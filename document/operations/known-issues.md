@@ -185,6 +185,15 @@
   ต้องได้ 0 บรรทัด (`CURRENT_TIMESTAMP()` 6 จุดใน `cdc_change_log`/`chq` ไม่ต้องแก้ —
   TIMESTAMP เป็นเวลาสัมบูรณ์)
 
+- **2026-08-17 — `sale_by_branch_mch3` ไม่มี PRIMARY KEY มาตลอด** เพราะ `uniqueKey`
+  และ `pk_key` เขียน `branch` ซ้ำ 2 ครั้ง (`["vendor_id","branch","mch3","branch"]`)
+  → `ADD PRIMARY KEY` ผิด syntax แล้ว retry-loop ใน post_operation กลืน error
+  จนครบ 10 รอบแบบเงียบ ๆ **ข้อมูลไม่เคยผิด** (`PARTITION BY a,b,c,b` ให้ผลเท่ากับ
+  `a,b,c`) เสียแค่ PK ไม่ติด — ตัด `branch` ตัวซ้ำออกแล้ว PK จะติดตอน full refresh
+  รอบถัดไป **บทเรียน**: retry-loop ที่ `EXCEPTION WHEN ERROR THEN retry` ปิดปาก
+  error ถาวร ถ้าสงสัยให้เช็กของจริงด้วย
+  `SELECT * FROM <dataset>.INFORMATION_SCHEMA.TABLE_CONSTRAINTS`
+
 ## การตัดสินใจเชิงออกแบบ
 
 - **2026-08-11 — `view_dim_aging_history` derive `AgingSK`/`BillingSK` สดแทนที่จะเชื่อค่าที่เก็บไว้**

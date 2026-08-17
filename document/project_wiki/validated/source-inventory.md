@@ -69,3 +69,13 @@
 
 All `type: "incremental"` but tagged only `validated`; PKs are wide business
 composites (e.g. `["sale_no","sale_date","branch_code","product_code"]`).
+
+**2026-08-17** — all 10 gained `partitionBy: "asatdate"` (they had `clusterBy` only,
+the single group in the whole validated layer without a partition). They still have
+**no incremental `WHERE ASATDATE >= …` window**, so each run reads the full raw
+history (~1.2 GB/night for ~80k output rows); adding the window is a separate,
+deliberate decision because it would stop late-arriving vendor corrections older
+than `BACKFILL_DAYS` from being picked up.
+
+Nothing downstream reads `validated_saleout_mdt` — no curated, dimension, fact or
+view references it. The layer ends here and is consumed directly by BI.

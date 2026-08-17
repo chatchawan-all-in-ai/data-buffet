@@ -5,6 +5,7 @@ config {
     tags: [databuffet.TAG_VALIDATED],
     uniqueKey: ["sale_no", "sale_date", "branch_code", "product_code"],
     bigquery: {
+        partitionBy: "asatdate",
         clusterBy: ["sale_no", "sale_date", "branch_code", "product_code"]
     },
 }

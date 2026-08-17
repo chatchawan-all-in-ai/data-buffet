@@ -5,6 +5,7 @@ config {
     tags: [databuffet.TAG_VALIDATED],
     uniqueKey: ["crdate", "periodtype", "vendorno", "siteno", "itemno", "mch3", "artno"],
     bigquery: {
+        partitionBy: "asatdate",
         clusterBy: ["crdate", "vendorno", "siteno", "mch3"]
     },
 }
