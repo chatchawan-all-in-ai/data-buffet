@@ -243,6 +243,59 @@ https://console.cloud.google.com/bigquery/transfers?project=databuffet-prd
 | `curated_cis360` | ว่างเปล่าใน nonprd |
 | `peem_using`, `temp_dim` | ตกลงกันแล้วว่าไม่ยกไป |
 
+### ⚠️ ตารางที่ Dataform **ไม่ได้สร้าง** แต่ pipeline ใช้งาน — ต้องมากับ dataset copy เท่านั้น
+
+(สำรวจครบทุก dataset เมื่อ **2026-08-17**: เทียบ 104 ตารางบน BigQuery กับโค้ดใน
+`definitions/` ทีละตัว)
+
+ตารางกลุ่มนี้ **ไม่มีไฟล์ `.sqlx` ที่สร้างมัน** — ถ้าไม่ติดมากับ Data Transfer ใน Step 17
+prd จะไม่มีทางสร้างเองได้เลย และ view/dim ที่อ่านมันจะพังตั้งแต่ Step 19
+
+| ตาราง | dataset | โค้ดที่อ่านมัน | พังตรงไหนถ้าไม่มี |
+|---|---|---|---|
+| `dim_geographies` | `dimension_table` | `view_dim_customer`, `onetime.Dimension_Customer` | Step 19 |
+| `dim_provinces` | `dimension_table` | `view_dim_customer`, `Dimension_Customer`, `view_deb_address_data`, `view_mih_address_data` | Step 19 |
+| `dim_districts` | `dimension_table` | `view_dim_customer`, `view_deb_address_data`, `view_mih_address_data` | Step 19 |
+| `dim_sub_districts` | `dimension_table` | `view_dim_customer`, `view_deb_address_data`, `view_mih_address_data` | Step 19 |
+| `cfsinvclose2024` | `onetime` | `dim_aging.sqlx` | Step 20 (dimension) |
+| `mapping_invoice` | `onetime` | `view_fact_transcation` | Step 19 |
+| `mih_address_data` | `process_dataset` | `view_mih_address_data` | Step 19 |
+
+ทั้ง 7 ตัวอยู่ใน dataset ที่มี transfer ครอบอยู่แล้ว (`dimension_table_from_nonprd`,
+`onetime_from_nonprd`, `process_dataset`) — **ไม่ต้องสร้าง transfer เพิ่ม** แต่ต้อง
+**ยืนยันด้วยตาว่ามันมาถึง prd จริง** (ดู checklist ท้าย Step 17) เพราะเป็นข้อมูล
+reference ที่โหลดมือครั้งเดียวตั้งแต่ ก.พ. 2026 ไม่มีใครสร้างซ้ำให้
+
+**ห้ามลบทิ้งที่ prd ตลอดไป** — Dataform จะไม่สร้างกลับให้
+
+### ตารางที่ไม่มีโค้ดสร้างและไม่มีโค้ดอ่าน (19 ตัว) — ตัดสินใจก่อน cutover
+
+`dimension_table`: `dim_target_channel`, `dim_target_sale` ·
+`fact_table`: `dim_mir` ·
+`onetime`: `Channel_Master_Finance`, `MasterProductRebate`, `MasterPublicHoliday`,
+`Master_Channel`, `Master_Channel_Cost`, `Master_Channel_Sales`, `Master_Cost_Group`,
+`Master_Cost_STK`, `Master_Target_Channel`, `Master_Target_Sales`, `ProductMasterFC`,
+`ProductMasterFC3`, `aging_hm_nu`, `cfsinvclose2024_backup`,
+`Table_Model_Invoice_Transaction`, `Table_Model_Target_DayOfWork`
+
+repo ไม่แตะเลยสักตัว แต่ **Power BI อาจต่ออยู่** — default คือปล่อยให้ copy ไปด้วย
+(อยู่ใน dataset ที่ copy ทั้งก้อนอยู่แล้ว) แล้วค่อยเก็บกวาดที่ Step 30
+อย่าเพิ่งลบก่อนถามฝั่ง BI
+
+### งานนอก Dataform ที่ต้องสร้างซ้ำที่ prd (เจอเพิ่มตอนสำรวจ 2026-08-17)
+
+`databuffet-nonprd` มี **scheduled query** 2 ตัวที่ไม่ได้อยู่ใน repo และไม่ได้อยู่ใน
+runbook นี้มาก่อน ถ้าไม่สร้างที่ prd ข้อมูลจะนิ่งไปเงียบ ๆ:
+
+| ชื่อ | เวลา | ทำอะไร |
+|---|---|---|
+| `table_for_ai_chatwith_data` | ทุกวัน 01:00 | TRUNCATE + INSERT `onetime.Table_Model_Invoice_Transaction` (และ `Table_Model_Target_DayOfWork`) — คือเจ้าของตาราง 2 ตัวในลิสต์ 19 ตัวด้านบนที่อัปเดตทุกวัน |
+| `data-retention` | ทุกวัน 05:00 | สคริปต์ retention ที่ไล่ dataset ทั้งโปรเจกต์ (รันก่อนรอบ Dataform 06:00) |
+
+ดูของจริงได้ที่: BigQuery → Scheduled queries (project `databuffet-nonprd`,
+region `us-central1`) แล้ว copy SQL ไปสร้างใหม่ที่ prd — **อย่าลืมแก้ชื่อ project
+ใน SQL เป็น `databuffet-prd`**
+
 ---
 
 ## Step 10 — ตรวจสิทธิ์: อะไรที่ต้องตามไปทำที่ prd
@@ -430,6 +483,27 @@ ORDER BY ds;
 
 **ต้องเห็น**: ตัวเลขเท่ากันทุกบรรทัด (prd อาจมากกว่าได้ใน `onetime` ถ้ามี view ค้าง —
 Step 18 จะจัดการ)
+
+### ✅ checklist: 7 ตารางที่ Dataform สร้างเองไม่ได้ (ดูรายละเอียดที่ Step 9)
+
+รันที่ **prd** — ทุกบรรทัดต้องได้ `row_count` มากกว่า 0 ถ้าตัวไหนเป็น 0 หรือ error
+แปลว่า transfer ไม่ครบ **ให้กลับไปรัน transfer ตัวนั้นซ้ำก่อนไป Step 18**
+
+```sql
+SELECT table_id, row_count FROM `databuffet-prd.dimension_table.__TABLES__`
+WHERE table_id IN ('dim_geographies','dim_provinces','dim_districts','dim_sub_districts')
+UNION ALL
+SELECT table_id, row_count FROM `databuffet-prd.onetime.__TABLES__`
+WHERE table_id IN ('cfsinvclose2024','mapping_invoice')
+UNION ALL
+SELECT table_id, row_count FROM `databuffet-prd.process_dataset.__TABLES__`
+WHERE table_id = 'mih_address_data'
+ORDER BY table_id;
+```
+
+**ค่าอ้างอิงจาก nonprd (2026-08-17)**: `dim_geographies` 6 · `dim_provinces` 77 ·
+`dim_districts` 930 · `dim_sub_districts` 7,451 · `cfsinvclose2024` 43,864 ·
+`mapping_invoice` 399,051 · `mih_address_data` 14,822
 
 > ทำไมต้องรัน 2 รอบ: nonprd อยู่ US, prd อยู่ asia-southeast1 — BigQuery **query ข้าม region
 > ไม่ได้** จึงเทียบด้วยตาเท่านั้น
