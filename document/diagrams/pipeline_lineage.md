@@ -869,6 +869,7 @@ flowchart LR
   dim_invoice --> Model_Invoice_Transaction
   dim_invoice --> view_aging_ri
   dim_invoice --> view_dim_invoice
+  dim_order --> view_dim_invoice
   dim_order --> view_dim_order
   dim_payment --> Model_Invoice_Transaction
   dim_product_master --> Model_Invoice_Transaction

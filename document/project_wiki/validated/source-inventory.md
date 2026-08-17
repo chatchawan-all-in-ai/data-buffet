@@ -70,12 +70,18 @@
 All `type: "incremental"` but tagged only `validated`; PKs are wide business
 composites (e.g. `["sale_no","sale_date","branch_code","product_code"]`).
 
-**2026-08-17** — all 10 gained `partitionBy: "asatdate"` (they had `clusterBy` only,
-the single group in the whole validated layer without a partition). They still have
-**no incremental `WHERE ASATDATE >= …` window**, so each run reads the full raw
-history (~1.2 GB/night for ~80k output rows); adding the window is a separate,
-deliberate decision because it would stop late-arriving vendor corrections older
-than `BACKFILL_DAYS` from being picked up.
+**2026-08-17** — all 10 were brought onto the standard validated pattern: they gained
+`partitionBy: "asatdate"` (they had `clusterBy` only, the single group in the whole
+layer without a partition) and the incremental
+`${when(incremental(), \`WHERE ASATDATE >= …BACKFILL_DAYS…\`)}` window, which they had
+never had. Before that, every run rescanned the full raw history — ~1.2 GB/night to
+produce ~80k rows, with `report_sale_subscription` alone at 721 MB.
+
+The window is safe here: all 858 raw objects across the four retailer folders
+(`hp` 84, `gb` 82, `tw` 84, `bt` 608) were uploaded on the same day as their own
+`ASATDATE=` partition — **zero back-dated files** — so no vendor correction older
+than `BACKFILL_DAYS` has ever arrived. If a retailer ever starts resending history,
+raise `BACKFILL_DAYS` for that run instead of removing the window.
 
 Nothing downstream reads `validated_saleout_mdt` — no curated, dimension, fact or
 view references it. The layer ends here and is consumed directly by BI.
