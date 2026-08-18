@@ -11,11 +11,11 @@
 GCS AVRO files  gs://file-raw-data  (Hive-partitioned by ASATDATE=YYYYMMDD)
       │
       ▼
-INITIAL      definitions/initial/     External tables + CREATE SCHEMA + UDFs (15 files)
+INITIAL      definitions/initial/     External tables + CREATE SCHEMA + UDFs (17 files)
       │
       ▼
-VALIDATED    definitions/validated/   Clean, cast, dedup — 1 file per source table (135 files)
-      │                               mac5 87 · cis360 25 · mastersku 12 · saleout_mdt 11
+VALIDATED    definitions/validated/   Clean, cast, dedup — 1 file per source table (143 files)
+      │                               mac5 87 · cis360 25 · mastersku 12 · saleout_mdt 11 · allkons_commission 8
       ▼
 CURATED      definitions/curated/     Business joins, JSON parsing, split-sale (8 files)
       │

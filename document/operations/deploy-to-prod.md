@@ -126,10 +126,12 @@ dataset ที่ยังไม่มี (ตรวจเมื่อ 2026-08-1
 | `raw_mac5_ak02` | external table ของ ak02 |
 | `raw_saleout_mdt` | external table ของ saleout |
 | `validated_saleout_mdt` | validated ของ saleout |
+| `raw_allkons_commission` | external table ของ allkons commission (เพิ่ม 2026-08-18) |
+| `validated_allkons_commission` | validated ของ allkons commission (เพิ่ม 2026-08-18) |
 | `bridge_dataset` | view `GroupCustomerSK_CustomerSK` |
 | `monitor_dataset` | ตาราง run telemetry |
 
-**ต้องเห็น**: ในแถบซ้ายมี dataset ครบ 25 ตัว
+**ต้องเห็น**: ในแถบซ้ายมี dataset ครบ 27 ตัว
 
 **ถ้าไม่ตรง**: กดที่ dataset แล้วดู **Data location** ต้องเป็น `asia-southeast1`
 ถ้าเผลอสร้างเป็น `us-central1` ต้องลบแล้วสร้างใหม่ (ย้าย location ไม่ได้)
@@ -189,8 +191,9 @@ https://console.cloud.google.com/transfer/jobs?project=databuffet-nonprd
 **ไปที่**: https://console.cloud.google.com/storage/browser?project=databuffet-prd
 → เปิด `file-raw-data-prd`
 
-**ต้องเห็น**: โฟลเดอร์ครบ 10 ตัว — `mac5_ag01`, `mac5_aa05`, `mac5_ab01`, `mac5_ac02`,
-`mac5_ak02`, `mac5_report`, `mac5_gps`, `mastersku`, `cis360`, **`saleout_mdt`**
+**ต้องเห็น**: โฟลเดอร์ครบ 11 ตัว — `mac5_ag01`, `mac5_aa05`, `mac5_ab01`, `mac5_ac02`,
+`mac5_ak02`, `mac5_report`, `mac5_gps`, `mastersku`, `cis360`, **`saleout_mdt`**,
+**`allkons_commission`**
 (เดิม prd **ไม่มี** `saleout_mdt` เลย ต้องโผล่มาหลัง Step 7)
 
 เปิด `mac5_ag01/mih/` แล้วเลื่อนลงล่างสุด
@@ -211,7 +214,7 @@ https://console.cloud.google.com/bigquery/transfers?project=databuffet-prd
 `dimension_table_from_nonprd`, `fact_table`, `process_dataset`, `mds_dataset_from_nonprd`
 (ของเก่าจาก 17 มี.ค. ใช้ซ้ำได้ ไม่ต้องสร้างใหม่)
 
-**ทำ**: กด **CREATE TRANSFER** เพิ่มอีก 9 ตัว ตามตารางนี้ ทุกตัวตั้งเหมือนกันหมด:
+**ทำ**: กด **CREATE TRANSFER** เพิ่มอีก 10 ตัว ตามตารางนี้ ทุกตัวตั้งเหมือนกันหมด:
 
 - **Source** = `Dataset Copy`
 - **Repeat frequency** = `On-demand`  ← สำคัญ ห้ามตั้งเป็น Daily
@@ -225,13 +228,14 @@ https://console.cloud.google.com/bigquery/transfers?project=databuffet-prd
 | `validated_cis360_from_nonprd` | `validated_cis360` |
 | `validated_mastersku_from_nonprd` | `validated_mastersku` |
 | `validated_saleout_mdt_from_nonprd` | `validated_saleout_mdt` |
+| `validated_allkons_commission_from_nonprd` | `validated_allkons_commission` |
 | `curated_mac5_from_nonprd` | `curated_mac5` |
 | `curated_mastersku_from_nonprd` | `curated_mastersku` |
 | `onetime_from_nonprd` | `onetime` |
 | `cdc_dataset_from_nonprd` | `cdc_dataset` |
 | `monitor_dataset_from_nonprd` | `monitor_dataset` |
 
-**ต้องเห็น**: หน้า Data transfers มีทั้งหมด **13 รายการ** สถานะยังไม่เคยรัน
+**ต้องเห็น**: หน้า Data transfers มีทั้งหมด **14 รายการ** สถานะยังไม่เคยรัน
 
 **ที่ไม่ต้องสร้างและเหตุผล**:
 
@@ -397,7 +401,8 @@ region `us-central1`) แล้ว copy SQL ไปสร้างใหม่ท
 ## Step 16 — รัน tag `initial` ใน Dataform
 
 ⚠️ **step นี้ต้องมาก่อน Step 17 เสมอ** เพราะไฟล์
-`drop_all_tables_validated_cis360` / `_mastersku` / `_saleout_mdt` ติด tag `initial` เอง
+`drop_all_tables_validated_cis360` / `_mastersku` / `_saleout_mdt` / `_allkons_commission`
+ติด tag `initial` เอง
 = มันจะ **ลบตาราง validated 45 ตาราง** ถ้าไปรันหลัง copy ข้อมูลจะหายทันที
 
 **ไปที่**: Dataform → repository `data-buffet` (region `asia-southeast1`)
@@ -448,13 +453,13 @@ FROM `databuffet-prd.raw_mac5_ag01.mih`;
 
 ---
 
-## Step 17 — สั่งรัน Data Transfer ทั้ง 13 ตัว
+## Step 17 — สั่งรัน Data Transfer ทั้ง 14 ตัว
 
 **ไปที่**: https://console.cloud.google.com/bigquery/transfers?project=databuffet-prd
 (region `asia-southeast1`)
 
 **ทำ**: เปิดทีละ transfer → **RUN TRANSFER NOW** (หรือ **SCHEDULE BACKFILL → Run one time
-transfer → now**) ทำให้ครบทั้ง 13 ตัว
+transfer → now**) ทำให้ครบทั้ง 14 ตัว
 
 **ต้องเห็น**: ทุกตัวจบเป็น **Succeeded** (ดูที่คอลัมน์ Run history)
 
@@ -470,6 +475,7 @@ SELECT 'validated_mac5' ds, COUNT(*) n FROM `databuffet-nonprd.validated_mac5.__
 UNION ALL SELECT 'validated_cis360', COUNT(*) FROM `databuffet-nonprd.validated_cis360.__TABLES__`
 UNION ALL SELECT 'validated_mastersku', COUNT(*) FROM `databuffet-nonprd.validated_mastersku.__TABLES__`
 UNION ALL SELECT 'validated_saleout_mdt', COUNT(*) FROM `databuffet-nonprd.validated_saleout_mdt.__TABLES__`
+UNION ALL SELECT 'validated_allkons_commission', COUNT(*) FROM `databuffet-nonprd.validated_allkons_commission.__TABLES__`
 UNION ALL SELECT 'curated_mac5', COUNT(*) FROM `databuffet-nonprd.curated_mac5.__TABLES__`
 UNION ALL SELECT 'curated_mastersku', COUNT(*) FROM `databuffet-nonprd.curated_mastersku.__TABLES__`
 UNION ALL SELECT 'dimension_table', COUNT(*) FROM `databuffet-nonprd.dimension_table.__TABLES__`
@@ -607,6 +613,7 @@ WITH t AS (
   UNION ALL SELECT 'validated_mac5', table_id, row_count FROM `databuffet-nonprd.validated_mac5.__TABLES__`
   UNION ALL SELECT 'validated_cis360', table_id, row_count FROM `databuffet-nonprd.validated_cis360.__TABLES__`
   UNION ALL SELECT 'validated_mastersku', table_id, row_count FROM `databuffet-nonprd.validated_mastersku.__TABLES__`
+  UNION ALL SELECT 'validated_allkons_commission', table_id, row_count FROM `databuffet-nonprd.validated_allkons_commission.__TABLES__`
   UNION ALL SELECT 'curated_mac5', table_id, row_count FROM `databuffet-nonprd.curated_mac5.__TABLES__`
   UNION ALL SELECT 'curated_mastersku', table_id, row_count FROM `databuffet-nonprd.curated_mastersku.__TABLES__`
 )

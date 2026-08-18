@@ -6,13 +6,13 @@
 GCS AVRO files  gs://file-raw-data  (Hive partition: ASATDATE=YYYYMMDD)
       │
       ▼
-┌────────────┐  definitions/initial/ (15 ไฟล์)
+┌────────────┐  definitions/initial/ (17 ไฟล์)
 │  INITIAL   │  external table + CREATE SCHEMA + UDF (function_dataset)
 └────────────┘
       ▼
-┌────────────┐  definitions/validated/ (135 ไฟล์)
+┌────────────┐  definitions/validated/ (143 ไฟล์)
 │ VALIDATED  │  cast + TRIM + NULL + dedup (QUALIFY) — 1 ไฟล์ต่อ 1 ตารางต้นทาง
-└────────────┘  mac5 87 · cis360 25 · mastersku 12 · saleout_mdt 11
+└────────────┘  mac5 87 · cis360 25 · mastersku 12 · saleout_mdt 11 · allkons_commission 8
       ▼
 ┌────────────┐  definitions/curated/ (8 ไฟล์)
 │  CURATED   │  business logic: status lookup, split-sale, JSON parsing

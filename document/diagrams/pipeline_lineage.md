@@ -7,7 +7,7 @@
 > inline `ref(...)` + `tags: [...]`), so the views — and `topic_flows.md` — always
 > match the repo.
 
-**Objects: 272** — initial 15 · validated 135 · curated 8 · dimension 59 · fact 9 · view 42 · cdc 2 · process 2
+**Objects: 282** — initial 17 · validated 143 · curated 8 · dimension 59 · fact 9 · view 42 · cdc 2 · process 2
 
 **Paused (config commented out):** —
 
@@ -24,8 +24,8 @@ The medallion → star-schema map. Counts are live.
 ```mermaid
 flowchart LR
   raw["Raw AVRO<br/>gs://file-raw-data"]
-  I["initial (15)<br/>ext tables + UDFs"]
-  V["validated (135)<br/>clean · cast · dedup"]
+  I["initial (17)<br/>ext tables + UDFs"]
+  V["validated (143)<br/>clean · cast · dedup"]
   C["curated (8)<br/>business joins"]
   D["dimension (59)<br/>SK + SCD"]
   F["fact (9)<br/>star-schema"]
@@ -73,12 +73,12 @@ dashed = a prerequisite from another cadence.
 ```mermaid
 flowchart TB
   subgraph boot["Bootstrap - run once / on schema change"]
-    I["initial | 11 objects<br/>external tables + UDFs<br/>tag: initial"]
+    I["initial | 13 objects<br/>external tables + UDFs<br/>tag: initial"]
   end
 
   subgraph nightly["Nightly run - Asia/Bangkok (top to bottom = run order)"]
     direction TB
-    V["validated | 135<br/>clean - cast - dedup<br/>tags: validated_incremental (48) / validated_full (73)"]
+    V["validated | 143<br/>clean - cast - dedup<br/>tags: validated_incremental (55) / validated_full (73)"]
     C["curated | 8<br/>business joins<br/>tag: curated"]
     D["dimension_daily | 58<br/>SK + SCD rebuild<br/>tag: dimension_daily"]
     Fd["fact_daily | 9<br/>star-schema load<br/>tag: fact_daily"]

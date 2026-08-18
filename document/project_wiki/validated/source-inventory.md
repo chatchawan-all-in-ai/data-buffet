@@ -85,3 +85,41 @@ raise `BACKFILL_DAYS` for that run instead of removing the window.
 
 Nothing downstream reads `validated_saleout_mdt` — no curated, dimension, fact or
 view references it. The layer ends here and is consumed directly by BI.
+
+## ALLKONS_COMMISSION (8 = 7 incremental + 1 schema) — PK `id`
+
+Sales-commission source, added 2026-08-18. GCS prefix `allkons_commission/`,
+one folder per table, Hive-partitioned by `ASATDATE=` like every other source.
+
+| Table | What it holds |
+|---|---|
+| `mac5_transactions` | order/invoice/receipt lines with payment + commission fields (largest — 931k rows in the 2026-08-06 snapshot) |
+| `mac5_sales_areas` | sales areas, links to `mac5_sales_channel_id` |
+| `mac5_sales_channels` | sales channels, links to `sales_channel_id` |
+| `sales_channels` | channel master |
+| `sales_positions` | position master |
+| `marketing_condition_version_details` | versioned commission conditions |
+| `target_commission_monthly_carries` | monthly target carry-over per sales id |
+
+All 7 follow the standard validated pattern exactly: `type: "incremental"`,
+tags `validated` + `validated_incremental`, `partitionBy: "asatdate"`,
+`clusterBy: ["id"]`, the `BACKFILL_DAYS` window, QUALIFY dedup and the PK
+post-operation. `uniqueKey` is `["id"]` on every table — **verified against the raw
+AVRO on 2026-08-18**: `id` is unique in every snapshot, including
+`marketing_condition_version_details` (45/45) and `mac5_transactions` (931,173/931,173).
+
+Two gotchas worth keeping:
+
+- `mac5_sales_areas` and `mac5_sales_channels` select a column literally named
+  `desc`, a GoogleSQL reserved word. It **must** be backtick-quoted inside the
+  helper — `cleanString('\`desc\`')`. Without the backticks BigQuery fails with
+  `Syntax error: Expected ")" but got keyword DESC`.
+- The 2026-08-02 partition contains the same snapshot loaded 3–4 times
+  (`mac5_sales_channels` 272 rows / 68 distinct, `sales_positions` 12 / 4) — a
+  test re-run by the data team. The rows are byte-identical, so QUALIFY collapses
+  them correctly; no action needed.
+
+The GCS prefix also holds a `mac5_transactions_view/` folder that is deliberately
+**not** declared as an external table (decision 2026-08-18).
+
+Nothing downstream reads `validated_allkons_commission` yet.

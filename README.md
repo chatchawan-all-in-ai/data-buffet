@@ -12,7 +12,7 @@ with built-in Change Data Capture (CDC) and an AI address-processing pipeline.
 | **Location** | `us-central1` |
 | **Language** | SQLX (SQL + JavaScript) |
 | **Raw Data** | `gs://file-raw-data` (AVRO, Hive-partitioned by `ASATDATE`) |
-| **Sources** | MAC5 (×5 companies), MASTERSKU, CIS360, SALEOUT_MDT + external `mds_dataset` |
+| **Sources** | MAC5 (×5 companies), MASTERSKU, CIS360, SALEOUT_MDT, ALLKONS_COMMISSION + external `mds_dataset` |
 | **Docs** | [`document/`](document/README.md) — developer guides (TH) + [LLM wiki (EN)](document/project_wiki/README.md) |
 | **New here?** | [`document/getting-started/onboarding.md`](document/getting-started/onboarding.md) — access to request, tooling, then `bash .claude/skills/verify-setup/scripts/verify.sh` |
 
@@ -24,12 +24,12 @@ with built-in Change Data Capture (CDC) and an AI address-processing pipeline.
 GCS AVRO files (gs://file-raw-data)
         │
         ▼
-┌─────────────────┐   definitions/initial/      (15 files)
+┌─────────────────┐   definitions/initial/      (17 files)
 │ INITIAL         │   External tables over GCS + schema/UDF bootstrap
 └─────────────────┘
         │
         ▼
-┌─────────────────┐   definitions/validated/    (131 transformations)
+┌─────────────────┐   definitions/validated/    (138 transformations)
 │ VALIDATED       │   Type casting, NULL/empty handling, dedup, schema enforcement
 └─────────────────┘
         │
@@ -62,13 +62,13 @@ Supporting pipelines:
 
 Counts below are **transformations**; the `*_schema_*.sqlx` bootstrap files are
 excluded (4 in validated, 3 in curated). `CLAUDE.md` and the Thai onboarding guide
-count **files**, so they read 135 / 8 for the same two layers — same code, different
+count **files**, so they read 143 / 8 for the same two layers — same code, different
 unit.
 
 | Layer | Path | Count | Purpose |
 |-------|------|------:|---------|
-| **Initial** | `definitions/initial/` | 15 | Create raw external tables over GCS AVRO; bootstrap schemas & UDFs |
-| **Validated** | `definitions/validated/` | 131 | Clean, cast, dedup; one table per source object (135 files) |
+| **Initial** | `definitions/initial/` | 17 | Create raw external tables over GCS AVRO; bootstrap schemas & UDFs |
+| **Validated** | `definitions/validated/` | 138 | Clean, cast, dedup; one table per source object (143 files) |
 | **Curated** | `definitions/curated/` | 5 | Business-ready joins, enrichment, JSON parsing (8 files) |
 | **Dimension** | `definitions/dimension/` | 59 | Conformed dimensions with surrogate keys (MERGE + SCD intervals) |
 | **Fact** | `definitions/fact/` | 9 | Star-schema fact tables joined to dimensions (4-year retention) |
@@ -76,7 +76,7 @@ unit.
 | **CDC** | `definitions/cdc/` | 2 | Config-driven change log over validated tables |
 | **Process** | `definitions/process/` | 2 | AI address parsing + row-level security (`rls_customer360`) |
 
-**Validated breakdown:** MAC5 `86` · CIS360 `24` · MASTERSKU `11` · SALEOUT_MDT `10`
+**Validated breakdown:** MAC5 `86` · CIS360 `24` · MASTERSKU `11` · SALEOUT_MDT `10` · ALLKONS_COMMISSION `7`
 (+1 schema-bootstrap file per source)
 
 **Dimension breakdown:** `34` full-daily-rebuild dims from `mds_dataset` (default
@@ -204,6 +204,7 @@ databuffet.cdcConfig                        // CDC source/table config
 | CIS360 | `raw_cis360` | `validated_cis360` | `curated_cis360` |
 | MASTERSKU | `raw_mastersku` | `validated_mastersku` | `curated_mastersku` |
 | SALEOUT_MDT | `raw_saleout_mdt` | `validated_saleout_mdt` | — |
+| ALLKONS_COMMISSION | `raw_allkons_commission` | `validated_allkons_commission` | — |
 
 Shared datasets: `dimension_table` / `dimension_view`, `fact_table` / `fact_view`,
 `process_dataset`, `cdc_dataset`, `function_dataset`, `onetime`, and the externally

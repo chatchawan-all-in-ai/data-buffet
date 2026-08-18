@@ -32,6 +32,7 @@
 | CIS360 | `raw_cis360` | `validated_cis360` | `curated_cis360` |
 | MASTERSKU | `raw_mastersku` | `validated_mastersku` | `curated_mastersku` |
 | SALEOUT_MDT | `raw_saleout_mdt` | `validated_saleout_mdt` | — |
+| ALLKONS_COMMISSION | `raw_allkons_commission` | `validated_allkons_commission` | — |
 
 ### Shared datasets
 
