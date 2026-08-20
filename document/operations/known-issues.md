@@ -148,10 +148,11 @@
   byte-identical (verify ด้วยการจำลอง template-literal unescape แล้ว 5/5)
   **หลักการ: ไฟล์นี้ยึด BigQuery เป็นความจริง** — ถ้าจะแก้ UDF ให้แก้ที่ไฟล์แล้วรัน
   ไม่ใช่แก้ใน console
-- **ไฟล์เก่ายังมี inline reference (tech debt)**: `fact_transcation.sqlx` ใช้ js-block Ref
-  กับ dims และ `${ref(...)}` กับ validated ถูกแล้ว แต่ยัง inline
-  `${databuffet.DATABASE}.onetime.Transaction_Data_Mart` (ควรเป็น js-block Ref ตาม §3.2)
-  — ของใหม่ยึดกฎ 2 ชั้น ของเก่าค่อยแปลงเมื่อแตะไฟล์นั้น
+- ~~**ไฟล์เก่ายังมี inline reference (tech debt)**: `fact_transcation.sqlx` inline
+  `${databuffet.DATABASE}.onetime.Transaction_Data_Mart`~~ **ปิดแล้ว 2026-08-20** —
+  เขียนใหม่ทั้งไฟล์แล้ว ตอนนี้ทุก ref เป็น js-block Ref / `${ref()}` ครบ
+  (ตรวจซ้ำ: `grep -c 'databuffet-nonprd' definitions/fact/fact_transcation.sqlx` = 0)
+  และ `dependencies[]` อ้าง view ที่อ่านตรงแทนตารางเบื้องหลัง
 
 ## ข้อจำกัด environment
 
