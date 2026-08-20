@@ -74,13 +74,22 @@ with tab_main as (
       ELSE inv.milLinkvcno
     END) as RefOrder,
 
-    (CASE 
+    -- ดึงชื่อร้านหลังธง #D/S, #D/, #/S, #D และ D/S (ไม่มี #) — COALESCE 5 pattern ตายตัว เจาะจงมาก->น้อย
+    -- ห้ามรวมเป็น pattern เดียวด้วย ? ซ้อน: เคส '#D/S' เปล่า ๆ จะ backtrack เหลือ prefix '#D/'
+    -- แล้วปล่อยตัว 'S' ออกมาเป็นชื่อร้าน
+    -- เกณฑ์ความยาวทำใน SQL ไม่ทำใน regex: ต้องมีตัวอักษรที่ไม่ใช่ช่องว่าง >= 3 ตัว
+    -- (ถ้าใส่ {n,} ใน regex มันจะเอาช่องว่างมานับความยาวช่วย เช่น '#D/S ca ' หลุดมาได้)
+    (CASE
       WHEN inv.mihCus in UNNEST(`${FnGetScgCustomerIdsTableRef}`())
         THEN `${CleanCompanyPrefixTableRef}`(
-          REGEXP_EXTRACT(
-            REGEXP_REPLACE(inv.mihNotes, r'\*{2,3}', '##'), 
-            r'(?:#?D/?S?|#/S)\s*\+?\s*(?:แ)?\s*([^\r\n#]+)'
-          )
+          (SELECT IF(CHAR_LENGTH(REGEXP_REPLACE(TRIM(v), r'\s', '')) >= 3, TRIM(v), NULL)
+           FROM UNNEST([COALESCE(
+             REGEXP_EXTRACT(REGEXP_REPLACE(inv.mihNotes, r'\*{2,3}', '##'), r'#D/S\s*\+?\s*(?:แ)?\s*([^\r\n#]+)'),
+             REGEXP_EXTRACT(REGEXP_REPLACE(inv.mihNotes, r'\*{2,3}', '##'), r'#D/\s*\+?\s*(?:แ)?\s*([^S\r\n#][^\r\n#]*)'),
+             REGEXP_EXTRACT(REGEXP_REPLACE(inv.mihNotes, r'\*{2,3}', '##'), r'#/S\s*\+?\s*(?:แ)?\s*([^\r\n#]+)'),
+             REGEXP_EXTRACT(REGEXP_REPLACE(inv.mihNotes, r'\*{2,3}', '##'), r'#D\s+\+?\s*(?:แ)?\s*([^\r\n#]+)'),
+             REGEXP_EXTRACT(REGEXP_REPLACE(inv.mihNotes, r'\*{2,3}', '##'), r'D/S\s*\+?\s*(?:แ)?\s*([^\r\n#]+)')
+           )]) AS v)
         )
       ELSE NULL
     END) as CRCShopName,
