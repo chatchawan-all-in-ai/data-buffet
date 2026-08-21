@@ -553,58 +553,59 @@ with dim_calendar as (
     on sec_map_sk.RegionSK = region_map_last.RegionSK
     and trans.CompanySK = region_map_last.CompanySK
 
+  -- DUMMY SECTION
+  LEFT JOIN `${DimSectionTableRef}` as dummy_sec
+    ON dummy_sec.SectionID = 'Dummy999990'
+    AND trans.CompanySK = dummy_sec.CompanySK
+    AND trans.mix_date BETWEEN dummy_sec.StartDate AND dummy_sec.EndDate
+
+  -- DUMMY SECTION MANAGER
+  LEFT JOIN `${DimSectionManagerTableRef}` as dummy_sec_mgr
+    ON dummy_sec_mgr.SectionID = 'Dummy999990'
+    AND trans.CompanySK = dummy_sec_mgr.CompanySK
+    AND trans.mix_date BETWEEN dummy_sec_mgr.StartDate AND dummy_sec_mgr.EndDate
+
+  -- DUMMY REGION
+  LEFT JOIN `${DimRegionTableRef}` dummy_reg
+    ON dummy_reg.RegionID = 'Dummy999990'
+    AND dummy_reg.SubRegionID = 'Dummy999990'
+    AND trans.CompanySK = dummy_reg.CompanySK
+    AND trans.mix_date BETWEEN dummy_reg.StartDate AND dummy_reg.EndDate
+
+  -- DUMMY REGION MANGER
+  LEFT JOIN `${DimRegionManagerTableRef}` as dummy_reg_mgr
+    ON dummy_reg_mgr.RegionID = 'Dummy999990'
+    AND dummy_reg_mgr.SubRegionID = 'Dummy999990'
+    AND trans.CompanySK = dummy_reg_mgr.CompanySK
+    AND trans.mix_date BETWEEN dummy_reg_mgr.StartDate AND dummy_reg_mgr.EndDate
+
+  -- DUMMY DIRECTOR
+  LEFT JOIN `${DimDirectorTableRef}` as dummy_dir
+    ON dummy_dir.DirectorID = 'Non Director'
+    AND trans.CompanySK = dummy_dir.CompanySK
+    AND trans.mix_date BETWEEN dummy_dir.StartDate AND dummy_dir.EndDate
+
+  -- get RegionID for ReportSK
+  left join `${DimRegionTableRef}` as reg
+    on (CASE 
+          WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+            THEN COALESCE(trans.ChangeRegionSK, dummy_reg.RegionSK)
+          ELSE COALESCE(trans.ChangeRegionSK, trans.RegionSK)
+        END) = reg.RegionSK
+
   -- ReportSk
   left join dim_report as dim_report
     on trans.CompanySK = dim_report.CompanySK
     and (CASE 
-      WHEN dim_report.Segment = 1 
-        THEN (CASE
-            WHEN FlagMappingInvoice is null THEN region_last.RegionID
-            WHEN FlagMappingInvoice = 'Yes' THEN region_map_last.RegionID
-            ELSE null
-          END) = dim_report.RegionID
-      WHEN dim_report.Segment = 2
-        THEN (CASE
-          WHEN FlagMappingInvoice is null THEN region_last.RegionID
-          WHEN FlagMappingInvoice = 'Yes' THEN region_map_last.RegionID
-          ELSE null
-        END) = dim_report.RegionID
-          and stk_mkt.MarketingGroupID = dim_report.MarketingGroupID
-      WHEN dim_report.Segment = 3
-        THEN (CASE
-          WHEN FlagMappingInvoice is null THEN region_last.RegionID
-          WHEN FlagMappingInvoice = 'Yes' THEN region_map_last.RegionID
-          ELSE null
-        END) = dim_report.RegionID
-          and dim_report.MarketingGroupID is null
-    END)
-
-    LEFT JOIN `${DimSectionTableRef}` as dummy_sec
-      ON dummy_sec.SectionID = 'Dummy999990'
-      AND trans.CompanySK = dummy_sec.CompanySK
-      AND trans.mix_date BETWEEN dummy_sec.StartDate AND dummy_sec.EndDate
-
-    LEFT JOIN `${DimSectionManagerTableRef}` as dummy_sec_mgr
-      ON dummy_sec_mgr.SectionID = 'Dummy999990'
-      AND trans.CompanySK = dummy_sec_mgr.CompanySK
-      AND trans.mix_date BETWEEN dummy_sec_mgr.StartDate AND dummy_sec_mgr.EndDate
-
-    LEFT JOIN `${DimRegionTableRef}` dummy_reg
-      ON dummy_reg.RegionID = 'Dummy999990'
-      AND dummy_reg.SubRegionID = 'Dummy999990'
-      AND trans.CompanySK = dummy_reg.CompanySK
-      AND trans.mix_date BETWEEN dummy_reg.StartDate AND dummy_reg.EndDate
-
-    LEFT JOIN `${DimRegionManagerTableRef}` as dummy_reg_mgr
-      ON dummy_reg_mgr.RegionID = 'Dummy999990'
-      AND dummy_reg_mgr.SubRegionID = 'Dummy999990'
-      AND trans.CompanySK = dummy_reg_mgr.CompanySK
-      AND trans.mix_date BETWEEN dummy_reg_mgr.StartDate AND dummy_reg_mgr.EndDate
-
-    LEFT JOIN `${DimDirectorTableRef}` as dummy_dir
-      ON dummy_dir.DirectorID = 'Non Director'
-      AND trans.CompanySK = dummy_dir.CompanySK
-      AND trans.mix_date BETWEEN dummy_dir.StartDate AND dummy_dir.EndDate
+        WHEN dim_report.Segment = 1 
+          THEN reg.RegionID = dim_report.RegionID
+        WHEN dim_report.Segment = 2
+          THEN reg.RegionID = dim_report.RegionID
+            and stk_mkt.MarketingGroupID = dim_report.MarketingGroupID
+        WHEN dim_report.Segment = 3
+          THEN reg.RegionID = dim_report.RegionID
+            and dim_report.MarketingGroupID is null
+      END)
 
   -- where UPPER(left(milLinkvcno,3)) = 'CRC'
 
