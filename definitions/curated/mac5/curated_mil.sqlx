@@ -29,14 +29,20 @@ SELECT
   milstomt as milStomt,
   millistno as milListno,
   milquan as milQuan,
+  milquan as milQuan_raw,
   milquanp2 as milQuanp2,
   miladisc as milAdisc,
+  miladisc as milAdisc_raw,
   milcog as milCog,
+  milcog as milCog_raw,
   milconv as milConv,
   mildisca as milDisca,
+  mildisca as milDisca_raw,
   mildisct as milDisct,
   milvat as milVat,
+  milvat as milVat_raw,
   milsum as milSum,
+  milsum as milSum_raw,
   milcut as milCut,
   milstype as milStype,
   miluname as milUname,
@@ -74,46 +80,64 @@ SELECT
   asatdate as asatdate,
   '100.00%' as percent_sale
 FROM ${ref(databuffet.VALIDATED_MAC5, "mil")}
-WHERE IFNULL(milvnos, '') != ''
+WHERE IFNULL(milvnos, '') != '' 
   ${ when(incremental(), `AND asatdate >= DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY)`) }
 
 
 post_operations {
-  -------- CREATE TEMP TABLE --------
   BEGIN
+    -------- CREATE TEMP TABLE --------
     CREATE OR REPLACE TEMP TABLE new_data_curated_mil AS
     WITH mil_raw AS (
       SELECT
-        mil.*, mil.milPer as milPer_raw
+        mil.* except(milQuan_raw, milAdisc_raw, milCog_raw, milDisca_raw, milVat_raw, milSum_raw),
+        mil.milPer AS milPer_raw,
+        mil.milQuan AS milQuan_raw,
+        mil.milAdisc AS milAdisc_raw,
+        mil.milCog AS milCog_raw,
+        mil.milDisca AS milDisca_raw,
+        mil.milVat AS milVat_raw,
+        mil.milSum AS milSum_raw
       FROM ${ref(databuffet.VALIDATED_MAC5, "mil")} AS mil
       WHERE mil.company_id = 'ag01'
-        and IFNULL(mil.milvnos, '') != ''
-      QUALIFY row_number() over(partition by mil.company_id, mil.milType, mil.milVnos, mil.milListno order by mil.asatdate desc) = 1
+        AND IFNULL(mil.milvnos, '') != ''
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY mil.company_id, mil.milType, mil.milVnos, mil.milListno ORDER BY mil.asatdate DESC) = 1 
 
     ), filter_mih2 AS (
-      SELECT company_id, mih2vnos, mih2cus, mih2per2, mih2rev, mih2perpc,
-        IF(per_sale1 > 100.00, 100.00, per_sale1) as per_sale1,
-        IF(per_sale2 > 100.00, 100.00, per_sale2) as per_sale2,
+      SELECT
+        company_id,
+        mih2vnos,
+        mih2cus,
+        mih2per2,
+        mih2rev,
+        mih2perpc,
+        IF(per_sale1 > 100.00, 100.00, per_sale1) AS per_sale1,
+        IF(per_sale2 > 100.00, 100.00, per_sale2) AS per_sale2,
       FROM (
-        SELECT DISTINCT
-          company_id, mih2vnos, mih2cus, mih2per2, mih2rev, mih2perpc,
+        SELECT DISTINCT 
+          company_id,
+          mih2vnos,
+          mih2cus,
+          mih2per2,
+          mih2rev,
+          mih2perpc,
           ROUND(CAST(NULLIF(REPLACE(REGEXP_REPLACE(mih2perpc, r'[^0-9.%]', ''), '%', ''), '') AS FLOAT64), 2) AS per_sale1,
           ROUND(CAST(NULLIF(REPLACE(REGEXP_REPLACE(mih2per2pc, r'[^0-9.%]', ''), '%', ''), '') AS FLOAT64), 2) AS per_sale2,
-        FROM ${ref(databuffet.VALIDATED_MAC5, "mih2")} as mih2
+        FROM ${ref(databuffet.VALIDATED_MAC5, "mih2")} AS mih2
         WHERE mih2.company_id = 'ag01'
           AND mih2.mih2cus IS NOT NULL
           AND mih2.mih2per2 IS NOT NULL
           AND mih2.mih2per2pc IS NOT NULL
-        --   AND mih2type = 'PS'
+          --   AND mih2type = 'PS'
           AND EXISTS (
             SELECT 1 FROM mil_raw AS mil
             WHERE mih2.mih2vnos = mil.milLinkvcno
               AND mih2.mih2cus = mil.milCus
-              AND mih2.company_id = mil.company_id
+              AND mih2.company_id = mil.company_id 
           )
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY company_id, mih2vnos, mih2cus ORDER BY mih2rev DESC) = 1
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY company_id, mih2vnos, mih2cus ORDER BY mih2rev DESC) = 1 
       )
-      WHERE (mih2perpc <> '100%' AND mih2perpc <> '00%')
+      WHERE (mih2perpc <> '100%' AND mih2perpc <> '00%') 
 
     ), includ_mil AS (
       SELECT
@@ -134,15 +158,31 @@ post_operations {
         mil.milSto,
         mil.milStomt,
         mil.milListno,
+
         (CASE WHEN split_sale = 1 THEN mil.milQuan * (mih2.per_sale1/100) ELSE mil.milQuan * (mih2.per_sale2/100) END) AS milQuan,
+        mil.milQuan_raw,
+
         mil.milQuanp2,
+
         (CASE WHEN split_sale = 1 THEN mil.milAdisc * (mih2.per_sale1/100) ELSE mil.milAdisc * (mih2.per_sale2/100) END) AS milAdisc,
+        mil.milAdisc_raw,
+
         (CASE WHEN split_sale = 1 THEN mil.milCog * (mih2.per_sale1/100) ELSE mil.milCog * (mih2.per_sale2/100) END) AS milCog,
+        mil.milCog_raw,
+
         mil.milConv,
+
         (CASE WHEN split_sale = 1 THEN mil.milDisca * (mih2.per_sale1/100) ELSE mil.milDisca * (mih2.per_sale2/100) END) AS milDisca,
+        mil.milDisca_raw,
+
         mil.milDisct,
+
         (CASE WHEN split_sale = 1 THEN mil.milVat * (mih2.per_sale1/100) ELSE mil.milVat * (mih2.per_sale2/100) END) AS milVat,
+        mil.milVat_raw,
+
         (CASE WHEN split_sale = 1 THEN mil.milSum * (mih2.per_sale1/100) ELSE mil.milSum * (mih2.per_sale2/100) END) AS milSum,
+        mil.milSum_raw,
+
         mil.milCut,
         mil.milStype,
         mil.milUname,
@@ -182,14 +222,14 @@ post_operations {
         (CASE WHEN split_sale = 1 THEN CONCAT(mih2.per_sale1, '%') ELSE CONCAT(mih2.per_sale2, '%') END) AS percent_sale,
       FROM mil_raw AS mil
       INNER JOIN filter_mih2 AS mih2
-        ON mil.milLinkvcno = mih2.mih2vnos
-          AND mil.milCus = mih2.mih2cus
-          AND mil.company_id = mih2.company_id
+      ON mil.milLinkvcno = mih2.mih2vnos
+        AND mil.milCus = mih2.mih2cus
+        AND mil.company_id = mih2.company_id
       CROSS JOIN (
         SELECT 1 AS split_sale
         UNION ALL
-        SELECT 2 AS split_sale
-      )
+        SELECT 2 AS split_sale 
+      ) 
 
     ), exclude_mil AS (
       SELECT
@@ -211,14 +251,20 @@ post_operations {
         mil.milStomt,
         mil.milListno,
         mil.milQuan,
+        mil.milQuan_raw,
         mil.milQuanp2,
         mil.milAdisc,
+        mil.milAdisc_raw,
         mil.milCog,
+        mil.milCog_raw,
         mil.milConv,
         mil.milDisca,
+        mil.milDisca_raw,
         mil.milDisct,
         mil.milVat,
+        mil.milVat_raw,
         mil.milSum,
+        mil.milSum_raw,
         mil.milCut,
         mil.milStype,
         mil.milUname,
@@ -255,48 +301,48 @@ post_operations {
         mil.milFitem,
         -- mil.mihRef1,
         mil.asatdate,
-        '100.00%' as percent_sale
+        '100.00%' AS percent_sale
       FROM mil_raw AS mil
       WHERE NOT EXISTS (
-        SELECT 1
-        FROM includ_mil AS mil2
-        WHERE mil.company_id = mil2.company_id
-          AND mil.milType = mil2.milType
-          AND mil.milVnos = mil2.milVnos
-          AND mil.milListno = mil2.milListno
-      )
-
+          SELECT 1
+          FROM includ_mil AS mil2
+          WHERE mil.company_id = mil2.company_id
+            AND mil.milType = mil2.milType
+            AND mil.milVnos = mil2.milVnos
+            AND mil.milListno = mil2.milListno 
+        ) 
+    
     ), final AS (
       SELECT * FROM exclude_mil
       UNION ALL
-      SELECT * FROM includ_mil
+      SELECT * FROM includ_mil 
+
     )
-
-    SELECT *
-    FROM final
-    ORDER BY company_id, milType, milVnos, milListno, milPer
+      SELECT *
+      FROM final
+      ORDER BY company_id, milType, milVnos, milListno, milPer
     ;
-  -------- CREATE TEMP TABLE --------
+    -------- CREATE TEMP TABLE --------
 
-  -------- DELETE WITH PK KEY --------
+    -------- DELETE WITH PK KEY --------
     DELETE FROM ${self()} AS old_data
     WHERE EXISTS (
       SELECT 1 FROM new_data_curated_mil AS new_data
       WHERE old_data.company_id = new_data.company_id
         AND old_data.milType = new_data.milType
         AND old_data.milVnos = new_data.milVnos
-        AND old_data.milListno = new_data.milListno
+        AND old_data.milListno = new_data.milListno 
     )
     ;
-  -------- DELETE WITH PK KEY --------
+    -------- DELETE WITH PK KEY --------
 
-  -------- INSERT DATA --------
+    -------- INSERT DATA --------
     INSERT INTO ${self()}
-    SELECT * 
+    SELECT *
     FROM new_data_curated_mil
     WHERE company_id = 'ag01'
     ;
-  -------- INSERT DATA --------
+    -------- INSERT DATA --------
 
   END;
 }
