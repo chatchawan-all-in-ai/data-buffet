@@ -257,8 +257,8 @@ prd จะไม่มีทางสร้างเองได้เลย แ
 
 | ตาราง | dataset | โค้ดที่อ่านมัน | พังตรงไหนถ้าไม่มี |
 |---|---|---|---|
-| `dim_geographies` | `dimension_table` | `view_dim_customer`, `onetime.Dimension_Customer` | Step 19 |
-| `dim_provinces` | `dimension_table` | `view_dim_customer`, `Dimension_Customer`, `view_deb_address_data`, `view_mih_address_data` | Step 19 |
+| `dim_geographies` | `dimension_table` | `view_dim_customer` | Step 19 |
+| `dim_provinces` | `dimension_table` | `view_dim_customer`, `view_deb_address_data`, `view_mih_address_data` | Step 19 |
 | `dim_districts` | `dimension_table` | `view_dim_customer`, `view_deb_address_data`, `view_mih_address_data` | Step 19 |
 | `dim_sub_districts` | `dimension_table` | `view_dim_customer`, `view_deb_address_data`, `view_mih_address_data` | Step 19 |
 | `cfsinvclose2024` | `onetime` | `dim_aging.sqlx` | Step 20 (dimension) |
@@ -524,24 +524,12 @@ ORDER BY table_id;
 **ไปที่**: BigQuery Studio (prd) → SQL editor
 
 ```sql
-DROP VIEW IF EXISTS `databuffet-prd.onetime.Dimension_Cheque`;
-DROP VIEW IF EXISTS `databuffet-prd.onetime.Dimension_Customer`;
-DROP VIEW IF EXISTS `databuffet-prd.onetime.Dimension_Delivery`;
-DROP VIEW IF EXISTS `databuffet-prd.onetime.Dimension_Invoice`;
-DROP VIEW IF EXISTS `databuffet-prd.onetime.Dimension_Order`;
-DROP VIEW IF EXISTS `databuffet-prd.onetime.Dimension_Project`;
-DROP VIEW IF EXISTS `databuffet-prd.onetime.Dimension_Quotation`;
 DROP VIEW IF EXISTS `databuffet-prd.onetime.Model_Invoice_Transaction`;
 DROP VIEW IF EXISTS `databuffet-prd.onetime.Model_Target_DayOfWork`;
 DROP VIEW IF EXISTS `databuffet-prd.onetime.PowerBI_Data_Buffet_Transaction`;
 DROP VIEW IF EXISTS `databuffet-prd.onetime.Product_Attribute`;
-DROP VIEW IF EXISTS `databuffet-prd.onetime.Product_Master`;
 DROP VIEW IF EXISTS `databuffet-prd.onetime.Product_Master_ALL`;
-DROP VIEW IF EXISTS `databuffet-prd.onetime.Sales_Per_Non_Master`;
 DROP VIEW IF EXISTS `databuffet-prd.onetime.Transaction_Data_Mart`;
-DROP VIEW IF EXISTS `databuffet-prd.onetime.View_Product`;
-DROP VIEW IF EXISTS `databuffet-prd.onetime.TEST_Data_Transaction`;
-DROP VIEW IF EXISTS `databuffet-prd.onetime.TEST_Data_Transaction_2`;
 DROP VIEW IF EXISTS `databuffet-prd.process_dataset.view_deb_address_data`;
 DROP VIEW IF EXISTS `databuffet-prd.process_dataset.view_mih_address_data`;
 DROP VIEW IF EXISTS `databuffet-prd.process_dataset.view_rls_data`;
@@ -551,8 +539,6 @@ DROP VIEW IF EXISTS `databuffet-prd.process_dataset.view_rls_special_data`;
 
 **ต้องเห็น**: รันผ่านหมด (`DROP VIEW` ไม่แตะตาราง ถ้าชื่อนั้นเป็นตารางจะ error แล้วหยุด —
 ถ้าเจอให้ข้ามบรรทัดนั้นไป)
-
-`TEST_Data_Transaction` / `_2` ลบแล้วจะไม่ถูกสร้างกลับ — ตั้งใจ (เป็น view ทดสอบ ไม่อยู่ใน repo)
 
 ---
 
@@ -570,8 +556,7 @@ Service account = `dbuffet-dataform-prd@` · **START EXECUTION**
 **ไปที่**: BigQuery Studio (prd) เปิดดูแต่ละ dataset
 
 **ต้องเห็น**: `dimension_view` 16 · `fact_view` 4 · `bridge_dataset` 1 ·
-`process_dataset` 5 · `onetime` 16 view
-(`onetime` น้อยกว่า nonprd อยู่ 2 คือ `TEST_Data_Transaction` ×2 — ถูกต้องแล้ว)
+`process_dataset` 5 · `onetime` 6 view (รวม 32 = จำนวนไฟล์ใน `definitions/view/`)
 
 ---
 

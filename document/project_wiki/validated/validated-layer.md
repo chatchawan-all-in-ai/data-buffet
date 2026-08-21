@@ -1,9 +1,10 @@
 # Validated Layer — `definitions/validated/`
 
-> **LLM context**: 135 files (mac5 87 · cis360 25 · mastersku 12 · saleout_mdt 11,
-> each source has 1 `validated_schema_*` bootstrap). Pure mechanical cleaning: read raw,
-> trim/cast every column with `functionData` helpers, standardize `asatdate`, dedup on PK,
-> write to `validated_<source>`. No business logic (rare exceptions in mac5).
+> **LLM context**: 143 files (mac5 87 · cis360 25 · mastersku 12 · saleout_mdt 11 ·
+> allkons_commission 8; each source has 1 `validated_schema_*` bootstrap). Pure mechanical
+> cleaning: read raw, trim/cast every column with `functionData` helpers, standardize
+> `asatdate`, dedup on PK, write to `validated_<source>`. No business logic (rare
+> exceptions in mac5).
 > **There is NO `primary-keys.json`** — keys are hardcoded per file (see below).
 
 ## Canonical incremental file (four parts)

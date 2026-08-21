@@ -31,8 +31,8 @@ see the note below):
 > while BigQuery has `mihvnos`/`mihcus`. It also carried **335 unescaped backslashes**
 > in the SQL body — including one `\1` that makes the whole action fail to compile
 > ("octal escape"), which is likely why the file drifted from reality in the first
-> place. Regenerated from `function_dataset.INFORMATION_SCHEMA.ROUTINES` with every
-> backslash doubled per [coding-standard §3.3](../../coding-standards/sqlx-coding-standard.md);
+> place. Regenerated from `function_dataset.INFORMATION_SCHEMA.ROUTINES`; backslashes
+> in the SQL body stay single per [coding-standard §3.3](../../coding-standards/sqlx-coding-standard.md);
 > all 5 now round-trip byte-identical to BigQuery.
 >
 > These UDFs are **not separate Dataform actions** — they are all created by this one
@@ -85,7 +85,7 @@ Every table is preceded by `DROP TABLE IF EXISTS`.
 | `mac5/create_all_table_raw_mac5_{aa05,ab01,ac02,ak02}.sqlx` | initial | Per-company: incremental `cql, mih, mil, mir, mie` + full `ap_s, ar_s, chq, deb, dep, per, stg, stk, cfs` |
 | `mac5/drop_all_tables_validated_mac5.sqlx` | **re-initial** | DROP ~85 validated_mac5 tables |
 | `mac5/drop_all_tables_curated_mac5.sqlx` | **re-initial** | DROP 3 curated tables |
-| `cis360/create_all_table_raw_cis360.sqlx` | initial | 27 hive-partitioned external tables |
+| `cis360/create_all_table_raw_cis360.sqlx` | initial | 25 hive-partitioned external tables |
 | `cis360/drop_all_tables_validated_cis360.sqlx` | initial | DROP 24 validated tables |
 | `mastersku/create_all_table_raw_mastersku.sqlx` | initial | 12 external tables |
 | `mastersku/drop_all_tables_validated_mastersku.sqlx` | initial | DROP 11 validated tables |

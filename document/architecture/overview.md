@@ -26,7 +26,7 @@ GCS AVRO files  gs://file-raw-data  (Hive partition: ASATDATE=YYYYMMDD)
  dimension_table                 fact_table
       └───────────────┬───────────────┘
                       ▼
-              ┌────────────┐  definitions/view/ (42 ไฟล์)
+              ┌────────────┐  definitions/view/ (32 ไฟล์)
               │    VIEW    │  BI/reporting views (type: "view")
               └────────────┘  dimension_view · fact_view · bridge_dataset ·
                view schemas    onetime · process_dataset

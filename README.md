@@ -48,7 +48,7 @@ GCS AVRO files (gs://file-raw-data)
         ▲          │                    │
         │          └────────┬───────────┘
         │                   ▼
-        │          ┌─────────────────┐   definitions/view/  (42 views)
+        │          ┌─────────────────┐   definitions/view/  (32 views)
         │          │ VIEW            │   BI/reporting layer (type: "view")
         │          └─────────────────┘   reads dim/fact/curated + other views
         │  mds_dataset (external master-data-service tables — not built by this repo)
@@ -72,7 +72,7 @@ unit.
 | **Curated** | `definitions/curated/` | 5 | Business-ready joins, enrichment, JSON parsing (8 files) |
 | **Dimension** | `definitions/dimension/` | 59 | Conformed dimensions with surrogate keys (MERGE + SCD intervals) |
 | **Fact** | `definitions/fact/` | 9 | Star-schema fact tables joined to dimensions (4-year retention) |
-| **View** | `definitions/view/` | 42 | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` |
+| **View** | `definitions/view/` | 32 | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` |
 | **CDC** | `definitions/cdc/` | 2 | Config-driven change log over validated tables |
 | **Process** | `definitions/process/` | 2 | AI address parsing + row-level security (`rls_customer360`) |
 

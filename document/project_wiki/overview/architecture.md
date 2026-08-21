@@ -27,7 +27,7 @@ DIMENSION    definitions/dimension/ FACT    definitions/fact/
       └──────────────┬─────────────┘
                      ▼
 VIEW         definitions/view/      Presentation views (type: "view") for Power BI /
-(42 files)                          data marts / RLS. schema stays dimension_view,
+(32 files)                          data marts / RLS. schema stays dimension_view,
                                     fact_view, onetime, process_dataset,
                                     bridge_dataset (folder ≠ target dataset)
 
@@ -70,7 +70,7 @@ Side pipelines:
   > `process_dataset.RLS_Customer360` (now built here as
   > `definitions/process/rls_customer360.sqlx`, lowercase). Both are declared in the
   > consuming files' `dependencies[]`.
-- **View layer now defined** (2026-07-24): the 42 views under `definitions/view/`
+- **View layer now defined** (2026-07-24): the 32 views under `definitions/view/`
   (e.g. `view_dim_aging`, `view_deb_address_data`) are Dataform-managed as of the view
   migration. See [view/view-layer.md](../view/view-layer.md).
 

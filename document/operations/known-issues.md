@@ -39,14 +39,13 @@
 - **View layer เข้า Dataform** (ตัดสินใจ + ทำ 2026-07-24): เดิม BigQuery views ถูก
   สร้าง/แก้ **นอก Dataform** ตรงใน console จึงไม่อยู่ใน repo และไม่มี lineage — ย้ายมา
   เป็น `type: "view"` ใต้ `definitions/view/` (แยก subfolder ตาม dataset ปลายทาง)
-  แล้ว **42 ไฟล์** โดย **`config.schema` คงชี้ dataset เดิม** (`dimension_view`,
+  แล้ว **32 ไฟล์** โดย **`config.schema` คงชี้ dataset เดิม** (`dimension_view`,
   `fact_view`, `onetime`, `process_dataset`, `bridge_dataset`) เพื่อไม่ให้
   Power BI/consumer พัง และแทน project literal `databuffet-nonprd` ด้วย
   `${databuffet.DATABASE}` (portable ข้าม env) — inventory เต็ม: `project_wiki/view/view-layer.md`
-  - ขอบเขต: 42 ตัว **ตัด 12** (test 5: `TEST_Data_Transaction`×2 + `temp_dim.*`×3;
-    `peem_using` ทั้ง dataset 7 ตัว: `view_1..4_Product_DOS_CAT1*` + RLS trio
-    `view_rls_data`/`sale`/`special` — เป็น **test copy ส่วนตัวของเจ้าของ** ของ RLS views
-    ใน `process_dataset` จงใจไม่เอาเข้า Dataform)
+  - ไม่เอาเข้า Dataform: `temp_dim.*` 3 ตัว (test) + `peem_using` ทั้ง dataset 7 ตัว
+    (`view_1..4_Product_DOS_CAT1*` + RLS trio `view_rls_data`/`sale`/`special` —
+    เป็น **test copy ส่วนตัวของเจ้าของ** ของ RLS views ใน `process_dataset`)
   - เพิ่ม constant: `TAG_VIEW`=`view`, `BRIDGE`=`bridge_dataset` (ไม่มี `PEEM_USING`)
   - `dependencies[]` ใส่เฉพาะ action จริง (basename ที่ unique) — external/UDF/ตารางที่
     ไม่มี .sqlx (`dim_districts/provinces/geographies/sub_districts`, `dim_aging_history`,
@@ -70,10 +69,10 @@
     (ข) ที่เหลือ (dim/fact, view อื่น, process, mds, onetime base, UDF, external) →
     js-block `<Pascal>Table`/`<Pascal>TableRef` อ้างด้วย `` `${XxxTableRef}` ``
     ห้าม inline `${databuffet.DATABASE}...` ใน body; view ที่อ่านแต่ validated/curated
-    จะ**ไม่มี js block** เลย (เช่น `Dimension_Quotation`)
+    จะ**ไม่มี js block** เลย (เช่น `PowerBI_Data_Buffet_Transaction`)
     ประวัติ: รอบแรก generate เป็น inline (ผิด §3) → รอบสองแก้เป็น js-block ทั้งหมด
     (ยัง**ผิด** เพราะ validated/curated ต้องเป็น `ref()`) → รอบสามได้ตามนี้
-    ยืนยันทุกรอบ: เนื้อ SQL ไม่เปลี่ยน 42/42 เทียบกับ BigQuery
+    ยืนยันทุกรอบ: เนื้อ SQL ไม่เปลี่ยนเทียบกับ BigQuery
 - **⚠️ ดึง view จาก BigQuery กลับเข้า `.sqlx` — backtick หาย** (เจอจริง 2026-08-10):
   `INFORMATION_SCHEMA.VIEWS.view_definition` คืน path ของตาราง **โดยตัด backtick ออก**
   เช่น `from databuffet-nonprd.dimension_table.dim_invoice as inv`
@@ -99,8 +98,8 @@
 
   **ลำดับเหตุการณ์**
   1. 2026-07-27 — สรุป (โดยการอนุมาน ไม่ได้เปิด compiled panel ดู) ว่า body เป็น JS
-     template literal จึงต้อง double → commit `3c02e61` double 3 view file
-     (`view_dim_product_master`, `view_aging_ri`, `Sales_Per_Non_Master`) และ
+     template literal จึงต้อง double → commit `3c02e61` double 2 view file
+     (`view_dim_product_master`, `view_aging_ri`) และ
      `67e779e` double ทั้ง `create_all_function.sqlx` (335 จุด)
   2. 2026-08-07 15:25 — deploy UDF เข้า BigQuery → `EXTRACT_CHQ_DATA` พัง
      `Cannot parse regular expression: missing )` เพราะ `\\(` ที่ไปถึง BigQuery
@@ -175,8 +174,7 @@
   (`Cannot parse regular expression: missing )`) จากการ deploy ด้วยการ paste
   ข้อความดิบเข้า console + กฎ backslash ในเอกสารที่สรุปผิดมาตั้งแต่ 07-27
   รายละเอียดเต็มอยู่ในหัวข้อ **พฤติกรรมที่ตั้งใจ** ด้านบน (bullet backslash)
-- **แก้ 2026-08-17 — `CURRENT_DATE()` ไม่มี timezone 4 จุด** (`dim_customer`,
-  `dim_project`, `view/onetime/Dimension_Customer`, `view/onetime/Dimension_Project`)
+- **แก้ 2026-08-17 — `CURRENT_DATE()` ไม่มี timezone** (`dim_customer`, `dim_project`)
   job รันเสร็จ ~06:07 น. ไทย = 23:07 UTC ของเมื่อวาน → `CURRENT_DATE()` คืนวันที่
   ย้อนหลัง 1 วัน**ทุกคืน** ทำให้ `projectDay` ต่ำไป 1 วันทุกแถวที่ `pjend` เป็น NULL
   และ `Total_contact_time_Year` ต่ำไป 1 ปีเฉพาะแถวที่ครบรอบวันนั้นพอดี

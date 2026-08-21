@@ -3,7 +3,7 @@
 > **LLM context**: The presentation layer — BigQuery **views** that sit on top of the
 > physical dim/fact/curated/validated tables (and a few external sources). Migrated
 > into Dataform on **2026-07-24** from views that previously lived only in BigQuery
-> (created by hand in the console). 42 views, `type: "view"`, tag `view`.
+> (created by hand in the console). 32 views, `type: "view"`, tag `view`.
 >
 > **Non-obvious constraints:**
 > - **A view's folder is not its dataset.** Files live under `definitions/view/<dataset>/`
@@ -68,7 +68,7 @@ Rules:
    does build (`type: "table"` in `process_dataset`).
 3. No inline `` `${databuffet.DATABASE}.${databuffet.X}.tbl` ``, no `databuffet-nonprd`
    literal. Declarations follow first-use order; declare only what is used. A view that
-   reads only validated/curated has **no `js` block** (e.g. `Dimension_Quotation`).
+   reads only validated/curated has **no `js` block** (e.g. `PowerBI_Data_Buffet_Transaction`).
 4. No trailing `;` (the view DDL wraps the query).
 4b. **Backslash ในโค้ด SQL ใช้ตัวเดียว** — Dataform ส่งผ่านให้ตรงๆ ไม่กิน
    ([coding-standard §3.3](../../coding-standards/sqlx-coding-standard.md)). `r'\d'`,
@@ -150,7 +150,7 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 > 13 เส้น เพราะ dims เหล่านั้นปั้น SK ใหม่ทุกคืน ถ้ารันสลับลำดับจะได้ SK ของเมื่อวาน
 > ตรวจ timestamp แล้วที่ผ่านมาเรียงถูกตลอด — เป็นการกันไว้ ไม่ใช่แก้ของที่พังอยู่
 
-## Inventory (42 views)
+## Inventory (32 views)
 
 ### `dimension_view` → schema `DIMENSION_VIEW` (16)
 
@@ -182,7 +182,7 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 | `view_fact_mir_rs` | fact_mir_rs, dim_aging, curated_mih, ar_s | — |
 | `view_fact_mir_vs` | fact_mir_vs, dim_aging | — |
 
-### `onetime` → schema `ONETIME` (16 — data marts / Power BI / models)
+### `onetime` → schema `ONETIME` (6 — data marts / Power BI / models)
 
 | View | Key upstream | External refs |
 |---|---|---|
@@ -190,20 +190,8 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 | `Model_Invoice_Transaction` | 15 dims, view_fact_transcation, view_dim_customer | — |
 | `Model_Target_DayOfWork` | 11 dims | — |
 | `PowerBI_Data_Buffet_Transaction` | curated_mih/mil, stk | — |
-| `Dimension_Customer` | validated_cis360 ×5, deb, match_customer, view_deb_address_data | dim_provinces/geographies |
-| `Dimension_Cheque` | chq, cql, mir | — |
-| `Dimension_Delivery` | curated_mih/mil, deb, tdelivery, ttrip, ttrip_document | — |
-| `Dimension_Invoice` | ap_s, ar_s, mih, mih2 | — |
-| `Dimension_Order` | curated_mih, ar_s | — |
-| `Dimension_Project` | tbook_profilecomp | — |
-| `Dimension_Quotation` | curated_tbook_quotation | — |
 | `Product_Attribute` | dim_company, dim_product_master, stg, stk, mastersku ×4 | — |
-| `Product_Master` | stg, stk, mastersku ×4, dim_rebate | — |
 | `Product_Master_ALL` | dim_product_master, dim_product_mkt_director, view_dim_product_mkt, Product_Attribute | — |
-| `Sales_Per_Non_Master` | per, dim_sale_representative | — |
-| `View_Product` | stg, stk, stk_mkt, mastersku ×5 | validated_mastersku.category |
-
-**Excluded (test — not migrated):** `TEST_Data_Transaction`, `TEST_Data_Transaction_2`.
 
 ### `process_dataset` → schema `PROCESS_DATASET` (5)
 
@@ -221,10 +209,10 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 |---|---|
 | `GroupCustomerSK_CustomerSK` | dim_customer, dim_group_customer |
 
-## Not migrated (12 total)
+## Not migrated
 
-- **Test (5):** `onetime.TEST_Data_Transaction`, `onetime.TEST_Data_Transaction_2`,
-  `temp_dim.fact_transcation`, `temp_dim.view_dim_aging`, `temp_dim.view_fact_transcation`.
+- **Test (3):** `temp_dim.fact_transcation`, `temp_dim.view_dim_aging`,
+  `temp_dim.view_fact_transcation`.
 - **`peem_using` dataset — excluded entirely (7):** the four
   `view_1..4_Product_DOS_CAT1*` (wrap externally-loaded `peem_using.Product_*` tables),
   plus `view_rls_data` / `view_rls_sale_data` / `view_rls_special_data` — the RLS trio
@@ -234,6 +222,6 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 
 ## Compile-verification checklist (local `dataform` CLI unavailable)
 
-1. All 42 views compile and the `view` tag runs after the table-building tags.
+1. All 32 views compile and the `view` tag runs after the table-building tags.
 2. Views referencing other views (chains — e.g. `view_dim_aging` → `view_dim_channel`,
    `Model_Invoice_Transaction` → `view_fact_transcation`) resolve in the right order.

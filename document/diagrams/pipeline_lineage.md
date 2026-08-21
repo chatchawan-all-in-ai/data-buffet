@@ -7,7 +7,7 @@
 > inline `ref(...)` + `tags: [...]`), so the views — and `topic_flows.md` — always
 > match the repo.
 
-**Objects: 282** — initial 17 · validated 143 · curated 8 · dimension 59 · fact 9 · view 42 · cdc 2 · process 2
+**Objects: 272** — initial 17 · validated 143 · curated 8 · dimension 59 · fact 9 · view 32 · cdc 2 · process 2
 
 **Paused (config commented out):** —
 
@@ -29,7 +29,7 @@ flowchart LR
   C["curated (8)<br/>business joins"]
   D["dimension (59)<br/>SK + SCD"]
   F["fact (9)<br/>star-schema"]
-  VW["view (42)<br/>BI/reporting views"]
+  VW["view (32)<br/>BI/reporting views"]
   CDC["cdc (2)"]
   P["process (2)<br/>AI address parse"]
   raw --> I --> V --> C
@@ -82,7 +82,7 @@ flowchart TB
     C["curated | 8<br/>business joins<br/>tag: curated"]
     D["dimension_daily | 58<br/>SK + SCD rebuild<br/>tag: dimension_daily"]
     Fd["fact_daily | 9<br/>star-schema load<br/>tag: fact_daily"]
-    Vw["view | 42<br/>BI/reporting views<br/>tag: view"]
+    Vw["view | 32<br/>BI/reporting views<br/>tag: view"]
     CDC["cdc | 2<br/>change log<br/>tag: cdc"]
     P["process | 2<br/>AI.GENERATE - gated on today's CDC changes<br/>tag: process"]
     V --> C --> D --> Fd --> Vw
@@ -643,33 +643,18 @@ other views it selects from. Edges captured from each view's `dependencies[]`.
 
 ```mermaid
 flowchart LR
-  subgraph validated["validated (27)"]
-    ap_s["ap_s"]
+  subgraph validated["validated (12)"]
     ar_s["ar_s"]
     brand["brand"]
-    category__mastersku["category"]
     chq["chq"]
     cql["cql"]
-    customer_profile["customer_profile"]
-    customer_profile_nature_business["customer_profile_nature_business"]
-    customer_status["customer_status"]
-    customer_type["customer_type"]
     deb["deb"]
-    match_customer["match_customer"]
-    mih["mih"]
     mih2["mih2"]
     mir["mir"]
-    nature_business["nature_business"]
-    per["per"]
     product["product"]
     product_detail["product_detail"]
     stg["stg"]
     stk["stk"]
-    stk_mkt["stk_mkt"]
-    tbook_profilecomp["tbook_profilecomp"]
-    tdelivery["tdelivery"]
-    ttrip["ttrip"]
-    ttrip_document["ttrip_document"]
     vendor["vendor"]
   end
   subgraph curated["curated (3)"]
@@ -731,24 +716,14 @@ flowchart LR
     fact_order["fact_order"]
     fact_transcation["fact_transcation"]
   end
-  subgraph view["view (42)"]
-    Dimension_Cheque["Dimension_Cheque"]
-    Dimension_Customer["Dimension_Customer"]
-    Dimension_Delivery["Dimension_Delivery"]
-    Dimension_Invoice["Dimension_Invoice"]
-    Dimension_Order["Dimension_Order"]
-    Dimension_Project["Dimension_Project"]
-    Dimension_Quotation["Dimension_Quotation"]
+  subgraph view["view (32)"]
     GroupCustomerSK_CustomerSK["GroupCustomerSK_CustomerSK"]
     Model_Invoice_Transaction["Model_Invoice_Transaction"]
     Model_Target_DayOfWork["Model_Target_DayOfWork"]
     PowerBI_Data_Buffet_Transaction["PowerBI_Data_Buffet_Transaction"]
     Product_Attribute["Product_Attribute"]
-    Product_Master["Product_Master"]
     Product_Master_ALL["Product_Master_ALL"]
-    Sales_Per_Non_Master["Sales_Per_Non_Master"]
     Transaction_Data_Mart["Transaction_Data_Mart"]
-    View_Product["View_Product"]
     view_aging_ri["view_aging_ri"]
     view_deb_address_data["view_deb_address_data"]
     view_dim_aging["view_dim_aging"]
@@ -780,37 +755,19 @@ flowchart LR
     rls_customer360["rls_customer360"]
   end
   Product_Attribute --> Product_Master_ALL
-  ap_s --> Dimension_Invoice
-  ar_s --> Dimension_Invoice
-  ar_s --> Dimension_Order
   ar_s --> view_aging_ri
   ar_s --> view_fact_mir_rs
   brand --> Product_Attribute
-  brand --> Product_Master
-  brand --> View_Product
-  category__mastersku --> View_Product
-  chq --> Dimension_Cheque
   chq --> view_aging_ri
-  cql --> Dimension_Cheque
   cql --> view_aging_ri
-  curated_mih --> Dimension_Delivery
-  curated_mih --> Dimension_Order
   curated_mih --> PowerBI_Data_Buffet_Transaction
   curated_mih --> Transaction_Data_Mart
   curated_mih --> view_aging_ri
   curated_mih --> view_fact_mir_rs
   curated_mih --> view_fact_transcation
-  curated_mil --> Dimension_Delivery
   curated_mil --> PowerBI_Data_Buffet_Transaction
   curated_mil --> Transaction_Data_Mart
-  curated_tbook_quotation --> Dimension_Quotation
   curated_tbook_quotation --> Transaction_Data_Mart
-  customer_profile --> Dimension_Customer
-  customer_profile_nature_business --> Dimension_Customer
-  customer_status --> Dimension_Customer
-  customer_type --> Dimension_Customer
-  deb --> Dimension_Customer
-  deb --> Dimension_Delivery
   deb --> view_fact_transcation
   deb_address_data --> view_deb_address_data
   dim_aging --> view_dim_aging
@@ -880,7 +837,6 @@ flowchart LR
   dim_product_mkt_director --> Product_Master_ALL
   dim_product_mkt_director --> view_dim_product_mkt
   dim_rate_target --> view_dim_target_by_agent
-  dim_rebate --> Product_Master
   dim_rebate --> view_dim_product_master
   dim_rebate --> view_fact_transcation
   dim_region --> view_dim_target_by_agent_dayofwork
@@ -901,7 +857,6 @@ flowchart LR
   dim_report --> Model_Target_DayOfWork
   dim_report --> view_dim_target_by_agent
   dim_report --> view_fact_transcation
-  dim_sale_representative --> Sales_Per_Non_Master
   dim_sale_representative --> view_dim_sale_representative
   dim_sale_representative --> view_dim_target_by_agent_dayofwork
   dim_sale_representative --> view_fact_transcation
@@ -940,39 +895,17 @@ flowchart LR
   fact_mir_vs --> view_fact_mir_vs
   fact_order --> view_fact_transcation
   fact_transcation --> view_fact_transcation
-  match_customer --> Dimension_Customer
-  mih --> Dimension_Invoice
-  mih2 --> Dimension_Invoice
   mih2 --> view_dim_order
-  mir --> Dimension_Cheque
   mir --> view_aging_ri
-  nature_business --> Dimension_Customer
-  per --> Sales_Per_Non_Master
   product --> Product_Attribute
-  product --> Product_Master
-  product --> View_Product
   product_detail --> Product_Attribute
-  product_detail --> Product_Master
-  product_detail --> View_Product
   rls_customer360 --> view_rls_sale_data
   rls_customer360 --> view_rls_special_data
   stg --> Product_Attribute
-  stg --> Product_Master
-  stg --> View_Product
   stk --> PowerBI_Data_Buffet_Transaction
   stk --> Product_Attribute
-  stk --> Product_Master
   stk --> Transaction_Data_Mart
-  stk --> View_Product
-  stk_mkt --> View_Product
-  tbook_profilecomp --> Dimension_Project
-  tdelivery --> Dimension_Delivery
-  ttrip --> Dimension_Delivery
-  ttrip_document --> Dimension_Delivery
   vendor --> Product_Attribute
-  vendor --> Product_Master
-  vendor --> View_Product
-  view_deb_address_data --> Dimension_Customer
   view_deb_address_data --> Transaction_Data_Mart
   view_dim_aging --> view_aging_ri
   view_dim_aging --> view_fact_transcation
@@ -993,10 +926,10 @@ flowchart LR
   classDef view fill:#cfeae6,stroke:#3a9d94,color:#111;
   classDef process fill:#f5c6c6,stroke:#c04040,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
-  class ap_s,ar_s,brand,category__mastersku,chq,cql,customer_profile,customer_profile_nature_business,customer_status,customer_type,deb,match_customer,mih,mih2,mir,nature_business,per,product,product_detail,stg,stk,stk_mkt,tbook_profilecomp,tdelivery,ttrip,ttrip_document,vendor validated;
+  class ar_s,brand,chq,cql,deb,mih2,mir,product,product_detail,stg,stk,vendor validated;
   class curated_mih,curated_mil,curated_tbook_quotation curated;
   class dim_aging,dim_aging_rang,dim_calendar,dim_change_district,dim_channel,dim_channel_cost,dim_channel_finance,dim_channel_sales,dim_company,dim_cost_group,dim_cost_stk,dim_customer,dim_customer_grade,dim_department,dim_department_last,dim_director,dim_director_last,dim_doctype,dim_group_customer,dim_guarantee,dim_invoice,dim_order,dim_payment,dim_product_master,dim_product_mkt,dim_product_mkt_director,dim_rate_target,dim_rebate,dim_region,dim_region_last,dim_region_manager,dim_region_manager_last,dim_report,dim_sale_representative,dim_sale_representative_last,dim_section,dim_section_last,dim_section_manager,dim_section_manager_last,dim_status_not_receive,dim_stk_mkt,dim_target_product_group,dim_target_product_group_by_sale,dim_target_product_group_by_sale_dayofwork,dim_waterpac dimension;
   class fact_invoice,fact_mir_rs,fact_mir_vs,fact_order,fact_transcation fact;
-  class Dimension_Cheque,Dimension_Customer,Dimension_Delivery,Dimension_Invoice,Dimension_Order,Dimension_Project,Dimension_Quotation,GroupCustomerSK_CustomerSK,Model_Invoice_Transaction,Model_Target_DayOfWork,PowerBI_Data_Buffet_Transaction,Product_Attribute,Product_Master,Product_Master_ALL,Sales_Per_Non_Master,Transaction_Data_Mart,View_Product,view_aging_ri,view_deb_address_data,view_dim_aging,view_dim_aging_history,view_dim_channel,view_dim_company,view_dim_customer,view_dim_customer_credit_management,view_dim_guarantee,view_dim_invoice,view_dim_order,view_dim_product_master,view_dim_product_mkt,view_dim_sale_representative,view_dim_sale_representative_last,view_dim_target_by_agent,view_dim_target_by_agent_dayofwork,view_fact_mir_rs,view_fact_mir_vs,view_fact_transcation,view_mih_address_data,view_rls_data,view_rls_sale_data,view_rls_special_data,view_sales_representative_last view;
+  class GroupCustomerSK_CustomerSK,Model_Invoice_Transaction,Model_Target_DayOfWork,PowerBI_Data_Buffet_Transaction,Product_Attribute,Product_Master_ALL,Transaction_Data_Mart,view_aging_ri,view_deb_address_data,view_dim_aging,view_dim_aging_history,view_dim_channel,view_dim_company,view_dim_customer,view_dim_customer_credit_management,view_dim_guarantee,view_dim_invoice,view_dim_order,view_dim_product_master,view_dim_product_mkt,view_dim_sale_representative,view_dim_sale_representative_last,view_dim_target_by_agent,view_dim_target_by_agent_dayofwork,view_fact_mir_rs,view_fact_mir_vs,view_fact_transcation,view_mih_address_data,view_rls_data,view_rls_sale_data,view_rls_special_data,view_sales_representative_last view;
   class deb_address_data,rls_customer360 process;
 ```

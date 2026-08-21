@@ -65,9 +65,8 @@ intent.
 Run the scan before any `view` tag run, and after a stretch of console work:
 skill `bq-drift-scan` (`.claude/skills/bq-drift-scan/`, with
 `scripts/{dump.sql,scan.py,pull.py}`), or the read-only `bq-drift-auditor` agent.
-Baseline 2026-08-10: 42 views + 7 UDFs, all matching except a trailing semicolon
-in `Sales_Per_Non_Master`, plus two `onetime.TEST_Data_Transaction*` views that
-exist only in BigQuery and are deliberately not tracked.
+Baseline 2026-08-21: 32 views + 7 UDFs. `onetime` holds exactly the 6 views the repo
+builds — no untracked leftovers.
 
 Things that cost time the first round:
 
