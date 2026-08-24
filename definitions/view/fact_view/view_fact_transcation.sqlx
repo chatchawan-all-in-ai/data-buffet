@@ -352,14 +352,15 @@ with dim_calendar as (
     (CASE
       WHEN UPPER(dir_map.DirectorName) = UPPER('Agent') THEN change_sec_map_sk.SectionSK
       ELSE (CASE 
-              WHEN UPPER(dir_map.DirectorName) LIKE 'PS%' and UPPER(LEFT(trans.SectionMappingID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
+              WHEN UPPER(dir_map.DirectorName) LIKE 'PS%' 
+                and UPPER(LEFT(trans.SectionMappingID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
                 THEN change_sec_map_sk.SectionSK
               ELSE (CASE 
                     WHEN FlagMappingInvoice is null THEN 
                       (CASE 
                         WHEN IFNULL(sale_sk.ChangeSectionFlag, 'No') = 'Yes' 
                           THEN COALESCE(change_sec_sk.SectionSK, (SELECT SectionSK FROM `${DimSectionLastTableRef}` WHERE SectionID = 'Dummy999990'))
-                            ELSE COALESCE(change_sec_sk.SectionSK, sec_sk.SectionSK)
+                        ELSE sec_sk.SectionSK -- COALESCE(change_sec_sk.SectionSK, sec_sk.SectionSK)
                       END)
                     WHEN FlagMappingInvoice = 'Yes' THEN sec_map_sk.SectionSK
                     ELSE null
