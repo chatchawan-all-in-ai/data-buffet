@@ -289,6 +289,11 @@ with dim_calendar as (
     END) as FlagMappingInvoice, 
     map_inv.SectionID as SectionMappingID,
     deb.debgroup,
+
+    -- plug-in for logic change section
+    sec.SectionID,
+    reg.RegionID,
+    dir.DirectorName,
     
     -- gur.GuaranteeSK,
 
@@ -304,7 +309,20 @@ with dim_calendar as (
   left join `${MappingInvoiceTableRef}` as map_inv
     on trans.milPer = TRIM(map_inv.milPer)
     and trans.milVnos = TRIM(map_inv.milVnos)
-    and trans.companyID = TRIM(map_inv.CompanyID)
+    and trans.companyID = TRIM(map_inv.CompanyID
+    )
+  -- section id
+  left join `${DimSectionTableRef}` as sec
+    on trans.SectionSK = sec.SectionSK
+
+  -- region id
+  left join `${DimRegionTableRef}` as reg
+    on trans.RegionSK = reg.RegionSK
+
+  -- director id
+  left join `${DimDirectorTableRef}` as dir
+    on trans.DirectorSK = dir.DirectorSK
+
 
   -- guarantee
   -- left join `${DimGuaranteeTableRef}` as gur
@@ -350,18 +368,28 @@ with dim_calendar as (
     END) as DirectorSKLast,
 
     (CASE
-      WHEN UPPER(dir_map.DirectorName) = UPPER('Agent') THEN change_sec_map_sk.SectionSK
+      WHEN UPPER(dir_map.DirectorName) = UPPER('Agent') 
+        and UPPER(REGEXP_REPLACE(trans.SectionID, r'[^a-zA-Z]', '')) = UPPER(REGEXP_REPLACE(chg_dis_map.newSectionID, r'[^a-zA-Z]', ''))
+        THEN change_sec_map_sk.SectionSK
+
       ELSE (CASE 
               WHEN UPPER(dir_map.DirectorName) LIKE 'PS%' 
-                and UPPER(LEFT(trans.SectionMappingID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
+                and UPPER(trans.SectionID) = UPPER('PS1-4')
+                THEN sec_sk.SectionSK
+
+              WHEN UPPER(dir_map.DirectorName) LIKE 'PS%' 
+                and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
                 THEN change_sec_map_sk.SectionSK
+
               ELSE (CASE 
                     WHEN FlagMappingInvoice is null THEN 
                       (CASE 
                         WHEN IFNULL(sale_sk.ChangeSectionFlag, 'No') = 'Yes' 
-                          THEN COALESCE(change_sec_sk.SectionSK, (SELECT SectionSK FROM `${DimSectionLastTableRef}` WHERE SectionID = 'Dummy999990'))
+                          THEN COALESCE(change_sec_sk.SectionSK, dummy_sec_last.SectionSK)
+
                         ELSE sec_sk.SectionSK -- COALESCE(change_sec_sk.SectionSK, sec_sk.SectionSK)
                       END)
+
                     WHEN FlagMappingInvoice = 'Yes' THEN sec_map_sk.SectionSK
                     ELSE null
                   END) 
@@ -369,39 +397,155 @@ with dim_calendar as (
     END) as ChangeSectionSKLast,
 
     ----  change transaction
-    (CASE 
-      WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
-        THEN COALESCE(trans.ChangeSectionSK, dummy_sec.SectionSK)
-      ELSE COALESCE(trans.ChangeSectionSK, trans.SectionSK)
+    (CASE
+      WHEN UPPER(trans.DirectorName) = UPPER('Agent') 
+        and UPPER(REGEXP_REPLACE(trans.SectionID, r'[^a-zA-Z]', '')) = UPPER(REGEXP_REPLACE(chg_dis_map.newSectionID, r'[^a-zA-Z]', ''))
+        THEN trans.ChangeSectionSK
+
+      ELSE (CASE 
+              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                and UPPER(trans.SectionID) = UPPER('PS1-4')
+                THEN trans.SectionSK
+
+              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
+                THEN trans.ChangeSectionSK
+
+              ELSE (CASE 
+                    WHEN FlagMappingInvoice is null THEN 
+                      (CASE 
+                        WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                          THEN COALESCE(trans.ChangeSectionSK, dummy_sec.SectionSK)
+
+                        ELSE trans.SectionSK
+                      END)
+
+                    WHEN FlagMappingInvoice = 'Yes' THEN trans.SectionSK
+                    ELSE null
+                  END)
+            END)
     END) as ChangeSectionSK,
 
-    (CASE 
-      WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
-        THEN COALESCE(trans.ChangeSectionManagerSK, dummy_sec_mgr.SectionManagerSK)
-      ELSE COALESCE(trans.ChangeSectionManagerSK, trans.SectionManagerSK)
+    (CASE
+      WHEN UPPER(trans.DirectorName) = UPPER('Agent') 
+        and UPPER(REGEXP_REPLACE(trans.SectionID, r'[^a-zA-Z]', '')) = UPPER(REGEXP_REPLACE(chg_dis_map.newSectionID, r'[^a-zA-Z]', ''))
+        THEN trans.ChangeSectionManagerSK
+        
+      ELSE (CASE 
+              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                and UPPER(trans.SectionID) = UPPER('PS1-4')
+                THEN trans.SectionManagerSK
+
+              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
+                THEN trans.ChangeSectionManagerSK
+
+              ELSE (CASE 
+                    WHEN FlagMappingInvoice is null THEN 
+                      (CASE 
+                        WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                          THEN COALESCE(trans.ChangeSectionManagerSK, dummy_sec_mgr.SectionManagerSK)
+
+                        ELSE trans.SectionManagerSK
+                      END)
+
+                    WHEN FlagMappingInvoice = 'Yes' THEN trans.SectionManagerSK
+                    ELSE null
+                  END)
+            END)
     END) as ChangeSectionManagerSK,
 
-    (CASE 
-      WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
-        THEN COALESCE(trans.ChangeRegionSK, dummy_reg.RegionSK)
-      ELSE COALESCE(trans.ChangeRegionSK, trans.RegionSK)
+    (CASE
+      WHEN UPPER(trans.DirectorName) = UPPER('Agent') 
+        and UPPER(REGEXP_REPLACE(trans.SectionID, r'[^a-zA-Z]', '')) = UPPER(REGEXP_REPLACE(chg_dis_map.newSectionID, r'[^a-zA-Z]', ''))
+        THEN trans.ChangeRegionSK
+
+      ELSE (CASE 
+              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                and UPPER(trans.SectionID) = UPPER('PS1-4')
+                THEN trans.RegionSK
+
+              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
+                THEN trans.ChangeRegionSK
+
+              ELSE (CASE 
+                    WHEN FlagMappingInvoice is null THEN 
+                      (CASE 
+                        WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                          THEN COALESCE(trans.ChangeRegionSK, dummy_reg.RegionSK)
+
+                        ELSE trans.RegionSK
+                      END)
+
+                    WHEN FlagMappingInvoice = 'Yes' THEN trans.RegionSK
+                    ELSE null
+                  END)
+            END)
     END) as ChangeRegionSK,
 
-    (CASE 
-      WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
-        THEN COALESCE(trans.ChangeRegionManagerSK, dummy_reg_mgr.RegionManagerSK)
-      ELSE COALESCE(trans.ChangeRegionManagerSK, trans.RegionManagerSK)
+    (CASE
+      WHEN UPPER(trans.DirectorName) = UPPER('Agent') 
+        and UPPER(REGEXP_REPLACE(trans.SectionID, r'[^a-zA-Z]', '')) = UPPER(REGEXP_REPLACE(chg_dis_map.newSectionID, r'[^a-zA-Z]', ''))
+        THEN trans.ChangeRegionManagerSK
+
+      ELSE (CASE 
+              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                and UPPER(trans.SectionID) = UPPER('PS1-4')
+                THEN trans.RegionManagerSK
+
+              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
+                THEN trans.ChangeRegionManagerSK
+
+              ELSE (CASE 
+                    WHEN FlagMappingInvoice is null THEN 
+                      (CASE 
+                        WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                          THEN COALESCE(trans.ChangeRegionManagerSK, dummy_reg_mgr.RegionManagerSK)
+
+                        ELSE trans.RegionManagerSK
+                      END)
+
+                    WHEN FlagMappingInvoice = 'Yes' THEN trans.RegionManagerSK
+                    ELSE null
+                  END)
+            END)
     END) as ChangeRegionManagerSK,
 
-    (CASE 
-      WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
-        THEN COALESCE(trans.ChangeDirectorSK, dummy_dir.DirectorSK)
-      ELSE COALESCE(trans.ChangeDirectorSK, trans.DirectorSK)
+    (CASE
+      WHEN UPPER(trans.DirectorName) = UPPER('Agent') 
+        and UPPER(REGEXP_REPLACE(trans.SectionID, r'[^a-zA-Z]', '')) = UPPER(REGEXP_REPLACE(chg_dis_map.newSectionID, r'[^a-zA-Z]', ''))
+        THEN trans.ChangeDirectorSK
+
+      ELSE (CASE 
+              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                and UPPER(trans.SectionID) = UPPER('PS1-4')
+                THEN trans.DirectorSK
+
+              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
+                THEN trans.ChangeDirectorSK
+
+              ELSE (CASE 
+                    WHEN FlagMappingInvoice is null THEN 
+                      (CASE 
+                        WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                          THEN COALESCE(trans.ChangeDirectorSK, dummy_dir.DirectorSK)
+
+                        ELSE trans.DirectorSK
+                      END)
+
+                    WHEN FlagMappingInvoice = 'Yes' THEN trans.DirectorSK
+                    ELSE null
+                  END)
+            END)
     END) as ChangeDirectorSK,
 
     trans.* except(ChangeSectionSK, ChangeRegionSK, ChangeDirectorSK,
       ChangeSectionManagerSK, ChangeRegionManagerSK,
-      SectionMappingID, debgroup, FlagMappingInvoice),
+      SectionMappingID, debgroup, FlagMappingInvoice,
+      SectionID, RegionID, DirectorName),
 
     (CASE
       WHEN sale_sk.seq_condition = 3 and trans.ChannelCostID = sale_sk.CostChannelID THEN 3.1
@@ -446,30 +590,32 @@ with dim_calendar as (
   -- SaleRepSK
   left join (
     select *,
-      (CASE 
-        WHEN NULLIF(TRIM(CAST(EmployeeID as STRING)), '') is not null 
-          and NULLIF(TRIM(CAST(DepCode as STRING)), '') is not null 
-          and NULLIF(TRIM(CAST(CostChannelID as STRING)), '') is not null 
+       (CASE
+        WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL
+          AND NULLIF(TRIM(CAST(DepCode AS STRING)), '') IS NOT NULL
+          AND NULLIF(TRIM(CAST(CostChannelID AS STRING)), '') IS NOT NULL
           THEN 1
-        WHEN NULLIF(TRIM(CAST(EmployeeID as STRING)), '') is not null and NULLIF(TRIM(CAST(ProvinceID as STRING)), '') is not null
-          THEN 2
-        WHEN NULLIF(TRIM(CAST(EmployeeID as STRING)), '') is not null and NULLIF(TRIM(CAST(CostChannelID as STRING)), '') is not null 
-          THEN 3
-        WHEN NULLIF(TRIM(CAST(EmployeeID as STRING)), '') is not null and NULLIF(TRIM(CAST(DepartmentID as STRING)), '') is not null
-          THEN 4
-        ELSE 5
-      END) as seq_condition
+        WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(CostChannelID AS STRING)), '') IS NOT NULL  THEN 2
+        WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(DepCode AS STRING)), '') IS NOT NULL        THEN 3
+        WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(ProvinceID AS STRING)), '') IS NOT NULL     THEN 4
+        WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(DepartmentID AS STRING)), '') IS NOT NULL   THEN 5
+        WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(CustomerFlag AS STRING)), '') IS NOT NULL   THEN 6
+        ELSE 9
+      END) AS seq_condition
     from `${DimSaleRepresentativeLastTableRef}`
   ) as sale_sk
     on trans.CompanySK = sale_sk.CompanySK
+    and TRIM(IFNULL(trans.DummyChannel, trans.milPer)) = TRIM(CAST(sale_sk.EmployeeID as STRING))
     and (CASE 
             WHEN IFNULL(TRIM(sale_sk.DepCode), '') != '' and IFNULL(TRIM(sale_sk.CostChannelID), '') != ''
-              THEN TRIM(IFNULL(trans.DummyChannel, trans.milPer)) = TRIM(CAST(sale_sk.EmployeeID as STRING))
-                and TRIM(trans.milDep) = TRIM(sale_sk.DepCode)
+              THEN TRIM(trans.milDep) = TRIM(sale_sk.DepCode)
                 and trans.ChannelCostID = sale_sk.CostChannelID
+
+            WHEN IFNULL(TRIM(sale_sk.DepCode), '') != ''
+              THEN TRIM(trans.milDep) = TRIM(sale_sk.DepCode)
+
             WHEN IFNULL(TRIM(sale_sk.DepCode), '') = '' and IFNULL(TRIM(sale_sk.CostChannelID), '') != ''
-              THEN TRIM(IFNULL(trans.DummyChannel, trans.milPer)) = TRIM(CAST(sale_sk.EmployeeID as STRING))
-                and (CASE
+              THEN (CASE
                       WHEN trans.ChannelCostID = sale_sk.CostChannelID THEN TRUE
                       WHEN trans.debgroup in ('HP', 'HPEXPO') THEN lower(sale_sk.DepartmentID) like 'hp_%'
                       WHEN trans.debgroup in ('TW', 'TWEXPO') THEN lower(sale_sk.DepartmentID) like 'tw_%'
@@ -478,17 +624,17 @@ with dim_calendar as (
                       WHEN trans.debgroup in ('MH') THEN lower(sale_sk.DepartmentID) like 'mh_%'
                       WHEN trans.debgroup in ('DOHOME') THEN lower(sale_sk.DepartmentID) like 'dh_%'
                     END)
-            WHEN IFNULL(TRIM(sale_sk.ProvinceID), '') != ''
-              THEN TRIM(IFNULL(trans.DummyChannel, trans.milPer)) = TRIM(CAST(sale_sk.EmployeeID as STRING))
-                and CAST(trans.OrderProvinceSK as STRING) IN  UNNEST(SPLIT(sale_sk.ProvinceID, '|'))
-            WHEN IFNULL(TRIM(sale_sk.DepartmentID), '') != '' 
-              THEN TRIM(IFNULL(trans.DummyChannel, trans.milPer)) = TRIM(CAST(sale_sk.EmployeeID as STRING))
-                and sale_sk.DepartmentID is not null
-            WHEN IFNULL(TRIM(sale_sk.DepartmentID), '') = '' 
-              THEN TRIM(IFNULL(trans.DummyChannel, trans.milPer)) = TRIM(CAST(sale_sk.EmployeeID as STRING))
-                and sale_sk.DepartmentID is null
-          END)
 
+            WHEN IFNULL(TRIM(sale_sk.ProvinceID), '') != ''
+              THEN CAST(trans.OrderProvinceSK as STRING) IN UNNEST(SPLIT(sale_sk.ProvinceID, '|'))
+            
+            WHEN IFNULL(TRIM(sale_sk.DepartmentID), '') != '' 
+              THEN sale_sk.DepartmentID is not null
+            
+            WHEN IFNULL(TRIM(sale_sk.DepartmentID), '') = '' 
+              THEN sale_sk.DepartmentID is null
+          END)
+          
   -- DepartmentSK
   left join `${DimDepartmentLastTableRef}` as dep_sk
     on sale_sk.DepartmentSK = dep_sk.DepartmentSK
@@ -554,6 +700,11 @@ with dim_calendar as (
     on sec_map_sk.RegionSK = region_map_last.RegionSK
     and trans.CompanySK = region_map_last.CompanySK
 
+  -- DUMMY SECTION LAST
+  LEFT JOIN `${DimSectionLastTableRef}` as dummy_sec_last
+    ON dummy_sec_last.SectionID = 'Dummy999990'
+    AND trans.CompanySK = dummy_sec_last.CompanySK
+
   -- DUMMY SECTION
   LEFT JOIN `${DimSectionTableRef}` as dummy_sec
     ON dummy_sec.SectionID = 'Dummy999990'
@@ -588,10 +739,33 @@ with dim_calendar as (
 
   -- get RegionID for ReportSK
   left join `${DimRegionTableRef}` as reg
-    on (CASE 
-          WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
-            THEN COALESCE(trans.ChangeRegionSK, dummy_reg.RegionSK)
-          ELSE COALESCE(trans.ChangeRegionSK, trans.RegionSK)
+    on (CASE
+      WHEN UPPER(trans.DirectorName) = UPPER('Agent') 
+        and UPPER(REGEXP_REPLACE(trans.SectionID, r'[^a-zA-Z]', '')) = UPPER(REGEXP_REPLACE(chg_dis_map.newSectionID, r'[^a-zA-Z]', ''))
+        THEN trans.ChangeRegionSK
+
+      ELSE (CASE 
+              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                and UPPER(trans.SectionID) = UPPER('PS1-4')
+                THEN trans.RegionSK
+
+              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
+                THEN trans.ChangeRegionSK
+
+              ELSE (CASE 
+                    WHEN FlagMappingInvoice is null THEN 
+                      (CASE 
+                        WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                          THEN COALESCE(trans.ChangeRegionSK, dummy_reg.RegionSK)
+
+                        ELSE trans.RegionSK
+                      END)
+
+                    WHEN FlagMappingInvoice = 'Yes' THEN trans.RegionSK
+                    ELSE null
+                  END)
+            END)
         END) = reg.RegionSK
 
   -- ReportSk
