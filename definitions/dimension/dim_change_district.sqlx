@@ -1,7 +1,11 @@
 config {
   type: "table",
+  schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_company"],
-  tags: [databuffet.TAG_DIM_DAILY]
+  tags: [databuffet.TAG_DIM_DAILY],
+  bigquery: {
+    clusterBy: ["companyID", "customerCode"],
+  }
 }
 
 js {
