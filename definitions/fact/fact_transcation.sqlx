@@ -726,31 +726,40 @@ BEGIN
     trans.CostStkSk,
     trans.CostGroupSK,
 
-    (CASE
-      WHEN FlagMappingInvoice IS NULL THEN trans.ChangeSectionSK
-      WHEN FlagMappingInvoice = 'Yes' THEN sec_map_sk.SectionSK
-      ELSE NULL
-    END) AS ChangeSectionSK,
-    (CASE
-      WHEN FlagMappingInvoice IS NULL THEN trans.ChangeSectionManagerSK
-      WHEN FlagMappingInvoice = 'Yes' THEN sec_m_map_sk.SectionManagerSK
-      ELSE NULL
-    END) AS ChangeSectionManagerSK,
-    (CASE
-      WHEN FlagMappingInvoice IS NULL THEN trans.ChangeRegionSK
-      WHEN FlagMappingInvoice = 'Yes' THEN reg_map_sk.RegionSK
-      ELSE NULL
-    END) AS ChangeRegionSK,
-    (CASE
-      WHEN FlagMappingInvoice IS NULL THEN trans.ChangeRegionManagerSK
-      WHEN FlagMappingInvoice = 'Yes' THEN reg_m_map_sk.RegionManagerSK
-      ELSE NULL
-    END) AS ChangeRegionManagerSK,
-    (CASE
-      WHEN FlagMappingInvoice IS NULL THEN trans.ChangeDirectorSK
-      WHEN FlagMappingInvoice = 'Yes' THEN dir_map_sk.DirectorSK
-      ELSE NULL
-    END) AS ChangeDirectorSK,
+    -- (CASE
+    --   WHEN FlagMappingInvoice IS NULL THEN trans.ChangeSectionSK
+    --   WHEN FlagMappingInvoice = 'Yes' THEN sec_map_sk.SectionSK
+    --   ELSE NULL
+    -- END) AS ChangeSectionSK,
+    trans.ChangeSectionSK,
+
+    -- (CASE
+    --   WHEN FlagMappingInvoice IS NULL THEN trans.ChangeSectionManagerSK
+    --   WHEN FlagMappingInvoice = 'Yes' THEN sec_m_map_sk.SectionManagerSK
+    --   ELSE NULL
+    -- END) AS ChangeSectionManagerSK,
+    trans.ChangeSectionManagerSK,
+
+    -- (CASE
+    --   WHEN FlagMappingInvoice IS NULL THEN trans.ChangeRegionSK
+    --   WHEN FlagMappingInvoice = 'Yes' THEN reg_map_sk.RegionSK
+    --   ELSE NULL
+    -- END) AS ChangeRegionSK,
+    trans.ChangeRegionSK,
+
+    -- (CASE
+    --   WHEN FlagMappingInvoice IS NULL THEN trans.ChangeRegionManagerSK
+    --   WHEN FlagMappingInvoice = 'Yes' THEN reg_m_map_sk.RegionManagerSK
+    --   ELSE NULL
+    -- END) AS ChangeRegionManagerSK,
+    trans.ChangeRegionManagerSK,
+
+    -- (CASE
+    --   WHEN FlagMappingInvoice IS NULL THEN trans.ChangeDirectorSK
+    --   WHEN FlagMappingInvoice = 'Yes' THEN dir_map_sk.DirectorSK
+    --   ELSE NULL
+    -- END) AS ChangeDirectorSK,
+    trans.ChangeDirectorSK,
 
     -- DATA
     trans.* EXCEPT(FlagMappingInvoice, SectionMappingID,
