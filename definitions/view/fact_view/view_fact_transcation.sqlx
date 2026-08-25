@@ -669,6 +669,7 @@ with dim_calendar as (
   left join `${DimChangeDistrictTableRef}` as chg_dis_map
     on trans.milCus = chg_dis_map.customerCode
     and trans.CompanySK = chg_dis_map.CompanySK
+    and trans.mix_date between chg_dis_map.startDate and chg_dis_map.endDate
 
   -- ChangeSectionForMapping
   left join `${DimSectionLastTableRef}` as change_sec_map_sk
