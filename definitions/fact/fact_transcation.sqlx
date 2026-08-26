@@ -722,6 +722,7 @@ BEGIN
     DebAddress.SubDistrictSK AS InvoiceSubDistrictSK,
     stk_mkt.StkMktSK,
 
+    IF(mds.NewProductMktSK is not null, True, False) as FlagNewProductMKT,
     COALESCE(mds.NewProductMktSK, product_mkt.ProductMktSk) as NewProductMktSK,
     product_mkt.ProductMktSK,
 
