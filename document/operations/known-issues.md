@@ -85,6 +85,12 @@
   (น่าสังเกต: การเรียก UDF ยังคง backtick ไว้ ตัดเฉพาะ path ของตาราง)
   **เวลาดึงกลับเข้า repo ต้องใส่ backtick ครอบ `` `${XxxTableRef}` `` เองทุกตัว**
   ส่วน `${ref(...)}` **ห้าม**ครอบ เพราะ Dataform ใส่ให้เองอยู่แล้ว
+  **กับดักที่ 2 — backslash ใน comment (เจอ 2026-08-26 ตอน pull `view_dim_product_master`)**:
+  ถ้าโค้ดที่ดึงกลับมามีบล็อกที่ถูก comment ไว้ด้วย `--` และข้างในมี backslash
+  ต้อง **double เอง** — BigQuery คืนมาตัวเดียวเสมอ แต่ `\1` ใน `--` comment
+  = octal escape → **ทั้ง action compile ไม่ผ่าน** (กฎอยู่ใน coding-standard §3.3)
+  สคริปต์ `pull.py` **ไม่ได้ทำให้** — ต้องไล่เองหลัง pull ทุกครั้ง
+
   อีกเรื่อง: BigQuery **ตัด comment ที่ comment ทิ้งไว้ออก** ตอน save view ในคอนโซล
   (`view_rls_data` เสีย 88 บรรทัดของโค้ดเก่าที่ comment ไว้ — กู้จาก git history ได้)
   **บทเรียน**: สคริปต์เทียบ repo↔BQ ที่ normalize backtick ทิ้งก่อนเทียบ **มองไม่เห็นบั๊กนี้**
