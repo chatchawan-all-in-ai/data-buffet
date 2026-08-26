@@ -21,7 +21,7 @@ js {
 
     const MdsSourceTable = {
         database: databuffet.DATABASE,
-        schema: "mds_dataset",
+        schema: databuffet.MDS_DATASET,
         name: "mds_data_payment_status_not_receive_master",
     };
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
