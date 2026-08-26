@@ -1,7 +1,7 @@
 config {
   type: "view",
   schema: databuffet.FACT_VIEW,
-  dependencies: ["dim_calendar", "dim_product_mkt", "dim_rebate", 
+  dependencies: ["dim_calendar", "dim_rebate", 
                   "dim_report", "fact_transcation", "dim_guarantee", 
                   "dim_section_last", "dim_section", "dim_sale_representative", 
                   "dim_channel", "dim_sale_representative_last", "dim_department_last", 

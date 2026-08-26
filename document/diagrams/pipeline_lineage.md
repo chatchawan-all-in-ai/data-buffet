@@ -837,7 +837,6 @@ flowchart LR
   dim_product_mkt --> view_dim_product_master
   dim_product_mkt --> view_dim_product_mkt
   dim_product_mkt --> view_dim_target_by_agent
-  dim_product_mkt --> view_fact_transcation
   dim_product_mkt_director --> Product_Master_ALL
   dim_product_mkt_director --> view_dim_product_mkt
   dim_pump_information --> view_fact_transcation
