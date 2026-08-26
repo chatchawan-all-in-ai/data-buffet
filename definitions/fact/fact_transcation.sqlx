@@ -171,12 +171,17 @@ js {
     };
     const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
 
+    const MdsChaMKTGroupMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_change_marketinggroup_master",
+    };
+    const MdsChaMKTGroupMasterTableRef = `${MdsChaMKTGroupMasterTable.database}.${MdsChaMKTGroupMasterTable.schema}.${MdsChaMKTGroupMasterTable.name}`;
+
+
     // ---------------------------------------------------------------------------------
     // เงื่อนไข match sale representative
-    // เดิมเขียนซ้ำ 3 ชุด (sale_sk ใน final_part1 / sale_sk ใน final_part2 / sale_addon ใน
-    // final_part2) ตรวจแล้วเหมือนกัน byte-identical ต่างแค่ชื่อ alias -> ยุบเป็นฟังก์ชันเดียว
     // พารามิเตอร์ r = alias ของ sale_rep (ฝั่ง transaction ใช้ alias `trans` ทั้ง 3 จุด)
-    //
     // หมายเหตุการอ่าน: equality ของ EmployeeID ถูกดึงออกมาเป็น AND ชั้นนอกของ CASE
     // เพราะเดิมมันอยู่ในทุกกิ่ง -> BigQuery ใช้เป็น hash join key ได้ (เดิมเป็น non-equi join)
     // ---------------------------------------------------------------------------------
@@ -215,6 +220,7 @@ js {
 
           ELSE TRUE
         END)`;
+
 }
 
 BEGIN
@@ -248,6 +254,28 @@ BEGIN
     SELECT * EXCEPT(customerCode), TRIM(customerCode) AS customerCode
     FROM `${DimChangeDistrictTableRef}`
 
+  ), mds_change_mktgroup as (
+    SELECT 
+      chg.companyid, chg.depcodeaction, chg.depcode, 
+      chg.jobaction, chg.job, 
+      chg.productaction, chg.productid, 
+      chg.productgroupaction, chg.productgroup, 
+      chg.salesregionaction, chg.salesregion, 
+      chg.salesamtaction, chg.salesamt, 
+      chg.productdescriptionaction, chg.productdescription, 
+      chg.remarkaction, chg.remark, 
+      chg.marketingaction, 
+      oldmarketinggroupid, oldsubmarketinggroupid, oldsegmentid, 
+      new_mktgroup.ProductMktSK as NewProductMktSK,
+      newmarketinggroupid, newsubmarketinggroupid, newsegmentid
+    FROM `${MdsChaMKTGroupMasterTableRef}` as chg
+    LEFT JOIN `${DimProductMktTableRef}` as new_mktgroup
+      on chg.companyid = new_mktgroup.CompanyID
+      and chg.newmarketinggroupid = new_mktgroup.MarketingGroupID
+      and chg.newsubmarketinggroupid = new_mktgroup.SubMarketingID
+      and chg.newsegmentid = new_mktgroup.SegmentID
+    WHERE chg.is_active = TRUE
+
   ), department_change AS (
     SELECT DISTINCT CompanySK, CompanyID, RegionID, SectionID, StartDate, EndDate
     FROM src_dim_department
@@ -266,7 +294,7 @@ BEGIN
           AND NULLIF(TRIM(CAST(DepCode AS STRING)), '') IS NOT NULL
           AND NULLIF(TRIM(CAST(CostChannelID AS STRING)), '') IS NOT NULL
           THEN 1
-        WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(CostChannelID AS STRING)), '') IS NOT NULL THEN 2
+        WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(CostChannelID AS STRING)), '') IS NOT NULL  THEN 2
         WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(DepCode AS STRING)), '') IS NOT NULL        THEN 3
         WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(ProvinceID AS STRING)), '') IS NOT NULL     THEN 4
         WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(DepartmentID AS STRING)), '') IS NOT NULL   THEN 5
@@ -293,6 +321,7 @@ BEGIN
 
       -- productmaster.ProductCode,
       productmaster.ProductGroupACC,
+      productmaster.ProductGroupMac5Description,
       deb.debgroup,
       (CASE
         WHEN flagSpecialDimChannel.employeeID IS NOT NULL THEN CAST(NULL AS STRING)
@@ -393,7 +422,8 @@ BEGIN
       trans.* EXCEPT(ChannelSK, ChannelFinanceSK, ChannelSaleSK, ChannelCostSK),
 
       -- FOR USE THIS PROCESS
-      dep_sk.DepartmentID
+      dep_sk.DepartmentID,
+      reg_sk.RegionID
     FROM raw_part1 AS trans
 
     -- CostStkSk
@@ -534,12 +564,13 @@ BEGIN
       trans.ChannelFinanceSK,
       trans.ChannelSaleSK,
       channel_cost.ChannelCostSK,
-
+      
       -- DATA
       trans.* EXCEPT(ChannelSK, ChannelFinanceSK, ChannelSaleSK, ChannelCostSK),
 
       -- FOR USE THIS PROCESS
-      dep_sk.DepartmentID
+      dep_sk.DepartmentID,
+      reg_sk.RegionID
     FROM raw_part2 AS trans
 
     -- SaleRepSK
@@ -683,13 +714,17 @@ BEGIN
     -- where mildep is null
   )
   SELECT
-    trans.CompanySK, trans.companyID,
+    trans.CompanySK, 
+    trans.companyID,
     -- SK
     DebAddress.ProvinceSK AS InvoiceProvinceSK,
     DebAddress.DistrictSK AS InvoiceDistrictSK,
     DebAddress.SubDistrictSK AS InvoiceSubDistrictSK,
     stk_mkt.StkMktSK,
+
+    COALESCE(mds.NewProductMktSK, product_mkt.ProductMktSk) as NewProductMktSK,
     product_mkt.ProductMktSK,
+
     tg_dayofwork.TargetBySaleDayofworkSK,
     tg_dayofwork.TargetProductGroupSK,
     tg_dayofwork.RateTargetSK,
@@ -723,63 +758,27 @@ BEGIN
       ELSE NULL
     END) AS DirectorSK,
 
-    trans.CostStkSk,
-    trans.CostGroupSK,
-
-    -- (CASE
-    --   WHEN FlagMappingInvoice IS NULL THEN trans.ChangeSectionSK
-    --   WHEN FlagMappingInvoice = 'Yes' THEN sec_map_sk.SectionSK
-    --   ELSE NULL
-    -- END) AS ChangeSectionSK,
-    trans.ChangeSectionSK,
-
-    -- (CASE
-    --   WHEN FlagMappingInvoice IS NULL THEN trans.ChangeSectionManagerSK
-    --   WHEN FlagMappingInvoice = 'Yes' THEN sec_m_map_sk.SectionManagerSK
-    --   ELSE NULL
-    -- END) AS ChangeSectionManagerSK,
-    trans.ChangeSectionManagerSK,
-
-    -- (CASE
-    --   WHEN FlagMappingInvoice IS NULL THEN trans.ChangeRegionSK
-    --   WHEN FlagMappingInvoice = 'Yes' THEN reg_map_sk.RegionSK
-    --   ELSE NULL
-    -- END) AS ChangeRegionSK,
-    trans.ChangeRegionSK,
-
-    -- (CASE
-    --   WHEN FlagMappingInvoice IS NULL THEN trans.ChangeRegionManagerSK
-    --   WHEN FlagMappingInvoice = 'Yes' THEN reg_m_map_sk.RegionManagerSK
-    --   ELSE NULL
-    -- END) AS ChangeRegionManagerSK,
-    trans.ChangeRegionManagerSK,
-
-    -- (CASE
-    --   WHEN FlagMappingInvoice IS NULL THEN trans.ChangeDirectorSK
-    --   WHEN FlagMappingInvoice = 'Yes' THEN dir_map_sk.DirectorSK
-    --   ELSE NULL
-    -- END) AS ChangeDirectorSK,
-    trans.ChangeDirectorSK,
-
     -- DATA
-    trans.* EXCEPT(FlagMappingInvoice, SectionMappingID,
-      DepartmentID, CompanySK, companyID, CostStkSk, CostGroupSK,
-      SaleRepSK, DepartmentSK, RegionSK, RegionManagerSK, SectionSK, SectionManagerSK, DirectorSK,
-      ChangeSectionSK, ChangeSectionManagerSK, ChangeRegionSK, ChangeRegionManagerSK, ChangeDirectorSK
+    trans.* EXCEPT(ProductGroupMac5Description, FlagMappingInvoice, SectionMappingID,
+      RegionID, mihnotes, DepartmentID, CompanySK, companyID,
+      SaleRepSK, DepartmentSK, RegionSK, RegionManagerSK, SectionSK, SectionManagerSK, DirectorSK
     )
 
   FROM mix_table AS trans
   LEFT JOIN `${ViewDebAddressDataTableRef}` AS DebAddress
     ON trans.milCus = DebAddress.DebCode
     AND trans.companyID = DebAddress.company_id
+
   LEFT JOIN `${DimStkMktTableRef}` AS stk_mkt
     ON trans.milStk = stk_mkt.StkCode
     AND trans.CompanySK = stk_mkt.CompanySK
+
   LEFT JOIN `${DimProductMktTableRef}` AS product_mkt
     ON stk_mkt.MarketingGroupID = product_mkt.MarketingGroupID
     AND stk_mkt.SubMarketingID = product_mkt.SubMarketingID
     AND stk_mkt.SegmentID = product_mkt.SegmentID
     AND stk_mkt.CompanySK = product_mkt.CompanySK
+
   LEFT JOIN `${DimTargetProductGroupBySaleDayofworkTableRef}` AS tg_dayofwork
     ON trans.milyear = tg_dayofwork.year
     AND trans.milmonth = tg_dayofwork.month
@@ -789,6 +788,7 @@ BEGIN
     AND stk_mkt.SubMarketingID = tg_dayofwork.SubMarketingID
     AND stk_mkt.SegmentID = tg_dayofwork.SegmentID
     AND trans.CompanySK = tg_dayofwork.CompanySK
+    
   LEFT JOIN `${DimCustomerTableRef}` AS dim_cust
     ON trans.milCus = dim_cust.debcode
     AND trans.CompanySK = dim_cust.CompanySK
@@ -833,6 +833,79 @@ BEGIN
     ON trans.mix_date BETWEEN dir_map_sk.StartDate AND dir_map_sk.EndDate
     AND reg_map_sk.DirectorID = dir_map_sk.DirectorID
     AND reg_map_sk.CompanySK = dir_map_sk.CompanySK
+
+  -- change productmktsk
+  left join mds_change_mktgroup as mds
+    on trans.companyid = mds.companyid
+    and (
+      (
+        -- กลุ่มที่ 1: เช็คจาก Depcode และ ProductID (milstk) เช่น บ-0124
+        (
+          lower(mds.DepcodeAction) = 'startwith' AND lower(mds.ProductAction) = 'exc' 
+          AND trans.mildep LIKE CONCAT(mds.Depcode, '%') 
+          AND trans.milstk <> mds.ProductID
+        )
+      )
+      OR 
+      (
+        -- กลุ่มที่ 2 & 3: เช็คจาก ID เดิม และ Job (miljob) = LITETITE
+        (
+          lower(mds.JobAction) = 'inc' AND lower(mds.MarketingAction) = 'inc'
+          AND trans.miljob = mds.Job           
+          AND (
+            (
+              product_mkt.MarketingGroupID = mds.OLDMarketingGroupID
+              and ifnull(trim(mds.OLDSubMarketingGroupID), '') = ''
+              and ifnull(trim(mds.OLDSegmentID), '') = ''
+            ) 
+            OR (
+              product_mkt.MarketingGroupID = mds.OLDMarketingGroupID
+              and product_mkt.SubMarketingID = mds.OLDSubMarketingGroupID
+              and product_mkt.SegmentID = mds.OLDSegmentID
+            )
+          )
+        )
+      )
+      OR 
+      (
+        -- กลุ่มที่ 4-11: เช็คจาก SalesReging, ยอดขาย (SalesAmt) และ ID เดิม
+        (
+          lower(mds.SalesRegionAction) = 'inc' AND lower(mds.SalesAmtAction) = 'inc'
+          AND trans.RegionID = mds.SalesRegion 
+          AND trans.milSum = mds.SalesAmt 
+          AND product_mkt.MarketingGroupID = mds.OLDMarketingGroupID
+          AND product_mkt.SubMarketingID = mds.OLDSubMarketingGroupID
+          AND product_mkt.SegmentID = mds.OLDSegmentID
+        )
+      )
+      OR 
+      (
+        -- กลุ่มที่ 12-13: เช็คจาก Product Group (LT-DFS) และคำค้นหาในชื่อสินค้า (mildesc)
+        (
+          lower(mds.ProductGroupAction) = 'inc' AND lower(mds.ProductDescriptionAction) = 'contains'
+          AND trans.ProductGroupMac5Description = mds.ProductGroup
+          AND REGEXP_CONTAINS(trans.mildesc, mds.ProductDescription)
+        )
+      )
+      OR 
+      (
+        -- กลุ่มที่ 14-18: เช็คจาก ProductID และคำค้นหาในหมายเหตุ (mihnotes) หรือชื่อสินค้า (mildesc)
+        (
+          lower(mds.ProductAction) = 'inc' AND lower(mds.ProductDescriptionAction) = 'contains' AND lower(RemarkAction) = 'contains'
+          AND trans.milstk = mds.ProductID 
+          AND (REGEXP_CONTAINS(trans.mildesc, mds.ProductDescription) OR REGEXP_CONTAINS(trans.mihnotes, mds.Remark) OR REGEXP_CONTAINS(trans.mihdesc, mds.Remark))
+        )
+      )
+      OR 
+      (
+        -- กลุ่มที่ 19: เช็คจาก ProductID และชื่อสินค้า (mildesc)
+        (
+          lower(mds.ProductAction) = 'inc' AND lower(mds.ProductDescriptionAction) = 'contains'
+          AND trans.milstk = mds.ProductID 
+          AND REGEXP_CONTAINS(trans.mildesc, mds.ProductDescription)
+        )
+      )
+    )
   ;
 
   BEGIN

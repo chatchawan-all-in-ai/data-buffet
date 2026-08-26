@@ -71,6 +71,7 @@ WITH stk as (
     a.mihmemonew,
     a.mihCancel,
     a.mihStatus,
+    a.mihnotes,
     mih_ps.QuotationID,
     mih_ps.QuotationCode,
     b.* except(company_id),

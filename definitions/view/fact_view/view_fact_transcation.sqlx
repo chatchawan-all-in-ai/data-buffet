@@ -83,13 +83,6 @@ js {
     };
     const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
 
-    const DimProductMktTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_product_mkt",
-    };
-    const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
-
     const DimRebateTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -216,13 +209,6 @@ js {
     };
     const FnFlagScgTableRef = `${FnFlagScgTable.database}.${FnFlagScgTable.schema}.${FnFlagScgTable.name}`;
 
-    const MdsDataChangeMarketinggroupMasterTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_change_marketinggroup_master",
-    };
-    const MdsDataChangeMarketinggroupMasterTableRef = `${MdsDataChangeMarketinggroupMasterTable.database}.${MdsDataChangeMarketinggroupMasterTable.schema}.${MdsDataChangeMarketinggroupMasterTable.name}`;
-
     const MappingInvoiceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.ONETIME,
@@ -237,28 +223,6 @@ with dim_calendar as (
   cross join `${DimCompanyTableRef}` as comp
   where Date between DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR) AND CURRENT_DATE('Asia/Bangkok')-1 
  
-), mds_change_mktgroup as (
-  SELECT 
-    chg.companyid, chg.depcodeaction, chg.depcode, 
-    chg.jobaction, chg.job, 
-    chg.productaction, chg.productid, 
-    chg.productgroupaction, chg.productgroup, 
-    chg.salesregionaction, chg.salesregion, 
-    chg.salesamtaction, chg.salesamt, 
-    chg.productdescriptionaction, chg.productdescription, 
-    chg.remarkaction, chg.remark, 
-    chg.marketingaction, 
-    oldmarketinggroupid, oldsubmarketinggroupid, oldsegmentid, 
-    new_mktgroup.ProductMktSK as NewProductMktSK,
-    newmarketinggroupid, newsubmarketinggroupid, newsegmentid
-  FROM `${MdsDataChangeMarketinggroupMasterTableRef}` as chg
-  LEFT JOIN `${DimProductMktTableRef}` as new_mktgroup
-    on chg.companyid = new_mktgroup.CompanyID
-    and chg.newmarketinggroupid = new_mktgroup.MarketingGroupID
-    and chg.newsubmarketinggroupid = new_mktgroup.SubMarketingID
-    and chg.newsegmentid = new_mktgroup.SegmentID
-  WHERE chg.is_active = TRUE
-
 ), dim_rebate as (
   select * 
   from `${DimRebateTableRef}`
@@ -807,32 +771,43 @@ with dim_calendar as (
   -- get RegionID for ReportSK
   left join `${DimRegionTableRef}` as reg
     on (CASE
-      WHEN UPPER(trans.DirectorName) = UPPER('Agent') 
-        and UPPER(REGEXP_REPLACE(trans.SectionID, r'[^a-zA-Z]', '')) = UPPER(REGEXP_REPLACE(chg_dis_map.newSectionID, r'[^a-zA-Z]', ''))
-        THEN trans.ChangeRegionSK
+          WHEN UPPER(trans.DirectorName) = UPPER('Agent') 
+            and UPPER(REGEXP_REPLACE(trans.SectionID, r'[^a-zA-Z]', '')) = UPPER(REGEXP_REPLACE(chg_dis_map.newSectionID, r'[^a-zA-Z]', ''))
+            THEN trans.ChangeRegionSK
 
-      ELSE (CASE 
-              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
-                and UPPER(trans.SectionID) = UPPER('PS1-4')
-                THEN trans.RegionSK
+          ELSE (CASE 
+                  WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                    and UPPER(trans.SectionID) = UPPER('PS1-4')
+                    THEN (CASE 
+                            WHEN FlagMappingInvoice is null THEN 
+                              (CASE 
+                                WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                                  THEN COALESCE(trans.ChangeRegionSK, dummy_reg.RegionSK)
 
-              WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
-                and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
-                THEN trans.ChangeRegionSK
+                                ELSE trans.RegionSK
+                              END)
 
-              ELSE (CASE 
-                    WHEN FlagMappingInvoice is null THEN 
-                      (CASE 
-                        WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
-                          THEN COALESCE(trans.ChangeRegionSK, dummy_reg.RegionSK)
+                            WHEN FlagMappingInvoice = 'Yes' THEN trans.RegionSK
+                            ELSE null
+                          END)
 
-                        ELSE trans.RegionSK
-                      END)
+                  WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
+                    and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
+                    THEN trans.ChangeRegionSK
 
-                    WHEN FlagMappingInvoice = 'Yes' THEN trans.RegionSK
-                    ELSE null
-                  END)
-            END)
+                  ELSE (CASE 
+                          WHEN FlagMappingInvoice is null THEN 
+                            (CASE 
+                              WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                                THEN COALESCE(trans.ChangeRegionSK, dummy_reg.RegionSK)
+
+                              ELSE trans.RegionSK
+                            END)
+
+                          WHEN FlagMappingInvoice = 'Yes' THEN trans.RegionSK
+                          ELSE null
+                        END)
+                END)
         END) = reg.RegionSK
 
   -- ReportSk
@@ -958,107 +933,6 @@ with dim_calendar as (
     on t1.CompanySK = t6.CompanySK
     and t1.millinkvcno = t6.mihVnos
     
-), final2 as (
-  select 
-    -- mds.NewProductMktSK,
-    COALESCE(mds.NewProductMktSK, fn.ProductMktSk) as NewProductMktSK,
-    fn.*
-  from final as fn
-  -- get product mkt
-  left join `${DimProductMktTableRef}` as prd_mkt
-    on fn.ProductMktSK = prd_mkt.ProductMktSK
-
-  -- get sale region
-  left join `${DimRegionTableRef}` as reg
-    on fn.RegionSKLast = reg.RegionSK
-
-  -- get product master
-  left join `${DimProductMasterTableRef}` as prd
-    on fn.ProductSK = prd.ProductSK
-
-  -- get mihnotes
-  left join ${ref(databuffet.CURATED_MAC5, "curated_mih")} as mih
-    on fn.companyid = mih.company_id
-    and fn.milday = mih.mihday
-    and fn.milmonth = mih.mihmonth
-    and fn.milyear = mih.mihyear
-    and fn.miltype = mih.mihtype
-    and fn.milvnos = mih.mihvnos
-    and fn.milcus = mih.mihcus
-    
-  -- change productmktsk
-  left join mds_change_mktgroup as mds
-    on fn.companyid = mds.companyid
-    and (
-      (
-        -- กลุ่มที่ 1: เช็คจาก Depcode และ ProductID (milstk) เช่น บ-0124
-        (
-          lower(mds.DepcodeAction) = 'startwith' AND lower(mds.ProductAction) = 'exc' 
-          AND fn.mildep LIKE CONCAT(mds.Depcode, '%') 
-          AND fn.milstk <> mds.ProductID
-        )
-      )
-      OR 
-      (
-        -- กลุ่มที่ 2 & 3: เช็คจาก ID เดิม และ Job (miljob) = LITETITE
-        (
-          lower(mds.JobAction) = 'inc' AND lower(MarketingAction) = 'inc'
-          AND fn.miljob = mds.Job           
-          AND (
-            (
-              prd_mkt.MarketingGroupID = mds.OLDMarketingGroupID
-              and ifnull(trim(mds.OLDSubMarketingGroupID), '') = ''
-              and ifnull(trim(mds.OLDSegmentID), '') = ''
-            ) 
-            OR (
-              prd_mkt.MarketingGroupID = mds.OLDMarketingGroupID
-              and prd_mkt.SubMarketingID = mds.OLDSubMarketingGroupID
-              and prd_mkt.SegmentID = mds.OLDSegmentID
-            )
-          )
-        )
-      )
-      OR 
-      (
-        -- กลุ่มที่ 4-11: เช็คจาก SalesReging, ยอดขาย (SalesAmt) และ ID เดิม
-        (
-          lower(mds.SalesRegionAction) = 'inc' AND lower(mds.SalesAmtAction) = 'inc'
-          AND reg.RegionID = mds.SalesRegion 
-          AND fn.milSum = mds.SalesAmt 
-          AND prd_mkt.MarketingGroupID = mds.OLDMarketingGroupID
-          AND prd_mkt.SubMarketingID = mds.OLDSubMarketingGroupID
-          AND prd_mkt.SegmentID = mds.OLDSegmentID
-        )
-      )
-      OR 
-      (
-        -- กลุ่มที่ 12-13: เช็คจาก Product Group (LT-DFS) และคำค้นหาในชื่อสินค้า (mildesc)
-        (
-          lower(mds.ProductGroupAction) = 'inc' AND lower(mds.ProductDescriptionAction) = 'contains'
-          AND prd.ProductGroupMac5Description = mds.ProductGroup
-          AND REGEXP_CONTAINS(fn.mildesc, mds.ProductDescription)
-        )
-      )
-      OR 
-      (
-        -- กลุ่มที่ 14-18: เช็คจาก ProductID และคำค้นหาในหมายเหตุ (mihnotes) หรือชื่อสินค้า (mildesc)
-        (
-          lower(mds.ProductAction) = 'inc' AND lower(mds.ProductDescriptionAction) = 'contains' AND lower(RemarkAction) = 'contains'
-          AND fn.milstk = mds.ProductID 
-          AND (REGEXP_CONTAINS(fn.mildesc, mds.ProductDescription) OR REGEXP_CONTAINS(mih.mihnotes, mds.Remark) OR REGEXP_CONTAINS(mih.mihdesc, mds.Remark))
-        )
-      )
-      OR 
-      (
-        -- กลุ่มที่ 19: เช็คจาก ProductID และชื่อสินค้า (mildesc)
-        (
-          lower(mds.ProductAction) = 'inc' AND lower(mds.ProductDescriptionAction) = 'contains'
-          AND fn.milstk = mds.ProductID 
-          AND REGEXP_CONTAINS(fn.mildesc, mds.ProductDescription)
-        )
-      )
-    )
-
 )
   select distinct
     trans.* except(
@@ -1101,12 +975,8 @@ with dim_calendar as (
     IF(trans.mix_date is not null, trans.DepositVat, 0.0) as DepositVat,
 
   from dim_calendar as calendar
-  left join final2 as trans
+  left join final as trans
     on calendar.Date = trans.mix_date
     and calendar.CompanySK = trans.CompanySK
-  left join `${DimProductMktTableRef}` as new_prd
-    on trans.NewProductMktSK = new_prd.ProductMktSK
-  left join `${DimProductMktTableRef}` as prd
-    on trans.ProductMktSK = prd.ProductMktSK
   
   -- where NewProductMktSK is not null
