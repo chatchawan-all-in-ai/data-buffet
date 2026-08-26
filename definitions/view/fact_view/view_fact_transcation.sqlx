@@ -308,7 +308,7 @@ with dim_calendar as (
     on IFNULL(trans.milStk, '') = IFNULL(pump.milStk, '')
     and trans.FlagNewProductMKT = pump.FlagNewProductMKT
     and IFNULL(reg.RegionID, '') = IFNULL(pump.RegionID, '')
-
+    and trans.CompanySK = pump.CompanySK
 
   -- guarantee
   -- left join `${DimGuaranteeTableRef}` as gur
