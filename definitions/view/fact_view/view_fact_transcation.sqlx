@@ -375,24 +375,35 @@ with dim_calendar as (
       ELSE (CASE 
               WHEN UPPER(dir_map.DirectorName) LIKE 'PS%' 
                 and UPPER(trans.SectionID) = UPPER('PS1-4')
-                THEN sec_sk.SectionSK
+                THEN (CASE 
+                        WHEN FlagMappingInvoice is null THEN 
+                          (CASE 
+                            WHEN IFNULL(sale_sk.ChangeSectionFlag, 'No') = 'Yes' 
+                              THEN COALESCE(change_sec_sk.SectionSK, dummy_sec_last.SectionSK)
+
+                            ELSE sec_sk.SectionSK -- COALESCE(change_sec_sk.SectionSK, sec_sk.SectionSK)
+                          END)
+
+                        WHEN FlagMappingInvoice = 'Yes' THEN sec_map_sk.SectionSK
+                        ELSE null
+                      END) 
 
               WHEN UPPER(dir_map.DirectorName) LIKE 'PS%' 
                 and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
                 THEN change_sec_map_sk.SectionSK
 
               ELSE (CASE 
-                    WHEN FlagMappingInvoice is null THEN 
-                      (CASE 
-                        WHEN IFNULL(sale_sk.ChangeSectionFlag, 'No') = 'Yes' 
-                          THEN COALESCE(change_sec_sk.SectionSK, dummy_sec_last.SectionSK)
+                      WHEN FlagMappingInvoice is null THEN 
+                        (CASE 
+                          WHEN IFNULL(sale_sk.ChangeSectionFlag, 'No') = 'Yes' 
+                            THEN COALESCE(change_sec_sk.SectionSK, dummy_sec_last.SectionSK)
 
-                        ELSE sec_sk.SectionSK -- COALESCE(change_sec_sk.SectionSK, sec_sk.SectionSK)
-                      END)
+                          ELSE sec_sk.SectionSK -- COALESCE(change_sec_sk.SectionSK, sec_sk.SectionSK)
+                        END)
 
-                    WHEN FlagMappingInvoice = 'Yes' THEN sec_map_sk.SectionSK
-                    ELSE null
-                  END) 
+                      WHEN FlagMappingInvoice = 'Yes' THEN sec_map_sk.SectionSK
+                      ELSE null
+                    END) 
             END)
     END) as ChangeSectionSKLast,
 
@@ -405,24 +416,35 @@ with dim_calendar as (
       ELSE (CASE 
               WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
                 and UPPER(trans.SectionID) = UPPER('PS1-4')
-                THEN trans.SectionSK
+                THEN (CASE 
+                        WHEN FlagMappingInvoice is null THEN 
+                          (CASE 
+                            WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                              THEN COALESCE(trans.ChangeSectionSK, dummy_sec.SectionSK)
+
+                            ELSE trans.SectionSK
+                          END)
+
+                        WHEN FlagMappingInvoice = 'Yes' THEN trans.SectionSK
+                        ELSE null
+                      END)
 
               WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
                 and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
                 THEN trans.ChangeSectionSK
 
               ELSE (CASE 
-                    WHEN FlagMappingInvoice is null THEN 
-                      (CASE 
-                        WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
-                          THEN COALESCE(trans.ChangeSectionSK, dummy_sec.SectionSK)
+                      WHEN FlagMappingInvoice is null THEN 
+                        (CASE 
+                          WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                            THEN COALESCE(trans.ChangeSectionSK, dummy_sec.SectionSK)
 
-                        ELSE trans.SectionSK
-                      END)
+                          ELSE trans.SectionSK
+                        END)
 
-                    WHEN FlagMappingInvoice = 'Yes' THEN trans.SectionSK
-                    ELSE null
-                  END)
+                      WHEN FlagMappingInvoice = 'Yes' THEN trans.SectionSK
+                      ELSE null
+                    END)
             END)
     END) as ChangeSectionSK,
 
@@ -434,24 +456,35 @@ with dim_calendar as (
       ELSE (CASE 
               WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
                 and UPPER(trans.SectionID) = UPPER('PS1-4')
-                THEN trans.SectionManagerSK
+                THEN (CASE 
+                        WHEN FlagMappingInvoice is null THEN 
+                          (CASE 
+                            WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                              THEN COALESCE(trans.ChangeSectionManagerSK, dummy_sec_mgr.SectionManagerSK)
+
+                            ELSE trans.SectionManagerSK
+                          END)
+
+                        WHEN FlagMappingInvoice = 'Yes' THEN trans.SectionManagerSK
+                        ELSE null
+                      END)
 
               WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
                 and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
                 THEN trans.ChangeSectionManagerSK
 
               ELSE (CASE 
-                    WHEN FlagMappingInvoice is null THEN 
-                      (CASE 
-                        WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
-                          THEN COALESCE(trans.ChangeSectionManagerSK, dummy_sec_mgr.SectionManagerSK)
+                      WHEN FlagMappingInvoice is null THEN 
+                        (CASE 
+                          WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                            THEN COALESCE(trans.ChangeSectionManagerSK, dummy_sec_mgr.SectionManagerSK)
 
-                        ELSE trans.SectionManagerSK
-                      END)
+                          ELSE trans.SectionManagerSK
+                        END)
 
-                    WHEN FlagMappingInvoice = 'Yes' THEN trans.SectionManagerSK
-                    ELSE null
-                  END)
+                      WHEN FlagMappingInvoice = 'Yes' THEN trans.SectionManagerSK
+                      ELSE null
+                    END)
             END)
     END) as ChangeSectionManagerSK,
 
@@ -463,24 +496,35 @@ with dim_calendar as (
       ELSE (CASE 
               WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
                 and UPPER(trans.SectionID) = UPPER('PS1-4')
-                THEN trans.RegionSK
+                THEN (CASE 
+                        WHEN FlagMappingInvoice is null THEN 
+                          (CASE 
+                            WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                              THEN COALESCE(trans.ChangeRegionSK, dummy_reg.RegionSK)
+
+                            ELSE trans.RegionSK
+                          END)
+
+                        WHEN FlagMappingInvoice = 'Yes' THEN trans.RegionSK
+                        ELSE null
+                      END)
 
               WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
                 and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
                 THEN trans.ChangeRegionSK
 
               ELSE (CASE 
-                    WHEN FlagMappingInvoice is null THEN 
-                      (CASE 
-                        WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
-                          THEN COALESCE(trans.ChangeRegionSK, dummy_reg.RegionSK)
+                      WHEN FlagMappingInvoice is null THEN 
+                        (CASE 
+                          WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                            THEN COALESCE(trans.ChangeRegionSK, dummy_reg.RegionSK)
 
-                        ELSE trans.RegionSK
-                      END)
+                          ELSE trans.RegionSK
+                        END)
 
-                    WHEN FlagMappingInvoice = 'Yes' THEN trans.RegionSK
-                    ELSE null
-                  END)
+                      WHEN FlagMappingInvoice = 'Yes' THEN trans.RegionSK
+                      ELSE null
+                    END)
             END)
     END) as ChangeRegionSK,
 
@@ -492,24 +536,35 @@ with dim_calendar as (
       ELSE (CASE 
               WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
                 and UPPER(trans.SectionID) = UPPER('PS1-4')
-                THEN trans.RegionManagerSK
+                THEN (CASE 
+                        WHEN FlagMappingInvoice is null THEN 
+                          (CASE 
+                            WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                              THEN COALESCE(trans.ChangeRegionManagerSK, dummy_reg_mgr.RegionManagerSK)
+
+                            ELSE trans.RegionManagerSK
+                          END)
+
+                        WHEN FlagMappingInvoice = 'Yes' THEN trans.RegionManagerSK
+                        ELSE null
+                      END)
 
               WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
                 and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
                 THEN trans.ChangeRegionManagerSK
 
               ELSE (CASE 
-                    WHEN FlagMappingInvoice is null THEN 
-                      (CASE 
-                        WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
-                          THEN COALESCE(trans.ChangeRegionManagerSK, dummy_reg_mgr.RegionManagerSK)
+                      WHEN FlagMappingInvoice is null THEN 
+                        (CASE 
+                          WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                            THEN COALESCE(trans.ChangeRegionManagerSK, dummy_reg_mgr.RegionManagerSK)
 
-                        ELSE trans.RegionManagerSK
-                      END)
+                          ELSE trans.RegionManagerSK
+                        END)
 
-                    WHEN FlagMappingInvoice = 'Yes' THEN trans.RegionManagerSK
-                    ELSE null
-                  END)
+                      WHEN FlagMappingInvoice = 'Yes' THEN trans.RegionManagerSK
+                      ELSE null
+                    END)
             END)
     END) as ChangeRegionManagerSK,
 
@@ -521,24 +576,35 @@ with dim_calendar as (
       ELSE (CASE 
               WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
                 and UPPER(trans.SectionID) = UPPER('PS1-4')
-                THEN trans.DirectorSK
+                THEN (CASE 
+                        WHEN FlagMappingInvoice is null THEN 
+                          (CASE 
+                            WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                              THEN COALESCE(trans.ChangeDirectorSK, dummy_dir.DirectorSK)
+
+                            ELSE trans.DirectorSK
+                          END)
+
+                        WHEN FlagMappingInvoice = 'Yes' THEN trans.DirectorSK
+                        ELSE null
+                      END)
 
               WHEN UPPER(trans.DirectorName) LIKE 'PS%' 
                 and UPPER(LEFT(trans.SectionID, 3)) = UPPER(LEFT(chg_dis_map.newSectionID, 3))
                 THEN trans.ChangeDirectorSK
 
               ELSE (CASE 
-                    WHEN FlagMappingInvoice is null THEN 
-                      (CASE 
-                        WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
-                          THEN COALESCE(trans.ChangeDirectorSK, dummy_dir.DirectorSK)
+                      WHEN FlagMappingInvoice is null THEN 
+                        (CASE 
+                          WHEN IFNULL(dim_salerep.ChangeSectionFlag, 'No') = 'Yes' 
+                            THEN COALESCE(trans.ChangeDirectorSK, dummy_dir.DirectorSK)
 
-                        ELSE trans.DirectorSK
-                      END)
+                          ELSE trans.DirectorSK
+                        END)
 
-                    WHEN FlagMappingInvoice = 'Yes' THEN trans.DirectorSK
-                    ELSE null
-                  END)
+                      WHEN FlagMappingInvoice = 'Yes' THEN trans.DirectorSK
+                      ELSE null
+                    END)
             END)
     END) as ChangeDirectorSK,
 
