@@ -1,7 +1,15 @@
 config {
   type: "view",
   schema: databuffet.FACT_VIEW,
-  dependencies: ["dim_calendar", "dim_product_mkt", "dim_rebate", "dim_report", "fact_transcation", "dim_guarantee", "dim_section_last", "dim_section", "dim_sale_representative", "dim_channel", "dim_sale_representative_last", "dim_department_last", "dim_director_last", "dim_change_district", "dim_cost_stk", "dim_cost_group", "dim_stk_mkt", "dim_region_last", "dim_product_master", "fact_invoice", "view_dim_aging", "fact_order", "view_dim_invoice", "dim_region", "dim_company", "dim_director", "dim_region_manager", "dim_section_manager"],
+  dependencies: ["dim_calendar", "dim_product_mkt", "dim_rebate", 
+                  "dim_report", "fact_transcation", "dim_guarantee", 
+                  "dim_section_last", "dim_section", "dim_sale_representative", 
+                  "dim_channel", "dim_sale_representative_last", "dim_department_last", 
+                  "dim_director_last", "dim_change_district", "dim_cost_stk", 
+                  "dim_cost_group", "dim_stk_mkt", "dim_region_last", "dim_product_master", 
+                  "fact_invoice", "view_dim_aging", "fact_order", "view_dim_invoice", 
+                  "dim_region", "dim_company", "dim_director", "dim_region_manager", 
+                  "dim_section_manager", "dim_pump_information"],
   tags: [databuffet.TAG_VIEW],
 }
 
@@ -215,6 +223,14 @@ js {
         name: "mapping_invoice",
     };
     const MappingInvoiceTableRef = `${MappingInvoiceTable.database}.${MappingInvoiceTable.schema}.${MappingInvoiceTable.name}`;
+
+    const DimPumpInfoTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_pump_information",
+    };
+    const DimPumpInfoTableRef = `${DimPumpInfoTable.database}.${DimPumpInfoTable.schema}.${DimPumpInfoTable.name}`;
+
 }
 
 with dim_calendar as (
@@ -260,7 +276,7 @@ with dim_calendar as (
     dir.DirectorName,
     
     -- gur.GuaranteeSK,
-
+    pump.PumpSK,
     trans.*
   from `${FactTranscationTableRef}` as trans
 
@@ -286,6 +302,12 @@ with dim_calendar as (
   -- director id
   left join `${DimDirectorTableRef}` as dir
     on trans.DirectorSK = dir.DirectorSK
+    
+  -- Pump Information
+  left join `${DimPumpInfoTableRef}` as pump
+    on IFNULL(trans.milStk, '') = IFNULL(pump.milStk, '')
+    and trans.FlagNewProductMKT = pump.FlagNewProductMKT
+    and IFNULL(reg.RegionID, '') = IFNULL(pump.RegionID, '')
 
 
   -- guarantee
