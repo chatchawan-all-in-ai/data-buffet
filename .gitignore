@@ -20,3 +20,11 @@ CLAUDE.md
 
 # workflow_settings.yaml is intentionally NOT listed here: it is already tracked,
 # so the old ignore entry never took effect. Edits to it are committed and shared.
+
+# --- SPK plugin ---------------------------------------------------------------
+# ai_context/ is scaffolding created by the spk@inline Claude Code plugin.
+# It duplicates document/project_wiki/, which is the authoritative LLM wiki here
+# (and the only one the doc-sync hard rule and the Stop hook enforce).
+# Decision 2026-08-26: do not track it. Deleting the folder is safe -- the plugin
+# recreates it on the next session start.
+ai_context/

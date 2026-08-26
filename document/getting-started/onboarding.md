@@ -134,6 +134,10 @@ tar --exclude='.claude/settings.local.json' --exclude='__pycache__' -czf claude-
 
 `.mcp.json` (ประกาศ MCP server ที่ใช้ร่วมกัน) ก็ไม่ได้อยู่ใน git เหมือนกัน — ไปพร้อมชุดนี้
 
+> `ai_context/` ที่โผล่มาที่ root คือ scaffold ของ plugin `spk@inline` ไม่ใช่ของ repo
+> ซ้ำกับ `document/project_wiki/` จึงใส่ `.gitignore` ไว้ตั้งแต่ 2026-08-26 — ลบทิ้งได้เลย
+> (plugin จะสร้างกลับมาเองทุก session)
+
 คนรับแตกไฟล์ที่ root ของ repo แล้วเช็กว่ามีครบ: `CLAUDE.md`, `agents/` (5),
 `skills/` (15), `hooks/` (4), `settings.json`, `.mcp.json`
 
