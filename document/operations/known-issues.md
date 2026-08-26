@@ -313,14 +313,17 @@
   `fact_transcation` เป็น `fact_daily` → **ถ้ารัน tag แยกกันโดยไม่ติ๊ก dependencies
   จะอ่าน fact ของเมื่อวาน** (คลาสเดียวกับ `dim_aging` ที่ขึ้นกับ `fact_mir_vs`)
   SK (`PumpSK`) ปั้นใหม่ทุกวันด้วย `ROW_NUMBER()` — ห้าม persist ข้ามวัน
-  consumer เดียวคือ `view_fact_transcation` (เพิ่ม `abb0be2`) ซึ่ง join กลับด้วย
-  natural key `IFNULL(milStk,'')` × `FlagNewProductMKT` × `IFNULL(RegionID,'')`
-  จึง re-derive สดทุก query — **ปลอดภัย ไม่ได้เก็บ PumpSK ไว้**
-  แต่ `dim_pump_information` มี 57 key ที่ซ้ำ (milStk เดียวกัน RegionID ว่าง แต่
-  `PumpSegment` ต่างกัน เช่น `HITACHI` vs `OTHERS`) → join นี้ fan out ได้
-  วัดจริง 2026-08-26: view เพิ่มมาแค่ **6 แถว** จาก 2,650,009 (ตัวกรองใน view
-  ตัดทิ้งไปก่อนเกือบหมด) — ไม่ใช่ปัญหาตอนนี้ แต่ถ้า mds เพิ่มสินค้าที่ชน key
-  ตัวเลขนี้จะโตขึ้นเงียบ ๆ เช็คซ้ำด้วยการนับ row ต่อ line key เทียบ fact กับ view
+  consumer เดียวคือ `view_fact_transcation` ซึ่ง join กลับด้วย natural key 4 ตัว
+  `CompanySK` × `IFNULL(milStk,'')` × `FlagNewProductMKT` × `IFNULL(RegionID,'')`
+  จึง re-derive สดทุก query — ไม่ได้เก็บ `PumpSK` ไว้
+  **ประวัติ**: ตอนเพิ่มครั้งแรก (`b746f93`) key ไม่มีบริษัท ทำให้ซ้ำ 57 key เพราะ
+  รหัส `milStk` เดียวกันมีอยู่ทั้งใน ag01 (ได้แบรนด์จริง) และ ac02 (ได้ `OTHERS`)
+  — `milStk` unique แค่ภายในบริษัท แก้แล้วใน `91e120d` โดยเพิ่ม `CompanySK`/`CompanyID`
+  เข้า `SELECT DISTINCT` และเพิ่ม `trans.CompanySK = pump.CompanySK` ในฝั่ง view
+  ตรวจ 2026-08-26 หลัง rebuild: **ซ้ำ 0 key** (ทดสอบด้วยรูป `IFNULL()` ตรงตามที่ view
+  join จริง) · 34,645 แถว · ถ้าถอด `CompanySK` ออกจาก key ตอนนี้จะซ้ำ 568 key
+  **ข้อควรระวังถ้าเพิ่มคอลัมน์ในอนาคต**: `SELECT DISTINCT` ทำให้ทุกคอลัมน์ที่ใส่เข้าไป
+  กลายเป็นส่วนหนึ่งของ key โดยปริยาย
 - SK ที่ยังไม่รู้เจ้าของ (จาก FK scan 2026-07-09): `BillingSK` (หา dim ต้นทางไม่พบ),
   `DueAvgCollectSK`/`InvAvgCollectSK` (น่าจะ role-play ของ dim_avg_collection_score),
   `DueGradeSK`/`InvoiceGradeSK` (น่าจะ role-play ของ dim_grade)

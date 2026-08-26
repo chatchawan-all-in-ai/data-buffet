@@ -191,7 +191,8 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 > `view_fact_transcation` ไม่คำนวณ `NewProductMktSK` เองแล้ว (ย้ายไป `fact_transcation`
 > 2026-08-26) แต่รับ **mapping-invoice override ของ `Change*SK` ทั้ง 5 ตัว** มาทำแทน
 > (ย้ายมาจาก fact 2026-08-25) — ทั้งสองทิศทางสลับกันในสัปดาห์เดียว
-> และเพิ่ม `PumpSK` จาก `dim_pump_information` (join ด้วย natural key 3 ตัว ไม่ใช่ SK)
+> และเพิ่ม `PumpSK` จาก `dim_pump_information` (join ด้วย natural key 4 ตัว ไม่ใช่ SK:
+> `CompanySK` + `IFNULL(milStk,'')` + `FlagNewProductMKT` + `IFNULL(RegionID,'')`)
 | `Model_Invoice_Transaction` | 15 dims, view_fact_transcation, view_dim_customer | — |
 | `Model_Target_DayOfWork` | 11 dims | — |
 | `PowerBI_Data_Buffet_Transaction` | curated_mih/mil, stk | — |
