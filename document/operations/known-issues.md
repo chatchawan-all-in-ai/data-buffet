@@ -193,6 +193,18 @@
   error ถาวร ถ้าสงสัยให้เช็กของจริงด้วย
   `SELECT * FROM <dataset>.INFORMATION_SCHEMA.TABLE_CONSTRAINTS`
 
+- **2026-08-25 — `dim_change_district` ไม่มี `schema:` ใน config มาตลอด**
+  config เขียนแค่ `type: "table"` + `dependencies` + `tags` ไม่มี `schema` →
+  Dataform ใช้ `defaultDataset` จาก `workflow_settings.yaml` (คือ `dataform`)
+  ไม่ใช่ `dimension_table` ขณะที่ `fact_transcation` / `view_fact_transcation`
+  อ้าง `${databuffet.DIMENSION_TABLE}.dim_change_district` เสมอ
+  แก้แล้วใน `e0fe26c` — เพิ่ม `schema: databuffet.DIMENSION_TABLE` +
+  `clusterBy: ["companyID","customerCode"]`
+  ตรวจ 2026-08-26: dataset `dataform` **ว่างเปล่า** ไม่มีตารางตกค้าง
+  **บทเรียน**: `schema:` ไม่ใช่ optional — ไฟล์ dim/fact ทุกไฟล์ต้องระบุ
+  ตรวจซ้ำได้ด้วย `for f in definitions/dimension/*.sqlx; do grep -q "schema:" "$f" || echo "$f"; done`
+  (ตอนนี้ได้ 0 บรรทัด)
+
 ## การตัดสินใจเชิงออกแบบ
 
 - **2026-08-11 — `view_dim_aging_history` derive `AgingSK`/`BillingSK` สดแทนที่จะเชื่อค่าที่เก็บไว้**
@@ -290,6 +302,25 @@
 
 ## หนี้ทางเทคนิค / งานค้าง
 
+- **2026-08-26 — ล้าง literal `"mds_dataset"` ออกหมดแล้ว** เดิม 36 ไฟล์ใน
+  `definitions/dimension/` เขียน `schema: "mds_dataset"` ตรง ๆ (ผิด hard rule ข้อ 3)
+  ทั้งที่ constant `MDS_DATASET` มีอยู่ตั้งแต่ 2026-05-31 — เกิดจาก template ที่ใช้
+  generate dim รอบใหญ่ (`694e996` "add process mds to dim - phase2") ยังเป็นตัวเก่า
+  แก้เป็น `databuffet.MDS_DATASET` ทั้งหมดใน `b746f93` ค่าเหมือนเดิมเป๊ะ ผล compile ไม่เปลี่ยน
+  ตอนนี้ `grep -rn '"mds_dataset"' definitions` ต้องได้ 0 บรรทัด
+- **`dim_pump_information` (เพิ่ม 2026-08-26) เป็น dim ตัวเดียวที่อ่านจาก fact**
+  `dependencies: ["fact_transcation", ...]` แต่ tag เป็น `dimension_daily` ส่วน
+  `fact_transcation` เป็น `fact_daily` → **ถ้ารัน tag แยกกันโดยไม่ติ๊ก dependencies
+  จะอ่าน fact ของเมื่อวาน** (คลาสเดียวกับ `dim_aging` ที่ขึ้นกับ `fact_mir_vs`)
+  SK (`PumpSK`) ปั้นใหม่ทุกวันด้วย `ROW_NUMBER()` — ห้าม persist ข้ามวัน
+  consumer เดียวคือ `view_fact_transcation` (เพิ่ม `abb0be2`) ซึ่ง join กลับด้วย
+  natural key `IFNULL(milStk,'')` × `FlagNewProductMKT` × `IFNULL(RegionID,'')`
+  จึง re-derive สดทุก query — **ปลอดภัย ไม่ได้เก็บ PumpSK ไว้**
+  แต่ `dim_pump_information` มี 57 key ที่ซ้ำ (milStk เดียวกัน RegionID ว่าง แต่
+  `PumpSegment` ต่างกัน เช่น `HITACHI` vs `OTHERS`) → join นี้ fan out ได้
+  วัดจริง 2026-08-26: view เพิ่มมาแค่ **6 แถว** จาก 2,650,009 (ตัวกรองใน view
+  ตัดทิ้งไปก่อนเกือบหมด) — ไม่ใช่ปัญหาตอนนี้ แต่ถ้า mds เพิ่มสินค้าที่ชน key
+  ตัวเลขนี้จะโตขึ้นเงียบ ๆ เช็คซ้ำด้วยการนับ row ต่อ line key เทียบ fact กับ view
 - SK ที่ยังไม่รู้เจ้าของ (จาก FK scan 2026-07-09): `BillingSK` (หา dim ต้นทางไม่พบ),
   `DueAvgCollectSK`/`InvAvgCollectSK` (น่าจะ role-play ของ dim_avg_collection_score),
   `DueGradeSK`/`InvoiceGradeSK` (น่าจะ role-play ของ dim_grade)

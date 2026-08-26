@@ -76,6 +76,7 @@ TOPICS = [
         r"^dim_product_mkt(_director)?$",
         r"^dim_stk_mkt$",
         r"^dim_rebate$",
+        r"^dim_pump_information$",
         r"^curated_product$",
         r"^product_for_aisearch$",
     ]),

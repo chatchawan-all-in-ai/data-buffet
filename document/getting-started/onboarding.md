@@ -18,7 +18,7 @@ GCS AVRO (gs://file-raw-data)
   → initial   (external table + schema + UDF — 15 ไฟล์)
   → validated (ทำความสะอาด cast dedup — 135 ไฟล์ = 131 transformation + 4 schema)
   → curated   (business logic, join — 8 ไฟล์ = 5 transformation + 3 schema)
-  → dimension (59 ไฟล์) + fact (9 ไฟล์)
+  → dimension (60 ไฟล์) + fact (9 ไฟล์)
   → view      (ชั้น BI/report — 32 ไฟล์)
   ท่อเสริม: cdc (จับ change) + process (แกะที่อยู่ไทยด้วย AI)
 ```

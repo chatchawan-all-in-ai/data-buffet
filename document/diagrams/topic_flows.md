@@ -492,9 +492,9 @@ flowchart LR
 
 ## Product master & marketing — สินค้า
 
-**Objects in this topic (8):** `curated_product`, `dim_product_master`, `dim_product_master_fc`, `dim_product_mkt`, `dim_product_mkt_director`, `dim_rebate`, `dim_stk_mkt`, `product_for_aisearch`
+**Objects in this topic (9):** `curated_product`, `dim_product_master`, `dim_product_master_fc`, `dim_product_mkt`, `dim_product_mkt_director`, `dim_pump_information`, `dim_rebate`, `dim_stk_mkt`, `product_for_aisearch`
 
-**Fed by (9):** `brand`, `category`, `dim_company`, `product`, `product_detail`, `stg`, `stk`, `unit`, `vendor`
+**Fed by (11):** `brand`, `category`, `dim_company`, `dim_region`, `fact_transcation`, `product`, `product_detail`, `stg`, `stk`, `unit`, `vendor`
 
 ```mermaid
 flowchart LR
@@ -512,13 +512,15 @@ flowchart LR
     curated_product["curated_product"]
     product_for_aisearch["product_for_aisearch"]
   end
-  subgraph dimension["dimension (7)"]
+  subgraph dimension["dimension (9)"]
     dim_company["dim_company"]
     dim_product_master["dim_product_master"]
     dim_product_master_fc["dim_product_master_fc"]
     dim_product_mkt["dim_product_mkt"]
     dim_product_mkt_director["dim_product_mkt_director"]
+    dim_pump_information["dim_pump_information"]
     dim_rebate["dim_rebate"]
+    dim_region["dim_region"]
     dim_stk_mkt["dim_stk_mkt"]
   end
   subgraph fact["fact (4)"]
@@ -535,20 +537,26 @@ flowchart LR
   dim_company --> dim_product_mkt
   dim_company --> dim_product_mkt_director
   dim_company --> dim_rebate
+  dim_company --> dim_region
   dim_company --> dim_stk_mkt
   dim_company --> fact_order
   dim_company --> fact_quotation
   dim_company --> fact_transaction_delivery
+  dim_product_master --> dim_pump_information
   dim_product_master --> fact_order
   dim_product_master --> fact_quotation
   dim_product_master --> fact_transaction_delivery
   dim_product_master --> fact_transcation
   dim_product_mkt --> dim_product_master
+  dim_product_mkt --> dim_pump_information
   dim_product_mkt --> fact_transcation
   dim_rebate --> dim_product_master
+  dim_region --> dim_pump_information
+  dim_region --> fact_transcation
   dim_stk_mkt --> dim_product_master
   dim_stk_mkt --> fact_transcation
   fact_quotation --> fact_order
+  fact_transcation --> dim_pump_information
   product --> curated_product
   product --> dim_product_master
   product_detail --> curated_product
@@ -566,7 +574,7 @@ flowchart LR
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
   class brand,category__mastersku,product,product_detail,stg,stk,unit,vendor validated;
   class curated_product,product_for_aisearch curated;
-  class dim_company,dim_product_master,dim_product_master_fc,dim_product_mkt,dim_product_mkt_director,dim_rebate,dim_stk_mkt dimension;
+  class dim_company,dim_product_master,dim_product_master_fc,dim_product_mkt,dim_product_mkt_director,dim_pump_information,dim_rebate,dim_region,dim_stk_mkt dimension;
   class fact_order,fact_quotation,fact_transaction_delivery,fact_transcation fact;
 ```
 

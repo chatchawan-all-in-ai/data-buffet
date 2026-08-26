@@ -177,7 +177,7 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 
 | View | Key upstream | External refs |
 |---|---|---|
-| `view_fact_transcation` | fact_invoice, fact_order, fact_transcation, curated_mih, deb, ~20 dims, view_dim_aging, view_dim_invoice | mds, onetime.mapping_invoice, fn_flag_scg/exc |
+| `view_fact_transcation` | fact_invoice, fact_order, fact_transcation, curated_mih, deb, ~20 dims, dim_pump_information, view_dim_aging, view_dim_invoice | onetime.mapping_invoice, fn_flag_scg/exc |
 | `view_aging_ri` | fact_mir_vs, dim_aging_rang, dim_invoice, dim_status_not_receive, curated_mih, ar_s/chq/cql/mir, view_dim_aging | — |
 | `view_fact_mir_rs` | fact_mir_rs, dim_aging, curated_mih, ar_s | — |
 | `view_fact_mir_vs` | fact_mir_vs, dim_aging | — |
@@ -187,6 +187,11 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 | View | Key upstream | External refs |
 |---|---|---|
 | `Transaction_Data_Mart` | curated_mih/mil/tbook_quotation, dim_company, view_deb_address_data, stk, dim_rebate | fn_flag_sales_kpi |
+
+> `view_fact_transcation` ไม่คำนวณ `NewProductMktSK` เองแล้ว (ย้ายไป `fact_transcation`
+> 2026-08-26) แต่รับ **mapping-invoice override ของ `Change*SK` ทั้ง 5 ตัว** มาทำแทน
+> (ย้ายมาจาก fact 2026-08-25) — ทั้งสองทิศทางสลับกันในสัปดาห์เดียว
+> และเพิ่ม `PumpSK` จาก `dim_pump_information` (join ด้วย natural key 3 ตัว ไม่ใช่ SK)
 | `Model_Invoice_Transaction` | 15 dims, view_fact_transcation, view_dim_customer | — |
 | `Model_Target_DayOfWork` | 11 dims | — |
 | `PowerBI_Data_Buffet_Transaction` | curated_mih/mil, stk | — |

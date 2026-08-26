@@ -21,7 +21,7 @@ GCS AVRO files  gs://file-raw-data  (Hive partition: ASATDATE=YYYYMMDD)
       ▼                               ▼
 ┌────────────┐                 ┌────────────┐
 │ DIMENSION  │ ◄──── SK ────── │    FACT    │
-│ (59 ไฟล์)  │                 │  (6 ไฟล์)  │
+│ (60 ไฟล์)  │                 │  (9 ไฟล์)  │
 └────────────┘                 └────────────┘
  dimension_table                 fact_table
       └───────────────┬───────────────┘

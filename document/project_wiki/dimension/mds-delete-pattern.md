@@ -54,8 +54,8 @@ Verify anytime with `grep -L "is_active = FALSE" $(grep -l "mds_data" definition
 — only `dim_change_district` should appear.
 
 > History: the 2026-07-10 batch initially covered 35 files; `dim_rebate` was missed
-> because it references the schema via `databuffet.MDS_DATASET` instead of the literal
-> `"mds_dataset"` string the scan grepped for. Added 2026-07-10 (same day, follow-up).
+> because a grep for the literal `"mds_dataset"` could not see it. Every dim now uses
+> `databuffet.MDS_DATASET`, so grep for the constant, not the string.
 
 Exclusions:
 - **`dim_change_district`** — mds-sourced but `type: "table"` full rebuild; the

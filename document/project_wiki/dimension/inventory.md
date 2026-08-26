@@ -1,9 +1,9 @@
-# Dimension Inventory — all 59 files
+# Dimension Inventory — all 60 files
 
 > **LLM context**: SK = surrogate key column; NK = natural/business key. Most dims
 > carry `CompanySK` FK from `dim_company`.
 > Groups since 2026-07-20: (a) mds **full daily rebuild** (34 — SKs regenerate daily),
-> (a2) mds MERGE legacy (2), (b) lake MERGE (10), (c) other full rebuild (10), (e) other (3).
+> (a2) mds MERGE legacy (2), (b) lake MERGE (10), (c) other full rebuild (11), (e) other (3).
 
 ## Group (a) — mds dims (36 total: 34 full rebuild + 2 MERGE legacy)
 
@@ -68,7 +68,7 @@ All depend on `dim_company` except `dim_company` (deps `[]`) and `dim_holiday` (
 | dim_group_customer | GroupCustomerSK | dim_customer | dim_customer |
 | dim_group_customer_grade | GroupCustomerGradeSK | deb, chq, cql, mie, mir, mih, curated_mih | dim_calendar, dim_customer, dim_group_customer + score dims |
 
-## Group (c) — full rebuild `type: "table"` (10)
+## Group (c) — full rebuild `type: "table"` (11)
 
 | File | SK | Notes |
 |---|---|---|
@@ -76,6 +76,7 @@ All depend on `dim_company` except `dim_company` (deps `[]`) and `dim_holiday` (
 | dim_department_last / dim_director_last / dim_region_last / dim_region_manager_last / dim_section_last / dim_section_manager_last / dim_sale_representative_last | `<X>SK` via ROW_NUMBER | Latest SCD row per entity; NULL FK SKs backfilled by `update_sk_sale_rep_group` |
 | dim_target_product_group_by_sale | TargetBySaleSK | Multi-CTE join of target/rate/report/product-mkt dims + `_last` family |
 | dim_target_product_group_by_sale_dayofwork | TargetBySaleDayofworkSK | joins dim_calendar (working-day expansion); daily full rebuild, self-heals |
+| dim_pump_information | PumpSK | **อ่านจาก `fact_transcation`** (ไม่ใช่ mds) — `milstk` × `RegionID` × `FlagNewProductMKT` → `PumpSegment`; PS1 + FlagNewProductMKT → `dim_product_mkt.Segment`, นอกนั้น→ `view_dim_product_master.PumpSegment` (เพิ่ม 2026-08-26) · consumer: `view_fact_transcation` join กลับด้วย natural key 3 ตัว (ไม่ persist PumpSK) |
 
 ## Group (e) — other operations (3)
 

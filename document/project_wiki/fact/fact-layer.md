@@ -29,7 +29,7 @@
 | `fact_quotation` | dim_quotation, dim_company, dim_product_master, dim_customer — source `validated_mac5.tbook_quodetail` |
 | `fact_transaction_delivery` | dim_invoice, dim_product_master, dim_company — source `curated_mil` (type='IS') |
 | `fact_delivery` | dim_delivery, dim_company, + `fact_transaction_delivery` — sources `ttrip_document, ttrip, tdelivery, deb, curated_mih, curated_mil`; Thai delivery-status labels |
-| `fact_transcation` | ~20 dims (see below) — source `onetime.Transaction_Data_Mart` |
+| `fact_transcation` | ~20 dims (see below) — source `onetime.Transaction_Data_Mart`; external `mds_data_change_marketinggroup_master` (marketing-group re-map) |
 | `fact_chq` | dim_customer, dim_company — sources `validated_mac5.chq + cql` (`cqlbook = 0`); Thai cheque-status labels |
 | `fact_mir_vs` | dim_invoice (deduped `QUALIFY`), dim_customer, dim_collection_status, dim_company — sources `validated_mac5.mir/mie` + `curated_mih` (mirtype `'VS'`, `mihcancel = 0`) |
 | `fact_mir_rs` | same dims as `fact_mir_vs` + `fact_mir_vs` (BillingSK) + **FULL JOIN** `fact_chq` (FactChqSK) — mirtype `'RS'` |
@@ -66,6 +66,8 @@ BEGIN
      │                     section_manager, region, region_manager, director, cost_stk,
      │                     cost_group, change_district) -> แก้ชื่อตารางจุดเดียว
      │                     src_dim_change_district ทำ TRIM(customerCode) ให้ครั้งเดียว
+     ├─ mds_change_mktgroup: `mds_data_change_marketinggroup_master` (is_active) +
+     │                     dim_product_mkt -> NewProductMktSK (ย้ายมาจาก view 2026-08-26)
      ├─ department_change: DISTINCT CompanyID/RegionID/SectionID/StartDate/EndDate
      ├─ sale_rep         : dim_sale_representative + seq_condition (1-6, else 9)
      │                     TRIM ฝั่ง dim ครั้งเดียวโดยคงชื่อคอลัมน์เดิม (* EXCEPT + ประกาศทับ)
@@ -84,10 +86,15 @@ BEGIN
      └─ final SELECT     : + address SKs (view_deb_address_data), dim_stk_mkt,
                            dim_product_mkt, dim_target_product_group_by_sale_dayofwork,
                            dim_customer + mapping override chain (sec/reg/dir _map_sk)
-                           ที่ gate ด้วย FlagMappingInvoice — ทั้ง Section/SectionManager/
-                           Region/RegionManager/Director SK และ Change* ทั้ง 5 ตัว
-                           ใช้รูป CASE เดียวกัน (NULL -> ค่าเดิม, 'Yes' -> ค่า mapping,
-                           'No' -> NULL) ไม่ใช่ COALESCE
+                           ที่ gate ด้วย FlagMappingInvoice — Section/SectionManager/
+                           Region/RegionManager/Director SK ใช้รูป CASE เดียวกัน
+                           (NULL -> ค่าเดิม, 'Yes' -> ค่า mapping, 'No' -> NULL) ไม่ใช่ COALESCE
+                           **Change* ทั้ง 5 ตัวไม่ผ่าน CASE นี้แล้ว** (ย้ายไปทำใน
+                           view_fact_transcation 2026-08-25) ไหลผ่าน trans.* ดิบ ๆ
+                           + FlagNewProductMKT / NewProductMktSK จาก mds_change_mktgroup
+                           (19 กลุ่มเงื่อนไข: depcode/job/salesregion+amt/productgroup+
+                           description/productid+remark) — COALESCE กลับไป
+                           product_mkt.ProductMktSk เมื่อไม่ match
   2. DELETE FROM fact_transcation T WHERE EXISTS (
        SELECT 1 FROM temp WHERE T.milVnos=S.milVnos AND T.milType=S.milType
        AND T.CompanySK=S.CompanySK)
@@ -100,7 +107,7 @@ END;
 ```
 
 Because it's `operations`, the target table must already exist — Dataform does not create it.
-ตารางจริงมี **116 คอลัมน์** และปิดท้ายด้วย `INSERT ... SELECT *` → ถ้าแก้ไฟล์นี้แล้วจำนวนหรือ
+ตารางจริงมี **124 คอลัมน์** (เดิม 116 — เพิ่ม FlagNewProductMKT/NewProductMktSK และอื่น ๆ 2026-08-26) และปิดท้ายด้วย `INSERT ... SELECT *` → ถ้าแก้ไฟล์นี้แล้วจำนวนหรือ
 **ลำดับ**คอลัมน์เปลี่ยน ต้องแก้ DDL ของตารางเองด้วย (repo ไม่มี `CREATE TABLE` ของ fact นี้)
 
 ### เงื่อนไข match sale representative — ประกาศใน `js {}` ที่เดียว

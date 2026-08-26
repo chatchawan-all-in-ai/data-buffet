@@ -32,7 +32,6 @@ config {
 
 กติกา:
 - `schema` และ `tags` ต้องอ้าง `databuffet.*` — **ห้าม string literal**
-  (ยกเว้นข้อยกเว้นเดิม: `"mds_dataset"` ใน dim files)
 - เลือก `type` ตาม layer:
   - validated: `incremental` (transactional) หรือ `table` (full-load reference)
   - curated: `incremental`

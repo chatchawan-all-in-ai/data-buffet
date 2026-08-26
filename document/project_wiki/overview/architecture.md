@@ -22,7 +22,7 @@ CURATED      definitions/curated/     Business joins, JSON parsing, split-sale (
       ├────────────────────────────┐
       ▼                            ▼
 DIMENSION    definitions/dimension/ FACT    definitions/fact/
-(59 files — SK dims)         ◄──── (9 files — star-schema joins)
+(60 files — SK dims)         ◄──── (9 files — star-schema joins)
       │                            │
       └──────────────┬─────────────┘
                      ▼
@@ -43,7 +43,7 @@ Side pipelines:
 | Initial | `raw_*`, `function_dataset` | operations (external tables, UDFs) | [initial/initial-layer.md](../initial/initial-layer.md) |
 | Validated | `validated_*` | incremental / table + QUALIFY dedup | [validated/validated-layer.md](../validated/validated-layer.md) |
 | Curated | `curated_*` | incremental + post_operations | [curated/curated-layer.md](../curated/curated-layer.md) |
-| Dimension | `dimension_table`, `dimension_view` | table rebuild (34 mds + 10 other) / operations MERGE (2 mds + 10 lake) | [dimension/dimension-layer.md](../dimension/dimension-layer.md) |
+| Dimension | `dimension_table`, `dimension_view` | table rebuild (34 mds + 11 other) / operations MERGE (2 mds + 10 lake) | [dimension/dimension-layer.md](../dimension/dimension-layer.md) |
 | Fact | `fact_table`, `fact_view` | table rebuild / operations upsert | [fact/fact-layer.md](../fact/fact-layer.md) |
 | CDC | `cdc_dataset` | operations (config-generated) | [cdc-process/cdc.md](../cdc-process/cdc.md) |
 | Process | `process_dataset` | incremental (AI.GENERATE) | [cdc-process/process.md](../cdc-process/process.md) |
@@ -78,8 +78,9 @@ Side pipelines:
 
 1. **Timezone**: always `Asia/Bangkok` (`CURRENT_DATE('Asia/Bangkok')`).
 2. **NULL policy**: empty string → NULL via `cleanString` everywhere.
-3. **Config through `databuffet.*`** — no hardcoded dataset names/tags
-   (exception: `"mds_dataset"` is a string literal in most dim files).
+3. **Config through `databuffet.*`** — no hardcoded dataset names/tags. The last
+   holdout (`"mds_dataset"` as a literal in 36 dim files) was converted to
+   `databuffet.MDS_DATASET` on 2026-08-26; there are now **zero** literals.
 4. **`type: "operations"` tables are NOT created by Dataform** — they must pre-exist
    in BigQuery (the 12 MERGE dims, `fact_transcation`). The 34 full-rebuild mds dims
    are Dataform-managed tables whose **SKs regenerate daily** (see

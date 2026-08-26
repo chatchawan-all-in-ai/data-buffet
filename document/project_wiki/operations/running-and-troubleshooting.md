@@ -13,7 +13,7 @@
 | `re-initial` | ⚠️ DROP validated/curated MAC5 tables (destructive, mac5 only) |
 | `validated` / `validated_full` / `validated_incremental` | Validated layer |
 | `curated` | Curated layer (no sub-tags in use) |
-| `dimension_daily` | 58 of 59 dims |
+| `dimension_daily` | 59 of 60 dims |
 | `dimension_yearly` | `dim_calendar` only |
 | `fact_daily` | All 6 facts |
 | `cdc` / `cdc_incremental` | CDC change log |
