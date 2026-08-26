@@ -42,6 +42,8 @@ js {
 
 with mix_data as (
   select distinct
+    fact.CompanySK,
+    fact.CompanyID,
     fact.milstk, reg.RegionID, fact.FlagNewProductMKT, 
     -- prd.PumpSegment as OldPumpSegment, 
     -- prd_mkt.Segment as ProcessPumpSegment,
