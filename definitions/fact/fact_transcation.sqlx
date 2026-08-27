@@ -264,7 +264,7 @@ BEGIN
       chg.salesamtaction, chg.salesamt, 
       chg.productdescriptionaction, chg.productdescription, 
       chg.remarkaction, chg.remark, 
-      chg.marketingaction, 
+      chg.marketingaction, chg.customercodeaction, chg.customercode,
       oldmarketinggroupid, oldsubmarketinggroupid, oldsegmentid, 
       new_mktgroup.ProductMktSK as NewProductMktSK,
       newmarketinggroupid, newsubmarketinggroupid, newsegmentid
@@ -842,12 +842,22 @@ BEGIN
       (
         -- กลุ่มที่ 1: เช็คจาก Depcode และ ProductID (milstk) เช่น บ-0124
         (
-          lower(mds.DepcodeAction) = 'startwith' AND lower(mds.ProductAction) = 'exc' 
+          lower(mds.DepcodeAction) = lower('startwith') AND lower(mds.ProductAction) = lower('exc')
           AND trans.mildep LIKE CONCAT(mds.Depcode, '%') 
-          AND trans.milstk <> mds.ProductID
+          AND NOT REGEXP_CONTAINS(trans.milstk, mds.ProductID)
         )
       )
       OR 
+      (
+        -- กลุ่มที่ 21: เช็คจาก Depcode และ ProductID (milstk) เช่น บ-0124
+        (
+          lower(mds.DepcodeAction) = lower('startwith') AND lower(mds.ProductAction) = lower('inc') AND lower(mds.customercodeaction) = lower('inc')
+          AND trans.mildep LIKE CONCAT(mds.Depcode, '%')
+          AND REGEXP_CONTAINS(trans.milstk, mds.ProductID)
+          AND REGEXP_CONTAINS(trans.milCus, mds.CustomerCode)
+        )
+      )
+      OR
       (
         -- กลุ่มที่ 2 & 3: เช็คจาก ID เดิม และ Job (miljob) = LITETITE
         (
