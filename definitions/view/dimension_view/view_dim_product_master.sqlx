@@ -62,7 +62,7 @@ with final as (
     REGEXP_EXTRACT(ProductMac5Description, r'/([PU][a-zA-Z0-9].*)$') AS WaterPac2,
 
     pm.MarketingGroupID,
-    pm.SubMarketing,
+    pm.Segment,
     pm.SegmentID
 
   FROM `${DimProductMasterTableRef}` as pd
@@ -78,12 +78,12 @@ with final as (
 )
   SELECT
     -- pd.ProductCode, pd.ProductCode1, pd.ProductMac5Description,
-    -- pd.WaterPac, pd.WaterPac1, pd.WaterPac2, pd.MarketingGroupID, pd.SubMarketing, pd.SegmentID,
+    -- pd.WaterPac, pd.WaterPac1, pd.WaterPac2, pd.MarketingGroupID, pd.Segment, pd.SegmentID,
     -- wp.WaterPacName as wp, wp1.WaterPacName as wp1, wp2.WaterPacName as wp2,
-    pd.* except(MarketingGroupID, SubMarketing, SegmentID, WaterPac, WaterPac1, WaterPac2),
+    pd.* except(MarketingGroupID, Segment, SegmentID, WaterPac, WaterPac1, WaterPac2),
     (CASE 
       WHEN pd.SegmentID in ('00111', '00112') THEN COALESCE(wp.WaterPacName, wp1.WaterPacName, wp2.WaterPacName, 'WaterPac')
-      WHEN pd.MarketingGroupID = '002' THEN pd.SubMarketing
+      WHEN pd.MarketingGroupID = '002' THEN pd.Segment
       ELSE 'OTHERS'
     END) as PumpSegment
   FROM final as pd

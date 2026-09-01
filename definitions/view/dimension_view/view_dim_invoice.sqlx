@@ -111,7 +111,7 @@ with tab_main as (
     (CASE
       WHEN cust.FlagMDSNickName = True THEN cust.NicknameCustomer
       WHEN COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName) is not null THEN COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName)
-      ELSE `${CleanCompanyPrefixTableRef}`(debnamet)
+      ELSE `${CleanCompanyPrefixTableRef}`(cust.debnamet)
     END) as CustomerReportName
     
   from tab_main as main
