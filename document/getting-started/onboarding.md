@@ -114,7 +114,7 @@ hooks ของ Claude Code) แล้วบอก `PASS` `FAIL` `SKIP` พร�
 
 | ของ | อยู่ที่ | ทำอะไร |
 |---|---|---|
-| Project context | `.claude/CLAUDE.md` | สรุปสถาปัตยกรรม + กติกา ให้ Claude อ่านอัตโนมัติทุก session |
+| Project context | `CLAUDE.md` (root ของ repo — **อยู่ใน git** ตั้งแต่ 2026-09-01, มากับ clone เลย ไม่ต้อง copy) | สรุปสถาปัตยกรรม + กติกา ให้ Claude อ่านอัตโนมัติทุก session |
 | Skills (15) | `.claude/skills/*/SKILL.md` | `add-*-table`, `dataform-run`, `check-runs`, `data-quality-check`, `fk-integrity-scan`, `bq-drift-scan`, `backfill-dimension`, `enable-cdc`, `update-docs`, `ship`, `verify-setup` — เรียกด้วย `/<ชื่อ skill>` |
 | Agents (5) | `.claude/agents/*.md` | `dataform-expert`, `data-architect`, `bigquery-optimizer`, `data-quality-auditor`, `bq-drift-auditor` |
 | Hooks | `.claude/hooks/` | `ensure-hookspath.sh` (SessionStart — ตั้ง `core.hooksPath` + `chmod +x` ให้เองครั้งแรก), `guard-dangerous.sh` (บล็อกคำสั่งทำลายข้อมูล), `doc-sync-check.sh` (กันลืมอัปเดตเอกสาร), `pre-commit.sh` (format/compile + regenerate diagram — **block commit ถ้า regenerate ไม่ผ่าน**; ไม่มี CI สำรองแล้วตั้งแต่ 2026-08-27) |
@@ -138,8 +138,9 @@ tar --exclude='.claude/settings.local.json' --exclude='__pycache__' -czf claude-
 > ซ้ำกับ `document/project_wiki/` จึงใส่ `.gitignore` ไว้ตั้งแต่ 2026-08-26 — ลบทิ้งได้เลย
 > (plugin จะสร้างกลับมาเองทุก session)
 
-คนรับแตกไฟล์ที่ root ของ repo แล้วเช็กว่ามีครบ: `CLAUDE.md`, `agents/` (5),
+คนรับแตกไฟล์ที่ root ของ repo แล้วเช็กว่ามีครบ: `agents/` (5),
 `skills/` (15), `hooks/` (5), `settings.json`, `.mcp.json`
+(`CLAUDE.md` ไม่อยู่ในชุด copy แล้ว — มากับ `git clone` เอง)
 
 ### 4.2 หลังวาง `.claude/` แล้ว — **ตั้งให้อัตโนมัติแล้ว ไม่ต้องทำเอง**
 

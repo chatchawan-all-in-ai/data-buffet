@@ -40,7 +40,7 @@
 
 ## Companion tooling
 
-`.claude/` was rebuilt 2026-07-10 to point into this wiki: `CLAUDE.md` (session
+`.claude/` was rebuilt 2026-07-10 to point into this wiki: `CLAUDE.md` (repo root, tracked in git since 2026-09-01; session
 context), skills (`add-initial-table`, `add-validated-table`, `add-curated-table`,
 `add-dimension`, `add-fact-table`, `dataform-run`, `enable-cdc`,
 `backfill-dimension`, `fk-integrity-scan`, `data-quality-check`, `update-docs`,
