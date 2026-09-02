@@ -109,6 +109,14 @@ BEGIN
             mih.mihstatus_desc as mihStatusDesc,
             mih.mihCus,
             mih.mihNotes,
+            mih.mihDesc,
+            mih.mihKeydate,
+            mih.mihDelvdate,
+            mih.mihClearum,
+            mih.mihExtrasum,
+            mih.mihPer,
+            mih.mihBl,
+            ar.ar_scolb as StatusColorBg,
             order_status.OrderStatus
         FROM ${ref(databuffet.CURATED_MAC5, 'curated_mih')} as mih
         LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, 'ar_s')} as ar
@@ -154,6 +162,14 @@ BEGIN
         t1.mihMemoNew,
         t1.mihStatusDesc,
         t1.mihNotes,
+        t1.mihDesc,
+        t1.mihKeydate,
+        t1.mihDelvdate,
+        t1.mihClearum,
+        t1.mihExtrasum,
+        t1.mihPer,
+        t1.mihBl,
+        t1.StatusColorBg,
         t1.OrderStatus
     FROM source_data AS t1
     LEFT JOIN `${DimOrderTableRef}` AS t2
@@ -186,7 +202,15 @@ BEGIN
       T.memoExtract = S.memoExtract,
       T.mihMemoNew = S.mihMemoNew,
       T.mihNotes = S.mihNotes,
-      T.mihStatusDesc = S.mihStatusDesc
+      T.mihStatusDesc = S.mihStatusDesc,
+      T.mihDesc = S.mihDesc,
+      T.mihKeydate = S.mihKeydate,
+      T.mihDelvdate = S.mihDelvdate,
+      T.mihClearum = S.mihClearum,
+      T.mihExtrasum = S.mihExtrasum,
+      T.mihPer = S.mihPer,
+      T.mihBl = S.mihBl,
+      T.StatusColorBg = S.StatusColorBg
 
   -- กรณีไม่เจอข้อมูล (Insert)
   WHEN NOT MATCHED THEN
@@ -195,15 +219,19 @@ BEGIN
       companyID,
       mix_date, mihYear, mihMonth, mihDay, mihType, mihVnos, mihCus,
       mihJob, mihRef1, mihRef2, mihRef3, mihCancel, mihStatus, 
-      StatusName, memoExtract, mihMemoNew, mihNotes, 
-      mihStatusDesc, OrderStatus
+      StatusName, memoExtract, mihMemoNew, mihNotes,
+      mihStatusDesc, OrderStatus,
+      mihDesc, mihKeydate, mihDelvdate, mihClearum, mihExtrasum,
+      mihPer, mihBl, StatusColorBg
     )
     VALUES (
       S.OrderSK, S.CompanySK,
       S.companyID,
       S.mix_date, S.mihYear, S.mihMonth, S.mihDay, S.mihType, S.mihVnos, S.mihCus,
-      S.mihJob, S.mihRef1, S.mihRef2, S.mihRef3, S.mihCancel, S.mihStatus, 
-      S.StatusName, S.memoExtract, S.mihMemoNew, S.mihNotes, 
-      S.mihStatusDesc, S.OrderStatus
+      S.mihJob, S.mihRef1, S.mihRef2, S.mihRef3, S.mihCancel, S.mihStatus,
+      S.StatusName, S.memoExtract, S.mihMemoNew, S.mihNotes,
+      S.mihStatusDesc, S.OrderStatus,
+      S.mihDesc, S.mihKeydate, S.mihDelvdate, S.mihClearum, S.mihExtrasum,
+      S.mihPer, S.mihBl, S.StatusColorBg
     );
 END;

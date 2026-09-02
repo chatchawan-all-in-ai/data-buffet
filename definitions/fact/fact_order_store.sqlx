@@ -1,0 +1,138 @@
+config {
+    type: "table",
+    schema: databuffet.FACT_TABLE,
+    dependencies: ["dim_order", "dim_customer", "dim_product_master", "dim_company", "dim_store"],
+    tags: [databuffet.TAG_FACT_DAILY],
+    uniqueKey: ["FactOrderStoreSK"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["FactOrderStoreSK"]
+    },
+}
+
+js {
+    const DimOrderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_order",
+    };
+    const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
+
+    const DimCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer",
+    };
+    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
+
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+
+    const DimProductMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_master",
+    };
+    const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
+
+    const DimStoreTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_store",
+    };
+    const DimStoreTableRef = `${DimStoreTable.database}.${DimStoreTable.schema}.${DimStoreTable.name}`;
+}
+
+-- Query 1 "Order" -- grain = uniqueKey ของ mil (company_id, milType, milVnos, milListNo)
+-- เงื่อนไขคัดลอกจาก query ต้นฉบับตรง ๆ ไม่เพิ่มไม่ลด:
+--   mihType in ('PS')
+--   mihDesc not like '%PO.วางบิล%'
+--   milDesc not like 'โปรโมชั่น%'
+-- หมายเหตุ: ไม่ใส่ IFNULL ครอบสองเงื่อนไข like เพื่อรักษาพฤติกรรมเดิมของ query
+-- (แถวที่ desc เป็น NULL ถูกตัดออกเหมือนใน query ต้นฉบับ)
+
+WITH dim_order_dedup AS (
+  -- dim_order เก็บย้อนถึง 2006 และ MERGE ยึด (year, month, day, type, vnos, cus)
+  -- จึงกันไว้ก่อนไม่ให้ join แล้วแตกแถว -- pattern เดียวกับ dim_invoice.sqlx และ view_dim_invoice.sqlx
+  SELECT OrderSK, CompanySK, mihVnos
+  FROM `${DimOrderTableRef}`
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, mihVnos ORDER BY OrderSK DESC) = 1
+),
+
+dim_product_dedup AS (
+  -- วัด 2026-09-01: (CompanySK, ProductCode) ซ้ำ 36 code จาก 117,419 แถว
+  -- ถ้า join ตรง ๆ จะ fan out ทำให้ milQuan เฟ้อ
+  SELECT ProductSK, CompanySK, ProductCode
+  FROM `${DimProductMasterTableRef}`
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, ProductCode ORDER BY ProductSK) = 1
+),
+
+source_data AS (
+  SELECT
+    dim_com.CompanySK,
+    mih.company_id AS companyID,
+    SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) AS mix_date,
+    mih.mihYear,
+    mih.mihMonth,
+    mih.mihDay,
+
+    dim_ord.OrderSK,
+    dim_cust.CustomerSK,
+    dim_prod.ProductSK,
+    IFNULL(dim_sto.StoreSK, -1) AS StoreSK,
+
+    mil.milType,
+    mil.milVnos,
+    mil.milListNo,
+    mil.milStk,
+    mil.milDesc,
+    mil.milSto,
+
+    mih.mihPer AS SalespersonCode,
+    per.pernamet AS SalespersonName,
+
+    mil.milQuan
+  FROM ${ref(databuffet.CURATED_MAC5, 'curated_mil')} AS mil
+  INNER JOIN ${ref(databuffet.CURATED_MAC5, 'curated_mih')} AS mih
+    ON  mih.company_id = mil.company_id
+    AND mih.mihVnos    = mil.milVnos
+    AND mih.mihType    = mil.milType
+  LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+    ON mih.company_id = dim_com.companyID
+  LEFT JOIN dim_order_dedup AS dim_ord
+    ON  dim_ord.CompanySK = dim_com.CompanySK
+    AND dim_ord.mihVnos   = mih.mihVnos
+  LEFT JOIN `${DimCustomerTableRef}` AS dim_cust
+    ON  dim_cust.CompanySK = dim_com.CompanySK
+    AND dim_cust.debcode   = mih.mihCus
+  LEFT JOIN dim_product_dedup AS dim_prod
+    ON  dim_prod.CompanySK   = dim_com.CompanySK
+    AND dim_prod.ProductCode = mil.milStk
+  LEFT JOIN `${DimStoreTableRef}` AS dim_sto
+    ON  dim_sto.CompanySK = dim_com.CompanySK
+    AND dim_sto.StoreCode = mil.milSto
+  LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, 'per')} AS per
+    ON  per.company_id = mih.company_id
+    AND per.percode    = mih.mihPer
+  WHERE mih.mihType = 'PS'
+    AND mih.mihDesc NOT LIKE '%PO.วางบิล%'
+    AND mil.milDesc NOT LIKE 'โปรโมชั่น%'
+    AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay)))
+        >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
+)
+
+SELECT
+  ROW_NUMBER() OVER(
+    ORDER BY CompanySK, mihYear, mihMonth, mihDay, milType, milVnos, milListNo
+  ) AS FactOrderStoreSK,
+  source_data.*,
+  CURRENT_DATE('Asia/Bangkok') AS asatdate
+FROM source_data
+
+pre_operations {}
+
+post_operations {}

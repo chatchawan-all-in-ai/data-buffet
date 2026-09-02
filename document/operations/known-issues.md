@@ -341,3 +341,41 @@
   ค่า `status` มีแค่ `SUCCESS`/`FAILED` — ใช้ skill `check-runs` ดูสรุป
 - Tag ที่ประกาศแต่ไม่ใช้: `dimension_monthly`, `fact_monthly`, `fact_yearly`,
   `curated_full`, `curated_incremental`, `onetime`
+- **`cps` เคยกอง snapshot ทุกวันโดยไม่ dedup — แก้แล้ว 2026-09-01** (`105870e add pk key`):
+  เดิม `cps.sqlx` ประกาศ `uniqueKey: []` ทำให้ตารางมี **164,093,041 แถว** (ag01)
+  กระจายบน 238 `asatdate` ทั้งที่ข้อมูลจริงวันละ ~482K แถว · แก้โดยใส่
+  `uniqueKey: ["company_id","rowguid"]` เหลือ **3,429,587 แถว** (เล็กลง 48 เท่า)
+  `rowguid` unique เป๊ะ NULL 0 · ผลพลอยได้: วันที่ job ขนซ้ำ (2026-08-20 ขน 5 เท่า,
+  08-24 ขน 3 เท่า) ถูกยุบไปโดยโครงสร้าง ไม่ต้องตัดแถวซ้ำในชั้น fact อีก
+- **ห้าม dedup `cps` ต่อ key แบบตารางอื่น** — `mih`/`mil`/`deb` ใช้
+  `QUALIFY ROW_NUMBER() PARTITION BY pk ORDER BY asatdate DESC` ซึ่งถูกกับตารางที่แถว
+  อยู่ถาวร แต่ **แถวใน `cps` หายไปเมื่อตัดของครบ** · วัด 2026-09-01: key ตลอด 238 วัน
+  = 2,806,672 แต่วันล่าสุดมี 482,624 → dedup ต่อ key จะชุบชีวิตงานที่ปิดแล้ว 2.3 ล้านบรรทัด
+  ต้องใช้ `WHERE asatdate = MAX(asatdate)` ต่อบริษัท (ทำไว้แล้วใน `fact_backlog_store`)
+- **`dim_product_master` และ `dim_sale_representative` fan out เมื่อ join ด้วย natural key**
+  (วัด 2026-09-01): `dim_product_master` มี `(CompanySK, ProductCode)` distinct 117,383
+  จาก 117,419 แถว → **ซ้ำ 36 code** · `dim_sale_representative` มี
+  `(CompanySK, EmployeeID)` distinct 1,796 จาก 2,339 แถว → **ซ้ำ 543 แถว** เพราะเป็น
+  `UNION ALL` ของ mds block กับ ledger block · fact ที่ join ต้อง `QUALIFY ROW_NUMBER()`
+  ก่อน (ทำไว้แล้วใน `fact_*_store` ทั้งสามตัว) ส่วนพนักงานขายเลี่ยงไปใช้
+  `validated_mac5.per` ตรง ๆ ซึ่ง PK unique จริง
+- **`ar_sColB` / `ar_sColF` เก็บสีเป็น integer แบบ BGR ไม่ใช่ RGB** (ยืนยัน 2026-09-01):
+  MAC5 เป็นระบบสาย Delphi (`TColor` = `$00BBGGRR`) · `255` = แดง (ห้ามส่งสินค้า,
+  ยกเลิก Order), `65280` = เขียว (อนุมัติ), `65535` = เหลือง (รออนุมัติ)
+  แปลงด้วย `FORMAT("#%02X%02X%02X", MOD(c,256), MOD(DIV(c,256),256), MOD(DIV(c,65536),256))`
+  ถ้าอ่านเป็น RGB ตรง ๆ สีจะสลับแดง↔น้ำเงินกับหน้าจอ MAC5
+- **`is_store_*` ใน Query "ยอดจ่าย" ทับกันเองที่ prefix `MEMO-H`** — เอกสารที่เลขขึ้นต้น
+  `MEMO-H` ได้ทั้ง `is_store_ktb` และ `is_store_hy` เป็น TRUE พร้อมกัน เพราะ `'MEMO-H'`
+  ไม่อยู่ใน exclusion list ของ `p5` (มีแค่ MEMO-K/P/L/U) · **เก็บพฤติกรรมนี้ไว้ตามเดิม**
+  ใน `fact_invoice_store` (การตัดสินใจของเจ้าของงาน 2026-09-01 — เงื่อนไขจากระบบเดิม
+  ไม่แก้) · การสไลซ์สาขาจริงให้ใช้ `dim_store` ที่มาจาก `validated_mac5.sto` แทน
+  โดย `KTB` = ธนาคารกรุงไทย ไม่ใช่คลัง จึงไม่มีใน `sto` (แสดงเป็น "อื่นๆ" รอ desc)
+- **`curated_mil` ฝั่ง `IS` แตกบรรทัดตามสัดส่วนพนักงานขาย — ห้าม QUALIFY ทิ้ง**
+  (วัด 2026-09-01): `curated_mil` มี 4,344,147 แถวเทียบกับ `validated_mac5.mil` 4,339,108
+  → **เกิน 5,039 แถว** เพราะบรรทัดเดียวถูกแตกตาม `percent_sale` (70/30, 50/50)
+  โดย `milPer_raw` เก็บพนักงานคนเดิมไว้ · `miltype = 'PS'` ไม่มีปัญหานี้ (3,012,477 = distinct PK)
+  **ตัวเลขที่พิสูจน์**: `SUM(milQuan)` ของ curated ทั้งหมด = 22,209,217.12 เทียบกับ validated
+  22,209,216.72 (ต่างกัน 0.40 = เศษปัดจากการหารสัดส่วน) แต่ถ้า `QUALIFY ROW_NUMBER() = 1`
+  เหลือแถวเดียวจะได้ 22,199,705.31 → **qty หาย 9,512 และ `milSum` หาย 141 ล้าน**
+  ดังนั้น `fact_invoice_store` ใช้ grain ที่รวม `milPer` และเก็บ `percent_sale` ไว้
+  (การตัดสินใจของเจ้าของงาน 2026-09-01: "แตกยอดให้พนักงานขาย ไม่ต้องยุ่ง")

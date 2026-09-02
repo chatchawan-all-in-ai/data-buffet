@@ -42,7 +42,7 @@ GCS AVRO files (gs://file-raw-data)
         ▼                              ▼
 ┌─────────────────┐            ┌─────────────────┐
 │ DIMENSION       │            │ FACT            │
-│ (60 files, SCD) │◄───────────│ (9 fact tables) │
+│ (61 files, SCD) │◄───────────│ (12 fact tables)│
 └─────────────────┘            └─────────────────┘
    definitions/dimension/         definitions/fact/
         ▲          │                    │
@@ -70,8 +70,8 @@ unit.
 | **Initial** | `definitions/initial/` | 17 | Create raw external tables over GCS AVRO; bootstrap schemas & UDFs |
 | **Validated** | `definitions/validated/` | 138 | Clean, cast, dedup; one table per source object (143 files) |
 | **Curated** | `definitions/curated/` | 5 | Business-ready joins, enrichment, JSON parsing (8 files) |
-| **Dimension** | `definitions/dimension/` | 60 | Conformed dimensions with surrogate keys (MERGE + SCD intervals) |
-| **Fact** | `definitions/fact/` | 9 | Star-schema fact tables joined to dimensions (4-year retention) |
+| **Dimension** | `definitions/dimension/` | 61 | Conformed dimensions with surrogate keys (MERGE + SCD intervals) |
+| **Fact** | `definitions/fact/` | 12 | Star-schema fact tables joined to dimensions (4-year retention) |
 | **View** | `definitions/view/` | 32 | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` |
 | **CDC** | `definitions/cdc/` | 2 | Config-driven change log over validated tables |
 | **Process** | `definitions/process/` | 2 | AI address parsing + row-level security (`rls_customer360`) |

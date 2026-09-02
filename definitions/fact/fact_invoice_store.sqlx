@@ -1,0 +1,169 @@
+config {
+    type: "table",
+    schema: databuffet.FACT_TABLE,
+    dependencies: ["dim_order", "dim_customer", "dim_product_master", "dim_company", "dim_store"],
+    tags: [databuffet.TAG_FACT_DAILY],
+    uniqueKey: ["FactInvoiceStoreSK"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["FactInvoiceStoreSK"]
+    },
+}
+
+js {
+    const DimOrderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_order",
+    };
+    const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
+
+    const DimCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer",
+    };
+    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
+
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+
+    const DimProductMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_master",
+    };
+    const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
+
+    const DimStoreTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_store",
+    };
+    const DimStoreTableRef = `${DimStoreTable.database}.${DimStoreTable.schema}.${DimStoreTable.name}`;
+}
+
+-- Query 2 "ยอดจ่าย"
+-- grain = (company_id, milType, milVnos, milListNo, milPer)
+--
+-- curated_mil ฝั่ง IS แตกบรรทัดตามสัดส่วนพนักงานขาย (percent_sale) จึงมีมากกว่า
+-- validated_mac5.mil อยู่ 5,039 แถว (4,344,147 vs 4,339,108 -- วัด 2026-09-01)
+-- **ห้าม QUALIFY ทิ้ง** -- แถวเหล่านี้ไม่ใช่ข้อมูลซ้ำ วัดแล้ว SUM ทั้งหมดได้เท่ากับ
+-- validated เกือบเป๊ะ (qty 22,209,217.12 vs 22,209,216.72 -- ต่างกัน 0.40 คือเศษปัด
+-- จากการหารสัดส่วน) ถ้า QUALIFY เหลือแถวเดียวจะทำให้ qty หาย 9,512 และ milSum หาย 141 ล้าน
+-- milType 'PS' ไม่มีปัญหานี้ -- curated_mil ฝั่ง PS ไม่ซ้ำเลย (3,012,477 = distinct PK)
+--
+-- เงื่อนไขจาก query ต้นฉบับ: mihType in ('IS') เท่านั้น ไม่ขยายไป BS/AS/QS
+-- is_store_* 6 คอลัมน์คัดลอกมาจาก query ตรง ๆ ไม่แก้ (รวมพฤติกรรมที่เลขขึ้นต้น MEMO-H
+-- ติดทั้ง is_store_ktb และ is_store_hy -- เป็นของระบบเดิม ไม่ใช่ bug ที่นี่)
+-- StoreSK เป็นคนละเรื่องกับ is_store_* -- มาจาก milSto ที่ join กับ validated_mac5.sto
+
+WITH dim_order_dedup AS (
+  SELECT OrderSK, CompanySK, mihVnos
+  FROM `${DimOrderTableRef}`
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, mihVnos ORDER BY OrderSK DESC) = 1
+),
+
+dim_product_dedup AS (
+  -- (CompanySK, ProductCode) ซ้ำ 36 code -- กัน fan out
+  SELECT ProductSK, CompanySK, ProductCode
+  FROM `${DimProductMasterTableRef}`
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, ProductCode ORDER BY ProductSK) = 1
+),
+
+raw_table AS (
+  SELECT
+    dim_com.CompanySK,
+    mih.company_id AS companyID,
+    SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) AS mix_date,
+    mih.mihYear,
+    mih.mihMonth,
+    mih.mihDay,
+    mih.mihVnos,
+
+    dim_ord.OrderSK,
+    dim_cust.CustomerSK,
+    dim_prod.ProductSK,
+    IFNULL(dim_sto.StoreSK, -1) AS StoreSK,
+
+    mil.milType,
+    mil.milListNo,
+    mil.milStk,
+    mil.milDesc,
+    mil.milSto,
+    mil.milLinkVcno,
+    mil.milLinkVcType,
+
+    -- ส่วนแบ่งพนักงานขาย -- เป็นเหตุผลที่บรรทัดเดียวมีได้หลายแถว
+    mil.milPer,
+    mil.percent_sale,
+
+    mil.milQuan,
+
+    SUBSTR(IFNULL(mih.mihVnos, ''), 1, 1) AS p1,
+    SUBSTR(IFNULL(mih.mihVnos, ''), 1, 2) AS p2,
+    SUBSTR(IFNULL(mih.mihVnos, ''), 1, 3) AS p3,
+    SUBSTR(IFNULL(mih.mihVnos, ''), 1, 4) AS p4,
+    SUBSTR(IFNULL(mih.mihVnos, ''), 1, 5) AS p5
+  FROM ${ref(databuffet.CURATED_MAC5, 'curated_mil')} AS mil
+  INNER JOIN ${ref(databuffet.CURATED_MAC5, 'curated_mih')} AS mih
+    ON  mih.company_id = mil.company_id
+    AND mih.mihVnos    = mil.milVnos
+    AND mih.mihType    = mil.milType
+  LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+    ON mih.company_id = dim_com.companyID
+  LEFT JOIN dim_order_dedup AS dim_ord
+    -- โยงกลับใบสั่งขาย เฉพาะเมื่อ link ชี้ไปที่เอกสารชนิด PS
+    ON  dim_ord.CompanySK = dim_com.CompanySK
+    AND dim_ord.mihVnos   = mil.milLinkVcno
+    AND mil.milLinkVcType = 'PS'
+  LEFT JOIN `${DimCustomerTableRef}` AS dim_cust
+    ON  dim_cust.CompanySK = dim_com.CompanySK
+    AND dim_cust.debcode   = mih.mihCus
+  LEFT JOIN dim_product_dedup AS dim_prod
+    ON  dim_prod.CompanySK   = dim_com.CompanySK
+    AND dim_prod.ProductCode = mil.milStk
+  LEFT JOIN `${DimStoreTableRef}` AS dim_sto
+    ON  dim_sto.CompanySK = dim_com.CompanySK
+    AND dim_sto.StoreCode = mil.milSto
+  WHERE mih.mihType = 'IS'
+    AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay)))
+        >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
+),
+
+final AS (
+  SELECT
+    * EXCEPT(p1, p2, p3, p4, p5),
+    NOT (
+      p1 IN ('P','K','L','U','H')
+      OR p2 IN ('TK','TP','TL','TU','TH')
+      OR p3 IN ('IKK','IPK','ILP','IUB','IHY')
+      OR p4 IN ('TWPK','TWKK','TWLP','TWUB','TWHY',
+                'CH-H','CH-K','CH-P','CH-L','CH-U',
+                'RT-K','RT-P','RT-L','RT-U','RT-H',
+                'HPHY','HPKK','HPPK','HPLP','HPUB')
+      OR p5 IN ('MEMO-K','MEMO-P','MEMO-L','MEMO-U')
+    ) AS is_store_ktb,
+    (p1 = 'K' OR p2 = 'TK' OR p3 = 'IKK' OR p4 IN ('CH-K','TWKK','HPKK','RT-K') OR p5 = 'MEMO-K') AS is_store_kk,
+    (p1 = 'P' OR p2 = 'TP' OR p3 = 'IPK' OR p4 IN ('CH-P','TWPK','HPPK','RT-P') OR p5 = 'MEMO-P') AS is_store_pk,
+    (p1 = 'L' OR p2 = 'TL' OR p3 = 'ILP' OR p4 IN ('CH-L','TWLP','HPLP','RT-L') OR p5 = 'MEMO-L') AS is_store_lp,
+    (p1 = 'U' OR p2 = 'TU' OR p3 = 'IUB' OR p4 IN ('CH-U','TWUB','HPUB','RT-U') OR p5 = 'MEMO-U') AS is_store_ub,
+    (p1 = 'H' OR p2 = 'TH' OR p3 = 'IHY' OR p4 IN ('CH-H','TWHY','HPHY','RT-H') OR p5 = 'MEMO-H') AS is_store_hy
+  FROM raw_table
+)
+
+SELECT
+  ROW_NUMBER() OVER(
+    ORDER BY CompanySK, mihYear, mihMonth, mihDay, milType, mihVnos, milListNo, milPer
+  ) AS FactInvoiceStoreSK,
+  final.*,
+  CURRENT_DATE('Asia/Bangkok') AS asatdate
+FROM final
+
+pre_operations {}
+
+post_operations {}

@@ -22,7 +22,7 @@ CURATED      definitions/curated/     Business joins, JSON parsing, split-sale (
       ├────────────────────────────┐
       ▼                            ▼
 DIMENSION    definitions/dimension/ FACT    definitions/fact/
-(60 files — SK dims)         ◄──── (9 files — star-schema joins)
+(61 files — SK dims)         ◄──── (12 files — star-schema joins)
       │                            │
       └──────────────┬─────────────┘
                      ▼

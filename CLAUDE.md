@@ -82,8 +82,8 @@ work on Opus, pattern-following work on Sonnet):
 | Initial | `definitions/initial/` | 17 | `raw_*`, `function_dataset` | operations (external tables, UDFs) |
 | Validated | `definitions/validated/` | 143 | `validated_<source>` | incremental / table + QUALIFY dedup |
 | Curated | `definitions/curated/` | 8 | `curated_<source>` | incremental (+ post_operations) |
-| Dimension | `definitions/dimension/` | 60 | `dimension_table` | **table rebuild** (34 mds + 11 other) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
-| Fact | `definitions/fact/` | 9 | `fact_table` | table rebuild / operations upsert — **no MERGE** |
+| Dimension | `definitions/dimension/` | 61 | `dimension_table` | **table rebuild** (34 mds + 12 other) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
+| Fact | `definitions/fact/` | 12 | `fact_table` | table rebuild / operations upsert — **no MERGE** |
 | View | `definitions/view/` | 32 | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |
 | CDC | `definitions/cdc/` | 2 | `cdc_dataset` | operations, generated from `cdc-config.json` |
 | Process | `definitions/process/` | 2 | `process_dataset` | `deb_address_data` (`AI.GENERATE` gated on CDC) + `rls_customer360` (RLS access map, `type: "table"`) |

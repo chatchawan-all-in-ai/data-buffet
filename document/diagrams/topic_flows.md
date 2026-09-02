@@ -26,7 +26,7 @@ layer (validated/curated/dimension/fact/…) as in
 11. Calendar / date spine — ปฏิทิน/วันหยุด
 12. Reference / misc — ตารางอ้างอิงอื่นๆ
 
-**Uncovered dim/fact/curated objects (not in any topic):** —
+**Uncovered dim/fact/curated objects (not in any topic):** `dim_store`, `fact_backlog_store`, `fact_invoice_store`, `fact_order_store`
 
 ---
 
@@ -60,13 +60,16 @@ flowchart LR
     dim_section_manager_last["dim_section_manager_last"]
     update_sk_sale_rep_group["update_sk_sale_rep_group"]
   end
-  subgraph fact["fact (9)"]
+  subgraph fact["fact (12)"]
+    fact_backlog_store["fact_backlog_store"]
     fact_chq["fact_chq"]
     fact_delivery["fact_delivery"]
     fact_invoice["fact_invoice"]
+    fact_invoice_store["fact_invoice_store"]
     fact_mir_rs["fact_mir_rs"]
     fact_mir_vs["fact_mir_vs"]
     fact_order["fact_order"]
+    fact_order_store["fact_order_store"]
     fact_quotation["fact_quotation"]
     fact_transaction_delivery["fact_transaction_delivery"]
     fact_transcation["fact_transcation"]
@@ -87,12 +90,15 @@ flowchart LR
   dim_company --> dim_section_last
   dim_company --> dim_section_manager
   dim_company --> dim_section_manager_last
+  dim_company --> fact_backlog_store
   dim_company --> fact_chq
   dim_company --> fact_delivery
   dim_company --> fact_invoice
+  dim_company --> fact_invoice_store
   dim_company --> fact_mir_rs
   dim_company --> fact_mir_vs
   dim_company --> fact_order
+  dim_company --> fact_order_store
   dim_company --> fact_quotation
   dim_company --> fact_transaction_delivery
   dim_department --> dim_department_last
@@ -123,13 +129,14 @@ flowchart LR
   fact_transaction_delivery --> fact_delivery
   per --> dim_sale_representative
   per --> dim_sale_representative_last
+  per --> fact_order_store
   classDef validated fill:#cfe8ff,stroke:#4a90d9,color:#111;
   classDef dimension fill:#ffe0b3,stroke:#d98f2f,color:#111;
   classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
   class per validated;
   class dim_change_district,dim_company,dim_department,dim_department_last,dim_director,dim_director_last,dim_region,dim_region_last,dim_region_manager,dim_region_manager_last,dim_sale_representative,dim_sale_representative_last,dim_section,dim_section_last,dim_section_manager,dim_section_manager_last,update_sk_sale_rep_group dimension;
-  class fact_chq,fact_delivery,fact_invoice,fact_mir_rs,fact_mir_vs,fact_order,fact_quotation,fact_transaction_delivery,fact_transcation fact;
+  class fact_backlog_store,fact_chq,fact_delivery,fact_invoice,fact_invoice_store,fact_mir_rs,fact_mir_vs,fact_order,fact_order_store,fact_quotation,fact_transaction_delivery,fact_transcation fact;
 ```
 
 ---
@@ -285,12 +292,15 @@ flowchart LR
     dim_status_not_receive["dim_status_not_receive"]
     dim_weight_score["dim_weight_score"]
   end
-  subgraph fact["fact (7)"]
+  subgraph fact["fact (10)"]
+    fact_backlog_store["fact_backlog_store"]
     fact_chq["fact_chq"]
     fact_invoice["fact_invoice"]
+    fact_invoice_store["fact_invoice_store"]
     fact_mir_rs["fact_mir_rs"]
     fact_mir_vs["fact_mir_vs"]
     fact_order["fact_order"]
+    fact_order_store["fact_order_store"]
     fact_quotation["fact_quotation"]
     fact_transcation["fact_transcation"]
   end
@@ -308,8 +318,11 @@ flowchart LR
   curated_mih --> dim_aging
   curated_mih --> dim_customer_grade
   curated_mih --> dim_group_customer_grade
+  curated_mih --> fact_backlog_store
+  curated_mih --> fact_invoice_store
   curated_mih --> fact_mir_rs
   curated_mih --> fact_mir_vs
+  curated_mih --> fact_order_store
   customer_profile --> dim_customer
   customer_profile_nature_business --> dim_customer
   customer_status --> dim_customer
@@ -337,11 +350,14 @@ flowchart LR
   dim_company --> dim_payment_receive_score
   dim_company --> dim_status_not_receive
   dim_company --> dim_weight_score
+  dim_company --> fact_backlog_store
   dim_company --> fact_chq
   dim_company --> fact_invoice
+  dim_company --> fact_invoice_store
   dim_company --> fact_mir_rs
   dim_company --> fact_mir_vs
   dim_company --> fact_order
+  dim_company --> fact_order_store
   dim_company --> fact_quotation
   dim_contact_score --> dim_customer_grade
   dim_contact_score --> dim_group_customer_grade
@@ -349,11 +365,14 @@ flowchart LR
   dim_customer --> dim_customer_grade
   dim_customer --> dim_group_customer
   dim_customer --> dim_group_customer_grade
+  dim_customer --> fact_backlog_store
   dim_customer --> fact_chq
   dim_customer --> fact_invoice
+  dim_customer --> fact_invoice_store
   dim_customer --> fact_mir_rs
   dim_customer --> fact_mir_vs
   dim_customer --> fact_order
+  dim_customer --> fact_order_store
   dim_customer --> fact_quotation
   dim_customer --> fact_transcation
   dim_grade --> dim_customer_grade
@@ -393,7 +412,7 @@ flowchart LR
   class chq,cql,customer_profile,customer_profile_nature_business,customer_status,customer_type,deb,match_customer,mie,mih,mir,nature_business validated;
   class curated_mih curated;
   class dim_aging,dim_avg_collection_score,dim_bounce_cheque_score,dim_calendar,dim_company,dim_contact_score,dim_customer,dim_customer_grade,dim_grade,dim_group_customer,dim_group_customer_grade,dim_payment_receive_score,dim_status_not_receive,dim_weight_score dimension;
-  class fact_chq,fact_invoice,fact_mir_rs,fact_mir_vs,fact_order,fact_quotation,fact_transcation fact;
+  class fact_backlog_store,fact_chq,fact_invoice,fact_invoice_store,fact_mir_rs,fact_mir_vs,fact_order,fact_order_store,fact_quotation,fact_transcation fact;
   class deb_address_data process;
 ```
 
@@ -523,8 +542,11 @@ flowchart LR
     dim_region["dim_region"]
     dim_stk_mkt["dim_stk_mkt"]
   end
-  subgraph fact["fact (4)"]
+  subgraph fact["fact (7)"]
+    fact_backlog_store["fact_backlog_store"]
+    fact_invoice_store["fact_invoice_store"]
     fact_order["fact_order"]
+    fact_order_store["fact_order_store"]
     fact_quotation["fact_quotation"]
     fact_transaction_delivery["fact_transaction_delivery"]
     fact_transcation["fact_transcation"]
@@ -539,11 +561,17 @@ flowchart LR
   dim_company --> dim_rebate
   dim_company --> dim_region
   dim_company --> dim_stk_mkt
+  dim_company --> fact_backlog_store
+  dim_company --> fact_invoice_store
   dim_company --> fact_order
+  dim_company --> fact_order_store
   dim_company --> fact_quotation
   dim_company --> fact_transaction_delivery
   dim_product_master --> dim_pump_information
+  dim_product_master --> fact_backlog_store
+  dim_product_master --> fact_invoice_store
   dim_product_master --> fact_order
+  dim_product_master --> fact_order_store
   dim_product_master --> fact_quotation
   dim_product_master --> fact_transaction_delivery
   dim_product_master --> fact_transcation
@@ -575,7 +603,7 @@ flowchart LR
   class brand,category__mastersku,product,product_detail,stg,stk,unit,vendor validated;
   class curated_product,product_for_aisearch curated;
   class dim_company,dim_product_master,dim_product_master_fc,dim_product_mkt,dim_product_mkt_director,dim_pump_information,dim_rebate,dim_region,dim_stk_mkt dimension;
-  class fact_order,fact_quotation,fact_transaction_delivery,fact_transcation fact;
+  class fact_backlog_store,fact_invoice_store,fact_order,fact_order_store,fact_quotation,fact_transaction_delivery,fact_transcation fact;
 ```
 
 ---
@@ -622,12 +650,15 @@ flowchart LR
     dim_stk_mkt["dim_stk_mkt"]
     dim_target_product_group_by_sale_dayofwork["dim_target_product_group_by_sale_dayofwork"]
   end
-  subgraph fact["fact (8)"]
+  subgraph fact["fact (11)"]
+    fact_backlog_store["fact_backlog_store"]
     fact_delivery["fact_delivery"]
     fact_invoice["fact_invoice"]
+    fact_invoice_store["fact_invoice_store"]
     fact_mir_rs["fact_mir_rs"]
     fact_mir_vs["fact_mir_vs"]
     fact_order["fact_order"]
+    fact_order_store["fact_order_store"]
     fact_quotation["fact_quotation"]
     fact_transaction_delivery["fact_transaction_delivery"]
     fact_transcation["fact_transcation"]
@@ -646,15 +677,20 @@ flowchart LR
   curated_mih --> Transaction_Data_Mart
   curated_mih --> dim_invoice
   curated_mih --> dim_order
+  curated_mih --> fact_backlog_store
   curated_mih --> fact_delivery
+  curated_mih --> fact_invoice_store
   curated_mih --> fact_mir_rs
   curated_mih --> fact_mir_vs
+  curated_mih --> fact_order_store
   curated_mil --> Transaction_Data_Mart
   curated_mil --> dim_invoice
   curated_mil --> dim_order
   curated_mil --> fact_delivery
   curated_mil --> fact_invoice
+  curated_mil --> fact_invoice_store
   curated_mil --> fact_order
+  curated_mil --> fact_order_store
   curated_mil --> fact_transaction_delivery
   deb --> dim_customer
   deb --> fact_delivery
@@ -681,19 +717,25 @@ flowchart LR
   dim_company --> dim_section
   dim_company --> dim_section_manager
   dim_company --> dim_stk_mkt
+  dim_company --> fact_backlog_store
   dim_company --> fact_delivery
   dim_company --> fact_invoice
+  dim_company --> fact_invoice_store
   dim_company --> fact_mir_rs
   dim_company --> fact_mir_vs
   dim_company --> fact_order
+  dim_company --> fact_order_store
   dim_company --> fact_quotation
   dim_company --> fact_transaction_delivery
   dim_cost_group --> fact_transcation
   dim_cost_stk --> fact_transcation
+  dim_customer --> fact_backlog_store
   dim_customer --> fact_invoice
+  dim_customer --> fact_invoice_store
   dim_customer --> fact_mir_rs
   dim_customer --> fact_mir_vs
   dim_customer --> fact_order
+  dim_customer --> fact_order_store
   dim_customer --> fact_quotation
   dim_customer --> fact_transcation
   dim_department --> dim_target_product_group_by_sale_dayofwork
@@ -705,9 +747,15 @@ flowchart LR
   dim_invoice --> fact_mir_vs
   dim_invoice --> fact_transaction_delivery
   dim_order --> dim_invoice
+  dim_order --> fact_backlog_store
+  dim_order --> fact_invoice_store
   dim_order --> fact_order
+  dim_order --> fact_order_store
   dim_payment --> fact_transcation
+  dim_product_master --> fact_backlog_store
+  dim_product_master --> fact_invoice_store
   dim_product_master --> fact_order
+  dim_product_master --> fact_order_store
   dim_product_master --> fact_quotation
   dim_product_master --> fact_transaction_delivery
   dim_product_master --> fact_transcation
@@ -748,7 +796,7 @@ flowchart LR
   class ap_s,ar_s,deb,mih,mih2,mil validated;
   class curated_mih,curated_mil curated;
   class dim_change_district,dim_channel_cost,dim_company,dim_cost_group,dim_cost_stk,dim_customer,dim_department,dim_director,dim_invoice,dim_order,dim_payment,dim_product_master,dim_product_mkt,dim_region,dim_region_manager,dim_sale_representative,dim_section,dim_section_manager,dim_stk_mkt,dim_target_product_group_by_sale_dayofwork dimension;
-  class fact_delivery,fact_invoice,fact_mir_rs,fact_mir_vs,fact_order,fact_quotation,fact_transaction_delivery,fact_transcation fact;
+  class fact_backlog_store,fact_delivery,fact_invoice,fact_invoice_store,fact_mir_rs,fact_mir_vs,fact_order,fact_order_store,fact_quotation,fact_transaction_delivery,fact_transcation fact;
   class Transaction_Data_Mart,view_deb_address_data,view_dim_channel view;
 ```
 

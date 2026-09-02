@@ -1,9 +1,9 @@
-# Dimension Inventory — all 60 files
+# Dimension Inventory — all 61 files
 
 > **LLM context**: SK = surrogate key column; NK = natural/business key. Most dims
 > carry `CompanySK` FK from `dim_company`.
 > Groups since 2026-07-20: (a) mds **full daily rebuild** (34 — SKs regenerate daily),
-> (a2) mds MERGE legacy (2), (b) lake MERGE (10), (c) other full rebuild (11), (e) other (3).
+> (a2) mds MERGE legacy (2), (b) lake MERGE (10), (c) other full rebuild (12), (e) other (3).
 
 ## Group (a) — mds dims (36 total: 34 full rebuild + 2 MERGE legacy)
 
@@ -60,6 +60,7 @@ All depend on `dim_company` except `dim_company` (deps `[]`) and `dim_holiday` (
 | dim_customer | CustomerSK | validated_mac5 (match_customer, deb), validated_cis360 (customer_profile/status/type/nature_business), view_deb_address_data | dim_company |
 | dim_invoice | InvoiceSK | curated_mih, ar_s/ap_s, curated_mil | dim_company, dim_order |
 | dim_order | OrderSK | curated_mih, ar_s, curated_mil | dim_company |
+| ↳ 2026-09-01 | เพิ่ม 8 คอลัมน์ (ไม่แตะ logic/เงื่อนไข/SK): `mihDesc` `mihKeydate` `mihDelvdate` `mihClearum` `mihExtrasum` `mihPer` `mihBl` จาก `curated_mih` ที่อ่านอยู่แล้ว + `StatusColorBg` (`ar_scolb`) จาก `ar_s` ที่ join อยู่แล้ว | ต้อง `ALTER TABLE ... ADD COLUMN` บน BigQuery ก่อน (type `operations`, ตาราง pre-exist) · `view_dim_order` ทำ `SELECT ord.*` จึงได้ 8 คอลัมน์นี้ไปด้วยอัตโนมัติ · 49,719 แถวที่เก่ากว่า window 4 ปีจะเป็น NULL ถาวร | consumer: `fact_order_store`, `fact_invoice_store`, `fact_backlog_store` |
 | dim_delivery | DeliverySK | curated_mil, ttrip/ttrip_document/tdelivery, deb, curated_mih | dim_company |
 | dim_project | ProjectSK | validated_mac5.tbook_profilecomp | dim_company |
 | dim_quotation | QuotationSK | curated_tbook_quotation, tbook_quodetail, curated_mih/mil | dim_company, dim_project |
@@ -68,7 +69,7 @@ All depend on `dim_company` except `dim_company` (deps `[]`) and `dim_holiday` (
 | dim_group_customer | GroupCustomerSK | dim_customer | dim_customer |
 | dim_group_customer_grade | GroupCustomerGradeSK | deb, chq, cql, mie, mir, mih, curated_mih | dim_calendar, dim_customer, dim_group_customer + score dims |
 
-## Group (c) — full rebuild `type: "table"` (11)
+## Group (c) — full rebuild `type: "table"` (12)
 
 | File | SK | Notes |
 |---|---|---|
@@ -76,6 +77,7 @@ All depend on `dim_company` except `dim_company` (deps `[]`) and `dim_holiday` (
 | dim_department_last / dim_director_last / dim_region_last / dim_region_manager_last / dim_section_last / dim_section_manager_last / dim_sale_representative_last | `<X>SK` via ROW_NUMBER | Latest SCD row per entity; NULL FK SKs backfilled by `update_sk_sale_rep_group` |
 | dim_target_product_group_by_sale | TargetBySaleSK | Multi-CTE join of target/rate/report/product-mkt dims + `_last` family |
 | dim_target_product_group_by_sale_dayofwork | TargetBySaleDayofworkSK | joins dim_calendar (working-day expansion); daily full rebuild, self-heals |
+| dim_store | StoreSK · **NK = company_id + stoCode** | คลัง/สาขาจาก `validated_mac5.sto` (601 แถว ag01) · `StoreGroup` (`stogroup`) เป็นชั้นที่ใช้สไลซ์ — KK ขอนแก่น, LP ลำพูน, HY หาดใหญ่, UB อุบลราชธานี, PK ภูเก็ต · `UNION ALL` แถว Unknown `StoreSK = -1` รับรหัสที่ไม่มีใน `sto` (pattern เดียวกับ `dim_stk_mkt`) · consumer: `fact_order_store` / `fact_invoice_store` / `fact_backlog_store` ต่อด้วย `milSto` / `cpsSto` (เพิ่ม 2026-09-01) |
 | dim_pump_information | PumpSK · **NK = CompanySK + milstk + RegionID + FlagNewProductMKT** | **อ่านจาก `fact_transcation`** (ไม่ใช่ mds) → `PumpSegment`; PS1 + FlagNewProductMKT → `dim_product_mkt.Segment`, นอกนั้น → `view_dim_product_master.PumpSegment` (เพิ่ม 2026-08-26) · consumer: `view_fact_transcation` join กลับด้วย NK 4 ตัว (ไม่ persist PumpSK) · **`CompanySK` จำเป็น — `milstk` unique แค่ภายในบริษัท** |
 
 ## Group (e) — other operations (3)
