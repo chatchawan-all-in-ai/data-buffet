@@ -78,18 +78,16 @@ dim_product_dedup AS (
 raw_table AS (
   SELECT
     dim_com.CompanySK,
-    mih.company_id AS companyID,
+    mih.company_id,
     SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) AS mix_date,
     mih.mihYear,
     mih.mihMonth,
     mih.mihDay,
     mih.mihVnos,
-
     dim_ord.OrderSK,
     dim_cust.CustomerSK,
     dim_prod.ProductSK,
     IFNULL(dim_sto.StoreSK, -1) AS StoreSK,
-
     mil.milType,
     mil.milListNo,
     mil.milStk,
@@ -97,13 +95,9 @@ raw_table AS (
     mil.milSto,
     mil.milLinkVcno,
     mil.milLinkVcType,
-
-    -- ส่วนแบ่งพนักงานขาย -- เป็นเหตุผลที่บรรทัดเดียวมีได้หลายแถว
+    mil.milQuan,
     mil.milPer,
     mil.percent_sale,
-
-    mil.milQuan,
-
     SUBSTR(IFNULL(mih.mihVnos, ''), 1, 1) AS p1,
     SUBSTR(IFNULL(mih.mihVnos, ''), 1, 2) AS p2,
     SUBSTR(IFNULL(mih.mihVnos, ''), 1, 3) AS p3,

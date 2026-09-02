@@ -89,24 +89,21 @@ dim_product_dedup AS (
 source_data AS (
   SELECT
     dim_com.CompanySK,
-    mih.company_id AS companyID,
+    mih.company_id,
     SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) AS sDate,
     mih.mihYear,
     mih.mihMonth,
     mih.mihDay,
-
     dim_ord.OrderSK,
     dim_cust.CustomerSK,
     dim_prod.ProductSK,
     IFNULL(dim_sto.StoreSK, -1) AS StoreSK,
-
     cps.cpsVnosID,
     cps.cpsCusID,
     cps.cpsStkID,
     cps.cpsSto,
-
-    SUM(cps.cpsStkREQ)                        AS qty_requested,
-    SUM(cps.cpsStkCUT1)                       AS qty_cut,
+    SUM(cps.cpsStkREQ)                        AS cpsStkREQ,
+    SUM(cps.cpsStkCUT1)                       AS cpsStkCUT1,
     SUM(cps.cpsStkREQ) - SUM(cps.cpsStkCUT1)  AS qty
   FROM ${ref(databuffet.CURATED_MAC5, 'curated_mih')} AS mih
   INNER JOIN cps_latest AS cps
@@ -132,7 +129,7 @@ source_data AS (
     AND mih.mihClearUM  = 0
     AND mih.mihExtraSUM = 0
   GROUP BY
-    CompanySK, companyID, sDate, mihYear, mihMonth, mihDay,
+    CompanySK, company_id, sDate, mihYear, mihMonth, mihDay,
     OrderSK, CustomerSK, ProductSK, StoreSK,
     cpsVnosID, cpsCusID, cpsStkID, cpsSto
 )

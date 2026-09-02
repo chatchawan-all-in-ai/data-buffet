@@ -74,28 +74,24 @@ dim_product_dedup AS (
 source_data AS (
   SELECT
     dim_com.CompanySK,
-    mih.company_id AS companyID,
+    mih.company_id,
     SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) AS mix_date,
     mih.mihYear,
     mih.mihMonth,
     mih.mihDay,
-
     dim_ord.OrderSK,
     dim_cust.CustomerSK,
     dim_prod.ProductSK,
     IFNULL(dim_sto.StoreSK, -1) AS StoreSK,
-
     mil.milType,
     mil.milVnos,
     mil.milListNo,
     mil.milStk,
     mil.milDesc,
     mil.milSto,
-
-    mih.mihPer AS SalespersonCode,
-    per.pernamet AS SalespersonName,
-
-    mil.milQuan
+    mil.milQuan,
+    mih.mihPer,
+    per.pernamet
   FROM ${ref(databuffet.CURATED_MAC5, 'curated_mil')} AS mil
   INNER JOIN ${ref(databuffet.CURATED_MAC5, 'curated_mih')} AS mih
     ON  mih.company_id = mil.company_id
