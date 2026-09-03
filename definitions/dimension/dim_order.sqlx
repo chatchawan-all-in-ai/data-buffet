@@ -115,6 +115,7 @@ BEGIN
             mih.mihClearum,
             mih.mihExtrasum,
             mih.mihPer,
+            per.pernamet,
             mih.mihBl,
             ar.ar_scolb as StatusColorBg,
             order_status.OrderStatus
@@ -122,6 +123,9 @@ BEGIN
         LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, 'ar_s')} as ar
             on mih.mihStatus = ar.ar_scode
             AND mih.company_id = ar.company_id
+        LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, 'per')} as per
+            on mih.mihPer = per.percode
+            AND mih.company_id = per.company_id
         LEFT JOIN order_status as order_status
             on order_status.milvnos = mih.mihVnos
             and order_status.company_id = mih.company_id
@@ -168,6 +172,7 @@ BEGIN
         t1.mihClearum,
         t1.mihExtrasum,
         t1.mihPer,
+        t1.pernamet,
         t1.mihBl,
         t1.StatusColorBg,
         t1.OrderStatus
@@ -209,6 +214,7 @@ BEGIN
       T.mihClearum = S.mihClearum,
       T.mihExtrasum = S.mihExtrasum,
       T.mihPer = S.mihPer,
+      T.pernamet = S.pernamet,
       T.mihBl = S.mihBl,
       T.StatusColorBg = S.StatusColorBg
 
@@ -222,7 +228,7 @@ BEGIN
       StatusName, memoExtract, mihMemoNew, mihNotes,
       mihStatusDesc, OrderStatus,
       mihDesc, mihKeydate, mihDelvdate, mihClearum, mihExtrasum,
-      mihPer, mihBl, StatusColorBg
+      mihPer, pernamet, mihBl, StatusColorBg
     )
     VALUES (
       S.OrderSK, S.CompanySK,
@@ -232,6 +238,6 @@ BEGIN
       S.StatusName, S.memoExtract, S.mihMemoNew, S.mihNotes,
       S.mihStatusDesc, S.OrderStatus,
       S.mihDesc, S.mihKeydate, S.mihDelvdate, S.mihClearum, S.mihExtrasum,
-      S.mihPer, S.mihBl, S.StatusColorBg
+      S.mihPer, S.pernamet, S.mihBl, S.StatusColorBg
     );
 END;

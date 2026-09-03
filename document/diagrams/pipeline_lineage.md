@@ -122,14 +122,13 @@ Every `fact_*` table and the dimensions / curated tables it joins.
 
 ```mermaid
 flowchart LR
-  subgraph validated["validated (11)"]
+  subgraph validated["validated (10)"]
     chq["chq"]
     cps["cps"]
     cql["cql"]
     deb["deb"]
     mie["mie"]
     mir["mir"]
-    per["per"]
     tbook_quodetail["tbook_quodetail"]
     tdelivery["tdelivery"]
     ttrip["ttrip"]
@@ -269,7 +268,6 @@ flowchart LR
   mie --> fact_mir_vs
   mir --> fact_mir_rs
   mir --> fact_mir_vs
-  per --> fact_order_store
   tbook_quodetail --> fact_quotation
   tdelivery --> fact_delivery
   ttrip --> fact_delivery
@@ -282,7 +280,7 @@ flowchart LR
   classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
   classDef view fill:#cfeae6,stroke:#3a9d94,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
-  class chq,cps,cql,deb,mie,mir,per,tbook_quodetail,tdelivery,ttrip,ttrip_document validated;
+  class chq,cps,cql,deb,mie,mir,tbook_quodetail,tdelivery,ttrip,ttrip_document validated;
   class curated_mih,curated_mil curated;
   class dim_change_district,dim_channel_cost,dim_collection_status,dim_company,dim_cost_group,dim_cost_stk,dim_customer,dim_delivery,dim_department,dim_director,dim_invoice,dim_order,dim_payment,dim_product_master,dim_product_mkt,dim_quotation,dim_region,dim_region_manager,dim_sale_representative,dim_section,dim_section_manager,dim_stk_mkt,dim_store,dim_target_product_group_by_sale_dayofwork dimension;
   class fact_backlog_store,fact_chq,fact_delivery,fact_invoice,fact_invoice_store,fact_mir_rs,fact_mir_vs,fact_order,fact_order_store,fact_quotation,fact_transaction_delivery,fact_transcation fact;
@@ -645,9 +643,10 @@ flowchart LR
   mir --> fact_mir_rs
   mir --> fact_mir_vs
   nature_business --> dim_customer
+  per --> dim_invoice
+  per --> dim_order
   per --> dim_sale_representative
   per --> dim_sale_representative_last
-  per --> fact_order_store
   product --> curated_product
   product --> dim_product_master
   product_detail --> curated_product

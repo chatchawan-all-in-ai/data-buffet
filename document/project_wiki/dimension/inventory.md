@@ -58,8 +58,10 @@ All depend on `dim_company` except `dim_company` (deps `[]`) and `dim_holiday` (
 | File | SK | Sources | Deps |
 |---|---|---|---|
 | dim_customer | CustomerSK | validated_mac5 (match_customer, deb), validated_cis360 (customer_profile/status/type/nature_business), view_deb_address_data | dim_company |
-| dim_invoice | InvoiceSK | curated_mih, ar_s/ap_s, curated_mil | dim_company, dim_order |
-| dim_order | OrderSK | curated_mih, ar_s, curated_mil | dim_company |
+| dim_invoice | InvoiceSK | curated_mih, ar_s/ap_s, curated_mil, per | dim_company, dim_order |
+| ↳ 2026-09-03 | เพิ่ม `pernamet` (ชื่อพนักงานขาย จาก `validated_mac5.per` join `mihPer` = `percode`) | ต้อง `ALTER TABLE ... ADD COLUMN` + `UPDATE` backfill ก่อน (สคริปต์ `add_pernamet.sql`) · `per` คีย์ `(company_id, percode)` unique 1,791 → ไม่ fan out · match 1,649,176/1,657,238 = 99.51% | — |
+| dim_order | OrderSK | curated_mih, ar_s, curated_mil, per | dim_company |
+| ↳ 2026-09-03 | เพิ่ม `pernamet` (ชื่อพนักงานขาย จาก `validated_mac5.per` join `mihPer` = `percode`) — ย้ายมาจาก `fact_order_store` เพื่อให้ซ่อน fact ได้ทั้งใบ | `ALTER TABLE ... ADD COLUMN` + `UPDATE` backfill (สคริปต์ `add_pernamet.sql`) · match 1,369,665/1,374,663 = 99.64% | consumer: `fact_order_store` (Power BI ใช้ `dim_order[pernamet]` แทน) |
 | ↳ 2026-09-01 | เพิ่ม 8 คอลัมน์ (ไม่แตะ logic/เงื่อนไข/SK): `mihDesc` `mihKeydate` `mihDelvdate` `mihClearum` `mihExtrasum` `mihPer` `mihBl` จาก `curated_mih` ที่อ่านอยู่แล้ว + `StatusColorBg` (`ar_scolb`) จาก `ar_s` ที่ join อยู่แล้ว | ต้อง `ALTER TABLE ... ADD COLUMN` บน BigQuery ก่อน (type `operations`, ตาราง pre-exist) · `view_dim_order` ทำ `SELECT ord.*` จึงได้ 8 คอลัมน์นี้ไปด้วยอัตโนมัติ · 49,719 แถวที่เก่ากว่า window 4 ปีจะเป็น NULL ถาวร | consumer: `fact_order_store`, `fact_invoice_store`, `fact_backlog_store` |
 | dim_delivery | DeliverySK | curated_mil, ttrip/ttrip_document/tdelivery, deb, curated_mih | dim_company |
 | dim_project | ProjectSK | validated_mac5.tbook_profilecomp | dim_company |

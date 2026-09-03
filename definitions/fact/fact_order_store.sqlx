@@ -90,8 +90,7 @@ source_data AS (
     mil.milDesc,
     mil.milSto,
     mil.milQuan,
-    mih.mihPer,
-    per.pernamet
+    mih.mihPer
   FROM ${ref(databuffet.CURATED_MAC5, 'curated_mil')} AS mil
   INNER JOIN ${ref(databuffet.CURATED_MAC5, 'curated_mih')} AS mih
     ON  mih.company_id = mil.company_id
@@ -111,9 +110,6 @@ source_data AS (
   LEFT JOIN `${DimStoreTableRef}` AS dim_sto
     ON  dim_sto.CompanySK = dim_com.CompanySK
     AND dim_sto.StoreCode = mil.milSto
-  LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, 'per')} AS per
-    ON  per.company_id = mih.company_id
-    AND per.percode    = mih.mihPer
   WHERE mih.mihType = 'PS'
     AND mih.mihDesc NOT LIKE '%PO.วางบิล%'
     AND mil.milDesc NOT LIKE 'โปรโมชั่น%'

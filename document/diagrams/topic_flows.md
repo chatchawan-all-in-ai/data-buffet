@@ -129,7 +129,6 @@ flowchart LR
   fact_transaction_delivery --> fact_delivery
   per --> dim_sale_representative
   per --> dim_sale_representative_last
-  per --> fact_order_store
   classDef validated fill:#cfe8ff,stroke:#4a90d9,color:#111;
   classDef dimension fill:#ffe0b3,stroke:#d98f2f,color:#111;
   classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
@@ -612,17 +611,18 @@ flowchart LR
 
 **Objects in this topic (8):** `curated_mih`, `curated_mil`, `dim_invoice`, `dim_order`, `dim_payment`, `fact_invoice`, `fact_order`, `fact_transcation`
 
-**Fed by (27):** `Transaction_Data_Mart`, `ap_s`, `ar_s`, `deb`, `dim_change_district`, `dim_channel_cost`, `dim_company`, `dim_cost_group`, `dim_cost_stk`, `dim_customer`, `dim_department`, `dim_director`, `dim_product_master`, `dim_product_mkt`, `dim_region`, `dim_region_manager`, `dim_sale_representative`, `dim_section`, `dim_section_manager`, `dim_stk_mkt`, `dim_target_product_group_by_sale_dayofwork`, `fact_quotation`, `mih`, `mih2`, `mil`, `view_deb_address_data`, `view_dim_channel`
+**Fed by (28):** `Transaction_Data_Mart`, `ap_s`, `ar_s`, `deb`, `dim_change_district`, `dim_channel_cost`, `dim_company`, `dim_cost_group`, `dim_cost_stk`, `dim_customer`, `dim_department`, `dim_director`, `dim_product_master`, `dim_product_mkt`, `dim_region`, `dim_region_manager`, `dim_sale_representative`, `dim_section`, `dim_section_manager`, `dim_stk_mkt`, `dim_target_product_group_by_sale_dayofwork`, `fact_quotation`, `mih`, `mih2`, `mil`, `per`, `view_deb_address_data`, `view_dim_channel`
 
 ```mermaid
 flowchart LR
-  subgraph validated["validated (6)"]
+  subgraph validated["validated (7)"]
     ap_s["ap_s"]
     ar_s["ar_s"]
     deb["deb"]
     mih["mih"]
     mih2["mih2"]
     mil["mil"]
+    per["per"]
   end
   subgraph curated["curated (2)"]
     curated_mih["curated_mih"]
@@ -784,6 +784,9 @@ flowchart LR
   mih2 --> curated_mil
   mih2 --> dim_invoice
   mil --> curated_mil
+  per --> dim_invoice
+  per --> dim_order
+  per --> dim_sale_representative
   view_deb_address_data --> Transaction_Data_Mart
   view_deb_address_data --> fact_transcation
   view_dim_channel --> fact_transcation
@@ -793,7 +796,7 @@ flowchart LR
   classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
   classDef view fill:#cfeae6,stroke:#3a9d94,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
-  class ap_s,ar_s,deb,mih,mih2,mil validated;
+  class ap_s,ar_s,deb,mih,mih2,mil,per validated;
   class curated_mih,curated_mil curated;
   class dim_change_district,dim_channel_cost,dim_company,dim_cost_group,dim_cost_stk,dim_customer,dim_department,dim_director,dim_invoice,dim_order,dim_payment,dim_product_master,dim_product_mkt,dim_region,dim_region_manager,dim_sale_representative,dim_section,dim_section_manager,dim_stk_mkt,dim_target_product_group_by_sale_dayofwork dimension;
   class fact_backlog_store,fact_delivery,fact_invoice,fact_invoice_store,fact_mir_rs,fact_mir_vs,fact_order,fact_order_store,fact_quotation,fact_transaction_delivery,fact_transcation fact;

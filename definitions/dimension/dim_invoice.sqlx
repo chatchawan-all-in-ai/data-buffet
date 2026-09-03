@@ -172,7 +172,7 @@ BEGIN
       t1.companyID,
       t1.mihDay, t1.mihMonth, t1.mihYear,
       t1.mihType, t1.mihVnos, t1.mihCus, t1.milLinkVcno,
-      t1.mihRef1, t1.mihRef2, t1.mihPer, t1.mihStatus, t1.StatusDesc, t1.mihCancel,
+      t1.mihRef1, t1.mihRef2, t1.mihPer, per.pernamet, t1.mihStatus, t1.StatusDesc, t1.mihCancel,
       t1.per_sale1, t1.mih2per2, t1.per_sale2, t1.mihDep, t1.mihJob,
       t1.InvoiceSalesFlag,
       t1.mihNotes,
@@ -193,6 +193,9 @@ BEGIN
     ) AS dim_order
         ON IFNULL(t1.milLinkVcno, '') = IFNULL(dim_order.mihVnos, '')
         AND t1.CompanySK = dim_order.CompanySK
+    LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, 'per')} AS per
+        ON t1.mihPer = per.percode
+        AND t1.companyID = per.company_id
   ) AS S
   ON T.InvoiceSK = S.InvoiceSK
 
@@ -206,6 +209,7 @@ BEGIN
       T.mihYear = S.mihYear,
       T.mihCus = S.mihCus,
       T.mihPer = S.mihPer,
+      T.pernamet = S.pernamet,
       T.per_sale1 = S.per_sale1,
       T.mih2per2 = S.mih2per2,
       T.per_sale2 = S.per_sale2,
@@ -226,7 +230,7 @@ BEGIN
       InvoiceSK, CompanySK, OrderSK, companyID,
       mix_date, mihDay, mihMonth, mihYear,
       mihType, mihVnos, mihCus, milLinkVcno,
-      mihRef1, mihRef2, mihPer, mihStatus, StatusDesc, mihCancel,
+      mihRef1, mihRef2, mihPer, pernamet, mihStatus, StatusDesc, mihCancel,
       per_sale1, mih2per2, per_sale2, mihDep, mihJob, mihNotes,
       InvoiceSalesFlag
     )
@@ -234,7 +238,7 @@ BEGIN
       S.InvoiceSK, S.CompanySK, S.OrderSK, S.companyID,
       S.mix_date, S.mihDay, S.mihMonth, S.mihYear,
       S.mihType, S.mihVnos, S.mihCus, S.milLinkVcno,
-      S.mihRef1, S.mihRef2, S.mihPer, S.mihStatus, S.StatusDesc, S.mihCancel,
+      S.mihRef1, S.mihRef2, S.mihPer, S.pernamet, S.mihStatus, S.StatusDesc, S.mihCancel,
       S.per_sale1, S.mih2per2, S.per_sale2, S.mihDep, S.mihJob, S.mihNotes,
       S.InvoiceSalesFlag
     );
