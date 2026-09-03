@@ -78,7 +78,10 @@ WITH dim_order_dedup AS (
     mil.milQuan,
     mih.mihPer,
     (CASE 
-      WHEN mil.milsum = 0.0 and mil.milDesc like '%ของแถม%' THEN 'Yes'
+      WHEN mil.milsum = 0.0 
+        or mil.milDesc like '%ของแถม%' 
+        or dim_prod.ProductGroupMAC5 = '5000' 
+        THEN 'Yes'
       ELSE 'No'
     END) as FlagFree,
   FROM ${ref(databuffet.CURATED_MAC5, 'curated_mil')} AS mil
