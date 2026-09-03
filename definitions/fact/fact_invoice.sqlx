@@ -117,10 +117,10 @@ LEFT JOIN dim_invoice as t
     and t.companyID = mil.companyID
 LEFT JOIN (
   SELECT * FROM `${FactOrderTableRef}`
-  qualify row_number() over(partition by CompanySK, milYear, milMonth, milDay, milType, milVnos, milCus, milStk order by FactOrderSK desc) = 1
+  qualify row_number() over(partition by CompanySK, milYear, milMonth, milDay, milType, milVnos, milCus, LOWER(milStk) order by FactOrderSK desc) = 1
 ) AS fact_ord
   ON IFNULL(t.RefOrder, '') = IFNULL(fact_ord.milVnos, '')
-  AND mil.milStk = fact_ord.milStk
+  AND LOWER(mil.milStk) = LOWER(fact_ord.milStk)
   AND mil.CompanySK = fact_ord.CompanySK
 LEFT JOIN `${DimCustomerTableRef}` as dim_cust
   ON mil.milCus = dim_cust.debcode
