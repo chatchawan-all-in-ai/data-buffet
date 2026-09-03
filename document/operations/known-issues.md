@@ -478,3 +478,29 @@
   `and mil.asatdate >= current_date('Asia/Bangkok')-1` จึงมองแค่เอกสารที่เพิ่งขนเข้ามา
   ถ้าต้องการให้ `item_status` ย้อนหลังถูก ต้องขยายหน้าต่าง `asatdate` ชั่วคราวแล้วรันรอบเดียว
   (แนวเดียวกับ skill `backfill-dimension`)
+- **`fact_*_store` 3 ตัว: ถอด `asatdate` แล้วเปลี่ยน partition (2026-09-03, commit 048f746 → 5e70f83)** —
+  `048f746` ลบ `CURRENT_DATE('Asia/Bangkok') AS asatdate` ออกจาก SELECT ทั้ง 3 ไฟล์ **แต่ทิ้ง
+  `partitionBy: "asatdate"` ไว้ใน config** → Dataform สร้าง `PARTITION BY asatdate` บน query
+  ที่ไม่มีคอลัมน์นั้น = `Unrecognized name: asatdate` (พิสูจน์ด้วย dry-run บน BigQuery)
+  `5e70f83` แก้แล้วเป็น `sDate` (backlog) / `mix_date` (order, invoice) — dry-run ผ่านทั้ง 3
+  **บทเรียน**: `partitionBy`/`clusterBy` ใน config ไม่ได้ถูกตรวจตอน edit — เวลาถอดคอลัมน์
+  ต้องเช็ค config คู่กันเสมอ · ถ้าไม่มี dataform CLI ตรวจได้ด้วยการขยาย `${ref()}` เอง
+  แล้วยิง `bq query --dry_run` ครอบด้วย `SELECT <partition_col> FROM ( ... )`
+  **ผลข้างเคียงของการถอด `asatdate`**: ไม่มี consumer ใน `definitions/` (ตรวจแล้ว 0 ไฟล์)
+  แต่ **fact ทั้ง 3 เลิกบอกได้ว่าแถวมาจาก snapshot วันไหน** — ถ้ารายงาน Power BI เคยใช้
+  คอลัมน์นี้จะพัง · `sDate` ให้ 3,619 partition (ย้อนถึงปี 2006) ห่างจากลิมิต 10,000 มาก
+  **ขอบเขตวันที่ของ 3 fact ไม่เท่ากัน**: `fact_order_store`/`fact_invoice_store` กรอง 4 ปี
+  ส่วน `fact_backlog_store` ไม่กรองเลย (ย้อนถึง 2006)
+- **`FlagFree` มีนิยาม 2 แบบไม่ตรงกัน — ยังไม่แก้ (2026-09-03)** —
+  · `fact_order_store` / `fact_invoice_store`: `milSum = 0` **OR** `ProductGroupMAC5 = '5000'`
+  · `fact_backlog_store`: **`cpssumreq = 0`** OR `ProductGroupMAC5 = '5000'`
+  คนละคอลัมน์ คนละ grain → สินค้าตัวเดียวกันได้ `Yes` ในหน้างานค้าง แต่ `No` ในหน้า Order ได้
+  **ขอบเขต**: `cpssumreq = 0` = 33% ของ cps (158,325/482,790) · `ProductGroupMAC5 = '5000'`
+  = 95 สินค้าจาก 117,458 · `milDesc LIKE '%ของแถม%'` ที่ถูก comment ออกกระทบ **281 บรรทัด**
+  (ที่เขียนว่าของแถมแต่ `milSum != 0` → เปลี่ยนจาก Yes เป็น No)
+  **fan-out ที่เหลืออยู่**: `fact_backlog_store` ใส่ `FlagFree` เข้า `GROUP BY` แต่ค่ามาจาก
+  `cps.cpssumreq` ซึ่งเป็นค่าต่อแถว cps → **4,342 กลุ่ม (1.0% ของ 441,976)** จะแตกเป็น
+  2 แถว (Yes + No) · ยอด `qty` ไม่เบิ้ล (SUM แยกกลุ่ม) แต่ Power BI เห็นสินค้าเดียวกันสองบรรทัด
+  แก้ได้ด้วย `LOGICAL_AND`/`LOGICAL_OR` ให้เหลือ 1 แถวต่อ (order, product) พร้อมค่า `Mixed`
+  **ข้อเสนอที่ยังค้าง**: ย้ายนิยามไป helper ไฟล์เดียว (`function-data.js` หรือไฟล์ใหม่
+  `business-rules.js`) เพื่อไม่ให้กฎ “ของแถม” กระจายอยู่ 3 ไฟล์และเพี้ยนกันเอง
