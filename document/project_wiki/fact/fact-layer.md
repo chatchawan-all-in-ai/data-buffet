@@ -27,8 +27,8 @@
 
 | Fact | Dimensions joined |
 |---|---|
-| `fact_order` | dim_order, dim_company, dim_product_master, dim_customer, + `fact_quotation` (QuotationSK) — source `curated_mil` |
-| `fact_invoice` | dim_invoice, dim_company, dim_customer, + `fact_order` (deduped `QUALIFY ROW_NUMBER()=1`) — source `curated_mil` |
+| `fact_order` | dim_order, dim_company, dim_product_master, dim_customer, + `fact_quotation` (QuotationSK) — source `curated_mil` · join `dim_product_master` ด้วย `lower(milstk) = lower(ProductCode)` และ `FactOrderSk` `order by lower(milStk)` (2026-09-03 — ดู `known-issues.md`) |
+| `fact_invoice` | dim_invoice, dim_company, dim_customer, + `fact_order` (deduped `QUALIFY ROW_NUMBER()=1`) — source `curated_mil` · join `fact_order` ด้วย `LOWER(milStk)` ทั้งใน `ON` และใน `QUALIFY ... PARTITION BY` (2026-09-03) |
 | `fact_quotation` | dim_quotation, dim_company, dim_product_master, dim_customer — source `validated_mac5.tbook_quodetail` |
 | `fact_transaction_delivery` | dim_invoice, dim_product_master, dim_company — source `curated_mil` (type='IS') |
 | `fact_delivery` | dim_delivery, dim_company, + `fact_transaction_delivery` — sources `ttrip_document, ttrip, tdelivery, deb, curated_mih, curated_mil`; Thai delivery-status labels |

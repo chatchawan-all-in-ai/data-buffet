@@ -381,3 +381,27 @@
   เหลือแถวเดียวจะได้ 22,199,705.31 → **qty หาย 9,512 และ `milSum` หาย 141 ล้าน**
   ดังนั้น `fact_invoice_store` ใช้ grain ที่รวม `milPer` และเก็บ `percent_sale` ไว้
   (การตัดสินใจของเจ้าของงาน 2026-09-01: "แตกยอดให้พนักงานขาย ไม่ต้องยุ่ง")
+- **`milStk` เทียบแบบไม่สนตัวพิมพ์ใหญ่-เล็กแล้ว (2026-09-03)** — `fact_order` join
+  `dim_product_master` เปลี่ยนเป็น `lower(mil.milstk) = lower(dim_product.ProductCode)`
+  และ `fact_invoice` join `fact_order` ด้วย `LOWER(milStk)` ทั้งใน `ON` และใน
+  `QUALIFY ... PARTITION BY` ส่วน `FactOrderSk` ก็ `order by lower(mil.milStk)` ตามไปด้วย
+  **ตัวเลขที่วัดได้ 2026-09-03**: `(company_id, milStk)` ของ `milType = 'PS'` ทั้งหมด
+  16,283 ตัว → match แบบเดิม 16,173 → `LOWER()` **ได้เพิ่มแค่ 17 ตัว** และยังไม่ match
+  อีก 93 ตัว (93 ตัวนี้คนละสาเหตุ ไม่ใช่เรื่องตัวพิมพ์ — ยังไม่ได้สอบ)
+  **ข้อควรระวังที่ต้องเช็คซ้ำเวลาเพิ่มสินค้า**: ถ้า `dim_product_master` มี `ProductCode`
+  สองตัวที่ต่างกันแค่ตัวพิมพ์ในบริษัทเดียวกัน join นี้จะ fan-out เป็น 2 แถวที่ `ProductSK`
+  ต่างกัน และ `group by 1,...,12` ใน `fact_order` (คอลัมน์ 1 คือ `ProductSK`) จะไม่ยุบให้
+  → ยอด `milQuan`/`milSum` คูณสอง · วัดแล้ว **ยังไม่มีคู่ไหนชนกันเลย (0 กลุ่ม)** ตรวจด้วย
+  `SELECT companyID, LOWER(ProductCode) AS k FROM dimension_table.dim_product_master GROUP BY 1,2 HAVING COUNT(DISTINCT ProductCode) > 1`
+  · `FactOrderSK` เลื่อนค่าจากการเปลี่ยน `order by` — ไม่กระทบเพราะ `fact_order` เป็น
+  full rebuild และ consumer ทั้งสอง (`fact_invoice`, `view_fact_transcation`) rebuild ตามทุกคืน
+- **`dim_store.ReportStore` (2026-09-03)** — คอลัมน์ใหม่สำหรับสไลซ์รายงาน:
+  `lower(ifnull(stogroup, ''))` ที่ไม่อยู่ใน `kk/pk/lp/ub/hy` ยุบเป็น `'KTB'` ถังเดียว
+  ที่เหลือคืน `stogroup` ตัวเดิม (ไม่ lower) · **`stogroup` ที่เป็น NULL ก็ตกเป็น `'KTB'`**
+  เพราะ `ifnull` แปลงเป็น `''` ก่อน — ไม่ใช่ NULL · แถว Unknown `StoreSK = -1` ได้
+  `'Unknown'` · เป็นตัวแทนของ `is_store_*` ที่ถอดออกไปตอน 2026-09-03
+  **`'KTB'` ที่นี่คือถังรวม "ที่เหลือทั้งหมด" ไม่ได้หมายถึงคลังของธนาคารกรุงไทย** —
+  ชื่อพ้องกับ `is_store_ktb` เดิมแต่ความหมายไม่เหมือนกัน อย่าอ่านว่าเป็นสาขา ·
+  commit เดียวกันนี้ลบคอมเมนต์อธิบายใน `dim_store.sqlx` ทิ้ง (ถูก re-save ทับจาก
+  Dataform web IDE) — **เจ้าของงานตัดสินใจไม่เอากลับ** คำอธิบายอยู่ที่ไฟล์นี้กับ
+  `project_wiki/dimension/inventory.md` แทน
