@@ -1,7 +1,7 @@
 config {
     type: "table",
     schema: databuffet.FACT_TABLE,
-    dependencies: ["dim_order", "dim_customer", "dim_product_master", "dim_company", "dim_store"],
+    dependencies: ["dim_order", "dim_invoice", "dim_customer", "dim_product_master", "dim_company", "dim_store"],
     tags: [databuffet.TAG_FACT_DAILY],
     uniqueKey: ["FactInvoiceStoreSK"],
     bigquery: {
@@ -17,6 +17,13 @@ js {
         name: "dim_order",
     };
     const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
+
+    const DimInvoiceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_invoice",
+    };
+    const DimInvoiceTableRef = `${DimInvoiceTable.database}.${DimInvoiceTable.schema}.${DimInvoiceTable.name}`;
 
     const DimCustomerTable = {
         database: databuffet.DATABASE,
@@ -75,6 +82,15 @@ dim_product_dedup AS (
   QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, ProductCode ORDER BY ProductSK) = 1
 ),
 
+dim_invoice_dedup AS (
+  -- dim_invoice grain ละเอียดกว่าเลขที่เอกสาร (มี mihCus + milLinkVcno ในคีย์)
+  -- ฝั่ง IS 1,629,503 แถว แต่ (CompanySK, mihVnos) ไม่ซ้ำ 1,627,342 -- ต้อง dedup กัน fan out
+  SELECT InvoiceSK, CompanySK, mihVnos
+  FROM `${DimInvoiceTableRef}`
+  WHERE mihType = 'IS'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, mihVnos ORDER BY InvoiceSK DESC) = 1
+),
+
 raw_table AS (
   SELECT
     dim_com.CompanySK,
@@ -84,6 +100,7 @@ raw_table AS (
     mih.mihMonth,
     mih.mihDay,
     mih.mihVnos,
+    dim_inv.InvoiceSK,
     dim_ord.OrderSK,
     dim_cust.CustomerSK,
     dim_prod.ProductSK,
@@ -105,6 +122,10 @@ raw_table AS (
     AND mih.mihType    = mil.milType
   LEFT JOIN `${DimCompanyTableRef}` AS dim_com
     ON mih.company_id = dim_com.companyID
+  LEFT JOIN dim_invoice_dedup AS dim_inv
+    -- ตัวใบกำกับเอง -- ปลด mihVnos/mihRef/mihNotes ออกจาก fact ไปอยู่ dim
+    ON  dim_inv.CompanySK = dim_com.CompanySK
+    AND dim_inv.mihVnos   = mih.mihVnos
   LEFT JOIN dim_order_dedup AS dim_ord
     -- โยงกลับใบสั่งขาย เฉพาะเมื่อ link ชี้ไปที่เอกสารชนิด PS
     ON  dim_ord.CompanySK = dim_com.CompanySK

@@ -232,6 +232,7 @@ flowchart LR
   dim_department --> fact_transcation
   dim_director --> fact_transcation
   dim_invoice --> fact_invoice
+  dim_invoice --> fact_invoice_store
   dim_invoice --> fact_mir_rs
   dim_invoice --> fact_mir_vs
   dim_invoice --> fact_transaction_delivery
