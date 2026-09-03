@@ -37,7 +37,7 @@
 | `fact_mir_vs` | dim_invoice (deduped `QUALIFY`), dim_customer, dim_collection_status, dim_company — sources `validated_mac5.mir/mie` + `curated_mih` (mirtype `'VS'`, `mihcancel = 0`) |
 | `fact_mir_rs` | same dims as `fact_mir_vs` + `fact_mir_vs` (BillingSK) + **FULL JOIN** `fact_chq` (FactChqSK) — mirtype `'RS'` |
 | `fact_order_store` | dim_order, dim_company, dim_customer, dim_product_master, dim_store — source `curated_mih` + `curated_mil` (`mihType='PS'`) + `validated_mac5.per` (ชื่อพนักงานขาย) |
-| `fact_invoice_store` | เหมือน `fact_order_store` แต่ `mihType='IS'`; OrderSK มาจาก `milLinkVcno` เมื่อ `milLinkVcType='PS'`; เก็บ `is_store_*` 6 คอลัมน์ของ query ต้นฉบับไว้ด้วย · **grain รวม `milPer`** เพราะ `curated_mil` ฝั่ง IS แตกบรรทัดตามสัดส่วนพนักงานขาย |
+| `fact_invoice_store` | เหมือน `fact_order_store` แต่ `mihType='IS'`; OrderSK มาจาก `milLinkVcno` เมื่อ `milLinkVcType='PS'`; สไลซ์สาขาใช้ `StoreSK` → `dim_store` (`is_store_*` 6 คอลัมน์ของ query ต้นฉบับถอดออกแล้ว 2026-09-03) · **grain รวม `milPer`** เพราะ `curated_mil` ฝั่ง IS แตกบรรทัดตามสัดส่วนพนักงานขาย |
 | `fact_backlog_store` | dim_order, dim_company, dim_customer, dim_product_master, dim_store — source `curated_mih` + `validated_mac5.cps` (snapshot ล่าสุด); `SUM` ต่อ (cpsVnosID, cpsCusID, cpsStkID) |
 
 > `fact_chq` / `fact_mir_vs` / `fact_mir_rs` were migrated into the repo **2026-07-20**

@@ -58,9 +58,9 @@ js {
 -- milType 'PS' ไม่มีปัญหานี้ -- curated_mil ฝั่ง PS ไม่ซ้ำเลย (3,012,477 = distinct PK)
 --
 -- เงื่อนไขจาก query ต้นฉบับ: mihType in ('IS') เท่านั้น ไม่ขยายไป BS/AS/QS
--- is_store_* 6 คอลัมน์คัดลอกมาจาก query ตรง ๆ ไม่แก้ (รวมพฤติกรรมที่เลขขึ้นต้น MEMO-H
--- ติดทั้ง is_store_ktb และ is_store_hy -- เป็นของระบบเดิม ไม่ใช่ bug ที่นี่)
--- StoreSK เป็นคนละเรื่องกับ is_store_* -- มาจาก milSto ที่ join กับ validated_mac5.sto
+-- is_store_* 6 คอลัมน์ที่เคยคัดลอกมาจาก query ต้นฉบับ ถอดออกแล้ว 2026-09-03
+-- (เจ้าของงานสั่ง) -- สไลซ์สาขาให้ใช้ dim_store ผ่าน StoreSK ซึ่งมาจาก milSto
+-- join กับ validated_mac5.sto เป็น dimension จริง ไม่ใช่การเดาจาก prefix ของเลขเอกสาร
 
 WITH dim_order_dedup AS (
   SELECT OrderSK, CompanySK, mihVnos
@@ -97,12 +97,7 @@ raw_table AS (
     mil.milLinkVcType,
     mil.milQuan,
     mil.milPer,
-    mil.percent_sale,
-    SUBSTR(IFNULL(mih.mihVnos, ''), 1, 1) AS p1,
-    SUBSTR(IFNULL(mih.mihVnos, ''), 1, 2) AS p2,
-    SUBSTR(IFNULL(mih.mihVnos, ''), 1, 3) AS p3,
-    SUBSTR(IFNULL(mih.mihVnos, ''), 1, 4) AS p4,
-    SUBSTR(IFNULL(mih.mihVnos, ''), 1, 5) AS p5
+    mil.percent_sale
   FROM ${ref(databuffet.CURATED_MAC5, 'curated_mil')} AS mil
   INNER JOIN ${ref(databuffet.CURATED_MAC5, 'curated_mih')} AS mih
     ON  mih.company_id = mil.company_id
@@ -127,36 +122,15 @@ raw_table AS (
   WHERE mih.mihType = 'IS'
     AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay)))
         >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
-),
-
-final AS (
-  SELECT
-    * EXCEPT(p1, p2, p3, p4, p5),
-    NOT (
-      p1 IN ('P','K','L','U','H')
-      OR p2 IN ('TK','TP','TL','TU','TH')
-      OR p3 IN ('IKK','IPK','ILP','IUB','IHY')
-      OR p4 IN ('TWPK','TWKK','TWLP','TWUB','TWHY',
-                'CH-H','CH-K','CH-P','CH-L','CH-U',
-                'RT-K','RT-P','RT-L','RT-U','RT-H',
-                'HPHY','HPKK','HPPK','HPLP','HPUB')
-      OR p5 IN ('MEMO-K','MEMO-P','MEMO-L','MEMO-U')
-    ) AS is_store_ktb,
-    (p1 = 'K' OR p2 = 'TK' OR p3 = 'IKK' OR p4 IN ('CH-K','TWKK','HPKK','RT-K') OR p5 = 'MEMO-K') AS is_store_kk,
-    (p1 = 'P' OR p2 = 'TP' OR p3 = 'IPK' OR p4 IN ('CH-P','TWPK','HPPK','RT-P') OR p5 = 'MEMO-P') AS is_store_pk,
-    (p1 = 'L' OR p2 = 'TL' OR p3 = 'ILP' OR p4 IN ('CH-L','TWLP','HPLP','RT-L') OR p5 = 'MEMO-L') AS is_store_lp,
-    (p1 = 'U' OR p2 = 'TU' OR p3 = 'IUB' OR p4 IN ('CH-U','TWUB','HPUB','RT-U') OR p5 = 'MEMO-U') AS is_store_ub,
-    (p1 = 'H' OR p2 = 'TH' OR p3 = 'IHY' OR p4 IN ('CH-H','TWHY','HPHY','RT-H') OR p5 = 'MEMO-H') AS is_store_hy
-  FROM raw_table
 )
 
 SELECT
   ROW_NUMBER() OVER(
     ORDER BY CompanySK, mihYear, mihMonth, mihDay, milType, mihVnos, milListNo, milPer
   ) AS FactInvoiceStoreSK,
-  final.*,
+  raw_table.*,
   CURRENT_DATE('Asia/Bangkok') AS asatdate
-FROM final
+FROM raw_table
 
 pre_operations {}
 
