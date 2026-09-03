@@ -5,7 +5,7 @@ config {
     tags: [databuffet.TAG_FACT_DAILY],
     uniqueKey: ["FactOrderStoreSK"],
     bigquery: {
-        partitionBy: "asatdate",
+        partitionBy: "mix_date",
         clusterBy: ["FactOrderStoreSK"]
     },
 }
