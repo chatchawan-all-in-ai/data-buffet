@@ -61,7 +61,7 @@ WITH dim_order_dedup AS (
   QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, mihVnos ORDER BY OrderSK DESC) = 1
 
 ), dim_product_dedup AS (
-  SELECT ProductSK, CompanySK, ProductCode
+  SELECT ProductSK, CompanySK, ProductCode, ProductGroupMAC5
   FROM `${DimProductMasterTableRef}`
   QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, ProductCode ORDER BY ProductSK) = 1
 
@@ -97,7 +97,7 @@ WITH dim_order_dedup AS (
     mil.percent_sale,
     (CASE 
       WHEN mil.milsum = 0.0 
-        or mil.milDesc like '%ของแถม%' 
+        -- or mil.milDesc like '%ของแถม%' 
         or dim_prod.ProductGroupMAC5 = '5000' 
         THEN 'Yes'
       ELSE 'No'
@@ -136,8 +136,7 @@ SELECT
   ROW_NUMBER() OVER(
     ORDER BY CompanySK, mihYear, mihMonth, mihDay, milType, mihVnos, milListNo, milPer
   ) AS FactInvoiceStoreSK,
-  raw_table.*,
-  CURRENT_DATE('Asia/Bangkok') AS asatdate
+  raw_table.*
 FROM raw_table
 
 pre_operations {}

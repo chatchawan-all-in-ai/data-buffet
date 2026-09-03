@@ -65,8 +65,7 @@ WITH cps_latest AS (
   QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, mihVnos ORDER BY OrderSK DESC) = 1
 
 ), dim_product_dedup AS (
-  -- (CompanySK, ProductCode) ซ้ำ 36 code -- กัน fan out
-  SELECT ProductSK, CompanySK, ProductCode
+  SELECT ProductSK, CompanySK, ProductCode, ProductGroupMAC5
   FROM `${DimProductMasterTableRef}`
   QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, ProductCode ORDER BY ProductSK) = 1
 
@@ -86,6 +85,12 @@ WITH cps_latest AS (
     cps.cpsCusID,
     cps.cpsStkID,
     cps.cpsSto,
+    (CASE 
+      WHEN cps.cpssumreq = 0.0 
+        or dim_prod.ProductGroupMAC5 = '5000' 
+        THEN 'Yes'
+      ELSE 'No'
+    END) as FlagFree,
     SUM(cps.cpsStkREQ)                        AS cpsStkREQ,
     SUM(cps.cpsStkCUT1)                       AS cpsStkCUT1,
     SUM(cps.cpsStkREQ) - SUM(cps.cpsStkCUT1)  AS qty
@@ -115,7 +120,7 @@ WITH cps_latest AS (
   GROUP BY
     CompanySK, company_id, sDate, mihYear, mihMonth, mihDay,
     OrderSK, CustomerSK, ProductSK, StoreSK,
-    cpsVnosID, cpsCusID, cpsStkID, cpsSto
+    cpsVnosID, cpsCusID, cpsStkID, cpsSto, FlagFree
 )
 
 SELECT
@@ -123,7 +128,6 @@ SELECT
     ORDER BY CompanySK, mihYear, mihMonth, mihDay, cpsVnosID, cpsCusID, cpsStkID
   ) AS FactBacklogStoreSK,
   source_data.*,
-  CURRENT_DATE('Asia/Bangkok') AS asatdate
 FROM source_data
 
 pre_operations {}
