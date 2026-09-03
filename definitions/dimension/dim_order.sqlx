@@ -53,7 +53,7 @@ BEGIN
             select 1
             from main_table as main
             where mil.millinkvcno = main.milvnos
-            and mil.milstk = main.milstk
+            and lower(mil.milstk) = lower(main.milstk)
             and mil.company_id = main.company_id
         )
         group by 1, 2, 3
@@ -72,7 +72,7 @@ BEGIN
         from main_table as main
         left join sec_table as sec
             on main.milvnos = sec.millinkvcno
-            and main.milstk = sec.milstk
+            and lower(main.milstk) = lower(sec.milstk)
             and main.company_id = sec.company_id
     ),
     order_status as (

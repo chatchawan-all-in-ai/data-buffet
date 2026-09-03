@@ -60,7 +60,7 @@ LEFT JOIN `${DimCompanyTableRef}` AS com ON ...
 ```
 
 ถ้า view อ่านแต่ validated/curated → **ไม่ต้องมี js block เลย**
-(ตัวอย่าง: `view/onetime/PowerBI_Data_Buffet_Transaction.sqlx`)
+(ณ 2026-09-03 ยังไม่มีตัวอย่างจริงใน repo — view ทั้ง 31 ตัวมี js block หมด)
 
 ### 4. ข้อควรระวัง
 

@@ -903,7 +903,7 @@ BEGIN
         -- กลุ่มที่ 14-18: เช็คจาก ProductID และคำค้นหาในหมายเหตุ (mihnotes) หรือชื่อสินค้า (mildesc)
         (
           lower(mds.ProductAction) = 'inc' AND lower(mds.ProductDescriptionAction) = 'contains' AND lower(RemarkAction) = 'contains'
-          AND trans.milstk = mds.ProductID 
+          AND LOWER(trans.milstk) = LOWER(mds.ProductID) 
           AND (REGEXP_CONTAINS(trans.mildesc, mds.ProductDescription) OR REGEXP_CONTAINS(trans.mihnotes, mds.Remark) OR REGEXP_CONTAINS(trans.mihdesc, mds.Remark))
         )
       )
@@ -912,7 +912,7 @@ BEGIN
         -- กลุ่มที่ 19: เช็คจาก ProductID และชื่อสินค้า (mildesc)
         (
           lower(mds.ProductAction) = 'inc' AND lower(mds.ProductDescriptionAction) = 'contains'
-          AND trans.milstk = mds.ProductID 
+          AND LOWER(trans.milstk) = LOWER(mds.ProductID) 
           AND REGEXP_CONTAINS(trans.mildesc, mds.ProductDescription)
         )
       )

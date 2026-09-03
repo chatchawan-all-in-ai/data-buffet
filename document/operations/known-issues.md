@@ -69,7 +69,7 @@
     (ข) ที่เหลือ (dim/fact, view อื่น, process, mds, onetime base, UDF, external) →
     js-block `<Pascal>Table`/`<Pascal>TableRef` อ้างด้วย `` `${XxxTableRef}` ``
     ห้าม inline `${databuffet.DATABASE}...` ใน body; view ที่อ่านแต่ validated/curated
-    จะ**ไม่มี js block** เลย (เช่น `PowerBI_Data_Buffet_Transaction`)
+    จะ**ไม่มี js block** เลย (ณ 2026-09-03 view ทั้ง 31 ตัวมี js block หมด ไม่มีตัวอย่างจริง)
     ประวัติ: รอบแรก generate เป็น inline (ผิด §3) → รอบสองแก้เป็น js-block ทั้งหมด
     (ยัง**ผิด** เพราะ validated/curated ต้องเป็น `ref()`) → รอบสามได้ตามนี้
     ยืนยันทุกรอบ: เนื้อ SQL ไม่เปลี่ยนเทียบกับ BigQuery
@@ -443,11 +443,38 @@
   **`ORDER BY` ใน `ROW_NUMBER()` ที่ใส่ `LOWER()`** (`FactInvoiceSK`, `FactTransDeliverySK`,
   `PumpSK`) **ไม่มีผลต่อการ match** เปลี่ยนแค่ลำดับเลข SK — ปลอดภัยเพราะทั้งสามเป็น
   full rebuild และ consumer ก็ rebuild ตามทุกคืน (ใส่เพื่อให้ตรงกับ `FactOrderSk` ที่ b14a0d4 ทำไว้)
-  **⚠️ view 4 ตัวต้องไป `CREATE OR REPLACE VIEW` บน BigQuery เองด้วย** (เจ้าของงานเลือกไม่รัน
+  **⚠️ view 3 ตัวต้องไป `CREATE OR REPLACE VIEW` บน BigQuery เองด้วย** (เจ้าของงานเลือกไม่รัน
   Dataform เพื่อ deploy view): `onetime.Transaction_Data_Mart`,
-  `onetime.PowerBI_Data_Buffet_Transaction`, `onetime.Model_Invoice_Transaction`,
+  `onetime.Model_Invoice_Transaction`,
   `fact_view.view_fact_transcation` — ถ้าแก้ไม่ครบทั้ง 4 จะเกิด drift ระหว่าง repo กับ BigQuery
   (ตรวจด้วย skill `bq-drift-scan`)
-  **บั๊กที่เจอระหว่างสแกน แต่ยังไม่แก้**: `onetime.PowerBI_Data_Buffet_Transaction`
+  **บั๊กที่เจอระหว่างสแกน — ตกไปเพราะเลิกใช้**: `onetime.PowerBI_Data_Buffet_Transaction`
   join `stk` ด้วย `stkcode = milstk` **โดยไม่มีเงื่อนไข `company_id`** ขณะที่ `stkcode`
-  ซ้ำข้ามบริษัทถึง 21,985 รหัส → fan-out ข้ามบริษัท (คนละเรื่องกับ case)
+  ซ้ำข้ามบริษัทถึง 21,985 รหัส → fan-out ข้ามบริษัท (คนละเรื่องกับ case) ·
+  ไฟล์ถูกย้ายไป `backup/view/onetime/` 2026-09-03 จึงไม่แก้
+- **`onetime.PowerBI_Data_Buffet_Transaction` ย้ายไป `backup/` (2026-09-03)** —
+  เจ้าของงานแจ้งว่าเลิกใช้แล้ว · view layer เหลือ **31 ไฟล์** (จาก 32) ·
+  ผลข้างเคียง: บั๊ก join `stk` ที่ขาด `company_id` (fan-out ข้ามบริษัท 21,985 รหัส) ตกไป
+  และ view ที่ต้อง `CREATE OR REPLACE VIEW` มือบน BigQuery ลดจาก 4 เหลือ **3** ตัว ·
+  **หมายเหตุ**: การลบ `.sqlx` ไม่ได้ลบ view ใน BigQuery — `onetime.PowerBI_Data_Buffet_Transaction`
+  ยังอยู่ แต่ไม่มีใครดูแลแล้ว ถ้าจะ drop ต้องสั่งเองบน console
+  (`document/operations/deploy-to-prod.md` มีบรรทัด `DROP VIEW IF EXISTS` ของ prd อยู่แล้ว)
+- **รอบสองของ `LOWER(milStk)` — 7 จุดที่รอบแรกเว้นไว้ (2026-09-03)** —
+  เจ้าของงานสั่งให้ใส่เพิ่ม วัดผลกระทบทีละจุดก่อน:
+  **จุดที่กระทบข้อมูลจริง — ใหญ่สุดในงานนี้ทั้งหมด**
+  · `dim_order.sqlx` 2 จุด (`mil.milstk = main.milstk` ใน `EXISTS` ของ `sec_table`
+    และ `main.milstk = sec.milstk` ใน `cal_table`) — สองฝั่งเป็น **เอกสารต่างใบ**
+    (`main_table` = บรรทัด PS ใบสั่งซื้อ, `sec_table` = บรรทัด IS ใบกำกับที่โยงด้วย `milLinkVcno`)
+    ตัวพิมพ์ของรหัสสินค้าจึงต่างกันได้ · **วัด 2026-09-03: IS 3,660,081 คีย์ →
+    จับ PS ได้เพิ่ม 412 คีย์** ซึ่งเดิมตกเป็น `item_status = 'On Order'` ผิด
+    ที่จริงต้องเป็น `'Complete'` หรือ `'In Process'`
+  **จุดที่เป็น no-op (ใส่เพื่อความสม่ำเสมอ วัดแล้วได้เพิ่ม 0)**
+  · `fact_transcation.sqlx` 2 จุด `trans.milstk = mds.ProductID` — pattern เป็นเลข/อักษรไทย
+  · `view_fact_transcation.sqlx` 3 จุด (`pump.milStk`, `t2 = fact_invoice`, `t3 = fact_order`)
+    — ทุกฝั่งสืบค่ามาจาก `curated_mil` สายเดียวกัน ตัวพิมพ์ตรงกันอยู่แล้ว
+    (วัด: `t2_gain = 0`, `t3_gain = 0` จาก 2,430,311 คีย์)
+  **fan-out**: ตรวจครบทุกฝั่ง = 0 กลุ่ม (`ps`, `is`, `fact_invoice`, `fact_order`)
+  **⚠️ 412 คีย์นั้นจะยังไม่ถูกแก้ย้อนหลังเอง** — `dim_order` เป็น MERGE ที่มี
+  `and mil.asatdate >= current_date('Asia/Bangkok')-1` จึงมองแค่เอกสารที่เพิ่งขนเข้ามา
+  ถ้าต้องการให้ `item_status` ย้อนหลังถูก ต้องขยายหน้าต่าง `asatdate` ชั่วคราวแล้วรันรอบเดียว
+  (แนวเดียวกับ skill `backfill-dimension`)

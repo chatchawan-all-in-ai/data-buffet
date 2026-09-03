@@ -305,7 +305,7 @@ with dim_calendar as (
     
   -- Pump Information
   left join `${DimPumpInfoTableRef}` as pump
-    on IFNULL(trans.milStk, '') = IFNULL(pump.milStk, '')
+    on LOWER(IFNULL(trans.milStk, '')) = LOWER(IFNULL(pump.milStk, ''))
     and trans.FlagNewProductMKT = pump.FlagNewProductMKT
     and IFNULL(reg.RegionID, '') = IFNULL(pump.RegionID, '')
     and trans.CompanySK = pump.CompanySK
@@ -920,7 +920,7 @@ with dim_calendar as (
     and t1.milVnos = t2.milVnos
     and t1.milCus = t2.milCus
     and IFNULL(t1.milLinkVcno, '') = IFNULL(t2.milLinkVcno, '')
-    and IFNULL(t1.milStk, '') = IFNULL(t2.milStk, '')
+    and LOWER(IFNULL(t1.milStk, '')) = LOWER(IFNULL(t2.milStk, ''))
     and t1.CompanySK = t2.CompanySK
 
   -- aging
@@ -935,7 +935,7 @@ with dim_calendar as (
     and t1.milType = t3.milType
     and t1.milVnos = t3.milVnos
     and t1.milCus = t3.milCus
-    and t1.milStk = t3.milStk
+    and LOWER(t1.milStk) = LOWER(t3.milStk)
     and t1.CompanySK = t3.CompanySK
 
   left join (
