@@ -848,7 +848,7 @@ with dim_calendar as (
 
   -- where UPPER(left(milLinkvcno,3)) = 'CRC'
 
-  qualify row_number() over(partition by trans.CompanySK, trans.milType,trans.milVnos,trans.milCus,trans.milStk,trans.milPer,trans.milListno order by seq_condition, dim_report.Segment, sale_sk.SaleRepSK desc) = 1
+  qualify row_number() over(partition by trans.CompanySK, trans.milType,trans.milVnos,trans.milCus,LOWER(trans.milStk),trans.milPer,trans.milListno order by seq_condition, dim_report.Segment, sale_sk.SaleRepSK desc) = 1
 
 ), final as (
   select 
@@ -885,7 +885,7 @@ with dim_calendar as (
     t1.* except(mihCancel, mihStatus, seq_condition)
   from raw_table as t1
   left join `${DimProductMasterTableRef}` as t4
-    ON t1.milstk = t4.ProductCode
+    ON LOWER(t1.milstk) = LOWER(t4.ProductCode)
     and t1.CompanySK = t4.CompanySK
   left join dim_rebate as rebate_customer
     on t1.milCus = TRIM(rebate_customer.rebate)
@@ -896,7 +896,7 @@ with dim_calendar as (
     and lower(trim(rebate_sale.status)) = 'sales'
     and t1.CompanySK = rebate_sale.CompanySK
   left join dim_rebate as rebate_product
-    on t1.milStk = TRIM(rebate_product.rebate)
+    on LOWER(t1.milStk) = LOWER(TRIM(rebate_product.rebate))
     and lower(trim(rebate_product.status)) = 'product'
     and t1.CompanySK = rebate_product.CompanySK
   left join dim_rebate as rebate_dep

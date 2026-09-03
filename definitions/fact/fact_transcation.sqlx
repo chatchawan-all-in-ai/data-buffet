@@ -333,7 +333,7 @@ BEGIN
 
     -- Product Master
     LEFT JOIN `${DimProductMasterTableRef}` AS productmaster
-      ON trans.milstk = productmaster.ProductCode
+      ON LOWER(trans.milstk) = LOWER(productmaster.ProductCode)
       AND trans.CompanySK = productmaster.CompanySK
 
     -- PaymentSK
@@ -428,7 +428,7 @@ BEGIN
 
     -- CostStkSk
     LEFT JOIN src_dim_cost_stk AS coststk_sk
-      ON trans.milStk = coststk_sk.MilStk
+      ON LOWER(trans.milStk) = LOWER(coststk_sk.MilStk)
       AND trans.ChannelCostID = coststk_sk.ChannelCostID
       AND trans.mix_date BETWEEN coststk_sk.StartDate AND coststk_sk.EndDate
       AND trans.CompanySK = coststk_sk.CompanySK
@@ -538,7 +538,7 @@ BEGIN
       AND change_reg_sk.CompanySK = change_dir_sk.CompanySK
 
     QUALIFY ROW_NUMBER() OVER(
-      PARTITION BY trans.CompanySK, trans.milType, trans.milVnos, trans.milCus, trans.milStk, trans.milPer, trans.milListno
+      PARTITION BY trans.CompanySK, trans.milType, trans.milVnos, trans.milCus, LOWER(trans.milStk), trans.milPer, trans.milListno
       ORDER BY sale_sk.seq_condition, sale_sk.SaleRepSK DESC) = 1
 
   ), final_part2 AS (
@@ -689,7 +689,7 @@ BEGIN
     -- CostStkSk
     LEFT JOIN src_dim_cost_stk AS coststk_sk
       ON trans.mix_date BETWEEN coststk_sk.StartDate AND coststk_sk.EndDate
-      AND trans.milStk = coststk_sk.MilStk
+      AND LOWER(trans.milStk) = LOWER(coststk_sk.MilStk)
       AND trans.CompanySK = coststk_sk.CompanySK
       AND coststk_sk.ChannelCostID = channel_cost.ChannelCostID
 
@@ -701,7 +701,7 @@ BEGIN
       AND costgroup_sk.ChannelCostID = channel_cost.ChannelCostID
 
     QUALIFY ROW_NUMBER() OVER(
-      PARTITION BY trans.CompanySK, trans.milType, trans.milVnos, trans.milCus, trans.milStk, trans.milPer, trans.milListno
+      PARTITION BY trans.CompanySK, trans.milType, trans.milVnos, trans.milCus, LOWER(trans.milStk), trans.milPer, trans.milListno
       ORDER BY sale_sk.seq_condition, sale_sk.SaleRepSK DESC) = 1
 
   ), mix_table AS (
@@ -771,7 +771,7 @@ BEGIN
     AND trans.companyID = DebAddress.company_id
 
   LEFT JOIN `${DimStkMktTableRef}` AS stk_mkt
-    ON trans.milStk = stk_mkt.StkCode
+    ON LOWER(trans.milStk) = LOWER(stk_mkt.StkCode)
     AND trans.CompanySK = stk_mkt.CompanySK
 
   LEFT JOIN `${DimProductMktTableRef}` AS product_mkt

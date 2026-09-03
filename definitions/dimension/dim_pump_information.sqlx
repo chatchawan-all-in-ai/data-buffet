@@ -65,7 +65,7 @@ with mix_data as (
 
 )
   select
-    row_number() over(order by milstk, regionid, FlagNewProductMKT) as PumpSK, 
+    row_number() over(order by lower(milstk), regionid, FlagNewProductMKT) as PumpSK, 
     *
   from mix_data
 

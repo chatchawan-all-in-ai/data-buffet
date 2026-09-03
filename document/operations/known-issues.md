@@ -416,3 +416,38 @@
   แต่เป็นการปิดช่องไว้ล่วงหน้าให้ partition ตรงกับคีย์ upsert · แก้ 2 จุด
   (`final_part1`, `final_part2`) — ต้องแก้คู่กันเสมอ เพราะสอง CTE นี้ใช้ dedup ชุดเดียวกัน
   ตรวจซ้ำได้ด้วย: group by 6 คีย์ แล้ว `HAVING COUNT(DISTINCT CompanySK) > 1`
+- **ทำ `milStk` ให้ไม่สนตัวพิมพ์ทั่วทั้ง repo (2026-09-03, ต่อจาก commit b14a0d4)** —
+  สแกน `milstk` ทั้ง repo เจอ 66 บรรทัดใน 20 ไฟล์ แล้วใส่ `LOWER()` **สองฝั่งเสมอ**
+  ให้เฉพาะจุดที่พิสูจน์แล้วว่าไม่ทำให้แถวงอก · **เกณฑ์ที่ใช้**: ฝั่งขวาต้องไม่มีรหัส
+  ที่ต่างกันแค่ตัวพิมพ์ในกลุ่มเดียวกัน (วัดด้วย `GROUP BY key, LOWER(code) HAVING COUNT(DISTINCT code) > 1`)
+  **ผลวัด 2026-09-03**: `validated_mac5.stk` 0 · `dim_product_master` 0 · `dim_stk_mkt` 0 ·
+  `dim_cost_stk` 0 · `dim_rebate` (product) 0 · `fact_transaction_delivery` 0 ·
+  `mds_data_change_marketinggroup_master` 0 → **ใส่ได้** ·
+  `fact_quotation` **6 กลุ่ม** · `validated_mac5.tbook_quodetail` **6 กลุ่ม** → **ห้ามใส่**
+  **จำนวนที่ได้เพิ่มถ้าใส่**: `stk`/`dim_product_master` 36 รหัส (จาก 28,635) ·
+  `dim_stk_mkt` 27 · `fact_quotation` 9 · `dim_cost_stk` 0
+  **จุดที่เว้นไว้ (ห้ามใส่ทั้ง 3 กลุ่ม)**:
+  1. `fact_order.sqlx` join `fact_quotation` (`mil.milStk = fact_quo.StkCode`) — `fact_quotation`
+     มี `StkCode` ต่างกันแค่ตัวพิมพ์ 6 คู่ (ag01: `COM-01/SB-1000L` vs `com-01/sb-1000L`,
+     `FBWPCG1500` vs `Fbwpcg1500`, `T01-PVC-40X2400X10-025` vs `T01-PVC-40x2400x10-025` ฯลฯ)
+     ถ้าใส่ `LOWER()` join จะได้ 2 แถว → `milQuan`/`milSum` เฟ้อ · **ถ้าจะทำ ต้อง `QUALIFY` dedup
+     ฝั่ง `fact_quo` ก่อน** แบบที่ `fact_invoice.sqlx` ทำกับ `fact_order`
+  2. `dim_quotation.sqlx` join `main.stkcode = sec.milstk` — `tbook_quodetail` ชนกัน 6 กลุ่ม
+     (ต้นทางของ `fact_quotation` จึงชนแบบเดียวกัน)
+  3. `fact_transcation.sqlx` ที่เทียบกับ `mds.ProductID` (ทั้ง `=` และ `REGEXP_CONTAINS`) —
+     pattern ทั้ง 22 ตัวเป็นเลขกับอักษรไทย (`บ-0025`, `บ-124|บ-125|...`) **ไม่มีอักษรละตินเลย**
+     `LOWER()` จึงเป็น no-op (วัดแล้ว match 5 = 5 ทั้งก่อนและหลัง) — ไม่ต้องแตะ
+  **`PARTITION BY` ของ dedup ที่เปลี่ยนเป็น `LOWER(milStk)`** (`fact_transcation` 2 จุด +
+  `view_fact_transcation` 1 จุด) วัดก่อนแก้ว่า **ยุบแล้วไม่มีแถวหาย = 0 กลุ่ม** ทั้งบน
+  `onetime.Transaction_Data_Mart` และ `fact_table.fact_transcation`
+  **`ORDER BY` ใน `ROW_NUMBER()` ที่ใส่ `LOWER()`** (`FactInvoiceSK`, `FactTransDeliverySK`,
+  `PumpSK`) **ไม่มีผลต่อการ match** เปลี่ยนแค่ลำดับเลข SK — ปลอดภัยเพราะทั้งสามเป็น
+  full rebuild และ consumer ก็ rebuild ตามทุกคืน (ใส่เพื่อให้ตรงกับ `FactOrderSk` ที่ b14a0d4 ทำไว้)
+  **⚠️ view 4 ตัวต้องไป `CREATE OR REPLACE VIEW` บน BigQuery เองด้วย** (เจ้าของงานเลือกไม่รัน
+  Dataform เพื่อ deploy view): `onetime.Transaction_Data_Mart`,
+  `onetime.PowerBI_Data_Buffet_Transaction`, `onetime.Model_Invoice_Transaction`,
+  `fact_view.view_fact_transcation` — ถ้าแก้ไม่ครบทั้ง 4 จะเกิด drift ระหว่าง repo กับ BigQuery
+  (ตรวจด้วย skill `bq-drift-scan`)
+  **บั๊กที่เจอระหว่างสแกน แต่ยังไม่แก้**: `onetime.PowerBI_Data_Buffet_Transaction`
+  join `stk` ด้วย `stkcode = milstk` **โดยไม่มีเงื่อนไข `company_id`** ขณะที่ `stkcode`
+  ซ้ำข้ามบริษัทถึง 21,985 รหัส → fan-out ข้ามบริษัท (คนละเรื่องกับ case)

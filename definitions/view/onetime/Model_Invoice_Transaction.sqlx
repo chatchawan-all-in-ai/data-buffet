@@ -232,7 +232,7 @@ left join `${DimDirectorLastTableRef}` as director
       and Sales_Tran.CompanySK = director.CompanySK
 
 left join `${DimProductMasterTableRef}` as ProductMaster 
-      on  Sales_Tran.milstk = ProductMaster.ProductCode
+      on  LOWER(Sales_Tran.milstk) = LOWER(ProductMaster.ProductCode)
       and Sales_Tran.CompanySK = ProductMaster.CompanySK
 left join `${DimProductMktTableRef}` as ProductMkt 
       on  Sales_Tran.ProductMktSK = ProductMkt.ProductMktSK

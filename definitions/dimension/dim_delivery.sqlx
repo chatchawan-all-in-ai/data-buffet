@@ -125,7 +125,7 @@ BEGIN
         SELECT 1
         FROM ${ref(databuffet.CURATED_MAC5, 'curated_mil')} AS mil
         WHERE raw.fdocument = mil.milVnos
-          AND raw.fitem = mil.milStk
+          AND LOWER(raw.fitem) = LOWER(mil.milStk)
           AND raw.company_id = mil.company_id
       )
       GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16

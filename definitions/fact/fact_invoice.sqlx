@@ -92,7 +92,7 @@ with dim_invoice as (
 )
 
 select
-  row_number() over(order by mil.CompanySK, mil.milYear, mil.milMonth, mil.milDay, mil.milType, mil.milVnos, mil.milCus, mil.milStk) as FactInvoiceSK, --, mil.milListno)
+  row_number() over(order by mil.CompanySK, mil.milYear, mil.milMonth, mil.milDay, mil.milType, mil.milVnos, mil.milCus, LOWER(mil.milStk)) as FactInvoiceSK, --, mil.milListno)
   mil.InvoiceSK,
   fact_ord.OrderSK,
   fact_ord.FactOrderSK,

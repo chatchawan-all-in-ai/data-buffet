@@ -32,7 +32,7 @@
 | `fact_quotation` | dim_quotation, dim_company, dim_product_master, dim_customer — source `validated_mac5.tbook_quodetail` |
 | `fact_transaction_delivery` | dim_invoice, dim_product_master, dim_company — source `curated_mil` (type='IS') |
 | `fact_delivery` | dim_delivery, dim_company, + `fact_transaction_delivery` — sources `ttrip_document, ttrip, tdelivery, deb, curated_mih, curated_mil`; Thai delivery-status labels |
-| `fact_transcation` | ~20 dims (see below) — source `onetime.Transaction_Data_Mart`; external `mds_data_change_marketinggroup_master` (marketing-group re-map) · dedup `QUALIFY` ทั้ง `final_part1`/`final_part2` partition ด้วย **`CompanySK` + 6 คีย์เอกสาร** ให้ตรงกับคีย์ upsert (เพิ่ม `CompanySK` 2026-09-03) |
+| `fact_transcation` | ~20 dims (see below) — source `onetime.Transaction_Data_Mart`; external `mds_data_change_marketinggroup_master` (marketing-group re-map) · dedup `QUALIFY` ทั้ง `final_part1`/`final_part2` partition ด้วย **`CompanySK` + 6 คีย์เอกสาร** ให้ตรงกับคีย์ upsert (เพิ่ม `CompanySK` 2026-09-03) และ `milStk` ใน partition เป็น `LOWER(milStk)` · join `dim_product_master` / `dim_cost_stk` / `dim_stk_mkt` ใส่ `LOWER()` สองฝั่งแล้ว (2026-09-03 — ดู `known-issues.md`) |
 | `fact_chq` | dim_customer, dim_company — sources `validated_mac5.chq + cql` (`cqlbook = 0`); Thai cheque-status labels |
 | `fact_mir_vs` | dim_invoice (deduped `QUALIFY`), dim_customer, dim_collection_status, dim_company — sources `validated_mac5.mir/mie` + `curated_mih` (mirtype `'VS'`, `mihcancel = 0`) |
 | `fact_mir_rs` | same dims as `fact_mir_vs` + `fact_mir_vs` (BillingSK) + **FULL JOIN** `fact_chq` (FactChqSK) — mirtype `'RS'` |

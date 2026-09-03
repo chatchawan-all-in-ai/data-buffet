@@ -231,3 +231,17 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 1. All 32 views compile and the `view` tag runs after the table-building tags.
 2. Views referencing other views (chains — e.g. `view_dim_aging` → `view_dim_channel`,
    `Model_Invoice_Transaction` → `view_fact_transcation`) resolve in the right order.
+
+## แก้ไขล่าสุด — ต้อง deploy ด้วยมือ (2026-09-03)
+
+4 view ถูกใส่ `LOWER()` สองฝั่งในการ join `milStk` แต่ **เจ้าของงานเลือกไม่รัน Dataform
+เพื่อ deploy view** จะไป `CREATE OR REPLACE VIEW` บน BigQuery เอง:
+
+| view | จุดที่แก้ |
+|---|---|
+| `onetime.Transaction_Data_Mart` | `LOWER(s.stkcode) = LOWER(b.milstk)` |
+| `onetime.PowerBI_Data_Buffet_Transaction` | `LOWER(s.stkcode) = LOWER(b.milstk)` |
+| `onetime.Model_Invoice_Transaction` | `LOWER(Sales_Tran.milstk) = LOWER(ProductMaster.ProductCode)` |
+| `fact_view.view_fact_transcation` | `LOWER(t1.milstk) = LOWER(t4.ProductCode)` · `LOWER(t1.milStk) = LOWER(TRIM(rebate_product.rebate))` · `PARTITION BY ... LOWER(trans.milStk) ...` |
+
+จนกว่าจะ apply ครบทั้ง 4 **repo กับ BigQuery จะ drift** — ตรวจด้วย skill `bq-drift-scan`
