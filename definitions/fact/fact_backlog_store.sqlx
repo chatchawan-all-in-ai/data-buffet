@@ -47,19 +47,6 @@ js {
     const DimStoreTableRef = `${DimStoreTable.database}.${DimStoreTable.schema}.${DimStoreTable.name}`;
 }
 
--- Query 3 "งานค้าง" -- grain = (company_id, cpsVnosID, cpsCusID, cpsStkID)
--- เงื่อนไขจาก query ต้นฉบับตรง ๆ:
---   mihType in ('PS') / mihCancel = 0 / mihClearUM = 0 / mihExtraSUM = 0
---   join cps ด้วย "ทั้ง" mihVnos = cpsVnosID และ mihCus = cpsCusID
--- ใช้จาก cps แค่ 7 คอลัมน์: company_id, cpsVnosID, cpsCusID, cpsStkID,
---   cpsStkREQ, cpsStkCUT1 (จาก query) + cpsSto (สำหรับ dim_store)
---
--- asatdate ของ cps ใช้ในกระบวนการเท่านั้น ไม่เก็บลง fact:
--- ตั้งแต่ commit 105870e ตาราง cps dedup ต่อ rowguid แล้ว asatdate จึงหมายถึง
--- "แถวนี้โผล่ในรอบขนครั้งสุดท้ายเมื่อไหร่" -> เอา MAX(asatdate) ต่อบริษัท
--- = บรรทัดที่ยังเปิดอยู่ (วัด 2026-09-01: 482,624 จาก 3,429,587 แถว)
--- ห้ามใช้ QUALIFY ROW_NUMBER() ต่อ key แบบตารางอื่น -- cps แถวหายเมื่อตัดของครบ
--- จะทำให้งานที่ปิดไปแล้วกลับมา
 
 WITH cps_latest AS (
   SELECT cps.*
@@ -71,22 +58,19 @@ WITH cps_latest AS (
   ) AS m
     ON  cps.company_id = m.company_id
     AND cps.asatdate   = m.max_asatdate
-),
 
-dim_order_dedup AS (
+), dim_order_dedup AS (
   SELECT OrderSK, CompanySK, mihVnos
   FROM `${DimOrderTableRef}`
   QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, mihVnos ORDER BY OrderSK DESC) = 1
-),
 
-dim_product_dedup AS (
+), dim_product_dedup AS (
   -- (CompanySK, ProductCode) ซ้ำ 36 code -- กัน fan out
   SELECT ProductSK, CompanySK, ProductCode
   FROM `${DimProductMasterTableRef}`
   QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, ProductCode ORDER BY ProductSK) = 1
-),
 
-source_data AS (
+), source_data AS (
   SELECT
     dim_com.CompanySK,
     mih.company_id,

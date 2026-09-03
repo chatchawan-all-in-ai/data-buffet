@@ -47,31 +47,17 @@ js {
     const DimStoreTableRef = `${DimStoreTable.database}.${DimStoreTable.schema}.${DimStoreTable.name}`;
 }
 
--- Query 1 "Order" -- grain = uniqueKey ของ mil (company_id, milType, milVnos, milListNo)
--- เงื่อนไขคัดลอกจาก query ต้นฉบับตรง ๆ ไม่เพิ่มไม่ลด:
---   mihType in ('PS')
---   mihDesc not like '%PO.วางบิล%'
---   milDesc not like 'โปรโมชั่น%'
--- หมายเหตุ: ไม่ใส่ IFNULL ครอบสองเงื่อนไข like เพื่อรักษาพฤติกรรมเดิมของ query
--- (แถวที่ desc เป็น NULL ถูกตัดออกเหมือนใน query ต้นฉบับ)
-
 WITH dim_order_dedup AS (
-  -- dim_order เก็บย้อนถึง 2006 และ MERGE ยึด (year, month, day, type, vnos, cus)
-  -- จึงกันไว้ก่อนไม่ให้ join แล้วแตกแถว -- pattern เดียวกับ dim_invoice.sqlx และ view_dim_invoice.sqlx
   SELECT OrderSK, CompanySK, mihVnos
   FROM `${DimOrderTableRef}`
   QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, mihVnos ORDER BY OrderSK DESC) = 1
-),
 
-dim_product_dedup AS (
-  -- วัด 2026-09-01: (CompanySK, ProductCode) ซ้ำ 36 code จาก 117,419 แถว
-  -- ถ้า join ตรง ๆ จะ fan out ทำให้ milQuan เฟ้อ
+), dim_product_dedup AS (
   SELECT ProductSK, CompanySK, ProductCode
   FROM `${DimProductMasterTableRef}`
   QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, ProductCode ORDER BY ProductSK) = 1
-),
 
-source_data AS (
+), source_data AS (
   SELECT
     dim_com.CompanySK,
     mih.company_id,
@@ -90,7 +76,11 @@ source_data AS (
     mil.milDesc,
     mil.milSto,
     mil.milQuan,
-    mih.mihPer
+    mih.mihPer,
+    (CASE 
+      WHEN mil.milsum = 0.0 and mil.mil.milDesc like '%ของแถม%' THEN 'Yes'
+      ELSE 'No'
+    END) as FlagFree,
   FROM ${ref(databuffet.CURATED_MAC5, 'curated_mil')} AS mil
   INNER JOIN ${ref(databuffet.CURATED_MAC5, 'curated_mih')} AS mih
     ON  mih.company_id = mil.company_id
@@ -106,7 +96,7 @@ source_data AS (
     AND dim_cust.debcode   = mih.mihCus
   LEFT JOIN dim_product_dedup AS dim_prod
     ON  dim_prod.CompanySK   = dim_com.CompanySK
-    AND dim_prod.ProductCode = mil.milStk
+    AND LOWER(dim_prod.ProductCode) = LOWER(mil.milStk)
   LEFT JOIN `${DimStoreTableRef}` AS dim_sto
     ON  dim_sto.CompanySK = dim_com.CompanySK
     AND dim_sto.StoreCode = mil.milSto
