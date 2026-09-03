@@ -405,3 +405,14 @@
   commit เดียวกันนี้ลบคอมเมนต์อธิบายใน `dim_store.sqlx` ทิ้ง (ถูก re-save ทับจาก
   Dataform web IDE) — **เจ้าของงานตัดสินใจไม่เอากลับ** คำอธิบายอยู่ที่ไฟล์นี้กับ
   `project_wiki/dimension/inventory.md` แทน
+- **`fact_transcation` dedup: เพิ่ม `CompanySK` เข้า `QUALIFY ... PARTITION BY` (2026-09-03)** —
+  เดิม partition ด้วย 6 คีย์เอกสาร (`milType, milVnos, milCus, milStk, milPer, milListno`)
+  **ไม่มี `CompanySK`** ขณะที่คีย์ upsert (`DELETE ... WHERE EXISTS`) คือ
+  `(milVnos, milType, CompanySK)` และข้อมูลมี 5 บริษัท → ถ้าวันไหนเลขเอกสารซ้ำข้ามบริษัท
+  แถวของบริษัทหนึ่งจะถูก `QUALIFY` ทิ้งเงียบ ๆ ทั้งที่ upsert มองว่าเป็นคนละแถว
+  **วัด 2026-09-03 ก่อนแก้**: `onetime.Transaction_Data_Mart` ในหน้าต่าง 4 ปี 2,655,284 แถว
+  → ยุบเป็น 2,655,222 กลุ่ม (6 คีย์) → **กลุ่มที่คร่อม `CompanySK` มากกว่า 1 = 0**
+  ดังนั้นการเพิ่ม `CompanySK` **เป็น no-op บนข้อมูลวันนี้** ไม่ใช่การแก้บั๊กที่กำลังเกิด
+  แต่เป็นการปิดช่องไว้ล่วงหน้าให้ partition ตรงกับคีย์ upsert · แก้ 2 จุด
+  (`final_part1`, `final_part2`) — ต้องแก้คู่กันเสมอ เพราะสอง CTE นี้ใช้ dedup ชุดเดียวกัน
+  ตรวจซ้ำได้ด้วย: group by 6 คีย์ แล้ว `HAVING COUNT(DISTINCT CompanySK) > 1`

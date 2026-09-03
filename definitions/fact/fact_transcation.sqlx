@@ -538,7 +538,7 @@ BEGIN
       AND change_reg_sk.CompanySK = change_dir_sk.CompanySK
 
     QUALIFY ROW_NUMBER() OVER(
-      PARTITION BY trans.milType, trans.milVnos, trans.milCus, trans.milStk, trans.milPer, trans.milListno
+      PARTITION BY trans.CompanySK, trans.milType, trans.milVnos, trans.milCus, trans.milStk, trans.milPer, trans.milListno
       ORDER BY sale_sk.seq_condition, sale_sk.SaleRepSK DESC) = 1
 
   ), final_part2 AS (
@@ -701,7 +701,7 @@ BEGIN
       AND costgroup_sk.ChannelCostID = channel_cost.ChannelCostID
 
     QUALIFY ROW_NUMBER() OVER(
-      PARTITION BY trans.milType, trans.milVnos, trans.milCus, trans.milStk, trans.milPer, trans.milListno
+      PARTITION BY trans.CompanySK, trans.milType, trans.milVnos, trans.milCus, trans.milStk, trans.milPer, trans.milListno
       ORDER BY sale_sk.seq_condition, sale_sk.SaleRepSK DESC) = 1
 
   ), mix_table AS (
