@@ -40,6 +40,7 @@
 
     "VALIDATED_SALEOUT_MDT" : "validated_saleout_mdt",
     "RAW_SALEOUT_MDT" : "raw_saleout_mdt",
+    "CURATED_SALEOUT_MDT": "curated_saleout_mdt",
 
     "VALIDATED_ALLKONS_COMMISSION" : "validated_allkons_commission",
     "RAW_ALLKONS_COMMISSION" : "raw_allkons_commission",
