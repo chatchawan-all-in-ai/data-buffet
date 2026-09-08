@@ -117,6 +117,7 @@ WITH cps_latest AS (
     AND mih.mihCancel   = 0
     AND mih.mihClearUM  = 0
     AND mih.mihExtraSUM = 0
+    AND mih.company_id in ('ag01', 'ab01')
   GROUP BY
     CompanySK, company_id, sDate, mihYear, mihMonth, mihDay,
     OrderSK, CustomerSK, ProductSK, StoreSK,

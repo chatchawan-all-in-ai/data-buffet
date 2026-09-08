@@ -128,6 +128,7 @@ WITH dim_order_dedup AS (
     ON  dim_sto.CompanySK = dim_com.CompanySK
     AND dim_sto.StoreCode = mil.milSto
   WHERE mih.mihType = 'IS'
+    AND mih.company_id in ('ag01', 'ab01')
     AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay)))
         >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
 )
