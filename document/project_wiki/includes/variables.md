@@ -31,7 +31,6 @@
 | MAC5 | `raw_mac5_ag01`, `raw_mac5_aa05`, `raw_mac5_ab01`, `raw_mac5_ac02`, `raw_mac5_ak02` (one per company) | `validated_mac5` | `curated_mac5` |
 | CIS360 | `raw_cis360` | `validated_cis360` | `curated_cis360` |
 | MASTERSKU | `raw_mastersku` | `validated_mastersku` | `curated_mastersku` |
-| SALEOUT_MDT | `raw_saleout_mdt` | `validated_saleout_mdt` | — |
 | ALLKONS_COMMISSION | `raw_allkons_commission` | `validated_allkons_commission` | — |
 | SALEOUT_MDT | `raw_saleout_mdt` | `validated_saleout_mdt` | `curated_saleout_mdt` (เพิ่ม 2026-09-07) |
 

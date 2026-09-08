@@ -16,7 +16,9 @@ plus CDC and an AI address-parsing pipeline.
 - **Language**: SQLX (SQL + JavaScript)
 - **Raw data**: GCS `gs://file-raw-data` (AVRO, Hive-partitioned by `ASATDATE=YYYYMMDD`)
 - **Sources**: MAC5 (5 companies: ag01/aa05/ab01/ac02/ak02), MASTERSKU, CIS360,
-  SALEOUT_MDT, ALLKONS_COMMISSION + externally-loaded `mds_dataset` (master data — not built by this repo)
+  SALEOUT_MDT + externally-loaded `mds_dataset` (master data — not built by this repo).
+  ALLKONS_COMMISSION has raw external tables in `definitions/initial/` but its 8
+  validated files sit in `backup/validated/allkons_commission/` — parked, not running.
 - **Branches**: `dev` (working/default) → `nonprod` → `prod` (+ `hotfix`)
 
 ## Documentation — read these first
@@ -80,9 +82,9 @@ work on Opus, pattern-following work on Sonnet):
 | Layer | Path | Files | Dataset | Materialization |
 |---|---|---:|---|---|
 | Initial | `definitions/initial/` | 17 | `raw_*`, `function_dataset` | operations (external tables, UDFs) |
-| Validated | `definitions/validated/` | 143 | `validated_<source>` | incremental / table + QUALIFY dedup |
-| Curated | `definitions/curated/` | 8 | `curated_<source>` | incremental (+ post_operations) |
-| Dimension | `definitions/dimension/` | 61 | `dimension_table` | **table rebuild** (34 mds + 12 other) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
+| Validated | `definitions/validated/` | 135 | `validated_<source>` | incremental / table + QUALIFY dedup |
+| Curated | `definitions/curated/` | 10 | `curated_<source>` | incremental (+ post_operations) · 1 operations file creates the SALEOUT_MDT schema |
+| Dimension | `definitions/dimension/` | 62 | `dimension_table` | **table rebuild** (34 mds + 13 other) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
 | Fact | `definitions/fact/` | 12 | `fact_table` | table rebuild / operations upsert — **no MERGE** |
 | View | `definitions/view/` | 31 | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |
 | CDC | `definitions/cdc/` | 2 | `cdc_dataset` | operations, generated from `cdc-config.json` |
