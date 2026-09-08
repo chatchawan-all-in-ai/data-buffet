@@ -84,7 +84,7 @@ work on Opus, pattern-following work on Sonnet):
 | Initial | `definitions/initial/` | 17 | `raw_*`, `function_dataset` | operations (external tables, UDFs) |
 | Validated | `definitions/validated/` | 135 | `validated_<source>` | incremental / table + QUALIFY dedup |
 | Curated | `definitions/curated/` | 10 | `curated_<source>` | incremental (+ post_operations) · 1 operations file creates the SALEOUT_MDT schema |
-| Dimension | `definitions/dimension/` | 62 | `dimension_table` | **table rebuild** (34 mds + 13 other) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
+| Dimension | `definitions/dimension/` | 65 | `dimension_table` | **table rebuild** (34 mds + 16 other) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
 | Fact | `definitions/fact/` | 12 | `fact_table` | table rebuild / operations upsert — **no MERGE** |
 | View | `definitions/view/` | 31 | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |
 | CDC | `definitions/cdc/` | 2 | `cdc_dataset` | operations, generated from `cdc-config.json` |
@@ -188,10 +188,10 @@ addresses, gated on today's CDC changes (cost control — don't remove the gate)
 ## Tags (in use)
 
 `initial`, `re-initial` (⚠️ drops validated/curated MAC5 tables), `validated`,
-`validated_full`, `validated_incremental`, `curated`, `dimension_daily`,
+`validated_full`, `validated_incremental`, `curated`, `curated_incremental`, `dimension_daily`,
 `dimension_yearly` (dim_calendar only), `fact_daily`, `view`, `cdc`, `cdc_incremental`,
 `process`. Declared but unused: `dimension_monthly`, `fact_monthly`, `fact_yearly`,
-`curated_full`, `curated_incremental`. **No `assertions` tag — no Dataform assertions
+`curated_full`. **No `assertions` tag — no Dataform assertions
 exist.**
 
 ## Environment facts

@@ -1,0 +1,41 @@
+config {
+  type: "table",
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: [],
+  tags: [databuffet.TAG_DIM_DAILY],
+  uniqueKey: ["BranchMdtSK"],
+  bigquery: {
+    clusterBy: ["BranchMdtSK"],
+  },
+}
+
+/*
+  สาขาของห้างค้าปลีก 6 แห่ง — ต้นทางคือ Master Branch MDT_final.xlsx ชีท Master Branch
+  ที่ BI ดูแล ยังไม่ได้โหลดเข้า BigQuery จึงมีแต่แถวไม่ระบุไปก่อน
+
+  คีย์ธรรมชาติคือ StoreCode + SourceStoreCode ต้องใช้ 2 คอลัมน์
+  เพราะรหัสสาขาไม่ unique ข้ามห้าง — BT '107' กับ TW '107' เป็นคนละสาขา
+
+  เก็บ ZoneMdtSK ไว้ในตัวเอง fact จึงไม่ต้อง join dim_zone
+  BranchMdtSK = -1 คือแถวไม่ระบุ fact ใช้ LEFT JOIN + IFNULL(SK,-1) ห้าม INNER JOIN
+
+  ponytail: ตอนเติมแถวจริงต้องเปลี่ยนไปใช้ MERGE เพื่อให้ SK นิ่งตลอดไป
+  ห้ามใช้ ROW_NUMBER เพราะ fact เก็บ SK ข้ามเดือน เพิ่มสาขาแล้ว SK จะเลื่อน
+  Province ยังไม่มีในไฟล์ master — Requirement ขอไว้ ต้องขอ BI เพิ่ม (Q31)
+*/
+
+SELECT * FROM UNNEST([
+  STRUCT(
+    -1                   AS BranchMdtSK,
+    CAST(NULL AS STRING) AS StoreCode,
+    CAST(NULL AS STRING) AS SourceStoreCode,
+    'ไม่ระบุ'              AS BranchNameTH,
+    -1                   AS ZoneMdtSK,
+    CAST(NULL AS STRING) AS Province,
+    CAST(NULL AS STRING) AS Section
+  )
+])
+
+pre_operations {}
+
+post_operations {}

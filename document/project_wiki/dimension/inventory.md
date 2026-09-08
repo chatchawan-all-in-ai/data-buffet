@@ -1,4 +1,4 @@
-# Dimension Inventory — all 61 files
+# Dimension Inventory — all 65 files
 
 > **LLM context**: SK = surrogate key column; NK = natural/business key. Most dims
 > carry `CompanySK` FK from `dim_company`.
@@ -71,7 +71,7 @@ All depend on `dim_company` except `dim_company` (deps `[]`) and `dim_holiday` (
 | dim_group_customer | GroupCustomerSK | dim_customer | dim_customer |
 | dim_group_customer_grade | GroupCustomerGradeSK | deb, chq, cql, mie, mir, mih, curated_mih | dim_calendar, dim_customer, dim_group_customer + score dims |
 
-## Group (c) — full rebuild `type: "table"` (12)
+## Group (c) — full rebuild `type: "table"` (16)
 
 | File | SK | Notes |
 |---|---|---|
@@ -81,6 +81,11 @@ All depend on `dim_company` except `dim_company` (deps `[]`) and `dim_holiday` (
 | dim_target_product_group_by_sale_dayofwork | TargetBySaleDayofworkSK | joins dim_calendar (working-day expansion); daily full rebuild, self-heals |
 | dim_store | StoreSK · **NK = company_id + stoCode** | คลัง/สาขาจาก `validated_mac5.sto` (601 แถว ag01) · `StoreGroup` (`stogroup`) เป็นชั้นที่ใช้สไลซ์ — KK ขอนแก่น, LP ลำพูน, HY หาดใหญ่, UB อุบลราชธานี, PK ภูเก็ต · `ReportStore` (เพิ่ม 2026-09-03) = `stogroup` ที่ไม่อยู่ใน `kk/pk/lp/ub/hy` ยุบเป็น `'KTB'` ถังเดียว ไว้สไลซ์รายงาน · `UNION ALL` แถว Unknown `StoreSK = -1` (`ReportStore = 'Unknown'`) รับรหัสที่ไม่มีใน `sto` (pattern เดียวกับ `dim_stk_mkt`) · consumer: `fact_order_store` / `fact_invoice_store` / `fact_backlog_store` ต่อด้วย `milSto` / `cpsSto` (เพิ่ม 2026-09-01) |
 | dim_pump_information | PumpSK · **NK = CompanySK + milstk + RegionID + FlagNewProductMKT** | **อ่านจาก `fact_transcation`** (ไม่ใช่ mds) → `PumpSegment`; PS1 + FlagNewProductMKT → `dim_product_mkt.Segment`, นอกนั้น → `view_dim_product_master.PumpSegment` (เพิ่ม 2026-08-26) · consumer: `view_fact_transcation` join กลับด้วย NK 4 ตัว (ไม่ persist PumpSK) · **`CompanySK` จำเป็น — `milstk` unique แค่ภายในบริษัท** |
+
+| dim_store_mdt | StoreMdtSK · **NK = StoreCode** | ห้างค้าปลีก 6 แห่งของโปรเจกต์ Sales Out MDT (HP MH TW GH BT DH) + แถว `-1` = 7 แถว · **ไม่มีต้นทาง** — ค่าอยู่ใน `UNNEST([STRUCT(...)])` ในไฟล์ · **SK เขียนเป็นเลขคงที่ ไม่ใช้ ROW_NUMBER** เพราะ `fact_saleout_mdt` เก็บ SK ข้ามเดือน · `HasFeed` แยก "ยอด 0 เพราะขายไม่ได้" ออกจาก "ยังไม่ส่งไฟล์" (DH = FALSE) · **เป็น conformed dimension เดียวที่ทั้งฝั่งขายออกและขายเข้าใช้ร่วมกันได้** — ฝั่งขายเข้าไม่มีสาขา จึงยุบเข้า `dim_sales_branch_mdt` ไม่ได้ (เพิ่ม 2026-09-08) |
+| dim_sales_branch_mdt | BranchMdtSK · **NK = StoreCode + SourceStoreCode** | สาขาของ 6 ห้าง · ต้นทาง `Master Branch MDT_final.xlsx` ชีท Master Branch (BI ดูแล) **ยังไม่โหลดเข้า BigQuery — ตอนนี้มีแต่แถว `-1`** · NK ต้อง 2 คอลัมน์ เพราะรหัสสาขาไม่ unique ข้ามห้าง (BT `107` ≠ TW `107`) · เก็บ `ZoneMdtSK` ไว้ในตัวเอง · `Province` ยังไม่มีในไฟล์ master (Q31) · ⚠️ ต้องเปลี่ยนเป็น MERGE ตอนเติมแถวจริง (เพิ่ม 2026-09-08) |
+| dim_zone_mdt | ZoneMdtSK · **NK = ZoneCode** | โซนขายของ MDT · ต้นทางชีท Zone **ยังไม่โหลด — มีแต่แถว `-1`** · **fact ไม่ join ตารางนี้** อ่าน `ZoneMdtSK` จาก `dim_sales_branch_mdt` · ตั้งชื่อ `_mdt` เพื่อไม่ให้กำกวมกับ `dim_region`/`dim_section` ของ MAC5 · ⚠️ ต้องเปลี่ยนเป็น MERGE ตอนเติมแถวจริง (เพิ่ม 2026-09-08) |
+| dim_product_mdt | ProductMdtSK · **NK = StoreCode + SourceProductCode** | สินค้าที่ขายผ่าน MDT · ต้นทางชีท Product **ยังไม่โหลด — มีแต่แถว `-1`** · NK ต้อง 2 คอลัมน์ เพราะรหัสสินค้าของแต่ละห้างเป็นระบบตัวเอง · เก็บ `ProductSK` ไว้ในตัวเอง fact จึงไม่ join `dim_product_master` · ตอนเติมแถวจริงต้องตอบก่อนว่าใช้ `ProductSK` ของบริษัทไหน (`dim_product_master` มี `CompanySK`) · **แถวใหม่ห้ามเพิ่มอัตโนมัติ** ต้องมีคนกรอกผ่าน form · ⚠️ ต้องเปลี่ยนเป็น MERGE ตอนเติมแถวจริง (เพิ่ม 2026-09-08) |
 
 ## Group (e) — other operations (3)
 
