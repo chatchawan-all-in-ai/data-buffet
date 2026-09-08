@@ -67,7 +67,7 @@ WITH mil_source AS (
     AND t.companyID = mil.company_id
   LEFT JOIN  `${DimProductMasterTableRef}` as dim_product
     on mil.company_id = dim_product.companyID
-    and mil.milstk = dim_product.ProductCode
+    and lower(mil.milstk) = lower(dim_product.ProductCode)
     -- AND IFNULL(t.milLinkVcno, '') = IFNULL(mil.milLinkVcno, '')
   WHERE PARSE_DATE('%Y%m%d', CONCAT(mil.milYear, FORMAT("%02d", mil.milMonth), FORMAT("%02d", mil.milDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
     -- and milVnos = 'L6703001189'
@@ -76,7 +76,7 @@ WITH mil_source AS (
 
 )
   SELECT
-    ROW_NUMBER() OVER(ORDER BY dim_com.CompanySK, mil.milYear, mil.milMonth, mil.milDay, mil.milType, mil.milvnos, mil.milStk) as FactTransDeliverySK,
+    ROW_NUMBER() OVER(ORDER BY dim_com.CompanySK, mil.milYear, mil.milMonth, mil.milDay, mil.milType, mil.milvnos, lower(mil.milStk)) as FactTransDeliverySK,
     mil.InvoiceSK,
     mil.ProductSK,
     dim_com.CompanySK,

@@ -74,8 +74,9 @@ SELECT
   asatdate as asatdate,
   '100.00%' as percent_sale
 FROM ${ref(databuffet.VALIDATED_MAC5, "mil")}
-WHERE company_id = 'ag01'
-${ when(incremental(), `AND asatdate >= CURRENT_DATE('Asia/Bangkok')-1`) }
+WHERE IFNULL(milvnos, '') != ''
+  ${ when(incremental(), `AND asatdate >= DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY)`) }
+
 
 post_operations {
   -------- CREATE TEMP TABLE --------
@@ -86,6 +87,7 @@ post_operations {
         mil.*, mil.milPer as milPer_raw
       FROM ${ref(databuffet.VALIDATED_MAC5, "mil")} AS mil
       WHERE mil.company_id = 'ag01'
+        and IFNULL(mil.milvnos, '') != ''
       QUALIFY row_number() over(partition by mil.company_id, mil.milType, mil.milVnos, mil.milListno order by mil.asatdate desc) = 1
 
     ), filter_mih2 AS (
@@ -290,7 +292,9 @@ post_operations {
 
   -------- INSERT DATA --------
     INSERT INTO ${self()}
-    SELECT * FROM new_data_curated_mil
+    SELECT * 
+    FROM new_data_curated_mil
+    WHERE company_id = 'ag01'
     ;
   -------- INSERT DATA --------
 

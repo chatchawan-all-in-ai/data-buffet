@@ -200,7 +200,7 @@ AS (
 
 CREATE OR REPLACE FUNCTION `${databuffet.DATABASE}.${databuffet.FUNCTION_DATASET}.clean_company_prefix`(text_input STRING)
 RETURNS STRING AS (
-  TRIM(
+  NULLIF(TRIM(
     REGEXP_REPLACE(
       -- Step 2: ตัดคำลงท้ายออก (จำกัด, (มหาชน))
       REGEXP_REPLACE(
@@ -212,5 +212,5 @@ RETURNS STRING AS (
       r'\s*(?:จำกัด|จก\.*|ก\.|\(มหาชน\))\s*$',
       ''
     )
-  )
+  ), '')
 );

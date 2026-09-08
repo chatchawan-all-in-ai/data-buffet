@@ -134,7 +134,7 @@ with mil_is as (
     select 1 
     from ${ref(databuffet.CURATED_MAC5, 'curated_mil')} as mil
     where raw.fdocument = mil.milVnos
-      and raw.fitem = mil.milStk
+      and lower(raw.fitem) = lower(mil.milStk)
       and raw.company_id = mil.company_id
   )
   group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
@@ -171,7 +171,7 @@ with mil_is as (
       select 1 
       from ${ref(databuffet.CURATED_MAC5, 'curated_mil')} as mil
       where raw.fdocument = mil.milVnos
-        and raw.fitem2 = mil.milStk
+        and lower(raw.fitem2) = lower(mil.milStk)
         and raw.company_id = mil.company_id
     )
   group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
@@ -242,7 +242,7 @@ with mil_is as (
   from final_delivery as t1
   left join `${FactTransDeliveryTableRef}` as t2
     on t1.documentID = t2.milVnos
-    AND t1.item = t2.milStk
+    AND LOWER(t1.item) = LOWER(t2.milStk)
     AND t1.companyID = t2.companyID
   left join `${DimDeliveryTableRef}` AS dl
     on t1.documentID = dl.documentID

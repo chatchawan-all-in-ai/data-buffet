@@ -13,7 +13,7 @@
 | `re-initial` | ⚠️ DROP validated/curated MAC5 tables (destructive, mac5 only) |
 | `validated` / `validated_full` / `validated_incremental` | Validated layer |
 | `curated` | Curated layer (no sub-tags in use) |
-| `dimension_daily` | 58 of 59 dims |
+| `dimension_daily` | 59 of 60 dims |
 | `dimension_yearly` | `dim_calendar` only |
 | `fact_daily` | All 6 facts |
 | `cdc` / `cdc_incremental` | CDC change log |
@@ -65,9 +65,10 @@ intent.
 Run the scan before any `view` tag run, and after a stretch of console work:
 skill `bq-drift-scan` (`.claude/skills/bq-drift-scan/`, with
 `scripts/{dump.sql,scan.py,pull.py}`), or the read-only `bq-drift-auditor` agent.
-Baseline 2026-08-10: 42 views + 7 UDFs, all matching except a trailing semicolon
-in `Sales_Per_Non_Master`, plus two `onetime.TEST_Data_Transaction*` views that
-exist only in BigQuery and are deliberately not tracked.
+Baseline 2026-08-26: 39 objects, 37 identical. The 2 that differ are ahead in the
+repo and waiting to be deployed (`EXTRACT_CHQ_DATA`, `view_dim_aging_history`) --
+nothing is drifting the other way. `onetime` holds exactly the 6 views the repo
+builds — no untracked leftovers.
 
 Things that cost time the first round:
 

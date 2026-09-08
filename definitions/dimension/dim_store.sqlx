@@ -1,0 +1,56 @@
+config {
+  type: "table",
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: ["dim_company"],
+  tags: [databuffet.TAG_DIM_DAILY],
+  uniqueKey: ["StoreSK"],
+  bigquery: {
+    clusterBy: ["StoreSK"],
+  },
+}
+
+js {
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+}
+
+WITH sto_master AS (
+  SELECT
+    ROW_NUMBER() OVER(ORDER BY sto.company_id, sto.stocode) AS StoreSK,
+    dim_com.CompanySK,
+    sto.company_id AS companyID,
+    sto.stocode AS StoreCode,
+    sto.stogroup AS StoreGroup,
+    sto.stodesct AS StoreNameT,
+    sto.stodesce AS StoreNameE,
+    (CASE 
+      WHEN lower(ifnull(sto.stogroup, '')) not in ('kk', 'pk', 'lp', 'ub', 'hy') THEN 'KTB'
+      ELSE sto.stogroup
+    END) AS ReportStore
+  FROM ${ref(databuffet.VALIDATED_MAC5, "sto")} AS sto
+  LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+    ON sto.company_id = dim_com.companyID
+
+), unknown_store AS (
+  SELECT
+    -1 AS StoreSK,
+    CAST(NULL AS INT64)  AS CompanySK,
+    CAST(NULL AS STRING) AS companyID,
+    CAST(NULL AS STRING) AS StoreCode,
+    CAST(NULL AS STRING) AS StoreGroup,
+    'ไม่ระบุคลัง' AS StoreNameT,
+    'Unknown' AS StoreNameE,
+    'Unknown' AS ReportStore
+)
+
+SELECT * FROM sto_master
+UNION ALL
+SELECT * FROM unknown_store
+
+pre_operations {}
+
+post_operations {}

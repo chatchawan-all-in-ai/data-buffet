@@ -39,7 +39,7 @@ WITH stk as (
       AND a.mihVnos = b.milVnos
       AND a.mihCus = b.milCus
   LEFT JOIN stk AS s
-    ON s.stkcode = b.milstk
+    ON LOWER(s.stkcode) = LOWER(b.milstk)
   WHERE a.mihtype IN ('IS', 'AS', 'BS', 'QS') 
 
 ), transcation as (

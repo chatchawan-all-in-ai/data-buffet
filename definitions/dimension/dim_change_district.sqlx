@@ -1,7 +1,11 @@
 config {
   type: "table",
+  schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_company"],
-  tags: [databuffet.TAG_DIM_DAILY]
+  tags: [databuffet.TAG_DIM_DAILY],
+  bigquery: {
+    clusterBy: ["companyID", "customerCode"],
+  }
 }
 
 js {
@@ -14,7 +18,7 @@ js {
 
     const MdsSourceTable = {
         database: databuffet.DATABASE,
-        schema: "mds_dataset",
+        schema: databuffet.MDS_DATASET,
         name: "mds_data_change_section_master",
     };
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;

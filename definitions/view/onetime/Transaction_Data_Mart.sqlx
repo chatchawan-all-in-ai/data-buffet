@@ -71,6 +71,7 @@ WITH stk as (
     a.mihmemonew,
     a.mihCancel,
     a.mihStatus,
+    a.mihnotes,
     mih_ps.QuotationID,
     mih_ps.QuotationCode,
     b.* except(company_id),
@@ -99,7 +100,7 @@ WITH stk as (
     ON b.milLinkvcno = mih_ps.mihVnos
     and b.company_id = mih_ps.company_id
   LEFT JOIN stk AS s
-    ON s.stkcode = b.milstk
+    ON LOWER(s.stkcode) = LOWER(b.milstk)
     and s.company_id = b.company_id
   -- LEFT JOIN `${DimProductRebateTableRef}` as product_rebate 
   --   ON b.milstk = product_rebate.Rebate

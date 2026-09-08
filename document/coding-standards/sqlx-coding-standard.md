@@ -32,7 +32,6 @@ config {
 
 กติกา:
 - `schema` และ `tags` ต้องอ้าง `databuffet.*` — **ห้าม string literal**
-  (ยกเว้นข้อยกเว้นเดิม: `"mds_dataset"` ใน dim files)
 - เลือก `type` ตาม layer:
   - validated: `incremental` (transactional) หรือ `table` (full-load reference)
   - curated: `incremental`
@@ -97,7 +96,7 @@ FROM `${DimCompanyTableRef}`
 > **tech debt**: ไฟล์เก่าบางไฟล์ยัง inline อยู่ เช่น `fact_transcation.sqlx` ใช้
 > `${databuffet.DATABASE}.onetime.Transaction_Data_Mart` แบบ inline (ควรเป็น js-block Ref)
 > — ของใหม่ยึดกฎข้างบน ของเก่าค่อยแปลงเมื่อแตะไฟล์นั้น
-> `definitions/view/` ทั้ง 42 ไฟล์ทำตามกฎนี้ครบแล้ว (2026-07-24)
+> `definitions/view/` ทั้ง 32 ไฟล์ทำตามกฎนี้ครบ
 
 ### 3.3 Backslash ใน SQL body — เขียนตรง ๆ ตัวเดียว
 

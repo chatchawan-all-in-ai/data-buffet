@@ -1,0 +1,144 @@
+config {
+    type: "table",
+    schema: databuffet.FACT_TABLE,
+    dependencies: ["dim_order", "dim_invoice", "dim_customer", "dim_product_master", "dim_company", "dim_store"],
+    tags: [databuffet.TAG_FACT_DAILY],
+    uniqueKey: ["FactInvoiceStoreSK"],
+    bigquery: {
+        partitionBy: "mix_date",
+        clusterBy: ["FactInvoiceStoreSK"]
+    },
+}
+
+js {
+    const DimOrderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_order",
+    };
+    const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
+
+    const DimInvoiceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_invoice",
+    };
+    const DimInvoiceTableRef = `${DimInvoiceTable.database}.${DimInvoiceTable.schema}.${DimInvoiceTable.name}`;
+
+    const DimCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer",
+    };
+    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
+
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+
+    const DimProductMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_master",
+    };
+    const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
+
+    const DimStoreTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_store",
+    };
+    const DimStoreTableRef = `${DimStoreTable.database}.${DimStoreTable.schema}.${DimStoreTable.name}`;
+}
+
+
+WITH dim_order_dedup AS (
+  SELECT OrderSK, CompanySK, mihVnos
+  FROM `${DimOrderTableRef}`
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, mihVnos ORDER BY OrderSK DESC) = 1
+
+), dim_product_dedup AS (
+  SELECT ProductSK, CompanySK, ProductCode, ProductGroupMAC5
+  FROM `${DimProductMasterTableRef}`
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, ProductCode ORDER BY ProductSK) = 1
+
+), dim_invoice_dedup AS (
+  SELECT InvoiceSK, CompanySK, mihVnos
+  FROM `${DimInvoiceTableRef}`
+  WHERE mihType = 'IS'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, mihVnos ORDER BY InvoiceSK DESC) = 1
+
+), raw_table AS (
+  SELECT
+    dim_com.CompanySK,
+    mih.company_id,
+    SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) AS mix_date,
+    mih.mihYear,
+    mih.mihMonth,
+    mih.mihDay,
+    mih.mihVnos,
+    dim_inv.InvoiceSK,
+    dim_ord.OrderSK,
+    dim_cust.CustomerSK,
+    dim_prod.ProductSK,
+    IFNULL(dim_sto.StoreSK, -1) AS StoreSK,
+    mil.milType,
+    mil.milListNo,
+    mil.milStk,
+    mil.milDesc,
+    mil.milSto,
+    mil.milLinkVcno,
+    mil.milLinkVcType,
+    mil.milQuan,
+    mil.milPer,
+    mil.percent_sale,
+    (CASE 
+      WHEN mil.milsum = 0.0 
+        -- or mil.milDesc like '%ของแถม%' 
+        or dim_prod.ProductGroupMAC5 = '5000' 
+        THEN 'Yes'
+      ELSE 'No'
+    END) as FlagFree,
+  FROM ${ref(databuffet.CURATED_MAC5, 'curated_mil')} AS mil
+  INNER JOIN ${ref(databuffet.CURATED_MAC5, 'curated_mih')} AS mih
+    ON  mih.company_id = mil.company_id
+    AND mih.mihVnos    = mil.milVnos
+    AND mih.mihType    = mil.milType
+  LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+    ON mih.company_id = dim_com.companyID
+  LEFT JOIN dim_invoice_dedup AS dim_inv
+    -- ตัวใบกำกับเอง -- ปลด mihVnos/mihRef/mihNotes ออกจาก fact ไปอยู่ dim
+    ON  dim_inv.CompanySK = dim_com.CompanySK
+    AND dim_inv.mihVnos   = mih.mihVnos
+  LEFT JOIN dim_order_dedup AS dim_ord
+    -- โยงกลับใบสั่งขาย เฉพาะเมื่อ link ชี้ไปที่เอกสารชนิด PS
+    ON  dim_ord.CompanySK = dim_com.CompanySK
+    AND dim_ord.mihVnos   = mil.milLinkVcno
+    AND mil.milLinkVcType = 'PS'
+  LEFT JOIN `${DimCustomerTableRef}` AS dim_cust
+    ON  dim_cust.CompanySK = dim_com.CompanySK
+    AND dim_cust.debcode   = mih.mihCus
+  LEFT JOIN dim_product_dedup AS dim_prod
+    ON  dim_prod.CompanySK   = dim_com.CompanySK
+    AND LOWER(dim_prod.ProductCode) = LOWER(mil.milStk)
+  LEFT JOIN `${DimStoreTableRef}` AS dim_sto
+    ON  dim_sto.CompanySK = dim_com.CompanySK
+    AND dim_sto.StoreCode = mil.milSto
+  WHERE mih.mihType = 'IS'
+    AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay)))
+        >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
+)
+
+SELECT
+  ROW_NUMBER() OVER(
+    ORDER BY CompanySK, mihYear, mihMonth, mihDay, milType, mihVnos, milListNo, milPer
+  ) AS FactInvoiceStoreSK,
+  raw_table.*
+FROM raw_table
+
+pre_operations {}
+
+post_operations {}

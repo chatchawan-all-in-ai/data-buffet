@@ -1,0 +1,74 @@
+config {
+  type: "table",
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: ["fact_transcation", "dim_product_mkt", "dim_product_master", "dim_region"],
+  tags: [databuffet.TAG_DIM_DAILY],
+  uniqueKey: ["PumpSK"],
+  bigquery: {
+    clusterBy: ["PumpSK"],
+  },
+}
+
+js {
+    const FactTranscationTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FACT_TABLE,
+        name: "fact_transcation",
+    };
+    const FactTranscationTableRef = `${FactTranscationTable.database}.${FactTranscationTable.schema}.${FactTranscationTable.name}`;
+
+    const ProductMasterView = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_VIEW,
+        name: "view_dim_product_master",
+    };
+    const ProductMasterViewRef = `${ProductMasterView.database}.${ProductMasterView.schema}.${ProductMasterView.name}`;
+
+    const DimRegionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region",
+    };
+    const DimRegionTableRef = `${DimRegionTable.database}.${DimRegionTable.schema}.${DimRegionTable.name}`;
+
+    const DimProductMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mkt",
+    };
+    const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
+
+}
+
+with mix_data as (
+  select distinct
+    fact.CompanySK,
+    fact.CompanyID,
+    fact.milstk, reg.RegionID, fact.FlagNewProductMKT, 
+    -- prd.PumpSegment as OldPumpSegment, 
+    -- prd_mkt.Segment as ProcessPumpSegment,
+
+    (CASE 
+      WHEN reg.RegionID = 'PS1' and FlagNewProductMKT = true THEN prd_mkt.Segment
+      ELSE prd.PumpSegment
+    END) as PumpSegment
+
+  from `${FactTranscationTableRef}` as fact
+  left join `${ProductMasterViewRef}` as prd
+    on fact.ProductSK = prd.ProductSK
+  left join `${DimRegionTableRef}` as reg
+    on fact.RegionSK = reg.RegionSK
+  left join `${DimProductMktTableRef}` as prd_mkt
+    on fact.NewProductMktSK = prd_mkt.ProductMktSK
+
+  where fact.milStk is not null
+
+)
+  select
+    row_number() over(order by lower(milstk), regionid, FlagNewProductMKT) as PumpSK, 
+    *
+  from mix_data
+
+pre_operations {}
+
+post_operations {}

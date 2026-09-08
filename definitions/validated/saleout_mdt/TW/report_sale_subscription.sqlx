@@ -5,6 +5,7 @@ config {
     tags: [databuffet.TAG_VALIDATED],
     uniqueKey: ["Store", "Cat", "Sub_Cat", "Brand", "SKU"],
     bigquery: {
+        partitionBy: "asatdate",
         clusterBy: ["Store", "Cat", "Sub_Cat", "Brand"]
     },
 }
@@ -56,6 +57,7 @@ SELECT
     PARSE_DATE('%Y-%m-%d', TRIM(Last_Receive_Date)) as Last_Receive_Date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
 FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.report_sale_subscription`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 ${partition_statement}
 
 pre_operations {

@@ -3,14 +3,15 @@ config {
     schema: databuffet.VALIDATED_SALEOUT_MDT,
     dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
     tags: [databuffet.TAG_VALIDATED],
-    uniqueKey: ["vendor_id", "branch", "mch3", "branch"],
+    uniqueKey: ["vendor_id", "branch", "mch3"],
     bigquery: {
+        partitionBy: "asatdate",
         clusterBy: ["vendor_id", "branch", "mch3"]
     },
 }
 
 js {
-    const pk_key = ["vendor_id", "branch", "mch3", "branch"]
+    const pk_key = ["vendor_id", "branch", "mch3"]
 
     let partition_statement, post_operations_statement;
 
@@ -54,6 +55,7 @@ SELECT
     PARSE_DATE('%Y/%m/%d', TRIM(END_DATE)) AS end_date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
 FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.sale_by_branch_mch3`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 ${partition_statement}
 
 pre_operations {

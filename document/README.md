@@ -86,5 +86,5 @@ project_wiki/
 - เปลี่ยนอะไรใน `definitions/` → regenerate lineage graph (pre-commit ทำให้อัตโนมัติ)
 - ตัดสินใจเชิงออกแบบใหม่ (เช่น hard delete 2026-07-10) → บันทึกใน
   `operations/known-issues.md` + หน้า pattern ที่เกี่ยว
-- `.claude/` ถูกสร้างใหม่ 2026-07-10 ให้ชี้เข้าเอกสารชุดนี้แล้ว (CLAUDE.md, skills,
+- `.claude/` ถูกสร้างใหม่ 2026-07-10 ให้ชี้เข้าเอกสารชุดนี้แล้ว (skills,
   agents) — `knowledge/` เก่าถูกลบ ถ้าแก้ pattern ให้ใช้ skill `/update-docs` ช่วย sync

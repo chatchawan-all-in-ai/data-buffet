@@ -1,7 +1,7 @@
 config {
   type: "view",
   schema: databuffet.DIMENSION_VIEW,
-  dependencies: ["dim_invoice", "dim_aging", "view_dim_customer"],
+  dependencies: ["dim_invoice", "dim_aging", "view_dim_customer","dim_order"],
   tags: [databuffet.TAG_VIEW],
 }
 
@@ -54,6 +54,14 @@ js {
         name: "mds_data_crc_shop_name_rename",
     };
     const MdsDataCrcShopNameRenameTableRef = `${MdsDataCrcShopNameRenameTable.database}.${MdsDataCrcShopNameRenameTable.schema}.${MdsDataCrcShopNameRenameTable.name}`;
+    
+    const DimOrderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_order",
+    };
+    const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
+
 }
 
 with tab_main as (
@@ -66,13 +74,17 @@ with tab_main as (
       ELSE inv.milLinkvcno
     END) as RefOrder,
 
-    (CASE 
+    (CASE
       WHEN inv.mihCus in UNNEST(`${FnGetScgCustomerIdsTableRef}`())
         THEN `${CleanCompanyPrefixTableRef}`(
-          REGEXP_EXTRACT(
-            REGEXP_REPLACE(inv.mihNotes, r'\*{2,3}', '##'), 
-            r'(?:#?D/?S?|#/S)\s*\+?\s*(?:แ)?\s*([^\r\n#]+)'
-          )
+          (SELECT IF(CHAR_LENGTH(REGEXP_REPLACE(TRIM(v), r'\s', '')) >= 3, TRIM(v), NULL)
+           FROM UNNEST([COALESCE(
+             REGEXP_EXTRACT(REGEXP_REPLACE(inv.mihNotes, r'\*{2,3}', '##'), r'#D/S\s*\+?\s*(?:แ)?\s*([^\r\n#]+)'),
+             REGEXP_EXTRACT(REGEXP_REPLACE(inv.mihNotes, r'\*{2,3}', '##'), r'#D/\s*\+?\s*(?:แ)?\s*([^S\r\n#][^\r\n#]*)'),
+             REGEXP_EXTRACT(REGEXP_REPLACE(inv.mihNotes, r'\*{2,3}', '##'), r'#/S\s*\+?\s*(?:แ)?\s*([^\r\n#]+)'),
+             REGEXP_EXTRACT(REGEXP_REPLACE(inv.mihNotes, r'\*{2,3}', '##'), r'#D\s+\+?\s*(?:แ)?\s*([^\r\n#]+)'),
+             REGEXP_EXTRACT(REGEXP_REPLACE(inv.mihNotes, r'\*{2,3}', '##'), r'D/S\s*\+?\s*(?:แ)?\s*([^\r\n#]+)')
+           )]) AS v)
         )
       ELSE NULL
     END) as CRCShopName,
@@ -87,25 +99,34 @@ with tab_main as (
     and inv.CompanySK = agi.CompanySK
 
   -- where mih2.mih2pos is not null
-
   qualify row_number() over(partition by InvoiceSK order by AgingSK) = 1
 
 )
   select 
-    main.* except(CRCShopName),
+    COALESCE(dim_order.OrderSK, main.OrderSK) as OrderSK,
+    main.* except(CRCShopName, OrderSK),
     `${FnFlagScgTableRef}`(main.RefOrder, main.mihCus) as FlagSCG,
 
     COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName) as CRCShopName, 
     (CASE
       WHEN cust.FlagMDSNickName = True THEN cust.NicknameCustomer
       WHEN COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName) is not null THEN COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName)
-      ELSE `${CleanCompanyPrefixTableRef}`(debnamet)
+      ELSE `${CleanCompanyPrefixTableRef}`(cust.debnamet)
     END) as CustomerReportName
     
   from tab_main as main
   left join `${ViewDimCustomerTableRef}` as cust
     on main.CompanySK = cust.CompanySK
     and main.mihCus = cust.debcode
+  left join (
+    select od.OrderSK, od.CompanySK, od.mihVnos 
+    from `${DimOrderTableRef}` as od
+    qualify row_number() over(partition by od.CompanySK, od.mihVnos order by od.OrderSK desc) = 1
+  ) as dim_order
+    on main.RefOrder = dim_order.mihVnos
+    and main.CompanySK = dim_order.CompanySK
+    and main.mihType in ('BS', 'AS')
+    and main.OrderSK is null
   left join `${MdsDataCrcShopNameRenameTableRef}` as mds_crc
     on main.CRCShopName = mds_crc.crc_shop_name
     and main.CRCShopName is not null

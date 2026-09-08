@@ -63,9 +63,18 @@ code as long as it is re-run.
 | Mechanism | Scope | Guarantee |
 |---|---|---|
 | Manual `python …/generate_lineage.py` + commit | anyone | authoritative — the diagram files are tracked in git |
-| Local pre-commit hook (`.claude/hooks/pre-commit.sh`) | per-machine (`.claude/` is git-ignored, **not** shared) | regenerates + stages both files when a commit touches `definitions/*.sqlx` |
-| CI: [`.github/workflows/diagrams-up-to-date.yml`](../../.github/workflows/diagrams-up-to-date.yml) | repo-wide, all contributors | **fails the PR/push** if the committed diagrams don't match a fresh run |
+| Local pre-commit hook (`.claude/hooks/pre-commit.sh`) | per-machine (`.claude/` is git-ignored, **not** shared) | regenerates + stages both files, and **blocks the commit** if Python is missing or the generator fails |
 
-So diagrams do **not** update on their own — but the CI check makes an out-of-date
-diagram a hard failure, so a change to `definitions/` that alters the flow can't merge
-without the regenerated diagrams alongside it.
+> **ไม่มี CI แล้ว** — GitHub Action `diagrams-up-to-date.yml` ถูกลบ 2026-08-27
+> (ผู้ใช้ตัดสินใจ: ให้เช็คบนเครื่องก่อน commit แทนที่จะไปเช็คบน GitHub)
+> pre-commit hook จึงเป็น**ตาข่ายเดียวที่เหลือ** และถูกทำให้ block แทนที่จะเตือนเฉย ๆ
+>
+> ⚠️ hook อยู่ใน `.claude/` ซึ่ง git-ignore ไว้ → **เครื่องใหม่ต้องตั้งเองครั้งเดียว**:
+> ```bash
+> git config core.hooksPath .claude/hooks
+> ```
+> เครื่องที่ไม่ได้ตั้ง จะ commit diagram ที่ล้าสมัยขึ้นไปได้แบบเงียบ ๆ ตรวจเองได้ด้วย:
+> ```bash
+> python document/diagrams/generate_lineage.py && git diff --stat -- document/diagrams/
+> ```
+> ไม่มี output = ตรงแล้ว

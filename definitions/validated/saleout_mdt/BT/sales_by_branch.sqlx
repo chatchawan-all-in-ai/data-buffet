@@ -5,6 +5,7 @@ config {
     tags: [databuffet.TAG_VALIDATED],
     uniqueKey: ["vendor_id", "branch"],
     bigquery: {
+        partitionBy: "asatdate",
         clusterBy: ["vendor_id", "branch"]
     },
 }
@@ -65,6 +66,7 @@ SELECT
     PARSE_DATE('%Y/%m/%d', TRIM(END_DATE)) AS end_date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
 FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.sales_by_branch`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 ${partition_statement}
 
 pre_operations {

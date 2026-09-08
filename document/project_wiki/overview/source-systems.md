@@ -41,6 +41,18 @@
 - All `type: "incremental"` but tagged only `validated` (no sub-tag); mostly no
   `asatdate` partition; custom date parsing `PARSE_DATE('%Y/%m/%d', TRIM(...))`.
 
+## ALLKONS_COMMISSION — Sales commission (added 2026-08-18)
+
+- GCS prefix `allkons_commission/`, one folder per table, Hive-partitioned by `ASATDATE=`.
+- 7 tables: `mac5_transactions` (the big one), `mac5_sales_areas`, `mac5_sales_channels`,
+  `sales_channels`, `sales_positions`, `marketing_condition_version_details`,
+  `target_commission_monthly_carries`.
+- Every table keyed on `id` (verified unique per snapshot); standard validated
+  pattern throughout — `partitionBy asatdate`, `BACKFILL_DAYS` window, QUALIFY dedup.
+- `mac5_sales_areas` / `mac5_sales_channels` have a column named `desc` (reserved word)
+  that must stay backtick-quoted.
+- Nothing downstream consumes `validated_allkons_commission` yet.
+
 ## mds_dataset — Master Data Service (external)
 
 - **Not created by this repo.** Tables named `mds_data_<entity>_master`.

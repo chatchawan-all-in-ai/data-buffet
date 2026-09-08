@@ -39,14 +39,13 @@
 - **View layer เข้า Dataform** (ตัดสินใจ + ทำ 2026-07-24): เดิม BigQuery views ถูก
   สร้าง/แก้ **นอก Dataform** ตรงใน console จึงไม่อยู่ใน repo และไม่มี lineage — ย้ายมา
   เป็น `type: "view"` ใต้ `definitions/view/` (แยก subfolder ตาม dataset ปลายทาง)
-  แล้ว **42 ไฟล์** โดย **`config.schema` คงชี้ dataset เดิม** (`dimension_view`,
+  แล้ว **32 ไฟล์** โดย **`config.schema` คงชี้ dataset เดิม** (`dimension_view`,
   `fact_view`, `onetime`, `process_dataset`, `bridge_dataset`) เพื่อไม่ให้
   Power BI/consumer พัง และแทน project literal `databuffet-nonprd` ด้วย
   `${databuffet.DATABASE}` (portable ข้าม env) — inventory เต็ม: `project_wiki/view/view-layer.md`
-  - ขอบเขต: 42 ตัว **ตัด 12** (test 5: `TEST_Data_Transaction`×2 + `temp_dim.*`×3;
-    `peem_using` ทั้ง dataset 7 ตัว: `view_1..4_Product_DOS_CAT1*` + RLS trio
-    `view_rls_data`/`sale`/`special` — เป็น **test copy ส่วนตัวของเจ้าของ** ของ RLS views
-    ใน `process_dataset` จงใจไม่เอาเข้า Dataform)
+  - ไม่เอาเข้า Dataform: `temp_dim.*` 3 ตัว (test) + `peem_using` ทั้ง dataset 7 ตัว
+    (`view_1..4_Product_DOS_CAT1*` + RLS trio `view_rls_data`/`sale`/`special` —
+    เป็น **test copy ส่วนตัวของเจ้าของ** ของ RLS views ใน `process_dataset`)
   - เพิ่ม constant: `TAG_VIEW`=`view`, `BRIDGE`=`bridge_dataset` (ไม่มี `PEEM_USING`)
   - `dependencies[]` ใส่เฉพาะ action จริง (basename ที่ unique) — external/UDF/ตารางที่
     ไม่มี .sqlx (`dim_districts/provinces/geographies/sub_districts`, `dim_aging_history`,
@@ -70,10 +69,10 @@
     (ข) ที่เหลือ (dim/fact, view อื่น, process, mds, onetime base, UDF, external) →
     js-block `<Pascal>Table`/`<Pascal>TableRef` อ้างด้วย `` `${XxxTableRef}` ``
     ห้าม inline `${databuffet.DATABASE}...` ใน body; view ที่อ่านแต่ validated/curated
-    จะ**ไม่มี js block** เลย (เช่น `Dimension_Quotation`)
+    จะ**ไม่มี js block** เลย (ณ 2026-09-03 view ทั้ง 31 ตัวมี js block หมด ไม่มีตัวอย่างจริง)
     ประวัติ: รอบแรก generate เป็น inline (ผิด §3) → รอบสองแก้เป็น js-block ทั้งหมด
     (ยัง**ผิด** เพราะ validated/curated ต้องเป็น `ref()`) → รอบสามได้ตามนี้
-    ยืนยันทุกรอบ: เนื้อ SQL ไม่เปลี่ยน 42/42 เทียบกับ BigQuery
+    ยืนยันทุกรอบ: เนื้อ SQL ไม่เปลี่ยนเทียบกับ BigQuery
 - **⚠️ ดึง view จาก BigQuery กลับเข้า `.sqlx` — backtick หาย** (เจอจริง 2026-08-10):
   `INFORMATION_SCHEMA.VIEWS.view_definition` คืน path ของตาราง **โดยตัด backtick ออก**
   เช่น `from databuffet-nonprd.dimension_table.dim_invoice as inv`
@@ -86,6 +85,12 @@
   (น่าสังเกต: การเรียก UDF ยังคง backtick ไว้ ตัดเฉพาะ path ของตาราง)
   **เวลาดึงกลับเข้า repo ต้องใส่ backtick ครอบ `` `${XxxTableRef}` `` เองทุกตัว**
   ส่วน `${ref(...)}` **ห้าม**ครอบ เพราะ Dataform ใส่ให้เองอยู่แล้ว
+  **กับดักที่ 2 — backslash ใน comment (เจอ 2026-08-26 ตอน pull `view_dim_product_master`)**:
+  ถ้าโค้ดที่ดึงกลับมามีบล็อกที่ถูก comment ไว้ด้วย `--` และข้างในมี backslash
+  ต้อง **double เอง** — BigQuery คืนมาตัวเดียวเสมอ แต่ `\1` ใน `--` comment
+  = octal escape → **ทั้ง action compile ไม่ผ่าน** (กฎอยู่ใน coding-standard §3.3)
+  สคริปต์ `pull.py` **ไม่ได้ทำให้** — ต้องไล่เองหลัง pull ทุกครั้ง
+
   อีกเรื่อง: BigQuery **ตัด comment ที่ comment ทิ้งไว้ออก** ตอน save view ในคอนโซล
   (`view_rls_data` เสีย 88 บรรทัดของโค้ดเก่าที่ comment ไว้ — กู้จาก git history ได้)
   **บทเรียน**: สคริปต์เทียบ repo↔BQ ที่ normalize backtick ทิ้งก่อนเทียบ **มองไม่เห็นบั๊กนี้**
@@ -99,8 +104,8 @@
 
   **ลำดับเหตุการณ์**
   1. 2026-07-27 — สรุป (โดยการอนุมาน ไม่ได้เปิด compiled panel ดู) ว่า body เป็น JS
-     template literal จึงต้อง double → commit `3c02e61` double 3 view file
-     (`view_dim_product_master`, `view_aging_ri`, `Sales_Per_Non_Master`) และ
+     template literal จึงต้อง double → commit `3c02e61` double 2 view file
+     (`view_dim_product_master`, `view_aging_ri`) และ
      `67e779e` double ทั้ง `create_all_function.sqlx` (335 จุด)
   2. 2026-08-07 15:25 — deploy UDF เข้า BigQuery → `EXTRACT_CHQ_DATA` พัง
      `Cannot parse regular expression: missing )` เพราะ `\\(` ที่ไปถึง BigQuery
@@ -148,10 +153,11 @@
   byte-identical (verify ด้วยการจำลอง template-literal unescape แล้ว 5/5)
   **หลักการ: ไฟล์นี้ยึด BigQuery เป็นความจริง** — ถ้าจะแก้ UDF ให้แก้ที่ไฟล์แล้วรัน
   ไม่ใช่แก้ใน console
-- **ไฟล์เก่ายังมี inline reference (tech debt)**: `fact_transcation.sqlx` ใช้ js-block Ref
-  กับ dims และ `${ref(...)}` กับ validated ถูกแล้ว แต่ยัง inline
-  `${databuffet.DATABASE}.onetime.Transaction_Data_Mart` (ควรเป็น js-block Ref ตาม §3.2)
-  — ของใหม่ยึดกฎ 2 ชั้น ของเก่าค่อยแปลงเมื่อแตะไฟล์นั้น
+- ~~**ไฟล์เก่ายังมี inline reference (tech debt)**: `fact_transcation.sqlx` inline
+  `${databuffet.DATABASE}.onetime.Transaction_Data_Mart`~~ **ปิดแล้ว 2026-08-20** —
+  เขียนใหม่ทั้งไฟล์แล้ว ตอนนี้ทุก ref เป็น js-block Ref / `${ref()}` ครบ
+  (ตรวจซ้ำ: `grep -c 'databuffet-nonprd' definitions/fact/fact_transcation.sqlx` = 0)
+  และ `dependencies[]` อ้าง view ที่อ่านตรงแทนตารางเบื้องหลัง
 
 ## ข้อจำกัด environment
 
@@ -174,8 +180,7 @@
   (`Cannot parse regular expression: missing )`) จากการ deploy ด้วยการ paste
   ข้อความดิบเข้า console + กฎ backslash ในเอกสารที่สรุปผิดมาตั้งแต่ 07-27
   รายละเอียดเต็มอยู่ในหัวข้อ **พฤติกรรมที่ตั้งใจ** ด้านบน (bullet backslash)
-- **แก้ 2026-08-17 — `CURRENT_DATE()` ไม่มี timezone 4 จุด** (`dim_customer`,
-  `dim_project`, `view/onetime/Dimension_Customer`, `view/onetime/Dimension_Project`)
+- **แก้ 2026-08-17 — `CURRENT_DATE()` ไม่มี timezone** (`dim_customer`, `dim_project`)
   job รันเสร็จ ~06:07 น. ไทย = 23:07 UTC ของเมื่อวาน → `CURRENT_DATE()` คืนวันที่
   ย้อนหลัง 1 วัน**ทุกคืน** ทำให้ `projectDay` ต่ำไป 1 วันทุกแถวที่ `pjend` เป็น NULL
   และ `Total_contact_time_Year` ต่ำไป 1 ปีเฉพาะแถวที่ครบรอบวันนั้นพอดี
@@ -185,6 +190,26 @@
   ต้องได้ 0 บรรทัด (`CURRENT_TIMESTAMP()` 6 จุดใน `cdc_change_log`/`chq` ไม่ต้องแก้ —
   TIMESTAMP เป็นเวลาสัมบูรณ์)
 
+- **2026-08-17 — `sale_by_branch_mch3` ไม่มี PRIMARY KEY มาตลอด** เพราะ `uniqueKey`
+  และ `pk_key` เขียน `branch` ซ้ำ 2 ครั้ง (`["vendor_id","branch","mch3","branch"]`)
+  → `ADD PRIMARY KEY` ผิด syntax แล้ว retry-loop ใน post_operation กลืน error
+  จนครบ 10 รอบแบบเงียบ ๆ **ข้อมูลไม่เคยผิด** (`PARTITION BY a,b,c,b` ให้ผลเท่ากับ
+  `a,b,c`) เสียแค่ PK ไม่ติด — ตัด `branch` ตัวซ้ำออกแล้ว PK จะติดตอน full refresh
+  รอบถัดไป **บทเรียน**: retry-loop ที่ `EXCEPTION WHEN ERROR THEN retry` ปิดปาก
+  error ถาวร ถ้าสงสัยให้เช็กของจริงด้วย
+  `SELECT * FROM <dataset>.INFORMATION_SCHEMA.TABLE_CONSTRAINTS`
+
+- **2026-08-25 — `dim_change_district` ไม่มี `schema:` ใน config มาตลอด**
+  config เขียนแค่ `type: "table"` + `dependencies` + `tags` ไม่มี `schema` →
+  Dataform ใช้ `defaultDataset` จาก `workflow_settings.yaml` (คือ `dataform`)
+  ไม่ใช่ `dimension_table` ขณะที่ `fact_transcation` / `view_fact_transcation`
+  อ้าง `${databuffet.DIMENSION_TABLE}.dim_change_district` เสมอ
+  แก้แล้วใน `e0fe26c` — เพิ่ม `schema: databuffet.DIMENSION_TABLE` +
+  `clusterBy: ["companyID","customerCode"]`
+  ตรวจ 2026-08-26: dataset `dataform` **ว่างเปล่า** ไม่มีตารางตกค้าง
+  **บทเรียน**: `schema:` ไม่ใช่ optional — ไฟล์ dim/fact ทุกไฟล์ต้องระบุ
+  ตรวจซ้ำได้ด้วย `for f in definitions/dimension/*.sqlx; do grep -q "schema:" "$f" || echo "$f"; done`
+  (ตอนนี้ได้ 0 บรรทัด)
 - **2026-09-07 — `validated_saleout_mdt.saleout_hp` นับได้ 259 สาขา ทั้งที่จริงมี 137**
 
   **สาเหตุ**: ไฟล์ HomePro ส่งค่าครอบด้วย `="..."` (ร่องรอย Excel force-text) และ
@@ -213,7 +238,8 @@
 
   **จุดใกล้กันที่ยังไม่แก้**: `uniqueKey` ของ `saleout_hp` มี `crdate` (เวลาที่ห้าง
   สร้างไฟล์ เปลี่ยนทุกวัน) อยู่ในคีย์ → การขายเดียวกันจากไฟล์ต่างวันไม่ยุบเข้าหากัน
-  ปัจจุบันยังไม่มี curated/fact ที่ต่อจากตารางนี้ จึงยังไม่กระทบรายงาน
+  แก้แล้วพร้อมกับการเพิ่ม `curated_saleout_mdt` — คีย์ใหม่คือ
+  `siteno · artno · sale_date` ไม่มี `crdate`
 
 ## การตัดสินใจเชิงออกแบบ
 
@@ -312,6 +338,28 @@
 
 ## หนี้ทางเทคนิค / งานค้าง
 
+- **2026-08-26 — ล้าง literal `"mds_dataset"` ออกหมดแล้ว** เดิม 36 ไฟล์ใน
+  `definitions/dimension/` เขียน `schema: "mds_dataset"` ตรง ๆ (ผิด hard rule ข้อ 3)
+  ทั้งที่ constant `MDS_DATASET` มีอยู่ตั้งแต่ 2026-05-31 — เกิดจาก template ที่ใช้
+  generate dim รอบใหญ่ (`694e996` "add process mds to dim - phase2") ยังเป็นตัวเก่า
+  แก้เป็น `databuffet.MDS_DATASET` ทั้งหมดใน `b746f93` ค่าเหมือนเดิมเป๊ะ ผล compile ไม่เปลี่ยน
+  ตอนนี้ `grep -rn '"mds_dataset"' definitions` ต้องได้ 0 บรรทัด
+- **`dim_pump_information` (เพิ่ม 2026-08-26) เป็น dim ตัวเดียวที่อ่านจาก fact**
+  `dependencies: ["fact_transcation", ...]` แต่ tag เป็น `dimension_daily` ส่วน
+  `fact_transcation` เป็น `fact_daily` → **ถ้ารัน tag แยกกันโดยไม่ติ๊ก dependencies
+  จะอ่าน fact ของเมื่อวาน** (คลาสเดียวกับ `dim_aging` ที่ขึ้นกับ `fact_mir_vs`)
+  SK (`PumpSK`) ปั้นใหม่ทุกวันด้วย `ROW_NUMBER()` — ห้าม persist ข้ามวัน
+  consumer เดียวคือ `view_fact_transcation` ซึ่ง join กลับด้วย natural key 4 ตัว
+  `CompanySK` × `IFNULL(milStk,'')` × `FlagNewProductMKT` × `IFNULL(RegionID,'')`
+  จึง re-derive สดทุก query — ไม่ได้เก็บ `PumpSK` ไว้
+  **ประวัติ**: ตอนเพิ่มครั้งแรก (`b746f93`) key ไม่มีบริษัท ทำให้ซ้ำ 57 key เพราะ
+  รหัส `milStk` เดียวกันมีอยู่ทั้งใน ag01 (ได้แบรนด์จริง) และ ac02 (ได้ `OTHERS`)
+  — `milStk` unique แค่ภายในบริษัท แก้แล้วใน `91e120d` โดยเพิ่ม `CompanySK`/`CompanyID`
+  เข้า `SELECT DISTINCT` และเพิ่ม `trans.CompanySK = pump.CompanySK` ในฝั่ง view
+  ตรวจ 2026-08-26 หลัง rebuild: **ซ้ำ 0 key** (ทดสอบด้วยรูป `IFNULL()` ตรงตามที่ view
+  join จริง) · 34,645 แถว · ถ้าถอด `CompanySK` ออกจาก key ตอนนี้จะซ้ำ 568 key
+  **ข้อควรระวังถ้าเพิ่มคอลัมน์ในอนาคต**: `SELECT DISTINCT` ทำให้ทุกคอลัมน์ที่ใส่เข้าไป
+  กลายเป็นส่วนหนึ่งของ key โดยปริยาย
 - SK ที่ยังไม่รู้เจ้าของ (จาก FK scan 2026-07-09): `BillingSK` (หา dim ต้นทางไม่พบ),
   `DueAvgCollectSK`/`InvAvgCollectSK` (น่าจะ role-play ของ dim_avg_collection_score),
   `DueGradeSK`/`InvoiceGradeSK` (น่าจะ role-play ของ dim_grade)
@@ -323,3 +371,166 @@
   ค่า `status` มีแค่ `SUCCESS`/`FAILED` — ใช้ skill `check-runs` ดูสรุป
 - Tag ที่ประกาศแต่ไม่ใช้: `dimension_monthly`, `fact_monthly`, `fact_yearly`,
   `curated_full`, `curated_incremental`, `onetime`
+- **`cps` เคยกอง snapshot ทุกวันโดยไม่ dedup — แก้แล้ว 2026-09-01** (`105870e add pk key`):
+  เดิม `cps.sqlx` ประกาศ `uniqueKey: []` ทำให้ตารางมี **164,093,041 แถว** (ag01)
+  กระจายบน 238 `asatdate` ทั้งที่ข้อมูลจริงวันละ ~482K แถว · แก้โดยใส่
+  `uniqueKey: ["company_id","rowguid"]` เหลือ **3,429,587 แถว** (เล็กลง 48 เท่า)
+  `rowguid` unique เป๊ะ NULL 0 · ผลพลอยได้: วันที่ job ขนซ้ำ (2026-08-20 ขน 5 เท่า,
+  08-24 ขน 3 เท่า) ถูกยุบไปโดยโครงสร้าง ไม่ต้องตัดแถวซ้ำในชั้น fact อีก
+- **ห้าม dedup `cps` ต่อ key แบบตารางอื่น** — `mih`/`mil`/`deb` ใช้
+  `QUALIFY ROW_NUMBER() PARTITION BY pk ORDER BY asatdate DESC` ซึ่งถูกกับตารางที่แถว
+  อยู่ถาวร แต่ **แถวใน `cps` หายไปเมื่อตัดของครบ** · วัด 2026-09-01: key ตลอด 238 วัน
+  = 2,806,672 แต่วันล่าสุดมี 482,624 → dedup ต่อ key จะชุบชีวิตงานที่ปิดแล้ว 2.3 ล้านบรรทัด
+  ต้องใช้ `WHERE asatdate = MAX(asatdate)` ต่อบริษัท (ทำไว้แล้วใน `fact_backlog_store`)
+- **`dim_product_master` และ `dim_sale_representative` fan out เมื่อ join ด้วย natural key**
+  (วัด 2026-09-01): `dim_product_master` มี `(CompanySK, ProductCode)` distinct 117,383
+  จาก 117,419 แถว → **ซ้ำ 36 code** · `dim_sale_representative` มี
+  `(CompanySK, EmployeeID)` distinct 1,796 จาก 2,339 แถว → **ซ้ำ 543 แถว** เพราะเป็น
+  `UNION ALL` ของ mds block กับ ledger block · fact ที่ join ต้อง `QUALIFY ROW_NUMBER()`
+  ก่อน (ทำไว้แล้วใน `fact_*_store` ทั้งสามตัว) ส่วนพนักงานขายเลี่ยงไปใช้
+  `validated_mac5.per` ตรง ๆ ซึ่ง PK unique จริง
+- **`ar_sColB` / `ar_sColF` เก็บสีเป็น integer แบบ BGR ไม่ใช่ RGB** (ยืนยัน 2026-09-01):
+  MAC5 เป็นระบบสาย Delphi (`TColor` = `$00BBGGRR`) · `255` = แดง (ห้ามส่งสินค้า,
+  ยกเลิก Order), `65280` = เขียว (อนุมัติ), `65535` = เหลือง (รออนุมัติ)
+  แปลงด้วย `FORMAT("#%02X%02X%02X", MOD(c,256), MOD(DIV(c,256),256), MOD(DIV(c,65536),256))`
+  ถ้าอ่านเป็น RGB ตรง ๆ สีจะสลับแดง↔น้ำเงินกับหน้าจอ MAC5
+- **`is_store_*` ถูกถอดออกจาก `fact_invoice_store` แล้ว (2026-09-03)** — เดิมคัดลอก 6
+  คอลัมน์ boolean มาจาก Query "ยอดจ่าย" ตรง ๆ ซึ่งเดาสาขาจาก prefix ของเลขที่เอกสาร
+  (`p1`–`p5` SUBSTR) และมีจุดที่ทับกันเอง: เอกสารที่เลขขึ้นต้น `MEMO-H` ได้ทั้ง
+  `is_store_ktb` และ `is_store_hy` เป็น TRUE พร้อมกัน เพราะ `'MEMO-H'` ไม่อยู่ใน
+  exclusion list ของ `p5` (มีแค่ MEMO-K/P/L/U) · **เจ้าของงานสั่งเอาออกทั้งชุด**
+  เมื่อ `dim_store` (จาก `validated_mac5.sto`) พร้อมใช้แล้ว — สไลซ์สาขาให้ใช้
+  `StoreSK` → `dim_store[StoreGroup]` ซึ่งเป็น dimension จริง ไม่ใช่การเดาจาก prefix ·
+  `KTB` = ธนาคารกรุงไทย ไม่ใช่คลัง จึงไม่เคยมีใน `sto` อยู่แล้ว
+- **`curated_mil` ฝั่ง `IS` แตกบรรทัดตามสัดส่วนพนักงานขาย — ห้าม QUALIFY ทิ้ง**
+  (วัด 2026-09-01): `curated_mil` มี 4,344,147 แถวเทียบกับ `validated_mac5.mil` 4,339,108
+  → **เกิน 5,039 แถว** เพราะบรรทัดเดียวถูกแตกตาม `percent_sale` (70/30, 50/50)
+  โดย `milPer_raw` เก็บพนักงานคนเดิมไว้ · `miltype = 'PS'` ไม่มีปัญหานี้ (3,012,477 = distinct PK)
+  **ตัวเลขที่พิสูจน์**: `SUM(milQuan)` ของ curated ทั้งหมด = 22,209,217.12 เทียบกับ validated
+  22,209,216.72 (ต่างกัน 0.40 = เศษปัดจากการหารสัดส่วน) แต่ถ้า `QUALIFY ROW_NUMBER() = 1`
+  เหลือแถวเดียวจะได้ 22,199,705.31 → **qty หาย 9,512 และ `milSum` หาย 141 ล้าน**
+  ดังนั้น `fact_invoice_store` ใช้ grain ที่รวม `milPer` และเก็บ `percent_sale` ไว้
+  (การตัดสินใจของเจ้าของงาน 2026-09-01: "แตกยอดให้พนักงานขาย ไม่ต้องยุ่ง")
+- **`milStk` เทียบแบบไม่สนตัวพิมพ์ใหญ่-เล็กแล้ว (2026-09-03)** — `fact_order` join
+  `dim_product_master` เปลี่ยนเป็น `lower(mil.milstk) = lower(dim_product.ProductCode)`
+  และ `fact_invoice` join `fact_order` ด้วย `LOWER(milStk)` ทั้งใน `ON` และใน
+  `QUALIFY ... PARTITION BY` ส่วน `FactOrderSk` ก็ `order by lower(mil.milStk)` ตามไปด้วย
+  **ตัวเลขที่วัดได้ 2026-09-03**: `(company_id, milStk)` ของ `milType = 'PS'` ทั้งหมด
+  16,283 ตัว → match แบบเดิม 16,173 → `LOWER()` **ได้เพิ่มแค่ 17 ตัว** และยังไม่ match
+  อีก 93 ตัว (93 ตัวนี้คนละสาเหตุ ไม่ใช่เรื่องตัวพิมพ์ — ยังไม่ได้สอบ)
+  **ข้อควรระวังที่ต้องเช็คซ้ำเวลาเพิ่มสินค้า**: ถ้า `dim_product_master` มี `ProductCode`
+  สองตัวที่ต่างกันแค่ตัวพิมพ์ในบริษัทเดียวกัน join นี้จะ fan-out เป็น 2 แถวที่ `ProductSK`
+  ต่างกัน และ `group by 1,...,12` ใน `fact_order` (คอลัมน์ 1 คือ `ProductSK`) จะไม่ยุบให้
+  → ยอด `milQuan`/`milSum` คูณสอง · วัดแล้ว **ยังไม่มีคู่ไหนชนกันเลย (0 กลุ่ม)** ตรวจด้วย
+  `SELECT companyID, LOWER(ProductCode) AS k FROM dimension_table.dim_product_master GROUP BY 1,2 HAVING COUNT(DISTINCT ProductCode) > 1`
+  · `FactOrderSK` เลื่อนค่าจากการเปลี่ยน `order by` — ไม่กระทบเพราะ `fact_order` เป็น
+  full rebuild และ consumer ทั้งสอง (`fact_invoice`, `view_fact_transcation`) rebuild ตามทุกคืน
+- **`dim_store.ReportStore` (2026-09-03)** — คอลัมน์ใหม่สำหรับสไลซ์รายงาน:
+  `lower(ifnull(stogroup, ''))` ที่ไม่อยู่ใน `kk/pk/lp/ub/hy` ยุบเป็น `'KTB'` ถังเดียว
+  ที่เหลือคืน `stogroup` ตัวเดิม (ไม่ lower) · **`stogroup` ที่เป็น NULL ก็ตกเป็น `'KTB'`**
+  เพราะ `ifnull` แปลงเป็น `''` ก่อน — ไม่ใช่ NULL · แถว Unknown `StoreSK = -1` ได้
+  `'Unknown'` · เป็นตัวแทนของ `is_store_*` ที่ถอดออกไปตอน 2026-09-03
+  **`'KTB'` ที่นี่คือถังรวม "ที่เหลือทั้งหมด" ไม่ได้หมายถึงคลังของธนาคารกรุงไทย** —
+  ชื่อพ้องกับ `is_store_ktb` เดิมแต่ความหมายไม่เหมือนกัน อย่าอ่านว่าเป็นสาขา ·
+  commit เดียวกันนี้ลบคอมเมนต์อธิบายใน `dim_store.sqlx` ทิ้ง (ถูก re-save ทับจาก
+  Dataform web IDE) — **เจ้าของงานตัดสินใจไม่เอากลับ** คำอธิบายอยู่ที่ไฟล์นี้กับ
+  `project_wiki/dimension/inventory.md` แทน
+- **`fact_transcation` dedup: เพิ่ม `CompanySK` เข้า `QUALIFY ... PARTITION BY` (2026-09-03)** —
+  เดิม partition ด้วย 6 คีย์เอกสาร (`milType, milVnos, milCus, milStk, milPer, milListno`)
+  **ไม่มี `CompanySK`** ขณะที่คีย์ upsert (`DELETE ... WHERE EXISTS`) คือ
+  `(milVnos, milType, CompanySK)` และข้อมูลมี 5 บริษัท → ถ้าวันไหนเลขเอกสารซ้ำข้ามบริษัท
+  แถวของบริษัทหนึ่งจะถูก `QUALIFY` ทิ้งเงียบ ๆ ทั้งที่ upsert มองว่าเป็นคนละแถว
+  **วัด 2026-09-03 ก่อนแก้**: `onetime.Transaction_Data_Mart` ในหน้าต่าง 4 ปี 2,655,284 แถว
+  → ยุบเป็น 2,655,222 กลุ่ม (6 คีย์) → **กลุ่มที่คร่อม `CompanySK` มากกว่า 1 = 0**
+  ดังนั้นการเพิ่ม `CompanySK` **เป็น no-op บนข้อมูลวันนี้** ไม่ใช่การแก้บั๊กที่กำลังเกิด
+  แต่เป็นการปิดช่องไว้ล่วงหน้าให้ partition ตรงกับคีย์ upsert · แก้ 2 จุด
+  (`final_part1`, `final_part2`) — ต้องแก้คู่กันเสมอ เพราะสอง CTE นี้ใช้ dedup ชุดเดียวกัน
+  ตรวจซ้ำได้ด้วย: group by 6 คีย์ แล้ว `HAVING COUNT(DISTINCT CompanySK) > 1`
+- **ทำ `milStk` ให้ไม่สนตัวพิมพ์ทั่วทั้ง repo (2026-09-03, ต่อจาก commit b14a0d4)** —
+  สแกน `milstk` ทั้ง repo เจอ 66 บรรทัดใน 20 ไฟล์ แล้วใส่ `LOWER()` **สองฝั่งเสมอ**
+  ให้เฉพาะจุดที่พิสูจน์แล้วว่าไม่ทำให้แถวงอก · **เกณฑ์ที่ใช้**: ฝั่งขวาต้องไม่มีรหัส
+  ที่ต่างกันแค่ตัวพิมพ์ในกลุ่มเดียวกัน (วัดด้วย `GROUP BY key, LOWER(code) HAVING COUNT(DISTINCT code) > 1`)
+  **ผลวัด 2026-09-03**: `validated_mac5.stk` 0 · `dim_product_master` 0 · `dim_stk_mkt` 0 ·
+  `dim_cost_stk` 0 · `dim_rebate` (product) 0 · `fact_transaction_delivery` 0 ·
+  `mds_data_change_marketinggroup_master` 0 → **ใส่ได้** ·
+  `fact_quotation` **6 กลุ่ม** · `validated_mac5.tbook_quodetail` **6 กลุ่ม** → **ห้ามใส่**
+  **จำนวนที่ได้เพิ่มถ้าใส่**: `stk`/`dim_product_master` 36 รหัส (จาก 28,635) ·
+  `dim_stk_mkt` 27 · `fact_quotation` 9 · `dim_cost_stk` 0
+  **จุดที่เว้นไว้ (ห้ามใส่ทั้ง 3 กลุ่ม)**:
+  1. `fact_order.sqlx` join `fact_quotation` (`mil.milStk = fact_quo.StkCode`) — `fact_quotation`
+     มี `StkCode` ต่างกันแค่ตัวพิมพ์ 6 คู่ (ag01: `COM-01/SB-1000L` vs `com-01/sb-1000L`,
+     `FBWPCG1500` vs `Fbwpcg1500`, `T01-PVC-40X2400X10-025` vs `T01-PVC-40x2400x10-025` ฯลฯ)
+     ถ้าใส่ `LOWER()` join จะได้ 2 แถว → `milQuan`/`milSum` เฟ้อ · **ถ้าจะทำ ต้อง `QUALIFY` dedup
+     ฝั่ง `fact_quo` ก่อน** แบบที่ `fact_invoice.sqlx` ทำกับ `fact_order`
+  2. `dim_quotation.sqlx` join `main.stkcode = sec.milstk` — `tbook_quodetail` ชนกัน 6 กลุ่ม
+     (ต้นทางของ `fact_quotation` จึงชนแบบเดียวกัน)
+  3. `fact_transcation.sqlx` ที่เทียบกับ `mds.ProductID` (ทั้ง `=` และ `REGEXP_CONTAINS`) —
+     pattern ทั้ง 22 ตัวเป็นเลขกับอักษรไทย (`บ-0025`, `บ-124|บ-125|...`) **ไม่มีอักษรละตินเลย**
+     `LOWER()` จึงเป็น no-op (วัดแล้ว match 5 = 5 ทั้งก่อนและหลัง) — ไม่ต้องแตะ
+  **`PARTITION BY` ของ dedup ที่เปลี่ยนเป็น `LOWER(milStk)`** (`fact_transcation` 2 จุด +
+  `view_fact_transcation` 1 จุด) วัดก่อนแก้ว่า **ยุบแล้วไม่มีแถวหาย = 0 กลุ่ม** ทั้งบน
+  `onetime.Transaction_Data_Mart` และ `fact_table.fact_transcation`
+  **`ORDER BY` ใน `ROW_NUMBER()` ที่ใส่ `LOWER()`** (`FactInvoiceSK`, `FactTransDeliverySK`,
+  `PumpSK`) **ไม่มีผลต่อการ match** เปลี่ยนแค่ลำดับเลข SK — ปลอดภัยเพราะทั้งสามเป็น
+  full rebuild และ consumer ก็ rebuild ตามทุกคืน (ใส่เพื่อให้ตรงกับ `FactOrderSk` ที่ b14a0d4 ทำไว้)
+  **⚠️ view 3 ตัวต้องไป `CREATE OR REPLACE VIEW` บน BigQuery เองด้วย** (เจ้าของงานเลือกไม่รัน
+  Dataform เพื่อ deploy view): `onetime.Transaction_Data_Mart`,
+  `onetime.Model_Invoice_Transaction`,
+  `fact_view.view_fact_transcation` — ถ้าแก้ไม่ครบทั้ง 4 จะเกิด drift ระหว่าง repo กับ BigQuery
+  (ตรวจด้วย skill `bq-drift-scan`)
+  **บั๊กที่เจอระหว่างสแกน — ตกไปเพราะเลิกใช้**: `onetime.PowerBI_Data_Buffet_Transaction`
+  join `stk` ด้วย `stkcode = milstk` **โดยไม่มีเงื่อนไข `company_id`** ขณะที่ `stkcode`
+  ซ้ำข้ามบริษัทถึง 21,985 รหัส → fan-out ข้ามบริษัท (คนละเรื่องกับ case) ·
+  ไฟล์ถูกย้ายไป `backup/view/onetime/` 2026-09-03 จึงไม่แก้
+- **`onetime.PowerBI_Data_Buffet_Transaction` ย้ายไป `backup/` (2026-09-03)** —
+  เจ้าของงานแจ้งว่าเลิกใช้แล้ว · view layer เหลือ **31 ไฟล์** (จาก 32) ·
+  ผลข้างเคียง: บั๊ก join `stk` ที่ขาด `company_id` (fan-out ข้ามบริษัท 21,985 รหัส) ตกไป
+  และ view ที่ต้อง `CREATE OR REPLACE VIEW` มือบน BigQuery ลดจาก 4 เหลือ **3** ตัว ·
+  **หมายเหตุ**: การลบ `.sqlx` ไม่ได้ลบ view ใน BigQuery — `onetime.PowerBI_Data_Buffet_Transaction`
+  ยังอยู่ แต่ไม่มีใครดูแลแล้ว ถ้าจะ drop ต้องสั่งเองบน console
+  (`document/operations/deploy-to-prod.md` มีบรรทัด `DROP VIEW IF EXISTS` ของ prd อยู่แล้ว)
+- **รอบสองของ `LOWER(milStk)` — 7 จุดที่รอบแรกเว้นไว้ (2026-09-03)** —
+  เจ้าของงานสั่งให้ใส่เพิ่ม วัดผลกระทบทีละจุดก่อน:
+  **จุดที่กระทบข้อมูลจริง — ใหญ่สุดในงานนี้ทั้งหมด**
+  · `dim_order.sqlx` 2 จุด (`mil.milstk = main.milstk` ใน `EXISTS` ของ `sec_table`
+    และ `main.milstk = sec.milstk` ใน `cal_table`) — สองฝั่งเป็น **เอกสารต่างใบ**
+    (`main_table` = บรรทัด PS ใบสั่งซื้อ, `sec_table` = บรรทัด IS ใบกำกับที่โยงด้วย `milLinkVcno`)
+    ตัวพิมพ์ของรหัสสินค้าจึงต่างกันได้ · **วัด 2026-09-03: IS 3,660,081 คีย์ →
+    จับ PS ได้เพิ่ม 412 คีย์** ซึ่งเดิมตกเป็น `item_status = 'On Order'` ผิด
+    ที่จริงต้องเป็น `'Complete'` หรือ `'In Process'`
+  **จุดที่เป็น no-op (ใส่เพื่อความสม่ำเสมอ วัดแล้วได้เพิ่ม 0)**
+  · `fact_transcation.sqlx` 2 จุด `trans.milstk = mds.ProductID` — pattern เป็นเลข/อักษรไทย
+  · `view_fact_transcation.sqlx` 3 จุด (`pump.milStk`, `t2 = fact_invoice`, `t3 = fact_order`)
+    — ทุกฝั่งสืบค่ามาจาก `curated_mil` สายเดียวกัน ตัวพิมพ์ตรงกันอยู่แล้ว
+    (วัด: `t2_gain = 0`, `t3_gain = 0` จาก 2,430,311 คีย์)
+  **fan-out**: ตรวจครบทุกฝั่ง = 0 กลุ่ม (`ps`, `is`, `fact_invoice`, `fact_order`)
+  **⚠️ 412 คีย์นั้นจะยังไม่ถูกแก้ย้อนหลังเอง** — `dim_order` เป็น MERGE ที่มี
+  `and mil.asatdate >= current_date('Asia/Bangkok')-1` จึงมองแค่เอกสารที่เพิ่งขนเข้ามา
+  ถ้าต้องการให้ `item_status` ย้อนหลังถูก ต้องขยายหน้าต่าง `asatdate` ชั่วคราวแล้วรันรอบเดียว
+  (แนวเดียวกับ skill `backfill-dimension`)
+- **`fact_*_store` 3 ตัว: ถอด `asatdate` แล้วเปลี่ยน partition (2026-09-03, commit 048f746 → 5e70f83)** —
+  `048f746` ลบ `CURRENT_DATE('Asia/Bangkok') AS asatdate` ออกจาก SELECT ทั้ง 3 ไฟล์ **แต่ทิ้ง
+  `partitionBy: "asatdate"` ไว้ใน config** → Dataform สร้าง `PARTITION BY asatdate` บน query
+  ที่ไม่มีคอลัมน์นั้น = `Unrecognized name: asatdate` (พิสูจน์ด้วย dry-run บน BigQuery)
+  `5e70f83` แก้แล้วเป็น `sDate` (backlog) / `mix_date` (order, invoice) — dry-run ผ่านทั้ง 3
+  **บทเรียน**: `partitionBy`/`clusterBy` ใน config ไม่ได้ถูกตรวจตอน edit — เวลาถอดคอลัมน์
+  ต้องเช็ค config คู่กันเสมอ · ถ้าไม่มี dataform CLI ตรวจได้ด้วยการขยาย `${ref()}` เอง
+  แล้วยิง `bq query --dry_run` ครอบด้วย `SELECT <partition_col> FROM ( ... )`
+  **ผลข้างเคียงของการถอด `asatdate`**: ไม่มี consumer ใน `definitions/` (ตรวจแล้ว 0 ไฟล์)
+  แต่ **fact ทั้ง 3 เลิกบอกได้ว่าแถวมาจาก snapshot วันไหน** — ถ้ารายงาน Power BI เคยใช้
+  คอลัมน์นี้จะพัง · `sDate` ให้ 3,619 partition (ย้อนถึงปี 2006) ห่างจากลิมิต 10,000 มาก
+  **ขอบเขตวันที่ของ 3 fact ไม่เท่ากัน**: `fact_order_store`/`fact_invoice_store` กรอง 4 ปี
+  ส่วน `fact_backlog_store` ไม่กรองเลย (ย้อนถึง 2006)
+- **`FlagFree` มีนิยาม 2 แบบไม่ตรงกัน — ยังไม่แก้ (2026-09-03)** —
+  · `fact_order_store` / `fact_invoice_store`: `milSum = 0` **OR** `ProductGroupMAC5 = '5000'`
+  · `fact_backlog_store`: **`cpssumreq = 0`** OR `ProductGroupMAC5 = '5000'`
+  คนละคอลัมน์ คนละ grain → สินค้าตัวเดียวกันได้ `Yes` ในหน้างานค้าง แต่ `No` ในหน้า Order ได้
+  **ขอบเขต**: `cpssumreq = 0` = 33% ของ cps (158,325/482,790) · `ProductGroupMAC5 = '5000'`
+  = 95 สินค้าจาก 117,458 · `milDesc LIKE '%ของแถม%'` ที่ถูก comment ออกกระทบ **281 บรรทัด**
+  (ที่เขียนว่าของแถมแต่ `milSum != 0` → เปลี่ยนจาก Yes เป็น No)
+  **fan-out ที่เหลืออยู่**: `fact_backlog_store` ใส่ `FlagFree` เข้า `GROUP BY` แต่ค่ามาจาก
+  `cps.cpssumreq` ซึ่งเป็นค่าต่อแถว cps → **4,342 กลุ่ม (1.0% ของ 441,976)** จะแตกเป็น
+  2 แถว (Yes + No) · ยอด `qty` ไม่เบิ้ล (SUM แยกกลุ่ม) แต่ Power BI เห็นสินค้าเดียวกันสองบรรทัด
+  แก้ได้ด้วย `LOGICAL_AND`/`LOGICAL_OR` ให้เหลือ 1 แถวต่อ (order, product) พร้อมค่า `Mixed`
+  **ข้อเสนอที่ยังค้าง**: ย้ายนิยามไป helper ไฟล์เดียว (`function-data.js` หรือไฟล์ใหม่
+  `business-rules.js`) เพื่อไม่ให้กฎ “ของแถม” กระจายอยู่ 3 ไฟล์และเพี้ยนกันเอง

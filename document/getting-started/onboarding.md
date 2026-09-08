@@ -18,8 +18,8 @@ GCS AVRO (gs://file-raw-data)
   → initial   (external table + schema + UDF — 15 ไฟล์)
   → validated (ทำความสะอาด cast dedup — 135 ไฟล์ = 131 transformation + 4 schema)
   → curated   (business logic, join — 8 ไฟล์ = 5 transformation + 3 schema)
-  → dimension (59 ไฟล์) + fact (9 ไฟล์)
-  → view      (ชั้น BI/report — 42 ไฟล์)
+  → dimension (60 ไฟล์) + fact (9 ไฟล์)
+  → view      (ชั้น BI/report — 32 ไฟล์)
   ท่อเสริม: cdc (จับ change) + process (แกะที่อยู่ไทยด้วย AI)
 ```
 
@@ -114,10 +114,10 @@ hooks ของ Claude Code) แล้วบอก `PASS` `FAIL` `SKIP` พร�
 
 | ของ | อยู่ที่ | ทำอะไร |
 |---|---|---|
-| Project context | `.claude/CLAUDE.md` | สรุปสถาปัตยกรรม + กติกา ให้ Claude อ่านอัตโนมัติทุก session |
+| Project context | `CLAUDE.md` (root ของ repo — **อยู่ใน git** ตั้งแต่ 2026-09-01, มากับ clone เลย ไม่ต้อง copy) | สรุปสถาปัตยกรรม + กติกา ให้ Claude อ่านอัตโนมัติทุก session |
 | Skills (15) | `.claude/skills/*/SKILL.md` | `add-*-table`, `dataform-run`, `check-runs`, `data-quality-check`, `fk-integrity-scan`, `bq-drift-scan`, `backfill-dimension`, `enable-cdc`, `update-docs`, `ship`, `verify-setup` — เรียกด้วย `/<ชื่อ skill>` |
 | Agents (5) | `.claude/agents/*.md` | `dataform-expert`, `data-architect`, `bigquery-optimizer`, `data-quality-auditor`, `bq-drift-auditor` |
-| Hooks | `.claude/hooks/` | `guard-dangerous.sh` (บล็อกคำสั่งทำลายข้อมูล), `doc-sync-check.sh` (กันลืมอัปเดตเอกสาร), `pre-commit.sh` (format/compile + regenerate diagram) |
+| Hooks | `.claude/hooks/` | `ensure-hookspath.sh` (SessionStart — ตั้ง `core.hooksPath` + `chmod +x` ให้เองครั้งแรก), `guard-dangerous.sh` (บล็อกคำสั่งทำลายข้อมูล), `doc-sync-check.sh` (กันลืมอัปเดตเอกสาร), `pre-commit.sh` (format/compile + regenerate diagram — **block commit ถ้า regenerate ไม่ผ่าน**; ไม่มี CI สำรองแล้วตั้งแต่ 2026-08-27) |
 | Permissions | `.claude/settings.json` | allowlist แบบอ่านอย่างเดียว — ของส่วนตัวใส่ `settings.local.json` (git ไม่เก็บ) |
 
 ### 4.1 การส่งมอบ `.claude/` (สำหรับคนที่ส่งให้)
@@ -134,20 +134,43 @@ tar --exclude='.claude/settings.local.json' --exclude='__pycache__' -czf claude-
 
 `.mcp.json` (ประกาศ MCP server ที่ใช้ร่วมกัน) ก็ไม่ได้อยู่ใน git เหมือนกัน — ไปพร้อมชุดนี้
 
-คนรับแตกไฟล์ที่ root ของ repo แล้วเช็กว่ามีครบ: `CLAUDE.md`, `agents/` (5),
-`skills/` (15), `hooks/` (4), `settings.json`, `.mcp.json`
+> `ai_context/` ที่โผล่มาที่ root คือ scaffold ของ plugin `spk@inline` ไม่ใช่ของ repo
+> ซ้ำกับ `document/project_wiki/` จึงใส่ `.gitignore` ไว้ตั้งแต่ 2026-08-26 — ลบทิ้งได้เลย
+> (plugin จะสร้างกลับมาเองทุก session)
 
-### 4.2 ต้องทำเองหลังวาง `.claude/` แล้ว
+คนรับแตกไฟล์ที่ root ของ repo แล้วเช็กว่ามีครบ: `agents/` (5),
+`skills/` (15), `hooks/` (5), `settings.json`, `.mcp.json`
+(`CLAUDE.md` ไม่อยู่ในชุด copy แล้ว — มากับ `git clone` เอง)
+
+### 4.2 หลังวาง `.claude/` แล้ว — **ตั้งให้อัตโนมัติแล้ว ไม่ต้องทำเอง**
+
+เปิด Claude Code ที่ root ของ repo ครั้งแรก **SessionStart hook
+(`.claude/hooks/ensure-hookspath.sh`) จะตั้งให้เองทันที**:
+
+```
+[data-buffet] ตั้ง core.hooksPath = .claude/hooks ให้อัตโนมัติแล้ว
+[data-buffet] pre-commit จะ regenerate diagram ให้ตอน commit ที่แตะ definitions/
+```
+
+มันทำ 2 อย่าง: `git config core.hooksPath .claude/hooks` และ `chmod +x` ให้ไฟล์ hook
+(สิทธิ์ execute หายตอน copy ข้ามเครื่อง) — รันซ้ำได้ ไม่พูดอะไรถ้าตั้งถูกอยู่แล้ว
+และ**ไม่ทับ**ถ้าเครื่องนั้นตั้ง `core.hooksPath` เป็นค่าอื่นไว้ตั้งใจ
+
+> **ทำไมต้องมี**: `.claude/` git-ignore ไว้ ส่งด้วยการ copy — git จะไม่ใช้ hook ข้างในจนกว่า
+> จะตั้ง `core.hooksPath` เอง และตั้งแต่ลบ GitHub Action ทิ้ง (2026-08-27) hook ตัวนี้คือ
+> **ตาข่ายเดียว**ที่กัน `pipeline_lineage.md` / `topic_flows.md` ไม่ให้ล้าสมัย
+> เครื่องที่ลืมตั้งจะ commit diagram เก่าขึ้นไปแบบเงียบ ๆ
+
+ถ้าไม่ได้ใช้ Claude Code (สั่ง git จาก terminal เปล่า ๆ) ต้องสั่งเองครั้งเดียว:
 
 ```bash
 git config core.hooksPath .claude/hooks
 chmod +x .claude/hooks/*.sh .claude/hooks/pre-commit .claude/skills/verify-setup/scripts/verify.sh
 ```
 
-คำสั่งแรกทำให้ pre-commit ทำงาน คำสั่งที่สองจำเป็นบน Linux/WSL (สิทธิ์ execute
-หายตอน copy ข้ามเครื่อง) — ถ้าไฟล์กลายเป็น CRLF ตอน copy ให้แปลงกลับเป็น LF ด้วย
-`dos2unix .claude/hooks/*.sh` ไม่งั้น bash ฟ้อง `$'\r': command not found` แล้ว
-**guard จะเงียบไปเฉย ๆ** — รัน `verify-setup` (§3.4) เพื่อจับกรณีนี้
+ถ้าไฟล์กลายเป็น CRLF ตอน copy ให้แปลงกลับเป็น LF ด้วย `dos2unix .claude/hooks/*.sh`
+ไม่งั้น bash ฟ้อง `$'\r': command not found` แล้ว **guard จะเงียบไปเฉย ๆ** —
+รัน `verify-setup` (§3.4) เพื่อจับกรณีนี้
 
 ข้อควรรู้:
 

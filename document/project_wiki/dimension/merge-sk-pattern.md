@@ -28,7 +28,7 @@ js {
     const DimCompanyTable = { database: databuffet.DATABASE, schema: databuffet.DIMENSION_TABLE, name: "dim_company" };
     const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 
-    const MdsSourceTable = { database: databuffet.DATABASE, schema: "mds_dataset", name: "mds_data_waterpac_master" };
+    const MdsSourceTable = { database: databuffet.DATABASE, schema: databuffet.MDS_DATASET, name: "mds_data_waterpac_master" };
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 }
 

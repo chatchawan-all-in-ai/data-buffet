@@ -40,23 +40,29 @@ with final as (
     pd.*,
     IFNULL(rebate.salesExc, 'No') as FlagSalesExc,
     IFNULL(rebate.accExc, 'No') as FlagAccExc,
-    
-    -- ARRAY_REVERSE(
-    --   SPLIT(REGEXP_REPLACE(ProductCode, r'/([PU])', r'|\\1'), '|')
-    -- )[SAFE_OFFSET(0)] AS WaterPac,
-    (CASE
-      WHEN REGEXP_CONTAINS(ProductCode, r'/([PU])') THEN
-        ARRAY_REVERSE(SPLIT(REGEXP_REPLACE(ProductCode, r'/([PU])', r'|\1'), '|'))[SAFE_OFFSET(0)]
-      ELSE NULL
-    END) as WaterPac,
-    (CASE
-      WHEN REGEXP_CONTAINS(ProductCode1, r'/([PU])') THEN
-        ARRAY_REVERSE(SPLIT(REGEXP_REPLACE(ProductCode1, r'/([PU])', r'|\1'), '|'))[SAFE_OFFSET(0)]
-      ELSE NULL
-    END) as WaterPac1,
+
+    -- (CASE
+    --   WHEN REGEXP_CONTAINS(ProductCode, r'/([PU])') THEN
+    --     ARRAY_REVERSE(SPLIT(REGEXP_REPLACE(ProductCode, r'/([PU])', r'|\\1'), '|'))[SAFE_OFFSET(0)]
+    --   ELSE NULL
+    -- END) as WaterPac,
+    -- (CASE
+    --   WHEN REGEXP_CONTAINS(ProductCode1, r'/([PU])') THEN
+    --     ARRAY_REVERSE(SPLIT(REGEXP_REPLACE(ProductCode1, r'/([PU])', r'|\\1'), '|'))[SAFE_OFFSET(0)]
+    --   ELSE NULL
+    -- END) as WaterPac1,
+    -- (CASE
+    --   WHEN REGEXP_CONTAINS(ProductMac5Description, r'/([PU])') THEN
+    --     ARRAY_REVERSE(SPLIT(REGEXP_REPLACE(ProductMac5Description, r'/([PU])', r'|\\1'), '|'))[SAFE_OFFSET(0)]
+    --   ELSE NULL
+    -- END) as WaterPac2,
+
+    REGEXP_EXTRACT(ProductCode, r'/([PU][a-zA-Z0-9].*)$') AS WaterPac,
+    REGEXP_EXTRACT(ProductCode1, r'/([PU][a-zA-Z0-9].*)$') AS WaterPac1,
+    REGEXP_EXTRACT(ProductMac5Description, r'/([PU][a-zA-Z0-9].*)$') AS WaterPac2,
 
     pm.MarketingGroupID,
-    pm.SubMarketing,
+    pm.Segment,
     pm.SegmentID
 
   FROM `${DimProductMasterTableRef}` as pd
@@ -71,20 +77,24 @@ with final as (
 
 )
   SELECT
-    -- pd.WaterPac,
-    -- WaterPac, WaterPac1, MarketingGroupID, SubMarketing, SegmentID,
-    pd.* except(WaterPac, WaterPac1, MarketingGroupID, SubMarketing, SegmentID),
+    -- pd.ProductCode, pd.ProductCode1, pd.ProductMac5Description,
+    -- pd.WaterPac, pd.WaterPac1, pd.WaterPac2, pd.MarketingGroupID, pd.Segment, pd.SegmentID,
+    -- wp.WaterPacName as wp, wp1.WaterPacName as wp1, wp2.WaterPacName as wp2,
+    pd.* except(MarketingGroupID, Segment, SegmentID, WaterPac, WaterPac1, WaterPac2),
     (CASE 
-      WHEN pd.SegmentID in ('00111', '00112') THEN IF(wp.WaterPacSK is not null, wp.WaterPacName, 'WaterPac')
-      WHEN pd.MarketingGroupID = '002' THEN pd.SubMarketing
+      WHEN pd.SegmentID in ('00111', '00112') THEN COALESCE(wp.WaterPacName, wp1.WaterPacName, wp2.WaterPacName, 'WaterPac')
+      WHEN pd.MarketingGroupID = '002' THEN pd.Segment
       ELSE 'OTHERS'
     END) as PumpSegment
   FROM final as pd
   LEFT JOIN `${DimWaterpacTableRef}` as wp
     on pd.CompanySK = wp.CompanySK
-    and (CASE 
-          WHEN pd.WaterPac is not null THEN pd.WaterPac = wp.WaterPacCode
-          WHEN pd.WaterPac1 is not null THEN pd.WaterPac1 = wp.WaterPacCode
-        END)
+    and UPPER(pd.WaterPac) = UPPER(wp.WaterPacCode)
+  LEFT JOIN `${DimWaterpacTableRef}` as wp1
+    on pd.CompanySK = wp1.CompanySK
+    and UPPER(pd.WaterPac1) = UPPER(wp1.WaterPacCode)
+  LEFT JOIN `${DimWaterpacTableRef}` as wp2
+    on pd.CompanySK = wp2.CompanySK
+    and UPPER(pd.WaterPac2) = UPPER(wp2.WaterPacCode)
 
-  -- WHERE ProductCode in ('8858802724714', '8858802725162') or ProductCode in ('HY-39/LG-900L/P11', 'HY-37/RD-1000L/P11')
+  -- WHERE ProductCode in ('DE-17/SB-1000L/H/P20/P')

@@ -12,7 +12,7 @@
 |---|---|---|---|---|---|
 | `mac5/curated_schema_mac5.sqlx` | schema `curated_mac5` | operations | — | — | `CREATE SCHEMA IF NOT EXISTS` |
 | `mac5/curated_mih.sqlx` | `curated_mac5.curated_mih` | incremental | `company_id, mihType, mihVnos` | `asatdate` / `company_id, mihVnos, mihType` | Invoice headers + status lookup |
-| `mac5/curated_mil.sqlx` | `curated_mac5.curated_mil` | incremental | `company_id, milType, milVnos, milListno` | `asatdate` / `company_id, milVnos, milType` | Invoice lines + **post_operations split-sale** |
+| `mac5/curated_mil.sqlx` | `curated_mac5.curated_mil` | incremental | `company_id, milType, milVnos, milListno` | `asatdate` / `company_id, milVnos, milType` | Invoice lines + **post_operations split-sale**; 68 คอลัมน์ รวม `_raw` 7 ตัว |
 | `mac5/curated_tbook_quotation.sqlx` | `curated_mac5.curated_tbook_quotation` | incremental | `company_id, running` | (partition commented out) | Latest quotation revision (`ORDER BY rev DESC`) |
 | `mastersku/curated_schema_mastersku.sqlx` | schema `curated_mastersku` | operations | — | — | |
 | `mastersku/curated_product.sqlx` | `curated_mastersku.curated_product` | incremental | `prdSku` | `asatdate` / `prdSku, prdUniversalBarcode, prdVendorId, prdBrandId` | Only file using `updatePartitionFilter` (7-day) |
@@ -42,6 +42,9 @@ Only `curated_product` uses `updatePartitionFilter: "asatdate >= CURRENT_DATE('A
   other companies pass through with defaults (`100.00%` / `0.00%`) via `UNION ALL`.
 
 ### `curated_mil` — Master Invoice Lines (most complex)
+0. **คอลัมน์ `_raw` (เพิ่ม 2026-08-26)**: `milPer_raw` + `milQuan_raw`, `milAdisc_raw`,
+   `milCog_raw`, `milDisca_raw`, `milVat_raw`, `milSum_raw` เก็บค่า**ก่อน**หาร split-sale
+   ไว้คู่กับคอลัมน์ปกติที่ถูกหารแล้ว — ใช้ตอนต้องการยอดเต็มของบรรทัดนั้น
 1. Main SELECT: flat rename of `validated_mac5.mil`, `percent_sale = '100.00%'` hardcoded.
 2. `post_operations { BEGIN ... END }` recomputes **ag01 rows only** with split-sale
    allocation:
