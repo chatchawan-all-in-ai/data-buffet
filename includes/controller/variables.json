@@ -37,6 +37,7 @@
     "RAW_CIS360": "raw_cis360",
     "VALIDATED_CIS360": "validated_cis360",
     "CURATED_CIS360": "curated_cis360",
+    "CURATED_SALEOUT_MDT": "curated_saleout_mdt",
 
     "VALIDATED_SALEOUT_MDT" : "validated_saleout_mdt",
     "RAW_SALEOUT_MDT" : "raw_saleout_mdt",

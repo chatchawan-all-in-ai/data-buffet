@@ -2,20 +2,30 @@ config {
     type: "incremental",
     schema: databuffet.VALIDATED_SALEOUT_MDT,
     dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
-    tags: [databuffet.TAG_VALIDATED],
-    uniqueKey: ["crdate", "periodtype", "vendorno", "siteno", "itemno", "mch3", "artno"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["siteno", "artno", "sale_date"],
     bigquery: {
-        clusterBy: ["crdate", "vendorno", "siteno", "mch3"]
+        partitionBy: "asatdate",
+        clusterBy: ["siteno", "artno"]
     },
 }
 
 js {
-    const pk_key = ["crdate", "periodtype", "vendorno", "siteno", "itemno", "mch3", "artno"]
+    const sourceTableRef = `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_hp`;
+
+    // ห้างส่งค่าครอบด้วย ="..." และย้ายคอลัมน์ที่ครอบได้
+    // (2-4 ส.ค. 2026 ย้ายจาก PERIODDATE ไปอยู่ SITENO/VENDORNO/ARTNO — 601 แถว)
+    // จึงแกะทุกคอลัมน์ข้อความ ไม่เลือกคอลัมน์ ดู operations/known-issues.md 2026-09-07
+    const UNQUOTE = String.raw`r'^="|"$'`;
+    const c = (col) => databuffet.functionData.cleanCode(col, UNQUOTE);
+
+    const pk_key = ["siteno", "artno", "sale_date"]
 
     let partition_statement, post_operations_statement;
 
     if (pk_key && pk_key.length > 0) {
-        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY ASATDATE DESC) = 1`;
+        // value DESC กันเลือกแถวยอด 0 ทับแถวที่มียอดจริง เมื่อวันขายเดียวกันมาจาก 2 ไฟล์
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY ASATDATE DESC, value DESC) = 1`;
         post_operations_statement = `
 BEGIN
     DECLARE retry_count INT64 DEFAULT 0;
@@ -40,26 +50,50 @@ END;`;
 }
 
 SELECT
-    PARSE_DATETIME('%d/%m/%Y %H:%M', TRIM(CRDATE)) AS crdate,
-    ${databuffet.functionData.cleanString('PERIODTYPE')} AS periodtype,
-    PARSE_DATE('%d/%m/%Y', REGEXP_REPLACE(TRIM(PERIODDATE), r'[="]', '')) AS perioddate,
-    ${databuffet.functionData.cleanString('VENDORNO')} AS vendorno,
-    ${databuffet.functionData.cleanString('VENDORNAME')} AS vendorname,
-    ${databuffet.functionData.cleanString('SITENO')} AS siteno,
+    -- วันขาย: PERIODDATE รูปแบบ วัน/เดือน/ค.ศ. เท่ากับ CRDATE ลบ 1 วัน
+    PARSE_DATE('%d/%m/%Y', ${c('PERIODDATE')}) AS sale_date,
+
+    -- ไฟล์เดียวมี 2 ห้าง แยกด้วยตัวอักษรแรกของ SITENO
+    -- prefix อื่นได้ NULL โดยเจตนา เพื่อให้ตรวจเจอว่ามีรหัสที่ไม่ใช่สาขาขายปลีก
+    -- ปัจจุบันมี 5 แถว: CS01 (3) และ EX99 Inter Company (2)
+    CASE LEFT(${c('SITENO')}, 1)
+        WHEN 'S' THEN 'HP'
+        WHEN 'M' THEN 'MH'
+    END AS store_code,
+
+    ${c('SITENO')} AS siteno,
     ${databuffet.functionData.cleanString('SITENAME')} AS sitename,
-    ${databuffet.functionData.cleanString('ITEMNO')} AS itemno,
+
+    ${c('ARTNO')} AS artno,
+    ${databuffet.functionData.cleanString('ARTDESC')} AS artdesc,
+
+    -- VDARTNO เป็นบาร์โค้ด GS1 (ขึ้นต้น 885) ใช้จับคู่กับ dim_product_master.Barcode
+    ${c('VDARTNO')} AS vdartno,
+    ${databuffet.functionData.cleanString('VDARTDESC')} AS vdartdesc,
+
+    -- ARTEAN เป็นบาร์โค้ดภายในร้าน (ขึ้นต้น 24) เก็บไว้สืบกลับ ห้ามใช้จับคู่สินค้า
+    ${c('ARTEAN')} AS artean,
+
+    ${c('ITEMNO')} AS itemno,
     ${databuffet.functionData.cleanString('MCH3')} AS mch3,
     ${databuffet.functionData.cleanString('MCH2DESC')} AS mch2desc,
     ${databuffet.functionData.cleanString('MCH1DESC')} AS mch1desc,
-    ${databuffet.functionData.cleanString('ARTNO')} AS artno,
-    ${databuffet.functionData.cleanString('ARTDESC')} AS artdesc,
-    NULLIF(CAST(REGEXP_REPLACE(TRIM(ARTEAN), r'[="]', '') AS STRING), '') AS artean,
-    NULLIF(CAST(REGEXP_REPLACE(TRIM(VDARTNO), r'[="]', '') AS STRING), '') AS vdartno,
-    ${databuffet.functionData.cleanString('VDARTDESC')} AS vdartdesc,
-    ${databuffet.functionData.castFloat64('QTY')} AS qty,
+
+    ${c('VENDORNO')} AS vendorno,
+    ${databuffet.functionData.cleanString('VENDORNAME')} AS vendorname,
+
+    ${databuffet.functionData.castInt64('QTY')} AS qty,
     ${databuffet.functionData.castFloat64('VALUE')} AS value,
-    ${databuffet.functionData.parseAsatDate()} as ASATDATE,
-FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_hp`
+    ${databuffet.functionData.castInt64('QTY')} < 0 AS is_return,
+
+    ${databuffet.functionData.cleanString('PERIODTYPE')} AS periodtype,
+    SAFE.PARSE_DATETIME('%d/%m/%Y %H:%M', ${c('CRDATE')}) AS crdate,
+
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 ${partition_statement}
 
 pre_operations {

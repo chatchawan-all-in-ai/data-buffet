@@ -78,10 +78,10 @@ runs **every** run.
 |---|---|---|---|---|
 | Raw datasets | `raw_mac5_ag01` + 4 companies | `raw_cis360` | `raw_mastersku` | `raw_saleout_mdt` |
 | Default type | mostly `table` (full) | all incremental | all incremental | all incremental |
-| Sub-tag | FULL / INCREMENTAL | INCREMENTAL | INCREMENTAL | **none** (only `validated`) |
+| Sub-tag | FULL / INCREMENTAL | INCREMENTAL | INCREMENTAL | **none** except `saleout_hp` (+ INCREMENTAL, 2026-09-07) |
 | PK | table-specific composites | `id` | `prd_id` / `*_id` | wide business composites |
-| Partition | `asatdate` when incremental | `asatdate` | `asatdate` | usually none |
-| Quirks | multi-company UNION, sign flips, Thai-text cleanup | heavy `castBool` | `prd_*` prefix | vendor subfolders BT/GB/HP/TW, `PARSE_DATE('%Y/%m/%d', ...)` |
+| Partition | `asatdate` when incremental | `asatdate` | `asatdate` | usually none; `saleout_hp` = `asatdate` |
+| Quirks | multi-company UNION, sign flips, Thai-text cleanup | heavy `castBool` | `prd_*` prefix | vendor subfolders BT/GB/HP/TW, `PARSE_DATE('%Y/%m/%d', ...)`, Excel `="..."` artefacts (see below) |
 
 ### MAC5 multi-company UNION (14 files)
 
@@ -95,6 +95,35 @@ others hardcode `CAST(NULL AS DATETIME) AS moddate`.
 
 `mih, mih2, mih_dummy, mil, mil_dummy, mie, mie_dummy, mir, cps, cps_dummy, cql, cst, rcv`
 — the transactional invoice/cost/receiving tables.
+
+### saleout_mdt — Excel `="..."` artefacts
+
+ไฟล์ที่ห้างส่งมาผ่าน Excel มีค่าครอบด้วย `="..."` (force-text) ติดมาถึง AVRO
+**และห้างย้ายคอลัมน์ที่ครอบได้** — 2-4 ส.ค. 2026 (601 แถวใน `saleout_hp`) `="`
+ย้ายจาก `PERIODDATE` ไปอยู่ `SITENO` / `VENDORNO` / `ARTNO` แทน
+
+**กฎ: แกะทุกคอลัมน์ข้อความ ห้ามเลือกคอลัมน์** ใช้ `cleanCode(col, pattern)` ที่มีอยู่
+โดยส่ง pattern เข้าไป ไม่ต้องเพิ่ม helper ใหม่:
+
+```js
+const UNQUOTE = String.raw`r'^="|"$'`;
+const c = (col) => databuffet.functionData.cleanCode(col, UNQUOTE);
+```
+
+ถ้าแกะไม่ครบ สาขาเดียวจะปรากฏ 2 รูปแบบ (`S107` และ `="S107"`) โดยไม่มี error —
+เคยทำให้ `saleout_hp` นับได้ 259 สาขาแทน 137 ดู
+`document/operations/known-issues.md` (2026-09-07)
+
+`saleout_hp` (แก้ 2026-09-07) เป็นไฟล์แรกของ source นี้ที่:
+- แกะ `="` ทุกคอลัมน์ข้อความ
+- uniqueKey ไม่มีคอลัมน์ที่ผูกกับตัวไฟล์ (`crdate` เดิมอยู่ในคีย์ ทำให้การขายเดียวกัน
+  จากไฟล์ต่างวันไม่ยุบเข้าหากัน) — ใช้ `siteno + artno + sale_date` แทน
+- มี `partitionBy: "asatdate"` และ incremental window ตาม `BACKFILL_DAYS`
+- มีคอลัมน์ `store_code` แยก HomePro (`SITENO` ขึ้นต้น `S`) กับ Megahome (`M`)
+  จากไฟล์เดียวกัน — prefix อื่นได้ `NULL` โดยเจตนา (ปัจจุบัน `CS01` 3 แถว · `EX99` 2 แถว)
+
+**เปลี่ยน partition/cluster spec ของตารางที่มีอยู่แล้วต้อง DROP ก่อน** — BigQuery
+ไม่ยอม `CREATE OR REPLACE` ข้าม spec และถือว่า `ASATDATE` กับ `asatdate` เป็นคนละ spec
 
 ## Data quality
 

@@ -1,6 +1,6 @@
 # Known Issues & Gotchas
 
-รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-07-24
+รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-09-07
 
 ## คำสะกดผิดที่เป็น identifier จริง (ห้ามแก้)
 
@@ -184,6 +184,36 @@
   **ตรวจซ้ำได้ด้วย**: `grep -rniE "current_date\(\)|current_datetime\(\)" definitions includes`
   ต้องได้ 0 บรรทัด (`CURRENT_TIMESTAMP()` 6 จุดใน `cdc_change_log`/`chq` ไม่ต้องแก้ —
   TIMESTAMP เป็นเวลาสัมบูรณ์)
+
+- **2026-09-07 — `validated_saleout_mdt.saleout_hp` นับได้ 259 สาขา ทั้งที่จริงมี 137**
+
+  **สาเหตุ**: ไฟล์ HomePro ส่งค่าครอบด้วย `="..."` (ร่องรอย Excel force-text) และ
+  **ห้างย้ายคอลัมน์ที่ครอบได้** — ช่วง 2-4 ส.ค. 2026 (601 แถว) `="` ย้ายจาก
+  `PERIODDATE` ไปอยู่ `SITENO` / `VENDORNO` / `ARTNO` แทน
+  `saleout_hp.sqlx` แกะ `="` ให้แค่ 3 คอลัมน์ (`PERIODDATE`, `ARTEAN`, `VDARTNO`)
+  ส่วน `SITENO` ใช้ `cleanString` ซึ่งทำแค่ TRIM → ค่า `="S107"` ติดเข้าตาราง
+
+  **ผล**: สาขาเดียวปรากฏ 2 รูปแบบ (`S107` และ `="S107"`) →
+  `COUNT(DISTINCT siteno)` = 259 · **ไม่มี error ไม่มี NULL ไม่มีสัญญาณอะไรเลย**
+  และถ้ามีโค้ดที่แยกห้างด้วย `LEFT(siteno, 1)` จะได้ `=` แทน `S`/`M`
+  → ยอดทั้ง HomePro และ Megahome หายไป 3 วันโดยเงียบ
+
+  **ตรวจซ้ำได้ด้วย**:
+  ```sql
+  SELECT COUNT(DISTINCT NULLIF(CAST(TRIM(SITENO) AS STRING),'')) AS old_way,
+         COUNT(DISTINCT NULLIF(CAST(TRIM(REGEXP_REPLACE(SITENO, r'^="|"$', '')) AS STRING),'')) AS unquoted
+  FROM `databuffet-nonprd.raw_saleout_mdt.saleout_hp`
+  ```
+  ได้ `259` กับ `137` — วิธีที่แกะแล้วเหลือ prefix ที่ไม่ใช่ `S`/`M` แค่ 5 แถว คือ
+  `CS01` (3) และ `EX99` Inter Company (2) ซึ่งเป็นรหัสจริงของห้าง ไม่ใช่ของสกปรก
+
+  **บทเรียน**: กับต้นทางที่เป็นไฟล์ Excel **ห้ามล้างของสกปรกแบบเลือกคอลัมน์** —
+  ห้างเปลี่ยนตำแหน่งได้ ต้องใช้ `REGEXP_REPLACE(x, r'^="|"$', '')` กับทุกคอลัมน์ข้อความ
+  (ใช้ `cleanCode(col, pattern)` ที่มีอยู่แล้ว ส่ง pattern เข้าไป ไม่ต้องเพิ่ม helper)
+
+  **จุดใกล้กันที่ยังไม่แก้**: `uniqueKey` ของ `saleout_hp` มี `crdate` (เวลาที่ห้าง
+  สร้างไฟล์ เปลี่ยนทุกวัน) อยู่ในคีย์ → การขายเดียวกันจากไฟล์ต่างวันไม่ยุบเข้าหากัน
+  ปัจจุบันยังไม่มี curated/fact ที่ต่อจากตารางนี้ จึงยังไม่กระทบรายงาน
 
 ## การตัดสินใจเชิงออกแบบ
 

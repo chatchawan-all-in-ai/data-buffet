@@ -2,15 +2,20 @@ config {
     type: "incremental",
     schema: databuffet.VALIDATED_SALEOUT_MDT,
     dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
-    tags: [databuffet.TAG_VALIDATED],
-    uniqueKey: ["vendor_id", "year_date_id", "month_date_id", "branch", "article_id"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["branch", "article_id", "distribution_channel", "end_date"],
     bigquery: {
-        clusterBy: ["vendor_id", "year_date_id", "month_date_id", "branch"]
+        partitionBy: "asatdate",
+        clusterBy: ["branch", "article_id", "end_date"]
     },
 }
 
 js {
-    const pk_key = ["vendor_id", "year_date_id", "month_date_id", "branch", "article_id"]
+    const sourceTableRef = `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.sale_by_branch_detail`;
+
+    // end_date ต้องอยู่ในคีย์ ไม่งั้นเก็บได้แค่แถวเดียวต่อเดือน แล้วหายอดรายวันไม่ได้
+    // distribution_channel ต้องอยู่ในคีย์ ไม่งั้นยอด Showroom กับ Anyhome ทับกัน
+    const pk_key = ["branch", "article_id", "distribution_channel", "end_date"]
 
     let partition_statement, post_operations_statement;
 
@@ -40,26 +45,45 @@ END;`;
 }
 
 SELECT
-    ${databuffet.functionData.cleanString('VENDOR_ID')} AS vendor_id,
-    ${databuffet.functionData.cleanString('VENDOR_NAME')} AS vendor_name,
-    ${databuffet.functionData.castInt64('YEAR_DATE_ID')} AS year_date_id,
-    ${databuffet.functionData.cleanString('MONTH_DATE_ID')} AS month_date_id,
     ${databuffet.functionData.cleanString('BRANCH')} AS branch,
-    ${databuffet.functionData.cleanString('DISTRIBUTION_CHANNEL')} AS distribution_channel,
     ${databuffet.functionData.cleanString('ARTICLE_ID')} AS article_id,
+
+    -- ห้างเปลี่ยนชื่อช่องทางกลางทาง: Web (พ.ค.-ก.ค.) → Website (ส.ค.-ก.ย.)
+    -- สาขาเดียวกัน (ECOMMERCE) ทั้งคู่ จึงรวมเป็นค่าเดียว
+    CASE ${databuffet.functionData.cleanString('DISTRIBUTION_CHANNEL')}
+        WHEN 'Website' THEN 'Web'
+        ELSE ${databuffet.functionData.cleanString('DISTRIBUTION_CHANNEL')}
+    END AS distribution_channel,
+
+    -- ช่วงที่ยอดสะสมครอบ: start_date เป็นวันที่ 1 ของเดือนเสมอ
+    -- end_date คือวันสุดท้ายที่ยอดนับถึง ไม่ใช่วันที่ขายล่าสุด
+    PARSE_DATE('%Y/%m/%d', ${databuffet.functionData.cleanString('START_DATE')}) AS start_date,
+    PARSE_DATE('%Y/%m/%d', ${databuffet.functionData.cleanString('END_DATE')}) AS end_date,
+
+    -- ค่าสะสมตั้งแต่ต้นเดือน (MTD) ไม่ใช่ยอดของวัน — ห้าม SUM ข้ามวัน
+    -- ยอดรายวันคำนวณที่ชั้น curated ด้วย LAG ดู project_wiki/validated/validated-layer.md
+    ${databuffet.functionData.castFloat64('NET_INC_TAX')} AS net_inc_tax_mtd,
+    ${databuffet.functionData.castInt64('SALE_QTY')} AS sale_qty_mtd,
+    ${databuffet.functionData.castFloat64('SALE_SQM')} AS sale_sqm_mtd,
+
     ${databuffet.functionData.cleanString('ARTICLE_NAME_TH')} AS article_name_th,
     ${databuffet.functionData.cleanString('BRAND')} AS brand,
     ${databuffet.functionData.cleanString('FLAG_PROJECT')} AS flag_project,
     ${databuffet.functionData.cleanString('ITEM_FLAG')} AS item_flag,
     ${databuffet.functionData.cleanString('MCH3')} AS mch3,
     ${databuffet.functionData.cleanString('MCH2')} AS mch2,
-    ${databuffet.functionData.castFloat64('NET_INC_TAX')} AS net_inc_tax,
-    ${databuffet.functionData.castInt64('SALE_QTY')} AS sale_qty,
-    ${databuffet.functionData.castFloat64('SALE_SQM')} AS sale_sqm,
-    PARSE_DATE('%Y/%m/%d', TRIM(START_DATE)) AS start_date,
-    PARSE_DATE('%Y/%m/%d', TRIM(END_DATE)) AS end_date,
-    ${databuffet.functionData.parseAsatDate()} as ASATDATE,
-FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.sale_by_branch_detail`
+
+    ${databuffet.functionData.castInt64('YEAR_DATE_ID')} AS year_date_id,
+    ${databuffet.functionData.cleanString('MONTH_DATE_ID')} AS month_date_id,
+
+    ${databuffet.functionData.cleanString('VENDOR_ID')} AS vendor_id,
+    ${databuffet.functionData.cleanString('VENDOR_NAME')} AS vendor_name,
+
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 ${partition_statement}
 
 pre_operations {

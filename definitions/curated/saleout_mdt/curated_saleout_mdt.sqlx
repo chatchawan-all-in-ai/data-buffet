@@ -1,0 +1,58 @@
+config {
+    type: "incremental",
+    schema: databuffet.CURATED_SALEOUT_MDT,
+    dependencies: ["curated_schema_saleout"],
+    tags: [databuffet.TAG_CURATED, databuffet.TAG_CURATED_INCREMENTAL],
+    uniqueKey: ["sale_date", "store_code", "source_store_code", "source_product_code"],
+    bigquery: {
+        partitionBy: "sale_date",
+        clusterBy: ["store_code", "source_store_code", "source_product_code"]
+    },
+}
+
+/*
+  ชั้นนี้ทำให้ทุกห้างหน้าตาเหมือนกัน — ความต่างของแต่ละห้างตายที่ชั้น validated
+  ตั้งแต่ที่นี่ขึ้นไปห้ามมีเงื่อนไข IF ห้าง = ...
+
+  เพิ่มห้างใหม่ = เพิ่ม UNION ALL block ด้านล่าง ไม่ต้องแตะ fact หรือ view
+  ตอนนี้มีแค่ HomePro + Megahome (จากไฟล์เดียวกัน)
+
+  ยอดทุกห้างรวม VAT มาแล้ว (ยืนยัน 2026-09-07) จึงใช้ค่าตรงๆ ไม่ต้องแปลง
+
+  ไม่มีคอลัมน์ distribution_channel ที่ชั้นนี้ — Requirement ไม่ได้ขอ (0 จาก 15 กลุ่ม dimension)
+  BT เป็นห้างเดียวที่มีข้อมูลนี้ และเก็บไว้ในคีย์ที่ชั้น validated แล้ว
+  ตอนทำ block ของ BT ต้องหาส่วนต่างแยกช่องทางก่อน แล้วจึง SUM รวม — สลับลำดับจะได้ยอดผิด
+*/
+
+WITH hp AS (
+
+    SELECT
+        sale_date,
+        store_code,                                 -- 'HP' หรือ 'MH' · NULL = ไม่ใช่สาขาขายปลีก (CS01/EX99)
+        siteno      AS source_store_code,
+        sitename    AS source_store_name,
+        artno       AS source_product_code,
+        artdesc     AS source_product_name,
+        vdartno     AS barcode_match,               -- บาร์โค้ด GS1 ใช้จับคู่ dim_product_master.Barcode
+        qty         AS sale_qty,
+        value       AS sale_amount,
+        is_return,
+        1           AS days_covered,
+        FALSE       AS date_is_estimated,
+        CAST(NULL AS STRING) AS source_bill_no,     -- มีแค่ Global House
+        asatdate
+    FROM ${ref("saleout_hp")}
+    WHERE sale_date IS NOT NULL
+      AND (qty <> 0 OR value <> 0)                  -- ตัดแถวสินค้าที่ไม่ขาย (34% ของไฟล์ HP)
+      -- กรองที่ต้นทาง เพราะ validated partition ด้วย asatdate — วางไว้ข้างนอกจะไม่ตัดพาร์ทิชัน
+      ${ when(incremental(), `AND asatdate >= DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY)`) }
+
+)
+
+SELECT * FROM hp
+
+pre_operations {
+}
+
+post_operations {
+}

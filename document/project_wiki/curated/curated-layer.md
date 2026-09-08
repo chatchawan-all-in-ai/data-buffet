@@ -1,9 +1,10 @@
 # Curated Layer — `definitions/curated/`
 
-> **LLM context**: 8 files — 3 are schema-bootstrap `operations` (one per source),
-> 5 are real transformations. Dataset per source: `curated_mac5`, `curated_mastersku`,
-> `curated_cis360`. All tag with `databuffet.TAG_CURATED` only (the
-> `curated_incremental`/`curated_full` tags exist in variables.json but are **not used**).
+> **LLM context**: 10 files — 4 are schema-bootstrap `operations` (one per source),
+> 6 are real transformations. Dataset per source: `curated_mac5`, `curated_mastersku`,
+> `curated_cis360`, `curated_saleout_mdt`. Most tag with `databuffet.TAG_CURATED` only;
+> `curated_saleout_mdt` also uses `TAG_CURATED_INCREMENTAL` (first user of that tag,
+> 2026-09-07). `curated_full` still unused.
 
 ## Inventory
 
@@ -17,6 +18,8 @@
 | `mastersku/curated_product.sqlx` | `curated_mastersku.curated_product` | incremental | `prdSku` | `asatdate` / `prdSku, prdUniversalBarcode, prdVendorId, prdBrandId` | Only file using `updatePartitionFilter` (7-day) |
 | `mastersku/product_for_aisearch.sqlx` | `curated_mastersku.product_for_aisearch` | operations | — | — | AI-search feed, STRUCT column, DELETE+INSERT by run_date |
 | `cis360/curated_schema_cis360.sqlx` | schema `curated_cis360` | operations | — | — | Schema only, no tables yet |
+| `saleout_mdt/curated_schema_saleout.sqlx` | schema `curated_saleout_mdt` | operations | — | — | เพิ่ม 2026-09-07 |
+| `saleout_mdt/curated_saleout_mdt.sqlx` | `curated_saleout_mdt.curated_saleout_mdt` | incremental | `sale_date, store_code, source_store_code, source_product_code, distribution_channel` | `sale_date` / `store_code, source_store_code, source_product_code` | **ชั้นที่ทำให้ทุกห้างหน้าตาเหมือนกัน** — เพิ่มห้างใหม่ = เพิ่ม UNION ALL block ไม่ต้องแตะ fact/view · ตอนนี้มีแค่ HomePro + Megahome · ตัวกรอง incremental อยู่ใน CTE เพื่อตัดพาร์ทิชันของ validated |
 
 ## Incremental window — IMPORTANT
 
