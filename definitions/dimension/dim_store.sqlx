@@ -34,6 +34,7 @@ WITH sto_master AS (
   FROM ${ref(databuffet.VALIDATED_MAC5, "sto")} AS sto
   LEFT JOIN `${DimCompanyTableRef}` AS dim_com
     ON sto.company_id = dim_com.companyID
+  WHERE sto.company_id in ('ag01', 'ab01')
 
 ), unknown_store AS (
   SELECT

@@ -39,6 +39,13 @@ js {
     };
     const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
 
+    const DimProductMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mkt",
+    };
+    const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
+
     const DimStoreTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -65,9 +72,13 @@ WITH cps_latest AS (
   QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, mihVnos ORDER BY OrderSK DESC) = 1
 
 ), dim_product_dedup AS (
-  SELECT ProductSK, CompanySK, ProductCode, ProductGroupMAC5
-  FROM `${DimProductMasterTableRef}`
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, ProductCode ORDER BY ProductSK) = 1
+  SELECT m.ProductSK, m.CompanySK, m.ProductCode, m.ProductGroupMAC5
+  FROM `${DimProductMasterTableRef}` as m
+  LEFT JOIN `${DimProductMktTableRef}` as mkt
+    on m.ProductMktSK = mkt.ProductMktSK
+  WHERE mkt.TypeMarketing not in ('Sourcing')
+    and m.companyid in ('ag01', 'ab01')
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY m.CompanySK, m.ProductCode ORDER BY m.ProductSK) = 1
 
 ), source_data AS (
   SELECT
@@ -107,7 +118,7 @@ WITH cps_latest AS (
   LEFT JOIN `${DimCustomerTableRef}` AS dim_cust
     ON  dim_cust.CompanySK = dim_com.CompanySK
     AND dim_cust.debcode   = mih.mihCus
-  LEFT JOIN dim_product_dedup AS dim_prod
+  INNER JOIN dim_product_dedup AS dim_prod
     ON  dim_prod.CompanySK   = dim_com.CompanySK
     AND dim_prod.ProductCode = cps.cpsStkID
   LEFT JOIN `${DimStoreTableRef}` AS dim_sto
@@ -117,6 +128,7 @@ WITH cps_latest AS (
     AND mih.mihCancel   = 0
     AND mih.mihClearUM  = 0
     AND mih.mihExtraSUM = 0
+    AND mih.company_id in ('ag01', 'ab01')
   GROUP BY
     CompanySK, company_id, sDate, mihYear, mihMonth, mihDay,
     OrderSK, CustomerSK, ProductSK, StoreSK,
