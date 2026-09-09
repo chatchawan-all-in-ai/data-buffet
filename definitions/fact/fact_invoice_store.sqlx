@@ -59,13 +59,25 @@ js {
         name: "dim_store",
     };
     const DimStoreTableRef = `${DimStoreTable.database}.${DimStoreTable.schema}.${DimStoreTable.name}`;
+
+    const MDSStatusTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_status_control_master",
+    };
+    const MDSStatusTableRef = `${MDSStatusTable.database}.${MDSStatusTable.schema}.${MDSStatusTable.name}`;
 }
 
 
 WITH dim_order_dedup AS (
-  SELECT OrderSK, CompanySK, mihVnos
-  FROM `${DimOrderTableRef}`
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, mihVnos ORDER BY OrderSK DESC) = 1
+  SELECT ord.OrderSK, ord.CompanySK, ord.mihVnos
+  FROM `${DimOrderTableRef}` as ord
+  INNER JOIN `${MDSStatusTableRef}` as mds
+    on mds.is_active = true
+    and mds.flagwarehouse = true
+    and ord.CompanyID = mds.CompanyID
+    and ord.mihStatus = mds.StatusID
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY ord.CompanySK, ord.mihVnos ORDER BY ord.OrderSK DESC) = 1
 
 ), dim_product_dedup AS (
   SELECT m.ProductSK, m.CompanySK, m.ProductCode, m.ProductGroupMAC5
@@ -121,14 +133,11 @@ WITH dim_order_dedup AS (
   LEFT JOIN `${DimCompanyTableRef}` AS dim_com
     ON mih.company_id = dim_com.companyID
   LEFT JOIN dim_invoice_dedup AS dim_inv
-    -- ตัวใบกำกับเอง -- ปลด mihVnos/mihRef/mihNotes ออกจาก fact ไปอยู่ dim
     ON  dim_inv.CompanySK = dim_com.CompanySK
     AND dim_inv.mihVnos   = mih.mihVnos
-  LEFT JOIN dim_order_dedup AS dim_ord
-    -- โยงกลับใบสั่งขาย เฉพาะเมื่อ link ชี้ไปที่เอกสารชนิด PS
+  INNER JOIN dim_order_dedup AS dim_ord
     ON  dim_ord.CompanySK = dim_com.CompanySK
     AND dim_ord.mihVnos   = mil.milLinkVcno
-    AND mil.milLinkVcType = 'PS'
   LEFT JOIN `${DimCustomerTableRef}` AS dim_cust
     ON  dim_cust.CompanySK = dim_com.CompanySK
     AND dim_cust.debcode   = mih.mihCus

@@ -32,7 +32,8 @@ SELECT
       ${databuffet.functionData.cleanString("t1.TypeMarketingID")},
       ${databuffet.functionData.cleanString("t1.MarketingGroupID")},
       ${databuffet.functionData.cleanString("t1.SubMarketingID")},
-      ${databuffet.functionData.cleanString("t1.SegmentID")}
+      ${databuffet.functionData.cleanString("t1.SegmentID")},
+      ${databuffet.functionData.cleanString("t1.SubMarketingGroupNameWH")}
   ) AS ProductMktSK,
   dim_com.CompanySK,
   ${databuffet.functionData.cleanString("t1.CompanyID")} AS CompanyID,
@@ -44,6 +45,7 @@ SELECT
   ${databuffet.functionData.cleanString("t1.SubMarketing")} AS SubMarketing,
   ${databuffet.functionData.cleanString("t1.SegmentID")} AS SegmentID,
   ${databuffet.functionData.cleanString("t1.Segment")} AS Segment,
+  ${databuffet.functionData.cleanString("t1.SubMarketingGroupNameWH")} AS SubMarketingGroupNameWH,
   ${databuffet.functionData.cleanString("t1.id")} as MdsID
 FROM `${MdsSourceTableRef}` AS t1
 LEFT JOIN `${DimCompanyTableRef}` AS dim_com

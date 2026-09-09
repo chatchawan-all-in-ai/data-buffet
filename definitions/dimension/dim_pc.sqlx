@@ -1,0 +1,53 @@
+config {
+  type: "table",
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: [],
+  tags: [databuffet.TAG_DIM_DAILY],
+  uniqueKey: ["PcSK"],
+  bigquery: {
+    clusterBy: ["PcSK"],
+  },
+}
+
+js {
+    const PcSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_pc_master`;
+}
+
+WITH pc_dedup AS (
+  SELECT
+    ${databuffet.functionData.cleanString("employee_id")}       AS EmployeeID,
+    ${databuffet.functionData.cleanString("employee_name")}     AS EmployeeName,
+    ${databuffet.functionData.cleanString("employee_surname")}  AS EmployeeSurname,
+    ${databuffet.functionData.cleanString("employee_type")}     AS EmployeeType,
+    ${databuffet.functionData.cleanString("id")}                AS MdsID
+  FROM `${PcSourceRef}`
+  WHERE is_active = TRUE
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY employee_id ORDER BY updated_at DESC, id) = 1
+
+), pc_master AS (
+  SELECT
+    ROW_NUMBER() OVER(ORDER BY EmployeeID) AS PcSK,
+    EmployeeID,
+    EmployeeName,
+    EmployeeSurname,
+    EmployeeType,
+    MdsID
+  FROM pc_dedup
+
+), unknown_pc AS (
+  SELECT
+    -1                   AS PcSK,
+    CAST(NULL AS STRING) AS EmployeeID,
+    'ไม่ระบุ'              AS EmployeeName,
+    CAST(NULL AS STRING) AS EmployeeSurname,
+    CAST(NULL AS STRING) AS EmployeeType,
+    CAST(NULL AS STRING) AS MdsID
+)
+
+SELECT * FROM pc_master
+UNION ALL
+SELECT * FROM unknown_pc
+
+pre_operations {}
+
+post_operations {}
