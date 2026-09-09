@@ -10,32 +10,87 @@ config {
 }
 
 /*
-  สินค้าที่ขายผ่าน MDT — ต้นทางคือ Master Branch MDT_final.xlsx ชีท Product ที่ BI ดูแล
-  ยังไม่ได้โหลดเข้า BigQuery จึงมีแต่แถวไม่ระบุไปก่อน
+  สินค้าที่ขายผ่านช่องทาง MDT — 2,348 แถว
 
-  คีย์ธรรมชาติคือ StoreCode + SourceProductCode ต้องใช้ 2 คอลัมน์
-  เพราะรหัสสินค้าของแต่ละห้างเป็นระบบของตัวเอง ชนกันข้ามห้างได้
+  คีย์ธรรมชาติคือ ProductCode เดี่ยว ไม่ต้องมีรหัสห้าง
+  วัดแล้ว 2026-09-09: product_mdt_code ใน mds ไม่ซ้ำเลยทั้ง 2,348 แถว และการไม่สนห้าง
+  ให้ผลเท่ากับการจับคู่แยกห้างทุกห้าง โดยไม่จับผิดเพิ่มแม้แถวเดียว
+      แยกห้าง   HP 313 · MH 6   · TW 341 · GH 164 · BT 172
+      ไม่สนห้าง  HP 317 · MH 196 · TW 341 · GH 164 · BT 172  = 1,190/1,287 = 92.5%
+  MH กระโดดจาก 2.8% เป็น 91.6% เพราะ HP กับ MH มาจากไฟล์เดียวและใช้รหัส ARTNO ชุดเดียวกัน
+  แต่ mds ลงทะเบียนรหัสไว้ใต้ห้างเดียว การใส่ห้างในคีย์จึงตัดของที่ควรจับได้ออก
 
-  เก็บ ProductSK ไว้ในตัวเอง fact จึงไม่ต้อง join dim_product_master
-  ตอนเติมแถวจริงต้องตอบก่อนว่าใช้ ProductSK ของบริษัทไหน
-  dim_product_master มี CompanySK — รหัสสินค้าเดียวกันมีหลายแถวข้ามบริษัท
+  ฝั่ง fact ต้องตัด 0 นำหน้าก่อน join — LTRIM(product_code, '0')
+  TW ส่งรหัสมาพร้อม 0 นำหน้าทุกตัว ถ้าไม่ตัดจะจับได้ 0 จาก 383 รหัส
 
-  แถวใหม่ห้ามเพิ่มอัตโนมัติ ต้องมีคนกรอกผ่าน form ยืนยันก่อน
-  รหัสที่จับไม่ได้จะไปอยู่ที่ SK = -1 ยอดไม่หาย
+  ProductCode แปลงผ่าน INT64 เพราะต้นทางเป็น FLOAT
+  ห้าม CAST FLOAT เป็น STRING ตรง ๆ จะได้ '1254247.0' หรือรูปแบบยกกำลัง
+  ตรวจแล้วปลอดภัย: ไม่มีทศนิยม ไม่มีค่าเกินขอบจำนวนเต็มของ FLOAT ยาวสุด 14 หลัก
+  ⚠️ ต้นทางใน Excel เป็น STRING ทุกแถวและมี 1 แถวที่มี 0 นำหน้า ซึ่งเพี้ยนไปแล้วตอนเข้า mds
+  ⚠️ mds มี 2,348 แถว แต่ Excel ต้นทางมี 2,478 — หาย 130 แถว ต้องแจ้งคนดูแล mds
 
-  ponytail: ตอนเติมแถวจริงต้องเปลี่ยนไปใช้ MERGE เพื่อให้ SK นิ่ง
+  เก็บ ProductSK และ ProductMktSK ไว้ในตัวเอง fact จึงไม่ต้อง join dim_product_master
+  หรือ dim_product_mkt  ProductMktSK เป็นทางเดียวที่โยงยอดขายเข้ากลุ่มสินค้าของเป้า
+  (dim_product_mkt.MarketingGroupID = 001 PE / 005 DOOR & WINDOW ตรงกับตารางเป้า)
+
+  commpy = 'ag01' ทุกแถว จึงกรอง dim_product_master ด้วย companyID เดียวกัน
+  ไม่งั้นรหัสเดียวกันจะ join ได้หลายบริษัทและยอดคูณตามจำนวนบริษัท
+
+  ponytail: SK ปั้นด้วย ROW_NUMBER สร้างใหม่ทุกคืน ใช้ได้เพราะ fact_saleout_mdt
+  rebuild ทุกคืนเหมือนกัน  วันที่ fact เปลี่ยนเป็น incremental ต้องเปลี่ยนมาใช้ MERGE ก่อน
 */
 
-SELECT * FROM UNNEST([
-  STRUCT(
+js {
+    const ProductSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_product_master_mdt`;
+
+    const DimProductMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_master",
+    };
+    const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
+}
+
+WITH mac5_dedup AS (
+  -- dim_product_master มีได้หลายแถวต่อ (companyID, ProductCode) — ยุบก่อนเพื่อกัน fan-out
+  SELECT ProductSK, ProductMktSK, companyID, ProductCode
+  FROM `${DimProductMasterTableRef}`
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY companyID, ProductCode ORDER BY ProductSK) = 1
+
+), product_master AS (
+  SELECT
+    ROW_NUMBER() OVER(ORDER BY CAST(t1.product_mdt_code AS INT64)) AS ProductMdtSK,
+    IFNULL(mac5.ProductSK, -1)    AS ProductSK,
+    IFNULL(mac5.ProductMktSK, -1) AS ProductMktSK,
+    CAST(CAST(t1.product_mdt_code AS INT64) AS STRING)          AS ProductCode,
+    ${databuffet.functionData.cleanString("t1.product_mdt_name")}  AS ProductName,
+    ${databuffet.functionData.cleanString("t1.product_mac5_code")} AS ProductMac5Code,
+    ${databuffet.functionData.cleanString("t1.region_id")}         AS StoreCode,
+    ${databuffet.functionData.cleanString("t1.commpy")}            AS CompanyID,
+    ${databuffet.functionData.cleanString("t1.id")}                AS MdsID
+  FROM `${ProductSourceRef}` AS t1
+  LEFT JOIN mac5_dedup AS mac5
+    ON  ${databuffet.functionData.cleanString("t1.product_mac5_code")} = mac5.ProductCode
+    AND ${databuffet.functionData.cleanString("t1.commpy")}            = mac5.companyID
+  WHERE t1.is_active = TRUE
+    AND t1.product_mdt_code IS NOT NULL
+
+), unknown_product AS (
+  SELECT
     -1                   AS ProductMdtSK,
+    -1                   AS ProductSK,
+    -1                   AS ProductMktSK,
+    CAST(NULL AS STRING) AS ProductCode,
+    'ไม่ระบุสินค้า'         AS ProductName,
+    CAST(NULL AS STRING) AS ProductMac5Code,
     CAST(NULL AS STRING) AS StoreCode,
-    CAST(NULL AS STRING) AS SourceProductCode,
-    'ไม่ระบุ'              AS ProductNameMdt,
-    CAST(NULL AS STRING) AS ProductMdtCode,
-    -1                   AS ProductSK
-  )
-])
+    CAST(NULL AS STRING) AS CompanyID,
+    CAST(NULL AS STRING) AS MdsID
+)
+
+SELECT * FROM product_master
+UNION ALL
+SELECT * FROM unknown_product
 
 pre_operations {}
 

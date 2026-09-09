@@ -3,10 +3,10 @@ config {
     schema: databuffet.CURATED_SALEOUT_MDT,
     dependencies: ["curated_schema_saleout"],
     tags: [databuffet.TAG_CURATED, databuffet.TAG_CURATED_INCREMENTAL],
-    uniqueKey: ["sale_date", "store_code", "source_store_code", "source_product_code"],
+    uniqueKey: ["sale_date", "store_code", "branch_code", "product_code"],
     bigquery: {
         partitionBy: "sale_date",
-        clusterBy: ["store_code", "source_store_code", "source_product_code"]
+        clusterBy: ["store_code", "branch_code", "product_code"]
     },
 }
 
@@ -29,17 +29,17 @@ WITH hp AS (
     SELECT
         sale_date,
         store_code,                                 -- 'HP' หรือ 'MH' · NULL = ไม่ใช่สาขาขายปลีก (CS01/EX99)
-        siteno      AS source_store_code,
-        sitename    AS source_store_name,
-        artno       AS source_product_code,
-        artdesc     AS source_product_name,
+        siteno      AS branch_code,
+        sitename    AS branch_name,
+        artno       AS product_code,
+        artdesc     AS product_name,
         vdartno     AS barcode_match,               -- บาร์โค้ด GS1 ใช้จับคู่ dim_product_master.Barcode
         qty         AS sale_qty,
         value       AS sale_amount,
         is_return,
         1           AS days_covered,
         FALSE       AS date_is_estimated,
-        CAST(NULL AS STRING) AS source_bill_no,     -- มีแค่ Global House
+        CAST(NULL AS STRING) AS bill_no,     -- มีแค่ Global House
         asatdate
     FROM ${ref("saleout_hp")}
     WHERE sale_date IS NOT NULL

@@ -1,0 +1,85 @@
+config {
+  type: "table",
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: [],
+  tags: [databuffet.TAG_DIM_DAILY],
+  uniqueKey: ["PcSK"],
+  bigquery: {
+    clusterBy: ["PcSK"],
+  },
+}
+
+/*
+  พนักงาน PC ของช่องทาง MDT — 489 คนจริง จาก 578 แถวในต้นทาง
+
+  ต้นทาง mds_data_sales_pc_master ไม่ใช่ตารางพนักงาน — เป็นตารางความครอบคลุม
+  "สาขา x กลุ่มสินค้า" และมี 86 แถวที่ employee_id ว่างพร้อมชื่อเขียนว่า "ไม่มี PC"
+  (วัดจากต้นฉบับ Excel ชีท PC 2026-09-09)
+      578 แถว = 492 แถวที่มี PC จริง + 86 แถวที่ระบุว่าไม่มี PC
+      PC จริง 489 คน - 1 คนดูแลเฉลี่ย 1.01 แถว สูงสุด 2
+      1 สาขามี PC ได้ถึง 5 คน - 1 (สาขา x กลุ่ม) มีได้ถึง 3 คน
+      สาขาที่มี PC 315 จาก 494
+  ต้องกรอง employee_id ว่างออก ไม่งั้นแถว "ไม่มี PC" 86 แถวจะกลายเป็นพนักงาน 1 คน
+  ที่ดูเหมือนดูแล 47 สาขา
+
+  ไฟล์นี้เก็บ 1 แถว = 1 คน เท่านั้น ความสัมพันธ์คน-สาขา-กลุ่มสินค้าเป็น many-to-many
+  ยัดลงใน dim ไหนไม่ได้ ต้องมีตารางเชื่อมหรือ view ซึ่งตัดสินใจไม่ทำ (2026-09-09)
+
+  ยุบซ้ำด้วย ORDER BY updated_at DESC, id เพื่อให้ผลแน่นอนทุกครั้งที่รัน
+  มี 1 คนที่ชื่อ/นามสกุลในแถวซ้ำไม่ตรงกัน วิธีนี้เลือกแถวที่แก้ล่าสุด
+  ควรแจ้งคนดูแล mds ให้แก้ต้นทาง ไม่ใช่ปล่อยให้โค้ดตัดสิน
+
+  employee_type มีค่าเดียวคือ พันธมิตร เก็บไว้เผื่ออนาคตมีประเภทอื่น
+
+  ยังไม่มี fact ไหน join ตารางนี้ และ join ไม่ได้ด้วย ไฟล์ขายของทั้ง 5 ห้าง
+  ไม่มีคอลัมน์คนขาย (ตรวจ 2026-09-09) จึงรู้ได้แค่ว่าใครดูแลสาขานั้น ไม่ใช่ใครขายบิลนั้น
+  ถ้าอนุมานจาก (สาขา, กลุ่มสินค้า) จะระบุตัวได้ 55.5% ของยอดเงิน เป็นการอนุมาน ไม่ใช่การวัด
+
+  ponytail: SK ปั้นด้วย ROW_NUMBER สร้างใหม่ทุกคืน ยังไม่มี consumer ที่เก็บ SK นี้ไว้
+  ถ้าวันหน้ามี fact ที่เก็บ PcSK ข้ามเดือน ต้องเปลี่ยนมาใช้ MERGE ก่อน
+*/
+
+js {
+    const PcSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_pc_master`;
+}
+
+WITH pc_dedup AS (
+  SELECT
+    ${databuffet.functionData.cleanString("employee_id")}       AS EmployeeID,
+    ${databuffet.functionData.cleanString("employee_name")}     AS EmployeeName,
+    ${databuffet.functionData.cleanString("employee_surname")}  AS EmployeeSurname,
+    ${databuffet.functionData.cleanString("employee_type")}     AS EmployeeType,
+    ${databuffet.functionData.cleanString("id")}                AS MdsID
+  FROM `${PcSourceRef}`
+  WHERE is_active = TRUE
+    AND ${databuffet.functionData.cleanString("employee_id")} IS NOT NULL
+    AND IFNULL(TRIM(employee_name),'') <> 'ไม่มี PC'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY employee_id ORDER BY updated_at DESC, id) = 1
+
+), pc_master AS (
+  SELECT
+    ROW_NUMBER() OVER(ORDER BY EmployeeID) AS PcSK,
+    EmployeeID,
+    EmployeeName,
+    EmployeeSurname,
+    EmployeeType,
+    MdsID
+  FROM pc_dedup
+
+), unknown_pc AS (
+  SELECT
+    -1                   AS PcSK,
+    CAST(NULL AS STRING) AS EmployeeID,
+    'ไม่ระบุ'              AS EmployeeName,
+    CAST(NULL AS STRING) AS EmployeeSurname,
+    CAST(NULL AS STRING) AS EmployeeType,
+    CAST(NULL AS STRING) AS MdsID
+)
+
+SELECT * FROM pc_master
+UNION ALL
+SELECT * FROM unknown_pc
+
+pre_operations {}
+
+post_operations {}
