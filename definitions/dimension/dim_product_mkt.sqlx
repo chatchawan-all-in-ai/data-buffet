@@ -44,6 +44,7 @@ SELECT
   ${databuffet.functionData.cleanString("t1.SubMarketing")} AS SubMarketing,
   ${databuffet.functionData.cleanString("t1.SegmentID")} AS SegmentID,
   ${databuffet.functionData.cleanString("t1.Segment")} AS Segment,
+  ${databuffet.functionData.cleanString("t1.SubMarketingWH")} AS SubMarketingWH,
   ${databuffet.functionData.cleanString("t1.id")} as MdsID
 FROM `${MdsSourceTableRef}` AS t1
 LEFT JOIN `${DimCompanyTableRef}` AS dim_com
