@@ -1,0 +1,66 @@
+config {
+  type: "table",
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: [],
+  tags: [databuffet.TAG_DIM_DAILY],
+  uniqueKey: ["ProductMdtSK"],
+  bigquery: {
+    clusterBy: ["ProductMdtSK"],
+  },
+}
+
+js {
+    const ProductSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_product_master_mdt`;
+
+    const DimProductMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_master",
+    };
+    const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
+}
+
+WITH mac5_dedup AS (
+  -- dim_product_master มีได้หลายแถวต่อ (companyID, ProductCode) — ยุบก่อนเพื่อกัน fan-out
+  SELECT ProductSK, ProductMktSK, companyID, ProductCode
+  FROM `${DimProductMasterTableRef}`
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY companyID, ProductCode ORDER BY ProductSK) = 1
+
+), product_master AS (
+  SELECT
+    ROW_NUMBER() OVER(ORDER BY CAST(t1.product_mdt_code AS INT64)) AS ProductMdtSK,
+    IFNULL(mac5.ProductSK, -1)    AS ProductSK,
+    IFNULL(mac5.ProductMktSK, -1) AS ProductMktSK,
+    CAST(CAST(t1.product_mdt_code AS INT64) AS STRING)          AS ProductCode,
+    ${databuffet.functionData.cleanString("t1.product_mdt_name")}  AS ProductName,
+    ${databuffet.functionData.cleanString("t1.product_mac5_code")} AS ProductMac5Code,
+    ${databuffet.functionData.cleanString("t1.region_id")}         AS StoreCode,
+    ${databuffet.functionData.cleanString("t1.commpy")}            AS CompanyID,
+    ${databuffet.functionData.cleanString("t1.id")}                AS MdsID
+  FROM `${ProductSourceRef}` AS t1
+  LEFT JOIN mac5_dedup AS mac5
+    ON  ${databuffet.functionData.cleanString("t1.product_mac5_code")} = mac5.ProductCode
+    AND ${databuffet.functionData.cleanString("t1.commpy")}            = mac5.companyID
+  WHERE t1.is_active = TRUE
+    AND t1.product_mdt_code IS NOT NULL
+
+), unknown_product AS (
+  SELECT
+    -1                   AS ProductMdtSK,
+    -1                   AS ProductSK,
+    -1                   AS ProductMktSK,
+    CAST(NULL AS STRING) AS ProductCode,
+    'ไม่ระบุสินค้า'         AS ProductName,
+    CAST(NULL AS STRING) AS ProductMac5Code,
+    CAST(NULL AS STRING) AS StoreCode,
+    CAST(NULL AS STRING) AS CompanyID,
+    CAST(NULL AS STRING) AS MdsID
+)
+
+SELECT * FROM product_master
+UNION ALL
+SELECT * FROM unknown_product
+
+pre_operations {}
+
+post_operations {}

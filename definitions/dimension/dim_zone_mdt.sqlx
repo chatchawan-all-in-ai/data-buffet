@@ -1,0 +1,73 @@
+config {
+  type: "table",
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: [],
+  tags: [databuffet.TAG_DIM_DAILY],
+  uniqueKey: ["ZoneMdtSK"],
+  bigquery: {
+    clusterBy: ["ZoneMdtSK"],
+  },
+}
+
+/*
+  โซนขายของช่องทาง MDT — 15 โซน
+
+  ตั้งชื่อ dim_zone_mdt ไม่ใช่ dim_zone เพราะรีโปมี dim_region / dim_section ของ MAC5 อยู่แล้ว
+  ชื่อ dim_zone เปล่า ๆ จะไม่บอกว่าเป็นโซนของใคร
+
+  ชื่อผู้จัดการโซนมาจาก mds_data_sales_zone_manager_master ที่เกรนเดียวกัน (1 แถว = 1 โซน)
+  จึง LEFT JOIN เข้ามาเป็นคอลัมน์ ไม่แยกเป็น dim ตัวที่สอง
+  ตารางนั้นยังว่าง 0 แถว (ตรวจ 2026-09-09) คอลัมน์ผู้จัดการจะเป็น NULL ไปก่อน
+  วันที่ข้อมูลมาก็ขึ้นเอง ไม่ต้องแก้โค้ด
+
+  fact ไม่ join ตารางนี้ตรง ๆ — อ่าน ZoneMdtSK ที่ dim_sales_branch_mdt เก็บไว้
+
+  ponytail: SK ปั้นด้วย ROW_NUMBER สร้างใหม่ทุกคืน ใช้ได้เพราะ fact_saleout_mdt
+  เป็น type: "table" rebuild ทุกคืนเหมือนกัน  วันที่ fact เปลี่ยนไปเป็น incremental
+  ต้องเปลี่ยน dim ตระกูล MDT ไปเป็น MERGE ก่อน ไม่งั้น SK เลื่อนแล้วยอดเก่าชี้ผิดโซน
+*/
+
+js {
+    const ZoneSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_zone_master`;
+    const ZoneManagerSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_zone_manager_master`;
+}
+
+WITH zone_master AS (
+  SELECT
+    ROW_NUMBER() OVER(ORDER BY ${databuffet.functionData.cleanString("t1.zone_id")}) AS ZoneMdtSK,
+    ${databuffet.functionData.cleanString("t1.zone_id")}   AS ZoneCode,
+    ${databuffet.functionData.cleanString("t1.zone_name")} AS ZoneName,
+    ${databuffet.functionData.cleanString("mgr.zonemanageremployeeid")}       AS ZoneManagerEmployeeID,
+    ${databuffet.functionData.cleanString("mgr.zonemanageremployeename")}     AS ZoneManagerName,
+    ${databuffet.functionData.cleanString("mgr.zonemanageremployeesurname")}  AS ZoneManagerSurname,
+    ${databuffet.functionData.cleanString("mgr.zonemanageremployeenickname")} AS ZoneManagerNickname,
+    t1.start_date AS StartDate,
+    t1.end_date   AS EndDate,
+    ${databuffet.functionData.cleanString("t1.id")} AS MdsID
+  FROM `${ZoneSourceRef}` AS t1
+  LEFT JOIN `${ZoneManagerSourceRef}` AS mgr
+    ON ${databuffet.functionData.cleanString("t1.zone_id")} = ${databuffet.functionData.cleanString("mgr.zone_id")}
+   AND mgr.is_active = TRUE
+  WHERE t1.is_active = TRUE
+
+), unknown_zone AS (
+  SELECT
+    -1                   AS ZoneMdtSK,
+    CAST(NULL AS STRING) AS ZoneCode,
+    'ไม่ระบุโซน'           AS ZoneName,
+    CAST(NULL AS STRING) AS ZoneManagerEmployeeID,
+    CAST(NULL AS STRING) AS ZoneManagerName,
+    CAST(NULL AS STRING) AS ZoneManagerSurname,
+    CAST(NULL AS STRING) AS ZoneManagerNickname,
+    CAST(NULL AS DATE)   AS StartDate,
+    CAST(NULL AS DATE)   AS EndDate,
+    CAST(NULL AS STRING) AS MdsID
+)
+
+SELECT * FROM zone_master
+UNION ALL
+SELECT * FROM unknown_zone
+
+pre_operations {}
+
+post_operations {}
