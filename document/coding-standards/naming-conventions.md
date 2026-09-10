@@ -48,6 +48,8 @@ dataset กลาง: `dimension_table`, `dimension_view`, `fact_table`, `fact_v
 | `MdsSourceTable` / `MdsSourceTableRef` | ตารางต้นทาง mds |
 | `sourceTable` / `sourceTableRef` | ต้นทาง raw ใน validated |
 | `pk_key` | array PK ใน validated (ต้องตรงกับ `uniqueKey`) |
+| `doc_key` | array คีย์ระดับเอกสารสำหรับ DELETE ราย document (`mih`/`mil`/`mir`) |
+| `temp_table` | ชื่อ TEMP table ของ batch — `new_data_<table>` (`mih`/`mil`/`mir`) |
 | `partition_statement`, `post_operations_statement` | statement ที่ generate |
 
 ## Alias ใน SQL

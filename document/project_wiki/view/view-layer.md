@@ -68,7 +68,7 @@ Rules:
    does build (`type: "table"` in `process_dataset`).
 3. No inline `` `${databuffet.DATABASE}.${databuffet.X}.tbl` ``, no `databuffet-nonprd`
    literal. Declarations follow first-use order; declare only what is used. A view that
-   reads only validated/curated needs **no `js` block** — as of 2026-09-03 all 31 views
+   reads only validated/curated needs **no `js` block** — as of 2026-09-10 all 31 views
    happen to have one, so there is no live example.
 4. No trailing `;` (the view DDL wraps the query).
 4b. **Backslash ในโค้ด SQL ใช้ตัวเดียว** — Dataform ส่งผ่านให้ตรงๆ ไม่กิน
@@ -165,7 +165,7 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 | `view_dim_customer_credit_management` | dim_customer, dim_customer_grade | — |
 | `view_dim_guarantee` | dim_customer, dim_guarantee | — |
 | `view_dim_invoice` | dim_aging, dim_invoice | fn_flag_scg |
-| `view_dim_order` | dim_order, mih2 | fn_order_type |
+| `view_dim_order` | dim_order, mih2 | fn_order_type, mds_data_document_expire_rule_master |
 | `view_dim_product_master` | dim_product_master, dim_product_mkt, dim_rebate, dim_waterpac | — |
 | `view_dim_product_mkt` | dim_product_mkt, dim_product_mkt_director | — |
 | `view_dim_sale_representative` | dim_department, dim_sale_representative | — |
@@ -244,3 +244,27 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 | `fact_view.view_fact_transcation` | `LOWER(t1.milstk) = LOWER(t4.ProductCode)` · `LOWER(t1.milStk) = LOWER(TRIM(rebate_product.rebate))` · `PARTITION BY ... LOWER(trans.milStk) ...` |
 
 จนกว่าจะ apply ครบทั้ง 3 **repo กับ BigQuery จะ drift** — ตรวจด้วย skill `bq-drift-scan`
+
+> **สถานะ ณ 2026-09-10 (drift scan)**: ยังไม่ได้ deploy ทั้ง 3 — BigQuery ยังเป็นเวอร์ชัน
+> ก่อน `LOWER()` (last_modified 2026-08-26 / 2026-04-16) ส่วน repo commit ไปตั้งแต่ 2026-09-03
+
+## `view_dim_aging_history` — repo ล้ำหน้า BigQuery ตั้งแต่ 2026-08-11 (พบ 2026-09-10)
+
+การแก้ "derive `AgingSK`/`BillingSK` แทนการเชื่อค่าใน snapshot" (หัวข้อด้านบน) commit
+เข้า git เมื่อ 2026-08-11 แต่ **ไม่เคย deploy** — view จริงบน BigQuery ยัง last_modified
+2026-07-20 และยังใช้ `dim_aging.*` + `qualify ... partition by asatdate, AgingSK` แบบเดิม
+แปลว่าปัญหา SK ชี้ผิด 97% **ยังเกิดอยู่จริงบน BigQuery** จนกว่าจะรัน tag `view`
+(similarity ตอนสแกน = 0.462 ต่ำสุดในทั้ง repo)
+
+## Pull กลับจาก BigQuery — 2026-09-10
+
+| object | ทิศทาง | ทำอะไร |
+|---|---|---|
+| `dimension_view.view_dim_order` | BigQuery ล้ำหน้า (console edit 2026-09-10 13:57) | pull เข้า repo: เพิ่มคอลัมน์ `FlagExpire` + join `mds_data_document_expire_rule_master` ด้วย `lower(left(mihVnos,2)) = lower(DocPrefix)` |
+| `dimension_view.view_dim_invoice` | ต่างกันแต่ผลลัพธ์เท่ากัน | console ถอด qualifier เป็น `clean_company_prefix(debnamet)` — repo คงรูป `cust.debnamet` ไว้ (ชัดกว่า และกัน ambiguous ในอนาคต) |
+
+> **ที่จงใจไม่ดึงเข้า repo**: `fact_view.view_fact_saleout_pc_mdt` (สร้างบน BigQuery
+> 2026-09-10 07:31) **ยัง dev อยู่** — เจ้าของงานขอให้ปล่อยไว้บน console ก่อน อย่าเพิ่ง
+> สร้าง `.sqlx` และอย่านับรวมใน inventory จนกว่าจะนิ่ง (drift scan จะรายงานเป็น
+> "extra in BigQuery" ทุกรอบ — ถูกต้องแล้ว) ส่วน `onetime.PowerBI_Data_Buffet_Transaction`
+> ถูกย้ายไป `backup/` ตั้งใจแล้วเมื่อ 2026-09-03 — ไม่ต้องดึงกลับเช่นกัน

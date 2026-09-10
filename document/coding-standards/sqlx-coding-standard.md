@@ -87,6 +87,9 @@ FROM `${DimCompanyTableRef}`
 - ประกาศเรียงตามลำดับที่ถูกใช้ครั้งแรกใน SQL และ**ประกาศเฉพาะตัวที่ใช้จริง**
   (ไม่มี declared-but-unused); ถ้าไฟล์นั้นอ้างแต่ validated/curated ก็**ไม่ต้องมี js block**
 - validated: ประกาศ `pk_key` ใน js ให้ตรงกับ `uniqueKey` ใน config เสมอ (นิยามซ้ำ 2 ที่)
+- validated ที่เป็นเอกสารหลายบรรทัด (`mih`/`mil`/`mir`): เพิ่ม `doc_key` + `temp_table`
+  ใน js แล้วสร้าง TEMP table + DELETE ราย document ใน `pre_operations` — config
+  (`type`, `uniqueKey`) ไม่เปลี่ยน ดู `document/project_wiki/validated/validated-layer.md`
 
 > ทำไม dim/fact ไม่ใช้ `ref()`: MERGE dims และ `fact_transcation` เป็น
 > `type: "operations"` ที่ target มีอยู่ก่อนใน BigQuery — Dataform ไม่ได้เป็นเจ้าของ
