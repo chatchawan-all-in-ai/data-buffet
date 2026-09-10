@@ -26,7 +26,7 @@ layer (validated/curated/dimension/fact/…) as in
 11. Calendar / date spine — ปฏิทิน/วันหยุด
 12. Reference / misc — ตารางอ้างอิงอื่นๆ
 
-**Uncovered dim/fact/curated objects (not in any topic):** `curated_saleout_mdt`, `dim_pc`, `dim_product_mdt`, `dim_sales_branch_mdt`, `dim_store`, `dim_zone_mdt`, `fact_backlog_store`, `fact_invoice_store`, `fact_order_store`
+**Uncovered dim/fact/curated objects (not in any topic):** `curated_saleout_mdt`, `dim_pc`, `dim_product_mdt`, `dim_sales_branch_mdt`, `dim_store`, `dim_target_saleout_mdt`, `dim_zone_mdt`, `fact_backlog_store`, `fact_invoice_store`, `fact_order_store`, `fact_saleout_mdt`
 
 ---
 

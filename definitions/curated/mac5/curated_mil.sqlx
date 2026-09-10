@@ -10,6 +10,10 @@ config {
     }
 }
 
+SELECT * FROM new_data_curated_mil_base
+
+pre_operations {
+  CREATE OR REPLACE TEMP TABLE new_data_curated_mil_base AS
 SELECT
   company_id as company_id,
   milday as milDay,
@@ -82,7 +86,17 @@ SELECT
 FROM ${ref(databuffet.VALIDATED_MAC5, "mil")}
 WHERE IFNULL(milvnos, '') != '' 
   ${ when(incremental(), `AND asatdate >= DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY)`) }
+  ;
 
+  ${ when(incremental(), `
+  DELETE FROM ${self()} AS t
+  WHERE EXISTS (
+    SELECT 1 FROM new_data_curated_mil_base AS b
+    WHERE b.company_id = t.company_id
+      AND IFNULL(b.milType, '') = IFNULL(t.milType, '')
+      AND IFNULL(b.milVnos, '') = IFNULL(t.milVnos, '')
+  );`) }
+}
 
 post_operations {
   BEGIN
@@ -324,17 +338,16 @@ post_operations {
     ;
     -------- CREATE TEMP TABLE --------
 
-    -------- DELETE WITH PK KEY --------
+    -------- DELETE WITH DOC KEY --------
     DELETE FROM ${self()} AS old_data
     WHERE EXISTS (
       SELECT 1 FROM new_data_curated_mil AS new_data
       WHERE old_data.company_id = new_data.company_id
         AND old_data.milType = new_data.milType
         AND old_data.milVnos = new_data.milVnos
-        AND old_data.milListno = new_data.milListno 
     )
     ;
-    -------- DELETE WITH PK KEY --------
+    -------- DELETE WITH DOC KEY --------
 
     -------- INSERT DATA --------
     INSERT INTO ${self()}

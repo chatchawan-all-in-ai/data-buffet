@@ -249,6 +249,15 @@
   จะหายจนรันรอบถัดไป (ทางกลับกันเกิดไม่ได้ เพราะ Dataform fail ทั้ง action เมื่อ
   `pre_operations` fail จึงไม่มีกรณี insert ซ้ำโดยไม่ได้ DELETE)
 
+  **`curated_mil` ต้องแก้ตามด้วย (วันเดียวกัน)**: ถ้าล้างแค่ validated แต่ curated ยังลบ
+  ด้วย PK ระดับบรรทัด จำนวนแถวต่อเอกสารจะไม่เท่ากันสองชั้น วัดได้ **477 แถว /
+  9.25 ล้านบาท** (ag01 387, ac02 42, ab01 31, ak02 10, aa05 7) จึงเพิ่ม 2 จุด —
+  `pre_operations` สร้าง `new_data_curated_mil_base` + DELETE เอกสารทั้งใบ (ครอบทุกบริษัท
+  ตาม window 1 วัน ลบ 970,161 แถว ในนั้นเป็นแถวค้าง 474) และเปลี่ยน DELETE ใน
+  `post_operations` จาก PK grain เป็น doc grain (ag01 ลบ 9,164,132 แถวแล้ว insert คืน
+  ซึ่งเป็นพฤติกรรมเดิมอยู่แล้วเพราะ temp นั้นไม่มี window — แค่ทำให้แถวค้าง 387 ไม่รอด)
+  **`curated_mih` ไม่ต้องแก้**: `uniqueKey` เป็น doc key อยู่แล้ว แถวค้าง 0
+
 - **2026-08-11 — `view_dim_aging_history` derive `AgingSK`/`BillingSK` สดแทนที่จะเชื่อค่าที่เก็บไว้**
 
   **ปัญหา**: `dim_aging_history` เป็น snapshot สะสม (สิ้นเดือน + เมื่อวาน รวม 33

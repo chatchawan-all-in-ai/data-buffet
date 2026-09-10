@@ -134,6 +134,10 @@ lines / 9.2M THB on `mil`, 506 / 10.4M THB on `mir` (`mih` is 1 row/doc, so it i
 no-op). **Not applied to `mie`/`mie_dummy`** — their PK carries date + customer, so a
 `(type, vnos)` delete would drop 67,946 legitimate rows.
 Full write-up: `document/project_wiki/validated/validated-layer.md`.
+`curated_mil` carries the same fix (its PK is line-level too): `pre_operations` builds
+`new_data_curated_mil_base` + DELETEs the document, and the existing `post_operations`
+ag01 rebuild now DELETEs at doc grain. `curated_mih` needs nothing — its `uniqueKey`
+already **is** the document key (0 stale rows).
 
 ### Dimension (patterns split 2026-07-20)
 **Default for mds dims (34 files) — full daily rebuild**
