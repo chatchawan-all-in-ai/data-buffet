@@ -10,19 +10,7 @@ config {
     },
 }
 
-/*
-  ชั้นนี้ทำให้ทุกห้างหน้าตาเหมือนกัน — ความต่างของแต่ละห้างตายที่ชั้น validated
-  ตั้งแต่ที่นี่ขึ้นไปห้ามมีเงื่อนไข IF ห้าง = ...
 
-  เพิ่มห้างใหม่ = เพิ่ม UNION ALL block ด้านล่าง ไม่ต้องแตะ fact หรือ view
-  ตอนนี้มีแค่ HomePro + Megahome (จากไฟล์เดียวกัน)
-
-  ยอดทุกห้างรวม VAT มาแล้ว (ยืนยัน 2026-09-07) จึงใช้ค่าตรงๆ ไม่ต้องแปลง
-
-  ไม่มีคอลัมน์ distribution_channel ที่ชั้นนี้ — Requirement ไม่ได้ขอ (0 จาก 15 กลุ่ม dimension)
-  BT เป็นห้างเดียวที่มีข้อมูลนี้ และเก็บไว้ในคีย์ที่ชั้น validated แล้ว
-  ตอนทำ block ของ BT ต้องหาส่วนต่างแยกช่องทางก่อน แล้วจึง SUM รวม — สลับลำดับจะได้ยอดผิด
-*/
 
 WITH hp AS (
 
@@ -41,9 +29,10 @@ WITH hp AS (
         FALSE       AS date_is_estimated,
         CAST(NULL AS STRING) AS bill_no,     -- มีแค่ Global House
         asatdate
-    FROM ${ref("saleout_hp")}
+    -- ต้องระบุ dataset เพราะชื่อ saleout_hp มีทั้งใน raw_saleout_mdt (external) และ validated_saleout_mdt
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_hp")}
     WHERE sale_date IS NOT NULL
-      AND (qty <> 0 OR value <> 0)                  -- ตัดแถวสินค้าที่ไม่ขาย (34% ของไฟล์ HP)
+      AND (qty <> 0 OR value <> 0)                 
       -- กรองที่ต้นทาง เพราะ validated partition ด้วย asatdate — วางไว้ข้างนอกจะไม่ตัดพาร์ทิชัน
       ${ when(incremental(), `AND asatdate >= DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY)`) }
 

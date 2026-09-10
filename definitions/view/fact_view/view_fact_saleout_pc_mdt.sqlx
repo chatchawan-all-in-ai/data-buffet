@@ -1,0 +1,71 @@
+config {
+  type: "view",
+  schema: databuffet.FACT_VIEW,
+  dependencies: ["fact_saleout_mdt", "dim_pc", "dim_sales_branch_mdt", "dim_product_mkt"],
+  tags: [databuffet.TAG_VIEW],
+}
+
+
+js {
+    const PcSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_pc_master`;
+
+    const dim = (name) => `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.${name}`;
+    const DimPcRef       = dim("dim_pc");
+    const DimBranchRef   = dim("dim_sales_branch_mdt");
+    const DimProductMktRef = dim("dim_product_mkt");
+}
+
+WITH pc_assign AS (
+  -- PC ที่ดูแลแต่ละ (สาขา, กลุ่มสินค้า) พร้อมจำนวนคนในช่องนั้นเพื่อใช้เป็นตัวหาร
+  SELECT
+    br.BranchMdtSK,
+    ${databuffet.functionData.cleanString("src.marketinggroupid")} AS MarketingGroupID,
+    pc.PcSK,
+    src.start_date AS AssignStart,
+    src.end_date   AS AssignEnd,
+    COUNT(*) OVER (
+      PARTITION BY br.BranchMdtSK, ${databuffet.functionData.cleanString("src.marketinggroupid")}
+    ) AS PcCountInCell
+  FROM `${PcSourceRef}` AS src
+  JOIN `${DimPcRef}` AS pc
+    ON ${databuffet.functionData.cleanString("src.employee_id")} = pc.EmployeeID
+  JOIN `${DimBranchRef}` AS br
+    ON ${databuffet.functionData.cleanString("src.branch_code")} = br.BranchCodeMdt
+  WHERE src.is_active = TRUE
+
+), sale_with_group AS (
+  SELECT
+    f.*,
+    mkt.MarketingGroupID
+  FROM `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_saleout_mdt` AS f
+  LEFT JOIN `${DimProductMktRef}` AS mkt
+    ON f.product_mkt_sk = mkt.ProductMktSK
+)
+
+SELECT
+  s.sale_date,
+  s.store_code,
+  s.branch_sk,
+  s.zone_sk,
+  s.product_mdt_sk,
+  s.product_sk,
+  s.product_mkt_sk,
+  s.MarketingGroupID,
+
+  IFNULL(a.PcSK, -1)          AS pc_sk,
+  IFNULL(a.PcCountInCell, 1)  AS pc_count_in_cell,
+
+  s.doc_type,
+  -- แบ่งเท่ากัน  ห้าม SUM คอลัมน์ sale_amount ในมุมมองนี้ ให้ใช้ 2 คอลัมน์ล่างเท่านั้น
+  s.sale_amount / IFNULL(a.PcCountInCell, 1) AS sale_amount_allocated,
+  s.sale_qty    / IFNULL(a.PcCountInCell, 1) AS sale_qty_allocated,
+
+  s.branch_code,
+  s.product_code,
+  s.asatdate
+FROM sale_with_group AS s
+LEFT JOIN pc_assign AS a
+  ON  s.branch_sk        = a.BranchMdtSK
+  AND s.MarketingGroupID = a.MarketingGroupID
+  -- แบ่งยอดให้เฉพาะช่วงที่ PC คนนั้นยังรับผิดชอบสาขานั้นอยู่
+  AND s.sale_date BETWEEN a.AssignStart AND a.AssignEnd

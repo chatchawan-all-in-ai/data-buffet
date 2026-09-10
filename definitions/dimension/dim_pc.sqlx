@@ -22,6 +22,9 @@ WITH pc_dedup AS (
     ${databuffet.functionData.cleanString("id")}                AS MdsID
   FROM `${PcSourceRef}`
   WHERE is_active = TRUE
+    AND ${databuffet.functionData.cleanString("employee_id")} IS NOT NULL
+    AND ${databuffet.functionData.cleanString("employee_id")} <> 'Dummy_NotPC'
+    AND IFNULL(TRIM(employee_name),'') NOT IN ('ไม่มี PC', 'Not PC')
   QUALIFY ROW_NUMBER() OVER(PARTITION BY employee_id ORDER BY updated_at DESC, id) = 1
 
 ), pc_master AS (
