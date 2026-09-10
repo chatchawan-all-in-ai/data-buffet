@@ -80,9 +80,9 @@ work on Opus, pattern-following work on Sonnet):
 | Layer | Path | Files | Dataset | Materialization |
 |---|---|---:|---|---|
 | Initial | `definitions/initial/` | 17 | `raw_*`, `function_dataset` | operations (external tables, UDFs) |
-| Validated | `definitions/validated/` | 143 | `validated_<source>` | incremental / table + QUALIFY dedup |
-| Curated | `definitions/curated/` | 8 | `curated_<source>` | incremental (+ post_operations) |
-| Dimension | `definitions/dimension/` | 61 | `dimension_table` | **table rebuild** (34 mds + 12 other) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
+| Validated | `definitions/validated/` | 135 | `validated_<source>` | incremental / table + QUALIFY dedup |
+| Curated | `definitions/curated/` | 10 | `curated_<source>` | incremental (+ post_operations) |
+| Dimension | `definitions/dimension/` | 65 | `dimension_table` | **table rebuild** (34 mds + 12 other) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
 | Fact | `definitions/fact/` | 12 | `fact_table` | table rebuild / operations upsert — **no MERGE** |
 | View | `definitions/view/` | 31 | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |
 | CDC | `definitions/cdc/` | 2 | `cdc_dataset` | operations, generated from `cdc-config.json` |
@@ -105,6 +105,8 @@ work on Opus, pattern-following work on Sonnet):
   (not SAFE — fail fast).
 - **There is NO `primary-keys.json` / `databuffet.primaryKeys`.** Validated PKs are
   defined per file, twice: `uniqueKey` in config + `pk_key` in the js block (keep in sync).
+  `mih`/`mil`/`mir` additionally declare `doc_key` + `temp_table` for the
+  document-grain purge (see Validated pattern below) — their `uniqueKey` is unchanged.
 - `workflow_settings.yaml` is **tracked** — edits are committed and shared. Holds
   `BACKFILL_DAYS` (see above). The dead `.gitignore` entry was removed 2026-08-16.
 
@@ -118,7 +120,20 @@ work on Opus, pattern-following work on Sonnet):
 → post_op retry-loop `ADD PRIMARY KEY ... NOT ENFORCED` guarded by `when(!incremental())`.
 Full-load variant: `type: "table"` + `TAG_VALIDATED_FULL` (mac5 only, 73 files).
 14 MAC5 tables UNION ALL 5 companies with literal `company_id`.
-Reference: `validated/cis360/customer_profile.sqlx`, `validated/mac5/mih.sqlx`.
+Reference: `validated/cis360/customer_profile.sqlx`, `validated/mac5/mie.sqlx`.
+
+**Document-grain purge (`mih`, `mil`, `mir` — 2026-09-10)**: config is **unchanged**
+(`type: "incremental"` + same `uniqueKey`). `pre_operations` does
+`CREATE OR REPLACE TEMP TABLE new_data_<table> AS <the whole cleaned union + QUALIFY>;`
+then `${ when(incremental(), delete_statement) }`, deleting every document in that temp
+by `doc_key` = `company_id` + `<t>type` + `<t>vnos` (no `listno`); the body is just
+`SELECT * FROM new_data_<table>`, so the MERGE on `uniqueKey` hits its INSERT branch.
+Raw is read **once** — never re-read it to collect doc keys. Reason for the purge: a
+MERGE on a line-level PK can never remove a line deleted at source — measured 476 stale
+lines / 9.2M THB on `mil`, 506 / 10.4M THB on `mir` (`mih` is 1 row/doc, so it is a
+no-op). **Not applied to `mie`/`mie_dummy`** — their PK carries date + customer, so a
+`(type, vnos)` delete would drop 67,946 legitimate rows.
+Full write-up: `document/project_wiki/validated/validated-layer.md`.
 
 ### Dimension (patterns split 2026-07-20)
 **Default for mds dims (34 files) — full daily rebuild**
