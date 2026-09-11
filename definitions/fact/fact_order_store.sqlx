@@ -101,6 +101,12 @@ WITH dim_order_dedup AS (
     mil.milSto,
     mil.milQuan,
     mih.mihPer,
+    (CASE mil.milstype
+      WHEN 1 THEN 'Item'
+      WHEN 2 THEN 'Serial'
+      WHEN 3 THEN 'Service'
+      ELSE 'Unknown'
+    END) as milSType,
     (CASE 
       WHEN mil.milsum = 0.0 
         -- or mil.milDesc like '%ของแถม%' 
