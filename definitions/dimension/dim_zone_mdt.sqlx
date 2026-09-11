@@ -11,9 +11,26 @@ config {
 
 
 
+/*
+  โซนการขายของช่องทาง MDT — 1 แถว = 1 โซน (15 โซน + แถว -1)
+  ต้นทาง mds_data_sales_zone_master ตารางเดียว ไม่ join ใคร
+
+  ผู้จัดการโซนแยกไปอยู่ dim_zone_manager_mdt (แก้ 2026-09-11 ตามรีวิว)
+  เดิมไฟล์นี้ LEFT JOIN mds_data_sales_zone_manager_master เข้ามาแปะ 4 คอลัมน์
+  ซึ่งผิด 2 ข้อ
+    1. ยุบ 2 ตาราง MDS เป็น dim เดียว ตามรอยกลับไปหาต้นทางยาก
+    2. โซนหนึ่งอาจมีผู้จัดการหลายคน ถ้าวันหน้า mds มีข้อมูล แถวโซนจะบวม
+       ตามจำนวนผู้จัดการ แล้ว ZoneMdtSK ที่ปั้นด้วย ROW_NUMBER จะซ้ำ
+  ตอนแก้ mds_data_sales_zone_manager_master มี 0 แถว คอลัมน์ผู้จัดการทั้ง 4
+  จึงเป็น NULL ทุกแถวอยู่แล้ว การลบออกไม่ทำให้ใครเสียข้อมูล
+  ตรวจแล้วไม่มีไฟล์ใดอ่านคอลัมน์ ZoneManager* (2026-09-11)
+
+  ponytail: SK ปั้นด้วย ROW_NUMBER สร้างใหม่ทุกคืน ใช้ได้เพราะ dim_sales_branch_mdt
+  และ fact_saleout_mdt rebuild ทุกคืนเหมือนกัน
+*/
+
 js {
     const ZoneSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_zone_master`;
-    const ZoneManagerSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_zone_manager_master`;
 }
 
 WITH zone_master AS (
@@ -21,17 +38,10 @@ WITH zone_master AS (
     ROW_NUMBER() OVER(ORDER BY ${databuffet.functionData.cleanString("t1.zone_id")}) AS ZoneMdtSK,
     ${databuffet.functionData.cleanString("t1.zone_id")}   AS ZoneCode,
     ${databuffet.functionData.cleanString("t1.zone_name")} AS ZoneName,
-    ${databuffet.functionData.cleanString("mgr.zonemanageremployeeid")}       AS ZoneManagerEmployeeID,
-    ${databuffet.functionData.cleanString("mgr.zonemanageremployeename")}     AS ZoneManagerName,
-    ${databuffet.functionData.cleanString("mgr.zonemanageremployeesurname")}  AS ZoneManagerSurname,
-    ${databuffet.functionData.cleanString("mgr.zonemanageremployeenickname")} AS ZoneManagerNickname,
     t1.start_date AS StartDate,
     t1.end_date   AS EndDate,
     ${databuffet.functionData.cleanString("t1.id")} AS MdsID
   FROM `${ZoneSourceRef}` AS t1
-  LEFT JOIN `${ZoneManagerSourceRef}` AS mgr
-    ON ${databuffet.functionData.cleanString("t1.zone_id")} = ${databuffet.functionData.cleanString("mgr.zone_id")}
-   AND mgr.is_active = TRUE
   WHERE t1.is_active = TRUE
 
 ), unknown_zone AS (
@@ -39,10 +49,6 @@ WITH zone_master AS (
     -1                   AS ZoneMdtSK,
     CAST(NULL AS STRING) AS ZoneCode,
     'ไม่ระบุโซน'           AS ZoneName,
-    CAST(NULL AS STRING) AS ZoneManagerEmployeeID,
-    CAST(NULL AS STRING) AS ZoneManagerName,
-    CAST(NULL AS STRING) AS ZoneManagerSurname,
-    CAST(NULL AS STRING) AS ZoneManagerNickname,
     CAST(NULL AS DATE)   AS StartDate,
     CAST(NULL AS DATE)   AS EndDate,
     CAST(NULL AS STRING) AS MdsID

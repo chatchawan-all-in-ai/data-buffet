@@ -2,16 +2,56 @@ config {
     type: "incremental",
     schema: databuffet.VALIDATED_SALEOUT_MDT,
     dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
-    tags: [databuffet.TAG_VALIDATED],
-    uniqueKey: ["sale_no", "sale_date", "branch_code", "product_code"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["sale_no", "sale_date", "branch_code", "product_code", "row_no"],
     bigquery: {
         partitionBy: "asatdate",
-        clusterBy: ["sale_no", "sale_date", "branch_code", "product_code"]
+        clusterBy: ["sale_date", "branch_code", "product_code", "sale_no"]
     },
 }
 
+/*
+  ยอดขายออกของโกลบอลเฮ้าส์ — คีย์และการแปลงวันเขียนใหม่ 2026-09-11
+
+  ⚠️ ไฟล์มีรูปแบบวันที่ 2 แบบผสมกัน และรูปแบบผูกกับ "ปี" ที่ส่งมา
+  วัดจากของดิบ 32,799 แถว (2026-09-11) ไม่มีข้อยกเว้นแม้แถวเดียว
+      ปี 2569 (พ.ศ.)  20,384 แถว  ต้องเป็น วัน/เดือน 14,497 แถว · ต้องเป็น เดือน/วัน     0 แถว
+      ปี 2026 (ค.ศ.)  12,415 แถว  ต้องเป็น วัน/เดือน      0 แถว · ต้องเป็น เดือน/วัน 3,051 แถว
+  ห้างเปลี่ยนรูปแบบกลางทาง — ไฟล์ถึง 15 มิ.ย. 2026 ส่ง พ.ศ. หลังจากนั้นส่ง ค.ศ.
+
+  โค้ดเดิมใช้ COALESCE ลอง '%m/%d/%Y' ก่อน ทำให้แถว พ.ศ. ที่กำกวม (เลขทั้งสองตัว <= 12)
+  parse สำเร็จเป็นปี 2569 จริง ๆ แล้วสาขา พ.ศ. ไม่ได้ทำงานเลย
+  ผลคือ validated มี sale_date ปี 2569 ถึง 18,776 แถว / 75.5 ล้านบาท (74% ของยอด)
+  หลังแก้: parse พลาด 0 แถว · วันอนาคต 0 แถว · วันขายหลังวันที่ไฟล์เข้า 0 แถว
+
+  คีย์ต้องมี row_no (คอลัมน์ No_ = เลขบรรทัดในบิล) ไม่งั้นบิลใบเดียวที่มีสินค้า
+  ตัวเดียวกันหลายบรรทัดจะทับกัน  วัดแล้ว:
+      คีย์ 4 ตัว  22,700 แถว /  95,851,374
+      คีย์ 5 ตัว  24,011 แถว / 102,548,397   ได้คืน 1,311 แถว / 6.7 ล้าน
+  ที่ row_no ยังแยกไม่ออกอีก 1,166 กลุ่ม ตรวจแล้วเป็นแถวที่ซ้ำกันทุกคอลัมน์
+  (0 กลุ่มที่ต่างกันจริง) การยุบทิ้งจึงถูกต้อง
+
+  การยุบข้ามวันถูกต้องด้วย — ห้างส่งบางบรรทัดซ้ำหลายไฟล์ (มากสุด 44 ไฟล์)
+  547 บรรทัดที่ถูกส่งซ้ำ ถ้านับทุกไฟล์จะกลายเป็น 41 ล้าน จากของจริง 2.7 ล้าน
+  547 บรรทัดนี้ไม่ต่างจากบรรทัดปกติ (540 เป็น SALE ธรรมดา มัดจำ 1) เป็นนิสัยของไฟล์
+
+  กรองแถวสรุปท้ายไฟล์ออก (Sale_Date ว่าง) — 177 แถว ทุกคอลัมน์ระบุตัวตนเป็น NULL
+  ผลรวมของแถวสรุปทุกไฟล์ = ผลรวมแถวรายการทุกไฟล์ = 146,809,458.70 เป๊ะ
+  ใช้เป็น reconciliation ต่อไฟล์ได้ แต่ต้องรันกับตารางดิบ ไม่ใช่ตารางนี้
+
+  ⚠️ ฟีดค้าง — วันขายล่าสุด 5 ก.ค. 2026 แต่ไฟล์เข้าถึง 11 ก.ย. 2026 ต้องถามห้าง
+*/
+
 js {
-    const pk_key = ["sale_no", "sale_date", "branch_code", "product_code"]
+    const pk_key = ["sale_no", "sale_date", "branch_code", "product_code", "row_no"]
+
+    // เลขแต่ละช่องของ Sale_Date — 0 = ตัวแรก · 1 = ตัวกลาง · 2 = ปี
+    const datePart = (i) => `CAST(SPLIT(TRIM(Sale_Date), '/')[SAFE_OFFSET(${i})] AS INT64)`;
+
+    // SAFE.DATE คืน NULL ถ้าประกอบเป็นวันที่ไม่ได้ แทนที่จะพังทั้ง query
+    const saleDateExpr = `IF(${datePart(2)} >= 2500,
+        SAFE.DATE(${datePart(2)} - 543, ${datePart(1)}, ${datePart(0)}),
+        SAFE.DATE(${datePart(2)},       ${datePart(0)}, ${datePart(1)}))`;
 
     let partition_statement, post_operations_statement;
 
@@ -43,22 +83,9 @@ END;`;
 SELECT
     ${databuffet.functionData.cleanString('No_')} AS row_no,
     ${databuffet.functionData.cleanString('Sale_No_')} AS sale_no,
-    COALESCE(
-        -- 1. ลองแปลงแบบ มม/วว/ปปปป (ค.ศ.) ก่อน เช่น "2/14/1483" -> 1483-02-14
-        SAFE.PARSE_DATE('%m/%d/%Y', TRIM(Sale_Date)),
-        
-        -- 2. ลองแปลงแบบ วว/มม/ปปปป (ค.ศ.) เผื่อมีผสมมา
-        SAFE.PARSE_DATE('%d/%m/%Y', TRIM(Sale_Date)),
-        
-        -- 3. ถ้าแปลง ค.ศ. ตรงๆ ไม่ผ่าน ค่อยคิดว่าเป็น พ.ศ. (วว/มม/พ.ศ.) แล้วนำมาลบ 543
-        PARSE_DATE('%d/%m/%Y', 
-            CONCAT(
-                SPLIT(TRIM(Sale_Date), '/')[OFFSET(0)], '/',
-                SPLIT(TRIM(Sale_Date), '/')[OFFSET(1)], '/',
-                CAST(SPLIT(TRIM(Sale_Date), '/')[OFFSET(2)] AS INT64) - 543
-            )
-        )
-    ) AS sale_date,
+    -- ปี >= 2500 = พ.ศ. ส่งมาแบบ วัน/เดือน  ·  ปี < 2500 = ค.ศ. ส่งมาแบบ เดือน/วัน
+    -- ห้ามใช้ COALESCE ลองทีละรูปแบบ — แถวที่กำกวมจะติดรูปแบบแรกที่ parse ผ่าน
+    ${saleDateExpr} AS sale_date,
     ${databuffet.functionData.cleanString('Branch_Code')} AS branch_code,
     ${databuffet.functionData.cleanString('Branch_Name')} AS branch_name,
     ${databuffet.functionData.cleanString('Branch_Short_Name')} AS branch_short_name,
@@ -71,7 +98,9 @@ SELECT
     ${databuffet.functionData.cleanString('Deposit_No_')} AS deposit_no,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
 FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_gb`
-${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+-- ตัดแถวสรุปท้ายไฟล์ 177 แถว (ทุกคอลัมน์ระบุตัวตนเป็น NULL เหลือแค่จำนวนกับยอดเงิน)
+WHERE Sale_Date IS NOT NULL AND TRIM(Sale_Date) <> ''
+${ when(incremental(), `AND ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 ${partition_statement}
 
 pre_operations {
