@@ -1,63 +1,134 @@
 config {
   type: "table",
   schema: databuffet.DIMENSION_TABLE,
-  dependencies: ["dim_zone_mdt"],
+  dependencies: ["dim_zone_mdt", "dim_region"],
   tags: [databuffet.TAG_DIM_DAILY],
   uniqueKey: ["BranchMdtSK"],
   bigquery: {
-    clusterBy: ["BranchMdtSK"],
+    clusterBy: ["BranchMdtSK", "StoreCode", "BranchCode"],
   },
 }
+
+/*
+  สาขาของ 6 ห้างในช่องทาง MDT — 1 แถว = 1 สาขา (494 สาขา + แถว -1)
+  ต้นทาง mds_data_sales_branch_master
+
+  แก้ 2026-09-11 สองข้อ
+  1. เพิ่ม RegionSK — เดิมมีแต่ ZoneMdtSK ส่วน region_id เก็บเป็นรหัสเปล่า ๆ ไม่มี SK
+     region_id ของ MDT (HP MH TW GH BT DH) มีอยู่ใน mds_data_sales_region_master
+     ของ MAC5 อยู่แล้ว จึงดึง RegionSK จาก dim_region มาเก็บไว้ พร้อม RegionName
+  2. เก็บทุกคอลัมน์ของ MDS ครบ ไม่ตัดอะไรออก รวมคอลัมน์กำกับการแก้ไข
+     (Version / CreatedAt / CreatedBy / UpdatedAt / UpdatedBy / IsActive)
+     สูตรเช็ค: COUNT(dim) - 1 = COUNT(mds WHERE is_active = TRUE)
+
+  ⚠️ dim_region แบ่งตามช่วงเวลา รหัสละ 2 แถว (วัด 2026-09-11)
+      RegionSK 21  HP  2022-01-01 ถึง 2025-12-31
+      RegionSK 22  HP  2026-01-01 ถึง 2066-12-31
+  ต้องกรองช่วงที่ครอบวันนี้ ไม่งั้นสาขาบวมเป็น 2 เท่า
+  ตารางนี้ rebuild ทุกคืน RegionSK จึงขยับเองเมื่อข้ามช่วง ไม่ต้องมีใครมาแก้
+  กรอง companyID = 'ag01' เพราะ MDT ทั้งช่องทางเป็นของบริษัทนี้ (แนวเดียวกับ dim_product_mdt)
+
+  ⚠️ GH จับ RegionSK ไม่ได้ทั้ง 100 สาขา — dim_region ใช้รหัส 'GB' (GLOBALHOUSE)
+     แต่ branch master ของ MDT ใช้ 'GH' · อีก 5 ห้างจับได้ 1 แถวพอดีทุกห้าง
+        BT RegionSK 4 · DH 6 · HP 22 · MH 28 · TW 54 · GH ไม่มี
+     **ไม่ใส่การแปลง GH -> GB ไว้ในโค้ด** เพราะเป็นการเดารหัสแทนต้นทาง
+     กฎเดียวกับที่ตกลงไว้เรื่องรหัสสินค้า: ปล่อยให้เห็นที่ -1 แล้วให้คนแก้ที่ mds
+     ต้องแจ้งคนดูแล mds ให้ทำรหัสให้ตรงกันสองฝั่ง
+
+  BranchCode = store_id ใช้ค่าดิบ ห้ามตัดแปลง — แต่ละห้างเขียนคนละแบบ
+  (HP `S015` · GH `GH-101` · BT ชื่อสาขาไทย · TW `60001-CRC Thai Watsadu ...`)
+  การตัดหลัง '-' ทำให้ TW/GH ไม่ติดเลย · วัด 2026-09-09 join กับยอดขายได้ 350/359 = 97.5%
+
+  BranchCodeMdt (`HP_BK1_001`) เป็นรหัสภายในที่เราตั้งเอง ใช้เชื่อม PC และเป้า
+
+  เก็บ ZoneMdtSK + ZoneName ไว้ในตัว fact จึงไม่ต้อง join dim_zone_mdt
+
+  ponytail: SK ปั้นด้วย ROW_NUMBER สร้างใหม่ทุกคืน ใช้ได้เพราะ fact_saleout_mdt,
+  dim_pc และ dim_target_saleout_mdt rebuild ทุกคืนเหมือนกัน
+  วันที่ fact เปลี่ยนเป็น incremental ต้องเปลี่ยนมาใช้ MERGE ก่อน
+*/
 
 js {
     const BranchSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_branch_master`;
 
-    const DimZoneMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_zone_mdt",
-    };
-    const DimZoneMdtTableRef = `${DimZoneMdtTable.database}.${DimZoneMdtTable.schema}.${DimZoneMdtTable.name}`;
+    const dim = (name) => `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.${name}`;
+    const DimZoneMdtTableRef = dim("dim_zone_mdt");
+    const DimRegionTableRef  = dim("dim_region");
 }
 
-WITH branch_master AS (
+WITH region_current AS (
+  -- 1 แถวต่อ 1 รหัสห้าง — เอาช่วงที่ครอบวันนี้ ไม่งั้น LEFT JOIN ข้างล่างจะทำให้สาขาบวม
+  SELECT RegionSK, RegionID, SubRegionID, RegionName
+  FROM `${DimRegionTableRef}`
+  WHERE companyID = 'ag01'
+    AND CURRENT_DATE('Asia/Bangkok') BETWEEN StartDate AND EndDate
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID ORDER BY EndDate DESC, RegionSK) = 1
+
+), branch_master AS (
   SELECT
     ROW_NUMBER() OVER(
       ORDER BY
         ${databuffet.functionData.cleanString("t1.region_id")},
         ${databuffet.functionData.cleanString("t1.store_id")}
     ) AS BranchMdtSK,
-    IFNULL(dim_zone.ZoneMdtSK, -1) AS ZoneMdtSK,
+    IFNULL(dim_region.RegionSK, -1) AS RegionSK,
+    IFNULL(dim_zone.ZoneMdtSK, -1)  AS ZoneMdtSK,
+
+    -- คอลัมน์ธุรกิจ
     ${databuffet.functionData.cleanString("t1.region_id")}   AS StoreCode,
+    dim_region.RegionName                                    AS RegionName,
+    dim_region.SubRegionID                                   AS SubRegionID,
     ${databuffet.functionData.cleanString("t1.store_id")}    AS BranchCode,
     ${databuffet.functionData.cleanString("t1.branch_code")} AS BranchCodeMdt,
     ${databuffet.functionData.cleanString("t1.branch_name")} AS BranchName,
     ${databuffet.functionData.cleanString("t1.zone_id")}     AS ZoneCode,
     dim_zone.ZoneName                                        AS ZoneName,
     ${databuffet.functionData.cleanString("t1.warehouse")}   AS Warehouse,
-    
     t1.start_date AS StartDate,
     t1.end_date   AS EndDate,
+
+    -- คอลัมน์กำกับการแก้ไขจาก MDS (เก็บครบตามที่ตกลง)
+    t1.is_active  AS IsActive,
+    t1.version    AS Version,
+    t1.created_at AS CreatedAt,
+    ${databuffet.functionData.cleanString("t1.created_by")} AS CreatedBy,
+    t1.updated_at AS UpdatedAt,
+    ${databuffet.functionData.cleanString("t1.updated_by")} AS UpdatedBy,
+
     ${databuffet.functionData.cleanString("t1.id")} AS MdsID
   FROM `${BranchSourceRef}` AS t1
   LEFT JOIN `${DimZoneMdtTableRef}` AS dim_zone
     ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone.ZoneCode
+  LEFT JOIN region_current AS dim_region
+    ON ${databuffet.functionData.cleanString("t1.region_id")} = dim_region.RegionID
   WHERE t1.is_active = TRUE
 
 ), unknown_branch AS (
   SELECT
-    -1                   AS BranchMdtSK,
-    -1                   AS ZoneMdtSK,
-    CAST(NULL AS STRING) AS StoreCode,
-    CAST(NULL AS STRING) AS BranchCode,
-    CAST(NULL AS STRING) AS BranchCodeMdt,
-    'ไม่ระบุสาขา'          AS BranchName,
-    CAST(NULL AS STRING) AS ZoneCode,
-    'ไม่ระบุโซน'           AS ZoneName,
-    CAST(NULL AS STRING) AS Warehouse,
-    CAST(NULL AS DATE)   AS StartDate,
-    CAST(NULL AS DATE)   AS EndDate,
-    CAST(NULL AS STRING) AS MdsID
+    -1                      AS BranchMdtSK,
+    -1                      AS RegionSK,
+    -1                      AS ZoneMdtSK,
+
+    CAST(NULL AS STRING)    AS StoreCode,
+    CAST(NULL AS STRING)    AS RegionName,
+    CAST(NULL AS STRING)    AS SubRegionID,
+    CAST(NULL AS STRING)    AS BranchCode,
+    CAST(NULL AS STRING)    AS BranchCodeMdt,
+    'ไม่ระบุสาขา'             AS BranchName,
+    CAST(NULL AS STRING)    AS ZoneCode,
+    'ไม่ระบุโซน'              AS ZoneName,
+    CAST(NULL AS STRING)    AS Warehouse,
+    CAST(NULL AS DATE)      AS StartDate,
+    CAST(NULL AS DATE)      AS EndDate,
+
+    CAST(NULL AS BOOL)      AS IsActive,
+    CAST(NULL AS INT64)     AS Version,
+    CAST(NULL AS TIMESTAMP) AS CreatedAt,
+    CAST(NULL AS STRING)    AS CreatedBy,
+    CAST(NULL AS TIMESTAMP) AS UpdatedAt,
+    CAST(NULL AS STRING)    AS UpdatedBy,
+
+    CAST(NULL AS STRING)    AS MdsID
 )
 
 SELECT * FROM branch_master
