@@ -494,6 +494,7 @@ flowchart LR
   dim_stk_mkt --> dim_product_master
   dim_target_product_group --> dim_target_product_group_by_sale
   dim_target_product_group_by_sale --> dim_target_product_group_by_sale_dayofwork
+  dim_zone_manager_mdt --> dim_sales_branch_mdt
   dim_zone_mdt --> dim_sales_branch_mdt
   dim_zone_mdt --> dim_zone_manager_mdt
   update_sk_sale_rep_group --> dim_rate_target
