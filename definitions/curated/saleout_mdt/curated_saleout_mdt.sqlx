@@ -112,11 +112,58 @@ WITH hp AS (
     WHERE sale_amount <> 0 OR sale_qty <> 0
     GROUP BY sale_date, store_code, branch_code, branch_name, product_code
 
+), lastyear AS (
+
+    -- ยอดขายย้อนหลังที่ BI ส่งมาเป็น Excel โหลดครั้งเดียว 2026-09-11
+    -- ต้นทาง 430,639 แถว 2022-01-01 ถึง 2026-08-23 รวม 4,185,331,780.32 ครบ 6 ห้าง
+    --
+    -- ⚠️ วันตัด 2026-02-09 — ฟีดรายวันของทุกห้างเริ่มวันนี้พอดี
+    --    เอาเฉพาะก่อนวันตัด ไม่งั้นยอดช่วง ก.พ.-ส.ค. 2026 จะนับซ้ำกับฟีดรายวัน
+    --    ก่อนวันตัด  358,302 แถว / 3,594,214,168.32  ไม่ซ้อนกับใคร
+    --    ทิ้งไป       62,110 แถว /   535,522,982.10  ซ้อนกับฟีดรายวัน
+    --
+    -- ⚠️ ยกเว้น DH — ยังไม่มีฟีดรายวันเลย ไม่มีอะไรให้ซ้อน จึงเอาทุกวัน
+    --    DH หลังวันตัด 10,227 แถว / 55,594,629.90
+    --    วันที่ DH มีฟีดรายวันแล้ว ต้องลบ OR store_code = 'DH' ออก
+    --    แล้วตั้งวันตัดของ DH เอง ไม่งั้นจะนับซ้ำทันที
+    --
+    -- ⚠️ ยังไม่รู้ว่าทำไม เม.ย.-ก.ค. 2026 ไฟล์กับฟีดรายวันต่างกันถึง 19%
+    --    วันตัดนี้เลี่ยงปัญหานั้นไปก่อน เพราะไม่แตะช่วงที่ทั้งสองฝั่งมีข้อมูล
+    --    ดู document/operations/known-issues.md (2026-09-11)
+    --
+    -- ไฟล์ไม่มีเลขบิลหรือเลขบรรทัด แยกแถวที่ซ้ำในคีย์ไม่ได้ (ชนกัน 6,968 แถว)
+    -- จึง GROUP BY ตามคีย์ของ curated แล้วบวกรวม — ยอดไม่หาย
+    --
+    -- ponytail: ไม่ใส่ filter asatdate เพราะเป็นตารางนิ่ง ไม่มีวันใหม่เข้ามาอีก
+    --    ถ้าใส่ incremental window แถวจะหลุดหน้าต่างตั้งแต่วันที่สอง แล้วไม่ถูก merge
+    --    368,529 แถว อ่านทั้งก้อนทุกคืนถูกกว่าเขียนโค้ดกันพลาด
+    SELECT
+        sale_date,
+        store_code,
+        branch_code,
+        ANY_VALUE(branch_name)  AS branch_name,
+        product_code,
+        ANY_VALUE(product_name) AS product_name,
+        CAST(NULL AS STRING)    AS barcode_match,  -- ไฟล์ไม่มีบาร์โค้ด
+        SUM(sale_qty)           AS sale_qty,
+        SUM(sale_amount)        AS sale_amount,
+        SUM(sale_amount) < 0    AS is_return,      -- ต้นทางมีแถวติดลบ 2,055 แถว
+        1                       AS days_covered,
+        FALSE                   AS date_is_estimated,
+        CAST(NULL AS STRING)    AS bill_no,        -- ไฟล์ไม่มีเลขบิล
+        MAX(asatdate)           AS asatdate
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_lastyear")}
+    WHERE sale_date IS NOT NULL
+      AND (sale_date < DATE '2026-02-09' OR store_code = 'DH')
+    GROUP BY sale_date, store_code, branch_code, product_code
+
 )
 
 SELECT * FROM hp
 UNION ALL
 SELECT * FROM bt
+UNION ALL
+SELECT * FROM lastyear
 
 pre_operations {
 }
