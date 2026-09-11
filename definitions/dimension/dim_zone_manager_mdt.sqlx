@@ -23,14 +23,15 @@ config {
   วัดเกรนจริงไม่ได้ตอนนี้เพราะยังไม่มีข้อมูล ถ้าเข้ามาแล้วพบว่า 1 โซน = 1 คนเสมอ
   ก็ยังใช้ได้ ไม่ต้องแก้
 
-  เก็บทุกคอลัมน์ของ MDS ครบ ไม่ตัดอะไรออก รวมคอลัมน์กำกับการแก้ไข
-  (Version / CreatedAt / CreatedBy / UpdatedAt / UpdatedBy / IsActive)
+  ไม่เก็บ MdsID และคอลัมน์กำกับการแก้ไข (ผู้ใช้ตัดสิน 2026-09-11) เหลือ 10 คอลัมน์
+  ให้เหมือน dim_zone_mdt / dim_pc / dim_sales_branch_mdt
 
   เก็บ ZoneMdtSK ไว้ในตัวเอง เพื่อให้คนที่ต้องการผู้จัดการโซนไม่ต้อง join
   dim_zone_mdt อีกทอด (แนวเดียวกับ dim_sales_branch_mdt ที่เก็บ ZoneMdtSK)
   ZoneName ก็มาจากต้นทางเองอยู่แล้ว ไม่ได้ดึงจาก dim_zone_mdt
 
-  ยังไม่มี fact หรือ view ไหนใช้ตารางนี้
+  dim_sales_branch_mdt เก็บ ZoneManagerMdtSK ไว้ในตัวแล้ว (2026-09-11)
+  join ด้วย ZoneCode แบบเดียวกับ dim_zone_mdt เพราะเกรนเท่ากัน (1 แถว = 1 โซน)
 
   ponytail: SK ปั้นด้วย ROW_NUMBER สร้างใหม่ทุกคืน ยังไม่มี consumer ที่เก็บ SK นี้ไว้
   ถ้าวันหน้ามี fact ที่เก็บ ZoneManagerMdtSK ข้ามเดือน ต้องเปลี่ยนมาใช้ MERGE ก่อน
@@ -63,17 +64,7 @@ WITH zone_manager_master AS (
     ${databuffet.functionData.cleanString("t1.zonemanageremployeesurname")}  AS EmployeeSurname,
     ${databuffet.functionData.cleanString("t1.zonemanageremployeenickname")} AS EmployeeNickname,
     t1.start_date AS StartDate,
-    t1.end_date   AS EndDate,
-
-    -- คอลัมน์กำกับการแก้ไขจาก MDS (เก็บครบตามที่ตกลง)
-    t1.is_active  AS IsActive,
-    t1.version    AS Version,
-    t1.created_at AS CreatedAt,
-    ${databuffet.functionData.cleanString("t1.created_by")} AS CreatedBy,
-    t1.updated_at AS UpdatedAt,
-    ${databuffet.functionData.cleanString("t1.updated_by")} AS UpdatedBy,
-
-    ${databuffet.functionData.cleanString("t1.id")} AS MdsID
+    t1.end_date   AS EndDate
   FROM `${ZoneManagerSourceRef}` AS t1
   LEFT JOIN `${DimZoneMdtTableRef}` AS dim_zone
     ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone.ZoneCode
@@ -91,16 +82,7 @@ WITH zone_manager_master AS (
     CAST(NULL AS STRING)    AS EmployeeSurname,
     CAST(NULL AS STRING)    AS EmployeeNickname,
     CAST(NULL AS DATE)      AS StartDate,
-    CAST(NULL AS DATE)      AS EndDate,
-
-    CAST(NULL AS BOOL)      AS IsActive,
-    CAST(NULL AS INT64)     AS Version,
-    CAST(NULL AS TIMESTAMP) AS CreatedAt,
-    CAST(NULL AS STRING)    AS CreatedBy,
-    CAST(NULL AS TIMESTAMP) AS UpdatedAt,
-    CAST(NULL AS STRING)    AS UpdatedBy,
-
-    CAST(NULL AS STRING)    AS MdsID
+    CAST(NULL AS DATE)      AS EndDate
 )
 
 SELECT * FROM zone_manager_master
