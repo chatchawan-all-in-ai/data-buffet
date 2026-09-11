@@ -465,8 +465,8 @@ flowchart LR
   dim_rebate --> dim_product_master
   dim_region --> dim_pump_information
   dim_region --> dim_region_last
-  dim_region --> dim_sales_branch_mdt
   dim_region --> dim_target_product_group_by_sale_dayofwork
+  dim_region_last --> dim_sales_branch_mdt
   dim_region_last --> dim_target_product_group_by_sale
   dim_region_last --> update_sk_sale_rep_group
   dim_region_manager --> dim_region_manager_last

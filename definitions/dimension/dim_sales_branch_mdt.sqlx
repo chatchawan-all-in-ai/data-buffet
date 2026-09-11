@@ -1,7 +1,7 @@
 config {
   type: "table",
   schema: databuffet.DIMENSION_TABLE,
-  dependencies: ["dim_zone_mdt", "dim_zone_manager_mdt", "dim_region"],
+  dependencies: ["dim_zone_mdt", "dim_zone_manager_mdt", "dim_region_last"],
   tags: [databuffet.TAG_DIM_DAILY],
   uniqueKey: ["BranchMdtSK"],
   bigquery: {
@@ -13,23 +13,30 @@ config {
   สาขาของ 6 ห้างในช่องทาง MDT — 1 แถว = 1 สาขา (494 สาขา + แถว -1)
   ต้นทาง mds_data_sales_branch_master
 
-  เพิ่ม RegionSK 2026-09-11 — เดิมมีแต่ ZoneMdtSK ส่วน region_id เก็บเป็นรหัสเปล่า ๆ
-  ไม่มี SK · รหัสห้างของ MDT อยู่ใน mds_data_sales_region_master ของ MAC5 อยู่แล้ว
-  จึงดึง RegionSK / RegionName / SubRegionID จาก dim_region มาเก็บไว้
+  เพิ่ม RegionSK / RegionManagerSK / ZoneManagerMdtSK 2026-09-11
+  เดิมมีแต่ ZoneMdtSK ส่วน region_id เก็บเป็นรหัสเปล่า ๆ ไม่มี SK
 
-  ⚠️ dim_region แบ่งตามช่วงเวลา รหัสละ 2 แถว (วัด 2026-09-11)
-      RegionSK 21  HP  2022-01-01 ถึง 2025-12-31
-      RegionSK 22  HP  2026-01-01 ถึง 2066-12-31
-  ต้องกรองช่วงที่ครอบวันนี้ ไม่งั้นสาขาบวมเป็น 2 เท่า (494 -> 988)
-  ตารางนี้ rebuild ทุกคืน RegionSK จึงขยับเองเมื่อข้ามช่วง ไม่ต้องมีใครมาแก้
+  ⚠️ ต้องใช้ dim_region_last ไม่ใช่ dim_region (เจ้าของ mds ชี้ 2026-09-11)
+      dim_region       ตารางสำหรับรายการขาย  1 รหัส = หลายแถว แยกตามช่วงปี (56 แถว / 22 รหัส)
+      dim_region_last  ตารางของล่าสุด        1 รหัส = 1 แถว          (28 แถว / 22 รหัส)
+  สาขาไม่มีวันที่กำกับ จึงเลือกช่วงจาก dim_region ไม่ได้ ถ้าไปหยิบเองจะได้ SK
+  ของคนละช่วงปนกันแล้วเชื่อมกับงานอื่นไม่ติด
+  SK ของสองตารางเป็นคนละเลข — เทียบแล้ว (last / dim_region)
+      BT 3/(3,4) · DH 4/(5,6) · GB 11/(19,20) · HP 12/(21,22) · MH 15/(27,28) · TW 27/(53,54)
+  dim_region_last แถมคอลัมน์ RegionManagerSK กับ DirectorSK มาให้ด้วย
   กรอง companyID = 'ag01' เพราะ MDT ทั้งช่องทางเป็นของบริษัทนี้
 
   ตรวจ 2026-09-11 หลัง mds เปลี่ยนรหัสโกลบอลเฮ้าส์ GH -> GB แล้ว
   จับ RegionSK ได้ครบทั้ง 6 ห้าง ไม่มีสาขาไหนเป็น -1
-      BT 4 BOONTHAVORN · DH 6 DOHOME · GB 20 GLOBALHOUSE
-      HP 22 HOME PRO · MH 28 MEGA HOME · TW 54 THAIWATSADU
+      BT 3 BOONTHAVORN · DH 4 DOHOME · GB 11 GLOBALHOUSE
+      HP 12 HOME PRO · MH 15 MEGA HOME · TW 27 THAIWATSADU
 
-  ไม่เก็บ MdsID และคอลัมน์กำกับการแก้ไข (ผู้ใช้ตัดสิน 2026-09-11) เหลือ 14 คอลัมน์
+  ZoneManagerMdtSK join ด้วย zone_id แบบเดียวกับ dim_zone_mdt เพราะเกรนเท่ากัน
+  (1 แถว = 1 โซน ตามที่เจ้าของ mds ยืนยัน 2026-09-10)
+  dim_zone_manager_mdt ขับจาก dim_zone_mdt จึงมีครบ 15 โซนแม้ต้นทางผู้จัดการยังว่าง
+  สาขาจับ SK ได้จริงตั้งแต่วันนี้ ชื่อผู้จัดการเติมเข้ามาเองคืนที่ mds นำเข้าข้อมูล
+
+  ไม่เก็บ MdsID และคอลัมน์กำกับการแก้ไข (ผู้ใช้ตัดสิน 2026-09-11) เหลือ 16 คอลัมน์
   สูตรเช็คกับต้นทางจึงเทียบได้แค่จำนวนแถว: COUNT(dim) - 1 = COUNT(mds WHERE is_active)
 
   BranchCode = store_id ใช้ค่าดิบ ห้ามตัดแปลง — แต่ละห้างเขียนคนละแบบ
@@ -62,26 +69,18 @@ js {
     };
     const DimZoneManagerMdtTableRef = `${DimZoneManagerMdtTable.database}.${DimZoneManagerMdtTable.schema}.${DimZoneManagerMdtTable.name}`;
 
-    const DimRegionTable = {
+    const DimRegionLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
-        name: "dim_region",
+        name: "dim_region_last",
     };
-    const DimRegionTableRef = `${DimRegionTable.database}.${DimRegionTable.schema}.${DimRegionTable.name}`;
+    const DimRegionLastTableRef = `${DimRegionLastTable.database}.${DimRegionLastTable.schema}.${DimRegionLastTable.name}`;
 }
 
-WITH region_current AS (
-  -- 1 แถวต่อ 1 รหัสห้าง — เอาช่วงที่ครอบวันนี้ ไม่งั้น LEFT JOIN ข้างล่างจะทำให้สาขาบวม
-  SELECT RegionSK, RegionID, SubRegionID, RegionName
-  FROM `${DimRegionTableRef}`
-  WHERE companyID = 'ag01'
-    AND CURRENT_DATE('Asia/Bangkok') BETWEEN StartDate AND EndDate
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID ORDER BY EndDate DESC, RegionSK) = 1
-
-), zone_manager_current AS (
+WITH zone_manager_current AS (
   -- ตอนนี้ zone_manager เกรนเท่ากับ zone_master (1 แถว = 1 โซน) จึง join แบบเดียวกับ
   -- dim_zone_mdt ได้เลย  QUALIFY เป็นตัวกันไว้เผื่อวันหน้าโซนหนึ่งมีผู้จัดการหลายคน
-  -- ไม่งั้นสาขาจะบวมตามจำนวนผู้จัดการแบบเงียบ ๆ (เคสเดียวกับ dim_region ที่มีรหัสละ 2 แถว)
+  -- ไม่งั้นสาขาจะบวมตามจำนวนผู้จัดการแบบเงียบ ๆ
   SELECT ZoneManagerMdtSK, ZoneCode
   FROM `${DimZoneManagerMdtTableRef}`
   WHERE ZoneManagerMdtSK <> -1
@@ -94,8 +93,9 @@ WITH region_current AS (
         ${databuffet.functionData.cleanString("t1.region_id")},
         ${databuffet.functionData.cleanString("t1.store_id")}
     ) AS BranchMdtSK,
-    IFNULL(dim_region.RegionSK, -1) AS RegionSK,
-    IFNULL(dim_zone.ZoneMdtSK, -1) AS ZoneMdtSK,
+    IFNULL(dim_region.RegionSK, -1)           AS RegionSK,
+    IFNULL(dim_region.RegionManagerSK, -1)    AS RegionManagerSK,
+    IFNULL(dim_zone.ZoneMdtSK, -1)            AS ZoneMdtSK,
     IFNULL(dim_zone_mgr.ZoneManagerMdtSK, -1) AS ZoneManagerMdtSK,
 
     ${databuffet.functionData.cleanString("t1.region_id")}   AS StoreCode,
@@ -113,18 +113,19 @@ WITH region_current AS (
   LEFT JOIN `${DimZoneMdtTableRef}` AS dim_zone
     ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone.ZoneCode
   -- ผู้จัดการโซน join ด้วย zone_id แบบเดียวกับ dim_zone_mdt
-  -- เกรนเท่ากัน (1 แถว = 1 โซน) จึงไม่ทำให้สาขาบวม
-  -- ต้นทางยังว่าง 0 แถว SK จึงเป็น -1 ไปก่อนแล้วเข้าที่เองวันที่ mds กรอกข้อมูล
   LEFT JOIN zone_manager_current AS dim_zone_mgr
     ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone_mgr.ZoneCode
-  LEFT JOIN region_current AS dim_region
+  -- dim_region_last มีแถวเดียวต่อรหัส จึง join ตรงได้ ไม่ต้องมี CTE กรองช่วงเวลา
+  LEFT JOIN `${DimRegionLastTableRef}` AS dim_region
     ON ${databuffet.functionData.cleanString("t1.region_id")} = dim_region.RegionID
+   AND dim_region.companyID = 'ag01'
   WHERE t1.is_active = TRUE
 
 ), unknown_branch AS (
   SELECT
     -1                   AS BranchMdtSK,
     -1                   AS RegionSK,
+    -1                   AS RegionManagerSK,
     -1                   AS ZoneMdtSK,
     -1                   AS ZoneManagerMdtSK,
 
