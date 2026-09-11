@@ -51,9 +51,19 @@ config {
 js {
     const BranchSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_branch_master`;
 
-    const dim = (name) => `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.${name}`;
-    const DimZoneMdtTableRef = dim("dim_zone_mdt");
-    const DimRegionTableRef  = dim("dim_region");
+    const DimZoneMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_zone_mdt",
+    };
+    const DimZoneMdtTableRef = `${DimZoneMdtTable.database}.${DimZoneMdtTable.schema}.${DimZoneMdtTable.name}`;
+
+    const DimRegionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region",
+    };
+    const DimRegionTableRef = `${DimRegionTable.database}.${DimRegionTable.schema}.${DimRegionTable.name}`;
 }
 
 WITH region_current AS (
