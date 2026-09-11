@@ -10,30 +10,37 @@ config {
 }
 
 /*
-  ผู้จัดการโซนของช่องทาง MDT — ต้นทาง mds_data_sales_zone_manager_master ตารางเดียว
+  ผู้จัดการโซนของช่องทาง MDT — 1 แถว = 1 โซน (15 โซน + แถว -1)
   แยกออกจาก dim_zone_mdt เมื่อ 2026-09-11 ตามรีวิว
   (เดิมถูก LEFT JOIN เข้าไปแปะ 4 คอลัมน์อยู่ใน dim_zone_mdt)
 
-  ⚠️ ต้นทางมี 0 แถว (ตรวจ 2026-09-11) ตารางนี้จึงมีแต่แถว -1 ไปก่อน
-  ไฟล์ต้นฉบับ Excel ชีท Zone มีชื่อผู้จัดการครบทั้ง 15 โซน ต้องแจ้งคนดูแล mds ให้นำเข้า
-  (โซน CEN ไม่มี employee_id ในไฟล์ต้นฉบับ)
+  ⚠️ ขับตารางนี้จาก dim_zone_mdt ไม่ใช่จาก mds_data_sales_zone_manager_master
+  เพราะต้นทางผู้จัดการยังว่าง 0 แถว (ตรวจ 2026-09-11 14:58 · ตารางสร้าง 09-08 ไม่ถูกแตะเลย)
+  ถ้าขับจากต้นทางผู้จัดการ ตารางนี้จะมีแต่แถว -1 และ dim_sales_branch_mdt
+  จะได้ ZoneManagerMdtSK = -1 ทั้ง 494 สาขา
+  ขับจากโซนแทน ทำให้ได้โครงครบ 15 โซนตั้งแต่วันนี้ สาขาจับ SK ได้จริง
+  แล้วชื่อผู้จัดการค่อยเติมเข้ามาเองคืนที่ mds นำเข้าข้อมูล — ไม่ต้องกลับมาแก้โค้ด
 
-  1 แถว = 1 แถวของ mds คือการมอบหมาย (โซน x ผู้จัดการ) ไม่ใช่ตัวคน
-  เกรนนี้รองรับทั้งกรณี 1 โซนมีผู้จัดการหลายคน และ 1 คนดูแลหลายโซน
-  วัดเกรนจริงไม่ได้ตอนนี้เพราะยังไม่มีข้อมูล ถ้าเข้ามาแล้วพบว่า 1 โซน = 1 คนเสมอ
-  ก็ยังใช้ได้ ไม่ต้องแก้
+  เกรน 1 แถว = 1 โซน ตามที่เจ้าของ mds ยืนยัน (2026-09-10) ว่าตอนนี้
+  zone_manager_master เกรนเท่ากับ zone_master และ join ด้วย zone_id ได้ตรง ๆ
+  QUALIFY ใน mgr_src กันไว้เผื่อวันหน้าโซนหนึ่งมีผู้จัดการหลายคน — ไม่งั้นโซนจะบวม
+  ถ้าวันนั้นมาถึงต้องตัดสินใจใหม่ว่าจะเก็บเป็นตารางมอบหมาย (โซน x คน) หรือเลือกคนเดียว
+
+  ZoneCode / ZoneName เอาจาก dim_zone_mdt ไม่เอาจากต้นทางผู้จัดการ
+  เพื่อให้มีที่มาที่เดียว และเพราะต้นทางยังไม่มีข้อมูลให้ใช้
+
+  ⚠️ โซน CEN ไม่มี employee_id ในไฟล์ Excel ต้นฉบับ ต้องถามว่าจะใส่อะไรแทน
 
   ไม่เก็บ MdsID และคอลัมน์กำกับการแก้ไข (ผู้ใช้ตัดสิน 2026-09-11) เหลือ 10 คอลัมน์
   ให้เหมือน dim_zone_mdt / dim_pc / dim_sales_branch_mdt
+  ⚠️ ผลข้างเคียงของการขับจากโซน: นับแถวเทียบกับ mds ตรง ๆ ไม่ได้แล้ว
+     ตารางนี้เท่ากับจำนวนโซน ไม่ใช่จำนวนแถวในตารางผู้จัดการ
 
-  เก็บ ZoneMdtSK ไว้ในตัวเอง เพื่อให้คนที่ต้องการผู้จัดการโซนไม่ต้อง join
-  dim_zone_mdt อีกทอด (แนวเดียวกับ dim_sales_branch_mdt ที่เก็บ ZoneMdtSK)
-  ZoneName ก็มาจากต้นทางเองอยู่แล้ว ไม่ได้ดึงจาก dim_zone_mdt
+  consumer: dim_sales_branch_mdt เก็บ ZoneManagerMdtSK ไว้ในตัว (2026-09-11)
+  join ด้วย ZoneCode แบบเดียวกับ dim_zone_mdt
 
-  dim_sales_branch_mdt เก็บ ZoneManagerMdtSK ไว้ในตัวแล้ว (2026-09-11)
-  join ด้วย ZoneCode แบบเดียวกับ dim_zone_mdt เพราะเกรนเท่ากัน (1 แถว = 1 โซน)
-
-  ponytail: SK ปั้นด้วย ROW_NUMBER สร้างใหม่ทุกคืน ยังไม่มี consumer ที่เก็บ SK นี้ไว้
+  ponytail: SK ปั้นด้วย ROW_NUMBER สร้างใหม่ทุกคืน ใช้ได้เพราะ dim_sales_branch_mdt
+  rebuild ทุกคืนเหมือนกัน
   ถ้าวันหน้ามี fact ที่เก็บ ZoneManagerMdtSK ข้ามเดือน ต้องเปลี่ยนมาใช้ MERGE ก่อน
 */
 
@@ -48,17 +55,11 @@ js {
     const DimZoneMdtTableRef = `${DimZoneMdtTable.database}.${DimZoneMdtTable.schema}.${DimZoneMdtTable.name}`;
 }
 
-WITH zone_manager_master AS (
+WITH mgr_src AS (
+  -- 1 แถวต่อ 1 โซน — QUALIFY กันไว้เผื่อวันหน้าโซนหนึ่งมีผู้จัดการหลายคน
+  -- ไม่งั้น LEFT JOIN ข้างล่างจะทำให้โซนบวมตามจำนวนผู้จัดการแบบเงียบ ๆ
   SELECT
-    ROW_NUMBER() OVER(
-      ORDER BY ${databuffet.functionData.cleanString("t1.zone_id")},
-               ${databuffet.functionData.cleanString("t1.zonemanageremployeeid")}
-    ) AS ZoneManagerMdtSK,
-    IFNULL(dim_zone.ZoneMdtSK, -1) AS ZoneMdtSK,
-
-    -- คอลัมน์ธุรกิจ
-    ${databuffet.functionData.cleanString("t1.zone_id")}   AS ZoneCode,
-    ${databuffet.functionData.cleanString("t1.zone_name")} AS ZoneName,
+    ${databuffet.functionData.cleanString("t1.zone_id")}                     AS ZoneCode,
     ${databuffet.functionData.cleanString("t1.zonemanageremployeeid")}       AS EmployeeID,
     ${databuffet.functionData.cleanString("t1.zonemanageremployeename")}     AS EmployeeName,
     ${databuffet.functionData.cleanString("t1.zonemanageremployeesurname")}  AS EmployeeSurname,
@@ -66,9 +67,29 @@ WITH zone_manager_master AS (
     t1.start_date AS StartDate,
     t1.end_date   AS EndDate
   FROM `${ZoneManagerSourceRef}` AS t1
-  LEFT JOIN `${DimZoneMdtTableRef}` AS dim_zone
-    ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone.ZoneCode
   WHERE t1.is_active = TRUE
+  QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY ${databuffet.functionData.cleanString("t1.zone_id")}
+    ORDER BY ${databuffet.functionData.cleanString("t1.zonemanageremployeeid")}
+  ) = 1
+
+), zone_manager_master AS (
+  SELECT
+    ROW_NUMBER() OVER(ORDER BY z.ZoneCode) AS ZoneManagerMdtSK,
+    z.ZoneMdtSK,
+    z.ZoneCode,
+    z.ZoneName,
+    mgr.EmployeeID,
+    mgr.EmployeeName,
+    mgr.EmployeeSurname,
+    mgr.EmployeeNickname,
+    mgr.StartDate,
+    mgr.EndDate
+  FROM `${DimZoneMdtTableRef}` AS z
+  LEFT JOIN mgr_src AS mgr
+    ON z.ZoneCode = mgr.ZoneCode
+  -- ตัดแถว -1 ของ dim_zone_mdt ออก ไม่งั้นจะซ้ำกับ unknown_zone_manager ข้างล่าง
+  WHERE z.ZoneMdtSK <> -1
 
 ), unknown_zone_manager AS (
   SELECT
