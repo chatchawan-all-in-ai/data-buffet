@@ -36,9 +36,87 @@ WITH hp AS (
       -- กรองที่ต้นทาง เพราะ validated partition ด้วย asatdate — วางไว้ข้างนอกจะไม่ตัดพาร์ทิชัน
       ${ when(incremental(), `AND asatdate >= DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY)`) }
 
+), bt_feed_gap AS (
+
+    -- ช่วงห่างระหว่าง snapshot ที่ห้างส่งมาจริง — ยอดที่กระโดดระหว่าง 2 snapshot เกิดในช่วงนี้
+    -- ต้องวัดจากวันที่ไฟล์มี ไม่ใช่จากช่วงในกลุ่มสินค้า เพราะสินค้าจะโผล่ในไฟล์ครั้งแรก
+    -- ก็ตอนที่มันขายแล้ว วันก่อนนั้นไม่มีแถวเลย (MTD = 0 ไม่ถูกส่งมา)
+    -- วัด 2026-09-11: ห่าง 1 วัน 149 ครั้ง · 2 วัน 11 ครั้ง · 3 วัน 1 ครั้ง
+    --                 ห่าง 10 วัน 1 ครั้ง (ไฟล์แรกของ ก.พ.) · 18 วัน 1 ครั้ง (ไฟล์แรกของ มี.ค.)
+    SELECT
+        end_date,
+        DATE_DIFF(
+            end_date,
+            IFNULL(
+                LAG(end_date) OVER (PARTITION BY DATE_TRUNC(end_date, MONTH) ORDER BY end_date),
+                DATE_SUB(month_start, INTERVAL 1 DAY)
+            ),
+            DAY
+        ) AS days_covered
+    FROM (
+        -- MIN กัน fan-out: ถ้า end_date เดียวมี start_date หลายค่า การ JOIN จะคูณแถว
+        SELECT end_date, MIN(start_date) AS month_start
+        FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "sale_by_branch_detail")}
+        WHERE end_date IS NOT NULL
+        GROUP BY end_date
+    )
+
+), bt_daily AS (
+
+    -- บุญถาวรส่งยอด "สะสมตั้งแต่ต้นเดือน" (MTD) มาใหม่ทุกวัน ไม่ใช่ยอดของวัน
+    -- 1 การขายถูกส่งซ้ำทุกวันจนสิ้นเดือน — วัด 2026-09-11: 12,756 แถว มีการขายจริงแค่ 1,370
+    -- ยอดของวัน = MTD ของวันนี้ − MTD ของแถวก่อนหน้า รีเซ็ตทุกต้นเดือน
+    --
+    -- ⚠️ ห้ามใส่ filter asatdate ในบล็อกนี้ — LAG ต้องเห็นแถวของวันก่อนหน้า
+    --    ถ้าอ่านแค่ 1 วัน แถวแรกจะไม่มี LAG แล้วยอดสะสมทั้งเดือนจะถูกนับเป็นยอดของวันเดียว
+    --    ต้นทาง 12,756 แถว / 0.3 MB — อ่านทั้งก้อนทุกคืนถูกกว่าเขียนโค้ดกันพลาด
+    -- ponytail: ถ้าวันหน้าตารางนี้โตเกินหลักล้านแถว เปลี่ยนเป็นอ่านย้อน 2 เดือนปฏิทิน
+    --    ต้องเป็นเดือนเต็ม ไม่ใช่ N วัน เพราะการรีเซ็ตผูกกับต้นเดือน
+    SELECT
+        s.end_date,
+        s.branch,
+        s.article_id,
+        s.article_name_th,
+        s.asatdate,
+        g.days_covered,
+        s.net_inc_tax_mtd - IFNULL(LAG(s.net_inc_tax_mtd) OVER w, 0) AS sale_amount,
+        s.sale_qty_mtd    - IFNULL(LAG(s.sale_qty_mtd)    OVER w, 0) AS sale_qty
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "sale_by_branch_detail")} AS s
+    JOIN bt_feed_gap AS g USING (end_date)
+    WHERE s.end_date IS NOT NULL
+    WINDOW w AS (
+        PARTITION BY s.branch, s.article_id, s.distribution_channel, DATE_TRUNC(s.end_date, MONTH)
+        ORDER BY s.end_date
+    )
+
+), bt AS (
+
+    -- ยุบช่องทาง (Showroom / Anyhome / Web) รวมกัน เพราะเกรนของ curated ไม่มีช่องทาง
+    -- วัด 2026-09-11: 27 จาก 1,343 กลุ่มมี 2 ช่องทาง คิดเป็นเงิน 395,197 — ยอดรวมไม่เปลี่ยน
+    SELECT
+        end_date                   AS sale_date,
+        'BT'                       AS store_code,
+        branch                     AS branch_code,   -- BT ใช้ชื่อไทยเป็นรหัสสาขา จับคู่ dim ได้ 16/16
+        branch                     AS branch_name,
+        article_id                 AS product_code,
+        ANY_VALUE(article_name_th) AS product_name,
+        CAST(NULL AS STRING)       AS barcode_match, -- BT ไม่ส่งบาร์โค้ดมา
+        SUM(sale_qty)              AS sale_qty,
+        SUM(sale_amount)           AS sale_amount,
+        SUM(sale_amount) < 0       AS is_return,     -- MTD ลดลง = คืนสินค้า (วัด 2026-09-11: 11 แถว)
+        MAX(days_covered)          AS days_covered,
+        MAX(days_covered) > 1      AS date_is_estimated, -- ครอบหลายวัน = ไม่รู้วันขายจริง
+        CAST(NULL AS STRING)       AS bill_no,
+        MAX(asatdate)              AS asatdate
+    FROM bt_daily
+    WHERE sale_amount <> 0 OR sale_qty <> 0
+    GROUP BY sale_date, store_code, branch_code, branch_name, product_code
+
 )
 
 SELECT * FROM hp
+UNION ALL
+SELECT * FROM bt
 
 pre_operations {
 }

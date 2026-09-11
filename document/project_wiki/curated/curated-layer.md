@@ -19,7 +19,7 @@
 | `mastersku/product_for_aisearch.sqlx` | `curated_mastersku.product_for_aisearch` | operations | — | — | AI-search feed, STRUCT column, DELETE+INSERT by run_date |
 | `cis360/curated_schema_cis360.sqlx` | schema `curated_cis360` | operations | — | — | Schema only, no tables yet |
 | `saleout_mdt/curated_schema_saleout.sqlx` | schema `curated_saleout_mdt` | operations | — | — | เพิ่ม 2026-09-07 |
-| `saleout_mdt/curated_saleout_mdt.sqlx` | `curated_saleout_mdt.curated_saleout_mdt` | incremental | `sale_date, store_code, branch_code, product_code, distribution_channel` | `sale_date` / `store_code, branch_code, product_code` | **ชั้นที่ทำให้ทุกห้างหน้าตาเหมือนกัน** — เพิ่มห้างใหม่ = เพิ่ม UNION ALL block ไม่ต้องแตะ fact/view · ตอนนี้มีแค่ HomePro + Megahome · ตัวกรอง incremental อยู่ใน CTE เพื่อตัดพาร์ทิชันของ validated |
+| `saleout_mdt/curated_saleout_mdt.sqlx` | `curated_saleout_mdt.curated_saleout_mdt` | incremental | `sale_date, store_code, branch_code, product_code` | `sale_date` / `store_code, branch_code, product_code` | **ชั้นที่ทำให้ทุกห้างหน้าตาเหมือนกัน** — เพิ่มห้างใหม่ = เพิ่ม UNION ALL block ไม่ต้องแตะ fact/view · ตอนนี้มี HomePro + Megahome + บุญถาวร · ตัวกรอง incremental อยู่ใน CTE เพื่อตัดพาร์ทิชันของ validated — **ยกเว้นบล็อก BT ที่ห้ามกรอง** (ดูหัวข้อ MTD differencing) |
 
 ## Incremental window — IMPORTANT
 
@@ -76,6 +76,47 @@ Only `curated_product` uses `updatePartitionFilter: "asatdate >= CURRENT_DATE('A
      because its PK was no longer in the temp; at doc grain the whole ag01 document is
      replaced, clearing all 387 stale ag01 rows in one run.
 
+### `curated_saleout_mdt` — ทำให้ 6 ห้างหน้าตาเหมือนกัน
+
+14 คอลัมน์คงที่ · เพิ่มห้าง = เพิ่ม CTE + `UNION ALL` ไม่ต้องแตะ `fact_saleout_mdt` เลย
+ลำดับคอลัมน์ของทุกบล็อกต้องตรงกันเป๊ะ เพราะ `UNION ALL` จับตามตำแหน่ง ไม่ใช่ชื่อ
+
+| ห้าง | บล็อก | รูปแบบต้นทาง | แถว | ยอด |
+|---|---|---|---:|---:|
+| HomePro + Megahome | `hp` | ยอดของวัน ใช้ได้ตรง ๆ | 24,790 | 167,978,976 |
+| บุญถาวร | `bt_feed_gap` → `bt_daily` → `bt` | ยอดสะสม MTD ต้องหาส่วนต่าง | 1,343 | 15,555,025 |
+
+#### MTD differencing (บุญถาวร) — รูปแบบใหม่ 2026-09-11
+
+ต้นทางส่ง **ยอดสะสมตั้งแต่ต้นเดือน** มาใหม่ทุกวัน การขาย 1 ครั้งถูกส่งซ้ำจนสิ้นเดือน
+(วัด: 12,756 แถว มีการขายจริง 1,370) `SUM` ตรง ๆ จะได้ 156.2 ล้าน แทนที่จะเป็น 15.6 ล้าน
+
+```sql
+net_inc_tax_mtd - IFNULL(LAG(net_inc_tax_mtd) OVER w, 0) AS sale_amount
+WINDOW w AS (
+  PARTITION BY branch, article_id, distribution_channel, DATE_TRUNC(end_date, MONTH)
+  ORDER BY end_date
+)
+```
+
+ข้อบังคับ 3 ข้อ — พลาดข้อใดข้อหนึ่งยอดเพี้ยนแบบเงียบ ๆ
+
+1. **ห้ามใส่ `when(incremental(), ...)` ในบล็อกนี้** — `LAG` ต้องเห็นแถวของวันก่อนหน้า
+   ถ้าอ่านแค่ 1 วัน แถวแรกจะไม่มี `LAG` แล้วยอดสะสมทั้งเดือนถูกนับเป็นยอดวันเดียว
+   ต้นทาง 0.3 MB จึงอ่านทั้งก้อนทุกคืน · ถ้าโตเกินหลักล้านแถว ให้ย้อน **2 เดือนปฏิทิน**
+   (เดือนเต็ม ไม่ใช่ N วัน เพราะการรีเซ็ตผูกกับต้นเดือน)
+2. **`distribution_channel` ต้องอยู่ใน `PARTITION BY`** ไม่งั้นยอด Showroom กับ Anyhome
+   ไปลบกันเอง
+3. **`DATE_TRUNC(end_date, MONTH)` ต้องอยู่ใน `PARTITION BY`** ไม่งั้นเดือนใหม่ไปลบกับเดือนเก่า
+
+`days_covered` วัดจาก **ช่วงห่างของ snapshot ที่ห้างส่งมาจริง** ไม่ใช่ช่วงห่างในกลุ่มสินค้า
+เพราะสินค้าโผล่ในไฟล์ครั้งแรกก็ตอนที่มันขายแล้ว (MTD = 0 ไม่ถูกส่งมา)
+วัดได้: ห่าง 1 วัน 149 ครั้ง · 2 วัน 11 ครั้ง · 3 วัน 1 ครั้ง · 10 วัน 1 ครั้ง (ไฟล์แรก ก.พ.)
+· 18 วัน 1 ครั้ง (ไฟล์แรก มี.ค.) → `date_is_estimated = TRUE` 339 แถว / 4,275,921 บาท (27%)
+
+ช่องทางถูกยุบรวมเพราะเกรนของ curated ไม่มีช่องทาง — 27 จาก 1,343 กลุ่มมี 2 ช่องทาง
+คิดเป็นเงิน 395,197 ยอดรวมไม่เปลี่ยน
+
 ### `curated_product` — Product catalog
 - Dedup per `prdSku` by `prdUpdatedDate DESC`.
 - `post_operations` UPDATE parses JSON from `product_detail`:
@@ -98,4 +139,7 @@ Only `curated_product` uses `updatePartitionFilter: "asatdate >= CURRENT_DATE('A
 3. Partition by `asatdate`, cluster on ≤4 filter columns.
 4. Inline `when(incremental(), ...)` Bangkok-time window.
 5. Complex reallocation (split, re-derivation) goes in `post_operations { BEGIN...END }`
+6. ถ้าต้นทางส่ง **ยอดสะสม** (MTD / running total) ห้ามใช้หน้าต่าง incremental รายวัน —
+   ฟังก์ชัน `LAG` ต้องมองเห็นประวัติ อ่านทั้งก้อนหรือย้อนเป็นเดือนเต็ม
+   (ตัวอย่าง: บล็อก `bt` ใน `curated_saleout_mdt`)
    as DELETE+INSERT on `self()`.
