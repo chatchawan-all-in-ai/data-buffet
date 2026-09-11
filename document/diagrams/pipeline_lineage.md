@@ -304,7 +304,7 @@ and the target-by-sale chain. Only `dimension → dimension` edges are shown.
 
 ```mermaid
 flowchart LR
-  subgraph dimension["dimension (65)"]
+  subgraph dimension["dimension (66)"]
     dim_aging["dim_aging"]
     dim_aging_rang["dim_aging_rang"]
     dim_avg_collection_score["dim_avg_collection_score"]
@@ -337,6 +337,7 @@ flowchart LR
     dim_order["dim_order"]
     dim_payment["dim_payment"]
     dim_payment_receive_score["dim_payment_receive_score"]
+    dim_pc["dim_pc"]
     dim_product_master["dim_product_master"]
     dim_product_master_fc["dim_product_master_fc"]
     dim_product_mkt["dim_product_mkt"]
@@ -476,6 +477,7 @@ flowchart LR
   dim_sale_representative --> dim_target_product_group_by_sale_dayofwork
   dim_sale_representative_last --> dim_target_product_group_by_sale
   dim_sale_representative_last --> update_sk_sale_rep_group
+  dim_sales_branch_mdt --> dim_pc
   dim_sales_branch_mdt --> dim_target_saleout_mdt
   dim_section --> dim_section_last
   dim_section --> dim_target_product_group_by_sale_dayofwork
@@ -497,7 +499,7 @@ flowchart LR
   update_sk_sale_rep_group --> dim_target_product_group_by_sale
   classDef dimension fill:#ffe0b3,stroke:#d98f2f,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
-  class dim_aging,dim_aging_rang,dim_avg_collection_score,dim_bounce_cheque_score,dim_calendar,dim_change_district,dim_channel,dim_channel_cost,dim_channel_finance,dim_channel_sales,dim_collection_status,dim_company,dim_contact_score,dim_cost_group,dim_cost_stk,dim_customer,dim_customer_grade,dim_delivery,dim_department,dim_department_last,dim_director,dim_director_last,dim_doctype,dim_grade,dim_group_customer,dim_group_customer_grade,dim_guarantee,dim_holiday,dim_invoice,dim_order,dim_payment,dim_payment_receive_score,dim_product_master,dim_product_master_fc,dim_product_mkt,dim_product_mkt_director,dim_project,dim_pump_information,dim_quotation,dim_rate_target,dim_rebate,dim_region,dim_region_last,dim_region_manager,dim_region_manager_last,dim_report,dim_sale_representative,dim_sale_representative_last,dim_sales_branch_mdt,dim_section,dim_section_last,dim_section_manager,dim_section_manager_last,dim_status_not_receive,dim_stk_mkt,dim_store,dim_target_product_group,dim_target_product_group_by_sale,dim_target_product_group_by_sale_dayofwork,dim_target_saleout_mdt,dim_waterpac,dim_weight_score,dim_zone_manager_mdt,dim_zone_mdt,update_sk_sale_rep_group dimension;
+  class dim_aging,dim_aging_rang,dim_avg_collection_score,dim_bounce_cheque_score,dim_calendar,dim_change_district,dim_channel,dim_channel_cost,dim_channel_finance,dim_channel_sales,dim_collection_status,dim_company,dim_contact_score,dim_cost_group,dim_cost_stk,dim_customer,dim_customer_grade,dim_delivery,dim_department,dim_department_last,dim_director,dim_director_last,dim_doctype,dim_grade,dim_group_customer,dim_group_customer_grade,dim_guarantee,dim_holiday,dim_invoice,dim_order,dim_payment,dim_payment_receive_score,dim_pc,dim_product_master,dim_product_master_fc,dim_product_mkt,dim_product_mkt_director,dim_project,dim_pump_information,dim_quotation,dim_rate_target,dim_rebate,dim_region,dim_region_last,dim_region_manager,dim_region_manager_last,dim_report,dim_sale_representative,dim_sale_representative_last,dim_sales_branch_mdt,dim_section,dim_section_last,dim_section_manager,dim_section_manager_last,dim_status_not_receive,dim_stk_mkt,dim_store,dim_target_product_group,dim_target_product_group_by_sale,dim_target_product_group_by_sale_dayofwork,dim_target_saleout_mdt,dim_waterpac,dim_weight_score,dim_zone_manager_mdt,dim_zone_mdt,update_sk_sale_rep_group dimension;
 ```
 
 ---

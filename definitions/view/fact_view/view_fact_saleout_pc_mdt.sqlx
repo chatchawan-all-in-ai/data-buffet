@@ -17,6 +17,12 @@ js {
 
 WITH pc_assign AS (
   -- PC ที่ดูแลแต่ละ (สาขา, กลุ่มสินค้า) พร้อมจำนวนคนในช่องนั้นเพื่อใช้เป็นตัวหาร
+  --
+  -- ⚠️ ค้างแก้ 2026-09-11: dim_pc เปลี่ยนเกรนเป็น 1 แถว = 1 การมอบหมาย
+  --    การ JOIN ด้านล่างด้วย EmployeeID จะได้ 2 แถวสำหรับ 4 คนที่ดูแล 2 สาขา
+  --    ทำให้ PcCountInCell ของช่องนั้นเพิ่มเป็นเท่าตัว และยอดที่ปันส่วนเพี้ยน
+  --    ทางแก้: อ่าน dim_pc ตรง ๆ (มี BranchMdtSK + MarketingGroupID อยู่ในตัวแล้ว)
+  --    แล้วเลิกอ่าน mds ดิบทั้งก้อน — ยังไม่ทำเพราะรอบนี้ตกลงว่าแก้เฉพาะ dim
   SELECT
     br.BranchMdtSK,
     ${databuffet.functionData.cleanString("src.marketinggroupid")} AS MarketingGroupID,

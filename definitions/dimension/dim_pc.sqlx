@@ -1,50 +1,137 @@
 config {
   type: "table",
   schema: databuffet.DIMENSION_TABLE,
-  dependencies: [],
+  dependencies: ["dim_sales_branch_mdt"],
   tags: [databuffet.TAG_DIM_DAILY],
   uniqueKey: ["PcSK"],
   bigquery: {
-    clusterBy: ["PcSK"],
+    clusterBy: ["PcSK", "BranchMdtSK", "MarketingGroupID"],
   },
 }
 
+/*
+  พนักงาน PC ของช่องทาง MDT — ต้นทาง mds_data_sales_pc_master
+
+  ⚠️ เปลี่ยนเกรน 2026-09-11 ตามที่ตกลงว่าเก็บทุกคอลัมน์ของ MDS ห้ามตัดอะไรออก
+      เดิม  1 แถว = 1 คน           527 คน (ยุบซ้ำต่อคน ตัด branch_code ทิ้ง)
+      ใหม่  1 แถว = 1 การมอบหมาย   531 แถว (คน x สาขา x กลุ่มสินค้า)
+  พอเก็บ branch_code กับ marketinggroupid ไว้ เกรนจึงต้องเป็นการมอบหมาย ไม่ใช่ตัวคน
+  เพราะยุบซ้ำต่อคนแล้วเก็บสาขาไว้พร้อมกันไม่ได้ — มี 4 คนที่ดูแล 2 สาขา
+  ใครต้องการจำนวนคน ใช้ COUNT(DISTINCT EmployeeID) ไม่ใช่ COUNT(*)
+
+  ⚠️ PcSK ไม่ใช่รหัสประจำตัวคนอีกแล้ว เป็นรหัสของ "การมอบหมาย"
+  คนคนเดียวมีได้หลาย PcSK — ตัวที่ระบุคนคือ EmployeeID
+
+  ⚠️ view_fact_saleout_pc_mdt ยังไม่ได้แก้ (รอบนี้ตกลงว่าแก้เฉพาะ dim)
+  view นั้นอ่าน mds ดิบแล้ว JOIN ตารางนี้ด้วย EmployeeID — จะได้ 2 แถวสำหรับ 4 คน
+  ที่ดูแล 2 สาขา ทำให้ PcCountInCell ของช่องนั้นเพิ่มเป็นเท่าตัวและยอดปันส่วนเพี้ยน
+  ทางแก้: ให้ view อ่านตารางนี้ตรง ๆ (มี BranchMdtSK + MarketingGroupID อยู่ในตัวแล้ว)
+  แล้วเลิกอ่าน mds ดิบทั้งก้อน
+
+  ต้นทาง 578 แถว = 531 การมอบหมายจริง + 47 แถวที่ระบุว่าสาขานั้นไม่มี PC
+  แถว "ไม่มี PC" ต้องกรองออก ไม่งั้นกลายเป็นพนักงาน 1 คนที่ดูเหมือนดูแล 47 สาขา
+  ต้นทางเคยส่งมาเป็น employee_id ว่าง + ชื่อ "ไม่มี PC" หลังสร้างตารางใหม่ 2026-09-10
+  เปลี่ยนเป็นรหัสตัวแทน Dummy_NotPC / "Not PC" — กรองไว้ทั้งสองแบบ
+  เพราะไม่รู้ว่าต้นทางจะกลับไปแบบเดิมเมื่อไหร่
+
+  531 การมอบหมาย = 527 คนจริง (523 คนดูแลสาขาเดียว + 4 คนดูแล 2 สาขา)
+  ⚠️ employee_type กลายเป็น NULL ทั้งหมด เดิมเป็น 'พันธมิตร' ต้องถามว่าตั้งใจหรือตกไป
+  ⚠️ start_date / end_date เป็นค่าตัวแทน 2022-01-01 / 2066-12-31 เหมือนกันทั้ง 578 แถว
+     กติกา "PC ที่ออกไปแล้วไม่ได้เครดิตยอด" จึงบังคับไม่ได้จนกว่า mds จะกรอกวันจริง
+
+  เก็บทุกคอลัมน์ของ MDS ครบ รวมคอลัมน์กำกับการแก้ไข
+  (Version / CreatedAt / CreatedBy / UpdatedAt / UpdatedBy / IsActive)
+
+  เก็บ BranchMdtSK ไว้ในตัวเอง ผู้ใช้จึงไม่ต้อง join dim_sales_branch_mdt อีกทอด
+  join ด้วย BranchCodeMdt (รหัสภายในแบบ HP_BK1_001) ไม่ใช่รหัสที่ห้างส่งมา
+
+  ⚠️ ยอดขายจาก 5 ห้างไม่มีคอลัมน์คนขาย (ตรวจ 2026-09-09) จึงรู้ได้แค่ว่าใครดูแลสาขานั้น
+  ไม่ใช่ใครขายบิลนั้น — การแบ่งยอดลง PC เป็นการปันส่วน ไม่ใช่การวัด
+
+  ponytail: SK ปั้นด้วย ROW_NUMBER สร้างใหม่ทุกคืน ยังไม่มี consumer ที่เก็บ SK นี้ไว้
+  (view_fact_saleout_pc_mdt เป็น view ไม่เก็บข้อมูล)
+  ถ้าวันหน้ามี fact ที่เก็บ PcSK ข้ามเดือน ต้องเปลี่ยนมาใช้ MERGE ก่อน
+*/
+
 js {
     const PcSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_pc_master`;
+
+    const DimBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimBranchTableRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
 }
 
-WITH pc_dedup AS (
+WITH pc_source AS (
   SELECT
-    ${databuffet.functionData.cleanString("employee_id")}       AS EmployeeID,
-    ${databuffet.functionData.cleanString("employee_name")}     AS EmployeeName,
-    ${databuffet.functionData.cleanString("employee_surname")}  AS EmployeeSurname,
-    ${databuffet.functionData.cleanString("employee_type")}     AS EmployeeType,
-    ${databuffet.functionData.cleanString("id")}                AS MdsID
-  FROM `${PcSourceRef}`
-  WHERE is_active = TRUE
-    AND ${databuffet.functionData.cleanString("employee_id")} IS NOT NULL
-    AND ${databuffet.functionData.cleanString("employee_id")} <> 'Dummy_NotPC'
-    AND IFNULL(TRIM(employee_name),'') NOT IN ('ไม่มี PC', 'Not PC')
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY employee_id ORDER BY updated_at DESC, id) = 1
+    -- คอลัมน์ธุรกิจ
+    ${databuffet.functionData.cleanString("t1.branch_code")}      AS BranchCodeMdt,
+    ${databuffet.functionData.cleanString("t1.employee_id")}      AS EmployeeID,
+    ${databuffet.functionData.cleanString("t1.employee_name")}    AS EmployeeName,
+    ${databuffet.functionData.cleanString("t1.employee_surname")} AS EmployeeSurname,
+    ${databuffet.functionData.cleanString("t1.employee_type")}    AS EmployeeType,
+    ${databuffet.functionData.cleanString("t1.marketinggroupid")} AS MarketingGroupID,
+    ${databuffet.functionData.cleanString("t1.marketinggroup")}   AS MarketingGroupName,
+    t1.start_date AS StartDate,
+    t1.end_date   AS EndDate,
+
+    -- คอลัมน์กำกับการแก้ไขจาก MDS (เก็บครบตามที่ตกลง)
+    t1.is_active  AS IsActive,
+    t1.version    AS Version,
+    t1.created_at AS CreatedAt,
+    ${databuffet.functionData.cleanString("t1.created_by")} AS CreatedBy,
+    t1.updated_at AS UpdatedAt,
+    ${databuffet.functionData.cleanString("t1.updated_by")} AS UpdatedBy,
+
+    ${databuffet.functionData.cleanString("t1.id")} AS MdsID
+  FROM `${PcSourceRef}` AS t1
+  WHERE t1.is_active = TRUE
+    AND ${databuffet.functionData.cleanString("t1.employee_id")} IS NOT NULL
+    -- แถวที่บอกว่าสาขานั้นไม่มี PC — กรองทั้งรูปแบบเก่าและใหม่
+    AND ${databuffet.functionData.cleanString("t1.employee_id")} <> 'Dummy_NotPC'
+    AND IFNULL(TRIM(t1.employee_name),'') NOT IN ('ไม่มี PC', 'Not PC')
+  -- ยุบซ้ำที่ระดับการมอบหมาย ไม่ใช่ระดับคน — ถ้า mds มีแถวซ้ำ เก็บแถวที่แก้ล่าสุด
+  QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY t1.employee_id, t1.branch_code, t1.marketinggroupid
+    ORDER BY t1.updated_at DESC, t1.id
+  ) = 1
 
 ), pc_master AS (
   SELECT
-    ROW_NUMBER() OVER(ORDER BY EmployeeID) AS PcSK,
-    EmployeeID,
-    EmployeeName,
-    EmployeeSurname,
-    EmployeeType,
-    MdsID
-  FROM pc_dedup
+    ROW_NUMBER() OVER(
+      ORDER BY src.EmployeeID, src.BranchCodeMdt, src.MarketingGroupID
+    ) AS PcSK,
+    IFNULL(dim_br.BranchMdtSK, -1) AS BranchMdtSK,
+    src.*
+  FROM pc_source AS src
+  LEFT JOIN `${DimBranchTableRef}` AS dim_br
+    ON src.BranchCodeMdt = dim_br.BranchCodeMdt
 
 ), unknown_pc AS (
   SELECT
-    -1                   AS PcSK,
-    CAST(NULL AS STRING) AS EmployeeID,
-    'ไม่ระบุ'              AS EmployeeName,
-    CAST(NULL AS STRING) AS EmployeeSurname,
-    CAST(NULL AS STRING) AS EmployeeType,
-    CAST(NULL AS STRING) AS MdsID
+    -1                      AS PcSK,
+    -1                      AS BranchMdtSK,
+
+    CAST(NULL AS STRING)    AS BranchCodeMdt,
+    CAST(NULL AS STRING)    AS EmployeeID,
+    'ไม่ระบุ'                 AS EmployeeName,
+    CAST(NULL AS STRING)    AS EmployeeSurname,
+    CAST(NULL AS STRING)    AS EmployeeType,
+    CAST(NULL AS STRING)    AS MarketingGroupID,
+    CAST(NULL AS STRING)    AS MarketingGroupName,
+    CAST(NULL AS DATE)      AS StartDate,
+    CAST(NULL AS DATE)      AS EndDate,
+
+    CAST(NULL AS BOOL)      AS IsActive,
+    CAST(NULL AS INT64)     AS Version,
+    CAST(NULL AS TIMESTAMP) AS CreatedAt,
+    CAST(NULL AS STRING)    AS CreatedBy,
+    CAST(NULL AS TIMESTAMP) AS UpdatedAt,
+    CAST(NULL AS STRING)    AS UpdatedBy,
+
+    CAST(NULL AS STRING)    AS MdsID
 )
 
 SELECT * FROM pc_master
