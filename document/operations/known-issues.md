@@ -334,6 +334,55 @@
   เหตุผลที่ **ไม่ใช่** เหตุผลที่ดี (เคยยกไปตอนแรก): `INT64` เล็กกว่า `STRING`
   (2 ตัวอักษร 6 ค่า ไม่ต่างหลังบีบอัด) · เก็บชื่อไว้ที่เดียว (ชีท Master Branch
   มีคอลัมน์ Store อยู่แล้ว) · แถว `-1` (`branch_sk = -1` ครอบเคสเดียวกัน)
+- **2026-09-11 — รหัสโกลบอลเฮ้าส์รวมเป็น `GB` แก้ที่ MDS ไม่แก้ในโค้ด · เป้ายังค้าง 897.7 ล้าน**
+
+  **ปัญหา**: `dim_sales_branch_mdt` เพิ่ม `RegionSK` จาก `dim_region` แต่ฝั่ง MDT ใช้รหัส
+  `GH` ส่วน `mds_data_sales_region_master` ของ MAC5 ใช้ `GB` → GH ไม่ติดทั้ง 100 สาขา
+
+  **ที่วัดได้ก่อนแก้**: `GH` มี 6,085 ค่าใน 4 ตาราง MDS (branch 100 + branch_code 100 +
+  product 351 + pc 158 + target 5,376) · `GB` มีแค่ 2 แถวใน region master ของ MAC5
+
+  **ที่เลือก**: **แก้ที่ต้นทาง ไม่ใส่ `CASE WHEN 'GH' THEN 'GB'` ในโค้ด** — กฎเดียวกับรหัสสินค้า
+  (ห้ามเดารหัสแทนต้นทาง) เพราะการแปลงในโค้ดคือกฎที่ซ่อนอยู่ คนรุ่นหลังหาไม่เจอ
+
+  **สถานะ 2026-09-11** — mds แก้แล้ว 3 จาก 5 จุด
+  | ตาราง MDS | คอลัมน์ | สถานะ |
+  |---|---|---|
+  | `mds_data_sales_branch_master` | `region_id` | ✅ `GB` 100 |
+  | `mds_data_sales_branch_master` | `branch_code` | ✅ `GB_` 100 |
+  | `mds_data_sales_pc_master` | `branch_code` | ✅ `GB_` 158 |
+  | `mds_data_sales_target_by_mdt_master` | `branch_code` | ❌ ยัง `GH_` 5,376 |
+  | `mds_data_product_master_mdt` | `region_id` | ❌ ยัง `GH` 351 |
+
+  **ผลที่ยังค้าง**: เป้า join สาขาไม่ติด **5,376 จาก 16,903 แถว = 897,670,291.65 บาท (24.36%)**
+  เดิมติดครบ 386/386 · ⚠️ **ห้ามรัน `dim_target_saleout_mdt` จนกว่า mds จะแก้เป้า**
+  ไม่งั้นเป้าของโกลบอลเฮ้าส์ทั้งก้อนจะไปกองที่ `BranchMdtSK = -1`
+  `mds_data_product_master_mdt.region_id` ไม่ทำให้ join พัง (`dim_product_mdt` ใช้
+  `ProductCode` เดี่ยว) แต่ควรแก้ให้ตรงกัน
+
+- **2026-09-11 — `dim_region` แบ่งตามช่วงเวลา รหัสละ 2 แถว — join ตรงทำให้สาขาบวม 2 เท่า**
+
+  `dim_region` มี 1 แถวต่อ (companyID, RegionID, SubRegionID, StartDate, EndDate)
+  เช่น HP: `RegionSK 21` = 2022-01-01→2025-12-31 · `RegionSK 22` = 2026-01-01→2066-12-31
+  join ด้วย `RegionID` เฉย ๆ ทำให้ `dim_sales_branch_mdt` บวมจาก 494 เป็น 988 แถว
+
+  **ที่ทำ**: CTE `region_current` กรอง `companyID = 'ag01'` + ช่วงที่ครอบวันนี้
+  แล้วปิดท้ายด้วย `QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID ...) = 1` เป็นตัวกันชั้นที่สอง
+  ตารางนี้ rebuild ทุกคืน `RegionSK` จึงขยับเองเมื่อข้ามช่วง ไม่ต้องมีใครมาแก้
+
+- **2026-09-11 — dim ของ MDT ไม่เก็บ `MdsID` และคอลัมน์ audit (ผู้ใช้ตัดสิน)**
+
+  รอบแรกตกลงว่า "เก็บทุกคอลัมน์ของ MDS ห้ามตัด" แล้วเปลี่ยนใจตัด `MdsID` +
+  `IsActive/Version/CreatedAt/CreatedBy/UpdatedAt/UpdatedBy` ออกจาก
+  `dim_sales_branch_mdt` และ `dim_pc` · `dim_zone_mdt` / `dim_zone_manager_mdt`
+  ยังเก็บอยู่ — **ยังไม่ตรงกันทั้ง 4 ตัว ต้องเลือกให้เหมือนกัน**
+
+  ผลข้างเคียง: ไม่มี `MdsID` แล้วสืบกลับไปหาแถวใน MDS ไม่ได้ เช็ค "MDS = dim"
+  เหลือแค่เทียบจำนวนแถว เทียบค่าทีละช่องด้วย `EXCEPT DISTINCT` ไม่ได้
+
+  ⚠️ ตอนตัดคอลัมน์ต้องปิดให้ตรงกันทั้ง CTE หลักและ CTE แถว `-1` — พลาดจุดนี้ไป 3 ครั้ง
+  ได้ error `Queries in UNION ALL have mismatched column count`
+
 - **2026-09-11 — `saleout_gb` มี `sale_date` เป็นปี 2569 ถึง 74% ของยอด**
 
   **สิ่งที่พบ**: ไฟล์โกลบอลเฮ้าส์ส่งวันที่มา 2 รูปแบบผสมกัน และรูปแบบผูกกับ "ปี"
