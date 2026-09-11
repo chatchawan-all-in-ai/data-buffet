@@ -36,9 +36,72 @@ WITH hp AS (
       -- กรองที่ต้นทาง เพราะ validated partition ด้วย asatdate — วางไว้ข้างนอกจะไม่ตัดพาร์ทิชัน
       ${ when(incremental(), `AND asatdate >= DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY)`) }
 
+), bt_feed_gap AS (
+
+ 
+    SELECT
+        end_date,
+        DATE_DIFF(
+            end_date,
+            IFNULL(
+                LAG(end_date) OVER (PARTITION BY DATE_TRUNC(end_date, MONTH) ORDER BY end_date),
+                DATE_SUB(month_start, INTERVAL 1 DAY)
+            ),
+            DAY
+        ) AS days_covered
+    FROM (
+ 
+        SELECT end_date, MIN(start_date) AS month_start
+        FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "sale_by_branch_detail")}
+        WHERE end_date IS NOT NULL
+        GROUP BY end_date
+    )
+
+), bt_daily AS (
+
+    SELECT
+        s.end_date,
+        s.branch,
+        s.article_id,
+        s.article_name_th,
+        s.asatdate,
+        g.days_covered,
+        s.net_inc_tax_mtd - IFNULL(LAG(s.net_inc_tax_mtd) OVER w, 0) AS sale_amount,
+        s.sale_qty_mtd    - IFNULL(LAG(s.sale_qty_mtd)    OVER w, 0) AS sale_qty
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "sale_by_branch_detail")} AS s
+    JOIN bt_feed_gap AS g USING (end_date)
+    WHERE s.end_date IS NOT NULL
+    WINDOW w AS (
+        PARTITION BY s.branch, s.article_id, s.distribution_channel, DATE_TRUNC(s.end_date, MONTH)
+        ORDER BY s.end_date
+    )
+
+), bt AS (
+
+    SELECT
+        end_date                   AS sale_date,
+        'BT'                       AS store_code,
+        branch                     AS branch_code,   -- BT ใช้ชื่อไทยเป็นรหัสสาขา จับคู่ dim ได้ 16/16
+        branch                     AS branch_name,
+        article_id                 AS product_code,
+        ANY_VALUE(article_name_th) AS product_name,
+        CAST(NULL AS STRING)       AS barcode_match, -- BT ไม่ส่งบาร์โค้ดมา
+        SUM(sale_qty)              AS sale_qty,
+        SUM(sale_amount)           AS sale_amount,
+        SUM(sale_amount) < 0       AS is_return,     -- MTD ลดลง = คืนสินค้า (วัด 2026-09-11: 11 แถว)
+        MAX(days_covered)          AS days_covered,
+        MAX(days_covered) > 1      AS date_is_estimated, -- ครอบหลายวัน = ไม่รู้วันขายจริง
+        CAST(NULL AS STRING)       AS bill_no,
+        MAX(asatdate)              AS asatdate
+    FROM bt_daily
+    WHERE sale_amount <> 0 OR sale_qty <> 0
+    GROUP BY sale_date, store_code, branch_code, branch_name, product_code
+
 )
 
 SELECT * FROM hp
+UNION ALL
+SELECT * FROM bt
 
 pre_operations {
 }
