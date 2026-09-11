@@ -1,0 +1,65 @@
+config {
+  type: "table",
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: ["dim_zone_mdt"],
+  tags: [databuffet.TAG_DIM_DAILY],
+  uniqueKey: ["ZoneManagerMdtSK"],
+  bigquery: {
+    clusterBy: ["ZoneManagerMdtSK"],
+  },
+}
+
+js {
+    const ZoneManagerSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_zone_manager_master`;
+
+    const DimZoneMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_zone_mdt",
+    };
+    const DimZoneMdtTableRef = `${DimZoneMdtTable.database}.${DimZoneMdtTable.schema}.${DimZoneMdtTable.name}`;
+}
+
+WITH zone_manager_master AS (
+  SELECT
+    ROW_NUMBER() OVER(
+      ORDER BY ${databuffet.functionData.cleanString("t1.zone_id")},
+               ${databuffet.functionData.cleanString("t1.zonemanageremployeeid")}
+    ) AS ZoneManagerMdtSK,
+    IFNULL(dim_zone.ZoneMdtSK, -1) AS ZoneMdtSK,
+
+    ${databuffet.functionData.cleanString("t1.zone_id")}                     AS ZoneCode,
+    ${databuffet.functionData.cleanString("t1.zone_name")}                   AS ZoneName,
+    ${databuffet.functionData.cleanString("t1.zonemanageremployeeid")}       AS EmployeeID,
+    ${databuffet.functionData.cleanString("t1.zonemanageremployeename")}     AS EmployeeName,
+    ${databuffet.functionData.cleanString("t1.zonemanageremployeesurname")}  AS EmployeeSurname,
+    ${databuffet.functionData.cleanString("t1.zonemanageremployeenickname")} AS EmployeeNickname,
+    t1.start_date AS StartDate,
+    t1.end_date   AS EndDate
+  FROM `${ZoneManagerSourceRef}` AS t1
+  LEFT JOIN `${DimZoneMdtTableRef}` AS dim_zone
+    ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone.ZoneCode
+  WHERE t1.is_active = TRUE
+
+), unknown_zone_manager AS (
+  SELECT
+    -1                      AS ZoneManagerMdtSK,
+    -1                      AS ZoneMdtSK,
+
+    CAST(NULL AS STRING)    AS ZoneCode,
+    CAST(NULL AS STRING)    AS ZoneName,
+    CAST(NULL AS STRING)    AS EmployeeID,
+    'ไม่ระบุผู้จัดการโซน'         AS EmployeeName,
+    CAST(NULL AS STRING)    AS EmployeeSurname,
+    CAST(NULL AS STRING)    AS EmployeeNickname,
+    CAST(NULL AS DATE)      AS StartDate,
+    CAST(NULL AS DATE)      AS EndDate
+)
+
+SELECT * FROM zone_manager_master
+UNION ALL
+SELECT * FROM unknown_zone_manager
+
+pre_operations {}
+
+post_operations {}

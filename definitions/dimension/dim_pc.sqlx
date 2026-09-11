@@ -1,50 +1,98 @@
 config {
   type: "table",
   schema: databuffet.DIMENSION_TABLE,
-  dependencies: [],
+  dependencies: ["dim_sales_branch_mdt"],
   tags: [databuffet.TAG_DIM_DAILY],
   uniqueKey: ["PcSK"],
   bigquery: {
-    clusterBy: ["PcSK"],
+    clusterBy: ["PcSK", "BranchMdtSK", "MarketingGroupID"],
   },
 }
 
 js {
     const PcSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_pc_master`;
+
+    const DimBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimBranchTableRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
 }
 
-WITH pc_dedup AS (
+WITH pc_source AS (
   SELECT
-    ${databuffet.functionData.cleanString("employee_id")}       AS EmployeeID,
-    ${databuffet.functionData.cleanString("employee_name")}     AS EmployeeName,
-    ${databuffet.functionData.cleanString("employee_surname")}  AS EmployeeSurname,
-    ${databuffet.functionData.cleanString("employee_type")}     AS EmployeeType,
-    ${databuffet.functionData.cleanString("id")}                AS MdsID
-  FROM `${PcSourceRef}`
-  WHERE is_active = TRUE
-    AND ${databuffet.functionData.cleanString("employee_id")} IS NOT NULL
-    AND ${databuffet.functionData.cleanString("employee_id")} <> 'Dummy_NotPC'
-    AND IFNULL(TRIM(employee_name),'') NOT IN ('ไม่มี PC', 'Not PC')
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY employee_id ORDER BY updated_at DESC, id) = 1
+    -- คอลัมน์ธุรกิจ
+    ${databuffet.functionData.cleanString("t1.branch_code")}      AS BranchCodeMdt,
+    ${databuffet.functionData.cleanString("t1.employee_id")}      AS EmployeeID,
+    ${databuffet.functionData.cleanString("t1.employee_name")}    AS EmployeeName,
+    ${databuffet.functionData.cleanString("t1.employee_surname")} AS EmployeeSurname,
+    ${databuffet.functionData.cleanString("t1.employee_type")}    AS EmployeeType,
+    ${databuffet.functionData.cleanString("t1.marketinggroupid")} AS MarketingGroupID,
+    ${databuffet.functionData.cleanString("t1.marketinggroup")}   AS MarketingGroupName,
+    t1.start_date AS StartDate,
+    t1.end_date   AS EndDate,
+
+    -- คอลัมน์กำกับการแก้ไขจาก MDS (เก็บครบตามที่ตกลง)
+    --t1.is_active  AS IsActive,
+    --t1.version    AS Version,
+    --t1.created_at AS CreatedAt,
+    --${databuffet.functionData.cleanString("t1.created_by")} AS CreatedBy,
+    --t1.updated_at AS UpdatedAt,
+    --${databuffet.functionData.cleanString("t1.updated_by")} AS UpdatedBy,
+
+  
+    (
+      ${databuffet.functionData.cleanString("t1.employee_id")} IS NULL
+      OR ${databuffet.functionData.cleanString("t1.employee_id")} = 'Dummy_NotPC'
+      OR IFNULL(TRIM(t1.employee_name),'') IN ('ไม่มี PC', 'Not PC')
+    ) AS IsPlaceholder,
+
+    --${databuffet.functionData.cleanString("t1.id")} AS MdsID
+  FROM `${PcSourceRef}` AS t1
+  WHERE t1.is_active = TRUE
+  -- ยุบซ้ำที่ระดับการมอบหมาย ไม่ใช่ระดับคน — ถ้า mds มีแถวซ้ำ เก็บแถวที่แก้ล่าสุด
+  QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY t1.employee_id, t1.branch_code, t1.marketinggroupid
+    ORDER BY t1.updated_at DESC, t1.id
+  ) = 1
 
 ), pc_master AS (
   SELECT
-    ROW_NUMBER() OVER(ORDER BY EmployeeID) AS PcSK,
-    EmployeeID,
-    EmployeeName,
-    EmployeeSurname,
-    EmployeeType,
-    MdsID
-  FROM pc_dedup
+    ROW_NUMBER() OVER(
+      ORDER BY src.EmployeeID, src.BranchCodeMdt, src.MarketingGroupID
+    ) AS PcSK,
+    IFNULL(dim_br.BranchMdtSK, -1) AS BranchMdtSK,
+    src.*
+  FROM pc_source AS src
+  LEFT JOIN `${DimBranchTableRef}` AS dim_br
+    ON src.BranchCodeMdt = dim_br.BranchCodeMdt
 
 ), unknown_pc AS (
   SELECT
-    -1                   AS PcSK,
-    CAST(NULL AS STRING) AS EmployeeID,
-    'ไม่ระบุ'              AS EmployeeName,
-    CAST(NULL AS STRING) AS EmployeeSurname,
-    CAST(NULL AS STRING) AS EmployeeType,
-    CAST(NULL AS STRING) AS MdsID
+    -1                      AS PcSK,
+    -1                      AS BranchMdtSK,
+
+    CAST(NULL AS STRING)    AS BranchCodeMdt,
+    CAST(NULL AS STRING)    AS EmployeeID,
+    'ไม่ระบุ'                 AS EmployeeName,
+    CAST(NULL AS STRING)    AS EmployeeSurname,
+    CAST(NULL AS STRING)    AS EmployeeType,
+    CAST(NULL AS STRING)    AS MarketingGroupID,
+    CAST(NULL AS STRING)    AS MarketingGroupName,
+    CAST(NULL AS DATE)      AS StartDate,
+    CAST(NULL AS DATE)      AS EndDate,
+
+    --CAST(NULL AS BOOL)      AS IsActive,
+    --CAST(NULL AS INT64)     AS Version,
+    --CAST(NULL AS TIMESTAMP) AS CreatedAt,
+    --CAST(NULL AS STRING)    AS CreatedBy,
+    --CAST(NULL AS TIMESTAMP) AS UpdatedAt,
+    --CAST(NULL AS STRING)    AS UpdatedBy,
+
+    CAST(NULL AS BOOL)      AS IsPlaceholder,
+
+    --CAST(NULL AS STRING)    AS MdsID
 )
 
 SELECT * FROM pc_master

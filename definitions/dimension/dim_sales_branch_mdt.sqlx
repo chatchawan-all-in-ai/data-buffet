@@ -1,7 +1,7 @@
 config {
   type: "table",
   schema: databuffet.DIMENSION_TABLE,
-  dependencies: ["dim_zone_mdt"],
+  dependencies: ["dim_zone_mdt", "dim_zone_manager_mdt", "dim_region_last"],
   tags: [databuffet.TAG_DIM_DAILY],
   uniqueKey: ["BranchMdtSK"],
   bigquery: {
@@ -18,37 +18,78 @@ js {
         name: "dim_zone_mdt",
     };
     const DimZoneMdtTableRef = `${DimZoneMdtTable.database}.${DimZoneMdtTable.schema}.${DimZoneMdtTable.name}`;
+
+    const DimZoneManagerMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_zone_manager_mdt",
+    };
+    const DimZoneManagerMdtTableRef = `${DimZoneManagerMdtTable.database}.${DimZoneManagerMdtTable.schema}.${DimZoneManagerMdtTable.name}`;
+
+    const DimRegionLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region_last",
+    };
+    const DimRegionLastTableRef = `${DimRegionLastTable.database}.${DimRegionLastTable.schema}.${DimRegionLastTable.name}`;
 }
 
-WITH branch_master AS (
+
+WITH zone_manager_current AS (
+  -- ตอนนี้ zone_manager เกรนเท่ากับ zone_master (1 แถว = 1 โซน) จึง join แบบเดียวกับ
+  -- dim_zone_mdt ได้เลย  QUALIFY เป็นตัวกันไว้เผื่อวันหน้าโซนหนึ่งมีผู้จัดการหลายคน
+  -- ไม่งั้นสาขาจะบวมตามจำนวนผู้จัดการแบบเงียบ ๆ
+  SELECT ZoneManagerMdtSK, ZoneCode
+  FROM `${DimZoneManagerMdtTableRef}`
+  WHERE ZoneManagerMdtSK <> -1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY ZoneCode ORDER BY ZoneManagerMdtSK) = 1
+
+), branch_master AS (
   SELECT
     ROW_NUMBER() OVER(
       ORDER BY
         ${databuffet.functionData.cleanString("t1.region_id")},
         ${databuffet.functionData.cleanString("t1.store_id")}
     ) AS BranchMdtSK,
-    IFNULL(dim_zone.ZoneMdtSK, -1) AS ZoneMdtSK,
+    IFNULL(dim_region.RegionSK, -1)           AS RegionSK,
+    IFNULL(dim_region.RegionManagerSK, -1)    AS RegionManagerSK,
+    IFNULL(dim_zone.ZoneMdtSK, -1)            AS ZoneMdtSK,
+    IFNULL(dim_zone_mgr.ZoneManagerMdtSK, -1) AS ZoneManagerMdtSK,
+
     ${databuffet.functionData.cleanString("t1.region_id")}   AS StoreCode,
+    dim_region.RegionName                                    AS RegionName,
+    dim_region.SubRegionID                                   AS SubRegionID,
     ${databuffet.functionData.cleanString("t1.store_id")}    AS BranchCode,
     ${databuffet.functionData.cleanString("t1.branch_code")} AS BranchCodeMdt,
     ${databuffet.functionData.cleanString("t1.branch_name")} AS BranchName,
     ${databuffet.functionData.cleanString("t1.zone_id")}     AS ZoneCode,
     dim_zone.ZoneName                                        AS ZoneName,
     ${databuffet.functionData.cleanString("t1.warehouse")}   AS Warehouse,
-    
     t1.start_date AS StartDate,
     t1.end_date   AS EndDate,
-    ${databuffet.functionData.cleanString("t1.id")} AS MdsID
   FROM `${BranchSourceRef}` AS t1
   LEFT JOIN `${DimZoneMdtTableRef}` AS dim_zone
     ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone.ZoneCode
+  -- ผู้จัดการโซน join ด้วย zone_id แบบเดียวกับ dim_zone_mdt
+  LEFT JOIN zone_manager_current AS dim_zone_mgr
+    ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone_mgr.ZoneCode
+  -- dim_region_last มีแถวเดียวต่อรหัส จึง join ตรงได้ ไม่ต้องมี CTE กรองช่วงเวลา
+  LEFT JOIN `${DimRegionLastTableRef}` AS dim_region
+    ON ${databuffet.functionData.cleanString("t1.region_id")} = dim_region.RegionID
+   AND dim_region.companyID = 'ag01'
   WHERE t1.is_active = TRUE
 
 ), unknown_branch AS (
   SELECT
     -1                   AS BranchMdtSK,
+    -1                   AS RegionSK,
+    -1                   AS RegionManagerSK,
     -1                   AS ZoneMdtSK,
+    -1                   AS ZoneManagerMdtSK,
+
     CAST(NULL AS STRING) AS StoreCode,
+    CAST(NULL AS STRING) AS RegionName,
+    CAST(NULL AS STRING) AS SubRegionID,
     CAST(NULL AS STRING) AS BranchCode,
     CAST(NULL AS STRING) AS BranchCodeMdt,
     'ไม่ระบุสาขา'          AS BranchName,
@@ -57,7 +98,6 @@ WITH branch_master AS (
     CAST(NULL AS STRING) AS Warehouse,
     CAST(NULL AS DATE)   AS StartDate,
     CAST(NULL AS DATE)   AS EndDate,
-    CAST(NULL AS STRING) AS MdsID
 )
 
 SELECT * FROM branch_master
