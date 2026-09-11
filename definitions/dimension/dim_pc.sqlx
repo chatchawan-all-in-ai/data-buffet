@@ -12,29 +12,39 @@ config {
 /*
   พนักงาน PC ของช่องทาง MDT — ต้นทาง mds_data_sales_pc_master
 
-  ⚠️ เปลี่ยนเกรน 2026-09-11 ตามที่ตกลงว่าเก็บทุกคอลัมน์ของ MDS ห้ามตัดอะไรออก
-      เดิม  1 แถว = 1 คน           527 คน (ยุบซ้ำต่อคน ตัด branch_code ทิ้ง)
-      ใหม่  1 แถว = 1 การมอบหมาย   531 แถว (คน x สาขา x กลุ่มสินค้า)
-  พอเก็บ branch_code กับ marketinggroupid ไว้ เกรนจึงต้องเป็นการมอบหมาย ไม่ใช่ตัวคน
-  เพราะยุบซ้ำต่อคนแล้วเก็บสาขาไว้พร้อมกันไม่ได้ — มี 4 คนที่ดูแล 2 สาขา
+  ⚠️ เขียนใหม่ 2026-09-11 — กติกาคือ **dim ต้องตรงกับ MDS แถวต่อแถว**
+  เก็บทุกคอลัมน์ ไม่กรองแถวใดออก จะได้เช็คได้ว่า MDS กับ dim ตรงกันไหม
+  ค่อยเลือกทีหลังว่าจะหยิบคอลัมน์ไหนไปใช้
+
+      สูตรเช็ค:  COUNT(dim_pc) - 1  =  COUNT(mds WHERE is_active = TRUE)
+                        579     - 1  =  578
+
+      เดิม  1 แถว = 1 คน           527 แถว (ยุบซ้ำต่อคน + กรองแถวปลอม + ตัด branch_code)
+      ใหม่  1 แถว = 1 แถวของ MDS   579 แถว (578 + แถว -1)
+
+  พอเก็บ branch_code กับ marketinggroupid ไว้ เกรนจึงเป็น "การมอบหมาย"
+  (คน x สาขา x กลุ่มสินค้า) ไม่ใช่ตัวคน — ยุบซ้ำต่อคนแล้วเก็บสาขาไว้พร้อมกันไม่ได้
+  เพราะมี 4 คนที่ดูแล 2 สาขา
   ใครต้องการจำนวนคน ใช้ COUNT(DISTINCT EmployeeID) ไม่ใช่ COUNT(*)
 
-  ⚠️ PcSK ไม่ใช่รหัสประจำตัวคนอีกแล้ว เป็นรหัสของ "การมอบหมาย"
+  ⚠️ PcSK ไม่ใช่รหัสประจำตัวคนอีกแล้ว เป็นรหัสของแถว MDS
   คนคนเดียวมีได้หลาย PcSK — ตัวที่ระบุคนคือ EmployeeID
+
+  ⚠️ 47 แถวไม่ใช่พนักงานจริง เป็นแถวที่ระบุว่า "สาขานี้ไม่มี PC"
+  ติดธง IsPlaceholder = TRUE ไว้ **ไม่กรองออก** เพราะต้องตรงกับ MDS
+  **ใครเอาไปใช้ต้องใส่ AND IsPlaceholder = FALSE เอง** ไม่งั้นจะได้พนักงาน 1 คน
+  ที่ดูเหมือนดูแล 47 สาขาทั่วประเทศ
+  รูปแบบเก่า: employee_id ว่าง + ชื่อ 'ไม่มี PC' · รูปแบบใหม่ (2026-09-10):
+  employee_id = 'Dummy_NotPC' + ชื่อ 'Not PC' — เช็คไว้ทั้งสองแบบ
 
   ⚠️ view_fact_saleout_pc_mdt ยังไม่ได้แก้ (รอบนี้ตกลงว่าแก้เฉพาะ dim)
   view นั้นอ่าน mds ดิบแล้ว JOIN ตารางนี้ด้วย EmployeeID — จะได้ 2 แถวสำหรับ 4 คน
   ที่ดูแล 2 สาขา ทำให้ PcCountInCell ของช่องนั้นเพิ่มเป็นเท่าตัวและยอดปันส่วนเพี้ยน
   ทางแก้: ให้ view อ่านตารางนี้ตรง ๆ (มี BranchMdtSK + MarketingGroupID อยู่ในตัวแล้ว)
-  แล้วเลิกอ่าน mds ดิบทั้งก้อน
+  พร้อมเงื่อนไข IsPlaceholder = FALSE แล้วเลิกอ่าน mds ดิบทั้งก้อน
 
-  ต้นทาง 578 แถว = 531 การมอบหมายจริง + 47 แถวที่ระบุว่าสาขานั้นไม่มี PC
-  แถว "ไม่มี PC" ต้องกรองออก ไม่งั้นกลายเป็นพนักงาน 1 คนที่ดูเหมือนดูแล 47 สาขา
-  ต้นทางเคยส่งมาเป็น employee_id ว่าง + ชื่อ "ไม่มี PC" หลังสร้างตารางใหม่ 2026-09-10
-  เปลี่ยนเป็นรหัสตัวแทน Dummy_NotPC / "Not PC" — กรองไว้ทั้งสองแบบ
-  เพราะไม่รู้ว่าต้นทางจะกลับไปแบบเดิมเมื่อไหร่
-
-  531 การมอบหมาย = 527 คนจริง (523 คนดูแลสาขาเดียว + 4 คนดูแล 2 สาขา)
+  578 แถว = 531 การมอบหมายจริง + 47 แถวปลอม
+  531 การมอบหมายจริง = 527 คน (523 คนดูแลสาขาเดียว + 4 คนดูแล 2 สาขา)
   ⚠️ employee_type กลายเป็น NULL ทั้งหมด เดิมเป็น 'พันธมิตร' ต้องถามว่าตั้งใจหรือตกไป
   ⚠️ start_date / end_date เป็นค่าตัวแทน 2022-01-01 / 2066-12-31 เหมือนกันทั้ง 578 แถว
      กติกา "PC ที่ออกไปแล้วไม่ได้เครดิตยอด" จึงบังคับไม่ได้จนกว่า mds จะกรอกวันจริง
@@ -85,13 +95,21 @@ WITH pc_source AS (
     t1.updated_at AS UpdatedAt,
     ${databuffet.functionData.cleanString("t1.updated_by")} AS UpdatedBy,
 
+    -- ธงบอกว่าแถวนี้ไม่ใช่พนักงานจริง แต่เป็นแถวที่ระบุว่า "สาขานี้ไม่มี PC"
+    -- ไม่กรองออก เพราะตกลงว่า dim ต้องตรงกับ MDS แถวต่อแถวเพื่อเช็คกันได้
+    -- ใครเอาไปใช้ต้องใส่ AND IsPlaceholder = FALSE เอง
+    -- รูปแบบเก่า: employee_id ว่าง + ชื่อ 'ไม่มี PC'
+    -- รูปแบบใหม่ (หลังสร้างตารางใหม่ 2026-09-10): employee_id = 'Dummy_NotPC' + ชื่อ 'Not PC'
+    -- เช็คทั้งสองแบบ เพราะไม่รู้ว่าต้นทางจะกลับไปแบบเดิมเมื่อไหร่
+    (
+      ${databuffet.functionData.cleanString("t1.employee_id")} IS NULL
+      OR ${databuffet.functionData.cleanString("t1.employee_id")} = 'Dummy_NotPC'
+      OR IFNULL(TRIM(t1.employee_name),'') IN ('ไม่มี PC', 'Not PC')
+    ) AS IsPlaceholder,
+
     ${databuffet.functionData.cleanString("t1.id")} AS MdsID
   FROM `${PcSourceRef}` AS t1
   WHERE t1.is_active = TRUE
-    AND ${databuffet.functionData.cleanString("t1.employee_id")} IS NOT NULL
-    -- แถวที่บอกว่าสาขานั้นไม่มี PC — กรองทั้งรูปแบบเก่าและใหม่
-    AND ${databuffet.functionData.cleanString("t1.employee_id")} <> 'Dummy_NotPC'
-    AND IFNULL(TRIM(t1.employee_name),'') NOT IN ('ไม่มี PC', 'Not PC')
   -- ยุบซ้ำที่ระดับการมอบหมาย ไม่ใช่ระดับคน — ถ้า mds มีแถวซ้ำ เก็บแถวที่แก้ล่าสุด
   QUALIFY ROW_NUMBER() OVER(
     PARTITION BY t1.employee_id, t1.branch_code, t1.marketinggroupid
@@ -130,6 +148,8 @@ WITH pc_source AS (
     CAST(NULL AS STRING)    AS CreatedBy,
     CAST(NULL AS TIMESTAMP) AS UpdatedAt,
     CAST(NULL AS STRING)    AS UpdatedBy,
+
+    CAST(NULL AS BOOL)      AS IsPlaceholder,
 
     CAST(NULL AS STRING)    AS MdsID
 )
