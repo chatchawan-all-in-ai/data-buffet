@@ -89,7 +89,7 @@ Every table is preceded by `DROP TABLE IF EXISTS`.
 | `cis360/drop_all_tables_validated_cis360.sqlx` | initial | DROP 24 validated tables |
 | `mastersku/create_all_table_raw_mastersku.sqlx` | initial | 12 external tables |
 | `mastersku/drop_all_tables_validated_mastersku.sqlx` | initial | DROP 11 validated tables |
-| `saleout_mdt/create_all_table_raw_saleout_mdt.sqlx` | initial | 10 external tables by retailer (bt/gb/hp/tw); note renames: folder `reportsalesubscription` → table `report_sale_subscription`, `gb/*` → `saleout_gb` |
+| `saleout_mdt/create_all_table_raw_saleout_mdt.sqlx` | initial | **11** external tables by retailer (bt/gb/hp/tw) + `saleout_lastyear` (one-off CSV, see below); note renames: folder `reportsalesubscription` → table `report_sale_subscription`, `gb/*` → `saleout_gb` |
 | `saleout_mdt/drop_all_tables_validated_saleout_mdt.sqlx` | initial | DROP 10 validated tables |
 
 ## Dependency wiring
@@ -100,3 +100,32 @@ Running `dataform run --tags initial` therefore rebuilds raw external tables cle
 
 ⚠️ `re-initial` tag DROPs validated/curated MAC5 tables — full-rebuild only, data in
 incremental tables is lost until re-run.
+
+
+## `saleout_lastyear` — โหลดครั้งเดียว ไม่ใช่ฟีดรายวัน (2026-09-11)
+
+ยอดขายย้อนหลังที่ BI ส่งมาเป็น Excel แล้วแปลงเป็น CSV ขึ้น GCS
+
+```
+gs://file-raw-data/saleout_mdt/lastyear/ASATDATE=20260911/SALEOUT_LASTYEAR_20260911.csv
+```
+
+| | |
+|---|---|
+| แถว | 430,639 |
+| ช่วงวันที่ | 2022-01-01 ถึง 2026-08-23 |
+| ยอดรวม | 4,185,331,780.32 |
+| จำนวน | 1,101,555 |
+| ห้าง | 6 — BT · DH · GB · HP · MH · TW (**มี DH ซึ่งฟีดรายวันยังไม่มี**) |
+| แถวติดลบ | 2,055 (การคืนสินค้า) |
+| วันที่ผิดรูปแบบ | 0 |
+
+**ต่างจาก external table ตัวอื่นในไฟล์เดียวกัน 2 ข้อ**
+
+1. `format = 'CSV'` + `skip_leading_rows = 1` ไม่ใช่ `AVRO` — เพราะแปลงจาก xlsx ตรง ๆ
+   CSV ไม่มี schema มากับไฟล์ จึง**ต้องประกาศคอลัมน์ใน DDL เอง** (8 คอลัมน์ STRING ทั้งหมด
+   ตามกฎ raw เก็บดิบ validated ค่อยแปลง)
+2. มีพาร์ทิชันเดียว `ASATDATE=20260911` และจะไม่มีเพิ่ม — ไม่ใช่ฟีดที่ Airflow ส่งทุกวัน
+
+⚠️ **ยังไม่ได้ต่อเข้า validated/curated/fact** — ดูเหตุผลใน
+`document/operations/known-issues.md` (ช่วง ก.พ.-ส.ค. 2026 ซ้อนกับฟีดรายวัน)
