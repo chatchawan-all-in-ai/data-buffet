@@ -6,6 +6,13 @@ config {
 }
 
 js {
+    const DimOrderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_order",
+    };
+    const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
+
     const FnOrderTypeTable = {
         database: databuffet.DATABASE,
         schema: databuffet.FUNCTION_DATASET,
@@ -13,18 +20,23 @@ js {
     };
     const FnOrderTypeTableRef = `${FnOrderTypeTable.database}.${FnOrderTypeTable.schema}.${FnOrderTypeTable.name}`;
 
-    const DimOrderTable = {
+    const MdsDataDocumentExpireRuleMasterTable = {
         database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_order",
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_document_expire_rule_master",
     };
-    const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
+    const MdsDataDocumentExpireRuleMasterTableRef = `${MdsDataDocumentExpireRuleMasterTable.database}.${MdsDataDocumentExpireRuleMasterTable.schema}.${MdsDataDocumentExpireRuleMasterTable.name}`;
 }
 
-SELECT 
+SELECT  
   ord.*,
   `${FnOrderTypeTableRef}`(ord.mihref2) as OrderType,
   mih2.mih2pos as CustomerShipTo,
+  (CASE 
+    WHEN mds.ExpireDays is null THEN 'No'
+    WHEN DATE_DIFF(CURRENT_DATE('Asia/Bangkok'), DATE(ord.mix_date), DAY) > mds.ExpireDays THEN 'Yes'
+    ELSE NULL
+  END) as FlagExpire
 
 from `${DimOrderTableRef}` as ord
 left join ${ref(databuffet.VALIDATED_MAC5, "mih2")} as mih2
@@ -35,6 +47,9 @@ left join ${ref(databuffet.VALIDATED_MAC5, "mih2")} as mih2
   and ord.mihType = mih2.mih2type
   and ord.mihCus = mih2.mih2cus
   and ord.mihVnos = mih2.mih2vnos
+left join `${MdsDataDocumentExpireRuleMasterTableRef}` as mds
+  on lower(left(ord.mihVnos, 2)) = lower(mds.DocPrefix)
+  and mds.is_active = true
   
 -- where OrderSK = 1007301
 

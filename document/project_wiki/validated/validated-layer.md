@@ -6,6 +6,9 @@
 > `asatdate`, dedup on PK, write to `validated_<source>`. No business logic (rare
 > exceptions in mac5).
 > **There is NO `primary-keys.json`** — keys are hardcoded per file (see below).
+> **3 files add a document-grain purge** (`mih`, `mil`, `mir`): same `type`/`uniqueKey` as
+> everyone else, but `pre_operations` builds a TEMP table of today's batch and DELETEs the
+> whole document from the target before the body MERGEs that TEMP table in.
 
 ## Canonical incremental file (four parts)
 
@@ -58,8 +61,12 @@ Key mechanics:
 
 Reference files:
 - Single-source incremental: `definitions/validated/cis360/customer_profile.sqlx`
-- Multi-company incremental: `definitions/validated/mac5/mih.sqlx`
+- Multi-company incremental: `definitions/validated/mac5/mie.sqlx`
 - Full-load: `definitions/validated/mac5/grp.sqlx`
+
+> `mih`, `mil` and `mir` keep this config but add a TEMP table + document DELETE in
+> `pre_operations` — see
+> [Document-grain purge via TEMP table](#document-grain-purge-via-temp-table-mih-mil-mir--2026-09-10).
 
 ## Full-load pattern (`TAG_VALIDATED_FULL`)
 
@@ -72,6 +79,94 @@ runs **every** run.
   the `tmp_*`, `tbook_*`, `tdis_*`, `match_*`, `pro_*` families.
 - Exceptions to note: `mir.sqlx` is `type: "incremental"` but tagged FULL (operator
   grouping); `mih_billing`/`mil_billing` are full-rebuild snapshots.
+
+## Document-grain purge via TEMP table (`mih`, `mil`, `mir` — 2026-09-10)
+
+**Config is unchanged** — still `type: "incremental"` with the same `uniqueKey`. What
+changes is that `pre_operations` materialises today's batch once and deletes the whole
+document from the target before the body runs:
+
+```sqlx
+SELECT * FROM new_data_mil        -- the body just reads the TEMP table
+
+pre_operations {
+  CREATE OR REPLACE TEMP TABLE new_data_mil AS
+  <the full multi-company SELECT: helpers, incremental window, QUALIFY dedup>
+  ;
+
+  ${ when(incremental(), delete_statement) }
+}
+```
+
+Order of execution: TEMP table → `DELETE` the documents it contains → the body's MERGE
+on `uniqueKey`. Because the old rows of those documents are already gone, every row
+falls into the MERGE's INSERT branch — so the net effect is delete + insert while the
+declared PK still guards against duplicates.
+
+`delete_statement` is built in the js block from two constants:
+
+| Constant | Purpose |
+|---|---|
+| `doc_key` | document identity — `company_id` + `<t>type` + `<t>vnos` (**no** `listno`) |
+| `temp_table` | `new_data_<table>` — the batch, so the doc keys are the already-cleaned values |
+
+```sqlx
+DELETE FROM ${self()} AS t
+WHERE EXISTS (
+  SELECT 1
+  FROM new_data_mil AS b
+  WHERE b.company_id = t.company_id
+    AND IFNULL(b.miltype, '') = IFNULL(t.miltype, '')
+    AND IFNULL(b.milvnos, '') = IFNULL(t.milvnos, '')
+);
+```
+
+**Why the TEMP table** — raw is an external table over GCS AVRO, so reading it twice
+(once to collect doc keys, once for the body) doubles the scan for nothing. The TEMP
+table reads raw **once** and both the DELETE and the body consume it. It also removes a
+whole class of bug: the doc keys are the cleaned values from the batch itself, so they
+cannot drift from the `cleanString()` expressions in the SELECT.
+
+**Why the purge at all**: the PK of `mil`/`mir` is line-level (`...listno`), so a MERGE
+can only ever upsert — a line deleted at source keeps its old `asatdate` and is then
+counted twice. One live example (`ag01/IS/6907004392`) held the same product, quantity
+and amount under `millistno` 1 and 2 because the source renumbered the line, doubling
+the document to 50,200 THB. Measured on nonprd 2026-09-10:
+
+| Table | rows/doc | stale lines | value double-counted | effect of the change |
+|---|---:|---:|---:|---|
+| `mil` | 3.12 | 476 | 9.2M THB of `milsum` | purges 473 lines per run |
+| `mir` | 3.49 | 506 | 10.4M THB of `mirsum` | purges 504 lines per run |
+| `mih` | 1.00 | 0 | — | none — doc key **is** the PK; done for consistency with `mil` |
+
+Verified by simulating the DELETE as a SELECT (2026-09-10): it removes 969,101 rows on
+`mil` = 968,628 re-inserted by the batch + 473 purged; `mir` 344,545 = 344,041 + 504;
+`mih` 484,891 = 484,891 + 0.
+
+Rules when touching these files:
+
+- Keep the doc key coarser than the PK — that gap (`listno`) is the whole point.
+- Mirror the body's row filter inside the TEMP table (`mih`/`mil` filter
+  `IFNULL(vnos, '') != ''`; `mir` has none).
+- Re-running the same day is idempotent: the DELETE is keyed on the batch, so a second
+  run deletes and re-inserts exactly what the first run did.
+- `when(incremental())` guards only the DELETE — the TEMP table is created on every run
+  because the body always reads it, including on a full refresh.
+- The DELETE cannot prune partitions (a document's lines may sit in different `asatdate`
+  partitions, which is the problem itself), so it scans the target each run. Cost is
+  negligible: the three tables together ran at ~$1.2/month before the change.
+
+**Deliberately NOT applied to `mie` / `mie_dummy`**: their PK carries
+`mieday/miemonth/mieyear/miecus`, so one `(mietype, mievnos)` legitimately holds several
+rows. Deleting at `(type, vnos)` grain would drop **67,946 rows across 4,744 documents**
+that the batch does not re-supply (measured 2026-09-10) — see
+[known-issues.md](../../operations/known-issues.md).
+
+**Accepted trade-off**: `pre_operations` and the body are statements in the same
+Dataform action, but the DELETE lands before the MERGE — if the MERGE fails after the
+DELETE, those documents are missing until the next run. The reverse (an INSERT that
+never deleted, which would duplicate) cannot happen: Dataform fails the whole action
+when `pre_operations` fails.
 
 ## Per-source summary
 

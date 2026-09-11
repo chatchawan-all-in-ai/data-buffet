@@ -328,6 +328,50 @@
   เหตุผลที่ **ไม่ใช่** เหตุผลที่ดี (เคยยกไปตอนแรก): `INT64` เล็กกว่า `STRING`
   (2 ตัวอักษร 6 ค่า ไม่ต่างหลังบีบอัด) · เก็บชื่อไว้ที่เดียว (ชีท Master Branch
   มีคอลัมน์ Store อยู่แล้ว) · แถว `-1` (`branch_sk = -1` ครอบเคสเดียวกัน)
+- **2026-09-10 — `mih`/`mil`/`mir` เพิ่ม TEMP table + DELETE ราย document ก่อน MERGE**
+
+  **ปัญหา**: PK ของ `mil`/`mir` เป็นระดับ**บรรทัด** (`...listno`) แต่ Dataform
+  incremental ทำได้แค่ upsert — บรรทัดที่ต้นทางลบทิ้งจะคาอยู่ใน validated ด้วย
+  `asatdate` เก่าตลอดไป และถูกนับซ้ำ ไม่มี error ไม่มี NULL ไม่มีสัญญาณอะไรเลย
+  (เหมือนเคส `AgingSK` ด้านล่าง)
+
+  ตัวอย่างจริง `ag01/IS/6907004392`: `millistno` 1 (asatdate 2026-09-09) กับ
+  `millistno` 2 (asatdate 2026-08-23) เป็น **สินค้า/จำนวน/ยอดเดียวกัน**
+  (ECO-04/GR-2000L, 5 ตัว, 25,100) เพราะต้นทางเปลี่ยนเลข listno → ใบนี้ยอดกลายเป็น
+  50,200
+
+  วัดบน nonprd 2026-09-10:
+
+  | ตาราง | แถว/เอกสาร | บรรทัดค้าง | ยอดที่นับซ้ำ | ผลของการเปลี่ยน |
+  |---|---:|---:|---:|---|
+  | `mil` | 3.12 | 476 | 9.2 ล้านบาท (`milsum`) | ล้าง 473 บรรทัด/รัน |
+  | `mir` | 3.49 | 506 | 10.4 ล้านบาท (`mirsum`) | ล้าง 504 บรรทัด/รัน |
+  | `mih` | 1.00 | 0 | — | **ไม่เปลี่ยนอะไร** (doc key = PK) ทำไว้ให้เข้าชุดกับ `mil` |
+
+  **วิธี**: **config ไม่เปลี่ยนเลย** (`type: "incremental"` + `uniqueKey` เดิม) —
+  `pre_operations` สร้าง `CREATE OR REPLACE TEMP TABLE new_data_<table>` จาก batch วันนี้
+  (อ่าน raw รอบเดียว) แล้วยิง `DELETE` เอกสารทั้งใบที่อยู่ใน temp ครอบด้วย
+  `when(incremental())` ส่วน body เหลือ `SELECT * FROM new_data_<table>` → MERGE ด้วย
+  `uniqueKey` เดิม ซึ่งเข้าเงื่อนไข INSERT เพราะแถวเก่าถูกลบไปแล้ว
+  รายละเอียดและข้อบังคับ: `document/project_wiki/validated/validated-layer.md`
+
+  **`mie`/`mie_dummy` ไม่ทำด้วยตั้งใจ**: PK มี `mieday/miemonth/mieyear/miecus`
+  ทำให้ `(mietype, mievnos)` เดียวมีได้หลายแถวโดยชอบธรรม ถ้าลบราย `(type, vnos)`
+  จะ**ลบทิ้ง 67,946 แถวจาก 4,744 ใบ** ที่ batch ไม่ได้ส่งกลับมา (มากกว่า `mil`/`mir`
+  ราว 140 เท่า) — ถ้าจะทำ ต้องหา doc key ที่ถูกต้องของ `mie` ก่อน
+
+  **trade-off ที่ยอมรับ**: DELETE ลงก่อน MERGE → ถ้า MERGE พังหลัง DELETE เอกสารชุดนั้น
+  จะหายจนรันรอบถัดไป (ทางกลับกันเกิดไม่ได้ เพราะ Dataform fail ทั้ง action เมื่อ
+  `pre_operations` fail จึงไม่มีกรณี insert ซ้ำโดยไม่ได้ DELETE)
+
+  **`curated_mil` ต้องแก้ตามด้วย (วันเดียวกัน)**: ถ้าล้างแค่ validated แต่ curated ยังลบ
+  ด้วย PK ระดับบรรทัด จำนวนแถวต่อเอกสารจะไม่เท่ากันสองชั้น วัดได้ **477 แถว /
+  9.25 ล้านบาท** (ag01 387, ac02 42, ab01 31, ak02 10, aa05 7) จึงเพิ่ม 2 จุด —
+  `pre_operations` สร้าง `new_data_curated_mil_base` + DELETE เอกสารทั้งใบ (ครอบทุกบริษัท
+  ตาม window 1 วัน ลบ 970,161 แถว ในนั้นเป็นแถวค้าง 474) และเปลี่ยน DELETE ใน
+  `post_operations` จาก PK grain เป็น doc grain (ag01 ลบ 9,164,132 แถวแล้ว insert คืน
+  ซึ่งเป็นพฤติกรรมเดิมอยู่แล้วเพราะ temp นั้นไม่มี window — แค่ทำให้แถวค้าง 387 ไม่รอด)
+  **`curated_mih` ไม่ต้องแก้**: `uniqueKey` เป็น doc key อยู่แล้ว แถวค้าง 0
 
 - **2026-08-11 — `view_dim_aging_history` derive `AgingSK`/`BillingSK` สดแทนที่จะเชื่อค่าที่เก็บไว้**
 

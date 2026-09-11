@@ -13,6 +13,21 @@ config {
 js {
     const pk_key = ["company_id", "mirtype","mirvnos","mirlistno"]
 
+    const doc_key = ["company_id", "mirtype", "mirvnos"]
+    const temp_table = "new_data_mir";
+
+    const doc_match = doc_key.map(k => k === "company_id"
+        ? `b.company_id = t.company_id`
+        : `IFNULL(b.${k}, '') = IFNULL(t.${k}, '')`).join("\n      AND ");
+
+    const delete_statement = `
+    DELETE FROM ${self()} AS t
+    WHERE EXISTS (
+      SELECT 1
+      FROM ${temp_table} AS b
+      WHERE ${doc_match}
+    );`;
+
     let partition_statement, post_operations_statement;
 
     if (pk_key && pk_key.length > 0) {
@@ -40,7 +55,11 @@ END;`;
     }
 }
 
-WITH all_sources AS (
+SELECT * FROM new_data_mir
+
+pre_operations {
+  CREATE OR REPLACE TEMP TABLE new_data_mir AS
+  WITH all_sources AS (
   SELECT 'ag01' AS company_id,
     ${databuffet.functionData.castInt64('mirday')} as mirday,
     ${databuffet.functionData.castInt64('mirmonth')} as mirmonth,
@@ -170,11 +189,12 @@ WITH all_sources AS (
   FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.mir`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
-)
-SELECT * FROM all_sources
-${partition_statement}
+  )
+  SELECT * FROM all_sources
+  ${partition_statement}
+  ;
 
-pre_operations {
+  ${ when(incremental(), delete_statement) }
 }
 
 post_operations {

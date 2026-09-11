@@ -13,6 +13,21 @@ config {
 js {
     const pk_key = ["company_id", "MILtype","MILvnos","MILlistNo"]
 
+    const doc_key = ["company_id", "miltype", "milvnos"]
+    const temp_table = "new_data_mil";
+
+    const doc_match = doc_key.map(k => k === "company_id"
+        ? `b.company_id = t.company_id`
+        : `IFNULL(b.${k}, '') = IFNULL(t.${k}, '')`).join("\n      AND ");
+
+    const delete_statement = `
+    DELETE FROM ${self()} AS t
+    WHERE EXISTS (
+      SELECT 1
+      FROM ${temp_table} AS b
+      WHERE ${doc_match}
+    );`;
+
     let partition_statement, post_operations_statement;
 
     if (pk_key && pk_key.length > 0) {
@@ -40,7 +55,11 @@ END;`;
     }
 }
 
-WITH cte_mil as (
+SELECT * FROM new_data_mil
+
+pre_operations {
+  CREATE OR REPLACE TEMP TABLE new_data_mil AS
+  WITH cte_mil as (
   SELECT 'ag01' AS company_id, * FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mil`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
@@ -203,10 +222,11 @@ LEFT JOIN cte_mih as mih
   and mil.miltype = mih.mihtype
   and mil.milvnos = mih.mihvnos
   and mil.milcus = mih.mihcus
-WHERE IFNULL(${databuffet.functionData.cleanString('MILvnos')}, '') != ''
-${partition_statement}
+  WHERE IFNULL(${databuffet.functionData.cleanString('MILvnos')}, '') != ''
+  ${partition_statement}
+  ;
 
-pre_operations {
+  ${ when(incremental(), delete_statement) }
 }
 
 post_operations {

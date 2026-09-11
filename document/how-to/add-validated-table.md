@@ -37,6 +37,11 @@ config {
 ```
 
 - ใน js: `pk_key = [...]` **ให้ตรงกับ `uniqueKey`** (นิยาม 2 ที่เสมอ)
+- ถ้าตารางใหม่เป็น **เอกสารหลายบรรทัด** (PK ลงท้ายด้วย `listno`/`seq`) ให้พิจารณาเพิ่ม
+  TEMP table + DELETE ราย document ใน `pre_operations` (config ไม่เปลี่ยน) — MERGE
+  เฉย ๆ ลบบรรทัดที่ต้นทางลบไปไม่ได้ ดูวิธีและเงื่อนไขที่
+  `document/project_wiki/validated/validated-layer.md` (ใช้อยู่ใน `mih`/`mil`/`mir`)
+  **แต่ต้องเช็กก่อนว่า batch รายวันส่งบรรทัดมาครบทั้งใบ**
 - SELECT: cast ทุกคอลัมน์ด้วย helper (`cleanString` / `castInt64` /
   `parseFlexibleDatetime` / `parseAsatDate()` สำหรับ `asatdate`)
 - incremental window (เฉพาะ incremental):
