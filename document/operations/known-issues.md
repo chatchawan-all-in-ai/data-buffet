@@ -213,6 +213,30 @@
 
 ## การตัดสินใจเชิงออกแบบ
 
+- **2026-09-10 — `monitor_dataset.dataform_run_action.total_bytes` สูงเกินจริง 2 เท่า (ยังไม่แก้)**
+
+  Dataform รันแต่ละ action เป็น **parent SCRIPT job 1 ตัว + child statement 8 ตัว**
+  และ `total_bytes_billed` ของ parent **เท่ากับผลรวมของ child พอดี** (parent ครอบ child
+  อยู่แล้ว) แต่ collector (Cloud Run `alert-dataform` — อยู่นอก repo นี้) เอามาบวกกัน
+  ตัวเลขใน monitor จึงเป็น 2 เท่าของ bytes ที่ถูกคิดเงินจริง
+
+  วัดจาก `region-us-central1.INFORMATION_SCHEMA.JOBS_BY_PROJECT` คืน 2026-09-09:
+
+  | action | parent (จริง) | children | parent+children | ที่ monitor บันทึก |
+  |---|---:|---:|---:|---:|
+  | `mil` | 1,756 MB | 1,756 | 3,513 | 3,512 |
+  | `mih` | 829 MB | 829 | 1,659 | 1,657 |
+  | `mie` | 513 MB | 513 | 1,026 | 1,025 |
+  | `mir` | 457 MB | 457 | 914 | 913 |
+  | `mie_dummy` | 58 MB | 58 | 115 | 114 |
+
+  **ผลกระทบ**: baseline "~117 GB/คืน" ในสกิล `check-runs` และทุกตัวเลข bytes/cost ที่
+  อ้างจากตารางนี้ **ต้องหารสอง** (ของจริง ~58 GB/คืน) `duration_sec` กับ `status`
+  ไม่ได้รับผลกระทบ
+  **วิธีเลี่ยง**: ถ้าต้องการ bytes ที่คิดเงินจริง ให้ query
+  `INFORMATION_SCHEMA.JOBS_BY_PROJECT` ที่ `parent_job_id IS NULL` (นับแค่ parent)
+  — region-level view นี้ใช้ได้ ต่างจาก `INFORMATION_SCHEMA` ระดับ region อื่นที่ถูก deny
+
 - **2026-09-10 — `mih`/`mil`/`mir` เพิ่ม TEMP table + DELETE ราย document ก่อน MERGE**
 
   **ปัญหา**: PK ของ `mil`/`mir` เป็นระดับ**บรรทัด** (`...listno`) แต่ Dataform

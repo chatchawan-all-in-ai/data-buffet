@@ -240,7 +240,11 @@ exist.**
   locally.
 - Ad-hoc queries: `bq --project_id=databuffet-nonprd query --use_legacy_sql=false '...'`
   — **always pass `--project_id`** (default gcloud project is a different one).
-- Region-level `INFORMATION_SCHEMA` is permission-denied; dataset-level works.
+- Region-level `INFORMATION_SCHEMA` is mostly permission-denied; dataset-level works.
+  **Exception (verified 2026-09-10): `region-us-central1.INFORMATION_SCHEMA.JOBS_BY_PROJECT`
+  IS readable** — use it for real billed bytes (`parent_job_id IS NULL` = parents only).
+  `monitor_dataset.dataform_run_action.total_bytes` double-counts parent + child jobs and
+  reports **2x** the billed bytes — see `document/operations/known-issues.md` 2026-09-10.
 - `backup/` holds old file copies — never edit.
 - Commit style: short imperative subject; push `dev`, then fast-forward `nonprod`.
 

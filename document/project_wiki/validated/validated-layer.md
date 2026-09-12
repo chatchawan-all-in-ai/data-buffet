@@ -154,7 +154,9 @@ Rules when touching these files:
   because the body always reads it, including on a full refresh.
 - The DELETE cannot prune partitions (a document's lines may sit in different `asatdate`
   partitions, which is the problem itself), so it scans the target each run. Cost is
-  negligible: the three tables together ran at ~$1.2/month before the change.
+  negligible: the three tables together billed ~3.0 GB/day = ~91 GB/month ≈ $0.57/month
+  before the change (real job bytes — **not** `monitor_dataset.dataform_run_action`,
+  which double-counts; see `document/operations/known-issues.md` 2026-09-10).
 
 **Deliberately NOT applied to `mie` / `mie_dummy`**: their PK carries
 `mieday/miemonth/mieyear/miecus`, so one `(mietype, mievnos)` legitimately holds several
