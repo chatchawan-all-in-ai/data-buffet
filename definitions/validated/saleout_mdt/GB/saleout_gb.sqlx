@@ -6,7 +6,7 @@ config {
     uniqueKey: ["sale_no", "sale_date", "branch_code", "product_code","row_no"],
     bigquery: {
         partitionBy: "asatdate",
-        clusterBy: ["sale_no", "branch_code", "product_code", "sale_no"]
+                clusterBy: ["sale_date", "branch_code", "product_code", "sale_no"]
     },
 }
 

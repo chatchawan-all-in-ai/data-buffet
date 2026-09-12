@@ -1,0 +1,63 @@
+config {
+    type: "table",
+    schema: databuffet.VALIDATED_SALEOUT_MDT,
+    dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_FULL],
+    bigquery: {
+        partitionBy: "sale_date",
+        clusterBy: ["store_code", "branch_code", "product_code"]
+    },
+}
+
+/*
+  ยอดขายย้อนหลังที่ BI ส่งมาเป็น Excel (โหลดครั้งเดียว 2026-09-11)
+  ต้นทาง raw_saleout_mdt.saleout_lastyear — CSV พาร์ทิชันเดียว ASATDATE=20260911
+
+  430,639 แถว · 2022-01-01 ถึง 2026-08-23 · 4,185,331,780.32 บาท · 1,101,555 ชิ้น
+  ครบ 6 ห้าง BT DH GB HP MH TW — **มี DH ซึ่งฟีดรายวันยังไม่มีเลย**
+  แถวติดลบ 2,055 (การคืนสินค้า) · วันที่แปลงไม่ได้ 0 · ยอดว่าง 0
+
+  ⚠️ ต่างจาก validated ตัวอื่น 3 ข้อ เพราะเป็นการโหลดครั้งเดียว ไม่ใช่ฟีดรายวัน
+  1. type: "table" ไม่ใช่ incremental — ไม่มีวันถัดไปให้ merge
+  2. ไม่มี uniqueKey และไม่มี QUALIFY ยุบซ้ำ — ไฟล์ไม่มีเลขบรรทัดหรือเลขบิล
+     ให้แยกแถวที่ซ้ำในคีย์ (วัน+ห้าง+สาขา+สินค้า) ได้ วัดแล้วชนกัน 6,968 แถว
+     ถ้ายุบทิ้งที่ชั้นนี้ยอดจะหาย จึงเก็บทุกแถวไว้แล้วไปบวกรวมที่ curated
+  3. partitionBy เป็น sale_date ไม่ใช่ asatdate — asatdate มีค่าเดียว แบ่งแล้วไม่ได้อะไร
+     ส่วน sale_date กระจาย 4 ปีครึ่ง ตัดพาร์ทิชันได้จริง
+
+  ⚠️ ช่วง 2026-02-09 เป็นต้นไปซ้อนกับฟีดรายวัน — ตัดทิ้งที่ curated ไม่ใช่ที่นี่
+     ชั้นนี้เก็บของดิบให้ครบเพื่อให้ย้อนดูและเทียบได้
+     เหตุผลและตัวเลขเทียบรายเดือน: document/operations/known-issues.md (2026-09-11)
+
+  ⚠️ ยังไม่รู้ว่าทำไม เม.ย.-ก.ค. 2026 ไฟล์กับ pipeline ต่างกันถึง 19%
+     ต้องหาสาเหตุก่อนจะเชื่อไฟล์ทับช่วงที่ฟีดรายวันมีอยู่แล้ว
+
+  PARSE_DATE ไม่ใช่ SAFE.PARSE_DATE — ตั้งใจให้พังถ้ารูปแบบวันเปลี่ยน
+  ดีกว่าได้ NULL เงียบ ๆ (ตรวจแล้ว 430,639 แถว parse ได้ครบ)
+*/
+
+js {
+    const sourceTableRef = `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_lastyear`;
+}
+
+SELECT
+    PARSE_DATE('%Y-%m-%d', ${databuffet.functionData.cleanString('sale_date')}) AS sale_date,
+
+    ${databuffet.functionData.cleanString('store_code')}   AS store_code,
+    ${databuffet.functionData.cleanString('branch_code')}  AS branch_code,
+    ${databuffet.functionData.cleanString('branch_name')}  AS branch_name,
+    ${databuffet.functionData.cleanString('product_code')} AS product_code,
+    ${databuffet.functionData.cleanString('product_name')} AS product_name,
+
+    ${databuffet.functionData.castInt64('sale_qty')}       AS sale_qty,
+    ${databuffet.functionData.castFloat64('sale_amount')}  AS sale_amount,
+
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+FROM `${sourceTableRef}`
+WHERE ${databuffet.functionData.cleanString('sale_date')} IS NOT NULL
+
+pre_operations {
+}
+
+post_operations {
+}
