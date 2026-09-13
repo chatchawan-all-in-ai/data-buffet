@@ -513,7 +513,7 @@ excluded). This is the densest view — open it on GitHub or mermaid.live to zoo
 
 ```mermaid
 flowchart LR
-  subgraph validated["validated (39)"]
+  subgraph validated["validated (40)"]
     ap_s["ap_s"]
     ar_s["ar_s"]
     brand["brand"]
@@ -538,6 +538,7 @@ flowchart LR
     product["product"]
     product_detail["product_detail"]
     sale_by_branch_detail["sale_by_branch_detail"]
+    saleout_gb["saleout_gb"]
     saleout_hp["saleout_hp"]
     saleout_lastyear["saleout_lastyear"]
     stg["stg"]
@@ -678,6 +679,7 @@ flowchart LR
   product_detail --> dim_product_master
   product_detail --> product_for_aisearch
   sale_by_branch_detail --> curated_saleout_mdt
+  saleout_gb --> curated_saleout_mdt
   saleout_hp --> curated_saleout_mdt
   saleout_lastyear --> curated_saleout_mdt
   stg --> dim_product_master
@@ -703,7 +705,7 @@ flowchart LR
   classDef dimension fill:#ffe0b3,stroke:#d98f2f,color:#111;
   classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
-  class ap_s,ar_s,brand,category__mastersku,cfs,chq,cps,cql,customer_profile,customer_profile_nature_business,customer_status,customer_type,deb,match_customer,mie,mih,mih2,mil,mir,nature_business,per,product,product_detail,sale_by_branch_detail,saleout_hp,saleout_lastyear,stg,stg_report,stgacc,stk,sto,tbook_profilecomp,tbook_quodetail,tbook_quotation,tdelivery,ttrip,ttrip_document,unit,vendor validated;
+  class ap_s,ar_s,brand,category__mastersku,cfs,chq,cps,cql,customer_profile,customer_profile_nature_business,customer_status,customer_type,deb,match_customer,mie,mih,mih2,mil,mir,nature_business,per,product,product_detail,sale_by_branch_detail,saleout_gb,saleout_hp,saleout_lastyear,stg,stg_report,stgacc,stk,sto,tbook_profilecomp,tbook_quodetail,tbook_quotation,tdelivery,ttrip,ttrip_document,unit,vendor validated;
   class curated_mih,curated_mil,curated_product,curated_saleout_mdt,curated_tbook_quotation,product_for_aisearch curated;
   class dim_aging,dim_customer,dim_customer_grade,dim_delivery,dim_group_customer_grade,dim_invoice,dim_order,dim_product_master,dim_project,dim_quotation,dim_sale_representative,dim_sale_representative_last,dim_stk_mkt,dim_store dimension;
   class fact_backlog_store,fact_chq,fact_delivery,fact_invoice,fact_invoice_store,fact_mir_rs,fact_mir_vs,fact_order,fact_order_store,fact_quotation,fact_saleout_mdt,fact_transaction_delivery,fact_transcation fact;

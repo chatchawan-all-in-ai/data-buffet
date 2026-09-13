@@ -3,17 +3,47 @@ config {
     schema: databuffet.CURATED_SALEOUT_MDT,
     dependencies: ["curated_schema_saleout"],
     tags: [databuffet.TAG_CURATED, databuffet.TAG_CURATED_INCREMENTAL],
-    uniqueKey: ["sale_date", "store_code", "branch_code", "product_code"],
+    uniqueKey: ["sale_date", "store_code", "branch_code", "product_code", "doc_type"],
     bigquery: {
         partitionBy: "sale_date",
         clusterBy: ["store_code", "branch_code", "product_code"]
     },
 }
 
+/*
+  ยอดขายออกช่องทาง MDT รวมทุกห้างให้เป็นรูปเดียว
+  1 แถว = 1 วัน x 1 ห้าง x 1 สาขา x 1 สินค้า x 1 ชนิดเอกสาร
 
+  ⚠️ เปลี่ยนเกรน 2026-09-13 — เพิ่ม doc_type เข้า uniqueKey แทน is_return
+  ตามที่หัวหน้าสั่งในรีวิว 2026-09-08 ว่า "Return ต้องเป็นชนิดเอกสาร ไม่ใช่ธง"
+  ชนิดเอกสารเป็นส่วนหนึ่งของเกรน ถ้ายุบขายกับคืนเข้าแถวเดียวกันก็ยังเป็นธงอยู่ดี
+  วัดแล้วราคาถูกมาก: ของเดิม 389,552 กลุ่ม ไม่มีกลุ่มไหนที่ขายกับคืนปนกันเลย
+  มีแต่ GB 187 กลุ่ม (784,770 บาท) ที่จะแตกเป็น 2 แถว — แถวเพิ่มรวม +187
+
+  ⚠️ การคืนบันทึก ณ วันที่คืนจริง ไม่ย้อนไปหักวันที่ขายเดิม (ตัดสิน 2026-09-13)
+  เหตุผล: มีแค่ GB ห้างเดียวที่ส่งเลขบิลอ้างอิงมา อีก 5 ห้างไม่ส่ง ย้อนไม่ได้อยู่ดี
+  แม้แต่ GB เอง 30% คืนวันเดียวกับที่ขาย (ได้ผลเท่ากันทั้งสองวิธี) และ 24% ตามบิลเดิมไม่เจอ
+  เหลือที่ได้ประโยชน์จริงแค่ 46% ของแถวคืน · และการย้อนไปแก้พาร์ทิชันเก่าสุด 52 วัน
+  อยู่นอกหน้าต่าง incremental 1 วัน ต้อง rebuild ทั้งตารางทุกคืน
+  ⚠️ ข้อจำกัดที่ต้องบอก BI: ยอดรายวันของวันที่ขายเดิมจะไม่ถูกหัก ยอดรวมเดือน/ปีถูกเสมอ
+  reference_no เก็บไว้แล้ว ถ้าวันหน้าจะเปลี่ยนไปหักวันเดิม ข้อมูลพร้อม ไม่ต้องรื้อ
+
+  ⚠️ doc_type_source บอกว่ารู้ชนิดเอกสารมาจากไหน — ไม่ใช่ทุกห้างน่าเชื่อเท่ากัน
+      SOURCE   ห้างส่งคอลัมน์ชนิดเอกสารมาเอง        เชื่อได้
+      DERIVED  เราเดาจากยอด/จำนวนติดลบ              ⚠️ อาจเป็นการแก้ตัวเลข ยกเลิกบิล
+                                                   หรือโอนของออก ไม่ใช่การคืนจริง
+  ตอนนี้มีแค่ GB ที่เป็น SOURCE · อีก 5 ห้างเป็น DERIVED ทั้งหมด
+  ยอดรวมไม่ผิด (ติดลบก็หักถูก) แต่ "อัตราการคืนสินค้า" ของ 5 ห้างนั้นเชื่อไม่ได้
+  ต้องขอให้ห้างส่งชนิดเอกสารมาเหมือน GB
+
+  ห้างที่ยังไม่มีในไฟล์นี้: TW (ต้นทางเป็น snapshot ต้องตัดสินใจก่อน)
+  DH มีเฉพาะจากไฟล์ย้อนหลัง ยังไม่มีฟีดรายวัน
+*/
 
 WITH hp AS (
 
+    -- HomePro + Megahome มาจากไฟล์เดียวกัน แยกด้วย store_code
+    -- ⚠️ ต้นทางไม่มีคอลัมน์ชนิดเอกสาร เราเดาจาก qty < 0 (ดู is_return ใน validated)
     SELECT
         sale_date,
         store_code,                                 -- 'HP' หรือ 'MH' · NULL = ไม่ใช่สาขาขายปลีก (CS01/EX99)
@@ -24,15 +54,17 @@ WITH hp AS (
         vdartno     AS barcode_match,               -- บาร์โค้ด GS1 ใช้จับคู่ dim_product_master.Barcode
         qty         AS sale_qty,
         value       AS sale_amount,
-        is_return,
+        IF(is_return, 'RETURN', 'SALE') AS doc_type,
+        'DERIVED'   AS doc_type_source,
         1           AS days_covered,
         FALSE       AS date_is_estimated,
-        CAST(NULL AS STRING) AS bill_no,     -- มีแค่ Global House
+        CAST(NULL AS STRING) AS bill_no,            -- มีแค่ Global House
+        CAST(NULL AS STRING) AS reference_no,       -- มีแค่ Global House
         asatdate
     -- ต้องระบุ dataset เพราะชื่อ saleout_hp มีทั้งใน raw_saleout_mdt (external) และ validated_saleout_mdt
     FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_hp")}
     WHERE sale_date IS NOT NULL
-      AND (qty <> 0 OR value <> 0)                 
+      AND (qty <> 0 OR value <> 0)
       -- กรองที่ต้นทาง เพราะ validated partition ด้วย asatdate — วางไว้ข้างนอกจะไม่ตัดพาร์ทิชัน
       ${ when(incremental(), `AND asatdate >= DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY)`) }
 
@@ -92,7 +124,8 @@ WITH hp AS (
 ), bt AS (
 
     -- ยุบช่องทาง (Showroom / Anyhome / Web) รวมกัน เพราะเกรนของ curated ไม่มีช่องทาง
-    -- วัด 2026-09-11: 27 จาก 1,343 กลุ่มมี 2 ช่องทาง คิดเป็นเงิน 395,197 — ยอดรวมไม่เปลี่ยน
+    -- แต่แยกตามชนิดเอกสาร — ช่องทางหนึ่งขายอีกช่องทางคืน จะได้ไม่หักกลบจนมองไม่เห็น
+    -- ⚠️ ต้นทางไม่มีคอลัมน์ชนิดเอกสาร เราเดาจากยอดสะสม MTD ที่ลดลง
     SELECT
         end_date                   AS sale_date,
         'BT'                       AS store_code,
@@ -103,14 +136,53 @@ WITH hp AS (
         CAST(NULL AS STRING)       AS barcode_match, -- BT ไม่ส่งบาร์โค้ดมา
         SUM(sale_qty)              AS sale_qty,
         SUM(sale_amount)           AS sale_amount,
-        SUM(sale_amount) < 0       AS is_return,     -- MTD ลดลง = คืนสินค้า (วัด 2026-09-11: 11 แถว)
+        IF(sale_amount < 0, 'RETURN', 'SALE') AS doc_type,
+        'DERIVED'                  AS doc_type_source,
         MAX(days_covered)          AS days_covered,
         MAX(days_covered) > 1      AS date_is_estimated, -- ครอบหลายวัน = ไม่รู้วันขายจริง
         CAST(NULL AS STRING)       AS bill_no,
+        CAST(NULL AS STRING)       AS reference_no,
         MAX(asatdate)              AS asatdate
     FROM bt_daily
     WHERE sale_amount <> 0 OR sale_qty <> 0
-    GROUP BY sale_date, store_code, branch_code, branch_name, product_code
+    GROUP BY sale_date, store_code, branch_code, branch_name, product_code, doc_type
+
+), gb AS (
+
+    -- โกลบอลเฮ้าส์ — ห้างเดียวที่ส่งชนิดเอกสารกับเลขบิลอ้างอิงมาเอง
+    -- ต้นทาง 24,011 แถว / 102,548,396.70 / 2026-02-09 ถึง 2026-07-05 (วัด 2026-09-13)
+    --
+    -- เกรนของ curated ไม่มีเลขบิล ต้องยุบหลายบรรทัดเข้าแถวเดียว
+    -- วัด: 24,011 แถว -> 16,233 กลุ่ม (ยุบ 7,778 แถว) · เลขบิลทั้งหมด 19,777 ใบ
+    --      กลุ่มที่มีบิลใบเดียว 13,970 (86.1%) เก็บเลขบิลได้ · อีก 2,263 กลุ่มมีหลายใบ
+    --      มากสุด 39 ใบในกลุ่มเดียว
+    -- เก็บเลขบิลเฉพาะตอนที่ไม่กำกวม — ถ้ามีหลายใบใส่ NULL ดีกว่าหยิบมาใบเดียวมั่ว ๆ
+    --
+    -- reference_no = บิลที่ถูกคืน · 357 แถวคืนมีครบ 100% · 325 ค่าที่ไม่ซ้ำ
+    -- ตามกลับไปเจอบิลขายจริง 247 (76%) · ที่เหลือเป็นบิลก่อน 2026-02-09 ซึ่งอยู่นอกฟีด
+    -- กลุ่มการคืน 326 กลุ่ม มี reference_no ค่าเดียว 305 (93.6%) · หลายค่า 21 กลุ่ม (มากสุด 4)
+    --
+    -- ⚠️ ฟีดค้าง — วันขายล่าสุด 5 ก.ค. 2026 แต่ไฟล์เข้าถึงปัจจุบัน ต้องถามห้าง
+    SELECT
+        sale_date,
+        'GB'                      AS store_code,
+        branch_code,
+        ANY_VALUE(branch_name)    AS branch_name,
+        product_code,
+        ANY_VALUE(product_name)   AS product_name,
+        product_code              AS barcode_match,  -- GB ใช้บาร์โค้ด 13 หลักเป็นรหัสสินค้าอยู่แล้ว
+        SUM(sale_quantity)        AS sale_qty,
+        SUM(sale_amount)          AS sale_amount,
+        type                      AS doc_type,       -- ห้างส่งมาเอง SALE / RETURN
+        'SOURCE'                  AS doc_type_source,
+        1                         AS days_covered,   -- วันขายแม่นยำ ไม่ใช่ค่าประมาณ
+        FALSE                     AS date_is_estimated,
+        IF(COUNT(DISTINCT sale_no)      = 1, ANY_VALUE(sale_no),      NULL) AS bill_no,
+        IF(COUNT(DISTINCT reference_no) = 1, ANY_VALUE(reference_no), NULL) AS reference_no,
+        MAX(asatdate)             AS asatdate
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_gb")}
+    WHERE sale_date IS NOT NULL
+    GROUP BY sale_date, store_code, branch_code, product_code, doc_type
 
 ), lastyear AS (
 
@@ -133,6 +205,7 @@ WITH hp AS (
     --
     -- ไฟล์ไม่มีเลขบิลหรือเลขบรรทัด แยกแถวที่ซ้ำในคีย์ไม่ได้ (ชนกัน 6,968 แถว)
     -- จึง GROUP BY ตามคีย์ของ curated แล้วบวกรวม — ยอดไม่หาย
+    -- ⚠️ ต้นทางไม่มีคอลัมน์ชนิดเอกสาร เราเดาจากยอดติดลบ
     --
     -- ponytail: ไม่ใส่ filter asatdate เพราะเป็นตารางนิ่ง ไม่มีวันใหม่เข้ามาอีก
     --    ถ้าใส่ incremental window แถวจะหลุดหน้าต่างตั้งแต่วันที่สอง แล้วไม่ถูก merge
@@ -147,21 +220,25 @@ WITH hp AS (
         CAST(NULL AS STRING)    AS barcode_match,  -- ไฟล์ไม่มีบาร์โค้ด
         SUM(sale_qty)           AS sale_qty,
         SUM(sale_amount)        AS sale_amount,
-        SUM(sale_amount) < 0    AS is_return,      -- ต้นทางมีแถวติดลบ 2,055 แถว
+        IF(sale_amount < 0, 'RETURN', 'SALE') AS doc_type,
+        'DERIVED'               AS doc_type_source,
         1                       AS days_covered,
         FALSE                   AS date_is_estimated,
         CAST(NULL AS STRING)    AS bill_no,        -- ไฟล์ไม่มีเลขบิล
+        CAST(NULL AS STRING)    AS reference_no,
         MAX(asatdate)           AS asatdate
     FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_lastyear")}
     WHERE sale_date IS NOT NULL
       AND (sale_date < DATE '2026-02-09' OR store_code = 'DH')
-    GROUP BY sale_date, store_code, branch_code, product_code
+    GROUP BY sale_date, store_code, branch_code, product_code, doc_type
 
 )
 
 SELECT * FROM hp
 UNION ALL
 SELECT * FROM bt
+UNION ALL
+SELECT * FROM gb
 UNION ALL
 SELECT * FROM lastyear
 
