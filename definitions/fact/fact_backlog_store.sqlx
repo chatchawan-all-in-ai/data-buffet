@@ -81,6 +81,7 @@ WITH cps_latest AS (
     and mds.flagwarehouse = true
     and ord.CompanyID = mds.CompanyID
     and ord.mihStatus = mds.StatusID
+  WHERE IFNULL(ord.mihDesc,'') NOT LIKE '%PO.วางบิล%'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY ord.CompanySK, ord.mihVnos ORDER BY ord.OrderSK DESC) = 1
 
 ), dim_product_dedup AS (

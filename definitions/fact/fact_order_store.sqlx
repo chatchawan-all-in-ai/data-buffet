@@ -70,6 +70,7 @@ WITH dim_order_dedup AS (
     and mds.flagwarehouse = true
     and ord.CompanyID = mds.CompanyID
     and ord.mihStatus = mds.StatusID
+  WHERE IFNULL(ord.mihDesc,'') NOT LIKE '%PO.วางบิล%'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY ord.CompanySK, ord.mihVnos ORDER BY ord.OrderSK DESC) = 1
 
 ), dim_product_dedup AS (
@@ -135,9 +136,10 @@ WITH dim_order_dedup AS (
     AND dim_sto.StoreCode = mil.milSto
   WHERE mih.mihType = 'PS'
     AND mih.company_id in ('ag01', 'ab01')
-    AND IFNULL(mih.mihDesc,'') NOT LIKE '%PO.วางบิล%'
+    -- AND IFNULL(mih.mihDesc,'') NOT LIKE '%PO.วางบิล%'
     AND IFNULL(mil.milDesc,'') NOT LIKE 'โปรโมชั่น%'
-    AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
+    AND mil.milstype not in (3)
+    -- AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 5 YEAR), YEAR)
 )
 
 SELECT
