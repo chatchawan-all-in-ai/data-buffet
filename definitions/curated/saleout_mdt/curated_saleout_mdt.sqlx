@@ -141,7 +141,7 @@ WITH hp AS (
         'TW'                   AS store_code,
         Store                  AS branch_code,   -- TW ใช้สตริงเต็ม `60001-CRC Thai Watsadu ...`
         Store                  AS branch_name,
-        SKU                    AS product_code,
+        LTRIM(SKU, '0')        AS product_code,
         ANY_VALUE(Description) AS product_name,
         ANY_VALUE(Barcode)     AS barcode_match, -- TW ส่งบาร์โค้ดมาแยกคอลัมน์
         SUM(Sales_Qty)         AS sale_qty,

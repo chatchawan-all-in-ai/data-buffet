@@ -141,6 +141,7 @@ WITH cps_latest AS (
     AND mih.mihClearUM  = 0
     AND mih.mihExtraSUM = 0
     AND mih.company_id in ('ag01', 'ab01')
+    AND mih.mihDesc NOT LIKE '%PO.วางบิล%'
   GROUP BY
     CompanySK, company_id, sDate, mihYear, mihMonth, mihDay,
     OrderSK, CustomerSK, ProductSK, StoreSK,
