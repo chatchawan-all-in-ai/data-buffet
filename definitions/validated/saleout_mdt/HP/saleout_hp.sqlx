@@ -53,9 +53,10 @@ SELECT
 
     -- ไฟล์เดียวมี 2 ห้าง แยกด้วยตัวอักษรแรกของ SITENO
     -- prefix อื่นได้ NULL โดยเจตนา เพื่อให้ตรวจเจอว่ามีห้างใหม่เข้ามา
-    CASE LEFT(${c('SITENO')}, 1)
-        WHEN 'S' THEN 'HP'
-        WHEN 'M' THEN 'MH'
+    CASE
+        WHEN ${c('SITENO')} IN ('M888', 'CS01', 'EX99') THEN 'HP'
+        WHEN LEFT(${c('SITENO')}, 1) = 'S' THEN 'HP'
+        WHEN LEFT(${c('SITENO')}, 1) = 'M' THEN 'MH'
     END AS store_code,
 
     ${c('SITENO')} AS siteno,

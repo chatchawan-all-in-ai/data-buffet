@@ -3,14 +3,12 @@ config {
     schema: databuffet.CURATED_SALEOUT_MDT,
     dependencies: ["curated_schema_saleout"],
     tags: [databuffet.TAG_CURATED, databuffet.TAG_CURATED_INCREMENTAL],
-    uniqueKey: ["sale_date", "store_code", "branch_code", "product_code"],
+    uniqueKey: ["sale_date", "store_code", "branch_code", "product_code", "doc_type"],
     bigquery: {
         partitionBy: "sale_date",
         clusterBy: ["store_code", "branch_code", "product_code"]
     },
 }
-
-
 
 WITH hp AS (
 
@@ -24,10 +22,12 @@ WITH hp AS (
         vdartno     AS barcode_match,               -- บาร์โค้ด GS1 ใช้จับคู่ dim_product_master.Barcode
         qty         AS sale_qty,
         value       AS sale_amount,
-        is_return,
+        IF(is_return, 'RETURN', 'SALE') AS doc_type,
+        'DERIVED'   AS doc_type_source,
         1           AS days_covered,
         FALSE       AS date_is_estimated,
         CAST(NULL AS STRING) AS bill_no,     -- มีแค่ Global House
+        CAST(NULL AS STRING) AS reference_no, 
         asatdate
     -- ต้องระบุ dataset เพราะชื่อ saleout_hp มีทั้งใน raw_saleout_mdt (external) และ validated_saleout_mdt
     FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_hp")}
@@ -88,42 +88,112 @@ WITH hp AS (
         CAST(NULL AS STRING)       AS barcode_match, -- BT ไม่ส่งบาร์โค้ดมา
         SUM(sale_qty)              AS sale_qty,
         SUM(sale_amount)           AS sale_amount,
-        SUM(sale_amount) < 0       AS is_return,     -- MTD ลดลง = คืนสินค้า (วัด 2026-09-11: 11 แถว)
+        IF(sale_amount < 0, 'RETURN', 'SALE') AS doc_type,
+        'DERIVED'                  AS doc_type_source,
         MAX(days_covered)          AS days_covered,
         MAX(days_covered) > 1      AS date_is_estimated, -- ครอบหลายวัน = ไม่รู้วันขายจริง
         CAST(NULL AS STRING)       AS bill_no,
+        CAST(NULL AS STRING)       AS reference_no,
         MAX(asatdate)              AS asatdate
     FROM bt_daily
     WHERE sale_amount <> 0 OR sale_qty <> 0
-    GROUP BY sale_date, store_code, branch_code, branch_name, product_code
+    GROUP BY sale_date, store_code, branch_code, branch_name, product_code, doc_type
+), gb AS (
+
+    SELECT
+        sale_date,
+        'GB'                      AS store_code,
+        branch_code,
+        ANY_VALUE(branch_name)    AS branch_name,
+        product_code,
+        ANY_VALUE(product_name)   AS product_name,
+        product_code              AS barcode_match,  -- GB ใช้บาร์โค้ด 13 หลักเป็นรหัสสินค้าอยู่แล้ว
+        SUM(sale_quantity)        AS sale_qty,
+        SUM(sale_amount)          AS sale_amount,
+        type                      AS doc_type,       -- ห้างส่งมาเอง SALE / RETURN
+        'SOURCE'                  AS doc_type_source,
+        1                         AS days_covered,   -- วันขายแม่นยำ ไม่ใช่ค่าประมาณ
+        FALSE                     AS date_is_estimated,
+        IF(COUNT(DISTINCT sale_no)      = 1, ANY_VALUE(sale_no),      NULL) AS bill_no,
+        IF(COUNT(DISTINCT reference_no) = 1, ANY_VALUE(reference_no), NULL) AS reference_no,
+        MAX(asatdate)             AS asatdate
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_gb")}
+    WHERE sale_date IS NOT NULL
+    GROUP BY sale_date, store_code, branch_code, product_code, doc_type
+    
+), tw_dedup AS (
+
+    SELECT Store, SKU, Barcode, Description, Last_Sold_Date, Sales_Amount, Sales_Qty, asatdate
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "report_sale_subscription")}
+    WHERE Last_Sold_Date IS NOT NULL
+      AND Store IS NOT NULL
+      AND (Sales_Amount <> 0 OR Sales_Qty <> 0)
+      -- ก่อนวันนี้ใช้ไฟล์ Excel แทน ดูบล็อก lastyear
+      AND Last_Sold_Date >= DATE '2026-05-13'
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY Store, SKU, Last_Sold_Date ORDER BY asatdate DESC
+    ) = 1
+
+), tw AS (
+
+    SELECT
+        Last_Sold_Date         AS sale_date,
+        'TW'                   AS store_code,
+        Store                  AS branch_code,   -- TW ใช้สตริงเต็ม `60001-CRC Thai Watsadu ...`
+        Store                  AS branch_name,
+        SKU                    AS product_code,
+        ANY_VALUE(Description) AS product_name,
+        ANY_VALUE(Barcode)     AS barcode_match, -- TW ส่งบาร์โค้ดมาแยกคอลัมน์
+        SUM(Sales_Qty)         AS sale_qty,
+        SUM(Sales_Amount)      AS sale_amount,
+        IF(Sales_Amount < 0, 'RETURN', 'SALE') AS doc_type,
+        'DERIVED'              AS doc_type_source,
+        1                      AS days_covered,
+        FALSE                  AS date_is_estimated, -- วันขายมาจากต้นทาง ไม่ได้เดา
+        CAST(NULL AS STRING)   AS bill_no,
+        CAST(NULL AS STRING)   AS reference_no,
+        MAX(asatdate)          AS asatdate
+    FROM tw_dedup
+    GROUP BY sale_date, store_code, branch_code, branch_name, product_code, doc_type
 
 ), lastyear AS (
 
     SELECT
         sale_date,
         store_code,
-        branch_code,
+        IF(store_code = 'DH' AND REGEXP_CONTAINS(branch_code, r'^M[0-9]+$'),
+           CONCAT(branch_code, '_TG'),
+        branch_code)            AS branch_code,
         ANY_VALUE(branch_name)  AS branch_name,
         product_code,
         ANY_VALUE(product_name) AS product_name,
         CAST(NULL AS STRING)    AS barcode_match,  -- ไฟล์ไม่มีบาร์โค้ด
         SUM(sale_qty)           AS sale_qty,
         SUM(sale_amount)        AS sale_amount,
-        SUM(sale_amount) < 0    AS is_return,      -- ต้นทางมีแถวติดลบ 2,055 แถว
+        IF(sale_amount < 0, 'RETURN', 'SALE') AS doc_type,
+        'DERIVED'               AS doc_type_source,
         1                       AS days_covered,
         FALSE                   AS date_is_estimated,
         CAST(NULL AS STRING)    AS bill_no,        -- ไฟล์ไม่มีเลขบิล
+        CAST(NULL AS STRING)    AS reference_no,   
         MAX(asatdate)           AS asatdate
+
+        
     FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_lastyear")}
     WHERE sale_date IS NOT NULL
-      AND (sale_date < DATE '2026-02-09' OR store_code = 'DH')
-    GROUP BY sale_date, store_code, branch_code, product_code
-
+        AND ((store_code = 'TW' AND sale_date < DATE '2026-05-13')
+        OR (store_code = 'DH')
+        OR (store_code NOT IN ('TW', 'DH') AND sale_date < DATE '2026-02-09'))
+    GROUP BY sale_date, store_code, branch_code, product_code, doc_type
 )
 
 SELECT * FROM hp
 UNION ALL
 SELECT * FROM bt
+UNION ALL
+SELECT * FROM gb
+UNION ALL
+SELECT * FROM tw
 UNION ALL
 SELECT * FROM lastyear
 

@@ -138,3 +138,28 @@ OPTIONS (
 );
 ------------------------------------- TW ----------------------------------------------
 ----------------------------------- INCREMENTAL ---------------------------------------
+
+------------------------------- LASTYEAR (ครั้งเดียว) ----------------------------------
+
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_lastyear`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_lastyear` (
+    sale_date    STRING,
+    branch_code  STRING,
+    branch_name  STRING,
+    store_code   STRING,
+    product_code STRING,
+    product_name STRING,
+    sale_qty     STRING,
+    sale_amount  STRING
+)
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'CSV',
+  skip_leading_rows = 1,
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/lastyear/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/lastyear/'
+);
+------------------------------- LASTYEAR (ครั้งเดียว) ----------------------------------
+----------------------------------- INCREMENTAL ---------------------------------------
