@@ -58,33 +58,94 @@
 `product_group`, `product_group_cost_group`, `product_status`, `product_admin_status`,
 `brand`, `category`, `unit`, `vendor`
 
-## SALEOUT_MDT (11 = 10 incremental + 1 schema) — by retailer subfolder
+## SALEOUT_MDT (12 = 7 incremental + 4 full + 1 schema) — by retailer subfolder
 
-| Folder | Tables |
-|---|---|
-| `BT/` | `sales_by_branch`, `sale_by_branch_detail`, `sale_by_branch_mch3`, `stock_by_branch`, `stock_aging`, `turnover`, `turnover_brand` |
-| `GB/` | `saleout_gb` |
-| `HP/` | `saleout_hp` |
-| `TW/` | `report_sale_subscription` |
+| Folder | Tables | Materialization |
+|---|---|---|
+| `BT/` | `sale_by_branch_detail`, `sales_by_branch`, `sale_by_branch_mch3`, `turnover`, `turnover_brand` | incremental |
+| `BT/` | `stock_by_branch`, `stock_aging` | **table (full)** — 2026-09-15 |
+| `GB/` | `saleout_gb` | incremental |
+| `HP/` | `saleout_hp` | incremental |
+| `TW/` | `report_sale_subscription` | **table (full)** — 2026-09-14 |
+| `LASTYEAR/` | `saleout_lastyear` | **table (full)** — 2026-09-11, one-off Excel |
 
-All `type: "incremental"` but tagged only `validated`; PKs are wide business
-composites (e.g. `["sale_no","sale_date","branch_code","product_code"]`).
+PKs on the incremental nine are wide business composites
+(e.g. `["sale_no","sale_date","branch_code","product_code","row_no"]`).
 
-**2026-08-17** — all 10 were brought onto the standard validated pattern: they gained
-`partitionBy: "asatdate"` (they had `clusterBy` only, the single group in the whole
+**2026-08-17** — the original 10 were brought onto the standard validated pattern: they
+gained `partitionBy: "asatdate"` (they had `clusterBy` only, the single group in the whole
 layer without a partition) and the incremental
 `${when(incremental(), \`WHERE ASATDATE >= …BACKFILL_DAYS…\`)}` window, which they had
 never had. Before that, every run rescanned the full raw history — ~1.2 GB/night to
 produce ~80k rows, with `report_sale_subscription` alone at 721 MB.
 
-The window is safe here: all 858 raw objects across the four retailer folders
-(`hp` 84, `gb` 82, `tw` 84, `bt` 608) were uploaded on the same day as their own
-`ASATDATE=` partition — **zero back-dated files** — so no vendor correction older
-than `BACKFILL_DAYS` has ever arrived. If a retailer ever starts resending history,
-raise `BACKFILL_DAYS` for that run instead of removing the window.
+The window is safe for the incremental nine: all 858 raw objects across the four retailer
+folders (`hp` 84, `gb` 82, `tw` 84, `bt` 608) were uploaded on the same day as their own
+`ASATDATE=` partition — **zero back-dated files** — so no vendor correction older than
+`BACKFILL_DAYS` has ever arrived. If a retailer ever starts resending history, raise
+`BACKFILL_DAYS` for that run instead of removing the window.
 
-Nothing downstream reads `validated_saleout_mdt` — no curated, dimension, fact or
-view references it. The layer ends here and is consumed directly by BI.
+### Two tables are full loads on purpose
+
+Both sources are **snapshots with no row-level key**, so any MERGE key either drops rows
+or duplicates them. Full reload sidesteps the problem; both are small enough that
+re-reading GCS nightly is cheaper than the code needed to get a MERGE key right.
+
+`report_sale_subscription` (TW) — converted 2026-09-14. Its `uniqueKey` was
+`(Store, Cat, Sub_Cat, Brand, SKU)` with **no `ASATDATE`**, so each night's MERGE
+overwrote the previous day's snapshot in place (the MERGE also rewrites the partition
+column). Measured: raw 1,552,616 rows / 109 feed days → validated held **9,816 rows**,
+a 99.4% loss, effectively one snapshot. Adding `ASATDATE` to the key was rejected because
+the remaining key columns are nullable — `Store` empty on 354 rows, `SKU` on 531, the
+per-file `Description = 'Total'` summary rows — and a NULL in a MERGE key never matches,
+so those rows would re-INSERT every night. No `QUALIFY` either: the first file
+(`ASATDATE=20260513`, 546,194 rows) is a ~59-snapshot backlog dump whose rows are only
+separable by `Last_Sold_Date`, so deduplication belongs in curated, not here.
+
+`saleout_lastyear` — one-off Excel, 6,968 rows collide on the curated key with no line
+discriminator to split them; collapsing at this layer would lose money.
+
+`stock_by_branch` / `stock_aging` (BT) — converted 2026-09-15, same bug as TW. Their
+`uniqueKey` had neither `ASATDATE` nor `end_date`, so each night's MERGE overwrote the
+previous snapshot. Measured: raw 41,286 / 43,088 rows over 114 feed days → validated held
+**384 and 1,065 rows** (99.1% and 97.5% lost). Adding `end_date` to the key is not enough
+either — one file carries several periods (167 distinct `END_DATE` from 114 file days), so
+a 1-day incremental window cannot keep up. Unlike TW these **do** need deduplication: every
+duplicate group is byte-identical (1,982 and 2,134 groups), and keeping them would double
+stock quantities on `SUM`. So: full load + `QUALIFY` on business key + `end_date` + `asatdate`.
+After the fix: **39,048 and 40,675 rows over 114 days**.
+
+⚠️ The other four BT tables (`sales_by_branch`, `sale_by_branch_mch3`, `turnover`,
+`turnover_brand`) have the **same bug and are still broken** — 2,694→19, 1,406→13,
+3,077→17, 3,305→19 rows. Left alone deliberately: nothing reads them yet. Fix them the
+same way before any consumer appears.
+
+### `saleout_hp` แยกห้างด้วยตัวอักษรแรกของ `SITENO` (แก้ 2026-09-14)
+
+ไฟล์เดียวมี 2 ห้าง — `S…` = HP · `M…` = MH · prefix อื่นได้ NULL โดยเจตนา เพื่อให้
+ตรวจเจอรหัสใหม่ที่ยังไม่รู้จัก
+
+⚠️ กฎนี้ผิดกับ 3 รหัส ต้องระบุตรง ๆ: `M888` ขึ้นต้น M แต่เป็น "บมจ. โฮมโปรดักส์
+เซ็นเตอร์" = HP สำนักงานใหญ่ · `CS01` = HP รังสิต-ปทุมธานี · `EX99` = HP Inter
+Company (สองตัวหลังเดิมได้ NULL) รวม **20 แถว / 168,646.50 บาท** ที่เคยจับ
+`BranchMdtSK` ไม่ได้ ยืนยันจากไฟล์ Excel ย้อนหลังของ BI ที่ติดป้าย `M888` เป็น HP
+
+ตรวจ 2026-09-14 หลังแก้: รหัสสาขาในฟีด 137 ตัว — dim มีครบ 137 · ห้างตรงกัน 137 ·
+`store_code IS NULL` เหลือ 0 แถว จาก 38,303
+
+⚠️ ยังเป็นการเดาอยู่ ทางที่ทนกว่าคือขอให้ห้างส่งรหัสห้างมาในไฟล์ · ระหว่างนี้มี
+query เฝ้าใน `document/operations/known-issues.md`
+
+### Downstream
+
+`curated_saleout_mdt` reads `saleout_hp`, `sale_by_branch_detail` (BT), `saleout_gb`,
+`report_sale_subscription` (TW, added 2026-09-14) and `saleout_lastyear`;
+`fact_saleout_mdt` reads the curated table.
+
+`curated_stock_mdt` (added 2026-09-15) reads `stock_by_branch` (BT) and
+`report_sale_subscription` (TW) → `fact_stock_mdt` → `fact_stock_mdt_monthly`.
+
+`stock_aging` and the four remaining BT tables still have no consumer.
 
 ## ALLKONS_COMMISSION (8 = 7 incremental + 1 schema) — PK `id`
 

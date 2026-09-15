@@ -1,0 +1,100 @@
+config {
+    type: "table",
+    schema: databuffet.CURATED_SALEOUT_MDT,
+    dependencies: ["curated_schema_saleout"],
+    tags: [databuffet.TAG_CURATED, databuffet.TAG_CURATED_FULL],
+    bigquery: {
+        partitionBy: "stock_date",
+        clusterBy: ["store_code", "branch_code", "product_code"]
+    },
+}
+
+/*
+  ของคงเหลือช่องทาง MDT รวมทุกห้างให้เป็นรูปเดียว
+  1 แถว = 1 วันสต็อก x 1 ห้าง x 1 สาขา x 1 สินค้า
+
+  ⚠️ มีแค่ 2 ห้างจาก 6 (สำรวจไฟล์ใน GCS 2026-09-15)
+      BT  ส่งไฟล์สต็อกแยกต่างหาก
+      TW  สต็อกปนมาในไฟล์เดียวกับยอดขาย
+      HP MH GB DH ไม่ส่งข้อมูลสต็อกมาเลยสักไฟล์
+  คิดเป็นยอดขาย 1,244 ล้านจาก 4,123 ล้าน = ครอบคลุมแค่ 30% ของธุรกิจ
+  ต้องบอก BI ก่อนทำ dashboard และขอให้อีก 4 ห้างส่งสต็อกมา
+
+  ⚠️ ตัววัดของ 2 ห้างไม่เหมือนกัน คอลัมน์ที่อีกห้างไม่มีเป็น NULL
+      onhand_qty   มีทั้งคู่
+      onhand_amt   มีแค่ BT (ต้นทุน) — TW ไม่ส่งมูลค่ามาเลย
+      onorder_qty  มีแค่ TW
+  ห้ามเอา onhand_amt ไปคิดรวมทั้งช่องทาง จะได้แค่ของ BT
+
+  ⚠️ วันสต็อกของ 2 ห้างมาจากคนละคอลัมน์
+      BT  end_date   ไม่ใช่ asatdate — ไฟล์รายงานสต็อกของ 1-2 วันก่อน
+                     วัด 2026-09-15: ห่าง 1 วัน 96 ไฟล์ · 2 วัน 20 ไฟล์
+                     ที่ห่าง 27-92 วันคือไฟล์ก้อนย้อนหลังตอนเริ่มฟีด
+      TW  asatdate   ไฟล์คือ snapshot ของวันนั้นเอง
+
+  ใช้ stock_by_branch เป็นแหล่งของ BT ไม่ใช่ stock_aging
+  เพราะเกรนตรงกัน (สาขา x สินค้า) ส่วน stock_aging ละเอียดกว่า
+  (แยกช่องทาง Showroom/Anyhome + ช่วงอายุ) เก็บไว้ทำ fact อายุสต็อกแยกทีหลัง
+  ⚠️ สองตารางให้ตัวเลขไม่ตรงกัน (2026-09-14: 372 vs 339 ชิ้น)
+     เพราะ stock_aging หักของจองออกแล้ว — ที่นี่ใช้ของทั้งหมดก่อนหักจอง
+*/
+
+WITH bt AS (
+
+    -- บุญถาวร — ไฟล์สต็อกแยกต่างหาก
+    -- วันสต็อกอยู่ที่ end_date · 163 จาก 167 วันส่งมาครั้งเดียว อีก 4 วันส่งซ้ำ 2 ไฟล์
+    -- จึงเลือกไฟล์ล่าสุดต่อ (สาขา, สินค้า, วันสต็อก)
+    SELECT
+        end_date               AS stock_date,
+        'BT'                   AS store_code,
+        branch                 AS branch_code,   -- BT ใช้ชื่อไทยเป็นรหัสสาขา
+        article_id             AS product_code,
+        article_name_th        AS product_name,
+        ur_qty                 AS onhand_qty,
+        ur_cost_amt            AS onhand_amt,    -- ต้นทุน ไม่ใช่ราคาขาย
+        CAST(NULL AS INT64)    AS onorder_qty,   -- BT ไม่ส่งของที่กำลังสั่งมา
+        asatdate
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "stock_by_branch")}
+    WHERE end_date IS NOT NULL
+      AND branch IS NOT NULL
+      AND article_id IS NOT NULL
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY branch, article_id, end_date ORDER BY asatdate DESC
+    ) = 1
+
+), tw AS (
+
+    -- ไทวัสดุ — สต็อกอยู่ในไฟล์เดียวกับยอดขาย วันของไฟล์คือวันสต็อก
+    -- ⚠️ ตัดศูนย์นำหน้ารหัสสินค้า เหมือนที่ทำในบล็อก tw ของ curated_saleout_mdt
+    --    ไม่งั้นรหัสจะไม่ตรงกับ dim_product_mdt และกับยอดขายของตัวเอง
+    -- ⚠️ ต้นทางมี 245 ค่าสาขา แต่จับกับ dim ได้ 101 · วันล่าสุดมีสต็อกจริง 91 สาขา
+    --    ส่วนเกินเป็นสาขาเก่าที่ปิดแล้ว จะตกเป็น -1 ในชั้น fact ซึ่งถูกตามดีไซน์
+    -- ⚠️ ทิ้งแถวที่ Stock_On_Hand ว่าง (13,349 แถว) — ไม่รู้ว่าเหลือเท่าไหร่
+    --    ต่างจากศูนย์ที่แปลว่าของหมด
+    SELECT
+        asatdate               AS stock_date,
+        'TW'                   AS store_code,
+        Store                  AS branch_code,   -- สตริงเต็ม `60001-CRC Thai Watsadu ...`
+        LTRIM(SKU, '0')        AS product_code,
+        ANY_VALUE(Description) AS product_name,
+        CAST(SUM(Stock_On_Hand) AS INT64)  AS onhand_qty,
+        CAST(NULL AS FLOAT64)  AS onhand_amt,    -- TW ไม่ส่งมูลค่าสต็อกมา
+        SUM(Stock_On_Order)    AS onorder_qty,
+        MAX(asatdate)          AS asatdate
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "report_sale_subscription")}
+    WHERE Store IS NOT NULL
+      AND SKU IS NOT NULL
+      AND Stock_On_Hand IS NOT NULL
+    GROUP BY stock_date, store_code, branch_code, product_code
+
+)
+
+SELECT * FROM bt
+UNION ALL
+SELECT * FROM tw
+
+pre_operations {
+}
+
+post_operations {
+}

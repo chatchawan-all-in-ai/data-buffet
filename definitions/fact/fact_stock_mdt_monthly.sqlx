@@ -1,0 +1,103 @@
+config {
+    type: "table",
+    schema: databuffet.FACT_TABLE,
+    dependencies: ["fact_stock_mdt"],
+    tags: [databuffet.TAG_FACT_DAILY],
+    uniqueKey: ["month_end", "store_code", "branch_code", "product_code"],
+    bigquery: {
+        partitionBy: "month_end",
+        clusterBy: ["store_code", "branch_sk", "product_mdt_sk"]
+    },
+}
+
+/*
+  ของคงเหลือช่องทาง MDT ณ สิ้นเดือน
+  1 แถว = 1 เดือน x 1 ห้าง x 1 สาขา x 1 สินค้า
+
+  หยิบ snapshot ของวันสุดท้ายที่มีข้อมูลในเดือนนั้น มาจาก fact_stock_mdt ตรง ๆ
+  ไม่บวกไม่เฉลี่ยอะไร — ยอดคงเหลือเป็นค่า ณ จุดเวลา บวกข้ามวันไม่ได้
+
+  ⚠️ วันสุดท้ายที่ "มีข้อมูล" ไม่ใช่วันสุดท้ายของปฏิทิน
+  ถ้าห้างไม่ส่งไฟล์วันที่ 30-31 เดือนนั้นจะได้ของวันที่ 29 แทน
+  เลือกวันแยกรายห้าง เพราะ BT กับ TW ส่งไฟล์คนละจังหวะ
+  คอลัมน์ snapshot_date บอกว่าค่านี้เป็นของวันไหนจริง ๆ
+
+  ⚠️ ข้ามวันที่ของคงเหลือรวมทั้งวันเป็น 0 — ไฟล์วันนั้นไม่สมบูรณ์ (เพิ่ม 2026-09-15)
+  เจอจริง: TW 2026-06-30 มี 201 แถว / 0 ชิ้น / 75 สาขา ขณะที่วันข้างเคียง
+  ~9,000 แถว / ~19,200 ชิ้น / 105 สาขา ถ้าไม่กัน สต็อก TW เดือน มิ.ย. จะเป็น 0
+  เลือกกฎนี้เพราะตรงเหตุ ไม่ต้องตั้งเกณฑ์เดาเอง (เช่น "แถวน้อยกว่า 50%")
+  ⚠️ แลกกับว่าถ้าวันไหนของหมดจริงทั้งห้างก็จะถูกข้าม — แทบเป็นไปไม่ได้
+  ถ้าเดือนไหนไม่เหลือวันที่ใช้ได้เลย เดือนนั้นจะไม่มีแถว ดีกว่ารายงานเลข 0 ปลอม
+
+  ⚠️ is_month_end บอกว่าเดือนนั้นจบแล้วหรือยัง
+      TRUE   เดือนจบแล้ว ค่านี้คือของสิ้นเดือนจริง เอาไปเทียบข้ามเดือนได้
+      FALSE  เดือนปัจจุบัน ยังไม่จบ เป็นค่าล่าสุดเท่าที่มี
+  ⚠️ BI ต้องกรอง is_month_end = TRUE ก่อนเทียบเดือนต่อเดือน
+     ไม่งั้นเดือนปัจจุบันที่ยังไม่จบจะดูเหมือนสต็อกลดฮวบ
+
+  ⚠️ ครอบคลุมแค่ 2 ห้างจาก 6 (BT · TW) เหมือน fact_stock_mdt
+  และ onhand_amt มีแค่ BT · onorder_qty มีแค่ TW
+
+  ponytail: อ่าน fact_stock_mdt ทั้งก้อน (998,079 แถว) แล้วเลือกวันสุดท้าย
+    ไม่ได้อ่านเฉพาะเดือนล่าสุด เพราะห้างส่งไฟล์ย้อนหลังเป็นก้อนอยู่เรื่อย
+    ถ้าอ่านแค่เดือนนี้ เดือนเก่าที่เพิ่งได้ข้อมูลเพิ่มจะไม่ถูกแก้
+    ตารางเล็ก อ่านทั้งก้อนทุกคืนถูกกว่าเขียนโค้ดกันพลาด
+*/
+
+js {
+    const FactStockTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FACT_TABLE,
+        name: "fact_stock_mdt",
+    };
+    const FactStockTableRef = `${FactStockTable.database}.${FactStockTable.schema}.${FactStockTable.name}`;
+}
+
+WITH month_last_day AS (
+
+  -- วันสุดท้ายที่แต่ละห้างมีข้อมูลในแต่ละเดือน
+  -- แยกรายห้างเพราะ BT กับ TW ส่งไฟล์คนละจังหวะ วันขาดคนละวัน
+  SELECT
+    store_code,
+    DATE_TRUNC(stock_date, MONTH) AS month_start,
+    MAX(stock_date)               AS snapshot_date
+  FROM (
+    -- ตัดวันที่ไฟล์ไม่สมบูรณ์ทิ้งก่อนเลือกวันสุดท้าย
+    SELECT store_code, stock_date
+    FROM `${FactStockTableRef}`
+    GROUP BY store_code, stock_date
+    HAVING SUM(onhand_qty) <> 0
+  )
+  GROUP BY store_code, month_start
+
+)
+
+SELECT
+  LAST_DAY(m.month_start, MONTH) AS month_end,
+  m.snapshot_date,
+  -- เดือนที่ยังไม่จบ = เดือนเดียวกับวันนี้ ค่าที่ได้เป็นค่าล่าสุด ไม่ใช่ค่าสิ้นเดือน
+  m.month_start < DATE_TRUNC(CURRENT_DATE('Asia/Bangkok'), MONTH) AS is_month_end,
+
+  f.store_code,
+  f.branch_sk,
+  f.zone_sk,
+  f.product_mdt_sk,
+  f.product_sk,
+  f.product_mkt_sk,
+
+  f.onhand_qty,
+  f.onhand_amt,     -- ต้นทุน มีแค่ BT
+  f.onorder_qty,    -- มีแค่ TW
+
+  f.branch_code,
+  f.product_code,
+
+  f.asatdate
+FROM month_last_day AS m
+JOIN `${FactStockTableRef}` AS f
+  ON  f.store_code  = m.store_code
+  AND f.stock_date  = m.snapshot_date
+
+pre_operations {}
+
+post_operations {}

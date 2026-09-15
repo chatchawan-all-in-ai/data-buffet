@@ -1,44 +1,39 @@
 config {
-    type: "incremental",
+    type: "table",
     schema: databuffet.VALIDATED_SALEOUT_MDT,
     dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
-    tags: [databuffet.TAG_VALIDATED],
-    uniqueKey: ["vendor_id", "branch", "article_id"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_FULL],
     bigquery: {
         partitionBy: "asatdate",
-        clusterBy: ["vendor_id", "branch", "article_id"]
+        clusterBy: ["branch", "article_id"]
     },
 }
 
-js {
-    const pk_key = ["vendor_id", "branch", "article_id"]
+/*
+  สต็อกคงเหลือรายสาขา x รายสินค้า ของบุญถาวร
+  1 แถว = 1 ผู้ขาย x 1 สาขา x 1 สินค้า x 1 ช่วงเวลา x 1 วันที่ไฟล์
 
-    let partition_statement, post_operations_statement;
+  ⚠️ เปลี่ยนจาก incremental เป็น table (full load) 2026-09-15
+  ของเดิม uniqueKey ไม่มี ASATDATE และไม่มี end_date — ต้นทางเป็น snapshot รายวัน
+  คีย์จึงซ้ำทุกคืน MERGE เขียนทับของเมื่อวานทิ้ง ประวัติหายเกือบหมด
+  บั๊กรูปแบบเดียวกับ report_sale_subscription ของไทวัสดุ (แก้ไปแล้ว 2026-09-14)
 
-    if (pk_key && pk_key.length > 0) {
-        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY ASATDATE DESC) = 1`;
-        post_operations_statement = `
-BEGIN
-    DECLARE retry_count INT64 DEFAULT 0;
-    DECLARE max_retries INT64 DEFAULT 10;
-    DECLARE success BOOL DEFAULT FALSE;
+  ทำไมไม่แค่เติมคีย์ให้ครบ: ไฟล์เดียวส่งหลายช่วงเวลามาพร้อมกัน
+  วัด 2026-09-15: END_DATE ไม่ซ้ำ 167 ค่า จากไฟล์เพียง 114 วัน
+  หน้าต่าง incremental 1 วันจึงตามไม่ทัน ต้องอ่านทั้งก้อน
+  ต้นทาง 6 ตารางของ BT รวมกันไม่ถึง 95,000 แถว — อ่านใหม่ทุกคืนถูกกว่าเขียนโค้ดกันพลาด
 
-    WHILE retry_count < max_retries AND NOT success DO
-        BEGIN
-            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
-            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
-            SET success = TRUE;
-        EXCEPTION WHEN ERROR THEN
-            SET retry_count = retry_count + 1;
-        END;
-    END WHILE;
-END;`;
+  ⚠️ ต้องยุบแถวซ้ำ ไม่ใช่เก็บทุกแถว (ต่างจาก TW)
+  ตรวจ 2026-09-15: กลุ่มที่ซ้ำเป็นสำเนาเหมือนกันทุกคอลัมน์ 100%
+  ถ้าไม่ยุบ เวลา SUM จำนวนหรือมูลค่าสต็อกจะนับซ้ำ
+  คีย์ที่ใช้ยุบ = คีย์ธุรกิจเดิม + end_date + asatdate
 
-    } else {
-        partition_statement = "";
-        post_operations_statement = "";
-    }
-}
+  วัด 2026-09-15: raw 41,286 แถว / 114 วัน -> validated เหลือ 384 แถว / 73 วัน (หาย 99.1%)
+  หลังแก้ควรได้ 39,048 แถว (ยุบสำเนาซ้ำ 2,238 แถว)
+
+  ponytail: ถ้าวันหน้าตารางนี้โตเกินหลักล้านแถว ค่อยกลับมาเป็น incremental
+    โดยใส่ end_date + ASATDATE เข้าคีย์ และขยายหน้าต่างให้คลุมช่วงที่ไฟล์ส่งย้อนมา
+*/
 
 SELECT
     ${databuffet.functionData.cleanString('VENDOR_ID')} AS vendor_id,
@@ -54,12 +49,13 @@ SELECT
     PARSE_DATE('%Y/%m/%d', TRIM(END_DATE)) AS end_date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
 FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.stock_by_branch`
-${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
-${partition_statement}
+QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY vendor_id, branch, article_id, end_date, asatdate
+    ORDER BY asatdate
+) = 1
 
 pre_operations {
 }
 
 post_operations {
-    ${ when(!incremental(), post_operations_statement) }
 }

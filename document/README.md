@@ -38,6 +38,7 @@
 | เอกสาร | เนื้อหา |
 |---|---|
 | [operations/known-issues.md](operations/known-issues.md) | คำผิดที่ห้ามแก้, พฤติกรรมตั้งใจ, หนี้เทคนิค |
+| [operations/saleout-mdt-backlog.md](operations/saleout-mdt-backlog.md) | งานค้าง Sales Out MDT + ความสดของฟีดแต่ละห้าง — เช็คทุกครั้งที่กลับมาทำ |
 | [operations/deploy-to-prod.md](operations/deploy-to-prod.md) | runbook clone nonprd → prd (big-bang cutover) — คำสั่งครบทุกขั้นในเอกสาร |
 
 ## LLM Wiki — `project_wiki/`

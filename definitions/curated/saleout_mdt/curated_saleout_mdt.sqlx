@@ -36,8 +36,8 @@ config {
   ยอดรวมไม่ผิด (ติดลบก็หักถูก) แต่ "อัตราการคืนสินค้า" ของ 5 ห้างนั้นเชื่อไม่ได้
   ต้องขอให้ห้างส่งชนิดเอกสารมาเหมือน GB
 
-  ห้างที่ยังไม่มีในไฟล์นี้: TW (ต้นทางเป็น snapshot ต้องตัดสินใจก่อน)
-  DH มีเฉพาะจากไฟล์ย้อนหลัง ยังไม่มีฟีดรายวัน
+  TW เข้ามา 2026-09-14 — ต้นทางเป็น snapshot สต็อก วันขายอยู่ที่ Last_Sold_Date
+  DH มีเฉพาะจากไฟล์ย้อนหลัง ยังไม่มีฟีดรายวัน ครบ 6 ห้างเมื่อ DH ส่งไฟล์
 */
 
 WITH hp AS (
@@ -184,15 +184,90 @@ WITH hp AS (
     WHERE sale_date IS NOT NULL
     GROUP BY sale_date, store_code, branch_code, product_code, doc_type
 
+), tw_dedup AS (
+
+    -- ไทวัสดุส่ง snapshot สต็อกรายวัน ยอดขายของวันแปะมาในแถวของสินค้า
+    -- ยอดเป็นของวันเดียว ไม่ใช่ยอดสะสม ไม่ต้อง differencing แบบ BT
+    -- วัด 2026-09-14 เฉพาะไฟล์ปกติ 102 วัน:
+    --     18,894 แถว (85.8 ล้าน) Last_Sold_Date = วันไฟล์ - 2 วันเป๊ะ
+    --      1,106 แถว (5.0 ล้าน)  ห่าง 0-1 วัน
+    --        236 แถว ห่าง 3-7 วัน ยอดรวม -304,903 คือการคืนสินค้า
+    --
+    -- ⚠️ วันขายจริงอยู่ที่ Last_Sold_Date ไม่ใช่ asatdate — ช้ากว่าห้างอื่น 2 วัน
+    --    ต้องบอก BI ว่ายอด TW ของเมื่อวานจะยังไม่ขึ้น ต้องรออีก 2 วัน
+    --
+    -- ⚠️ ต้องยุบก่อน GROUP BY เพราะห้างส่งไฟล์ตามหลังเป็นก้อน
+    --    วัด 8 ครั้งใน 4 เดือน (~ทุก 2 สัปดาห์) ไฟล์เดียวมีหลาย snapshot
+    --    หนักสุด 2026-05-13 มี 546,194 แถว = snapshot ~59 วันต่อกัน
+    --    การขายเดียวกันจึงถูกส่งซ้ำ ถ้า SUM ตรง ๆ ยอดจะเกิน
+    --    เลือก 1 แถวต่อ (สาขา, สินค้า, วันขาย) เอาจากไฟล์ล่าสุด
+    --    ที่เอาไฟล์ล่าสุดเพราะ 126 กลุ่มมียอดไม่ตรงกันข้ามไฟล์ = ห้างแก้ตัวเลขตามหลัง
+    --
+    -- แถวที่ตัดทิ้ง
+    --     Description = 'Total'  แถวสรุปท้ายไฟล์ 177 แถว (Store/SKU/Last_Sold_Date ว่างหมด)
+    --                            วัด 2026-09-12 ยอดแถวนี้ = ผลรวมแถวย่อยของวันนั้นพอดี
+    --                            ไม่กรอง = ยอดเป็น 2 เท่า · ตัดด้วย Store IS NOT NULL ก็พอ
+    --     Last_Sold_Date ว่าง    222 แถว / 1,023,163 บาท / 78 สาขา
+    --                            ⚠️ มียอดจริงแต่ไม่รู้วันขาย วางบนปฏิทินไม่ได้ ต้องทิ้ง
+    --                            คิดเป็น 0.1% ของยอด TW — ถ้าโตขึ้นต้องถามห้าง
+    --     ยอดและจำนวนเป็น 0      ~98% ของไฟล์ เป็นแถวสต็อกเฉย ๆ ไม่มีการขาย
+    SELECT Store, SKU, Barcode, Description, Last_Sold_Date, Sales_Amount, Sales_Qty, asatdate
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "report_sale_subscription")}
+    WHERE Last_Sold_Date IS NOT NULL
+      AND Store IS NOT NULL
+      AND (Sales_Amount <> 0 OR Sales_Qty <> 0)
+      -- ก่อนวันนี้ใช้ไฟล์ Excel แทน ดูบล็อก lastyear
+      AND Last_Sold_Date >= DATE '2026-05-13'
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY Store, SKU, Last_Sold_Date ORDER BY asatdate DESC
+    ) = 1
+
+), tw AS (
+
+    -- ⚠️ ต้นทางไม่มีคอลัมน์ชนิดเอกสาร เราเดาจากยอดติดลบ
+    -- ⚠️ การคืนของ TW ลงวันที่ขายเดิม ไม่ใช่วันคืน เพราะ Last_Sold_Date คือวันที่ขาย
+    --    ต่างจากห้างอื่นที่ลงวันคืน — ข้อจำกัดของต้นทาง บอก BI ด้วย
+    SELECT
+        Last_Sold_Date         AS sale_date,
+        'TW'                   AS store_code,
+        Store                  AS branch_code,   -- TW ใช้สตริงเต็ม `60001-CRC Thai Watsadu ...`
+        Store                  AS branch_name,
+        -- ⚠️ ตัดศูนย์นำหน้า (แก้ 2026-09-14) — TW ส่งรหัสสินค้ามาแบบมี 0 นำหน้าทุกตัว
+        --    แต่ไฟล์ Excel ย้อนหลังกับ dim_product_mdt ไม่มี ถ้าไม่ตัด สินค้าตัวเดียวกัน
+        --    จะกลายเป็นคนละรหัสเมื่อข้ามวันที่ 2026-05-13 กราฟรายสินค้าจะขาดตอน
+        --    วัด 2026-09-14: ฟีด 177 รหัส (มี 0 นำหน้า 100%) · Excel 537 รหัส (0%)
+        --                    ตัดศูนย์แล้วทับกัน 167/177 = 94%
+        --    dim_product_mdt ฝั่ง TW ทั้ง 527 รหัสไม่มีศูนย์นำหน้าเลย
+        -- ⚠️ ใส่เฉพาะบล็อกนี้ ห้ามไปใส่ห้างอื่น — ห้างอื่นรหัสไม่มีศูนย์นำหน้าอยู่แล้ว
+        LTRIM(SKU, '0')        AS product_code,
+        ANY_VALUE(Description) AS product_name,
+        ANY_VALUE(Barcode)     AS barcode_match, -- TW ส่งบาร์โค้ดมาแยกคอลัมน์
+        SUM(Sales_Qty)         AS sale_qty,
+        SUM(Sales_Amount)      AS sale_amount,
+        IF(Sales_Amount < 0, 'RETURN', 'SALE') AS doc_type,
+        'DERIVED'              AS doc_type_source,
+        1                      AS days_covered,
+        FALSE                  AS date_is_estimated, -- วันขายมาจากต้นทาง ไม่ได้เดา
+        CAST(NULL AS STRING)   AS bill_no,
+        CAST(NULL AS STRING)   AS reference_no,
+        MAX(asatdate)          AS asatdate
+    FROM tw_dedup
+    GROUP BY sale_date, store_code, branch_code, branch_name, product_code, doc_type
+
 ), lastyear AS (
 
     -- ยอดขายย้อนหลังที่ BI ส่งมาเป็น Excel โหลดครั้งเดียว 2026-09-11
     -- ต้นทาง 430,639 แถว 2022-01-01 ถึง 2026-08-23 รวม 4,185,331,780.32 ครบ 6 ห้าง
     --
-    -- ⚠️ วันตัด 2026-02-09 — ฟีดรายวันของทุกห้างเริ่มวันนี้พอดี
-    --    เอาเฉพาะก่อนวันตัด ไม่งั้นยอดช่วง ก.พ.-ส.ค. 2026 จะนับซ้ำกับฟีดรายวัน
-    --    ก่อนวันตัด  358,302 แถว / 3,594,214,168.32  ไม่ซ้อนกับใคร
-    --    ทิ้งไป       62,110 แถว /   535,522,982.10  ซ้อนกับฟีดรายวัน
+    -- ⚠️ วันตัดไม่เท่ากันทุกห้าง เพราะฟีดรายวันเริ่มไม่พร้อมกัน
+    --    เอาเฉพาะก่อนวันที่ฟีดของห้างนั้นเริ่ม ไม่งั้นจะนับซ้ำกับฟีด
+    --        HP MH GB BT   2026-02-09
+    --        TW            2026-05-13  (แก้ 2026-09-14 — เดิมใช้ 02-09 ของทุกห้าง)
+    --        DH            ไม่ตัด ยังไม่มีฟีดเลย
+    --
+    -- ⚠️ TW เคยถูกตัดผิดที่ 2026-02-09 ทั้งที่ฟีดเพิ่งเริ่ม 2026-05-13
+    --    ทำให้ ก.พ.-พ.ค. หายไปเฉย ๆ 8,062 แถว / 95,725,077 บาท ไม่มีอะไรมาแทน
+    --    หลังแก้ TW เอาจากไฟล์ 94,338 แถว / 1,035,602,501 · ทิ้งที่ซ้อนกับฟีด 10,201 แถว
     --
     -- ⚠️ ยกเว้น DH — ยังไม่มีฟีดรายวันเลย ไม่มีอะไรให้ซ้อน จึงเอาทุกวัน
     --    DH หลังวันตัด 10,227 แถว / 55,594,629.90
@@ -213,7 +288,17 @@ WITH hp AS (
     SELECT
         sale_date,
         store_code,
-        branch_code,
+        -- ⚠️ ไฟล์เขียนรหัสสาขา DH To go ปนกัน 2 แบบ (เจอ 2026-09-14)
+        --    ร้านเดียวกันมาทั้ง 'M017' และ 'M017_TG' ชื่อสาขาเหมือนกันเป๊ะ
+        --    MDS ใช้แบบมี _TG อย่างเดียว รหัสเปล่าจึงจับ BranchMdtSK ไม่ได้ ตกเป็น -1
+        --    วัด: 194 แถว / 420,566.53 บาท / 10 สาขา (ข้อมูลปี 2023 ล้วน)
+        --    เทียบชื่อกับ dim แล้วตรงกัน 10/10 ไม่มีอันไหนกำกวม
+        --    และไม่มีวัน+สินค้าไหนที่ส่งมาทั้ง 2 รหัส (ตรวจแล้ว 0 กลุ่ม) ยุบรวมได้ไม่นับซ้ำ
+        -- ⚠️ ต้องจำกัด store_code = 'DH' + รหัสเลขล้วน ไม่งั้นจะไปโดน M007 ของเมกาโฮม
+        --    ที่เป็นคนละร้านและถูกต้องอยู่แล้ว
+        IF(store_code = 'DH' AND REGEXP_CONTAINS(branch_code, r'^M[0-9]+$'),
+           CONCAT(branch_code, '_TG'),
+           branch_code)         AS branch_code,
         ANY_VALUE(branch_name)  AS branch_name,
         product_code,
         ANY_VALUE(product_name) AS product_name,
@@ -229,7 +314,9 @@ WITH hp AS (
         MAX(asatdate)           AS asatdate
     FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_lastyear")}
     WHERE sale_date IS NOT NULL
-      AND (sale_date < DATE '2026-02-09' OR store_code = 'DH')
+      AND (   (store_code = 'TW' AND sale_date < DATE '2026-05-13')
+           OR (store_code = 'DH')
+           OR (store_code NOT IN ('TW', 'DH') AND sale_date < DATE '2026-02-09'))
     GROUP BY sale_date, store_code, branch_code, product_code, doc_type
 
 )
@@ -239,6 +326,8 @@ UNION ALL
 SELECT * FROM bt
 UNION ALL
 SELECT * FROM gb
+UNION ALL
+SELECT * FROM tw
 UNION ALL
 SELECT * FROM lastyear
 

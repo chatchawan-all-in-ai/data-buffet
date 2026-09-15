@@ -1,44 +1,50 @@
 config {
-    type: "incremental",
+    type: "table",
     schema: databuffet.VALIDATED_SALEOUT_MDT,
     dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
-    tags: [databuffet.TAG_VALIDATED],
-    uniqueKey: ["Store", "Cat", "Sub_Cat", "Brand", "SKU"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_FULL],
     bigquery: {
         partitionBy: "asatdate",
-        clusterBy: ["Store", "Cat", "Sub_Cat", "Brand"]
+        clusterBy: ["Store", "SKU", "Last_Sold_Date"]
     },
 }
 
-js {
-    const pk_key = ["Store", "Cat", "Sub_Cat", "Brand", "SKU"]
+/*
+  ไทวัสดุ — snapshot สต็อกรายวัน ที่มียอดขายของวันแปะมาด้วย
+  1 แถว = 1 สาขา x 1 SKU x 1 วันที่ไฟล์ (ASATDATE)
 
-    let partition_statement, post_operations_statement;
+  ⚠️ เปลี่ยนจาก incremental เป็น table (full load) 2026-09-14
+  เหตุผล: ของเดิม uniqueKey = (Store, Cat, Sub_Cat, Brand, SKU) ไม่มี ASATDATE
+  ต้นทางเป็น snapshot รายวัน คีย์เดิมจึงซ้ำทุกคืน MERGE เขียนทับของเมื่อวานทิ้ง
+  วัด 2026-09-14: raw 1,552,616 แถว / 109 วัน  ->  validated เหลือ 9,816 แถว
+                  หายไป 99.4% เหลือแค่ snapshot ล่าสุดวันเดียว
+  ประวัติที่หายไปกู้ไม่ได้จาก validated ต้องอ่าน raw ใหม่ทั้งก้อน
 
-    if (pk_key && pk_key.length > 0) {
-        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY ASATDATE DESC) = 1`;
-        post_operations_statement = `
-BEGIN
-    DECLARE retry_count INT64 DEFAULT 0;
-    DECLARE max_retries INT64 DEFAULT 10;
-    DECLARE success BOOL DEFAULT FALSE;
+  ทำไมไม่แค่เติม ASATDATE เข้า uniqueKey:
+      ต้นทางไม่มีเลขบรรทัดหรือเลขเอกสาร คีย์ที่เหลือมีค่าว่างได้
+      (Store ว่าง 354 แถว · SKU ว่าง 531 แถว — แถวสรุป "Total" ของแต่ละไฟล์)
+      NULL ในคีย์ MERGE ไม่เคยแมตช์กับอะไร จะ INSERT ซ้ำเพิ่มทุกคืนเงียบ ๆ
+      แนวเดียวกับ saleout_lastyear ที่เลือก full load ด้วยเหตุผลเดียวกัน
+  1.55 ล้านแถว โตวันละ ~9,200 — อ่านทั้งก้อนทุกคืนถูกกว่าเขียนโค้ดกันพลาด
+  ponytail: ถ้าวันหน้าโตเกิน 50 ล้านแถว ค่อยกลับมาเป็น incremental โดยเพิ่ม
+      ASATDATE เข้าคีย์ พร้อมกับกรองแถว Total ทิ้งที่ชั้นนี้ก่อน
 
-    WHILE retry_count < max_retries AND NOT success DO
-        BEGIN
-            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
-            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
-            SET success = TRUE;
-        EXCEPTION WHEN ERROR THEN
-            SET retry_count = retry_count + 1;
-        END;
-    END WHILE;
-END;`;
+  ⚠️ ไม่ dedup ที่ชั้นนี้ — ยกภาระไปที่ curated
+  ไฟล์แรก ASATDATE=20260513 เป็นก้อนย้อนหลัง 546,194 แถว (~59 snapshot ต่อกัน)
+  snapshot เดียวกันซ้ำรหัสสินค้าเดิมหลายรอบ แยกกันได้ด้วย Last_Sold_Date เท่านั้น
+  curated จะเลือก 1 แถวต่อ (Store, SKU, Last_Sold_Date) โดยเอาไฟล์ล่าสุด
 
-    } else {
-        partition_statement = "";
-        post_operations_statement = "";
-    }
-}
+  ⚠️ Description = 'Total' คือแถวสรุปท้ายไฟล์ (177 แถว) ต้องกรองทิ้งที่ curated
+  วัด 2026-09-12: แถว Total = 738,509.15 เท่ากับผลรวมแถวย่อยของวันนั้นพอดี
+  ถ้าไม่กรอง ยอดจะเป็น 2 เท่า
+
+  ยอดขายเป็นยอดของวันเดียว ไม่ใช่ยอดสะสม — ไม่ต้อง differencing แบบ BT
+  วัด 2026-09-12: 9,208 แถว มียอดแค่ 173 แถว และ 169 แถวมี Last_Sold_Date
+  ตรงกันหมดคือ 2026-09-10 (ช้ากว่าวันไฟล์ 2 วัน) ที่เหลือยอดเป็น 0
+
+  วันขายจริงอยู่ที่ Last_Sold_Date ไม่ใช่ ASATDATE — ต่างกัน 2 วันเสมอ
+  ต้องบอก BI ว่ายอด TW จะมาช้ากว่าห้างอื่น 2 วัน
+*/
 
 SELECT
     ${databuffet.functionData.cleanString('Store')} as Store,
@@ -53,16 +59,14 @@ SELECT
     CAST(Sales_Qty as INT64) as Sales_Qty,
     CAST(Stock_On_Hand as FLOAT64) as Stock_On_Hand,
     CAST(Stock_On_Order as INT64) as Stock_On_Order,
+    -- ตรวจ 2026-09-14: ทั้ง 1,552,616 แถว parse ผ่านหมด ไม่มีค่าเพี้ยน จึงไม่ใช้ SAFE
     PARSE_DATE('%Y-%m-%d', TRIM(Last_Sold_Date)) as Last_Sold_Date,
     PARSE_DATE('%Y-%m-%d', TRIM(Last_Receive_Date)) as Last_Receive_Date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
 FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.report_sale_subscription`
-${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
-${partition_statement}
 
 pre_operations {
 }
 
 post_operations {
-    ${ when(!incremental(), post_operations_statement) }
 }

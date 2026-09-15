@@ -1,43 +1,54 @@
 config {
   type: "view",
   schema: databuffet.FACT_VIEW,
-  dependencies: ["fact_saleout_mdt", "dim_pc", "dim_sales_branch_mdt", "dim_product_mkt"],
+  dependencies: ["fact_saleout_mdt", "dim_pc", "dim_product_mkt"],
   tags: [databuffet.TAG_VIEW],
 }
 
 
 js {
-    const PcSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_pc_master`;
+    const DimPcTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_pc",
+    };
+    const DimPcRef = `${DimPcTable.database}.${DimPcTable.schema}.${DimPcTable.name}`;
 
-    const dim = (name) => `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.${name}`;
-    const DimPcRef       = dim("dim_pc");
-    const DimBranchRef   = dim("dim_sales_branch_mdt");
-    const DimProductMktRef = dim("dim_product_mkt");
+    const DimProductMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mkt",
+    };
+    const DimProductMktRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
 }
 
 WITH pc_assign AS (
+
   -- PC ที่ดูแลแต่ละ (สาขา, กลุ่มสินค้า) พร้อมจำนวนคนในช่องนั้นเพื่อใช้เป็นตัวหาร
   --
-  -- ⚠️ ค้างแก้ 2026-09-11: dim_pc เปลี่ยนเกรนเป็น 1 แถว = 1 การมอบหมาย
-  --    การ JOIN ด้านล่างด้วย EmployeeID จะได้ 2 แถวสำหรับ 4 คนที่ดูแล 2 สาขา
-  --    ทำให้ PcCountInCell ของช่องนั้นเพิ่มเป็นเท่าตัว และยอดที่ปันส่วนเพี้ยน
-  --    ทางแก้: อ่าน dim_pc ตรง ๆ (มี BranchMdtSK + MarketingGroupID อยู่ในตัวแล้ว)
-  --    แล้วเลิกอ่าน mds ดิบทั้งก้อน — ยังไม่ทำเพราะรอบนี้ตกลงว่าแก้เฉพาะ dim
+  -- ⚠️ แก้ 2026-09-14 — เดิมอ่าน mds_data_sales_pc_master ดิบแล้ว JOIN dim_pc
+  --    ด้วย EmployeeID ซึ่งพองแถว เพราะ dim_pc มีเกรน 1 แถว = 1 การมอบหมาย
+  --    คนที่ดูแลหลายสาขาจึงถูกนับซ้ำตามจำนวนสาขาที่ตัวเองดูแล
+  --    วัด 2026-09-14: ตัวหารรวม 2,748 แทนที่จะเป็น 531 (5.2 เท่า)
+  --                    ค่าสูงสุดในช่องเดียว 47 แทนที่จะเป็น 3
+  --                    ช่องที่ตัวหารผิด 55 จาก 508 · ยอดที่ปันส่วนเพี้ยน 1,629,649 บาท
+  --
+  -- ตอนนี้อ่าน dim_pc ตรง ๆ เพราะมี BranchMdtSK + MarketingGroupID + ช่วงวันที่
+  -- อยู่ในตัวเองครบแล้ว ไม่ต้องกลับไปแตะ mds และไม่ต้อง join dim_sales_branch_mdt
+  --
+  -- กรอง IsPlaceholder = FALSE — แถวเหล่านั้นคือสาขาที่ยังไม่มี PC จริง
+  -- (ต้นทางใส่ Dummy_NotPC ไว้) นับเป็นตัวหารไม่ได้ ถ้านับยอดจะถูกหารทิ้งเปล่า ๆ
+  -- วัด: 578 แถว = 531 การมอบหมายจริง (527 คน) + 47 แถวว่าง
   SELECT
-    br.BranchMdtSK,
-    ${databuffet.functionData.cleanString("src.marketinggroupid")} AS MarketingGroupID,
-    pc.PcSK,
-    src.start_date AS AssignStart,
-    src.end_date   AS AssignEnd,
-    COUNT(*) OVER (
-      PARTITION BY br.BranchMdtSK, ${databuffet.functionData.cleanString("src.marketinggroupid")}
-    ) AS PcCountInCell
-  FROM `${PcSourceRef}` AS src
-  JOIN `${DimPcRef}` AS pc
-    ON ${databuffet.functionData.cleanString("src.employee_id")} = pc.EmployeeID
-  JOIN `${DimBranchRef}` AS br
-    ON ${databuffet.functionData.cleanString("src.branch_code")} = br.BranchCodeMdt
-  WHERE src.is_active = TRUE
+    BranchMdtSK,
+    MarketingGroupID,
+    PcSK,
+    StartDate AS AssignStart,
+    EndDate   AS AssignEnd,
+    COUNT(*) OVER (PARTITION BY BranchMdtSK, MarketingGroupID) AS PcCountInCell
+  FROM `${DimPcRef}`
+  WHERE PcSK <> -1
+    AND IsPlaceholder = FALSE
 
 ), sale_with_group AS (
   SELECT

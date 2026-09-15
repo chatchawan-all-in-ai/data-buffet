@@ -1,0 +1,148 @@
+config {
+  type: "view",
+  schema: databuffet.FACT_VIEW,
+  dependencies: ["fact_transcation", "dim_customer", "dim_sales_branch_mdt"],
+  tags: [databuffet.TAG_VIEW],
+}
+
+/*
+  ยอดขายเข้าช่องทาง MDT — 1 แถว = 1 บรรทัดใบขายที่ออกให้ 6 ห้าง
+  กรองจาก fact_transcation ไม่ได้สร้าง fact ใหม่ เพราะเป็นธุรกรรม MAC5 ปกติ
+  ที่มีอยู่แล้ว แค่คัดเฉพาะลูกค้าที่เป็นห้าง แล้วจัดรูปให้เทียบกับ
+  fact_saleout_mdt ได้ (ใช้ store_code ชุดเดียวกัน)
+
+  ⚠️ ตัวแมปลูกค้า -> ห้าง มาจาก dim_customer.debgroup ซึ่งไม่สะอาด
+  วัด 2026-09-15 เจอกับดัก 3 อัน ต้องเขียนเงื่อนไขดักเอง
+      BT.C   บุญถาวรส่วนใหญ่อยู่กลุ่มนี้ ไม่ใช่ BT
+             ใช้แค่ BT ได้ 4.65 ล้าน · รวม BT.C ได้ 20.8 ล้าน (ขาดไป 77%)
+      DH     ไม่ใช่ดูโฮม เป็นบุคคลธรรมดา 6 คน ยอดรวมทั้งปี 1,297 บาท
+             ดูโฮมตัวจริงคือ DOHOME
+      MH     28 สาขาเมกาโฮมใช้นิติบุคคลโฮมโปร จึงอยู่ในกลุ่ม HP
+             ต้องแยกด้วยชื่อ ไม่งั้นยอดสองห้างผิดทั้งคู่
+
+  ตรวจความสมเหตุสมผลด้วยอัตราส่วนขายเข้า/ขายออก ปี 2026 (วัด 2026-09-15)
+      TW 1.09 · GB 1.34 · HP 1.11 · DH 1.19 · MH 1.16 · BT 1.09
+  ทั้ง 6 ห้างอยู่ในช่วงเดียวกัน ถ้าห้างไหนหลุดออกนอกช่วงนี้มาก
+  แปลว่าตัวแมปพลาด ให้กลับมาดูที่ CASE ด้านล่าง
+
+  BI ยืนยันตารางแมปแล้ว 2026-09-15 (BT.C ใช่ · แยกเมกาโฮมออกจาก HP ใช่)
+  และตัดสินว่า `บริษัท ช้างไทวัสดุ` (0.41 ล้าน) ไม่นับเป็นไทวัสดุ — จึงไม่อยู่ใน CASE
+
+  ⚠️ ขายเข้าเป็นราคาขายส่ง ขายออกเป็นราคาขายปลีก เทียบยอดกันตรง ๆ ไม่ได้
+  ใช้ดูแนวโน้มและสัดส่วน ไม่ใช่ส่วนต่างกำไร
+
+  ⚠️ ลูกค้าแยกเป็นรายสาขาจริง (วัด 2026-09-15 จับชื่อกับ dim_sales_branch_mdt ได้
+  GB 98.5% · TW 84% · DH 73% · HP 60% · BT 56% โดยยังไม่ได้ขัดชื่อเลย)
+  แต่ view นี้ยังไม่ต่อ BranchMdtSK — เก็บ customer_branch_name ไว้ให้ก่อน
+  ถ้าต้องการเทียบระดับสาขา ค่อยเพิ่มตัวจับคู่ทีหลัง
+*/
+
+js {
+    const DimCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer",
+    };
+    const DimCustomerRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
+
+    const FactTranscationTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FACT_TABLE,
+        name: "fact_transcation",
+    };
+    const FactTranscationRef = `${FactTranscationTable.database}.${FactTranscationTable.schema}.${FactTranscationTable.name}`;
+
+    const DimBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimBranchRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
+}
+
+WITH branch_lookup AS (
+
+  -- 1 SK ต่อ (ห้าง, ชื่อสาขาที่ขัดแล้ว) — กัน fan-out จากชื่อซ้ำใน dim
+  SELECT
+    StoreCode AS store_code,
+    REGEXP_REPLACE(
+      REGEXP_REPLACE(BranchName, r'^(HP|MH|GH|GB|BT|TW|DH)\s+', ''),
+      r'[\s()\-–]', ''
+    ) AS branch_key,
+    BranchMdtSK,
+    ZoneMdtSK
+  FROM `${DimBranchRef}`
+  WHERE BranchMdtSK <> -1
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY StoreCode,
+      REGEXP_REPLACE(REGEXP_REPLACE(BranchName, r'^(HP|MH|GH|GB|BT|TW|DH)\s+', ''), r'[\s()\-–]', '')
+    ORDER BY BranchMdtSK
+  ) = 1
+
+), mdt_customer AS (
+
+  -- ลูกค้าที่เป็นห้างในช่องทาง MDT พร้อมรหัสห้างของเรา
+  -- ลำดับของ WHEN สำคัญ: ต้องดัก MH ก่อน HP ไม่งั้นเมกาโฮมจะตกเป็นโฮมโปร
+  SELECT
+    CustomerSK,
+    CASE
+      WHEN UPPER(debgroup) = 'MH'                                  THEN 'MH'
+      WHEN debnamet LIKE '%เมกา%' OR UPPER(debnamet) LIKE '%MEGA%' THEN 'MH'
+      WHEN UPPER(debgroup) LIKE 'HP%'                              THEN 'HP'
+      WHEN UPPER(debgroup) IN ('TW', 'TWEXPO')                     THEN 'TW'
+      WHEN UPPER(debgroup) = 'GB'                                  THEN 'GB'
+      WHEN UPPER(debgroup) = 'DOHOME'                              THEN 'DH'
+      WHEN UPPER(debgroup) IN ('BT', 'BT.C')                       THEN 'BT'
+      WHEN debnamet LIKE '%บุญถาวร%'                                THEN 'BT'
+    END AS store_code,
+    debnamet      AS customer_name,
+    customer_code AS customer_code,
+    debbranch     AS customer_branch_no,
+    -- ชื่อสาขาที่ห้างตั้ง ตัดข้อความหลังคำว่า "สาขา" ออกมา
+    TRIM(REGEXP_REPLACE(REGEXP_EXTRACT(debnamet, r'สาขา\s*(.+)$'), r'[)\s]+$', '')) AS customer_branch_name,
+    -- คีย์สำหรับจับคู่กับ dim — ตัดคำว่าเมกาโฮมของ MH แล้วตัดช่องว่าง/วงเล็บ/ขีด
+    REGEXP_REPLACE(
+      REGEXP_REPLACE(
+        REGEXP_EXTRACT(debnamet, r'สาขา\s*(.+)$'),
+        r'^\s*เมกา\s*โฮม\s*[-–]?\s*|^\s*เมกา\s*[-–]?\s*', ''),
+      r'[\s()\-–]', ''
+    ) AS branch_key
+  FROM `${DimCustomerRef}`
+
+)
+
+SELECT
+  f.mix_date        AS sale_date,
+  c.store_code,
+
+  f.CustomerSK,
+  c.customer_code,
+  c.customer_name,
+  c.customer_branch_no,
+  c.customer_branch_name,
+  IFNULL(b.BranchMdtSK, -1) AS branch_sk,
+  IFNULL(b.ZoneMdtSK,   -1) AS zone_sk,
+
+  f.CompanySK,
+  f.companyID,
+  f.ProductSK,
+  f.SaleRepSK,
+
+  -- degenerate: เลขเอกสารฝั่งขายเข้า ใช้สืบกลับไปหาใบขายจริงใน MAC5
+  f.milType         AS doc_type_code,
+  f.milVnos         AS doc_no,
+  f.milListno       AS doc_line_no,
+  f.milStk          AS product_code_mac5,
+
+  f.milQuan         AS sale_qty,
+  f.milSum          AS sale_amount,        -- ก่อน VAT
+  f.milsum_incvat   AS sale_amount_incvat, -- รวม VAT — ใช้ตัวนี้เทียบกับขายออก
+
+  f.asatdate
+FROM `${FactTranscationRef}` AS f
+JOIN mdt_customer AS c
+  ON f.CustomerSK = c.CustomerSK
+LEFT JOIN branch_lookup AS b
+  ON  c.store_code = b.store_code
+  AND c.branch_key = b.branch_key
+WHERE c.store_code IS NOT NULL
