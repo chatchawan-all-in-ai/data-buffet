@@ -1,4 +1,53 @@
 config {
+    type: "table",
+    schema: databuffet.VALIDATED_SALEOUT_MDT,
+    dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_FULL],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["branch", "article_id", "aging_tier"]
+    },
+}
+
+
+SELECT
+    ${databuffet.functionData.cleanString('VENDOR_ID')} AS vendor_id,
+    ${databuffet.functionData.cleanString('VENDOR_NAME')} AS vendor_name,
+    ${databuffet.functionData.cleanString('BRANCH')} AS branch,
+    ${databuffet.functionData.cleanString('ARTICLE_ID')} AS article_id,
+    ${databuffet.functionData.cleanString('ARTICLE_NAME_TH')} AS article_name_th,
+    ${databuffet.functionData.cleanString('BRAND')} AS brand,
+    ${databuffet.functionData.cleanString('MCH3')} AS mch3,
+    ${databuffet.functionData.cleanString('MCH2')} AS mch2,
+    ${databuffet.functionData.castFloat64('TILE_SIZE')} AS tile_size,
+    ${databuffet.functionData.cleanString('ITEM_FLAG')} AS item_flag,
+    ${databuffet.functionData.cleanString('AGING_TIER')} AS aging_tier,
+    ${databuffet.functionData.cleanString('CLASS_STOCK')} AS class_stock,
+    ${databuffet.functionData.castInt64('AGING')} AS aging,
+    ${databuffet.functionData.castFloat64('UR_AMT')} AS ur_amt,
+    ${databuffet.functionData.castInt64('UR_QTY')} AS ur_qty,
+    ${databuffet.functionData.castFloat64('RESERVE_AMT')} AS reserve_amt,
+    ${databuffet.functionData.castInt64('RESERVE_QTY')} AS reserve_qty,
+    ${databuffet.functionData.castFloat64('REMAIN_AMT')} AS remain_amt,
+    ${databuffet.functionData.castInt64('REMAIN_QTY')} AS remain_qty,
+    PARSE_DATE('%Y/%m/%d', TRIM(START_DATE)) AS start_date,
+    PARSE_DATE('%Y/%m/%d', TRIM(END_DATE)) AS end_date,
+    ${databuffet.functionData.parseAsatDate()} as ASATDATE,
+FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.stock_aging`
+QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY vendor_id, branch, article_id, aging_tier, brand, mch3, mch2, end_date, asatdate
+    ORDER BY asatdate
+) = 1
+
+pre_operations {
+}
+
+post_operations {
+}
+
+
+
+/* config {
     type: "incremental",
     schema: databuffet.VALIDATED_SALEOUT_MDT,
     dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
@@ -73,3 +122,4 @@ pre_operations {
 post_operations {
     ${ when(!incremental(), post_operations_statement) }
 }
+ */

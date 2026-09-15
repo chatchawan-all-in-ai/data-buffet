@@ -1,37 +1,39 @@
 config {
   type: "view",
   schema: databuffet.FACT_VIEW,
-  dependencies: ["fact_saleout_mdt", "dim_pc", "dim_sales_branch_mdt", "dim_product_mkt"],
+  dependencies: ["fact_saleout_mdt", "dim_pc", "dim_product_mkt"],
   tags: [databuffet.TAG_VIEW],
 }
 
 
 js {
-    const PcSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_pc_master`;
+    const DimPcTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_pc",
+    };
+    const DimPcRef = `${DimPcTable.database}.${DimPcTable.schema}.${DimPcTable.name}`;
 
-    const dim = (name) => `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.${name}`;
-    const DimPcRef       = dim("dim_pc");
-    const DimBranchRef   = dim("dim_sales_branch_mdt");
-    const DimProductMktRef = dim("dim_product_mkt");
+    const DimProductMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mkt",
+    };
+    const DimProductMktRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
 }
 
 WITH pc_assign AS (
   -- PC ที่ดูแลแต่ละ (สาขา, กลุ่มสินค้า) พร้อมจำนวนคนในช่องนั้นเพื่อใช้เป็นตัวหาร
-  SELECT
-    br.BranchMdtSK,
-    ${databuffet.functionData.cleanString("src.marketinggroupid")} AS MarketingGroupID,
-    pc.PcSK,
-    src.start_date AS AssignStart,
-    src.end_date   AS AssignEnd,
-    COUNT(*) OVER (
-      PARTITION BY br.BranchMdtSK, ${databuffet.functionData.cleanString("src.marketinggroupid")}
-    ) AS PcCountInCell
-  FROM `${PcSourceRef}` AS src
-  JOIN `${DimPcRef}` AS pc
-    ON ${databuffet.functionData.cleanString("src.employee_id")} = pc.EmployeeID
-  JOIN `${DimBranchRef}` AS br
-    ON ${databuffet.functionData.cleanString("src.branch_code")} = br.BranchCodeMdt
-  WHERE src.is_active = TRUE
+   SELECT
+    BranchMdtSK,
+    MarketingGroupID,
+    PcSK,
+    StartDate AS AssignStart,
+    EndDate   AS AssignEnd,
+    COUNT(*) OVER (PARTITION BY BranchMdtSK, MarketingGroupID) AS PcCountInCell
+  FROM `${DimPcRef}`
+  WHERE PcSK <> -1
+    AND IsPlaceholder = FALSE
 
 ), sale_with_group AS (
   SELECT
