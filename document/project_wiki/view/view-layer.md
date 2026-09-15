@@ -236,30 +236,39 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 2. Views referencing other views (chains — e.g. `view_dim_aging` → `view_dim_channel`,
    `Model_Invoice_Transaction` → `view_fact_transcation`) resolve in the right order.
 
-## repo ล้ำหน้า BigQuery — ยังรอ deploy (ยืนยันจากสแกน 2026-09-15)
+## repo ล้ำหน้า BigQuery — ยังรอ deploy (สแกนล่าสุด 2026-09-15 ช่วงบ่าย)
 
-**4 view ที่ repo ใหม่กว่าของจริงบน BigQuery** เจ้าของงานเลือกไม่รัน Dataform เพื่อ deploy
-view จะไป `CREATE OR REPLACE VIEW` บน BigQuery เอง — แต่ยังไม่ได้ทำ:
+**"ค้าง" = แก้ใน git แล้วแต่ view จริงบน BigQuery ยังเป็นของเก่า** เพราะเจ้าของงานเลือก
+ไม่รัน Dataform ทั้ง tag แต่ไป `CREATE OR REPLACE VIEW` ทีละตัวบน BigQuery เอง
+
+**3 view ที่ยังค้าง**:
 
 | view | repo commit | BigQuery last_modified | สิ่งที่ยังไม่ถึง BigQuery |
 |---|---|---|---|
-| `dimension_view.view_dim_aging_history` | 2026-08-11 | 2026-07-20 | derive `AgingSK`/`BillingSK` เอง (ดูหัวข้อด้านบน — ปัญหา SK ชี้ผิด 97% ยังเกิดอยู่จริง) |
 | `fact_view.view_fact_transcation` | 2026-09-15 | 2026-08-26 | `LOWER()` 6 จุด + **CustomerFlag ชนก่อน DepCode** (`seq_condition` 2.5) |
 | `onetime.Transaction_Data_Mart` | 2026-09-03 | 2026-08-26 | `LOWER(s.stkcode) = LOWER(b.milstk)` |
 | `onetime.Model_Invoice_Transaction` | 2026-09-03 | 2026-04-16 | `LOWER(Sales_Tran.milstk) = LOWER(ProductMaster.ProductCode)` |
 
-จนกว่าจะ apply ครบทั้ง 4 **repo กับ BigQuery จะ drift** — ตรวจด้วย skill `bq-drift-scan`
+✅ **`dimension_view.view_dim_aging_history` deploy แล้ว** 2026-09-15 11:08 —
+ค้างมาตั้งแต่ 2026-08-11 ตอนนี้ตรงกับ repo แล้ว (ดูหัวข้อด้านบน)
+
+ℹ️ `dimension_view.view_dim_invoice` จะขึ้นว่า "ต่าง" ทุกรอบ — **ตั้งใจให้ต่าง** ไม่ต้อง
+deploy และไม่ต้อง pull (repo คง `cust.debnamet`, console เป็น `debnamet`, ผลเท่ากัน)
+
+จนกว่าจะ apply ครบทั้ง 3 **repo กับ BigQuery จะ drift** — ตรวจด้วย skill `bq-drift-scan`
 
 > **สถานะ ณ 2026-09-10 (drift scan)**: ยังไม่ได้ deploy ทั้ง 3 — BigQuery ยังเป็นเวอร์ชัน
 > ก่อน `LOWER()` (last_modified 2026-08-26 / 2026-04-16) ส่วน repo commit ไปตั้งแต่ 2026-09-03
 
-## `view_dim_aging_history` — repo ล้ำหน้า BigQuery ตั้งแต่ 2026-08-11 (พบ 2026-09-10)
+## `view_dim_aging_history` — เคยค้าง 2026-08-11 → **deploy แล้ว 2026-09-15** ✅
 
 การแก้ "derive `AgingSK`/`BillingSK` แทนการเชื่อค่าใน snapshot" (หัวข้อด้านบน) commit
 เข้า git เมื่อ 2026-08-11 แต่ **ไม่เคย deploy** — view จริงบน BigQuery ยัง last_modified
 2026-07-20 และยังใช้ `dim_aging.*` + `qualify ... partition by asatdate, AgingSK` แบบเดิม
-แปลว่าปัญหา SK ชี้ผิด 97% **ยังเกิดอยู่จริงบน BigQuery** จนกว่าจะรัน tag `view`
-(similarity ตอนสแกน = 0.462 ต่ำสุดในทั้ง repo)
+แปลว่าปัญหา SK ชี้ผิด 97% **เกิดอยู่จริงบน BigQuery ตลอด 5 สัปดาห์** (similarity ตอนสแกน
+= 0.462 ต่ำสุดในทั้ง repo) · เจ้าของงานรัน view นี้เมื่อ 2026-09-15 11:08 แก้ไปแล้ว
+**บทเรียน**: commit แล้วไม่ได้แปลว่า deploy — ชั้น view ต้องรัน tag `view` หรือ
+`CREATE OR REPLACE VIEW` เองทุกครั้ง ไม่งั้นแก้ไปก็ไม่มีผล
 
 ## Pull กลับจาก BigQuery — 2026-09-10
 

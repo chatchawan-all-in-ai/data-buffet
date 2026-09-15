@@ -65,9 +65,10 @@ intent.
 Run the scan before any `view` tag run, and after a stretch of console work:
 skill `bq-drift-scan` (`.claude/skills/bq-drift-scan/`, with
 `scripts/{dump.sql,scan.py,pull.py}`), or the read-only `bq-drift-auditor` agent.
-Baseline 2026-09-15: **40 objects, 35 identical**. The 5 that differ:
-4 are ahead in the repo and waiting to be deployed (`view_dim_aging_history`,
-`view_fact_transcation`, `Transaction_Data_Mart`, `Model_Invoice_Transaction`);
+Baseline 2026-09-15 (บ่าย): **40 objects, 36 identical**. The 4 that differ:
+3 are ahead in the repo and waiting to be deployed (`view_fact_transcation`,
+`Transaction_Data_Mart`, `Model_Invoice_Transaction`) — `view_dim_aging_history`
+was deployed at 11:08 and is now identical;
 1 (`view_dim_invoice`) is a **deliberate permanent difference** -- the repo keeps
 `clean_company_prefix(cust.debnamet)` while the console has the unqualified form;
 same result, do not pull it back. `onetime.PowerBI_Data_Buffet_Transaction` shows as
