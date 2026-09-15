@@ -241,16 +241,26 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 **"ค้าง" = แก้ใน git แล้วแต่ view จริงบน BigQuery ยังเป็นของเก่า** เพราะเจ้าของงานเลือก
 ไม่รัน Dataform ทั้ง tag แต่ไป `CREATE OR REPLACE VIEW` ทีละตัวบน BigQuery เอง
 
-**เหลือค้าง 1 view**:
+### ✅ 2026-09-15 — drift = 0 ทุกตัว
 
-| view | repo commit | BigQuery last_modified | สิ่งที่ยังไม่ถึง BigQuery |
-|---|---|---|---|
-| `fact_view.view_fact_transcation` | 2026-09-15 | 2026-08-26 | `LOWER()` 6 จุด + **CustomerFlag ชนก่อน DepCode** (`seq_condition` 2.5) |
+สแกนปิดท้ายวัน: **40 objects · 40 identical · 0 different** · `unbackticked = 0`
+เป็นครั้งแรกที่ repo กับ BigQuery ตรงกันทั้งชั้น view + UDF
 
-✅ **เคลียร์ไปแล้ว 4 ตัวในวันเดียว (2026-09-15)**: `view_dim_aging_history` (11:08,
-ค้างมาตั้งแต่ 2026-08-11), `view_dim_invoice` (แก้ console ให้ตรง repo),
-`Transaction_Data_Mart` และ `Model_Invoice_Transaction` (deploy `LOWER()` ที่ค้าง
-มาตั้งแต่ 2026-09-03 — ตัวหลังค้างจาก 2026-04-16)
+เคลียร์ไป **5 view ในวันเดียว**:
+
+| view | ค้างมาตั้งแต่ | สิ่งที่ไม่เคยถึง BigQuery |
+|---|---|---|
+| `view_dim_aging_history` | 2026-08-11 (5 สัปดาห์) | derive `AgingSK`/`BillingSK` เอง — ปัญหา SK ชี้ผิด 97% |
+| `Model_Invoice_Transaction` | 2026-04-16 (5 เดือน) | `LOWER(milstk) = LOWER(ProductCode)` |
+| `Transaction_Data_Mart` | 2026-09-03 | `LOWER(s.stkcode) = LOWER(b.milstk)` |
+| `view_fact_transcation` | 2026-08-26 | `LOWER()` 6 จุด + CustomerFlag ชนก่อน DepCode |
+| `view_dim_invoice` | — | แก้ฝั่ง console ให้ตรง repo แทนการปล่อยต่างถาวร |
+
+**บทเรียนที่ต้องจำ**: commit ≠ deploy · ชั้น view ไม่ได้ถูกรันพร้อม `fact_daily`
+ถ้าไม่ใส่ tag `view` ในตารางเวลา งานที่ merge เข้า `dev` แล้วอาจไม่มีผลกับ BigQuery
+**เป็นเดือน ๆ** โดยไม่มีอะไรเตือน — `Model_Invoice_Transaction` ค้าง 5 เดือน
+`view_dim_aging_history` ค้าง 5 สัปดาห์ทั้งที่แก้บั๊ก SK ชี้ผิด 97%
+รัน skill `bq-drift-scan` เป็นระยะคือตัวจับเรื่องนี้
 
 ✅ **`dimension_view.view_dim_invoice` ตรงกันแล้ว** — เจ้าของงานแก้ฝั่ง BigQuery ให้เป็น
 `clean_company_prefix(cust.debnamet)` ตามที่ repo เก็บไว้ (2026-09-15 ช่วงบ่าย)
