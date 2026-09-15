@@ -1,4 +1,47 @@
 config {
+    type: "table",
+    schema: databuffet.VALIDATED_SALEOUT_MDT,
+    dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_FULL],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["branch", "article_id"]
+    },
+}
+
+
+SELECT
+    ${databuffet.functionData.cleanString('VENDOR_ID')} AS vendor_id,
+    ${databuffet.functionData.cleanString('VENDOR_NAME')} AS vendor_name,
+    ${databuffet.functionData.cleanString('BRANCH')} AS branch,
+    ${databuffet.functionData.cleanString('MCH3')} AS mch3,
+    ${databuffet.functionData.cleanString('ARTICLE_ID')} AS article_id,
+    ${databuffet.functionData.cleanString('ARTICLE_NAME_TH')} AS article_name_th,
+    ${databuffet.functionData.cleanString('ITEM_FLAG')} AS item_flag,
+    ${databuffet.functionData.castInt64('UR_QTY')} AS ur_qty,
+    ${databuffet.functionData.castFloat64('UR_COST_AMT')} AS ur_cost_amt,
+    PARSE_DATE('%Y/%m/%d', TRIM(START_DATE)) AS start_date,
+    PARSE_DATE('%Y/%m/%d', TRIM(END_DATE)) AS end_date,
+    ${databuffet.functionData.parseAsatDate()} as ASATDATE,
+FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.stock_by_branch`
+QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY vendor_id, branch, article_id, end_date, asatdate
+    ORDER BY asatdate
+) = 1
+
+pre_operations {
+}
+
+post_operations {
+}
+
+
+
+
+
+
+
+/* config {
     type: "incremental",
     schema: databuffet.VALIDATED_SALEOUT_MDT,
     dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
@@ -62,4 +105,4 @@ pre_operations {
 
 post_operations {
     ${ when(!incremental(), post_operations_statement) }
-}
+} */

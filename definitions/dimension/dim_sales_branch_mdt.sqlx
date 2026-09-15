@@ -1,7 +1,7 @@
 config {
   type: "table",
   schema: databuffet.DIMENSION_TABLE,
-  dependencies: ["dim_zone_mdt", "dim_zone_manager_mdt", "dim_region_last"],
+  dependencies: ["dim_zone_mdt", "dim_zone_manager_mdt", "dim_region_last", "dim_section_last"],
   tags: [databuffet.TAG_DIM_DAILY],
   uniqueKey: ["BranchMdtSK"],
   bigquery: {
@@ -26,16 +26,32 @@ js {
     };
     const DimZoneManagerMdtTableRef = `${DimZoneManagerMdtTable.database}.${DimZoneManagerMdtTable.schema}.${DimZoneManagerMdtTable.name}`;
 
+
+        const DimSectionLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_section_last",
+    };
+    const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
+
     const DimRegionLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_region_last",
     };
     const DimRegionLastTableRef = `${DimRegionLastTable.database}.${DimRegionLastTable.schema}.${DimRegionLastTable.name}`;
+
 }
 
 
-WITH zone_manager_current AS (
+WITH section_lookup AS (
+  -- 1 แถวต่อ SectionID — กัน fan-out เผื่อ dim มีรหัสซ้ำ
+  SELECT SectionID, SectionSK, SectionManagerSK
+  FROM `${DimSectionLastTableRef}`
+  WHERE companyID = 'ag01'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY SectionID ORDER BY SectionSK) = 1
+
+), zone_manager_current AS (
   -- ตอนนี้ zone_manager เกรนเท่ากับ zone_master (1 แถว = 1 โซน) จึง join แบบเดียวกับ
   -- dim_zone_mdt ได้เลย  QUALIFY เป็นตัวกันไว้เผื่อวันหน้าโซนหนึ่งมีผู้จัดการหลายคน
   -- ไม่งั้นสาขาจะบวมตามจำนวนผู้จัดการแบบเงียบ ๆ
@@ -53,6 +69,9 @@ WITH zone_manager_current AS (
     ) AS BranchMdtSK,
     IFNULL(dim_region.RegionSK, -1)           AS RegionSK,
     IFNULL(dim_region.RegionManagerSK, -1)    AS RegionManagerSK,
+    IFNULL(dim_region.DirectorSK, -1)         AS DirectorSK,
+    IFNULL(dim_section.SectionSK, -1)         AS SectionSK,
+    IFNULL(dim_section.SectionManagerSK, -1)  AS SectionManagerSK,
     IFNULL(dim_zone.ZoneMdtSK, -1)            AS ZoneMdtSK,
     IFNULL(dim_zone_mgr.ZoneManagerMdtSK, -1) AS ZoneManagerMdtSK,
 
@@ -74,6 +93,20 @@ WITH zone_manager_current AS (
   LEFT JOIN zone_manager_current AS dim_zone_mgr
     ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone_mgr.ZoneCode
   -- dim_region_last มีแถวเดียวต่อรหัส จึง join ตรงได้ ไม่ต้องมี CTE กรองช่วงเวลา
+    -- Section แกะจาก BranchCodeMdt ที่เราตั้งเอง (<ห้าง>_<Section>_<ลำดับ>)
+  -- ต้องขัด 2 อย่างถึงจะตรงกับ dim_section_last: เติมศูนย์ และแปลง CEN
+  LEFT JOIN section_lookup AS dim_section
+    ON CONCAT(
+         ${databuffet.functionData.cleanString("t1.region_id")}, '_',
+         CASE
+           WHEN REGEXP_EXTRACT(${databuffet.functionData.cleanString("t1.branch_code")}, r'^[A-Z]+_([A-Z0-9]+)_') = 'CEN' THEN ''
+           WHEN REGEXP_CONTAINS(REGEXP_EXTRACT(${databuffet.functionData.cleanString("t1.branch_code")}, r'^[A-Z]+_([A-Z0-9]+)_'), r'^[A-Z][0-9]$')
+             THEN CONCAT(
+                    SUBSTR(REGEXP_EXTRACT(${databuffet.functionData.cleanString("t1.branch_code")}, r'^[A-Z]+_([A-Z0-9]+)_'), 1, 1), '0',
+                    SUBSTR(REGEXP_EXTRACT(${databuffet.functionData.cleanString("t1.branch_code")}, r'^[A-Z]+_([A-Z0-9]+)_'), 2, 1))
+           ELSE REGEXP_EXTRACT(${databuffet.functionData.cleanString("t1.branch_code")}, r'^[A-Z]+_([A-Z0-9]+)_')
+         END
+       ) = dim_section.SectionID
   LEFT JOIN `${DimRegionLastTableRef}` AS dim_region
     ON ${databuffet.functionData.cleanString("t1.region_id")} = dim_region.RegionID
    AND dim_region.companyID = 'ag01'
@@ -84,6 +117,9 @@ WITH zone_manager_current AS (
     -1                   AS BranchMdtSK,
     -1                   AS RegionSK,
     -1                   AS RegionManagerSK,
+    -1                   AS DirectorSK,
+    -1                   AS SectionSK,
+    -1                   AS SectionManagerSK,
     -1                   AS ZoneMdtSK,
     -1                   AS ZoneManagerMdtSK,
 

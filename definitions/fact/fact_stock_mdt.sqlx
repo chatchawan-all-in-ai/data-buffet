@@ -1,0 +1,64 @@
+config {
+    type: "table",
+    schema: databuffet.FACT_TABLE,
+    dependencies: ["dim_sales_branch_mdt", "dim_product_mdt"],
+    tags: [databuffet.TAG_FACT_DAILY],
+    uniqueKey: ["stock_date", "store_code", "branch_code", "product_code"],
+    bigquery: {
+        partitionBy: "stock_date",
+        clusterBy: ["store_code", "branch_sk", "product_mdt_sk"]
+    },
+}
+
+
+js {
+    const DimBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimBranchTableRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
+
+    const DimProductMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mdt",
+    };
+    const DimProductMdtTableRef = `${DimProductMdtTable.database}.${DimProductMdtTable.schema}.${DimProductMdtTable.name}`;
+}
+
+WITH source_data AS (
+  SELECT
+    c.stock_date,
+    c.store_code,
+
+    IFNULL(dim_br.BranchMdtSK,   -1) AS branch_sk,
+    IFNULL(dim_br.ZoneMdtSK,     -1) AS zone_sk,
+    IFNULL(dim_pr.ProductMdtSK,  -1) AS product_mdt_sk,
+    IFNULL(dim_pr.ProductSK,     -1) AS product_sk,
+    IFNULL(dim_pr.ProductMktSK,  -1) AS product_mkt_sk,
+
+    c.onhand_qty,
+    c.onhand_amt,     -- ต้นทุน มีแค่ BT
+    c.onorder_qty,    -- มีแค่ TW
+
+    -- degenerate: เก็บรหัสที่ห้างส่งมาไว้สืบกลับถึงแถวต้นทาง
+    c.branch_code,
+    c.product_code,
+
+    c.asatdate
+  FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_stock_mdt")} AS c
+  LEFT JOIN `${DimBranchTableRef}` AS dim_br
+    ON  c.store_code  = dim_br.StoreCode
+    AND c.branch_code = dim_br.BranchCode
+  LEFT JOIN `${DimProductMdtTableRef}` AS dim_pr
+    ON LTRIM(c.product_code, '0') = dim_pr.ProductCode
+)
+
+SELECT
+  source_data.*
+FROM source_data
+
+pre_operations {}
+
+post_operations {}

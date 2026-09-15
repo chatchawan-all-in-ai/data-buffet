@@ -78,7 +78,15 @@ WITH dim_order_dedup AS (
     and ord.CompanyID = mds.CompanyID
     and ord.mihStatus = mds.StatusID
   WHERE IFNULL(ord.mihDesc,'') NOT LIKE '%PO.วางบิล%'
+    AND ord.mix_date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
   QUALIFY ROW_NUMBER() OVER(PARTITION BY ord.CompanySK, ord.mihVnos ORDER BY ord.OrderSK DESC) = 1
+
+), order_gate AS (
+  -- ออร์เดอร์ที่ "มีบรรทัดรอด" ใน fact_order_store จริง ๆ (2026-09-15)
+  -- กันใบกำกับกำพร้า: ใบสั่งขายที่ทุกบรรทัดตกตัวกรอง (Sourcing / milstype=3 / ขึ้นต้น 'บ')
+  -- จะหายทั้งใบจาก fact_order_store แต่ใบกำกับที่อ้างถึงยังรอด → Order Qty ว่าง
+  SELECT DISTINCT OrderSK
+  FROM ${ref('fact_order_store')}
 
 ), dim_product_dedup AS (
   SELECT m.ProductSK, m.CompanySK, m.ProductCode, m.ProductGroupMAC5
@@ -139,6 +147,8 @@ WITH dim_order_dedup AS (
   INNER JOIN dim_order_dedup AS dim_ord
     ON  dim_ord.CompanySK = dim_com.CompanySK
     AND dim_ord.mihVnos   = mil.milLinkVcno
+  INNER JOIN order_gate AS ord_gate
+    ON  ord_gate.OrderSK = dim_ord.OrderSK
   LEFT JOIN `${DimCustomerTableRef}` AS dim_cust
     ON  dim_cust.CompanySK = dim_com.CompanySK
     AND dim_cust.debcode   = mih.mihCus
@@ -152,7 +162,7 @@ WITH dim_order_dedup AS (
     AND mih.company_id in ('ag01', 'ab01')
     AND mil.milstype not in (3)
     AND LEFT(mil.milstk,1) not in ('บ')
-    -- AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 5 YEAR), YEAR)
+    AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
 )
 
 SELECT

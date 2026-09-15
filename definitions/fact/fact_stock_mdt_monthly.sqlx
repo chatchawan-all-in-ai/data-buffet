@@ -1,0 +1,71 @@
+config {
+    type: "table",
+    schema: databuffet.FACT_TABLE,
+    dependencies: ["fact_stock_mdt"],
+    tags: [databuffet.TAG_FACT_DAILY],
+    uniqueKey: ["month_end", "store_code", "branch_code", "product_code"],
+    bigquery: {
+        partitionBy: "month_end",
+        clusterBy: ["store_code", "branch_sk", "product_mdt_sk"]
+    },
+}
+
+
+
+js {
+    const FactStockTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FACT_TABLE,
+        name: "fact_stock_mdt",
+    };
+    const FactStockTableRef = `${FactStockTable.database}.${FactStockTable.schema}.${FactStockTable.name}`;
+}
+
+WITH month_last_day AS (
+
+  -- วันสุดท้ายที่แต่ละห้างมีข้อมูลในแต่ละเดือน
+  -- แยกรายห้างเพราะ BT กับ TW ส่งไฟล์คนละจังหวะ วันขาดคนละวัน
+  SELECT
+    store_code,
+    DATE_TRUNC(stock_date, MONTH) AS month_start,
+    MAX(stock_date)               AS snapshot_date
+  FROM (
+    -- ตัดวันที่ไฟล์ไม่สมบูรณ์ทิ้งก่อนเลือกวันสุดท้าย
+    SELECT store_code, stock_date
+    FROM `${FactStockTableRef}`
+    GROUP BY store_code, stock_date
+    HAVING SUM(onhand_qty) <> 0
+  )
+  GROUP BY store_code, month_start
+
+)
+
+SELECT
+  LAST_DAY(m.month_start, MONTH) AS month_end,
+  m.snapshot_date,
+  -- เดือนที่ยังไม่จบ = เดือนเดียวกับวันนี้ ค่าที่ได้เป็นค่าล่าสุด ไม่ใช่ค่าสิ้นเดือน
+  m.month_start < DATE_TRUNC(CURRENT_DATE('Asia/Bangkok'), MONTH) AS is_month_end,
+
+  f.store_code,
+  f.branch_sk,
+  f.zone_sk,
+  f.product_mdt_sk,
+  f.product_sk,
+  f.product_mkt_sk,
+
+  f.onhand_qty,
+  f.onhand_amt,     -- ต้นทุน มีแค่ BT
+  f.onorder_qty,    -- มีแค่ TW
+
+  f.branch_code,
+  f.product_code,
+
+  f.asatdate
+FROM month_last_day AS m
+JOIN `${FactStockTableRef}` AS f
+  ON  f.store_code  = m.store_code
+  AND f.stock_date  = m.snapshot_date
+
+pre_operations {}
+
+post_operations {}
