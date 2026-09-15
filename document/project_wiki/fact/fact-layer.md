@@ -19,9 +19,9 @@
 | `fact_chq.sqlx` | `fact_chq` | table | Dataform-managed rebuild | — (uniqueKey `FactChqSK`) | (no partition) / `FactChqSK` | full refresh |
 | `fact_mir_vs.sqlx` | `fact_mir_vs` | table | Dataform-managed rebuild | — (uniqueKey `BillingSK`) | (no partition) / `BillingSK, InvoiceSK, CustomerSK` | full refresh |
 | `fact_mir_rs.sqlx` | `fact_mir_rs` | table | Dataform-managed rebuild | — (uniqueKey `ReceiveSK`) | (no partition) / `ReceiveSK, FactChqSK, InvoiceSK` | full refresh |
-| `fact_order_store.sqlx` | `fact_order_store` | table | Dataform-managed rebuild | — (uniqueKey `FactOrderStoreSK`) | `asatdate` / `FactOrderStoreSK` | 4-year trunc-to-year |
-| `fact_invoice_store.sqlx` | `fact_invoice_store` | table | Dataform-managed rebuild | — (uniqueKey `FactInvoiceStoreSK`) · grain รวม `milPer` | `asatdate` / `FactInvoiceStoreSK` | 4-year trunc-to-year |
-| `fact_backlog_store.sqlx` | `fact_backlog_store` | table | Dataform-managed rebuild | — (uniqueKey `FactBacklogStoreSK`) | `asatdate` / `FactBacklogStoreSK` | snapshot ล่าสุดของ `cps` เท่านั้น |
+| `fact_order_store.sqlx` | `fact_order_store` | table | Dataform-managed rebuild | — (uniqueKey `FactOrderStoreSK`) | `mix_date` / `FactOrderStoreSK` | 4-year trunc-to-year (WHERE หลัก **+ `dim_order_dedup`**, 2026-09-15) |
+| `fact_invoice_store.sqlx` | `fact_invoice_store` | table | Dataform-managed rebuild | — (uniqueKey `FactInvoiceStoreSK`) · grain รวม `milPer` | `mix_date` / `FactInvoiceStoreSK` | 4-year trunc-to-year (WHERE หลัก **+ `dim_order_dedup`**, 2026-09-15) |
+| `fact_backlog_store.sqlx` | `fact_backlog_store` | table | Dataform-managed rebuild | — (uniqueKey `FactBacklogStoreSK`) | `sDate` / `FactBacklogStoreSK` | snapshot ล่าสุดของ `cps` **+ 4-year trunc-to-year** (WHERE หลัก + `dim_order_dedup`, 2026-09-15) |
 
 ## Dimension SK joins per fact
 
@@ -36,7 +36,7 @@
 | `fact_chq` | dim_customer, dim_company — sources `validated_mac5.chq + cql` (`cqlbook = 0`); Thai cheque-status labels |
 | `fact_mir_vs` | dim_invoice (deduped `QUALIFY`), dim_customer, dim_collection_status, dim_company — sources `validated_mac5.mir/mie` + `curated_mih` (mirtype `'VS'`, `mihcancel = 0`) |
 | `fact_mir_rs` | same dims as `fact_mir_vs` + `fact_mir_vs` (BillingSK) + **FULL JOIN** `fact_chq` (FactChqSK) — mirtype `'RS'` |
-| `fact_order_store` | dim_order, dim_company, dim_customer, dim_product_master, dim_store — source `curated_mih` + `curated_mil` (`mihType='PS'`) · ชื่อพนักงานขาย (`pernamet`) ย้ายไปอยู่ `dim_order` แล้ว 2026-09-03 fact เก็บแค่ `mihPer` · `FlagFree` (เพิ่ม 2026-09-03, แก้นิยาม 048f746) = `'Yes'` เมื่อ `milSum = 0` **OR** `dim_product_master.ProductGroupMAC5 = '5000'` — เงื่อนไข `milDesc LIKE '%ของแถม%'` ถูก comment ออกแล้ว · **`fact_backlog_store` ใช้นิยามคนละแบบ** (`cpssumreq = 0`) ดู `known-issues.md` · `partitionBy` = `mix_date` (เดิม `asatdate` ถอดออก 2026-09-03) |
+| `fact_order_store` | dim_order, dim_company, dim_customer, dim_product_master, dim_store — source `curated_mih` + `curated_mil` (`mihType='PS'`) · **ตัวกรองบรรทัด (2026-09-15)**: `milstype not in (3)` + `LEFT(milstk,1) not in ('บ')` — ตัดค่าบริการ/ค่าขนส่ง ให้ตรงกับ `fact_invoice_store` · ใบสั่งขายที่มีแต่บรรทัดพวกนี้หรือสินค้า Sourcing จะ**หายทั้งใบ** ดู `known-issues.md` · ชื่อพนักงานขาย (`pernamet`) ย้ายไปอยู่ `dim_order` แล้ว 2026-09-03 fact เก็บแค่ `mihPer` · `FlagFree` (เพิ่ม 2026-09-03, แก้นิยาม 048f746) = `'Yes'` เมื่อ `milSum = 0` **OR** `dim_product_master.ProductGroupMAC5 = '5000'` — เงื่อนไข `milDesc LIKE '%ของแถม%'` ถูก comment ออกแล้ว · **`fact_backlog_store` ใช้นิยามคนละแบบ** (`cpssumreq = 0`) ดู `known-issues.md` · `partitionBy` = `mix_date` (เดิม `asatdate` ถอดออก 2026-09-03) |
 | `fact_invoice_store` | dim_invoice, dim_order, dim_company, dim_customer, dim_product_master, dim_store — เหมือน `fact_order_store` แต่ `mihType='IS'`; `InvoiceSK` = ตัวใบกำกับเอง (join `dim_invoice` บน `(CompanySK, mihVnos)` + QUALIFY dedup, แมตช์ 100% วัด 2026-09-03); `OrderSK` มาจาก `milLinkVcno` เมื่อ `milLinkVcType='PS'`; สไลซ์สาขาใช้ `StoreSK` → `dim_store` (`is_store_*` 6 คอลัมน์ของ query ต้นฉบับถอดออกแล้ว 2026-09-03) · **grain รวม `milPer`** เพราะ `curated_mil` ฝั่ง IS แตกบรรทัดตามสัดส่วนพนักงานขาย · `FlagFree` (เพิ่ม 2026-09-03, แก้นิยาม 048f746) = `'Yes'` เมื่อ `milSum = 0` **OR** `dim_product_master.ProductGroupMAC5 = '5000'` — เงื่อนไข `milDesc LIKE '%ของแถม%'` ถูก comment ออกแล้ว · **`fact_backlog_store` ใช้นิยามคนละแบบ** (`cpssumreq = 0`) ดู `known-issues.md` · `partitionBy` = `mix_date` (เดิม `asatdate` ถอดออก 2026-09-03) |
 | `fact_backlog_store` | dim_order, dim_company, dim_customer, dim_product_master, dim_store — source `curated_mih` + `validated_mac5.cps` (snapshot ล่าสุด); `SUM` ต่อ (cpsVnosID, cpsCusID, cpsStkID) · `FlagFree` = `'Yes'` เมื่อ `cps.cpssumreq = 0` OR `ProductGroupMAC5 = '5000'` (อยู่ใน `GROUP BY`) · `partitionBy` = `sDate` (เดิม `asatdate` ถอดออก 2026-09-03) |
 
@@ -75,7 +75,7 @@ BEGIN
      ├─ mds_change_mktgroup: `mds_data_change_marketinggroup_master` (is_active) +
      │                     dim_product_mkt -> NewProductMktSK (ย้ายมาจาก view 2026-08-26)
      ├─ department_change: DISTINCT CompanyID/RegionID/SectionID/StartDate/EndDate
-     ├─ sale_rep         : dim_sale_representative + seq_condition (1-6, else 9)
+     ├─ sale_rep         : dim_sale_representative + seq_condition (1, 2, 2.5, 3, 4, 5, else 9)
      │                     TRIM ฝั่ง dim ครั้งเดียวโดยคงชื่อคอลัมน์เดิม (* EXCEPT + ประกาศทับ)
      ├─ pre_raw_transction: Transaction_Data_Mart + Product/Payment/Channel SKs
      │                     + deb.debgroup; mix_date from milYear/Month/Day;
@@ -133,6 +133,34 @@ equality `TRIM(IFNULL(trans.DummyChannel, trans.milPer)) = <rep>.EmployeeID` ถ
 `AND` ชั้นนอกของ `CASE` (เดิมอยู่ในทุกกิ่ง) → BigQuery ใช้เป็น hash join key ได้
 ยืนยันจาก query plan ว่ากลายเป็น `LEFT OUTER HASH JOIN` แล้ว (เดิมเป็น cross join + filter)
 กฎการ generate SQL fragment ใน `js {}`: [coding-standards §3.4](../../coding-standards/sqlx-coding-standard.md)
+
+### CustomerFlag ชนก่อน DepCode (2026-09-15)
+
+CustomerFlag เก็บ list รหัสลูกค้าคั่นด้วย `|` และอยู่บนแถวเดียวกับ DepCode เสมอ
+(`dim_sale_representative` ยุบแถว flag ที่ user กรอกแยกเข้ามาให้ — ดู
+[dimension/special-cases.md](../dimension/special-cases.md)) กฎที่ใช้จริงคือ
+
+> ถ้าแถวมี CustomerFlag และ `milCus` อยู่ใน list → ชนด้วย EmployeeID + customer list
+> ถ้าไม่มี flag หรือลูกค้าไม่อยู่ใน list → EmployeeID + DepCode ตามเดิม
+
+ใน `saleRepMatchOn` จึงเป็นกิ่ง DepCode กิ่งเดียวที่ `OR` กันสองเงื่อนไข และ
+`SPLIT(REPLACE(<rep>.CustomerFlag, ' ', ''), '|')` กันช่องว่างรอบตัวคั่น
+**กิ่ง CustomerFlag เดี่ยว ๆ ถูกลบไปแล้ว** พร้อมกับ `seq_condition = 6`
+
+`seq_condition` แทรก **2.5** (EmployeeID + DepCode + CustomerFlag) ไว้ก่อน 3
+เพื่อให้แถวที่มี flag ชนะแถว DepCode ล้วนของพนักงานคนเดียวกัน แต่ยังแพ้กฎที่มี
+CostChannelID (1, 2) ค่าเป็น FLOAT64 ทั้ง CASE — logic 3.1–3.7 ใน
+`view_fact_transcation` ที่เทียบ `= 3` ยังทำงานเหมือนเดิม **ห้าม renumber 1–5**
+
+กิ่งแรกของ CASE เป็น **guard**: แถวที่มี CustomerFlag แต่ไม่มี DepCode / CostChannelID /
+ProvinceID ให้ `FALSE` — ปกติแถวแบบนี้ถูกยุบไปแล้วตั้งแต่ dim ถ้าหลุดมาได้จะไม่กลายเป็น
+catch-all ผ่าน `ELSE TRUE`
+
+`view_fact_transcation` (~645 seq_condition, ~661 CASE match) ถือ **สำเนา** ของกฎนี้
+สำหรับคอลัมน์ `*Last` ที่ join กับ `dim_sale_representative_last` — แก้ที่ไหนต้องแก้อีกที่เสมอ
+
+วัดเมื่อ 2026-09-15 (ag01 ทั้งตาราง เทียบกฎเดิมกับกฎใหม่บน dim ปัจจุบัน): เปลี่ยน **33 แถว**
+ของพนักงาน 1059254 จาก SK 254 (Lao_TA03) ไป SK 337 (Myanmar_TA01) พนักงานคนอื่นไม่ขยับ
 
 ### CompanySK ต่อเป็นลูกโซ่ตาม hierarchy (2026-08-20)
 

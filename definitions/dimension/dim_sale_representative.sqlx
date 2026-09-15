@@ -25,8 +25,7 @@ js {
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 }
 
-WITH mds_rep AS (
-  -- Sales reps จาก mds master (โครงสร้างองค์กรเต็ม + ช่วงวันที่มีผล)
+WITH mds_base AS (
   SELECT
     dim_com.CompanySK,
     ${databuffet.functionData.cleanString("t1.companyID")} AS companyID,
@@ -47,19 +46,64 @@ WITH mds_rep AS (
   LEFT JOIN `${DimCompanyTableRef}` AS dim_com
     ON ${databuffet.functionData.cleanString("t1.companyID")} = dim_com.companyID
   WHERE t1.is_active = TRUE
-),
-
-raw_per AS (
+  
+), flag_only AS (
+  SELECT companyID, EmployeeID, DepartmentID, StartDate, EndDate, CustomerFlag
+  FROM mds_base
+  WHERE CustomerFlag IS NOT NULL
+    AND DepCode IS NULL
+    AND CostChannelID IS NULL
+    AND ProvinceID IS NULL
+    
+), rule_rows AS (
+  SELECT *
+  FROM mds_base
+  WHERE NOT (CustomerFlag IS NOT NULL
+             AND DepCode IS NULL
+             AND CostChannelID IS NULL
+             AND ProvinceID IS NULL)
+             
+), mds_rep AS (
+  SELECT
+    r.CompanySK,
+    r.companyID,
+    r.DepartmentID,
+    r.EmployeeID,
+    r.EmployeeName,
+    r.EmployeeSurname,
+    r.EmployeeNickname,
+    r.DepCode,
+    r.CostChannelID,
+    r.ProvinceID,
+    r.ChangeSectionFlag,
+    NULLIF(
+      ARRAY_TO_STRING([
+        r.CustomerFlag,
+        (SELECT STRING_AGG(f.CustomerFlag, '|' ORDER BY f.CustomerFlag)
+         FROM flag_only AS f
+         WHERE r.DepCode IS NOT NULL
+           AND f.companyID    = r.companyID
+           AND f.EmployeeID   = r.EmployeeID
+           AND f.DepartmentID = r.DepartmentID
+           AND r.StartDate <= f.EndDate
+           AND f.StartDate <= r.EndDate)
+      ], '|'),
+      ''
+    ) AS CustomerFlag,
+    r.StartDate,
+    r.EndDate,
+    r.MdsID
+  FROM rule_rows AS r
+  
+), raw_per AS (
   SELECT DISTINCT
     company_id,
     percode AS EmployeeID,
     TRIM(REGEXP_REPLACE(pernamet, r'\s+', ' ')) AS pernamet
   FROM ${ref(databuffet.VALIDATED_MAC5, 'per')} AS per
   -- WHERE per.company_id = 'ag01'
-),
-
-ledger_rep AS (
-  -- พนักงานจาก ledger (per) ที่ไม่มีโครงสร้างองค์กร — DepartmentID เป็น NULL + วันที่ sentinel
+  
+), ledger_rep AS (
   SELECT
     dim_com.CompanySK,
     dim_com.companyID,
@@ -79,14 +123,13 @@ ledger_rep AS (
   FROM raw_per
   LEFT JOIN `${DimCompanyTableRef}` AS dim_com
     ON raw_per.company_id = dim_com.companyID
-),
-
-combined AS (
+    
+), combined AS (
   SELECT * FROM mds_rep
   UNION ALL
   SELECT * FROM ledger_rep
+  
 )
-
 SELECT
   ROW_NUMBER() OVER(
     ORDER BY

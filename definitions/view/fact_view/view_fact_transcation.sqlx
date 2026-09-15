@@ -648,23 +648,39 @@ with dim_calendar as (
           AND NULLIF(TRIM(CAST(CostChannelID AS STRING)), '') IS NOT NULL
           THEN 1
         WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(CostChannelID AS STRING)), '') IS NOT NULL  THEN 2
+        -- 2.5 = DepCode + CustomerFlag (ต้องตรงกับ fact_transcation)
+        WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL
+          AND NULLIF(TRIM(CAST(DepCode AS STRING)), '') IS NOT NULL
+          AND NULLIF(TRIM(CAST(CustomerFlag AS STRING)), '') IS NOT NULL                              THEN 2.5
         WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(DepCode AS STRING)), '') IS NOT NULL        THEN 3
         WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(ProvinceID AS STRING)), '') IS NOT NULL     THEN 4
         WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(DepartmentID AS STRING)), '') IS NOT NULL   THEN 5
-        WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(CustomerFlag AS STRING)), '') IS NOT NULL   THEN 6
         ELSE 9
       END) AS seq_condition
     from `${DimSaleRepresentativeLastTableRef}`
   ) as sale_sk
     on trans.CompanySK = sale_sk.CompanySK
     and TRIM(IFNULL(trans.DummyChannel, trans.milPer)) = TRIM(CAST(sale_sk.EmployeeID as STRING))
-    and (CASE 
+    and (CASE
+            -- guard: แถว flag ล้วนต้องไม่กลายเป็น catch-all (ตรงกับ fact_transcation)
+            WHEN IFNULL(TRIM(sale_sk.CustomerFlag), '') != ''
+              and IFNULL(TRIM(sale_sk.DepCode), '') = ''
+              and IFNULL(TRIM(sale_sk.CostChannelID), '') = ''
+              and IFNULL(TRIM(sale_sk.ProvinceID), '') = ''
+              THEN FALSE
+
             WHEN IFNULL(TRIM(sale_sk.DepCode), '') != '' and IFNULL(TRIM(sale_sk.CostChannelID), '') != ''
               THEN TRIM(trans.milDep) = TRIM(sale_sk.DepCode)
                 and trans.ChannelCostID = sale_sk.CostChannelID
 
+            -- มี CustomerFlag และลูกค้าอยู่ใน list -> ชนด้วย EmployeeID + customer list
+            -- ไม่มี flag หรือลูกค้าไม่อยู่ใน list -> EmployeeID + DepCode ตามเดิม
             WHEN IFNULL(TRIM(sale_sk.DepCode), '') != ''
-              THEN TRIM(trans.milDep) = TRIM(sale_sk.DepCode)
+              THEN (
+                (IFNULL(TRIM(sale_sk.CustomerFlag), '') != ''
+                  and TRIM(trans.milCus) IN UNNEST(SPLIT(REPLACE(sale_sk.CustomerFlag, ' ', ''), '|')))
+                OR TRIM(trans.milDep) = TRIM(sale_sk.DepCode)
+              )
 
             WHEN IFNULL(TRIM(sale_sk.DepCode), '') = '' and IFNULL(TRIM(sale_sk.CostChannelID), '') != ''
               THEN (CASE

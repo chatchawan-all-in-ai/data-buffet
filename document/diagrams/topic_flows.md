@@ -26,7 +26,7 @@ layer (validated/curated/dimension/fact/…) as in
 11. Calendar / date spine — ปฏิทิน/วันหยุด
 12. Reference / misc — ตารางอ้างอิงอื่นๆ
 
-**Uncovered dim/fact/curated objects (not in any topic):** `curated_saleout_mdt`, `dim_pc`, `dim_product_mdt`, `dim_sales_branch_mdt`, `dim_store`, `dim_target_saleout_mdt`, `dim_zone_mdt`, `fact_backlog_store`, `fact_invoice_store`, `fact_order_store`, `fact_saleout_mdt`
+**Uncovered dim/fact/curated objects (not in any topic):** `curated_saleout_mdt`, `dim_pc`, `dim_product_mdt`, `dim_sales_branch_mdt`, `dim_store`, `dim_target_saleout_mdt`, `dim_zone_manager_mdt`, `dim_zone_mdt`, `fact_backlog_store`, `fact_invoice_store`, `fact_order_store`, `fact_saleout_mdt`
 
 ---
 
@@ -125,6 +125,7 @@ flowchart LR
   fact_chq --> fact_mir_rs
   fact_mir_vs --> fact_mir_rs
   fact_order --> fact_invoice
+  fact_order_store --> fact_invoice_store
   fact_quotation --> fact_order
   fact_transaction_delivery --> fact_delivery
   per --> dim_sale_representative
@@ -386,6 +387,7 @@ flowchart LR
   fact_mir_vs --> dim_aging
   fact_mir_vs --> fact_mir_rs
   fact_order --> fact_invoice
+  fact_order_store --> fact_invoice_store
   fact_quotation --> fact_order
   match_customer --> dim_customer
   mie --> dim_aging
@@ -582,6 +584,7 @@ flowchart LR
   dim_region --> fact_transcation
   dim_stk_mkt --> dim_product_master
   dim_stk_mkt --> fact_transcation
+  fact_order_store --> fact_invoice_store
   fact_quotation --> fact_order
   fact_transcation --> dim_pump_information
   product --> curated_product
@@ -777,6 +780,7 @@ flowchart LR
   dim_target_product_group_by_sale_dayofwork --> fact_transcation
   fact_mir_vs --> fact_mir_rs
   fact_order --> fact_invoice
+  fact_order_store --> fact_invoice_store
   fact_quotation --> fact_order
   fact_transaction_delivery --> fact_delivery
   mih --> curated_mih

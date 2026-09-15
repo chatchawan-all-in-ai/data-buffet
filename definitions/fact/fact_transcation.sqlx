@@ -189,6 +189,12 @@ js {
     AND trans.CompanySK = ${r}.CompanySK
     AND TRIM(IFNULL(trans.DummyChannel, trans.milPer)) = ${r}.EmployeeID
     AND (CASE
+          WHEN IFNULL(${r}.CustomerFlag, '') != ''
+            AND IFNULL(${r}.DepCode, '') = ''
+            AND IFNULL(${r}.CostChannelID, '') = ''
+            AND IFNULL(${r}.ProvinceID, '') = ''
+            THEN FALSE
+
           WHEN IFNULL(${r}.DepCode, '') != '' AND IFNULL(${r}.CostChannelID, '') != ''
             THEN TRIM(trans.milDep) = ${r}.DepCode
               AND trans.ChannelCostID = ${r}.CostChannelID
@@ -204,8 +210,14 @@ js {
                     WHEN trans.debgroup IN ('DOHOME')       THEN LOWER(${r}.DepartmentID) LIKE 'dh_%'
                   END)
 
+          -- มี CustomerFlag และลูกค้าอยู่ใน list -> ชนด้วย EmployeeID + customer list
+          -- ไม่มี flag หรือลูกค้าไม่อยู่ใน list -> EmployeeID + DepCode ตามเดิม
           WHEN IFNULL(${r}.DepCode, '') != ''
-            THEN TRIM(trans.milDep) = ${r}.DepCode
+            THEN (
+              (IFNULL(${r}.CustomerFlag, '') != ''
+                AND TRIM(trans.milCus) IN UNNEST(SPLIT(REPLACE(${r}.CustomerFlag, ' ', ''), '|')))
+              OR TRIM(trans.milDep) = ${r}.DepCode
+            )
 
           WHEN IFNULL(${r}.ProvinceID, '') != ''
             THEN (CASE
@@ -214,9 +226,6 @@ js {
                     WHEN CAST(trans.OrderSubDistrictSK AS STRING) IN UNNEST(SPLIT(${r}.ProvinceID, '|')) THEN TRUE
                     ELSE FALSE
                   END)
-
-          WHEN IFNULL(${r}.CustomerFlag, '') != ''
-            THEN TRIM(trans.milCus) IN UNNEST(SPLIT(${r}.CustomerFlag, '|'))
 
           ELSE TRUE
         END)`;
@@ -295,10 +304,13 @@ BEGIN
           AND NULLIF(TRIM(CAST(CostChannelID AS STRING)), '') IS NOT NULL
           THEN 1
         WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(CostChannelID AS STRING)), '') IS NOT NULL  THEN 2
+        -- 2.5 = DepCode + CustomerFlag: ชนะแถว DepCode ล้วน (3) แต่ยังแพ้กฎที่มี CostChannelID
+        WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL
+          AND NULLIF(TRIM(CAST(DepCode AS STRING)), '') IS NOT NULL
+          AND NULLIF(TRIM(CAST(CustomerFlag AS STRING)), '') IS NOT NULL                              THEN 2.5
         WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(DepCode AS STRING)), '') IS NOT NULL        THEN 3
         WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(ProvinceID AS STRING)), '') IS NOT NULL     THEN 4
         WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(DepartmentID AS STRING)), '') IS NOT NULL   THEN 5
-        WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL AND NULLIF(TRIM(CAST(CustomerFlag AS STRING)), '') IS NOT NULL   THEN 6
         ELSE 9
       END) AS seq_condition
     FROM `${DimSaleRepresentativeTableRef}`

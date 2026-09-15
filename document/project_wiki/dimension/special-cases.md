@@ -7,12 +7,45 @@
 
 Full-rebuild file with two CTE sources UNION ALL'd, single `ROW_NUMBER()` over the union:
 - **`mds_rep`**: reps from `mds_data_sales_representative_master` (full org structure,
-  StartDate/EndDate intervals, MdsID populated).
+  StartDate/EndDate intervals, MdsID populated), built through three CTEs —
+  see **CustomerFlag roll-up** below.
 - **`ledger_rep`**: per-employees from `ref(databuffet.VALIDATED_MAC5, 'per')` —
   `pernamet` parsed via `REGEXP_EXTRACT` into name/surname/nickname;
   DepartmentID/DepCode/CostChannelID/ProvinceID/flags = NULL;
   sentinel dates `1900-01-01` → `2499-12-31`; `MdsID = NULL`.
 SK ordering puts mds rows first (`CASE WHEN MdsID IS NULL THEN 1 ELSE 0 END`).
+
+### CustomerFlag roll-up (2026-09-15)
+
+Users enter a customer-list rule as its **own mds row** — same companyID / EmployeeID /
+DepartmentID as the real rule row, `CustomerFlag` filled (`A|B|C`), and DepCode /
+CostChannelID / ProvinceID empty. Those rows must **not** reach the dim as standalone
+rows: they have no rule columns, so `dim_sale_representative_last` would treat them as
+the employee's "normal" row (its `agg_normal` CTE ignores CustomerFlag) and collapse
+every other row of that employee away. Measured before the fix: both test employees
+dropped from 3 rows to 1 in `_last`, moving 371 and 243 fact rows in the `*Last` columns.
+
+So `mds_rep` is now built in three steps:
+
+| CTE | What it holds |
+|---|---|
+| `mds_base` | the old `mds_rep` body — cleaned mds rows, `is_active = TRUE` |
+| `flag_only` | rows with CustomerFlag and no DepCode / CostChannelID / ProvinceID |
+| `rule_rows` | everything else (the real rules) |
+| `mds_rep` | `rule_rows` + CustomerFlag pulled in from `flag_only` |
+
+The pull-in is a **correlated scalar subquery** (`STRING_AGG` over `flag_only`) so several
+flag rows can feed one rule row without fanning out, combined with any inline
+CustomerFlag through `ARRAY_TO_STRING([...], '|')`. It attaches only to rows where
+`DepCode IS NOT NULL`, matching on companyID + EmployeeID + DepartmentID with
+**overlapping** date ranges (`r.StartDate <= f.EndDate AND f.StartDate <= r.EndDate`).
+
+A flag row with no rule row to attach to **disappears silently** — see
+`document/operations/known-issues.md`. Column order in `mds_rep` is written out
+explicitly because `combined` UNION ALLs it with `ledger_rep` positionally.
+
+Verified 2026-09-15: with 0 flag-only rows in mds, new and current output are identical
+(2,349 rows, `EXCEPT DISTINCT` = 0 both directions).
 
 ## `dim_stk_mkt` — 'Waiting Master' placeholders (rebuilt daily since 2026-07-20)
 
