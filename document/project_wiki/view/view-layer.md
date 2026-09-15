@@ -252,8 +252,9 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 ✅ **`dimension_view.view_dim_aging_history` deploy แล้ว** 2026-09-15 11:08 —
 ค้างมาตั้งแต่ 2026-08-11 ตอนนี้ตรงกับ repo แล้ว (ดูหัวข้อด้านบน)
 
-ℹ️ `dimension_view.view_dim_invoice` จะขึ้นว่า "ต่าง" ทุกรอบ — **ตั้งใจให้ต่าง** ไม่ต้อง
-deploy และไม่ต้อง pull (repo คง `cust.debnamet`, console เป็น `debnamet`, ผลเท่ากัน)
+✅ **`dimension_view.view_dim_invoice` ตรงกันแล้ว** — เจ้าของงานแก้ฝั่ง BigQuery ให้เป็น
+`clean_company_prefix(cust.debnamet)` ตามที่ repo เก็บไว้ (2026-09-15 ช่วงบ่าย)
+จบเรื่องที่เคยจะปล่อยให้ต่างถาวร
 
 จนกว่าจะ apply ครบทั้ง 3 **repo กับ BigQuery จะ drift** — ตรวจด้วย skill `bq-drift-scan`
 
@@ -291,7 +292,7 @@ deploy และไม่ต้อง pull (repo คง `cust.debnamet`, console
 | object | console edit | ทำอะไร |
 |---|---|---|
 | `dimension_view.view_dim_order` | 2026-09-14 07:12 | `FlagExpire` เปลี่ยน `ELSE NULL` → **`ELSE 'No'`** — เป็นความต่างเชิงพฤติกรรมจริง เอกสารหน้านี้เคยบันทึกรอบ pull 2026-09-10 ไว้แล้ว แสดงว่า view นี้ถูกแก้บน console **ซ้ำรอบที่สอง** |
-| `dimension_view.view_dim_invoice` | 2026-09-03 03:48 | **ไม่ pull — ยืนยันคำตัดสินใจเดิมของรอบ 2026-09-10** ให้ repo คง `clean_company_prefix(cust.debnamet)` ไว้ ส่วน console เป็น `(debnamet)` · **ผลลัพธ์เท่ากันแน่นอน**: ในขอบเขตนั้นมีแค่ `view_dim_customer` ที่มีคอลัมน์ `debnamet` (`dim_invoice` ไม่มี) `debnamet` เปล่า ๆ จึงผูกกับ `cust` อยู่ดี — repo เขียนชัดกว่าและกัน ambiguous ในอนาคต · **drift scan จะรายงาน view นี้ว่า "ต่าง" ทุกรอบ ซึ่งถูกต้องแล้ว ไม่ต้องดึงกลับ** |
+| `dimension_view.view_dim_invoice` | 2026-09-03 03:48 | **ไม่ pull** — ยืนยันให้ repo คง `clean_company_prefix(cust.debnamet)` ไว้ (ชัดกว่า กัน ambiguous ในอนาคต) ส่วน console ตอนนั้นเป็น `(debnamet)` · ผลลัพธ์เท่ากันอยู่แล้ว: ในขอบเขตนั้นมีแค่ `view_dim_customer` ที่มีคอลัมน์ `debnamet` (`dim_invoice` ไม่มี) · **จบด้วยการแก้ฝั่ง BigQuery ให้ตรงกับ repo แทน** (2026-09-15 ช่วงบ่าย) — ตอนนี้ scan ขึ้น identical ไม่ต่างอีกแล้ว |
 
 ตรวจหลัง pull: `scan.py --check-backticks` → `unbackticked=0` · เหลือ literal path 1 จุดที่
 `definitions/process/rls_customer360.sqlx` ซึ่ง**มีอยู่ก่อนแล้ว** ไม่ได้เกิดจากรอบนี้

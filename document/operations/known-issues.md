@@ -635,9 +635,11 @@
   `git log -1 --format=%ad -- <path>` ของไฟล์นั้น ถ้า commit ใหม่กว่า = รอ deploy
   ถ้า BigQuery ใหม่กว่า = console edit ที่ต้อง pull · **ถ้าดึงกลับหมดทั้ง 6 จะเป็นการ
   revert งานที่ commit ไปแล้ว** (เช่น CustomerFlag ชนก่อน DepCode ที่ commit 2026-09-15)
-- **`view_dim_invoice`: repo จงใจต่างจาก BigQuery ถาวร (ยืนยันซ้ำ 2026-09-15)** —
-  repo ใช้ `clean_company_prefix(cust.debnamet)` ส่วน console เป็น `(debnamet)`
+- **`view_dim_invoice`: qualifier `cust.` — จบแล้วโดยแก้ฝั่ง BigQuery (2026-09-15)** —
+  repo ใช้ `clean_company_prefix(cust.debnamet)` ส่วน console เคยเป็น `(debnamet)`
   **ผลลัพธ์เท่ากัน** (มีแค่ `view_dim_customer` ที่มีคอลัมน์ `debnamet`, `dim_invoice` ไม่มี)
-  เจ้าของงานสั่งให้คงรูปมี qualifier ไว้ เพราะอ่านง่ายกว่าและกัน ambiguous ถ้าวันหน้ามี
-  ตารางอื่นใน scope ที่มี `debnamet` · **drift scan จะรายงานว่า "ต่าง" ทุกรอบ — ถูกต้องแล้ว
-  อย่าดึงกลับ**
+  แต่เจ้าของงานเลือกให้คงรูปมี qualifier เพราะอ่านง่ายกว่าและกัน ambiguous ถ้าวันหน้ามี
+  ตารางอื่นใน scope ที่มี `debnamet` · **เคยวางแผนจะปล่อยให้ต่างถาวร แล้วเปลี่ยนเป็น
+  แก้ฝั่ง BigQuery ให้ตรง repo แทน** — ตอนนี้ drift scan ขึ้น identical แล้ว
+  **บทเรียน**: ถ้า repo "ถูกกว่า" แต่ค่าเท่ากัน ให้ deploy repo ทับ ดีกว่าปล่อยให้ scan
+  ฟ้องทุกรอบจนคนเลิกเชื่อผลสแกน
