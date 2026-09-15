@@ -65,11 +65,11 @@ intent.
 Run the scan before any `view` tag run, and after a stretch of console work:
 skill `bq-drift-scan` (`.claude/skills/bq-drift-scan/`, with
 `scripts/{dump.sql,scan.py,pull.py}`), or the read-only `bq-drift-auditor` agent.
-Baseline 2026-09-15 (บ่าย หลังเคลียร์): **40 objects, 37 identical**. The 3 that differ are
-all ahead in the repo and waiting to be deployed: `view_fact_transcation`,
-`Transaction_Data_Mart`, `Model_Invoice_Transaction`.
-`view_dim_aging_history` (deployed 11:08) and `view_dim_invoice` (console edited to
-match the repo) were cleared the same day.
+Baseline 2026-09-15 (เย็น หลังเคลียร์): **40 objects, 39 identical**. Only
+`view_fact_transcation` is still ahead in the repo and waiting to be deployed.
+Four views were cleared the same day: `view_dim_aging_history` (11:08),
+`view_dim_invoice` (console edited to match the repo), `Transaction_Data_Mart` and
+`Model_Invoice_Transaction`.
 `onetime.PowerBI_Data_Buffet_Transaction` shows as
 "extra in BigQuery" because the `.sqlx` was moved to `backup/` on 2026-09-03 --
 deleting the file does not drop the live view. `onetime` holds exactly the 6 views the repo
