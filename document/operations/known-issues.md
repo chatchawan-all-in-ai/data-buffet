@@ -623,3 +623,21 @@
   เหตุผล: ยอดค้างมาจาก `cps` ซึ่งเก็บบรรทัดที่ยังเบิกไม่ครบ — บรรทัดพวกนี้มักเป็นสินค้าที่
   ถูกตัดออกจาก `fact_order_store` ด้วยตัวกรองสินค้า (Sourcing / `milstype=3` / ขึ้นต้น `บ`)
   **ยอดงานค้างซึ่งเป็นหัวใจของรายงานจะหายไป** — ไม่คุ้มกับการลดแถวกำพร้า
+- **`view_dim_order.FlagExpire`: `NULL` → `'No'` (console edit 2026-09-14, pull เข้า repo 2026-09-15)** —
+  เดิม `ELSE NULL` แปลว่าเอกสารที่ `ExpireDays` ไม่เป็น null และยังไม่เลยกำหนด จะได้ `NULL`
+  ไม่ใช่ `'No'` ทำให้รายงานที่ `COUNT`/filter ด้วย `FlagExpire = 'No'` นับไม่ครบ
+  ตอนนี้ยึดตาม BigQuery เป็น `ELSE 'No'` แล้ว · **view นี้ถูกแก้บน console เป็นรอบที่สอง**
+  (รอบแรก 2026-09-10 เพิ่ม `FlagExpire` + join `mds_data_document_expire_rule_master`)
+  → เป็น view ที่ควรจับตาเรื่อง drift มากที่สุด เพราะถ้ารัน tag `view` ก่อน pull งานจะหาย
+- **บทเรียนจากสแกน 2026-09-15: "ต่าง" ไม่ได้แปลว่า "drift ที่ต้องดึงกลับ"** —
+  สแกนเจอต่าง 6 จาก 33 view แต่ **4 ใน 6 คือ repo ล้ำหน้าเพราะยังไม่ได้ deploy** ไม่ใช่
+  console edit · วิธีแยกคือเทียบ `__TABLES__.last_modified_time` กับ
+  `git log -1 --format=%ad -- <path>` ของไฟล์นั้น ถ้า commit ใหม่กว่า = รอ deploy
+  ถ้า BigQuery ใหม่กว่า = console edit ที่ต้อง pull · **ถ้าดึงกลับหมดทั้ง 6 จะเป็นการ
+  revert งานที่ commit ไปแล้ว** (เช่น CustomerFlag ชนก่อน DepCode ที่ commit 2026-09-15)
+- **`view_dim_invoice`: repo จงใจต่างจาก BigQuery ถาวร (ยืนยันซ้ำ 2026-09-15)** —
+  repo ใช้ `clean_company_prefix(cust.debnamet)` ส่วน console เป็น `(debnamet)`
+  **ผลลัพธ์เท่ากัน** (มีแค่ `view_dim_customer` ที่มีคอลัมน์ `debnamet`, `dim_invoice` ไม่มี)
+  เจ้าของงานสั่งให้คงรูปมี qualifier ไว้ เพราะอ่านง่ายกว่าและกัน ambiguous ถ้าวันหน้ามี
+  ตารางอื่นใน scope ที่มี `debnamet` · **drift scan จะรายงานว่า "ต่าง" ทุกรอบ — ถูกต้องแล้ว
+  อย่าดึงกลับ**

@@ -35,7 +35,7 @@ SELECT
   (CASE 
     WHEN mds.ExpireDays is null THEN 'No'
     WHEN DATE_DIFF(CURRENT_DATE('Asia/Bangkok'), DATE(ord.mix_date), DAY) > mds.ExpireDays THEN 'Yes'
-    ELSE NULL
+    ELSE 'No'
   END) as FlagExpire
 
 from `${DimOrderTableRef}` as ord

@@ -232,18 +232,19 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 2. Views referencing other views (chains — e.g. `view_dim_aging` → `view_dim_channel`,
    `Model_Invoice_Transaction` → `view_fact_transcation`) resolve in the right order.
 
-## แก้ไขล่าสุด — ต้อง deploy ด้วยมือ (2026-09-03)
+## repo ล้ำหน้า BigQuery — ยังรอ deploy (ยืนยันจากสแกน 2026-09-15)
 
-4 view ถูกใส่ `LOWER()` สองฝั่งในการ join `milStk` แต่ **เจ้าของงานเลือกไม่รัน Dataform
-เพื่อ deploy view** จะไป `CREATE OR REPLACE VIEW` บน BigQuery เอง:
+**4 view ที่ repo ใหม่กว่าของจริงบน BigQuery** เจ้าของงานเลือกไม่รัน Dataform เพื่อ deploy
+view จะไป `CREATE OR REPLACE VIEW` บน BigQuery เอง — แต่ยังไม่ได้ทำ:
 
-| view | จุดที่แก้ |
-|---|---|
-| `onetime.Transaction_Data_Mart` | `LOWER(s.stkcode) = LOWER(b.milstk)` |
-| `onetime.Model_Invoice_Transaction` | `LOWER(Sales_Tran.milstk) = LOWER(ProductMaster.ProductCode)` |
-| `fact_view.view_fact_transcation` | `LOWER(t1.milstk) = LOWER(t4.ProductCode)` · `LOWER(t1.milStk) = LOWER(TRIM(rebate_product.rebate))` · `PARTITION BY ... LOWER(trans.milStk) ...` |
+| view | repo commit | BigQuery last_modified | สิ่งที่ยังไม่ถึง BigQuery |
+|---|---|---|---|
+| `dimension_view.view_dim_aging_history` | 2026-08-11 | 2026-07-20 | derive `AgingSK`/`BillingSK` เอง (ดูหัวข้อด้านบน — ปัญหา SK ชี้ผิด 97% ยังเกิดอยู่จริง) |
+| `fact_view.view_fact_transcation` | 2026-09-15 | 2026-08-26 | `LOWER()` 6 จุด + **CustomerFlag ชนก่อน DepCode** (`seq_condition` 2.5) |
+| `onetime.Transaction_Data_Mart` | 2026-09-03 | 2026-08-26 | `LOWER(s.stkcode) = LOWER(b.milstk)` |
+| `onetime.Model_Invoice_Transaction` | 2026-09-03 | 2026-04-16 | `LOWER(Sales_Tran.milstk) = LOWER(ProductMaster.ProductCode)` |
 
-จนกว่าจะ apply ครบทั้ง 3 **repo กับ BigQuery จะ drift** — ตรวจด้วย skill `bq-drift-scan`
+จนกว่าจะ apply ครบทั้ง 4 **repo กับ BigQuery จะ drift** — ตรวจด้วย skill `bq-drift-scan`
 
 > **สถานะ ณ 2026-09-10 (drift scan)**: ยังไม่ได้ deploy ทั้ง 3 — BigQuery ยังเป็นเวอร์ชัน
 > ก่อน `LOWER()` (last_modified 2026-08-26 / 2026-04-16) ส่วน repo commit ไปตั้งแต่ 2026-09-03
@@ -268,3 +269,16 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 > สร้าง `.sqlx` และอย่านับรวมใน inventory จนกว่าจะนิ่ง (drift scan จะรายงานเป็น
 > "extra in BigQuery" ทุกรอบ — ถูกต้องแล้ว) ส่วน `onetime.PowerBI_Data_Buffet_Transaction`
 > ถูกย้ายไป `backup/` ตั้งใจแล้วเมื่อ 2026-09-03 — ไม่ต้องดึงกลับเช่นกัน
+
+## Pull กลับจาก BigQuery — 2026-09-15
+
+สแกนเจอต่าง 6 จาก 33 view · 4 ตัวเป็น "repo ล้ำหน้า" (ตารางด้านบน ไม่ใช่ drift) ·
+2 ตัวเป็น console edit ที่ไม่เคยเข้า git → **เจ้าของงานสั่ง "ยึดตาม BigQuery"** แต่ยกเว้น `view_dim_invoice` ที่สั่งให้คง `cust.debnamet` ไว้:
+
+| object | console edit | ทำอะไร |
+|---|---|---|
+| `dimension_view.view_dim_order` | 2026-09-14 07:12 | `FlagExpire` เปลี่ยน `ELSE NULL` → **`ELSE 'No'`** — เป็นความต่างเชิงพฤติกรรมจริง เอกสารหน้านี้เคยบันทึกรอบ pull 2026-09-10 ไว้แล้ว แสดงว่า view นี้ถูกแก้บน console **ซ้ำรอบที่สอง** |
+| `dimension_view.view_dim_invoice` | 2026-09-03 03:48 | **ไม่ pull — ยืนยันคำตัดสินใจเดิมของรอบ 2026-09-10** ให้ repo คง `clean_company_prefix(cust.debnamet)` ไว้ ส่วน console เป็น `(debnamet)` · **ผลลัพธ์เท่ากันแน่นอน**: ในขอบเขตนั้นมีแค่ `view_dim_customer` ที่มีคอลัมน์ `debnamet` (`dim_invoice` ไม่มี) `debnamet` เปล่า ๆ จึงผูกกับ `cust` อยู่ดี — repo เขียนชัดกว่าและกัน ambiguous ในอนาคต · **drift scan จะรายงาน view นี้ว่า "ต่าง" ทุกรอบ ซึ่งถูกต้องแล้ว ไม่ต้องดึงกลับ** |
+
+ตรวจหลัง pull: `scan.py --check-backticks` → `unbackticked=0` · เหลือ literal path 1 จุดที่
+`definitions/process/rls_customer360.sqlx` ซึ่ง**มีอยู่ก่อนแล้ว** ไม่ได้เกิดจากรอบนี้
