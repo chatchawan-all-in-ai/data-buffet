@@ -71,6 +71,7 @@ WITH dim_order_dedup AS (
     and ord.CompanyID = mds.CompanyID
     and ord.mihStatus = mds.StatusID
   WHERE IFNULL(ord.mihDesc,'') NOT LIKE '%PO.วางบิล%'
+    AND ord.mix_date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
   QUALIFY ROW_NUMBER() OVER(PARTITION BY ord.CompanySK, ord.mihVnos ORDER BY ord.OrderSK DESC) = 1
 
 ), dim_product_dedup AS (
@@ -110,8 +111,8 @@ WITH dim_order_dedup AS (
     END) as milSType,
     (CASE 
       WHEN mil.milsum = 0.0 
-        -- or mil.milDesc like '%ของแถม%' 
         or dim_prod.ProductGroupMAC5 = '5000' 
+        or IFNULL(mil.milDesc,'') LIKE 'โปรโมชั่น%'
         THEN 'Yes'
       ELSE 'No'
     END) as FlagFree,
@@ -137,9 +138,10 @@ WITH dim_order_dedup AS (
   WHERE mih.mihType = 'PS'
     AND mih.company_id in ('ag01', 'ab01')
     -- AND IFNULL(mih.mihDesc,'') NOT LIKE '%PO.วางบิล%'
-    AND IFNULL(mil.milDesc,'') NOT LIKE 'โปรโมชั่น%'
+    -- AND IFNULL(mil.milDesc,'') NOT LIKE 'โปรโมชั่น%'
     AND mil.milstype not in (3)
-    -- AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 5 YEAR), YEAR)
+    AND LEFT(mil.milstk,1) not in ('บ')
+    AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
 )
 
 SELECT

@@ -82,6 +82,7 @@ WITH cps_latest AS (
     and ord.CompanyID = mds.CompanyID
     and ord.mihStatus = mds.StatusID
   WHERE IFNULL(ord.mihDesc,'') NOT LIKE '%PO.วางบิล%'
+    AND ord.mix_date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
   QUALIFY ROW_NUMBER() OVER(PARTITION BY ord.CompanySK, ord.mihVnos ORDER BY ord.OrderSK DESC) = 1
 
 ), dim_product_dedup AS (
@@ -143,6 +144,7 @@ WITH cps_latest AS (
     AND mih.mihExtraSUM = 0
     AND mih.company_id in ('ag01', 'ab01')
     AND IFNULL(mih.mihDesc,'') NOT LIKE '%PO.วางบิล%'
+    AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
   GROUP BY
     CompanySK, company_id, sDate, mihYear, mihMonth, mihDay,
     OrderSK, CustomerSK, ProductSK, StoreSK,
