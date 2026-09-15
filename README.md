@@ -42,7 +42,7 @@ GCS AVRO files (gs://file-raw-data)
         ▼                              ▼
 ┌─────────────────┐            ┌─────────────────┐
 │ DIMENSION       │            │ FACT            │
-│ (61 files, SCD) │◄───────────│ (12 fact tables)│
+│ (67 files, SCD) │◄───────────│ (15 fact tables)│
 └─────────────────┘            └─────────────────┘
    definitions/dimension/         definitions/fact/
         ▲          │                    │
@@ -68,20 +68,20 @@ unit.
 | Layer | Path | Count | Purpose |
 |-------|------|------:|---------|
 | **Initial** | `definitions/initial/` | 17 | Create raw external tables over GCS AVRO; bootstrap schemas & UDFs |
-| **Validated** | `definitions/validated/` | 138 | Clean, cast, dedup; one table per source object (143 files) |
-| **Curated** | `definitions/curated/` | 5 | Business-ready joins, enrichment, JSON parsing (8 files) |
-| **Dimension** | `definitions/dimension/` | 61 | Conformed dimensions with surrogate keys (MERGE + SCD intervals) |
-| **Fact** | `definitions/fact/` | 12 | Star-schema fact tables joined to dimensions (4-year retention) |
-| **View** | `definitions/view/` | 32 | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` |
+| **Validated** | `definitions/validated/` | 132 | Clean, cast, dedup; one table per source object (136 files incl. 4 schema-bootstrap) |
+| **Curated** | `definitions/curated/` | 7 | Business-ready joins, enrichment, JSON parsing (11 files incl. 4 schema-bootstrap) |
+| **Dimension** | `definitions/dimension/` | 67 | Conformed dimensions with surrogate keys (MERGE + SCD intervals) |
+| **Fact** | `definitions/fact/` | 15 | Star-schema fact tables joined to dimensions (4-year retention) |
+| **View** | `definitions/view/` | 33 | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` |
 | **CDC** | `definitions/cdc/` | 2 | Config-driven change log over validated tables |
 | **Process** | `definitions/process/` | 2 | AI address parsing + row-level security (`rls_customer360`) |
 
-**Validated breakdown:** MAC5 `86` · CIS360 `24` · MASTERSKU `11` · SALEOUT_MDT `10` · ALLKONS_COMMISSION `7`
-(+1 schema-bootstrap file per source)
+**Validated breakdown:** MAC5 `87` · CIS360 `25` · MASTERSKU `12` · SALEOUT_MDT `12`
+(+1 schema-bootstrap file per source — 4 sources) · ALLKONS_COMMISSION มีเฉพาะชั้น initial ยังไม่มี validated
 
-**Dimension breakdown:** `34` full-daily-rebuild dims from `mds_dataset` (default
+**Dimension breakdown:** `41` full-daily-rebuild dims from `mds_dataset` (default
 since 2026-07-20) · `2` legacy MERGE mds dims with stable SKs (`dim_company`,
-`dim_aging_rang`) · `10` MERGE dims from validated/curated · `10` full-rebuild tables
+`dim_aging_rang`) · `10` MERGE dims from validated/curated · `11` full-rebuild tables
 (`*_last` snapshots, target aggregates) · `3` other (`dim_calendar`, `dim_aging`,
 `update_sk_sale_rep_group`)
 

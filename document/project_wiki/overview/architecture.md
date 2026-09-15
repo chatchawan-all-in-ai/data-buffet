@@ -43,7 +43,7 @@ Side pipelines:
 | Initial | `raw_*`, `function_dataset` | operations (external tables, UDFs) | [initial/initial-layer.md](../initial/initial-layer.md) |
 | Validated | `validated_*` | incremental / table + QUALIFY dedup | [validated/validated-layer.md](../validated/validated-layer.md) |
 | Curated | `curated_*` | incremental + post_operations | [curated/curated-layer.md](../curated/curated-layer.md) |
-| Dimension | `dimension_table`, `dimension_view` | table rebuild (34 mds + 11 other) / operations MERGE (2 mds + 10 lake) | [dimension/dimension-layer.md](../dimension/dimension-layer.md) |
+| Dimension | `dimension_table`, `dimension_view` | table rebuild (41 mds + 11 other) / operations MERGE (2 mds + 10 lake) | [dimension/dimension-layer.md](../dimension/dimension-layer.md) |
 | Fact | `fact_table`, `fact_view` | table rebuild / operations upsert | [fact/fact-layer.md](../fact/fact-layer.md) |
 | CDC | `cdc_dataset` | operations (config-generated) | [cdc-process/cdc.md](../cdc-process/cdc.md) |
 | Process | `process_dataset` | incremental (AI.GENERATE) | [cdc-process/process.md](../cdc-process/process.md) |

@@ -80,11 +80,11 @@ work on Opus, pattern-following work on Sonnet):
 | Layer | Path | Files | Dataset | Materialization |
 |---|---|---:|---|---|
 | Initial | `definitions/initial/` | 17 | `raw_*`, `function_dataset` | operations (external tables, UDFs) |
-| Validated | `definitions/validated/` | 135 | `validated_<source>` | incremental / table + QUALIFY dedup |
-| Curated | `definitions/curated/` | 10 | `curated_<source>` | incremental (+ post_operations) |
-| Dimension | `definitions/dimension/` | 65 | `dimension_table` | **table rebuild** (34 mds + 12 other) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
-| Fact | `definitions/fact/` | 12 | `fact_table` | table rebuild / operations upsert — **no MERGE** |
-| View | `definitions/view/` | 31 | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |
+| Validated | `definitions/validated/` | 136 | `validated_<source>` | incremental / table + QUALIFY dedup |
+| Curated | `definitions/curated/` | 11 | `curated_<source>` | incremental (+ post_operations) |
+| Dimension | `definitions/dimension/` | 67 | `dimension_table` | **table rebuild** (41 mds + 11 other) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
+| Fact | `definitions/fact/` | 15 | `fact_table` | table rebuild / operations upsert — **no MERGE** |
+| View | `definitions/view/` | 33 | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |
 | CDC | `definitions/cdc/` | 2 | `cdc_dataset` | operations, generated from `cdc-config.json` |
 | Process | `definitions/process/` | 2 | `process_dataset` | `deb_address_data` (`AI.GENERATE` gated on CDC) + `rls_customer360` (RLS access map, `type: "table"`) |
 
