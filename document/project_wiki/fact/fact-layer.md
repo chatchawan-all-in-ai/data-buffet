@@ -1,27 +1,54 @@
 # Fact Layer — `definitions/fact/`
 
-> **LLM context**: 9 files, all in dataset `fact_table` (`databuffet.FACT_TABLE`),
-> all tagged `fact_daily`. Three distinct materialization patterns — there is **no MERGE**
-> in the fact layer. Dimension tables are referenced by raw string interpolation
-> (`${...TableRef}`) + `dependencies[]`, while curated/validated sources use `${ref()}`.
-> **Load-bearing typo**: the table/file is `fact_transcation` (not "transaction") — keep as-is.
+> **LLM context**: **15 ไฟล์** ทั้งหมดอยู่ใน dataset `fact_table` (`databuffet.FACT_TABLE`)
+> และ tag `fact_daily` ทุกตัว · มี 3 แบบการ materialize — **ไม่มี MERGE** ในชั้นนี้เลย
+> ตาราง dimension อ้างด้วย string interpolation (`${...TableRef}`) + `dependencies[]`
+> ส่วนต้นทาง curated/validated อ้างด้วย `${ref()}`
+> **Load-bearing typo**: ไฟล์/ตารางคือ `fact_transcation` (ไม่ใช่ "transaction") ห้ามแก้
+> ตรวจกับโค้ดจริง 2026-09-15
 
-## Inventory
+## Inventory (15)
 
-| File | Target | Type | Pattern | Upsert keys | Partition / Cluster | Retention |
-|---|---|---|---|---|---|---|
-| `fact_order.sqlx` | `fact_order` | table | Dataform-managed rebuild | — (uniqueKey `FactOrderSk`) | `asatdate` / `FactOrderSk` | none active |
-| `fact_invoice.sqlx` | `fact_invoice` | table | Dataform-managed rebuild | — (uniqueKey `FactInvoiceSK`) | `asatdate` / `FactInvoiceSK` | 4-year window in query |
-| `fact_quotation.sqlx` | `fact_quotation` | operations | `DROP` + `CREATE OR REPLACE ... AS` | — | `asatdate` / `FactQuotationSK` | full refresh |
-| `fact_transaction_delivery.sqlx` | `fact_transaction_delivery` | operations | `CREATE OR REPLACE TABLE AS` | — | `mix_date` / `FactTransDeliverySK` | 4-year window |
-| `fact_delivery.sqlx` | `fact_delivery` | operations | `CREATE OR REPLACE TABLE AS` | — | (no partition) / `FactDeliverySK` | full refresh |
-| `fact_transcation.sqlx` | `fact_transcation` | operations | **TEMP → DELETE → INSERT upsert** | `milVnos, milType, CompanySK` | `mix_date` / `milType, milVnos, milCus, milPer` | DELETE < 4-year trunc-to-year |
-| `fact_chq.sqlx` | `fact_chq` | table | Dataform-managed rebuild | — (uniqueKey `FactChqSK`) | (no partition) / `FactChqSK` | full refresh |
-| `fact_mir_vs.sqlx` | `fact_mir_vs` | table | Dataform-managed rebuild | — (uniqueKey `BillingSK`) | (no partition) / `BillingSK, InvoiceSK, CustomerSK` | full refresh |
-| `fact_mir_rs.sqlx` | `fact_mir_rs` | table | Dataform-managed rebuild | — (uniqueKey `ReceiveSK`) | (no partition) / `ReceiveSK, FactChqSK, InvoiceSK` | full refresh |
-| `fact_order_store.sqlx` | `fact_order_store` | table | Dataform-managed rebuild | — (uniqueKey `FactOrderStoreSK`) | `mix_date` / `FactOrderStoreSK` | 4-year trunc-to-year (WHERE หลัก **+ `dim_order_dedup`**, 2026-09-15) |
-| `fact_invoice_store.sqlx` | `fact_invoice_store` | table | Dataform-managed rebuild | — (uniqueKey `FactInvoiceStoreSK`) · grain รวม `milPer` | `mix_date` / `FactInvoiceStoreSK` | 4-year trunc-to-year (WHERE หลัก **+ `dim_order_dedup`**, 2026-09-15) |
-| `fact_backlog_store.sqlx` | `fact_backlog_store` | table | Dataform-managed rebuild | — (uniqueKey `FactBacklogStoreSK`) | `sDate` / `FactBacklogStoreSK` | snapshot ล่าสุดของ `cps` **+ 4-year trunc-to-year** (WHERE หลัก + `dim_order_dedup`, 2026-09-15) |
+### กลุ่ม MAC5 — ขาย/วางบิล/รับชำระ (9)
+
+| File | Type | Pattern | Upsert keys | Partition / Cluster | Retention |
+|---|---|---|---|---|---|
+| `fact_order.sqlx` | table | Dataform rebuild | uniqueKey `FactOrderSk` | `asatdate` / `FactOrderSk` | ไม่มี |
+| `fact_invoice.sqlx` | table | Dataform rebuild | uniqueKey `FactInvoiceSK` | `asatdate` / `FactInvoiceSK` | 4 ปีใน query |
+| `fact_quotation.sqlx` | operations | `DROP` + `CREATE OR REPLACE ... AS` | — | `asatdate` / `FactQuotationSK` | full refresh |
+| `fact_transaction_delivery.sqlx` | operations | `CREATE OR REPLACE TABLE AS` | — | `mix_date` / `FactTransDeliverySK` | 4 ปี |
+| `fact_delivery.sqlx` | operations | `CREATE OR REPLACE TABLE AS` | — | ไม่ partition / `FactDeliverySK` | full refresh |
+| `fact_transcation.sqlx` | operations | **TEMP → DELETE → INSERT upsert** | `milVnos, milType, CompanySK` | `mix_date` / `milType, milVnos, milCus, milPer` | DELETE < 4 ปี ตัดถึงต้นปี |
+| `fact_chq.sqlx` | table | Dataform rebuild | uniqueKey `FactChqSK` | ไม่ partition / `FactChqSK` | full refresh |
+| `fact_mir_vs.sqlx` | table | Dataform rebuild | uniqueKey `BillingSK` | ไม่ partition / `BillingSK, InvoiceSK, CustomerSK` | full refresh |
+| `fact_mir_rs.sqlx` | table | Dataform rebuild | uniqueKey `ReceiveSK` | ไม่ partition / `ReceiveSK, FactChqSK, InvoiceSK` | full refresh |
+
+### กลุ่ม store — ใบสั่ง/ใบกำกับ/งานค้าง แยกตามคลัง (3)
+
+| File | Type | uniqueKey | Partition / Cluster | Retention |
+|---|---|---|---|---|
+| `fact_order_store.sqlx` | table | `FactOrderStoreSK` | `mix_date` / `FactOrderStoreSK` | 4 ปีตัดถึงต้นปี (WHERE หลัก **+ `dim_order_dedup`**, 2026-09-15) |
+| `fact_invoice_store.sqlx` | table | `FactInvoiceStoreSK` · grain รวม `milPer` | `mix_date` / `FactInvoiceStoreSK` | 4 ปีตัดถึงต้นปี (WHERE หลัก **+ `dim_order_dedup`**, 2026-09-15) |
+| `fact_backlog_store.sqlx` | table | `FactBacklogStoreSK` | `sDate` / `FactBacklogStoreSK` | snapshot ล่าสุดของ `cps` **+ 4 ปีตัดถึงต้นปี** |
+
+> ทั้งสามตัว `partitionBy` เดิมเป็น `asatdate` · commit `048f746` ถอดคอลัมน์ `asatdate`
+> ออกจาก SELECT แต่ลืมแก้ config ทำให้ `PARTITION BY asatdate` ชี้คอลัมน์ที่ไม่มี →
+> `5e70f83` แก้เป็น `mix_date` / `sDate` · **ถอดคอลัมน์เมื่อไร ต้องเช็ค `partitionBy`
+> ใน config ทุกครั้ง** (ดู known-issues.md 2026-09-03)
+
+### กลุ่ม SALEOUT_MDT — sell-out / สต็อก modern trade (3, เพิ่ม 2026-09)
+
+| File | Type | uniqueKey | Partition / Cluster | ต้นทาง |
+|---|---|---|---|---|
+| `fact_saleout_mdt.sqlx` | table | `sale_date, store_code, branch_code, product_code, doc_type` | `sale_date` / `store_code, branch_sk, product_mdt_sk` | `curated_saleout_mdt` |
+| `fact_stock_mdt.sqlx` | table | `stock_date, store_code, branch_code, product_code` | `stock_date` / `store_code, branch_sk, product_mdt_sk` | `curated_stock_mdt` |
+| `fact_stock_mdt_monthly.sqlx` | table | `month_end, store_code, branch_code, product_code` | `month_end` / `store_code, branch_sk, product_mdt_sk` | **`fact_stock_mdt`** (ไม่แตะ curated) |
+
+- ทั้งสามเก็บ `store_code` / `branch_code` / `product_code` เป็น **degenerate dimension**
+  ไว้สืบกลับถึงแถวต้นทางที่ห้างส่งมา คู่กับ `branch_sk` / `product_mdt_sk` ที่ใช้ join จริง
+- `fact_stock_mdt_monthly` เลือก **วันสุดท้ายที่แต่ละห้างมีข้อมูลในเดือนนั้น** แยกรายห้าง
+  เพราะ BT กับ TW ส่งไฟล์คนละจังหวะ วันขาดคนละวัน · ตัดวันที่ไฟล์ไม่สมบูรณ์ทิ้งก่อนเลือก
+  **เดือนที่ยังไม่จบ (เดือนปัจจุบัน) ค่าที่ได้เป็นค่าล่าสุด ไม่ใช่ค่าสิ้นเดือน**
 
 ## Dimension SK joins per fact
 
@@ -39,6 +66,9 @@
 | `fact_order_store` | dim_order, dim_company, dim_customer, dim_product_master, dim_store — source `curated_mih` + `curated_mil` (`mihType='PS'`) · **ตัวกรองบรรทัด (2026-09-15)**: `milstype not in (3)` + `LEFT(milstk,1) not in ('บ')` — ตัดค่าบริการ/ค่าขนส่ง ให้ตรงกับ `fact_invoice_store` · ใบสั่งขายที่มีแต่บรรทัดพวกนี้หรือสินค้า Sourcing จะ**หายทั้งใบ** ดู `known-issues.md` · ชื่อพนักงานขาย (`pernamet`) ย้ายไปอยู่ `dim_order` แล้ว 2026-09-03 fact เก็บแค่ `mihPer` · `FlagFree` (เพิ่ม 2026-09-03, แก้นิยาม 048f746) = `'Yes'` เมื่อ `milSum = 0` **OR** `dim_product_master.ProductGroupMAC5 = '5000'` — เงื่อนไข `milDesc LIKE '%ของแถม%'` ถูก comment ออกแล้ว · **`fact_backlog_store` ใช้นิยามคนละแบบ** (`cpssumreq = 0`) ดู `known-issues.md` · `partitionBy` = `mix_date` (เดิม `asatdate` ถอดออก 2026-09-03) |
 | `fact_invoice_store` | dim_invoice, dim_order, dim_company, dim_customer, dim_product_master, dim_store — เหมือน `fact_order_store` แต่ `mihType='IS'`; `InvoiceSK` = ตัวใบกำกับเอง (join `dim_invoice` บน `(CompanySK, mihVnos)` + QUALIFY dedup, แมตช์ 100% วัด 2026-09-03); `OrderSK` มาจาก `milLinkVcno` เมื่อ `milLinkVcType='PS'`; สไลซ์สาขาใช้ `StoreSK` → `dim_store` (`is_store_*` 6 คอลัมน์ของ query ต้นฉบับถอดออกแล้ว 2026-09-03) · **grain รวม `milPer`** เพราะ `curated_mil` ฝั่ง IS แตกบรรทัดตามสัดส่วนพนักงานขาย · `FlagFree` (เพิ่ม 2026-09-03, แก้นิยาม 048f746) = `'Yes'` เมื่อ `milSum = 0` **OR** `dim_product_master.ProductGroupMAC5 = '5000'` — เงื่อนไข `milDesc LIKE '%ของแถม%'` ถูก comment ออกแล้ว · **`fact_backlog_store` ใช้นิยามคนละแบบ** (`cpssumreq = 0`) ดู `known-issues.md` · `partitionBy` = `mix_date` (เดิม `asatdate` ถอดออก 2026-09-03) |
 | `fact_backlog_store` | dim_order, dim_company, dim_customer, dim_product_master, dim_store — source `curated_mih` + `validated_mac5.cps` (snapshot ล่าสุด); `SUM` ต่อ (cpsVnosID, cpsCusID, cpsStkID) · `FlagFree` = `'Yes'` เมื่อ `cps.cpssumreq = 0` OR `ProductGroupMAC5 = '5000'` (อยู่ใน `GROUP BY`) · `partitionBy` = `sDate` (เดิม `asatdate` ถอดออก 2026-09-03) |
+| `fact_saleout_mdt` | dim_sales_branch_mdt, dim_product_mdt — source `curated_saleout_mdt` · ไม่ join dim ของ MAC5 เลย (คนละจักรวาลสินค้า) |
+| `fact_stock_mdt` | dim_sales_branch_mdt, dim_product_mdt — source `curated_stock_mdt` |
+| `fact_stock_mdt_monthly` | dim เดียวกับ `fact_stock_mdt` — อ่านจาก `fact_stock_mdt` ไม่ใช่ curated |
 
 > `fact_chq` / `fact_mir_vs` / `fact_mir_rs` were migrated into the repo **2026-07-20**
 > (previously ad-hoc SQL, last rebuilt May 2026). They rebuild fully every night —

@@ -10,6 +10,14 @@
 - **Step 13–26** คืน cutover เริ่มประมาณ 20:00 น. (nonprd รันรอบเดียว 06:00 ข้อมูลนิ่งแล้ว)
 - **Step 27–30** เช้าถัดไป
 
+> **ทบทวนตัวเลขเมื่อ 2026-09-15** — เนื้อหา step ปฏิบัติไม่เปลี่ยน แต่ขอบเขตข้อมูลโตขึ้น:
+> เพิ่ม dataset `curated_saleout_mdt` (Step 5, 9, 17, 22) · view เป็น **33 ตัว** (Step 19) ·
+> **ALLKONS_COMMISSION หยุดที่ชั้น initial แล้ว** (commit `74a10e0` ลบ
+> `definitions/validated/allkons_commission/` ทิ้ง) — dataset `validated_allkons_commission`
+> ยังค้างข้อมูลเก่าใน nonprd และ **ไม่มีอะไร downstream ใช้** ตัดสินใจก่อน cutover ว่าจะ
+> ยกไป prd ด้วยหรือไม่ · ชุด SALEOUT_MDT ตอนนี้มีครบสาย (validated 12 · curated 2 ·
+> dim 6 · fact 3 · view 1) ต่างจากตอนเขียน runbook ที่มีแค่ validated
+
 > ⚠️ ทุกหน้าของ Console มี **ตัวเลือก project มุมบนซ้าย** และบางหน้ามี **ตัวเลือก region**
 > ผิด project หรือผิด region = ทำผิดที่ทั้ง step เช็กทุกครั้งก่อนกด
 
@@ -126,12 +134,14 @@ dataset ที่ยังไม่มี (ตรวจเมื่อ 2026-08-1
 | `raw_mac5_ak02` | external table ของ ak02 |
 | `raw_saleout_mdt` | external table ของ saleout |
 | `validated_saleout_mdt` | validated ของ saleout |
+| `curated_saleout_mdt` | curated ของ saleout (`curated_saleout_mdt`, `curated_stock_mdt` — เพิ่ม 2026-09) |
 | `raw_allkons_commission` | external table ของ allkons commission (เพิ่ม 2026-08-18) |
-| `validated_allkons_commission` | validated ของ allkons commission (เพิ่ม 2026-08-18) |
+| `validated_allkons_commission` | ⚠️ allkons **หยุดที่ชั้น initial แล้ว** (commit `74a10e0`) dataset นี้มีแต่ข้อมูลเก่า — สร้างไว้ก็ได้ถ้าจะ copy ของเก่าตามไป ไม่สร้างก็ได้ถ้าตัดทิ้ง |
 | `bridge_dataset` | view `GroupCustomerSK_CustomerSK` |
 | `monitor_dataset` | ตาราง run telemetry |
 
-**ต้องเห็น**: ในแถบซ้ายมี dataset ครบ 27 ตัว
+**ต้องเห็น**: ในแถบซ้ายมี dataset ครบ **28 ตัว** (ถ้าตัด `validated_allkons_commission`
+ทิ้งก็เป็น 27)
 
 **ถ้าไม่ตรง**: กดที่ dataset แล้วดู **Data location** ต้องเป็น `asia-southeast1`
 ถ้าเผลอสร้างเป็น `us-central1` ต้องลบแล้วสร้างใหม่ (ย้าย location ไม่ได้)
@@ -214,7 +224,7 @@ https://console.cloud.google.com/bigquery/transfers?project=databuffet-prd
 `dimension_table_from_nonprd`, `fact_table`, `process_dataset`, `mds_dataset_from_nonprd`
 (ของเก่าจาก 17 มี.ค. ใช้ซ้ำได้ ไม่ต้องสร้างใหม่)
 
-**ทำ**: กด **CREATE TRANSFER** เพิ่มอีก 10 ตัว ตามตารางนี้ ทุกตัวตั้งเหมือนกันหมด:
+**ทำ**: กด **CREATE TRANSFER** เพิ่มอีก **11 ตัว** ตามตารางนี้ ทุกตัวตั้งเหมือนกันหมด:
 
 - **Source** = `Dataset Copy`
 - **Repeat frequency** = `On-demand`  ← สำคัญ ห้ามตั้งเป็น Daily
@@ -228,14 +238,16 @@ https://console.cloud.google.com/bigquery/transfers?project=databuffet-prd
 | `validated_cis360_from_nonprd` | `validated_cis360` |
 | `validated_mastersku_from_nonprd` | `validated_mastersku` |
 | `validated_saleout_mdt_from_nonprd` | `validated_saleout_mdt` |
-| `validated_allkons_commission_from_nonprd` | `validated_allkons_commission` |
+| `validated_allkons_commission_from_nonprd` | `validated_allkons_commission` ⚠️ ข้อมูลเก่า ชั้น validated ถูก pause แล้ว — ข้ามได้ถ้าตกลงว่าไม่ยกไป |
 | `curated_mac5_from_nonprd` | `curated_mac5` |
 | `curated_mastersku_from_nonprd` | `curated_mastersku` |
+| `curated_saleout_mdt_from_nonprd` | `curated_saleout_mdt` |
 | `onetime_from_nonprd` | `onetime` |
 | `cdc_dataset_from_nonprd` | `cdc_dataset` |
 | `monitor_dataset_from_nonprd` | `monitor_dataset` |
 
-**ต้องเห็น**: หน้า Data transfers มีทั้งหมด **14 รายการ** สถานะยังไม่เคยรัน
+**ต้องเห็น**: หน้า Data transfers มีทั้งหมด **15 รายการ** สถานะยังไม่เคยรัน
+(14 ถ้าข้าม allkons)
 
 **ที่ไม่ต้องสร้างและเหตุผล**:
 
@@ -453,13 +465,13 @@ FROM `databuffet-prd.raw_mac5_ag01.mih`;
 
 ---
 
-## Step 17 — สั่งรัน Data Transfer ทั้ง 14 ตัว
+## Step 17 — สั่งรัน Data Transfer ทั้ง 15 ตัว
 
 **ไปที่**: https://console.cloud.google.com/bigquery/transfers?project=databuffet-prd
 (region `asia-southeast1`)
 
 **ทำ**: เปิดทีละ transfer → **RUN TRANSFER NOW** (หรือ **SCHEDULE BACKFILL → Run one time
-transfer → now**) ทำให้ครบทั้ง 14 ตัว
+transfer → now**) ทำให้ครบทั้ง 15 ตัว
 
 **ต้องเห็น**: ทุกตัวจบเป็น **Succeeded** (ดูที่คอลัมน์ Run history)
 
@@ -478,6 +490,7 @@ UNION ALL SELECT 'validated_saleout_mdt', COUNT(*) FROM `databuffet-nonprd.valid
 UNION ALL SELECT 'validated_allkons_commission', COUNT(*) FROM `databuffet-nonprd.validated_allkons_commission.__TABLES__`
 UNION ALL SELECT 'curated_mac5', COUNT(*) FROM `databuffet-nonprd.curated_mac5.__TABLES__`
 UNION ALL SELECT 'curated_mastersku', COUNT(*) FROM `databuffet-nonprd.curated_mastersku.__TABLES__`
+UNION ALL SELECT 'curated_saleout_mdt', COUNT(*) FROM `databuffet-nonprd.curated_saleout_mdt.__TABLES__`
 UNION ALL SELECT 'dimension_table', COUNT(*) FROM `databuffet-nonprd.dimension_table.__TABLES__`
 UNION ALL SELECT 'fact_table', COUNT(*) FROM `databuffet-nonprd.fact_table.__TABLES__`
 UNION ALL SELECT 'onetime', COUNT(*) FROM `databuffet-nonprd.onetime.__TABLES__`
@@ -555,8 +568,12 @@ Service account = `dbuffet-dataform-prd@` · **START EXECUTION**
 
 **ไปที่**: BigQuery Studio (prd) เปิดดูแต่ละ dataset
 
-**ต้องเห็น**: `dimension_view` 16 · `fact_view` 4 · `bridge_dataset` 1 ·
-`process_dataset` 5 · `onetime` 6 view (รวม 32 = จำนวนไฟล์ใน `definitions/view/`)
+**ต้องเห็น** (นับตาม `config.schema` ไม่ใช่ชื่อโฟลเดอร์ — โฟลเดอร์ ≠ dataset ปลายทาง):
+`dimension_view` 16 · `fact_view` 6 · `bridge_dataset` 1 · `onetime` 5 ·
+`process_dataset` 5 — **รวม 33** = จำนวนไฟล์ใน `definitions/view/`
+
+**ถ้าไม่ตรง**: ใช้ skill `bq-drift-scan` เทียบ repo กับ BigQuery ทีละตัว —
+จะบอกได้ว่าตัวไหนขาด ตัวไหนเกิน ตัวไหนเนื้อหาต่าง
 
 ---
 

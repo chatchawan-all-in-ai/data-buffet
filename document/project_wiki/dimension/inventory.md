@@ -1,16 +1,26 @@
-# Dimension Inventory — all 61 files
+# Dimension Inventory — ทั้งหมด 67 ไฟล์
 
-> **LLM context**: SK = surrogate key column; NK = natural/business key. Most dims
-> carry `CompanySK` FK from `dim_company`.
-> Groups since 2026-07-20: (a) mds **full daily rebuild** (34 — SKs regenerate daily),
-> (a2) mds MERGE legacy (2), (b) lake MERGE (10), (c) other full rebuild (12), (e) other (3).
+> **LLM context**: SK = surrogate key column; NK = natural/business key · dim ส่วนใหญ่
+> ถือ FK `CompanySK` จาก `dim_company` · ตรวจกับโค้ดจริง 2026-09-15
+>
+> | กลุ่ม | จำนวน | ลักษณะ |
+> |---|---:|---|
+> | (a) mds **full daily rebuild** | **41** | SK ออกใหม่ทุกวัน — ห้ามเก็บข้ามวัน |
+> | (a2) mds MERGE legacy | 2 | `dim_company`, `dim_aging_rang` — SK เสถียรตลอดกาล |
+> | (b) lake MERGE (validated/curated) | 10 | SK เสถียร ไม่มี mds tombstone |
+> | (c) full rebuild อื่น | 11 | `_last` snapshots, target, store, pump |
+> | (e) operations อื่น | 3 | `dim_calendar`, `dim_aging`, `update_sk_sale_rep_group` |
+>
+> วิธีนับที่เชื่อถือได้: จับ `mds_data_\w+` **ทั้งไฟล์** ไม่ใช่แค่ `name: "..."` — dim ชุด
+> MDT อ้าง mds ผ่าน const ใน `js {}` (`${databuffet.MDS_DATASET}.mds_data_...`)
+> ถ้าจับแค่ `name:` จะนับขาดไป 6 ตัว
 
-## Group (a) — mds dims (36 total: 34 full rebuild + 2 MERGE legacy)
+## Group (a) — mds dims (43 รวม: 41 full rebuild + 2 MERGE legacy)
 
-> Since 2026-07-20 every dim in this table is a **daily full rebuild**
-> ([full-rebuild-pattern.md](full-rebuild-pattern.md)) — natural key drives the
-> `ROW_NUMBER()` ordering — **except `dim_company` and `dim_aging_rang`** which keep
-> the MERGE + tombstone pattern and stable SKs.
+> ตั้งแต่ 2026-07-20 ทุก dim ในตารางนี้เป็น **full rebuild รายวัน**
+> ([full-rebuild-pattern.md](full-rebuild-pattern.md)) — natural key เป็นตัวกำหนดลำดับ
+> `ROW_NUMBER()` — **ยกเว้น `dim_company` กับ `dim_aging_rang`** ที่ยังใช้ MERGE +
+> tombstone และ SK เสถียร
 
 | File | SK | Natural key | mds source table |
 |---|---|---|---|
@@ -52,6 +62,12 @@
 | dim_weight_score | WeightSK | CompanyID, Typeeng, Typethai, StartDate, EndDate | mds_data_custgrade_weight_score_master |
 
 All depend on `dim_company` except `dim_company` (deps `[]`) and `dim_holiday` (no deps).
+| dim_zone_mdt | ZoneMdtSK | zone_id | mds_data_sales_zone_master |
+| dim_zone_manager_mdt | ZoneManagerMdtSK | ZoneCode (+ แถว Unknown) | mds_data_sales_zone_manager_master |
+| dim_sales_branch_mdt | BranchMdtSK | รหัสสาขาของห้าง | mds_data_sales_branch_master |
+| dim_product_mdt | ProductMdtSK | product_mdt_code (CAST INT64) | mds_data_product_master_mdt |
+| dim_pc | PcSK | รหัส PC ประจำสาขา | mds_data_sales_pc_master |
+| dim_target_saleout_mdt | TargetSaleoutMdtSK | เป้ารายเดือน กระจายเป็นรายวัน · partition `TargetDate` | mds_data_sales_target_by_mdt_master |
 
 ## Group (b) — MERGE from lake tables (10)
 
@@ -71,7 +87,7 @@ All depend on `dim_company` except `dim_company` (deps `[]`) and `dim_holiday` (
 | dim_group_customer | GroupCustomerSK | dim_customer | dim_customer |
 | dim_group_customer_grade | GroupCustomerGradeSK | deb, chq, cql, mie, mir, mih, curated_mih | dim_calendar, dim_customer, dim_group_customer + score dims |
 
-## Group (c) — full rebuild `type: "table"` (12)
+## Group (c) — full rebuild `type: "table"` ที่ไม่ได้อ่าน mds (11)
 
 | File | SK | Notes |
 |---|---|---|
