@@ -82,7 +82,7 @@ Side pipelines:
    holdout (`"mds_dataset"` as a literal in 36 dim files) was converted to
    `databuffet.MDS_DATASET` on 2026-08-26; there are now **zero** literals.
 4. **`type: "operations"` tables are NOT created by Dataform** — they must pre-exist
-   in BigQuery (the 12 MERGE dims, `fact_transcation`). The 34 full-rebuild mds dims
+   in BigQuery (the 12 MERGE dims, `fact_transcation`). The 41 full-rebuild mds dims
    are Dataform-managed tables whose **SKs regenerate daily** (see
    [dimension/full-rebuild-pattern.md](../dimension/full-rebuild-pattern.md)).
 5. **Load-bearing typos** — keep verbatim: `fact_transcation` (table + file),

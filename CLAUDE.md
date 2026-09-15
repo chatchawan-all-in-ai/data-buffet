@@ -42,8 +42,10 @@ Skills (`.claude/skills/*/SKILL.md`): `add-initial-table`, `add-validated-table`
 pull กลับ; มีสคริปต์ `scripts/{dump.sql,scan.py,pull.py}`),
 `update-docs`, `ship` (commit → push dev → ff nonprod), `check-runs` (monitor-table
 run health), `verify-setup` (day-1 machine check: CLIs, GCP auth, BigQuery/GCS
-access, hooks — script `scripts/verify.sh`, read-only). Each points at its
+access, hooks — script `scripts/verify.sh`, read-only), `show-me` (สรุปที่คุยกันเป็น
+ภาพเดียว) — **16 skills**. Each points at its
 `document/` guide — invoke the skill rather than improvising the pattern.
+Index งาน→skill→เอกสาร: `document/how-to/README.md`.
 
 Safety: a PreToolUse hook (`.claude/hooks/guard-dangerous.sh`, wired in
 `.claude/settings.json`) blocks destructive commands (re-initial, drop_all_tables,
@@ -255,7 +257,9 @@ exist.**
 | Onboard a new developer / check a machine | `document/getting-started/onboarding.md`, skill `verify-setup` |
 | Add validated table | `document/how-to/add-validated-table.md` |
 | Add curated table | `document/how-to/add-curated-table.md` |
-| Add dimension (mds MERGE) | `document/how-to/add-dimension.md` |
+| Add dimension (default = full rebuild) | `document/how-to/add-dimension.md` |
+| Add / deploy a view | `document/how-to/add-view.md`, `document/how-to/deploy-view.md` |
+| ธงเชิงธุรกิจ (FlagFree, FlagExpire, item_status, seq_condition) | `document/project_wiki/overview/business-flags.md` |
 | Add fact table | `document/how-to/add-fact-table.md` |
 | Run / debug / failure table | `document/how-to/run-and-debug.md`, `document/project_wiki/operations/running-and-troubleshooting.md` |
 | Which dim owns which SK | `document/project_wiki/dimension/inventory.md` |

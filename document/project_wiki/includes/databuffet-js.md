@@ -65,10 +65,11 @@ js {
 - `MDS_BACKFILL_DAYS` (currently `"1"`) limits how far back mds-sourced dimension
   MERGEs scan `updated_at`. See [dimension MERGE pattern](../dimension/merge-sk-pattern.md).
 - `BACKFILL_DAYS` (default `"1"`) is the incremental look-back window for every
-  validated and curated table. It is the **only** entry with a `|| "1"` fallback,
-  because the var is **added by hand per workspace** and is not carried in this
-  repo's commits — without the fallback a workspace that lacks it would
-  interpolate `undefined` into 74 SQL statements. See
+  validated and curated table. It **is** committed — `workflow_settings.yaml` has been
+  tracked in git since 2026-08-16, so every clone gets the value. The `|| "1"` fallback
+  (the only one in this file) is a leftover guard from the days when the var was added
+  by hand per workspace; it still protects a workspace whose `workflow_settings.yaml`
+  predates the var, where `undefined` would be interpolated into 74 SQL statements. See
   [running and troubleshooting](../operations/running-and-troubleshooting.md)
   for the backfill procedure.
 - `workflow_settings.yaml` is environment-specific (project ID differs per env).

@@ -25,12 +25,16 @@
 
 ## How-to (ทีละขั้น)
 
+**index เต็มของทุกงาน + skill ที่คู่กัน: [how-to/README.md](how-to/README.md)**
+
 | งาน | เอกสาร |
 |---|---|
 | เพิ่มตาราง validated | [how-to/add-validated-table.md](how-to/add-validated-table.md) |
 | เพิ่มตาราง curated | [how-to/add-curated-table.md](how-to/add-curated-table.md) |
-| เพิ่ม dimension (mds MERGE) | [how-to/add-dimension.md](how-to/add-dimension.md) |
+| เพิ่ม dimension (default = full rebuild) | [how-to/add-dimension.md](how-to/add-dimension.md) |
 | เพิ่ม fact table | [how-to/add-fact-table.md](how-to/add-fact-table.md) |
+| เพิ่ม view | [how-to/add-view.md](how-to/add-view.md) |
+| **deploy view ขึ้น BigQuery (ทำมือ)** | [how-to/deploy-view.md](how-to/deploy-view.md) |
 | รัน / debug | [how-to/run-and-debug.md](how-to/run-and-debug.md) |
 
 ## Operations
@@ -46,14 +50,15 @@ Entry point: [project_wiki/README.md](project_wiki/README.md) (มี routing ta
 
 ```
 project_wiki/
-├── overview/      architecture.md · source-systems.md
+├── overview/      architecture.md · source-systems.md · business-flags.md
 ├── includes/      databuffet-js.md · variables.md · function-data.md · cdc-config.md
 ├── initial/       initial-layer.md
 ├── validated/     validated-layer.md · source-inventory.md
 ├── curated/       curated-layer.md
-├── dimension/     dimension-layer.md · merge-sk-pattern.md · mds-delete-pattern.md
-│                  · inventory.md · special-cases.md
+├── dimension/     dimension-layer.md · full-rebuild-pattern.md · merge-sk-pattern.md
+│                  · mds-delete-pattern.md · inventory.md · special-cases.md
 ├── fact/          fact-layer.md
+├── view/          view-layer.md
 ├── cdc-process/   cdc.md · process.md
 └── operations/    running-and-troubleshooting.md
 ```
@@ -69,8 +74,9 @@ project_wiki/
   — edge = source → consumer, node ที่ pause เป็นเส้นประจาง (scaffolding
   initial/*_schema_* ตัดออกจาก view รายละเอียดเพื่อไม่ให้เกิน 500-edge cap ของ GitHub)
 - [diagrams/topic_flows.md](diagrams/topic_flows.md) — **subject-area views** แยกตาม
-  เรื่องธุรกิจ (sale-org, target, customer, ar-aging, product, sales-txn, delivery,
-  quotation, channel, cost, calendar, reference) แต่ละเรื่องโชว์ `.sqlx` ที่ใช้ทำ +
+  เรื่องธุรกิจ 14 เรื่อง (sale-org, target, customer, ar-aging, product, sales-txn,
+  delivery, quotation, channel, cost, calendar, store, modern-trade, reference)
+  แต่ละเรื่องโชว์ `.sqlx` ที่ใช้ทำ +
   feeder + fact ปลายทาง (นิยามเรื่องอยู่ที่ `TOPICS` ใน generator)
 - **Auto-generated** จาก [diagrams/generate_lineage.py](diagrams/generate_lineage.py)
   ซึ่ง parse `dependencies` + `ref()` + `tags` จาก `.sqlx` จริง → เขียนทั้ง

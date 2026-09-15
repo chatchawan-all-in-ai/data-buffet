@@ -18,6 +18,8 @@
 | Which dim owns which SK | [dimension/inventory.md](dimension/inventory.md) |
 | Add/edit a fact | [fact/fact-layer.md](fact/fact-layer.md) |
 | Add/edit a view (presentation layer) | [view/view-layer.md](view/view-layer.md), how-to: `document/how-to/add-view.md` |
+| Deploy a view to BigQuery (done by hand — `view` tag is not scheduled) | `document/how-to/deploy-view.md` |
+| What a business flag means (`FlagFree`, `FlagExpire`, `item_status`, `seq_condition`) | [overview/business-flags.md](overview/business-flags.md) |
 | CDC / change tracking | [cdc-process/cdc.md](cdc-process/cdc.md) |
 | AI address parsing | [cdc-process/process.md](cdc-process/process.md) |
 | Config, tags, helpers | [includes/databuffet-js.md](includes/databuffet-js.md), [includes/variables.md](includes/variables.md), [includes/function-data.md](includes/function-data.md), [includes/cdc-config.md](includes/cdc-config.md) |
@@ -29,7 +31,7 @@
 2. Strings pass through `cleanString` (empty → NULL); use `functionData` helpers, not raw casts.
 3. Never hardcode dataset names/tags — use `databuffet.*` constants.
 4. SK stability is per-pattern: MERGE dims (`dim_company`, `dim_aging_rang`, lake dims)
-   have SKs that are stable forever — never regenerate them. The 34 full-rebuild mds
+   have SKs that are stable forever — never regenerate them. The 41 full-rebuild mds
    dims regenerate SKs daily — never persist those SKs across days.
 5. `type: "operations"` targets (MERGE dims, `fact_transcation`) pre-exist in
    BigQuery — Dataform does not create them.
@@ -44,7 +46,8 @@
 context), skills (`add-initial-table`, `add-validated-table`, `add-curated-table`,
 `add-dimension`, `add-fact-table`, `dataform-run`, `enable-cdc`,
 `backfill-dimension`, `fk-integrity-scan`, `data-quality-check`, `update-docs`,
-plus `bq-drift-scan`, `ship`, `check-runs` added later — 14 total)
+plus `bq-drift-scan`, `ship`, `check-runs`, `verify-setup`, `show-me` added later
+— 16 total)
 and agents (`dataform-expert`, `data-architect`, `bigquery-optimizer`,
 `data-quality-auditor`, `bq-drift-auditor` — 5 total). The old `.claude/knowledge/` and root scaffold guides were
 deleted as stale — the historical error list is preserved in

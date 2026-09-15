@@ -60,7 +60,7 @@ LEFT JOIN `${DimCompanyTableRef}` AS com ON ...
 ```
 
 ถ้า view อ่านแต่ validated/curated → **ไม่ต้องมี js block เลย**
-(ณ 2026-09-03 ยังไม่มีตัวอย่างจริงใน repo — view ทั้ง 31 ตัวมี js block หมด)
+(ณ 2026-09-15 ยังไม่มีตัวอย่างจริงใน repo — view ทั้ง 33 ตัวมี js block หมด)
 
 ### 4. ข้อควรระวัง
 
@@ -78,13 +78,22 @@ LEFT JOIN `${DimCompanyTableRef}` AS com ON ...
 - ถ้ามีคนแก้ view เดิมใน console อยู่ ต้องคุยก่อน — พอเข้า Dataform แล้วจะ
   `CREATE OR REPLACE` ทับทุกครั้งที่รัน
 
-### 5. รัน
+### 5. Deploy
+
+> ⚠️ **ในทางปฏิบัติ view ถูก deploy ด้วยมือ ไม่ได้รันผ่าน Dataform** — tag `view`
+> ยังไม่อยู่ในตารางเวลา และเจ้าของงานเลือกแก้ view ตรง ๆ บน BigQuery console
+> **commit ≠ deploy** · ขั้นตอนเต็ม: [deploy-view.md](deploy-view.md)
+
+สรุปสั้น: แก้ `.sqlx` → commit → render SQL → `CREATE OR REPLACE VIEW` บน console →
+รัน `bq-drift-scan` ให้ขึ้น identical
+
+ถ้าวันไหนใส่ tag `view` เข้าตารางเวลาแล้ว คำสั่งคือ:
 
 ```bash
 dataform run --tags view
 ```
 
-view รันหลัง table layer (`dimension_daily` / `fact_daily`) เสมอ
+ไม่ว่าทางไหน view ต้องมาหลัง table layer (`dimension_daily` / `fact_daily`) เสมอ
 
 ## Checklist
 
@@ -97,3 +106,4 @@ view รันหลัง table layer (`dimension_daily` / `fact_daily`) เส
 - [ ] backslash ในโค้ด SQL เขียนตัวเดียว / ใน `--` comment เขียนสองตัว
 - [ ] ไม่มี declaration ที่ประกาศแล้วไม่ได้ใช้
 - [ ] อัปเดต inventory ใน [project_wiki/view/view-layer.md](../project_wiki/view/view-layer.md)
+- [ ] **deploy จริงบน BigQuery แล้ว** และ `bq-drift-scan` ขึ้น identical ([deploy-view.md](deploy-view.md))

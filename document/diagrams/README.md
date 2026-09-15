@@ -37,8 +37,9 @@ One section per business subject, defined by the `TOPICS` list in
 `generate_lineage.py`. Each shows the topic's own objects (members), the `.sqlx`
 that feed them (direct upstream, any layer), and any `fact_*` they feed — so you can
 answer "what builds this subject and how does its data flow?" without reading the
-whole pipeline. Current topics: sale-org, target, customer, ar-aging, product,
-sales-txn, delivery, quotation, channel, cost, calendar, reference. A coverage line
+whole pipeline. Current topics (14): sale-org, target, customer, ar-aging, product,
+sales-txn, delivery, quotation, channel, cost, calendar, store, modern-trade,
+reference. A coverage line
 at the top flags any dim/fact/curated object not yet claimed by a topic — **when you
 add a new domain of tables, add a matching `TOPICS` entry** so it stays at 0.
 
@@ -69,11 +70,11 @@ code as long as it is re-run.
 > (ผู้ใช้ตัดสินใจ: ให้เช็คบนเครื่องก่อน commit แทนที่จะไปเช็คบน GitHub)
 > pre-commit hook จึงเป็น**ตาข่ายเดียวที่เหลือ** และถูกทำให้ block แทนที่จะเตือนเฉย ๆ
 >
-> ⚠️ hook อยู่ใน `.claude/` ซึ่ง git-ignore ไว้ → **เครื่องใหม่ต้องตั้งเองครั้งเดียว**:
-> ```bash
-> git config core.hooksPath .claude/hooks
-> ```
-> เครื่องที่ไม่ได้ตั้ง จะ commit diagram ที่ล้าสมัยขึ้นไปได้แบบเงียบ ๆ ตรวจเองได้ด้วย:
+> hook อยู่ใน `.claude/` ซึ่ง git-ignore ไว้ แต่**ไม่ต้องตั้งเองแล้ว** — SessionStart hook
+> `ensure-hookspath.sh` ตั้ง `core.hooksPath = .claude/hooks` + `chmod +x` ให้อัตโนมัติ
+> ตั้งแต่ session แรกของ `.claude/` ที่เพิ่ง copy มา (idempotent · ไม่ทับค่าที่ตั้งเองไว้)
+> ตรวจว่าติดจริงไหม: `git config core.hooksPath` ต้องได้ `.claude/hooks`
+> เครื่องที่ hook ไม่ติด จะ commit diagram ที่ล้าสมัยขึ้นไปได้แบบเงียบ ๆ ตรวจเองได้ด้วย:
 > ```bash
 > python document/diagrams/generate_lineage.py && git diff --stat -- document/diagrams/
 > ```
