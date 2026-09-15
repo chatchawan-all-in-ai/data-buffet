@@ -19,7 +19,7 @@
 | `TAG_FACT_DAILY` / `TAG_FACT_MONTHLY` / `TAG_FACT_YEARLY` | `fact_daily`, `fact_monthly`, `fact_yearly` | Fact refresh cadence |
 | `TAG_PROCESS` | `process` | Process layer (address parsing) |
 | `TAG_CDC` / `TAG_CDC_INCREMENTAL` | `cdc`, `cdc_incremental` | CDC pipeline |
-| `TAG_VIEW` | `view` | View layer (`definitions/view/`) — presentation views over dim/fact/curated. Added 2026-07-24; migration in progress (see operations/known-issues.md). |
+| `TAG_VIEW` | `view` | View layer (`definitions/view/`) — presentation views over dim/fact/curated · เพิ่ม 2026-07-24 · **ย้ายครบทั้ง 33 view แล้ว** — ต้องใส่ tag นี้ในตารางเวลา ไม่งั้น view จะไม่ถูก deploy และ drift จาก BigQuery |
 | `ONETIME` | `onetime` | One-off actions |
 
 ## Dataset (BigQuery schema) names
@@ -31,8 +31,8 @@
 | MAC5 | `raw_mac5_ag01`, `raw_mac5_aa05`, `raw_mac5_ab01`, `raw_mac5_ac02`, `raw_mac5_ak02` (one per company) | `validated_mac5` | `curated_mac5` |
 | CIS360 | `raw_cis360` | `validated_cis360` | `curated_cis360` |
 | MASTERSKU | `raw_mastersku` | `validated_mastersku` | `curated_mastersku` |
-| SALEOUT_MDT | `raw_saleout_mdt` | `validated_saleout_mdt` | — |
-| ALLKONS_COMMISSION | `raw_allkons_commission` | `validated_allkons_commission` | — |
+| SALEOUT_MDT | `raw_saleout_mdt` | `validated_saleout_mdt` | **`curated_saleout_mdt`** (`CURATED_SALEOUT_MDT`, เพิ่ม 2026-09) |
+| ALLKONS_COMMISSION | `raw_allkons_commission` | `validated_allkons_commission` ⚠️ **ไม่มีไฟล์ validated แล้ว** (pause ใน `74a10e0`) dataset ยังค้างข้อมูลเก่า | — |
 
 ### Shared datasets
 
@@ -46,7 +46,7 @@
 | `BRIDGE` | `bridge_dataset` | Bridge views (many-to-many SK maps) — `definitions/view/bridge_dataset/` |
 | `CDC_DATESET` (sic) | `cdc_dataset` | CDC change log |
 | `PROCESS_DATASET` | `process_dataset` | Derived datasets (address parsing) + RLS/address views |
-| `FUNCTION_DATASET` | `function_dataset` | BigQuery UDFs |
+| `FUNCTION_DATASET` | `function_dataset` | BigQuery UDFs (7 ตัว) |
 | `MDS_DATASET` | `mds_dataset` | Master-data-service tables (externally loaded, **not** created by this repo) |
 
 > Note the historical typo: the constant is `CDC_DATESET`, not `CDC_DATASET`. Keep using
@@ -56,10 +56,17 @@
 
 Map source system → folder under `gs://file-raw-data`:
 `mac5_ag01`, `mac5_aa05`, `mac5_ab01`, `mac5_ac02`, `mac5_ak02`, `mac5_report`,
-`mac5_gps`, `mastersku`, `cis360`, `saleout_mdt`.
+`mac5_gps`, `mastersku`, `cis360`, `saleout_mdt`, `allkons_commission`.
 
 ## MAC5 multi-company note
 
 MAC5 has **5 company instances** (ag01, aa05, ab01, ac02, ak02), each with its own raw
 dataset and GCS folder. The validated layer consolidates them into the single
 `validated_mac5` dataset with a `company_id` column.
+
+## จำนวน key
+
+`variables.json` มี **57 key** (นับ 2026-09-15) — หน้านี้อธิบายด้วย **ค่า**
+(เช่น `raw_mac5_ag01`) ไม่ใช่ชื่อ constant ทุกตัว เพราะ key กลุ่ม `RAW_*` / `GCS_*` /
+`VALIDATED_*` / `CURATED_*` เดาได้จากค่าตรง ๆ · ถ้าต้องการรายชื่อครบ ให้อ่านจาก
+`includes/controller/variables.json` ตรง ๆ — **อย่าเชื่อหน้านี้เป็นรายการครบ**

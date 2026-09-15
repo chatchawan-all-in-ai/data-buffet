@@ -15,11 +15,11 @@ Data warehouse บน **Google BigQuery** (project `databuffet-nonprd`, region `
 
 ```
 GCS AVRO (gs://file-raw-data)
-  → initial   (external table + schema + UDF — 15 ไฟล์)
-  → validated (ทำความสะอาด cast dedup — 135 ไฟล์ = 131 transformation + 4 schema)
-  → curated   (business logic, join — 8 ไฟล์ = 5 transformation + 3 schema)
-  → dimension (60 ไฟล์) + fact (9 ไฟล์)
-  → view      (ชั้น BI/report — 32 ไฟล์)
+  → initial   (external table + schema + UDF 7 ตัว — 17 ไฟล์)
+  → validated (ทำความสะอาด cast dedup — 136 ไฟล์ = 132 transformation + 4 schema)
+  → curated   (business logic, join — 11 ไฟล์ = 7 transformation + 4 schema)
+  → dimension (67 ไฟล์) + fact (15 ไฟล์)
+  → view      (ชั้น BI/report — 33 ไฟล์)
   ท่อเสริม: cdc (จับ change) + process (แกะที่อยู่ไทยด้วย AI)
 ```
 
@@ -197,7 +197,7 @@ chmod +x .claude/hooks/*.sh .claude/hooks/pre-commit .claude/skills/verify-setup
 1. **Timezone Bangkok เสมอ** — `CURRENT_DATE('Asia/Bangkok')`
 2. **String ทุกตัวผ่าน `cleanString`** — `''` ต้องกลายเป็น `NULL`
 3. **SK มี 2 ระบบ** — dim แบบ MERGE (`dim_company`, `dim_aging_rang`, lake dims):
-   SK คงที่ตลอดชีพ ห้าม regenerate / dim mds แบบ full rebuild (34 ตัว): SK ออกเลขใหม่
+   SK คงที่ตลอดชีพ ห้าม regenerate / dim mds แบบ full rebuild (41 ตัว): SK ออกเลขใหม่
    ทุกวัน **ห้ามเก็บข้ามวัน**
 4. **ตาราง `type: "operations"` Dataform ไม่สร้างให้** — dim แบบ MERGE และ
    `fact_transcation` ต้องมีตารางอยู่ก่อน

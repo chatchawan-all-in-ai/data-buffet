@@ -58,7 +58,7 @@
 `product_group`, `product_group_cost_group`, `product_status`, `product_admin_status`,
 `brand`, `category`, `unit`, `vendor`
 
-## SALEOUT_MDT (11 = 10 incremental + 1 schema) — by retailer subfolder
+## SALEOUT_MDT (12 = 11 incremental + 1 schema) — by retailer subfolder
 
 | Folder | Tables |
 |---|---|
@@ -66,11 +66,12 @@
 | `GB/` | `saleout_gb` |
 | `HP/` | `saleout_hp` |
 | `TW/` | `report_sale_subscription` |
+| `LASTYEAR/` | `saleout_lastyear` — ไฟล์ Excel ย้อนหลังก่อนที่ TW จะส่ง feed (เพิ่ม 2026-09) |
 
 All `type: "incremental"` but tagged only `validated`; PKs are wide business
 composites (e.g. `["sale_no","sale_date","branch_code","product_code"]`).
 
-**2026-08-17** — all 10 were brought onto the standard validated pattern: they gained
+**2026-08-17** — all 10 (ตอนนั้น) were brought onto the standard validated pattern: they gained
 `partitionBy: "asatdate"` (they had `clusterBy` only, the single group in the whole
 layer without a partition) and the incremental
 `${when(incremental(), \`WHERE ASATDATE >= …BACKFILL_DAYS…\`)}` window, which they had
@@ -86,7 +87,17 @@ raise `BACKFILL_DAYS` for that run instead of removing the window.
 Nothing downstream reads `validated_saleout_mdt` — no curated, dimension, fact or
 view references it. The layer ends here and is consumed directly by BI.
 
-## ALLKONS_COMMISSION (8 = 7 incremental + 1 schema) — PK `id`
+## ALLKONS_COMMISSION — ⚠️ **ถูก pause แล้ว ไม่มีไฟล์ validated เหลือเลย**
+
+> commit `74a10e0 "pause process data layer of commission"` ลบ
+> `definitions/validated/allkons_commission/` ทิ้งทั้งโฟลเดอร์ (เดิม 8 ไฟล์)
+> · raw external table 7 ตัวยังถูกสร้างอยู่ที่ชั้น initial · dataset
+> `validated_allkons_commission` ยังค้างข้อมูลเก่าใน BigQuery แต่ไม่มีใครเติม
+> และไม่มีอะไร downstream ใช้
+>
+> ข้อมูลข้างล่างเก็บไว้เผื่อรื้อฟื้น — อย่าอ่านว่าเป็น inventory ของปัจจุบัน
+
+ตอนที่ยังใช้งาน (8 = 7 incremental + 1 schema) — PK `id`
 
 Sales-commission source, added 2026-08-18. GCS prefix `allkons_commission/`,
 one folder per table, Hive-partitioned by `ASATDATE=` like every other source.
@@ -123,3 +134,21 @@ The GCS prefix also holds a `mac5_transactions_view/` folder that is deliberatel
 **not** declared as an external table (decision 2026-08-18).
 
 Nothing downstream reads `validated_allkons_commission` yet.
+
+## Schema-bootstrap files (4)
+
+ทุก source มีไฟล์ `validated_schema_<source>.sqlx` อยู่ 1 ตัว — `type: "operations"`
+ทำหน้าที่ `CREATE SCHEMA IF NOT EXISTS` และเป็นตัวที่ตาราง curated ของ source นั้นไปผูก dependency ถึง
+นับรวมในตัวเลขของแต่ละ source ข้างบนแล้ว:
+
+| File | Source |
+|---|---|
+| `validated_schema_mac5.sqlx` | MAC5 |
+| `validated_schema_cis360.sqlx` | CIS360 |
+| `validated_schema_mastersku.sqlx` | MASTERSKU |
+| `validated_schema_saleout.sqlx` | SALEOUT_MDT |
+
+ไม่มี `validated_schema_allkons_commission.sqlx` แล้ว — ดูหัวข้อ ALLKONS ข้างบน
+
+**รวมทั้งชั้น: 136 ไฟล์** = MAC5 87 + CIS360 25 + MASTERSKU 12 + SALEOUT_MDT 12
+(นับรวม schema-bootstrap ของแต่ละ source แล้ว) · ตรวจ 2026-09-15

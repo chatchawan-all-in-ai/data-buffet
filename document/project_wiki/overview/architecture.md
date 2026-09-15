@@ -70,7 +70,7 @@ Side pipelines:
   > `process_dataset.RLS_Customer360` (now built here as
   > `definitions/process/rls_customer360.sqlx`, lowercase). Both are declared in the
   > consuming files' `dependencies[]`.
-- **View layer now defined** (2026-07-24): the 32 views under `definitions/view/`
+- **View layer now defined** (2026-07-24): the 32 views under `definitions/view/` (**33 today**)
   (e.g. `view_dim_aging`, `view_deb_address_data`) are Dataform-managed as of the view
   migration. See [view/view-layer.md](../view/view-layer.md).
 

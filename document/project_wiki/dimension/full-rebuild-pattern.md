@@ -1,6 +1,7 @@
 # The MDS Full-Rebuild Pattern (canonical since 2026-07-20)
 
-> **LLM context**: This is the default pattern for mds-sourced dimensions — **34 files**
+> **LLM context**: This is the default pattern for mds-sourced dimensions — **41 files**
+> (นับ 2026-09-15 — รวมชุด MDT 6 ตัวที่อ้าง mds ผ่าน const ใน `js {}`)
 > follow it (all mds dims except `dim_company` and `dim_aging_rang`, which keep the
 > legacy [MERGE pattern](merge-sk-pattern.md)). Reference implementation:
 > `definitions/dimension/dim_waterpac.sqlx`.
@@ -72,7 +73,7 @@ Verified 2026-07-20 (repo scan + live BQ + 90-day query history):
   into the repo as `type: "table"` daily full rebuilds tagged `fact_daily`
   (see [fact/fact-layer.md](../fact/fact-layer.md)).
 
-## Special files within the 34
+## Special files within the 41
 
 - `dim_sale_representative` — `UNION ALL` of the mds block and the ledger block
   (per-employees with NULL DepartmentID + sentinel dates 1900-01-01/2499-12-31, `MdsID NULL`).

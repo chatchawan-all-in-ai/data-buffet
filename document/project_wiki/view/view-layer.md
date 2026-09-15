@@ -3,7 +3,7 @@
 > **LLM context**: The presentation layer — BigQuery **views** that sit on top of the
 > physical dim/fact/curated/validated tables (and a few external sources). Migrated
 > into Dataform on **2026-07-24** from views that previously lived only in BigQuery
-> (created by hand in the console). 31 views, `type: "view"`, tag `view`.
+> (created by hand in the console). **33 views**, `type: "view"`, tag `view`. นับ 2026-09-15
 >
 > **Non-obvious constraints:**
 > - **A view's folder is not its dataset.** Files live under `definitions/view/<dataset>/`
@@ -68,7 +68,7 @@ Rules:
    does build (`type: "table"` in `process_dataset`).
 3. No inline `` `${databuffet.DATABASE}.${databuffet.X}.tbl` ``, no `databuffet-nonprd`
    literal. Declarations follow first-use order; declare only what is used. A view that
-   reads only validated/curated needs **no `js` block** — as of 2026-09-10 all 31 views
+   reads only validated/curated needs **no `js` block** — as of 2026-09-15 all 33 views
    happen to have one, so there is no live example.
 4. No trailing `;` (the view DDL wraps the query).
 4b. **Backslash ในโค้ด SQL ใช้ตัวเดียว** — Dataform ส่งผ่านให้ตรงๆ ไม่กิน
@@ -151,7 +151,10 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 > 13 เส้น เพราะ dims เหล่านั้นปั้น SK ใหม่ทุกคืน ถ้ารันสลับลำดับจะได้ SK ของเมื่อวาน
 > ตรวจ timestamp แล้วที่ผ่านมาเรียงถูกตลอด — เป็นการกันไว้ ไม่ใช่แก้ของที่พังอยู่
 
-## Inventory (31 views)
+## Inventory (33 views)
+
+> นับตาม `config.schema` ไม่ใช่ชื่อโฟลเดอร์ — โฟลเดอร์ ≠ dataset ปลายทาง
+> `DIMENSION_VIEW` 16 · `FACT_VIEW` 6 · `ONETIME` 5 · `PROCESS_DATASET` 5 · `BRIDGE` 1
 
 ### `dimension_view` → schema `DIMENSION_VIEW` (16)
 
@@ -182,6 +185,7 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 | `view_aging_ri` | fact_mir_vs, dim_aging_rang, dim_invoice, dim_status_not_receive, curated_mih, ar_s/chq/cql/mir, view_dim_aging | — |
 | `view_fact_mir_rs` | fact_mir_rs, dim_aging, curated_mih, ar_s | — |
 | `view_fact_mir_vs` | fact_mir_vs, dim_aging | — |
+| `view_fact_salein_mdt` | fact_transcation, dim_customer, dim_sales_branch_mdt — ตัวเชื่อม sell-**in** (ขายเข้าห้าง) กับชุด MDT ที่เป็น sell-**out** | — |
 
 ### `onetime` → schema `ONETIME` (6 — data marts / Power BI / models)
 
@@ -228,7 +232,7 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 
 ## Compile-verification checklist (local `dataform` CLI unavailable)
 
-1. All 31 views compile and the `view` tag runs after the table-building tags.
+1. All 33 views compile and the `view` tag runs after the table-building tags.
 2. Views referencing other views (chains — e.g. `view_dim_aging` → `view_dim_channel`,
    `Model_Invoice_Transaction` → `view_fact_transcation`) resolve in the right order.
 

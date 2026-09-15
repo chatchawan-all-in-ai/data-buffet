@@ -112,6 +112,22 @@ TOPICS = [
         r"^dim_calendar$",
         r"^dim_holiday$",
     ]),
+    ("store", "Store / branch sales — ยอดขายแยกตามคลัง-สาขา", [
+        r"^dim_store$",
+        r"^fact_order_store$",
+        r"^fact_invoice_store$",
+        r"^fact_backlog_store$",
+    ]),
+    ("modern-trade", "Modern trade (MDT) — sell-out/สต็อกห้างค้าปลีก", [
+        r"^dim_zone(_manager)?_mdt$",
+        r"^dim_sales_branch_mdt$",
+        r"^dim_product_mdt$",
+        r"^dim_pc$",
+        r"^dim_target_saleout_mdt$",
+        r"^curated_(saleout|stock)_mdt$",
+        r"^fact_saleout_mdt$",
+        r"^fact_stock_mdt(_monthly)?$",
+    ]),
     ("reference", "Reference / misc — ตารางอ้างอิงอื่นๆ", [
         r"^dim_doctype$",
         r"^dim_waterpac$",

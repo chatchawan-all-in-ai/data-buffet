@@ -99,7 +99,7 @@ FROM `${DimCompanyTableRef}`
 > **tech debt**: ไฟล์เก่าบางไฟล์ยัง inline อยู่ เช่น `fact_transcation.sqlx` ใช้
 > `${databuffet.DATABASE}.onetime.Transaction_Data_Mart` แบบ inline (ควรเป็น js-block Ref)
 > — ของใหม่ยึดกฎข้างบน ของเก่าค่อยแปลงเมื่อแตะไฟล์นั้น
-> `definitions/view/` ทั้ง 32 ไฟล์ทำตามกฎนี้ครบ
+> `definitions/view/` ทั้ง **33 ไฟล์** ทำตามกฎนี้ครบ (นับ 2026-09-15)
 
 ### 3.3 Backslash ใน SQL body — เขียนตรง ๆ ตัวเดียว
 
@@ -213,7 +213,7 @@ PK เป็น `NOT ENFORCED` — เป็น hint ให้ optimizer ไม�
 
 ## 8. Dimension patterns (สรุปย่อ)
 
-**Default — full rebuild** (mds dims 34 ตัว):
+**Default — full rebuild** (mds dims **41 ตัว**):
 [project_wiki/dimension/full-rebuild-pattern.md](../project_wiki/dimension/full-rebuild-pattern.md)
 `type: "table"` → SELECT เดียว: `ROW_NUMBER() OVER(ORDER BY natural key)` AS SK →
 join dim_company → `WHERE is_active = TRUE` → `MdsID` ปิดท้าย — SK ใหม่ทุกวัน

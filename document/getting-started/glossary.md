@@ -29,7 +29,7 @@
 | **MAC5** | ระบบ POS/บัญชี มี 5 บริษัท (ag01, aa05, ab01, ac02, ak02) แต่ละบริษัทมี raw dataset แยก รวมเป็น `validated_mac5` ด้วยคอลัมน์ `company_id` |
 | **MASTERSKU** | Product master (สี ขนาด มิติสินค้า — มี JSON ซ้อน) |
 | **CIS360** | ข้อมูลอ้างอิงลูกค้า |
-| **SALEOUT_MDT** | ข้อมูล sale-out จาก dealer (BT, GB, HP, TW) |
+| **SALEOUT_MDT** | ข้อมูล sell-out จากห้าง modern trade (BT บุญถาวร, GB โกลบอลเฮ้าส์, HP โฮมโปร, TW ไทวัสดุ) · ตั้งแต่ 2026-09 มีครบสาย validated → curated → dim 6 → fact 3 |
 | **mds_dataset** | ตาราง master-data-service ที่โหลดเข้ามาจากภายนอก (ไม่ได้สร้างโดย repo นี้) — เป็นต้นทางของ dimension ส่วนใหญ่ ทุกตารางมี `id`, `is_active`, `updated_at` |
 | **ASATDATE / asatdate** | วันที่ของ snapshot ข้อมูล (string `YYYYMMDD` ใน raw → `DATE` ใน validated) เป็น partition column หลักของตาราง incremental |
 | **AVRO / external table** | ไฟล์ raw บน GCS (`gs://file-raw-data`) อ่านผ่าน BigQuery external table — ข้อมูลจริงอยู่บน GCS |
@@ -42,7 +42,7 @@
 | **Incremental** | โหลดเฉพาะ partition ช่วงหลัง (`asatdate >= CURRENT_DATE('Asia/Bangkok') - N`) (tag `validated_incremental`) |
 | **QUALIFY dedup** | `QUALIFY ROW_NUMBER() OVER(PARTITION BY <pk> ORDER BY file_load_datetime DESC) = 1` — เก็บ row ล่าสุดต่อคีย์ |
 | **MERGE upsert** | `MERGE ... WHEN MATCHED UPDATE / WHEN NOT MATCHED INSERT` — ใช้ใน dimension ที่ต้องรักษา SK เดิม (dim_company, dim_aging_rang, lake dims) |
-| **Full rebuild dim** | pattern หลักของ mds dims 34 ตัว (ตั้งแต่ 2026-07-20): `type: "table"` ปั้นใหม่ทุกวันจาก `is_active = TRUE` — SK ออกเลขใหม่ทุกวัน ห้ามเก็บข้ามวัน |
+| **Full rebuild dim** | pattern หลักของ mds dims 41 ตัว (ตั้งแต่ 2026-07-20): `type: "table"` ปั้นใหม่ทุกวันจาก `is_active = TRUE` — SK ออกเลขใหม่ทุกวัน ห้ามเก็บข้ามวัน |
 | **mds inactive DELETE (tombstone)** | ท้าย dimension MERGE (เหลือ 2 ตัว): `DELETE FROM dim WHERE MdsID IN (SELECT id FROM mds WHERE is_active = FALSE)` — ลบ row ที่ต้นทาง soft-delete |
 | **Overwrite import** | โหมด import ของ mds ที่ล้างตารางแล้วลงใหม่ (id เปลี่ยนหมด) — full rebuild รองรับเองอัตโนมัติ |
 | **MDS_BACKFILL_DAYS** | ตัวแปรโปรเจกต์ (ปัจจุบัน `1`) จำกัดหน้าต่าง `updated_at` ของ dim แบบ MERGE (full rebuild ไม่ใช้) |
@@ -59,3 +59,16 @@
 | **`dataform compile`** | ตรวจ syntax + สร้าง execution graph (ไม่รันจริง) |
 | **`dataform run --tags <tag>`** | รันเฉพาะกลุ่ม เช่น `dimension_daily`, `validated_incremental` |
 | **`bq` CLI** | Query BigQuery ตรง ๆ — ต้องระบุ `--project_id=databuffet-nonprd` เสมอ |
+
+## คำที่เพิ่มมาใหม่ (2026-09)
+
+| คำ | ความหมาย |
+|---|---|
+| **sell-out / sell-in** | sell-**out** = ห้างขายออกจากสาขาให้ผู้บริโภค (ชุด MDT) · sell-**in** = เราขายเข้าห้าง (`view_fact_salein_mdt`) |
+| **MDT** | Modern Trade — ห้างค้าปลีกรายใหญ่ · dim/fact ชุดนี้ลงท้ายด้วย `_mdt` |
+| **degenerate dimension** | รหัสจากต้นทางที่เก็บไว้ใน fact ตรง ๆ เพื่อสืบกลับ (เช่น `store_code`, `product_code` ใน fact MDT) คู่กับ SK ที่ใช้ join จริง |
+| **`date_is_estimated`** | ธงใน `curated_saleout_mdt` — `TRUE` แปลว่าห้างส่งยอดมาเป็นช่วงวัน เราเฉลี่ยลงรายวันเอง (บุญถาวร) |
+| **`FlagFree`** | ธงของแถมใน `fact_order_store` / `fact_invoice_store` / `fact_backlog_store` · ⚠️ **นิยามไม่ตรงกัน 2 แบบ** — สองตัวแรกใช้ `milSum = 0`, backlog ใช้ `cpssumreq = 0` ดู known-issues.md |
+| **`StoreSK` / `ReportStore`** | `dim_store` — คลัง/สาขาจาก `validated_mac5.sto` · `ReportStore` ยุบ `stogroup` ที่ไม่อยู่ใน kk/pk/lp/ub/hy เป็น `'KTB'` — **เป็นถังรวม ไม่ใช่คลังของกรุงไทย** |
+| **doc-grain purge** | `pre_operations` ลบ**ทั้งเอกสาร**ก่อน insert — จำเป็นเพราะ MERGE บน PK ระดับบรรทัดลบบรรทัดที่ต้นทางลบไปไม่ได้ (`mih`/`mil`/`mir`/`curated_mil`) |
+| **drift (view)** | repo กับ BigQuery ไม่ตรงกัน — เกิดจากคนแก้ view บน console หรือ repo แก้แล้วยังไม่ได้รัน tag `view` · ตรวจด้วย skill `bq-drift-scan` |

@@ -11,7 +11,7 @@ Edges point **source → consumer**; paused objects render dashed. Node colours 
 layer (validated/curated/dimension/fact/…) as in
 [pipeline_lineage.md](pipeline_lineage.md).
 
-**Topics (12):**
+**Topics (14):**
 
 1. Sales org hierarchy — โครงสร้างองค์กรขาย (แผนก/ภาค/ผจก./เซล)
 2. Sales target / quota — เป้าการขาย
@@ -24,9 +24,11 @@ layer (validated/curated/dimension/fact/…) as in
 9. Sales channel — ช่องทางขาย
 10. Cost — ต้นทุน
 11. Calendar / date spine — ปฏิทิน/วันหยุด
-12. Reference / misc — ตารางอ้างอิงอื่นๆ
+12. Store / branch sales — ยอดขายแยกตามคลัง-สาขา
+13. Modern trade (MDT) — sell-out/สต็อกห้างค้าปลีก
+14. Reference / misc — ตารางอ้างอิงอื่นๆ
 
-**Uncovered dim/fact/curated objects (not in any topic):** `curated_saleout_mdt`, `curated_stock_mdt`, `dim_pc`, `dim_product_mdt`, `dim_sales_branch_mdt`, `dim_store`, `dim_target_saleout_mdt`, `dim_zone_manager_mdt`, `dim_zone_mdt`, `fact_backlog_store`, `fact_invoice_store`, `fact_order_store`, `fact_saleout_mdt`, `fact_stock_mdt`, `fact_stock_mdt_monthly`
+**Uncovered dim/fact/curated objects (not in any topic):** —
 
 ---
 
@@ -1013,6 +1015,151 @@ flowchart LR
   classDef dimension fill:#ffe0b3,stroke:#d98f2f,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
   class dim_calendar,dim_holiday dimension;
+```
+
+---
+
+## Store / branch sales — ยอดขายแยกตามคลัง-สาขา
+
+**Objects in this topic (4):** `dim_store`, `fact_backlog_store`, `fact_invoice_store`, `fact_order_store`
+
+**Fed by (9):** `cps`, `curated_mih`, `curated_mil`, `dim_company`, `dim_customer`, `dim_invoice`, `dim_order`, `dim_product_master`, `sto`
+
+```mermaid
+flowchart LR
+  subgraph validated["validated (2)"]
+    cps["cps"]
+    sto["sto"]
+  end
+  subgraph curated["curated (2)"]
+    curated_mih["curated_mih"]
+    curated_mil["curated_mil"]
+  end
+  subgraph dimension["dimension (6)"]
+    dim_company["dim_company"]
+    dim_customer["dim_customer"]
+    dim_invoice["dim_invoice"]
+    dim_order["dim_order"]
+    dim_product_master["dim_product_master"]
+    dim_store["dim_store"]
+  end
+  subgraph fact["fact (3)"]
+    fact_backlog_store["fact_backlog_store"]
+    fact_invoice_store["fact_invoice_store"]
+    fact_order_store["fact_order_store"]
+  end
+  cps --> fact_backlog_store
+  curated_mih --> dim_invoice
+  curated_mih --> dim_order
+  curated_mih --> fact_backlog_store
+  curated_mih --> fact_invoice_store
+  curated_mih --> fact_order_store
+  curated_mil --> dim_invoice
+  curated_mil --> dim_order
+  curated_mil --> fact_invoice_store
+  curated_mil --> fact_order_store
+  dim_company --> dim_customer
+  dim_company --> dim_invoice
+  dim_company --> dim_order
+  dim_company --> dim_product_master
+  dim_company --> dim_store
+  dim_company --> fact_backlog_store
+  dim_company --> fact_invoice_store
+  dim_company --> fact_order_store
+  dim_customer --> fact_backlog_store
+  dim_customer --> fact_invoice_store
+  dim_customer --> fact_order_store
+  dim_invoice --> fact_invoice_store
+  dim_order --> dim_invoice
+  dim_order --> fact_backlog_store
+  dim_order --> fact_invoice_store
+  dim_order --> fact_order_store
+  dim_product_master --> fact_backlog_store
+  dim_product_master --> fact_invoice_store
+  dim_product_master --> fact_order_store
+  dim_store --> fact_backlog_store
+  dim_store --> fact_invoice_store
+  dim_store --> fact_order_store
+  fact_order_store --> fact_invoice_store
+  sto --> dim_store
+  classDef validated fill:#cfe8ff,stroke:#4a90d9,color:#111;
+  classDef curated fill:#a8d5ff,stroke:#2f6fb0,color:#111;
+  classDef dimension fill:#ffe0b3,stroke:#d98f2f,color:#111;
+  classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
+  classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
+  class cps,sto validated;
+  class curated_mih,curated_mil curated;
+  class dim_company,dim_customer,dim_invoice,dim_order,dim_product_master,dim_store dimension;
+  class fact_backlog_store,fact_invoice_store,fact_order_store fact;
+```
+
+---
+
+## Modern trade (MDT) — sell-out/สต็อกห้างค้าปลีก
+
+**Objects in this topic (11):** `curated_saleout_mdt`, `curated_stock_mdt`, `dim_pc`, `dim_product_mdt`, `dim_sales_branch_mdt`, `dim_target_saleout_mdt`, `dim_zone_manager_mdt`, `dim_zone_mdt`, `fact_saleout_mdt`, `fact_stock_mdt`, `fact_stock_mdt_monthly`
+
+**Fed by (8):** `dim_region_last`, `dim_section_last`, `report_sale_subscription`, `sale_by_branch_detail`, `saleout_gb`, `saleout_hp`, `saleout_lastyear`, `stock_by_branch`
+
+```mermaid
+flowchart LR
+  subgraph validated["validated (6)"]
+    report_sale_subscription["report_sale_subscription"]
+    sale_by_branch_detail["sale_by_branch_detail"]
+    saleout_gb["saleout_gb"]
+    saleout_hp["saleout_hp"]
+    saleout_lastyear["saleout_lastyear"]
+    stock_by_branch["stock_by_branch"]
+  end
+  subgraph curated["curated (2)"]
+    curated_saleout_mdt["curated_saleout_mdt"]
+    curated_stock_mdt["curated_stock_mdt"]
+  end
+  subgraph dimension["dimension (8)"]
+    dim_pc["dim_pc"]
+    dim_product_mdt["dim_product_mdt"]
+    dim_region_last["dim_region_last"]
+    dim_sales_branch_mdt["dim_sales_branch_mdt"]
+    dim_section_last["dim_section_last"]
+    dim_target_saleout_mdt["dim_target_saleout_mdt"]
+    dim_zone_manager_mdt["dim_zone_manager_mdt"]
+    dim_zone_mdt["dim_zone_mdt"]
+  end
+  subgraph fact["fact (3)"]
+    fact_saleout_mdt["fact_saleout_mdt"]
+    fact_stock_mdt["fact_stock_mdt"]
+    fact_stock_mdt_monthly["fact_stock_mdt_monthly"]
+  end
+  curated_saleout_mdt --> fact_saleout_mdt
+  curated_stock_mdt --> fact_stock_mdt
+  dim_product_mdt --> fact_saleout_mdt
+  dim_product_mdt --> fact_stock_mdt
+  dim_region_last --> dim_sales_branch_mdt
+  dim_sales_branch_mdt --> dim_pc
+  dim_sales_branch_mdt --> dim_target_saleout_mdt
+  dim_sales_branch_mdt --> fact_saleout_mdt
+  dim_sales_branch_mdt --> fact_stock_mdt
+  dim_section_last --> dim_sales_branch_mdt
+  dim_zone_manager_mdt --> dim_sales_branch_mdt
+  dim_zone_mdt --> dim_sales_branch_mdt
+  dim_zone_mdt --> dim_zone_manager_mdt
+  fact_stock_mdt --> fact_stock_mdt_monthly
+  report_sale_subscription --> curated_saleout_mdt
+  report_sale_subscription --> curated_stock_mdt
+  sale_by_branch_detail --> curated_saleout_mdt
+  saleout_gb --> curated_saleout_mdt
+  saleout_hp --> curated_saleout_mdt
+  saleout_lastyear --> curated_saleout_mdt
+  stock_by_branch --> curated_stock_mdt
+  classDef validated fill:#cfe8ff,stroke:#4a90d9,color:#111;
+  classDef curated fill:#a8d5ff,stroke:#2f6fb0,color:#111;
+  classDef dimension fill:#ffe0b3,stroke:#d98f2f,color:#111;
+  classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
+  classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
+  class report_sale_subscription,sale_by_branch_detail,saleout_gb,saleout_hp,saleout_lastyear,stock_by_branch validated;
+  class curated_saleout_mdt,curated_stock_mdt curated;
+  class dim_pc,dim_product_mdt,dim_region_last,dim_sales_branch_mdt,dim_section_last,dim_target_saleout_mdt,dim_zone_manager_mdt,dim_zone_mdt dimension;
+  class fact_saleout_mdt,fact_stock_mdt,fact_stock_mdt_monthly fact;
 ```
 
 ---

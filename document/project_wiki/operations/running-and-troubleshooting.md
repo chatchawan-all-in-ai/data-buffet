@@ -13,9 +13,9 @@
 | `re-initial` | ⚠️ DROP validated/curated MAC5 tables (destructive, mac5 only) |
 | `validated` / `validated_full` / `validated_incremental` | Validated layer |
 | `curated` | Curated layer (no sub-tags in use) |
-| `dimension_daily` | 59 of 60 dims |
+| `dimension_daily` | 66 of 67 dims |
 | `dimension_yearly` | `dim_calendar` only |
-| `fact_daily` | All 6 facts |
+| `fact_daily` | All 15 facts |
 | `cdc` / `cdc_incremental` | CDC change log |
 | `process` | AI address parsing |
 
@@ -65,9 +65,14 @@ intent.
 Run the scan before any `view` tag run, and after a stretch of console work:
 skill `bq-drift-scan` (`.claude/skills/bq-drift-scan/`, with
 `scripts/{dump.sql,scan.py,pull.py}`), or the read-only `bq-drift-auditor` agent.
-Baseline 2026-08-26: 39 objects, 37 identical. The 2 that differ are ahead in the
-repo and waiting to be deployed (`EXTRACT_CHQ_DATA`, `view_dim_aging_history`) --
-nothing is drifting the other way. `onetime` holds exactly the 6 views the repo
+Baseline 2026-09-15: **40 objects, 35 identical**. The 5 that differ:
+4 are ahead in the repo and waiting to be deployed (`view_dim_aging_history`,
+`view_fact_transcation`, `Transaction_Data_Mart`, `Model_Invoice_Transaction`);
+1 (`view_dim_invoice`) is a **deliberate permanent difference** -- the repo keeps
+`clean_company_prefix(cust.debnamet)` while the console has the unqualified form;
+same result, do not pull it back. `onetime.PowerBI_Data_Buffet_Transaction` shows as
+"extra in BigQuery" because the `.sqlx` was moved to `backup/` on 2026-09-03 --
+deleting the file does not drop the live view. `onetime` holds exactly the 6 views the repo
 builds — no untracked leftovers.
 
 Things that cost time the first round:
@@ -88,7 +93,7 @@ Things that cost time the first round:
 
 Every validated and curated incremental window reads
 `DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY)`
-(74 statements across 52 files). The var lives in `workflow_settings.yaml`, is
+(86 statements across 64 files). The var lives in `workflow_settings.yaml`, is
 **added by hand per workspace** (this repo's commits do not carry it), and
 falls back to `"1"` — yesterday only — when absent.
 

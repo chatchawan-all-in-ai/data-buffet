@@ -4,6 +4,7 @@
 > [full daily rebuild](full-rebuild-pattern.md) (rebuild from `is_active = TRUE`
 > makes the tombstone unnecessary), so this pattern now applies to only the **2
 > remaining MERGE dims: `dim_company` and `dim_aging_rang`**.
+> (ตัวเลข 34 คือจำนวน ณ วันที่แปลง · ปัจจุบัน full-rebuild มี **41 ตัว** เพราะมี dim ใหม่เพิ่มหลังจากนั้น)
 > History: implemented 2026-07-10 across all then-MERGE mds dims (commit `e64a62d`).
 > Design decision: **hard DELETE, no downstream FK checks** — chosen explicitly over
 > a soft-delete `IsActive` flag.
@@ -38,24 +39,31 @@ Properties:
   (fact_table, dimension_table, bridge_dataset, process_dataset) found **0 dangling
   SK-FKs** at implementation time.
 
-## Where it applies (36 files)
+## Where it applies — **2 ไฟล์เท่านั้น** (ตรวจซ้ำ 2026-09-15)
 
-All MERGE-based mds dims: dim_aging_rang, dim_avg_collection_score,
-dim_bounce_cheque_score, dim_channel, dim_channel_cost, dim_channel_finance,
-dim_channel_sales, dim_collection_status, dim_company, dim_contact_score,
-dim_cost_group, dim_cost_stk, dim_department, dim_director, dim_doctype, dim_grade,
-dim_guarantee, dim_holiday, dim_payment, dim_payment_receive_score,
-dim_product_master_fc, dim_product_mkt, dim_product_mkt_director, dim_rate_target,
-dim_rebate, dim_region, dim_region_manager, dim_report, dim_sale_representative,
-dim_section, dim_section_manager, dim_status_not_receive, dim_stk_mkt,
-dim_target_product_group, dim_waterpac, dim_weight_score.
+หลังการแปลงเป็น full rebuild เมื่อ 2026-07-20 **เหลือ dim ที่ต้องมี tombstone DELETE แค่ 2 ตัว**
+คือ dim ที่ยังใช้ MERGE กับ mds:
 
-Verify anytime with `grep -L "is_active = FALSE" $(grep -l "mds_data" definitions/dimension/*.sqlx)`
-— only `dim_change_district` should appear.
+| File | ทำไมยังต้อง MERGE |
+|---|---|
+| `dim_company` | CompanySK ถูก persist ไว้ทั่วทั้ง warehouse |
+| `dim_aging_rang` | AgingRangSK ถูกแช่แข็งใน `dim_aging_history` |
 
-> History: the 2026-07-10 batch initially covered 35 files; `dim_rebate` was missed
-> because a grep for the literal `"mds_dataset"` could not see it. Every dim now uses
-> `databuffet.MDS_DATASET`, so grep for the constant, not the string.
+**dim ที่อ่าน mds อีก 41 ตัวไม่ต้องมี tombstone** — เพราะอ่านเฉพาะ
+`is_active = TRUE` ทั้งตารางทุกคืน แถวที่ต้นทาง soft-delete จึงหายเอง
+ดู [full-rebuild-pattern.md](full-rebuild-pattern.md)
+
+ตรวจซ้ำได้ทุกเมื่อ:
+
+```bash
+grep -l "is_active *= *FALSE" definitions/dimension/*.sqlx
+# ต้องได้แค่ dim_company.sqlx กับ dim_aging_rang.sqlx
+```
+
+> ประวัติ: ชุดแรก 2026-07-10 ครอบคลุม 35 ไฟล์ และตก `dim_rebate` ไป เพราะ grep
+> หา literal `"mds_dataset"` มองไม่เห็น · ต่อมาขยายเป็น 36 ไฟล์ ก่อนจะยุบเหลือ 2
+> ตอน 2026-07-20 · **บทเรียนที่ยังใช้ได้**: grep หา `mds_data_` ทั้งไฟล์ ไม่ใช่แค่
+> `name:` หรือ literal `"mds_dataset"` — dim ชุด MDT อ้างผ่าน const ใน `js {}`
 
 Exclusions:
 - **`dim_change_district`** — mds-sourced but `type: "table"` full rebuild; the

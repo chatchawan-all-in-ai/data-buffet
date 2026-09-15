@@ -34,7 +34,7 @@
 
 ## พฤติกรรมที่ตั้งใจ (อย่า "แก้")
 
-- **mds dims 34 ตัวเป็น full daily rebuild** (ตัดสินใจ 2026-07-20): แปลงจาก MERGE
+- **mds dims 34 ตัวเป็น full daily rebuild** (ตัดสินใจ 2026-07-20 · เลข 34 คือจำนวน ณ วันนั้น **ปัจจุบัน 41 ตัว**): แปลงจาก MERGE
   เป็น `type: "table"` ปั้นใหม่ทุกวันจาก `is_active = TRUE` — **SK ออกเลขใหม่ทุกวัน
   ห้าม persist SK พวกนี้ข้ามวัน** เหตุผล: mds มี overwrite import mode (ล้างแล้วลง
   ใหม่ id ใหม่หมด) ซึ่ง MERGE pattern รับมือไม่ครบ (zombie rows) ตรวจ consumer ครบ
