@@ -1,0 +1,22 @@
+config {
+  type: "view",
+  schema: databuffet.FACT_VIEW,
+  dependencies: ["fact_target_saleout_mdt"],
+  tags: [databuffet.TAG_VIEW],
+}
+
+SELECT
+  f.target_date,
+  f.store_code,
+
+  
+
+  f.marketing_group_id,
+  ANY_VALUE(f.marketing_group_name) AS marketing_group_name,
+
+  SUM(f.target_amt)             AS target_amt,
+  COUNT(DISTINCT f.branch_code) AS branch_count
+
+FROM `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_target_saleout_mdt` AS f
+GROUP BY
+  target_date, store_code,  marketing_group_id

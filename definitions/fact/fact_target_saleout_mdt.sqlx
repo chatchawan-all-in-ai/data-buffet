@@ -1,0 +1,72 @@
+config {
+    type: "table",
+    schema: databuffet.FACT_TABLE,
+    dependencies: ["dim_target_saleout_mdt", "dim_sales_branch_mdt"],
+    tags: [databuffet.TAG_FACT_DAILY],
+    uniqueKey: ["target_date", "branch_code", "marketing_group_id", "sub_marketing_id", "segment_id"],
+    bigquery: {
+        partitionBy: "target_date",
+        clusterBy: ["store_code", "branch_sk", "marketing_group_id"]
+    },
+}
+
+js {
+    const DimTargetTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_target_saleout_mdt",
+    };
+    const DimTargetTableRef = `${DimTargetTable.database}.${DimTargetTable.schema}.${DimTargetTable.name}`;
+
+    const DimBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimBranchTableRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
+}
+
+WITH source_data AS (
+  SELECT
+    t.TargetDate AS target_date,
+    t.StoreCode  AS store_code,
+
+    IFNULL(t.BranchMdtSK,        -1) AS branch_sk,
+    IFNULL(dim_br.ZoneMdtSK,     -1) AS zone_sk,
+    IFNULL(t.ProductMktSK,       -1) AS product_mkt_sk,
+
+
+    -- เป้าอยู่ที่เกรนกลุ่มการตลาด ไม่ใช่รายสินค้า — ไม่มี SK ระดับกลุ่มใน dim_product_mkt
+    -- (กลุ่ม 001 กระจายไป 34 ProductMktSK) BI ต้องม้วนยอดขายขึ้นมาที่ MarketingGroupID
+    -- แล้วค่อยเทียบ อย่าพยายามจอย SK ตรง ๆ
+    t.MarketingGroupID   AS marketing_group_id,
+    t.MarketingGroupName AS marketing_group_name,
+    t.SubMarketingID     AS sub_marketing_id,
+    t.SubMarketingName   AS sub_marketing_name,
+    t.SegmentID          AS segment_id,
+    t.SegmentName        AS segment_name,
+
+    t.Amt AS target_amt,
+
+    t.TargetYear  AS target_year,
+    t.TargetMonth AS target_month,
+    -- เป้าเดือนถูกหารเท่า ๆ กันทุกวันในเดือน คูณกลับด้วย days_in_month = ยอดเป้าเดือนเดิม
+    t.DaysInMonth AS days_in_month,
+
+    -- degenerate: รหัสสาขาจาก MDS ใช้สืบกลับตอน branch_sk = -1
+    t.BranchCodeMdt AS branch_code,
+    t.MdsID         AS mds_id
+  FROM `${DimTargetTableRef}` AS t
+  LEFT JOIN `${DimBranchTableRef}` AS dim_br
+    ON t.BranchMdtSK = dim_br.BranchMdtSK
+  -- ตัดแถว unknown (SK = -1) ของ dim ทิ้ง — fact ไม่ควรมีแถวที่ไม่มีวันที่
+  WHERE t.TargetDate IS NOT NULL
+)
+
+SELECT
+  source_data.*
+FROM source_data
+
+pre_operations {}
+
+post_operations {}

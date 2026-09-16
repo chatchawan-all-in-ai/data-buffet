@@ -1,12 +1,12 @@
 config {
   type: "table",
   schema: databuffet.DIMENSION_TABLE,
-  dependencies: ["dim_sales_branch_mdt"],
+  dependencies: ["dim_sales_branch_mdt","dim_product_mkt"],
   tags: [databuffet.TAG_DIM_DAILY],
   uniqueKey: ["TargetSaleoutMdtSK"],
   bigquery: {
     partitionBy: "TargetDate",
-    clusterBy: ["BranchMdtSK", "MarketingGroupID"],
+    clusterBy: ["BranchMdtSK", "MarketingGroupID","ProductMktSK"],
   },
 }
 
@@ -19,6 +19,13 @@ js {
         name: "dim_sales_branch_mdt",
     };
     const DimBranchTableRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
+
+    const DimProductMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mkt",
+    };
+    const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
 }
 
 WITH monthly AS (
@@ -29,6 +36,10 @@ WITH monthly AS (
     ${databuffet.functionData.cleanString("t1.branch_code")}      AS BranchCodeMdt,
     ${databuffet.functionData.cleanString("t1.marketinggroupid")} AS MarketingGroupID,
     ${databuffet.functionData.cleanString("t1.marketinggroup")}   AS MarketingGroupName,
+    ${databuffet.functionData.cleanString("t1.submarketingid")}   AS SubMarketingID,
+    ${databuffet.functionData.cleanString("t1.submarketing")}     AS SubMarketingName,
+    ${databuffet.functionData.cleanString("t1.segmentid")}        AS SegmentID,
+    ${databuffet.functionData.cleanString("t1.segment")}          AS SegmentName,
     t1.value AS MonthAmt,
     ${databuffet.functionData.cleanString("t1.id")} AS MdsID
   FROM `${TargetSourceRef}` AS t1
@@ -44,16 +55,34 @@ WITH monthly AS (
   FROM monthly AS m,
   UNNEST(GENERATE_DATE_ARRAY(m.MonthStart, LAST_DAY(m.MonthStart))) AS d
 
+  ), product_mkt_lookup AS (
+  -- ต้องกรอง CompanyID ด้วย ไม่งั้น 1 ชุด (กลุ่ม/ชั้นย่อย/เซกเมนต์) ชี้ 2 SK เพราะมี 2 บริษัท
+  -- MDT ทั้งช่องทางเป็นของ ag01 แบบเดียวกับที่ dim_sales_branch_mdt กรอง
+  -- วัด 2026-09-16: (CompanyID, กลุ่ม, ชั้นย่อย, เซกเมนต์) แยกได้ 230/230 แถว = ไม่ซ้ำ
+  SELECT ProductMktSK, MarketingGroupID, SubMarketingID, SegmentID
+  FROM `${DimProductMktTableRef}`
+  WHERE CompanyID = 'ag01'
+  -- กัน fan-out เผื่อวันหน้าต้นทางมีชุดซ้ำ สาขาจะได้ไม่บวมเงียบ ๆ
+  QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY MarketingGroupID, SubMarketingID, SegmentID ORDER BY ProductMktSK
+  ) = 1
+
 ), target_master AS (
   SELECT
     ROW_NUMBER() OVER(
-      ORDER BY d.TargetDate, d.BranchCodeMdt, d.MarketingGroupID
+      ORDER BY d.TargetDate, d.BranchCodeMdt, d.MarketingGroupID,
+               d.SubMarketingID, d.SegmentID
     ) AS TargetSaleoutMdtSK,
     IFNULL(dim_br.BranchMdtSK, -1) AS BranchMdtSK,
+    IFNULL(dim_mkt.ProductMktSK, -1) AS ProductMktSK,
     dim_br.StoreCode,
     d.BranchCodeMdt,
     d.MarketingGroupID,
     d.MarketingGroupName,
+    d.SubMarketingID,
+    d.SubMarketingName,
+    d.SegmentID,
+    d.SegmentName,
     d.TargetDate,
     d.TargetYear,
     d.TargetMonth,
@@ -62,16 +91,27 @@ WITH monthly AS (
     d.MdsID
   FROM daily AS d
   LEFT JOIN `${DimBranchTableRef}` AS dim_br
-    ON d.BranchCodeMdt = dim_br.BranchCodeMdt
+    ON IF(STARTS_WITH(d.BranchCodeMdt, 'GH_'),
+          CONCAT('GB_', SUBSTR(d.BranchCodeMdt, 4)),
+          d.BranchCodeMdt) = dim_br.BranchCodeMdt
+  LEFT JOIN product_mkt_lookup AS dim_mkt
+    ON  d.MarketingGroupID = dim_mkt.MarketingGroupID
+      AND d.SubMarketingID   = dim_mkt.SubMarketingID
+      AND d.SegmentID        = dim_mkt.SegmentID
 
 ), unknown_target AS (
   SELECT
     -1                    AS TargetSaleoutMdtSK,
     -1                    AS BranchMdtSK,
+    -1                    AS ProductMktSK,
     CAST(NULL AS STRING)  AS StoreCode,
     CAST(NULL AS STRING)  AS BranchCodeMdt,
     CAST(NULL AS STRING)  AS MarketingGroupID,
-    'ไม่ระบุกลุ่มสินค้า'      AS MarketingGroupName,
+    'ไม่ระบุกลุ่มสินค้า'         AS MarketingGroupName,
+    CAST(NULL AS STRING)  AS SubMarketingID,
+    CAST(NULL AS STRING)  AS SubMarketingName,
+    CAST(NULL AS STRING)  AS SegmentID,
+    CAST(NULL AS STRING)  AS SegmentName,
     CAST(NULL AS DATE)    AS TargetDate,
     CAST(NULL AS INT64)   AS TargetYear,
     CAST(NULL AS INT64)   AS TargetMonth,
