@@ -3,14 +3,14 @@ config {
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_zone_mdt"],
   tags: [databuffet.TAG_DIM_DAILY],
-  uniqueKey: ["ZoneManagerMdtSK"],
+  uniqueKey: ["ZoneTaMdtSK"],
   bigquery: {
-    clusterBy: ["ZoneManagerMdtSK"],
+    clusterBy: ["ZoneTaMdtSK"],
   },
 }
 
 js {
-    const ZoneManagerSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_zone_ta_master`;
+    const ZoneTaSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_zone_ta_master`;
 
     const DimZoneMdtTable = {
         database: databuffet.DATABASE,
@@ -20,12 +20,12 @@ js {
     const DimZoneMdtTableRef = `${DimZoneMdtTable.database}.${DimZoneMdtTable.schema}.${DimZoneMdtTable.name}`;
 }
 
-WITH zone_manager_master AS (
+WITH zone_ta_master AS (
   SELECT
     ROW_NUMBER() OVER(
       ORDER BY ${databuffet.functionData.cleanString("t1.zone_id")},
                ${databuffet.functionData.castInt64("t1.zonetaemployeeid")}
-    ) AS ZoneManagerMdtSK,
+    ) AS ZoneTaMdtSK,
     IFNULL(dim_zone.ZoneMdtSK, -1) AS ZoneMdtSK,
 
     ${databuffet.functionData.cleanString("t1.zone_id")}                     AS ZoneCode,
@@ -40,14 +40,14 @@ WITH zone_manager_master AS (
     ${databuffet.functionData.cleanString("t1.zonetaemployeenickname")} AS EmployeeNickname,
     t1.start_date AS StartDate,
     t1.end_date   AS EndDate
-  FROM `${ZoneManagerSourceRef}` AS t1
+  FROM `${ZoneTaSourceRef}` AS t1
   LEFT JOIN `${DimZoneMdtTableRef}` AS dim_zone
     ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone.ZoneCode
   WHERE t1.is_active = TRUE
 
-), unknown_zone_manager AS  (
+), unknown_zone_ta AS  (
   SELECT
-    -1                      AS ZoneManagerMdtSK,
+    -1                      AS ZoneTaMdtSK,
     -1                      AS ZoneMdtSK,
 
     CAST(NULL AS STRING)    AS ZoneCode,
@@ -60,9 +60,9 @@ WITH zone_manager_master AS (
     CAST(NULL AS DATE)      AS EndDate
 )
 
-SELECT * FROM zone_manager_master
+SELECT * FROM zone_ta_master
 UNION ALL
-SELECT * FROM unknown_zone_manager
+SELECT * FROM unknown_zone_ta
 
 pre_operations {}
 

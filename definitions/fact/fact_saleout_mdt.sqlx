@@ -1,7 +1,7 @@
 config {
     type: "table",
     schema: databuffet.FACT_TABLE,
-    dependencies: ["dim_sales_branch_mdt", "dim_product_mdt"],
+    dependencies: ["dim_sales_branch_mdt", "dim_product_mdt", "dim_product_mkt", "dim_report"],
     tags: [databuffet.TAG_FACT_DAILY],
     uniqueKey: ["sale_date", "store_code", "branch_code", "product_code", "doc_type"],
     bigquery: {
@@ -24,9 +24,49 @@ js {
         name: "dim_product_mdt",
     };
     const DimProductMdtTableRef = `${DimProductMdtTable.database}.${DimProductMdtTable.schema}.${DimProductMdtTable.name}`;
-}
 
-WITH source_data AS (
+
+const DimProductMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mkt",
+    };
+    const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
+
+    const DimReportTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_report",
+    };
+    const DimReportTableRef = `${DimReportTable.database}.${DimReportTable.schema}.${DimReportTable.name}`;
+}
+WITH mkt_group AS (
+  -- ProductMktSK -> MarketingGroupID เพื่อเอาไปหาบรรทัดรายงาน
+  SELECT ProductMktSK, MarketingGroupID
+  FROM `${DimProductMktTableRef}`
+  WHERE CompanyID = 'ag01'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY ProductMktSK ORDER BY MarketingGroupID) = 1
+
+), report_exact AS (
+  -- บรรทัดรายงานที่ระบุกลุ่มสินค้าไว้ เช่น BT+001 -> 17 (Modern Trade_PE)
+  -- ⚠️ dim_report.RegionID เก็บ "หน่วยที่ออกรายงาน" ไม่ใช่ภูมิภาค
+  --    ฝั่ง MDT มันคือรหัสห้าง (BT DH GB HP MH TW) ตรงกับ store_code ของเรา
+  --    ส่วนช่องทาง Dealer ถึงจะเป็นภูมิภาคจริง (E M N NE S W)
+  SELECT RegionID AS StoreCode, MarketingGroupID, ReportSK
+  FROM `${DimReportTableRef}`
+  WHERE companyID = 'ag01' AND MarketingGroupID IS NOT NULL
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, MarketingGroupID ORDER BY ReportSK) = 1
+
+), report_fallback AS (
+  -- แถว Other ของแต่ละห้าง (MarketingGroupID เป็น NULL) เช่น BT -> 16
+  -- ⚠️ ต้องแยกเป็น CTE ต่างหาก join ด้วย MarketingGroupID IS NULL ตรง ๆ ไม่ได้
+  --    เพราะ NULL = NULL ไม่เป็นจริงใน SQL
+  SELECT RegionID AS StoreCode, ReportSK
+  FROM `${DimReportTableRef}`
+  WHERE companyID = 'ag01' AND MarketingGroupID IS NULL
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID ORDER BY ReportSK) = 1
+
+), source_data AS (
   SELECT
     c.sale_date,
     c.store_code,
@@ -36,6 +76,7 @@ WITH source_data AS (
     IFNULL(dim_pr.ProductMdtSK,  -1) AS product_mdt_sk,
     IFNULL(dim_pr.ProductSK,     -1) AS product_sk,
     IFNULL(dim_pr.ProductMktSK,  -1) AS product_mkt_sk,
+    COALESCE(rep.ReportSK, rep_fb.ReportSK, -1) AS report_sk,
     
     c.doc_type,
     c.doc_type_source,
@@ -57,6 +98,13 @@ WITH source_data AS (
     AND c.branch_code = dim_br.BranchCode
   LEFT JOIN `${DimProductMdtTableRef}` AS dim_pr
     ON LTRIM(c.product_code, '0') = dim_pr.ProductCode
+    LEFT JOIN mkt_group AS mkt
+    ON dim_pr.ProductMktSK = mkt.ProductMktSK
+  LEFT JOIN report_exact AS rep
+    ON  c.store_code        = rep.StoreCode
+    AND mkt.MarketingGroupID = rep.MarketingGroupID
+  LEFT JOIN report_fallback AS rep_fb
+    ON c.store_code = rep_fb.StoreCode
 )
 
 SELECT
