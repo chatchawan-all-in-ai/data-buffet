@@ -156,12 +156,23 @@ WITH hp AS (
     FROM tw_dedup
     GROUP BY sale_date, store_code, branch_code, branch_name, product_code, doc_type
 
+), feed_days AS (
+
+    -- (ห้าง, วัน) ที่ฟีดรายวันส่งมาจริง — ใช้เป็นตัวกันไม่ให้ไฟล์ย้อนหลังนับซ้ำ
+    -- ต้องอยู่หลัง CTE ของทั้ง 4 ห้าง และก่อน lastyear
+    -- DH ไม่อยู่ในนี้เพราะยังไม่มีฟีด -> ไฟล์ย้อนหลังของ DH จึงเข้าทั้งหมดเอง
+    -- วันที่ DH มีฟีดแล้ว แค่เพิ่ม dh เข้า UNION ตรงนี้ **ไม่ต้องตั้งวันตัด**
+    SELECT DISTINCT store_code, sale_date FROM hp
+    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM bt
+    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM gb
+    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM tw
+
 ), lastyear AS (
 
     SELECT
-        sale_date,
-        store_code,
-        IF(store_code = 'DH' AND REGEXP_CONTAINS(branch_code, r'^M[0-9]+$'),
+        ly.sale_date,
+        ly.store_code,
+        IF(ly.store_code = 'DH' AND REGEXP_CONTAINS(branch_code, r'^M[0-9]+$'),
            CONCAT(branch_code, '_TG'),
         branch_code)            AS branch_code,
         ANY_VALUE(branch_name)  AS branch_name,
@@ -179,14 +190,18 @@ WITH hp AS (
         MAX(asatdate)           AS asatdate
 
         
-    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_lastyear")}
-    WHERE sale_date IS NOT NULL
-        AND ((store_code = 'TW' AND sale_date < DATE '2026-05-13')
-        OR (store_code = 'DH')
-        OR (store_code NOT IN ('TW', 'DH') AND sale_date < DATE '2026-02-09'))
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_lastyear")} AS ly
+    -- เอาเฉพาะ (ห้าง, วัน) ที่ฟีดรายวัน **ไม่มี** ข้อมูล — anti-join
+    -- ⚠️ ห้ามใช้ NOT EXISTS ที่อ้าง CTE ข้ามกัน — Dataform ห่อ incremental เป็น script
+    --    แล้ว BigQuery มองไม่เห็น CTE ในนั้น ฟ้อง "feed_days must be qualified with a dataset"
+    --    (พังจริง 2026-09-18 ตาราง curated หายทั้งตัว ต้องรันใหม่)
+    LEFT JOIN feed_days AS f
+      ON  f.store_code = ly.store_code
+      AND f.sale_date  = ly.sale_date
+    WHERE ly.sale_date IS NOT NULL
+      AND f.sale_date IS NULL
     GROUP BY sale_date, store_code, branch_code, product_code, doc_type
 )
-
 SELECT * FROM hp
 UNION ALL
 SELECT * FROM bt

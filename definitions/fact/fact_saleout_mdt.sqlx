@@ -1,7 +1,7 @@
 config {
     type: "table",
     schema: databuffet.FACT_TABLE,
-    dependencies: ["dim_sales_branch_mdt", "dim_product_mdt", "dim_product_mkt", "dim_report"],
+    dependencies: ["dim_sales_branch_mdt", "dim_product_mdt", "dim_product_mkt", "dim_report", "dim_region", "dim_region_manager", "dim_director"],
     tags: [databuffet.TAG_FACT_DAILY],
     uniqueKey: ["sale_date", "store_code", "branch_code", "product_code", "doc_type"],
     bigquery: {
@@ -39,6 +39,9 @@ const DimProductMktTable = {
         name: "dim_report",
     };
     const DimReportTableRef = `${DimReportTable.database}.${DimReportTable.schema}.${DimReportTable.name}`;
+    const DimRegionRef        = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_region`;
+    const DimRegionManagerRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_region_manager`;
+    const DimDirectorRef      = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_director`;
 }
 WITH mkt_group AS (
   -- ProductMktSK -> MarketingGroupID เพื่อเอาไปหาบรรทัดรายงาน
@@ -66,6 +69,34 @@ WITH mkt_group AS (
   WHERE companyID = 'ag01' AND MarketingGroupID IS NULL
   QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID ORDER BY ReportSK) = 1
 
+  ), region_at_sale AS (
+  -- ภาคขาย ณ วันที่ขาย — ใช้ dim_region ตัวเต็ม ไม่ใช่ dim_region_last
+  -- เจ้าของ MDS ระบุ 2026-09-17 ว่าให้ใช้ dim_region / dim_region_manager
+  -- (เปลี่ยนจากที่เคยชี้ให้ใช้ _last เมื่อ 2026-09-11 — ตอนนั้นยังไม่มีเรื่องช่วงเวลา)
+  -- 1 รหัสมีหลายแถวแยกตามช่วงปี เช่น BT: SK 3 = 2022-2025 · SK 4 = 2026 เป็นต้นไป
+  -- ⚠️ RegionID อย่างเดียวไม่ใช่คีย์ ต้องมี SubRegionID ด้วย — ภูมิภาค Dealer บางตัว
+  --    มีถึง 4 แถวในช่วงวันเดียวกัน · วัด 2026-09-18: ห้าง MDT ทั้ง 6 มี SubRegionID
+  --    ตัวเดียวเท่ากับ RegionID จึงปลอดภัย แต่ QUALIFY กันไว้เผื่อวันหน้าแตก SubRegion
+  SELECT RegionID, SubRegionID, RegionSK, DirectorID, StartDate, EndDate
+  FROM `${DimRegionRef}`
+  WHERE companyID = 'ag01'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionSK) = 1
+
+), region_manager_at_sale AS (
+  -- ผู้จัดการภาค ณ วันที่ขาย — ตอบว่า "ตอนนั้นใครดูแล" ไม่ใช่ "ตอนนี้ใครดูแล"
+  SELECT RegionID, RegionManagerSK, StartDate, EndDate
+  FROM `${DimRegionManagerRef}`
+  WHERE companyID = 'ag01'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionManagerSK) = 1
+
+), director_at_sale AS (
+  -- ผู้อำนวยการ ณ วันที่ขาย — ต้องผ่าน dim_region ก่อนเพราะ DirectorID อยู่ที่นั่น
+  SELECT DirectorID, DirectorSK, StartDate, EndDate
+  FROM `${DimDirectorRef}`
+  WHERE companyID = 'ag01'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY DirectorID, StartDate ORDER BY DirectorSK) = 1
+
+
 ), source_data AS (
   SELECT
     c.sale_date,
@@ -77,6 +108,12 @@ WITH mkt_group AS (
     IFNULL(dim_pr.ProductSK,     -1) AS product_sk,
     IFNULL(dim_pr.ProductMktSK,  -1) AS product_mkt_sk,
     COALESCE(rep.ReportSK, rep_fb.ReportSK, -1) AS report_sk,
+    -- ชุด "Transaction" ตามเอกสาร requirement — ค่า ณ วันที่ขาย ไม่ใช่ค่าปัจจุบัน
+    -- ต่างจาก RegionSK/RegionManagerSK ใน dim_sales_branch_mdt ซึ่งมาจาก _last = ค่าล่าสุด
+    -- (ฝั่ง sale in เรียกชุดค่าปัจจุบันว่า ChangeRegionSK — เรายังไม่ได้ทำชุดนั้น)
+    IFNULL(rg.RegionSK,         -1) AS region_sk,
+    IFNULL(rgm.RegionManagerSK, -1) AS region_manager_sk,
+    IFNULL(dr.DirectorSK,       -1) AS director_sk,
     
     c.doc_type,
     c.doc_type_source,
@@ -105,6 +142,16 @@ WITH mkt_group AS (
     AND mkt.MarketingGroupID = rep.MarketingGroupID
   LEFT JOIN report_fallback AS rep_fb
     ON c.store_code = rep_fb.StoreCode
+  LEFT JOIN region_at_sale AS rg
+    ON  c.store_code = rg.RegionID
+    AND c.sale_date BETWEEN rg.StartDate AND rg.EndDate
+  LEFT JOIN region_manager_at_sale AS rgm
+    ON  c.store_code = rgm.RegionID
+    AND c.sale_date BETWEEN rgm.StartDate AND rgm.EndDate
+  LEFT JOIN director_at_sale AS dr
+    ON  rg.DirectorID = dr.DirectorID
+    AND c.sale_date BETWEEN dr.StartDate AND dr.EndDate
+    
 )
 
 SELECT
