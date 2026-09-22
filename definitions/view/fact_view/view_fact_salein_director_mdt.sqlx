@@ -1,0 +1,47 @@
+config {
+  type: "view",
+  schema: databuffet.FACT_VIEW,
+  dependencies: ["view_fact_transcation", "dim_director"],
+  tags: [databuffet.TAG_VIEW],
+}
+
+
+js {
+    const ViewFactTranscationRef =
+        `${databuffet.DATABASE}.${databuffet.FACT_VIEW}.view_fact_transcation`;
+    const DimDirectorRef =
+        `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_director`;
+}
+
+SELECT
+  tran.mix_date,
+  tran.milYear,
+  tran.milMonth,
+  tran.milDay,
+
+  tran.ProductSK,
+  tran.milStk,
+  tran.NewProductMktSK,
+
+  tran.FlagSaleExc,
+  tran.FlagAccExc,
+  tran.ReportSK,
+
+  tran.RegionSK,
+  tran.RegionManagerSK,
+  tran.DirectorSK,
+  tran.RegionSKLast,
+  tran.RegionManagerSKLast,
+  tran.DirectorSKLast,
+
+  SUM(tran.milQuan)          AS milQuan,
+  SUM(tran.milAdisc)         AS milAdisc,
+  SUM(tran.milDisca)         AS milDisca,
+  SUM(tran.milSum)           AS milSum,
+  SUM(tran.milsum_incvat)    AS milsum_incvat,
+  SUM(tran.mildisca_incvat)  AS mildisca_incvat
+FROM `${ViewFactTranscationRef}` AS tran
+INNER JOIN `${DimDirectorRef}` AS director
+  ON  tran.DirectorSK = director.DirectorSK
+  AND director.DirectorID = '00004'
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16

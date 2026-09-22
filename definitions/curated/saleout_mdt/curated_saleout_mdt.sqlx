@@ -10,6 +10,10 @@ config {
     },
 }
 
+js {
+    const LASTYEAR_WINS_THRU = "2026-07-31";
+}
+
 WITH hp AS (
 
     SELECT
@@ -26,8 +30,6 @@ WITH hp AS (
         'DERIVED'   AS doc_type_source,
         1           AS days_covered,
         FALSE       AS date_is_estimated,
-        CAST(NULL AS STRING) AS bill_no,     -- มีแค่ Global House
-        CAST(NULL AS STRING) AS reference_no, 
         asatdate
     -- ต้องระบุ dataset เพราะชื่อ saleout_hp มีทั้งใน raw_saleout_mdt (external) และ validated_saleout_mdt
     FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_hp")}
@@ -92,8 +94,6 @@ WITH hp AS (
         'DERIVED'                  AS doc_type_source,
         MAX(days_covered)          AS days_covered,
         MAX(days_covered) > 1      AS date_is_estimated, -- ครอบหลายวัน = ไม่รู้วันขายจริง
-        CAST(NULL AS STRING)       AS bill_no,
-        CAST(NULL AS STRING)       AS reference_no,
         MAX(asatdate)              AS asatdate
     FROM bt_daily
     WHERE sale_amount <> 0 OR sale_qty <> 0
@@ -114,8 +114,6 @@ WITH hp AS (
         'SOURCE'                  AS doc_type_source,
         1                         AS days_covered,   -- วันขายแม่นยำ ไม่ใช่ค่าประมาณ
         FALSE                     AS date_is_estimated,
-        IF(COUNT(DISTINCT sale_no)      = 1, ANY_VALUE(sale_no),      NULL) AS bill_no,
-        IF(COUNT(DISTINCT reference_no) = 1, ANY_VALUE(reference_no), NULL) AS reference_no,
         MAX(asatdate)             AS asatdate
     FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_gb")}
     WHERE sale_date IS NOT NULL
@@ -150,8 +148,6 @@ WITH hp AS (
         'DERIVED'              AS doc_type_source,
         1                      AS days_covered,
         FALSE                  AS date_is_estimated, -- วันขายมาจากต้นทาง ไม่ได้เดา
-        CAST(NULL AS STRING)   AS bill_no,
-        CAST(NULL AS STRING)   AS reference_no,
         MAX(asatdate)          AS asatdate
     FROM tw_dedup
     GROUP BY sale_date, store_code, branch_code, branch_name, product_code, doc_type
@@ -162,11 +158,11 @@ WITH hp AS (
     -- ต้องอยู่หลัง CTE ของทั้ง 4 ห้าง และก่อน lastyear
     -- DH ไม่อยู่ในนี้เพราะยังไม่มีฟีด -> ไฟล์ย้อนหลังของ DH จึงเข้าทั้งหมดเอง
     -- วันที่ DH มีฟีดแล้ว แค่เพิ่ม dh เข้า UNION ตรงนี้ **ไม่ต้องตั้งวันตัด**
-    SELECT DISTINCT store_code, sale_date FROM hp
-    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM bt
-    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM gb
-    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM tw
-
+    -- นับเฉพาะวันหลังวันตัด เพื่อให้ไฟล์ลูกค้าผ่าน anti-join ได้ทั้งหมดในช่วงก่อนหน้า
+    SELECT DISTINCT store_code, sale_date FROM hp WHERE sale_date > DATE '${LASTYEAR_WINS_THRU}'
+    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM bt WHERE sale_date > DATE '${LASTYEAR_WINS_THRU}'
+    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM gb WHERE sale_date > DATE '${LASTYEAR_WINS_THRU}'
+    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM tw WHERE sale_date > DATE '${LASTYEAR_WINS_THRU}'
 ), lastyear AS (
 
     SELECT
@@ -185,8 +181,6 @@ WITH hp AS (
         'DERIVED'               AS doc_type_source,
         1                       AS days_covered,
         FALSE                   AS date_is_estimated,
-        CAST(NULL AS STRING)    AS bill_no,        -- ไฟล์ไม่มีเลขบิล
-        CAST(NULL AS STRING)    AS reference_no,   
         MAX(asatdate)           AS asatdate
 
         
@@ -202,15 +196,19 @@ WITH hp AS (
       AND f.sale_date IS NULL
     GROUP BY sale_date, store_code, branch_code, product_code, doc_type
 )
-SELECT * FROM hp
-UNION ALL
-SELECT * FROM bt
-UNION ALL
-SELECT * FROM gb
-UNION ALL
-SELECT * FROM tw
-UNION ALL
-SELECT * FROM lastyear
+SELECT * FROM (
+    SELECT * FROM hp
+    UNION ALL
+    SELECT * FROM bt
+    UNION ALL
+    SELECT * FROM gb
+    UNION ALL
+    SELECT * FROM tw
+    
+)
+WHERE sale_date > DATE '${LASTYEAR_WINS_THRU}'
+    UNION ALL
+    SELECT * FROM lastyear
 
 pre_operations {
 }
