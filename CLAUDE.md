@@ -54,8 +54,10 @@ explain to the user and let them decide — do not work around the guard.
 git `core.hooksPath` points to `.claude/hooks` — **the only diagram-sync net**
 since the `diagrams-up-to-date` GitHub Action was removed 2026-08-27 (user
 decision: check locally before commit, not on GitHub). pre-commit now **blocks**
-the commit if `generate_lineage.py` is missing/fails, and also runs dataform
-format+compile when the CLI exists. **No manual setup needed any more**: the
+the commit if `generate_lineage.py` is missing/fails. Its old `dataform format` +
+`compile` step was **removed 2026-09-23** (user decision — no machine has the CLI,
+so it only ever printed a skip warning); nothing checks SQLX compile locally, verify
+in the Dataform UI. **No manual setup needed any more**: the
 `SessionStart` hook `ensure-hookspath.sh` sets `core.hooksPath` and `chmod +x`
 on the first session in a freshly copied `.claude/` (idempotent; never
 overrides a hooksPath the user set to something else).
