@@ -10,9 +10,6 @@ config {
     },
 }
 
-js {
-    const LASTYEAR_WINS_THRU = "2026-07-31";
-}
 
 WITH hp AS (
 
@@ -30,17 +27,23 @@ WITH hp AS (
         'DERIVED'   AS doc_type_source,
         1           AS days_covered,
         FALSE       AS date_is_estimated,
+        
         asatdate
     -- ต้องระบุ dataset เพราะชื่อ saleout_hp มีทั้งใน raw_saleout_mdt (external) และ validated_saleout_mdt
     FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_hp")}
     WHERE sale_date IS NOT NULL
-      AND (qty <> 0 OR value <> 0)                 
+    
+        AND (qty <> 0 OR value <> 0)                 
       -- กรองที่ต้นทาง เพราะ validated partition ด้วย asatdate — วางไว้ข้างนอกจะไม่ตัดพาร์ทิชัน
       ${ when(incremental(), `AND asatdate >= DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY)`) }
 
 ), bt_feed_gap AS (
 
- 
+    -- ช่วงห่างระหว่าง snapshot ที่ห้างส่งมาจริง — ยอดที่กระโดดระหว่าง 2 snapshot เกิดในช่วงนี้
+    -- ต้องวัดจากวันที่ไฟล์มี ไม่ใช่จากช่วงในกลุ่มสินค้า เพราะสินค้าจะโผล่ในไฟล์ครั้งแรก
+    -- ก็ตอนที่มันขายแล้ว วันก่อนนั้นไม่มีแถวเลย (MTD = 0 ไม่ถูกส่งมา)
+    -- วัด 2026-09-11: ห่าง 1 วัน 149 ครั้ง · 2 วัน 11 ครั้ง · 3 วัน 1 ครั้ง
+    --                 ห่าง 10 วัน 1 ครั้ง (ไฟล์แรกของ ก.พ.) · 18 วัน 1 ครั้ง (ไฟล์แรกของ มี.ค.)
     SELECT
         end_date,
         DATE_DIFF(
@@ -52,7 +55,7 @@ WITH hp AS (
             DAY
         ) AS days_covered
     FROM (
- 
+        -- MIN กัน fan-out: ถ้า end_date เดียวมี start_date หลายค่า การ JOIN จะคูณแถว
         SELECT end_date, MIN(start_date) AS month_start
         FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "sale_by_branch_detail")}
         WHERE end_date IS NOT NULL
@@ -61,6 +64,15 @@ WITH hp AS (
 
 ), bt_daily AS (
 
+    -- บุญถาวรส่งยอด "สะสมตั้งแต่ต้นเดือน" (MTD) มาใหม่ทุกวัน ไม่ใช่ยอดของวัน
+    -- 1 การขายถูกส่งซ้ำทุกวันจนสิ้นเดือน — วัด 2026-09-11: 12,756 แถว มีการขายจริงแค่ 1,370
+    -- ยอดของวัน = MTD ของวันนี้ − MTD ของแถวก่อนหน้า รีเซ็ตทุกต้นเดือน
+    --
+    -- ⚠️ ห้ามใส่ filter asatdate ในบล็อกนี้ — LAG ต้องเห็นแถวของวันก่อนหน้า
+    --    ถ้าอ่านแค่ 1 วัน แถวแรกจะไม่มี LAG แล้วยอดสะสมทั้งเดือนจะถูกนับเป็นยอดของวันเดียว
+    --    ต้นทาง 12,756 แถว / 0.3 MB — อ่านทั้งก้อนทุกคืนถูกกว่าเขียนโค้ดกันพลาด
+    -- ponytail: ถ้าวันหน้าตารางนี้โตเกินหลักล้านแถว เปลี่ยนเป็นอ่านย้อน 2 เดือนปฏิทิน
+    --    ต้องเป็นเดือนเต็ม ไม่ใช่ N วัน เพราะการรีเซ็ตผูกกับต้นเดือน
     SELECT
         s.end_date,
         s.branch,
@@ -80,6 +92,9 @@ WITH hp AS (
 
 ), bt AS (
 
+    -- ยุบช่องทาง (Showroom / Anyhome / Web) รวมกัน เพราะเกรนของ curated ไม่มีช่องทาง
+    -- แต่แยกตามชนิดเอกสาร — ช่องทางหนึ่งขายอีกช่องทางคืน จะได้ไม่หักกลบจนมองไม่เห็น
+    -- ⚠️ ต้นทางไม่มีคอลัมน์ชนิดเอกสาร เราเดาจากยอดสะสม MTD ที่ลดลง
     SELECT
         end_date                   AS sale_date,
         'BT'                       AS store_code,
@@ -94,12 +109,41 @@ WITH hp AS (
         'DERIVED'                  AS doc_type_source,
         MAX(days_covered)          AS days_covered,
         MAX(days_covered) > 1      AS date_is_estimated, -- ครอบหลายวัน = ไม่รู้วันขายจริง
+        
         MAX(asatdate)              AS asatdate
     FROM bt_daily
     WHERE sale_amount <> 0 OR sale_qty <> 0
     GROUP BY sale_date, store_code, branch_code, branch_name, product_code, doc_type
+
+), gb_lines AS (
+
+    -- ห้างส่งไฟล์ซ้ำ และ No_ ไม่คงที่ข้ามไฟล์ คีย์ของ validated จึงตัดซ้ำไม่ออก
+    -- เก็บแต่ละบิลจากไฟล์ล่าสุดเท่านั้น · วัด 2026-09-23: 206 บิล / 2.15M ถูกนับซ้ำ
+    -- ponytail: ที่ถูกจริงคือ purge ระดับบิลใน validated แบบ mih/mil/mir ทำเมื่อมีห้างอื่นอ่าน saleout_gb ด้วย
+    SELECT * FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_gb")}
+    WHERE sale_date IS NOT NULL
+      -- GB ใช้บาร์โค้ดตัวเลขเป็นรหัสสินค้า รหัสที่ไม่ใช่ตัวเลขมีตัวเดียวคือ GP530217-000003 'รายได้ค่าขนส่ง'
+      -- ไม่ใช่การขายสินค้า ไฟล์ BI ก็ไม่นับ · วัด 2026-09-23: 4,206 แถว / 2.39M (18-20 มี.ค. 2026)
+      -- รหัสที่เป็น NULL ปล่อยผ่าน ให้ไปโผล่เป็น SK -1 ใน fact ดีกว่าหายไปเงียบ ๆ
+      AND (product_code IS NULL OR REGEXP_CONTAINS(product_code, r'^[0-9]+$'))
+    QUALIFY DENSE_RANK() OVER (PARTITION BY sale_no, sale_date, branch_code ORDER BY asatdate DESC) = 1
+
 ), gb AS (
 
+    -- โกลบอลเฮ้าส์ — ห้างเดียวที่ส่งชนิดเอกสารกับเลขบิลอ้างอิงมาเอง
+    -- ต้นทาง 24,011 แถว / 102,548,396.70 / 2026-02-09 ถึง 2026-07-05 (วัด 2026-09-13)
+    --
+    -- เกรนของ curated ไม่มีเลขบิล ต้องยุบหลายบรรทัดเข้าแถวเดียว
+    -- วัด: 24,011 แถว -> 16,233 กลุ่ม (ยุบ 7,778 แถว) · เลขบิลทั้งหมด 19,777 ใบ
+    --      กลุ่มที่มีบิลใบเดียว 13,970 (86.1%) เก็บเลขบิลได้ · อีก 2,263 กลุ่มมีหลายใบ
+    --      มากสุด 39 ใบในกลุ่มเดียว
+    -- เก็บเลขบิลเฉพาะตอนที่ไม่กำกวม — ถ้ามีหลายใบใส่ NULL ดีกว่าหยิบมาใบเดียวมั่ว ๆ
+    --
+    -- reference_no = บิลที่ถูกคืน · 357 แถวคืนมีครบ 100% · 325 ค่าที่ไม่ซ้ำ
+    -- ตามกลับไปเจอบิลขายจริง 247 (76%) · ที่เหลือเป็นบิลก่อน 2026-02-09 ซึ่งอยู่นอกฟีด
+    -- กลุ่มการคืน 326 กลุ่ม มี reference_no ค่าเดียว 305 (93.6%) · หลายค่า 21 กลุ่ม (มากสุด 4)
+    --
+    -- ⚠️ ฟีดค้าง — วันขายล่าสุด 5 ก.ค. 2026 แต่ไฟล์เข้าถึงปัจจุบัน ต้องถามห้าง
     SELECT
         sale_date,
         'GB'                      AS store_code,
@@ -115,10 +159,10 @@ WITH hp AS (
         1                         AS days_covered,   -- วันขายแม่นยำ ไม่ใช่ค่าประมาณ
         FALSE                     AS date_is_estimated,
         MAX(asatdate)             AS asatdate
-    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_gb")}
-    WHERE sale_date IS NOT NULL
-    GROUP BY sale_date, store_code, branch_code, product_code, doc_type
+    FROM gb_lines 
     
+    GROUP BY sale_date, store_code, branch_code, product_code, doc_type
+
 ), tw_dedup AS (
 
     SELECT Store, SKU, Barcode, Description, Last_Sold_Date, Sales_Amount, Sales_Qty, asatdate
@@ -151,7 +195,19 @@ WITH hp AS (
         MAX(asatdate)          AS asatdate
     FROM tw_dedup
     GROUP BY sale_date, store_code, branch_code, branch_name, product_code, doc_type
+), hp_all_days AS (
 
+    -- (ห้าง, วัน) ทั้งหมดที่ HP/MH เคยส่งมา — อ่าน validated ตรง ๆ ไม่ผ่าน CTE hp
+    -- ⚠️ ทำไมต้องมี CTE นี้: CTE `hp` ด้านบนติดกรอง asatdate ตอนรันแบบ incremental
+    --    จึงเหลือแค่วันล่าสุดวันเดียว ถ้าเอา `hp` ไปทำ feed_days แถวย้อนหลังของ HP/MH
+    --    จะไม่ถูกกัน แล้วไฟล์ lastyear จะเข้ามาซ้อนกับยอดจากฟีดรายวัน
+    --    วัด 2026-09-23: ซ้อนแล้ว 320 (ห้าง,วัน) · 13,301 แถว · 157.48 ล้านบาท
+    --    gb/bt/tw ไม่มีปัญหานี้เพราะ CTE ของมันอ่านเต็มทุกรอบอยู่แล้ว
+    -- เงื่อนไข WHERE ต้องเหมือน CTE `hp` เป๊ะ (ตัดเฉพาะบรรทัด incremental) ไม่งั้นกันคนละชุดวัน
+    SELECT DISTINCT store_code, sale_date
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_hp")}
+    WHERE sale_date IS NOT NULL
+      AND (qty <> 0 OR value <> 0)
 ), feed_days AS (
 
     -- (ห้าง, วัน) ที่ฟีดรายวันส่งมาจริง — ใช้เป็นตัวกันไม่ให้ไฟล์ย้อนหลังนับซ้ำ
@@ -159,10 +215,13 @@ WITH hp AS (
     -- DH ไม่อยู่ในนี้เพราะยังไม่มีฟีด -> ไฟล์ย้อนหลังของ DH จึงเข้าทั้งหมดเอง
     -- วันที่ DH มีฟีดแล้ว แค่เพิ่ม dh เข้า UNION ตรงนี้ **ไม่ต้องตั้งวันตัด**
     -- นับเฉพาะวันหลังวันตัด เพื่อให้ไฟล์ลูกค้าผ่าน anti-join ได้ทั้งหมดในช่วงก่อนหน้า
-    SELECT DISTINCT store_code, sale_date FROM hp WHERE sale_date > DATE '${LASTYEAR_WINS_THRU}'
-    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM bt WHERE sale_date > DATE '${LASTYEAR_WINS_THRU}'
-    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM gb WHERE sale_date > DATE '${LASTYEAR_WINS_THRU}'
-    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM tw WHERE sale_date > DATE '${LASTYEAR_WINS_THRU}'
+    SELECT DISTINCT store_code, sale_date FROM hp_all_days
+        -- แถว BT ครอบหลายวันได้ (days_covered) ต้องกันทุกวันในช่วง ไม่ใช่แค่วันสุดท้าย
+    -- วัด 2026-09-23: 14 แถว ครอบ 39 วัน โดนไฟล์ BI ซ้อน 2.87M
+    UNION DISTINCT SELECT DISTINCT store_code, d AS sale_date
+    FROM bt, UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(sale_date, INTERVAL days_covered - 1 DAY), sale_date)) AS d
+    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM gb
+    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM tw
 ), lastyear AS (
 
     SELECT
@@ -196,20 +255,15 @@ WITH hp AS (
       AND f.sale_date IS NULL
     GROUP BY sale_date, store_code, branch_code, product_code, doc_type
 )
-SELECT * FROM (
-    SELECT * FROM hp
-    UNION ALL
-    SELECT * FROM bt
-    UNION ALL
-    SELECT * FROM gb
-    UNION ALL
-    SELECT * FROM tw
-    
-)
-WHERE sale_date > DATE '${LASTYEAR_WINS_THRU}'
-    UNION ALL
-    SELECT * FROM lastyear
-
+SELECT * FROM hp
+UNION ALL
+SELECT * FROM bt
+UNION ALL
+SELECT * FROM gb
+UNION ALL
+SELECT * FROM tw
+UNION ALL
+SELECT * FROM lastyear
 pre_operations {
 }
 

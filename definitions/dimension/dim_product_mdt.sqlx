@@ -18,6 +18,7 @@ js {
         name: "dim_product_master",
     };
     const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
+    
 }
 
 WITH mac5_dedup AS (
@@ -33,7 +34,9 @@ WITH mac5_dedup AS (
     IFNULL(mac5.ProductMktSK, -1) AS ProductMktSK,
     CAST(CAST(t1.product_mdt_code AS INT64) AS STRING)          AS ProductCode,
     ${databuffet.functionData.cleanString("t1.product_mdt_name")}  AS ProductName,
-    ${databuffet.functionData.cleanString("t1.product_mac5_code")} AS ProductMac5Code,
+    IF(mac5.ProductSK IS NULL,
+       'ยังไม่มีข้อมูล',
+       ${databuffet.functionData.cleanString("t1.product_mac5_code")}) AS ProductMac5Code,
     ${databuffet.functionData.cleanString("t1.region_id")}         AS StoreCode,
     ${databuffet.functionData.cleanString("t1.commpy")}            AS CompanyID,
     ${databuffet.functionData.cleanString("t1.id")}                AS MdsID
@@ -50,8 +53,8 @@ WITH mac5_dedup AS (
     -1                   AS ProductSK,
     -1                   AS ProductMktSK,
     CAST(NULL AS STRING) AS ProductCode,
-    'ไม่ระบุสินค้า'         AS ProductName,
-    CAST(NULL AS STRING) AS ProductMac5Code,
+    'ไม่ระบุสินค้า'           AS ProductName,
+    'ยังไม่มีข้อมูล'           AS ProductMac5Code,
     CAST(NULL AS STRING) AS StoreCode,
     CAST(NULL AS STRING) AS CompanyID,
     CAST(NULL AS STRING) AS MdsID

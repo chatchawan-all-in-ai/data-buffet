@@ -41,6 +41,7 @@ WITH monthly AS (
     ${databuffet.functionData.cleanString("t1.segmentid")}        AS SegmentID,
     ${databuffet.functionData.cleanString("t1.segment")}          AS SegmentName,
     t1.value AS MonthAmt,
+    t1.Quantity AS MonthQty,
     ${databuffet.functionData.cleanString("t1.id")} AS MdsID
   FROM `${TargetSourceRef}` AS t1
   WHERE t1.is_active = TRUE
@@ -88,6 +89,7 @@ WITH monthly AS (
     d.TargetMonth,
     d.DaysInMonth,
     d.MonthAmt / d.DaysInMonth AS Amt,
+    d.MonthQty / d.DaysInMonth AS Qty,
     d.MdsID
   FROM daily AS d
   LEFT JOIN `${DimBranchTableRef}` AS dim_br
@@ -117,6 +119,7 @@ WITH monthly AS (
     CAST(NULL AS INT64)   AS TargetMonth,
     CAST(NULL AS INT64)   AS DaysInMonth,
     CAST(NULL AS FLOAT64) AS Amt,
+    CAST(NULL AS FLOAT64) AS Qty,
     CAST(NULL AS STRING)  AS MdsID
 )
 

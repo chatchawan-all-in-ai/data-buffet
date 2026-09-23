@@ -47,6 +47,7 @@ WITH source_data AS (
     t.SegmentName        AS segment_name,
 
     t.Amt AS target_amt,
+    t.Qty AS target_qty,
 
     t.TargetYear  AS target_year,
     t.TargetMonth AS target_month,

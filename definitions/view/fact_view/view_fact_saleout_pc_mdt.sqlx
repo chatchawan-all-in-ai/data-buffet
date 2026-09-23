@@ -53,6 +53,11 @@ SELECT
   s.product_sk,
   s.product_mkt_sk,
   s.MarketingGroupID,
+  s.report_sk,
+  -- ชุด transaction — ค่า ณ วันที่ขาย (fact จับ BETWEEN StartDate/EndDate มาแล้ว)
+  s.region_sk,
+  s.region_manager_sk,
+  s.director_sk,
 
   IFNULL(a.PcSK, -1)          AS pc_sk,
   IFNULL(a.PcCountInCell, 1)  AS pc_count_in_cell,
