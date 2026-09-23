@@ -29,6 +29,12 @@
 | backfill dim ย้อนหลังเกิน 1 วัน | `backfill-dimension` | [project_wiki/operations/running-and-troubleshooting.md](../project_wiki/operations/running-and-troubleshooting.md) |
 | backfill validated/curated ย้อนหลัง | — | เดียวกัน (`BACKFILL_DAYS` ใน `workflow_settings.yaml`) |
 
+## ส่งออกข้อมูล (export)
+
+| งาน | Skill | เอกสาร |
+|---|---|---|
+| Setup Pub/Sub ส่งข้อมูลออกให้ระบบ/ทีมอื่น (POC) | — | [setup-pubsub-export.md](setup-pubsub-export.md) |
+
 ## ตรวจ / debug
 
 | งาน | Skill | เอกสาร |
