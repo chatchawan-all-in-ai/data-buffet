@@ -234,6 +234,53 @@
 
 ## การตัดสินใจเชิงออกแบบ
 
+- **2026-09-23 — `fact_backlog_store` กรองบรรทัดให้ตรงกับ `fact_order_store`**
+
+  **ปัญหา**: 3 ตาราง store ถูกใช้คู่กันใน Power BI แต่ `fact_backlog_store` รับบรรทัดจาก
+  `cps` ตรง ๆ ขณะที่ `fact_order_store`/`fact_invoice_store` ตัด `milstype = 3` และ
+  `LEFT(milstk,1) = 'บ'` ทิ้ง → backlog มีบรรทัดที่อีกสองตารางไม่มี เทียบระดับบรรทัดไม่ได้
+
+  **วิธี**: เพิ่ม CTE `mil_line_scope` (`SELECT DISTINCT company_id, milVnos, milStk`
+  จาก `curated_mil` ที่ `milType='PS'` + เงื่อนไขสองข้อข้างบน **ลอกมาคำต่อคำ**) แล้ว
+  `INNER JOIN` บน (company_id, cpsVnosID, cpsStkID) — ใช้ `curated_mil` ไม่ใช่
+  `EXISTS` ไปยัง fact อื่น เพราะรีโปนี้ไม่มี dependency fact→fact ที่ไหนเลย
+
+  วัดบน nonprd 2026-09-23: 328,620 → **310,590 แถว** (ตัด 18,030 แถว, qty 4,419 = 3.3%)
+  distinct SK = 310,590 เท่ากัน **ไม่มี fan-out**; ตัวเลขตรงกับการทดสอบด้วย
+  `EXISTS` ไปยัง `fact_order_store` ทุกตัว
+
+  **trade-off ที่ยอมรับ**: backlog ไม่ใช่ภาพงานค้างที่ครบอีกต่อไป — 18,029 แถวที่ตัดออก
+  เป็นบรรทัดที่ `milstype = 3` ล้วน (มีอยู่จริงใน `mil` ไม่ใช่ขยะ) อีก 1 แถวไม่มีบรรทัดใน
+  `mil` เลย ใครต้องการยอดค้างทั้งหมดต้องไปอ่าน `validated_mac5.cps` ตรง ๆ
+
+  **ข้อเท็จจริงที่วัดไว้ตอนพิจารณา (กันวิเคราะห์ซ้ำ)**:
+  - `mil.milcut` เป็นธง boolean มีแค่ **-1 กับ 0** ไม่ใช่จำนวนที่ส่งแล้ว →
+    **คำนวณ backlog จาก `mil` ไม่ได้** ต้องใช้ `cps.cpsstkcut1` เท่านั้น
+  - `cps.cpsstkreq` กับ `mil.milquan` เป็นเลขเดียวกันแทบ 100% (จับคู่ 433,428 คู่
+    ต่างกัน **6 คู่**) → ของที่ `cps` มีอยู่คนเดียวคือ `cpsstkcut1`
+  - `cps` เป็น snapshot รายวัน บรรทัดที่ปิดงานแล้วจะหายจาก snapshot ล่าสุด →
+    **ห้ามเปลี่ยน `cps_latest` เป็น `QUALIFY ROW_NUMBER() PARTITION BY (company_id,
+    cpsvnosid, cpsstkid)`** จะลากแถวที่ปิดแล้วกลับมา 2,033,785 แถว + ทิ้งแถวซ้ำใน
+    snapshot เดียวกัน 38,255 แถว ทำให้ backlog พอง **5.1 เท่า** (qty 356,551 → 1,823,031).
+    `QUALIFY asatdate = MAX(asatdate) OVER (PARTITION BY company_id)` เท่าของเดิมเป๊ะ
+    (diff 0 ทั้งสองทาง, bytes เท่ากัน) แต่ **เลือกคงท่าเดิม `INNER JOIN MAX` ไว้**
+  - `LEFT(cps.cpsStkID,1) not in ('บ')` ใน `WHERE` เป็น **no-op** — ไม่มีแถวขึ้นต้น `บ`
+    ใน `cps` เลยสักแถว เก็บไว้เพื่อประกาศเจตนาให้ตรงกับอีกสองตาราง
+
+  **เพิ่ม `milstk NOT LIKE 'TEST%'` ทั้ง 3 ตาราง store (วันเดียวกัน)**: เจอ backlog
+  `BT69050113M` / `TEST-TANK` ที่ไม่มีฝั่ง order — สาเหตุคือ `fact_order_store` บน
+  BigQuery ถูก build ตอน 16:35 จาก Dataform workspace ที่มีบรรทัด `TEST%` **ซึ่งไม่มีใน
+  git** ส่วนอีกสองตารางไม่มี (ตรวจจาก query text ใน `JOBS_BY_PROJECT`) จึงใส่ให้ครบทั้ง
+  `fact_order_store`, `fact_invoice_store`, `mil_line_scope` ใน `fact_backlog_store`
+  ผลวัด: backlog −5 แถว, order/invoice 0 (order ตัวที่ deploy อยู่มีอยู่แล้ว, invoice ไม่มี
+  สินค้า TEST) ต้นทาง `curated_mil` PS มี 2,100 บรรทัด `TEST%` ไม่มีตัวพิมพ์อื่น
+  **บทเรียน**: ตัวกรองบรรทัดชุดนี้ลอกด้วยมือ 3 ที่ — รันจาก workspace ที่แก้ไม่ครบจะทำให้
+  3 ตารางเพี้ยนกันเงียบ ๆ
+
+  **ยังไม่ได้แก้**: `partitionBy` ของตารางนี้คือ `sDate` = วันที่ใบสั่ง **ไม่ใช่วันที่วัด
+  backlog** และ rebuild ทับทุกคืน → ดู backlog ย้อนหลังไม่ได้ ถ้าต้องการกราฟรายวันต้อง
+  เก็บทุก snapshot (`cps` มี `asatdate` ให้อยู่แล้ว)
+
 - **2026-09-10 — `monitor_dataset.dataform_run_action.total_bytes` สูงเกินจริง 2 เท่า (ยังไม่แก้)**
 
   Dataform รันแต่ละ action เป็น **parent SCRIPT job 1 ตัว + child statement 8 ตัว**

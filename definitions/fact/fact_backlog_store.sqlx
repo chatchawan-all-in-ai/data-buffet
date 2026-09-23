@@ -94,6 +94,14 @@ WITH cps_latest AS (
     and m.companyid in ('ag01', 'ab01')
   QUALIFY ROW_NUMBER() OVER(PARTITION BY m.CompanySK, m.ProductCode ORDER BY m.ProductSK) = 1
 
+), mil_line_scope AS (
+  SELECT DISTINCT mil.company_id, mil.milVnos, mil.milStk
+  FROM ${ref(databuffet.CURATED_MAC5, 'curated_mil')} AS mil
+  WHERE mil.milType = 'PS'
+    AND mil.milstype not in (3)
+    AND LEFT(mil.milstk,1) not in ('บ')
+    AND mil.milstk NOT LIKE 'TEST%'
+
 ), source_data AS (
   SELECT
     dim_com.CompanySK,
@@ -135,6 +143,10 @@ WITH cps_latest AS (
   INNER JOIN dim_product_dedup AS dim_prod
     ON  dim_prod.CompanySK   = dim_com.CompanySK
     AND dim_prod.ProductCode = cps.cpsStkID
+  INNER JOIN mil_line_scope AS mil_scope
+    ON  mil_scope.company_id = mih.company_id
+    AND mil_scope.milVnos    = cps.cpsVnosID
+    AND mil_scope.milStk     = cps.cpsStkID
   LEFT JOIN `${DimStoreTableRef}` AS dim_sto
     ON  dim_sto.CompanySK = dim_com.CompanySK
     AND dim_sto.StoreCode = cps.cpsSto
@@ -144,6 +156,7 @@ WITH cps_latest AS (
     AND mih.mihExtraSUM = 0
     AND mih.company_id in ('ag01', 'ab01')
     AND IFNULL(mih.mihDesc,'') NOT LIKE '%PO.วางบิล%'
+    AND LEFT(cps.cpsStkID,1) not in ('บ')
     AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
   GROUP BY
     CompanySK, company_id, sDate, mihYear, mihMonth, mihDay,

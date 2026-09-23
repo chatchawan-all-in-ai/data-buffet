@@ -162,6 +162,7 @@ WITH dim_order_dedup AS (
     AND mih.company_id in ('ag01', 'ab01')
     AND mil.milstype not in (3)
     AND LEFT(mil.milstk,1) not in ('บ')
+    AND mil.milstk NOT LIKE 'TEST%'
     AND SAFE.PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
 )
 
