@@ -35,7 +35,6 @@ BEGIN
         from ${ref(databuffet.CURATED_MAC5, 'curated_mil')} as mil
         where mil.miltype in ('PS', 'IS')
             and PARSE_DATE('%Y%m%d', CONCAT(mil.milYear, FORMAT("%02d", mil.milMonth), FORMAT("%02d", mil.milDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
-            and mil.asatdate >= current_date('Asia/Bangkok')-1
     ),
     main_table as (
         select
@@ -216,7 +215,8 @@ BEGIN
       T.mihPer = S.mihPer,
       T.pernamet = S.pernamet,
       T.mihBl = S.mihBl,
-      T.StatusColorBg = S.StatusColorBg
+      T.StatusColorBg = S.StatusColorBg,
+      T.OrderStatus = S.OrderStatus
 
   -- กรณีไม่เจอข้อมูล (Insert)
   WHEN NOT MATCHED THEN
