@@ -93,10 +93,14 @@ END
 ```sql
 CASE
   when sec.millinkvcno is null and sec.milstk is null then 'On Order'
-  when sec.milQuan >= main.milQuan and sec.milSum >= main.milSum then 'Complete'
+  when sec.milQuan >= main.milQuan and ROUND(sec.milSum, 2) >= ROUND(main.milSum, 2) then 'Complete'
   else 'In Process'
 end
 ```
+
+`ROUND(..., 2)` ใส่ใน `dim_order` 2026-09-24: `milSum` เป็น FLOAT64 และ `SUM()` ไม่รับประกันลำดับการบวก
+ยอด IS หลายใบที่รวมแล้วเท่ายอด PS พอดีจึงได้ ±1e-11 สลับ Complete ↔ In Process ทุกรอบ
+(วัดได้ 13,794 บรรทัด / 4,087 ใบ) · `dim_quotation` ยังเทียบ `sec.milSum >= main.total` แบบไม่ปัด
 
 `main` = บรรทัด PS (ใบสั่งซื้อ) · `sec` = บรรทัด IS (ใบกำกับ) ที่โยงด้วย `milLinkVcno`
 — **คนละเอกสาร** ตัวพิมพ์ของรหัสสินค้าจึงต่างกันได้ จึงต้อง `lower()` ทั้งสองฝั่ง
