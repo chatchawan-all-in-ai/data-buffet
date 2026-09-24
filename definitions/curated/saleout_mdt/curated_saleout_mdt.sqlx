@@ -176,6 +176,21 @@ WITH hp AS (
         PARTITION BY Store, SKU, Last_Sold_Date ORDER BY asatdate DESC
     ) = 1
 
+), tw_full_days AS (
+
+    -- วันที่ฟีด TW มาครบ = มีสาขาส่งยอดมาอย่างน้อย 30 สาขา
+    -- ⚠️ ถ้าไฟล์ของวันนั้นไม่มา (ปกติมาถึงวันที่ D+2) วันนั้นจะเหลือแค่แถวเศษที่หลงมาจากไฟล์อื่น
+    --    (ส่วนใหญ่เป็นการคืนสินค้า) ถ้ายังนับเป็นวันที่มีฟีด feed_days จะไม่ให้ไฟล์ BI มาเติม
+    --    แล้วยอดของทั้งวันหายไปเงียบ ๆ
+    --    วัด 2026-09-24 (13 พ.ค.-23 ส.ค.): เจอ 16 วัน ฟีดได้ไม่ถึง 2% ของ BI ในวันนั้น
+    --    วันปกติมี 63-83 สาขา · วันที่ไฟล์ไม่มามี 1-23 สาขา ไม่มีวันไหนอยู่ระหว่างนั้น
+    -- แถวเศษของวันที่ไม่ครบถูกทิ้งด้วย เพื่อให้วันหนึ่งมีข้อมูลจากแหล่งเดียว (ฟีด หรือ ไฟล์ BI)
+    -- ponytail: เกณฑ์ตายตัว 30 สาขา ถ้า TW เพิ่มหรือลดสาขามากให้ปรับ หรือเปลี่ยนเป็น % ของค่ากลางย้อนหลัง
+    SELECT Last_Sold_Date
+    FROM tw_dedup
+    GROUP BY Last_Sold_Date
+    HAVING COUNT(DISTINCT Store) >= 30
+
 ), tw AS (
 
     SELECT
@@ -194,6 +209,7 @@ WITH hp AS (
         FALSE                  AS date_is_estimated, -- วันขายมาจากต้นทาง ไม่ได้เดา
         MAX(asatdate)          AS asatdate
     FROM tw_dedup
+    JOIN tw_full_days USING (Last_Sold_Date) 
     GROUP BY sale_date, store_code, branch_code, branch_name, product_code, doc_type
 ), hp_all_days AS (
 
@@ -222,6 +238,170 @@ WITH hp AS (
     FROM bt, UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(sale_date, INTERVAL days_covered - 1 DAY), sale_date)) AS d
     UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM gb
     UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM tw
+
+), bi_end AS (
+
+    -- ============================================================================
+    -- เติมยอดจากไฟล์ BI แบบ "เฉพาะส่วนที่ขาด" ราย (ห้าง, สาขา, สินค้า, เดือน)   (แก้ 2026-09-24)
+    -- ============================================================================
+    -- ⚠️ ทำไมไม่เติมทีละวันแบบเดิม: ไฟล์ BI ลงวันที่ไม่ตรงกับวันขายจริง รายการเดียวกัน
+    --    ฟีดลงวันหนึ่ง BI ลงอีกวัน ผลในระดับสินค้าจึงผิดสองทาง
+    --      เบิ้ล — ฟีดมีรายการนี้ + BI ลงไว้ในวันที่ฟีดไม่มี  -> นับสองครั้ง
+    --      หาย  — ฟีดไม่มีรายการนี้ + BI ลงไว้ในวันที่ฟีดมี    -> ไม่นับเลย
+    --    วัด 2026-09-24: เบิ้ลราว 29.5M (GB 14.6 · HP 6.9 · TW 5.1 · MH 2.2 · BT 0.7)
+    --    ยอดรวมยังใกล้ BI เพราะเบิ้ลกับหายหักกันเอง แต่รายสินค้า/รายสาขาผิด
+    --    ตัวอย่างที่ BI เจอ: HP 1000630 ก.พ. สาขา S046/S053 นับสองครั้ง · S017 หาย
+    -- กติกาใหม่ ต่อ (ห้าง, เดือน) นับถึงวันสุดท้ายของไฟล์ BI:
+    --    ฟีดครบทุกวัน   -> ใช้ฟีดอย่างเดียว
+    --    ไม่มีฟีดเลย    -> ใช้แถวรายวันของ BI (เดิม)
+    --    มีฟีดบางวัน    -> ใช้ฟีด + เติมจาก BI เท่าที่ฟีดยังขาด ราย (สาขา, สินค้า) ทั้งเดือน
+    --                     เติม = max(0, BI ทั้งเดือน − ฟีดทั้งเดือน) · ลงไว้วันสุดท้ายของเดือนที่ฟีดไม่มีข้อมูล
+    -- วันสุดท้ายที่ไฟล์ BI มีข้อมูล (ตอนนี้ 2026-08-23) — ถ้า BI ส่งไฟล์ใหม่ ช่วงเติมจะขยายเอง
+    SELECT MAX(sale_date) AS d
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_lastyear")}
+
+), month_cov AS (
+
+    -- (ห้าง, เดือน) ที่มีฟีด: มีฟีดกี่วัน เทียบกับจำนวนวันในเดือน (ตัดที่ bi_end)
+    SELECT f.store_code,
+           DATE_TRUNC(f.sale_date, MONTH) AS m,
+           COUNT(DISTINCT f.sale_date)    AS fed_days,
+           ANY_VALUE(DATE_DIFF(LEAST(LAST_DAY(f.sale_date), e.d), DATE_TRUNC(f.sale_date, MONTH), DAY) + 1) AS window_days
+    FROM feed_days AS f
+    CROSS JOIN bi_end AS e
+    WHERE f.sale_date <= e.d
+    GROUP BY 1, 2
+
+), partial_months AS (
+
+    -- เดือนที่ฟีดมีบางวันแต่ไม่ครบ = เดือนที่ต้องเติมแบบเฉพาะส่วนที่ขาด
+    -- ⚠️ ไม่รวมเดือนที่ไฟล์ BI จบกลางเดือน (ตอนนี้ ส.ค. 2026) — ของที่ BI ลงวันที่ก่อนวันจบ แต่ฟีดลงหลังวันจบ
+    --    จะถูกนับว่า "ขาด" แล้วเติมซ้ำ (วัด 2026-09-24: HP ส.ค. +10% · MH +8%) เดือนนั้นใช้แบบรายวันเดิมไปก่อน
+    -- ⚠️ GB ใช้แบบรายวันเดิม (ตัดสินใจ 2026-09-24) — ฟีด GB สูงกว่า BI ราว 8% ในวันที่มีข้อมูล
+    --    วิธีเติมเฉพาะส่วนที่ขาดจึงเห็นว่า "ไม่ขาด" แล้วไม่เติมวันที่หาย ยอด ก.พ.-ก.ค. ต่ำกว่า BI 6.6%
+    --    (แบบรายวัน GB +4.3% แต่ยังมีเบิ้ล/หายราย สินค้า ~14.6M — รู้แล้ว ยอมรับไว้ก่อน)
+    SELECT c.store_code, c.m
+    FROM month_cov AS c
+    CROSS JOIN bi_end AS e
+    WHERE c.fed_days < c.window_days
+      AND LAST_DAY(c.m) <= e.d
+      AND c.store_code <> 'GB'
+
+), topup_day AS (
+
+    -- วันที่ใช้ลงยอดเติม = วันสุดท้ายของเดือนที่ฟีดไม่มีข้อมูล
+    -- เลือกวันที่ฟีดไม่มี เพื่อไม่ให้ชนคีย์ (sale_date, store, branch, product, doc_type) กับแถวของฟีด
+    SELECT p.store_code, p.m, MAX(d) AS d, COUNT(*) AS gap_days
+    FROM partial_months AS p
+    CROSS JOIN bi_end AS e
+    CROSS JOIN UNNEST(GENERATE_DATE_ARRAY(p.m, LEAST(LAST_DAY(p.m), e.d))) AS d
+    LEFT JOIN feed_days AS f
+      ON  f.store_code = p.store_code
+      AND f.sale_date  = d
+    WHERE f.sale_date IS NULL
+    GROUP BY 1, 2
+
+), feed_rows AS (
+
+    -- แถวฟีดทุกห้าง ย้อนหลังทั้งหมด (ใช้หายอดฟีดทั้งเดือน)
+    -- HP/MH อ่าน validated ตรง ๆ เพราะ CTE hp ติดกรอง incremental (เหตุผลเดียวกับ hp_all_days)
+    SELECT sale_date, store_code, siteno AS branch_code, artno AS product_code, qty AS sale_qty, value AS sale_amount
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_hp")}
+    WHERE sale_date IS NOT NULL
+      AND (qty <> 0 OR value <> 0)
+    UNION ALL SELECT sale_date, store_code, branch_code, product_code, sale_qty, sale_amount FROM bt
+    UNION ALL SELECT sale_date, store_code, branch_code, product_code, sale_qty, sale_amount FROM gb
+    UNION ALL SELECT sale_date, store_code, branch_code, product_code, sale_qty, sale_amount FROM tw
+
+), feed_items AS (
+
+    -- ยอดฟีดทั้งเดือน ราย (ห้าง, สาขา, สินค้า) เฉพาะเดือนที่ไม่ครบ · ตัด 0 นำหน้ารหัสให้จับคู่กับไฟล์ BI ได้
+    SELECT r.store_code, r.branch_code, LTRIM(r.product_code, '0') AS pc, p.m,
+           SUM(r.sale_qty) AS q, SUM(r.sale_amount) AS a
+    FROM feed_rows AS r
+    JOIN partial_months AS p
+      ON  p.store_code = r.store_code
+      AND p.m = DATE_TRUNC(r.sale_date, MONTH)
+    CROSS JOIN bi_end AS e
+    WHERE r.sale_date <= e.d
+    GROUP BY 1, 2, 3, 4
+
+), bi_items AS (
+
+    -- ยอด BI ทั้งเดือน ราย (ห้าง, สาขา, สินค้า) เฉพาะเดือนที่ไม่ครบ
+    SELECT ly.store_code, ly.branch_code, LTRIM(ly.product_code, '0') AS pc, p.m,
+           ANY_VALUE(ly.product_code) AS product_code,
+           ANY_VALUE(ly.branch_name)  AS branch_name,
+           ANY_VALUE(ly.product_name) AS product_name,
+           SUM(ly.sale_qty) AS q, SUM(ly.sale_amount) AS a,
+           MAX(ly.asatdate) AS asatdate
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_lastyear")} AS ly
+    JOIN partial_months AS p
+      ON  p.store_code = ly.store_code
+      AND p.m = DATE_TRUNC(ly.sale_date, MONTH)
+    GROUP BY 1, 2, 3, 4
+
+), topup_item AS (
+
+    -- ส่วนที่ฟีดยังขาด ราย (สาขา, สินค้า) — ถ้าฟีดมีเท่ากับหรือมากกว่า BI = ไม่เติม
+    SELECT b.*,
+           GREATEST(b.a - IFNULL(f.a, 0), 0) AS fill_a,
+           GREATEST(b.q - IFNULL(f.q, 0), 0) AS fill_q
+    FROM bi_items AS b
+    LEFT JOIN feed_items AS f
+      ON  f.store_code  = b.store_code
+      AND f.branch_code = b.branch_code
+      AND f.pc          = b.pc
+      AND f.m           = b.m
+
+), feed_store AS (
+
+    SELECT store_code, m, SUM(a) AS a FROM feed_items GROUP BY 1, 2
+
+), topup_scale AS (
+
+    -- เพดานต่อ (ห้าง, เดือน): เติมรวมทั้งห้างต้องไม่เกิน ยอด BI ของห้าง − ยอดฟีดของห้าง
+    -- กันยอดรวมเกิน BI จากสองเรื่อง: รหัสสินค้าสองฝั่งไม่ตรงกัน และสินค้าที่ BI บังเอิญสูงกว่าฟีด
+    --    (สินค้าที่ฟีดสูงกว่า BI ไม่ได้ถูกหักออก ถ้าไม่มีเพดาน ผลรวมของส่วนที่ "ขาด" จะสูงเกินจริง)
+    -- ใช้ระดับห้าง ไม่ใช่ระดับสาขา — ระดับสาขาตึงเกิน สาขาที่ฟีดสูงกว่า BI จะไม่ได้เติมเลยทั้งที่มีวันหาย
+    --    (เจอ HP 1000630 สาขา S054 ก.ค. ยังหาย) · วัด 2026-09-24: รหัสสินค้าตรงกัน 99%+ ทุกห้าง
+    SELECT t.store_code, t.m,
+           IFNULL(LEAST(1, SAFE_DIVIDE(GREATEST(SUM(t.a) - IFNULL(ANY_VALUE(fs.a), 0), 0), SUM(t.fill_a))), 0) AS scale
+    FROM topup_item AS t
+    LEFT JOIN feed_store AS fs
+      ON  fs.store_code = t.store_code
+      AND fs.m          = t.m
+    GROUP BY 1, 2
+
+), lastyear_topup AS (
+
+    -- แถวเติม — วันที่เป็นวันประมาณ (date_is_estimated = TRUE) ครอบทุกวันที่ฟีดไม่มีในเดือนนั้น
+    -- ponytail: ถ้าวันหลังห้างส่งไฟล์ย้อนหลังมาเติมวันที่หาย วันที่ของแถวเติมจะเลื่อน
+    --    แถวเติมเก่าจะค้างในตาราง (MERGE ไม่ลบ) ต้อง full refresh หลังโหลดไฟล์ย้อนหลังทุกครั้ง
+    SELECT
+        d.d                                  AS sale_date,
+        t.store_code,
+        t.branch_code,
+        t.branch_name,
+        t.product_code,
+        t.product_name,
+        CAST(NULL AS STRING)                 AS barcode_match,
+        ROUND(t.fill_q * s.scale)            AS sale_qty,
+        ROUND(t.fill_a * s.scale, 2)         AS sale_amount,
+        'SALE'                               AS doc_type,
+        'DERIVED'                            AS doc_type_source,
+        d.gap_days                           AS days_covered,
+        TRUE                                 AS date_is_estimated,
+        t.asatdate
+    FROM topup_item AS t
+    JOIN topup_scale AS s
+      ON  s.store_code = t.store_code
+      AND s.m          = t.m
+    JOIN topup_day AS d
+      ON  d.store_code = t.store_code
+      AND d.m          = t.m
+    WHERE t.fill_a * s.scale > 0.005
+
 ), lastyear AS (
 
     SELECT
@@ -251,8 +431,13 @@ WITH hp AS (
     LEFT JOIN feed_days AS f
       ON  f.store_code = ly.store_code
       AND f.sale_date  = ly.sale_date
+      -- เดือนที่ฟีดมีบางวัน ไม่ใช้แถวรายวันของ BI แล้ว — ใช้ lastyear_topup แทน (ดูคำอธิบายที่ bi_end)
+    LEFT JOIN partial_months AS pm
+      ON  pm.store_code = ly.store_code
+      AND pm.m          = DATE_TRUNC(ly.sale_date, MONTH)
     WHERE ly.sale_date IS NOT NULL
       AND f.sale_date IS NULL
+      AND pm.m IS NULL
     GROUP BY sale_date, store_code, branch_code, product_code, doc_type
 )
 SELECT * FROM hp
@@ -264,6 +449,8 @@ UNION ALL
 SELECT * FROM tw
 UNION ALL
 SELECT * FROM lastyear
+UNION ALL
+SELECT * FROM lastyear_topup
 pre_operations {
 }
 
