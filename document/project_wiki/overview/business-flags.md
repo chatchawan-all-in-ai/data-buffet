@@ -102,8 +102,13 @@ end
 — **คนละเอกสาร** ตัวพิมพ์ของรหัสสินค้าจึงต่างกันได้ จึงต้อง `lower()` ทั้งสองฝั่ง
 (แก้ 2026-09-03: จับคู่เพิ่มได้ **412 คีย์** ที่เดิมตกเป็น `'On Order'` ผิด)
 
-> ⚠️ 412 คีย์นี้ **ไม่ backfill เอง** — MERGE ของ `dim_order` อ่านแค่
-> `asatdate >= current_date - 1` ต้องรันด้วย window ที่กว้างขึ้นครั้งเดียว
+ระดับใบ (`OrderStatus` ใน `dim_order`): มีบรรทัด `In Process` → `In Process` ·
+ไม่มีแต่มี `On Order` → `On Order` · นอกนั้น `Complete`
+
+ตั้งแต่ 2026-09-24 `dim_order` คำนวณจาก mil ครบ window 4 ปี (ไม่กรอง `asatdate`)
+และ `UPDATE SET` เขียน `OrderStatus` ทุกคืน — สถานะตาม invoice ล่าสุดเสมอ
+(เดิมเขียนแค่ตอน INSERT จึงค้าง `On Order` 56,755 ใบ / `NULL` 377,982 ใบ ดู
+`operations/known-issues.md` 2026-09-24)
 
 ## `seq_condition` — `fact_transcation`
 

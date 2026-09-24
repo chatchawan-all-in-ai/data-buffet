@@ -234,6 +234,23 @@
 
 ## การตัดสินใจเชิงออกแบบ
 
+- **2026-09-24 — `dim_order.OrderStatus` คำนวณใหม่และ UPDATE ทุกคืน**
+
+  **ปัญหา**: `OrderStatus` ถูกเขียนแค่ตอน INSERT (`UPDATE SET` ไม่มีคอลัมน์นี้) และคำนวณจาก
+  `curated_mil` เฉพาะ `asatdate >= current_date - 1` → ใบที่ออก invoice ทีหลังวันสั่งค้าง
+  `On Order` ตลอดไป (เช่น CRC69090169 สั่ง 09-03 invoice 6909001665 วันที่ 09-04 แต่ dim
+  ยังเป็น On Order) และใบที่บรรทัด mil ไม่อยู่ใน window ตอน insert ได้ `NULL` ถาวร
+
+  วัดบน nonprd 2026-09-24 (dim เทียบคำนวณใหม่): `On Order` ที่ควรเป็น Complete **53,012** /
+  In Process **3,743** ใบ · `In Process` → Complete 995 · `NULL` → On Order **377,982** ใบ
+
+  **วิธี**: ถอด `asatdate >= current_date - 1` ออกจาก CTE `mil` (คำนวณสถานะจาก mil ครบ
+  window 4 ปี) + เพิ่ม `T.OrderStatus = S.OrderStatus` ใน `UPDATE SET` · SK/คีย์ไม่เปลี่ยน ·
+  รันคืนแรกซ่อมย้อนหลังครบเอง (source ของ MERGE ครอบ PS ทั้ง 4 ปีอยู่แล้ว) — ไม่ต้อง backfill
+  ค่าใช้จ่ายเพิ่ม ~0.79 GB/วัน (dry-run) ≈ ฿4.5/เดือน · ไม่ย้ายไป view เพราะ `curated_mil`
+  สดรายวันเท่ากัน แต่ view จะคำนวณทุกครั้งที่ query · นิยามสถานะไม่เปลี่ยน
+  (invoice ครบทั้ง qty และ sum = Complete)
+
 - **2026-09-23 — `fact_backlog_store` กรองบรรทัดให้ตรงกับ `fact_order_store`**
 
   **ปัญหา**: 3 ตาราง store ถูกใช้คู่กันใน Power BI แต่ `fact_backlog_store` รับบรรทัดจาก
@@ -611,10 +628,8 @@
     — ทุกฝั่งสืบค่ามาจาก `curated_mil` สายเดียวกัน ตัวพิมพ์ตรงกันอยู่แล้ว
     (วัด: `t2_gain = 0`, `t3_gain = 0` จาก 2,430,311 คีย์)
   **fan-out**: ตรวจครบทุกฝั่ง = 0 กลุ่ม (`ps`, `is`, `fact_invoice`, `fact_order`)
-  **⚠️ 412 คีย์นั้นจะยังไม่ถูกแก้ย้อนหลังเอง** — `dim_order` เป็น MERGE ที่มี
-  `and mil.asatdate >= current_date('Asia/Bangkok')-1` จึงมองแค่เอกสารที่เพิ่งขนเข้ามา
-  ถ้าต้องการให้ `item_status` ย้อนหลังถูก ต้องขยายหน้าต่าง `asatdate` ชั่วคราวแล้วรันรอบเดียว
-  (แนวเดียวกับ skill `backfill-dimension`)
+  ~~412 คีย์นั้นจะยังไม่ถูกแก้ย้อนหลังเอง~~ — **หมดไปแล้ว 2026-09-24**: `dim_order`
+  เลิกกรอง `asatdate` และ UPDATE `OrderStatus` ทุกคืน (ดู "การตัดสินใจเชิงออกแบบ" 2026-09-24)
 - **`fact_*_store` 3 ตัว: ถอด `asatdate` แล้วเปลี่ยน partition (2026-09-03, commit 048f746 → 5e70f83)** —
   `048f746` ลบ `CURRENT_DATE('Asia/Bangkok') AS asatdate` ออกจาก SELECT ทั้ง 3 ไฟล์ **แต่ทิ้ง
   `partitionBy: "asatdate"` ไว้ใน config** → Dataform สร้าง `PARTITION BY asatdate` บน query
