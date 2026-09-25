@@ -65,7 +65,8 @@ BEGIN
             sec.milQuan as sec_qty, sec.milSum as sec_sum,
             (case
                 when sec.millinkvcno is null and sec.milstk is null then 'On Order'
-                when sec.milQuan >= main.milQuan and ROUND(sec.milSum, 2) >= ROUND(main.milSum, 2)  then 'Complete'
+                when sec.milQuan >= main.milQuan then 'Complete'
+                -- when sec.milQuan >= main.milQuan and ROUND(sec.milSum, 2) >= ROUND(main.milSum, 2)  then 'Complete'
                 else 'In Process'
             end) as item_status
         from main_table as main
