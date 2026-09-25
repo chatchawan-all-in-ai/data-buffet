@@ -561,12 +561,26 @@
   `lower(ifnull(stogroup, ''))` ที่ไม่อยู่ใน `kk/pk/lp/ub/hy` ยุบเป็น `'KTB'` ถังเดียว
   ที่เหลือคืน `stogroup` ตัวเดิม (ไม่ lower) · **`stogroup` ที่เป็น NULL ก็ตกเป็น `'KTB'`**
   เพราะ `ifnull` แปลงเป็น `''` ก่อน — ไม่ใช่ NULL · แถว Unknown `StoreSK = -1` ได้
-  `'Unknown'` · เป็นตัวแทนของ `is_store_*` ที่ถอดออกไปตอน 2026-09-03
+  `'KTB'` (**เปลี่ยน 2026-09-25** — เดิม `'Unknown'` ดูหัวข้อถัดไป) · เป็นตัวแทนของ
+  `is_store_*` ที่ถอดออกไปตอน 2026-09-03
   **`'KTB'` ที่นี่คือถังรวม "ที่เหลือทั้งหมด" ไม่ได้หมายถึงคลังของธนาคารกรุงไทย** —
   ชื่อพ้องกับ `is_store_ktb` เดิมแต่ความหมายไม่เหมือนกัน อย่าอ่านว่าเป็นสาขา ·
   commit เดียวกันนี้ลบคอมเมนต์อธิบายใน `dim_store.sqlx` ทิ้ง (ถูก re-save ทับจาก
   Dataform web IDE) — **เจ้าของงานตัดสินใจไม่เอากลับ** คำอธิบายอยู่ที่ไฟล์นี้กับ
   `project_wiki/dimension/inventory.md` แทน
+- **`dim_store` แถว `-1`: `ReportStore` `'Unknown'` → `'KTB'` (2026-09-25)** — ตามคำขอ
+  รายงาน Warehouse Group (Power BI rename `ReportStore` เป็น `Warehouse Group Report`)
+  ให้ Unknown ไปรวมกับ KTB · **คง default SK `-1` ไว้** เพราะเป็น pattern เดียวที่ repo ใช้
+  (ปล่อย NULL จะขึ้น `(Blank)` ใน Power BI · ชี้ไปคลังจริงก็ไม่ได้ เพราะ KTB เป็นถังรวม
+  ไม่ใช่คลังเดียว) · `StoreNameT`/`StoreNameE` ยังเป็น `ไม่ระบุคลัง`/`Unknown` · ไม่ต้อง
+  rebuild fact เพราะ SK ไม่เปลี่ยน
+  **วัด 2026-09-25 ยอดที่ย้ายเข้า KTB**: order 7,874 แถว / 24,801 ชิ้น · invoice 67 / 191 ·
+  backlog 415 / 11 · **ต้นเหตุส่วนใหญ่คือรหัสคลังที่ไม่มีใน `validated_mac5.sto`** (ag01):
+  `FGON` 6,213 แถว order · `milSto` NULL 1,228 (+ invoice 63) · `FGKTB` 184 ·
+  `FGHY (B)`/`FGLP (B)`/`FGUB (B)`/`FGPK (B)` รวม 196 — **ดูจากชื่อน่าจะเป็นกลุ่ม HY/LP/UB/PK
+  แต่ตอนนี้ตกไป KTB** แก้ได้ที่ต้นทางด้วยการเพิ่มรหัสเข้า master `sto` · `AS02` 15 แถวมีใน
+  `sto` แต่เป็นของ ag01 ขณะที่แถว order เป็น ab01 · **ab01 ไม่มีคลังใน `dim_store` เลย**
+  (`sto` ไม่มีแถว ab01)
 - **`fact_transcation` dedup: เพิ่ม `CompanySK` เข้า `QUALIFY ... PARTITION BY` (2026-09-03)** —
   เดิม partition ด้วย 6 คีย์เอกสาร (`milType, milVnos, milCus, milStk, milPer, milListno`)
   **ไม่มี `CompanySK`** ขณะที่คีย์ upsert (`DELETE ... WHERE EXISTS`) คือ

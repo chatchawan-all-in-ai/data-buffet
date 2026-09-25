@@ -45,7 +45,7 @@ WITH sto_master AS (
     CAST(NULL AS STRING) AS StoreGroup,
     'ไม่ระบุคลัง' AS StoreNameT,
     'Unknown' AS StoreNameE,
-    'Unknown' AS ReportStore
+    'KTB' AS ReportStore
 )
 
 SELECT * FROM sto_master
