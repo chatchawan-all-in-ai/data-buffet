@@ -14,24 +14,17 @@ js {
     const DimCalendarTableRef = `${DimCalendarTable.database}.${DimCalendarTable.schema}.${DimCalendarTable.name}`;
 }
 
--- LatestDateFilter = TRUE สำหรับ "เมื่อวาน" + วันหยุดที่ติดกันก่อนหน้า (ไว้ใช้เป็น dynamic page filter ใน Power BI)
--- วันหยุด = HolidayFlag = 'Yes' (อาทิตย์ + นักขัตฤกษ์) หรือวันเสาร์ — dim_calendar นับเสาร์เป็นวันทำงาน
--- แต่ filter นี้นับเสาร์เป็นวันหยุด · คิดจาก dim_calendar อย่างเดียว ไม่อิง fact จึงใช้ได้ทุก model
--- CURRENT_DATE คำนวณตอนที่ view ถูก query → Power BI (Import) ต้อง refresh รายวันธงจึงจะขยับ
+-- LatestDateFilter: เมื่อวาน + สะสมวันหยุด (ส. อา. นักขัตฤกษ์) ย้อนไปถึงวันทำงานล่าสุด
 WITH latest AS (
   SELECT
-    DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 1 DAY) AS AnchorDate,
-    MAX(IF(
-      HolidayFlag = 'No'
-        AND EXTRACT(DAYOFWEEK FROM Date) != 7  -- 7 = เสาร์
-        AND Date < DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 1 DAY),
-      Date, NULL
-    )) AS PrevWorkDate
+    DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 1 DAY) AS Yesterday,
+    MAX(IF(HolidayFlag = 'No' AND EXTRACT(DAYOFWEEK FROM Date) != 7
+           AND Date < CURRENT_DATE('Asia/Bangkok'), Date, NULL)) AS LastWorkDate
   FROM `${DimCalendarTableRef}`
 )
 
 SELECT
   cal.*,
-  (cal.Date > latest.PrevWorkDate AND cal.Date <= latest.AnchorDate) AS LatestDateFilter
+  cal.Date BETWEEN latest.LastWorkDate AND latest.Yesterday AS LatestDateFilter
 FROM `${DimCalendarTableRef}` AS cal
 CROSS JOIN latest
