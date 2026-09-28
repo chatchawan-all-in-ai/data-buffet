@@ -60,7 +60,7 @@ LEFT JOIN `${DimCompanyTableRef}` AS com ON ...
 ```
 
 ถ้า view อ่านแต่ validated/curated → **ไม่ต้องมี js block เลย**
-(ณ 2026-09-15 ยังไม่มีตัวอย่างจริงใน repo — view ทั้ง 33 ตัวมี js block หมด)
+(ณ 2026-09-28 ยังไม่มีตัวอย่างจริงใน repo — view ทั้ง 34 ตัวมี js block หมด)
 
 ### 4. ข้อควรระวัง
 

@@ -3,7 +3,7 @@
 > **LLM context**: The presentation layer — BigQuery **views** that sit on top of the
 > physical dim/fact/curated/validated tables (and a few external sources). Migrated
 > into Dataform on **2026-07-24** from views that previously lived only in BigQuery
-> (created by hand in the console). **33 views**, `type: "view"`, tag `view`. นับ 2026-09-15
+> (created by hand in the console). **34 views**, `type: "view"`, tag `view`. นับ 2026-09-28 (+`view_dim_calendar`)
 >
 > **Non-obvious constraints:**
 > - **A view's folder is not its dataset.** Files live under `definitions/view/<dataset>/`
@@ -68,7 +68,7 @@ Rules:
    does build (`type: "table"` in `process_dataset`).
 3. No inline `` `${databuffet.DATABASE}.${databuffet.X}.tbl` ``, no `databuffet-nonprd`
    literal. Declarations follow first-use order; declare only what is used. A view that
-   reads only validated/curated needs **no `js` block** — as of 2026-09-15 all 33 views
+   reads only validated/curated needs **no `js` block** — as of 2026-09-28 all 34 views
    happen to have one, so there is no live example.
 4. No trailing `;` (the view DDL wraps the query).
 4b. **Backslash ในโค้ด SQL ใช้ตัวเดียว** — Dataform ส่งผ่านให้ตรงๆ ไม่กิน
@@ -151,17 +151,18 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 > 13 เส้น เพราะ dims เหล่านั้นปั้น SK ใหม่ทุกคืน ถ้ารันสลับลำดับจะได้ SK ของเมื่อวาน
 > ตรวจ timestamp แล้วที่ผ่านมาเรียงถูกตลอด — เป็นการกันไว้ ไม่ใช่แก้ของที่พังอยู่
 
-## Inventory (33 views)
+## Inventory (34 views)
 
 > นับตาม `config.schema` ไม่ใช่ชื่อโฟลเดอร์ — โฟลเดอร์ ≠ dataset ปลายทาง
-> `DIMENSION_VIEW` 16 · `FACT_VIEW` 6 · `ONETIME` 5 · `PROCESS_DATASET` 5 · `BRIDGE` 1
+> `DIMENSION_VIEW` 17 · `FACT_VIEW` 6 · `ONETIME` 5 · `PROCESS_DATASET` 5 · `BRIDGE` 1
 
-### `dimension_view` → schema `DIMENSION_VIEW` (16)
+### `dimension_view` → schema `DIMENSION_VIEW` (17)
 
 | View | Key upstream (repo tables) | External refs (not deps) |
 |---|---|---|
 | `view_dim_aging` | dim_aging, dim_aging_rang, dim_sale_representative_last, view_dim_channel | — |
 | `view_dim_aging_history` | view_dim_channel, dim_aging, fact_mir_vs | dim_aging_history |
+| `view_dim_calendar` | dim_calendar | — · เพิ่ม 2026-09-28: `dim_calendar.*` + `LatestDateFilter` (ดูหัวข้อด้านล่าง) |
 | `view_dim_channel` | dim_channel, dim_channel_cost, dim_channel_finance, dim_channel_sales | — |
 | `view_dim_company` | dim_company | — |
 | `view_dim_customer` | dim_customer, dim_group_customer | mds ×3, dim_districts/provinces/geographies/sub_districts |
@@ -230,9 +231,26 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
   intentionally not managed by Dataform. (The canonical RLS views live in
   `process_dataset`.) No `PEEM_USING` dataset constant exists.
 
+## `view_dim_calendar` — `LatestDateFilter` (dynamic page filter, 2026-09-28)
+
+`dim_calendar.*` ทุกคอลัมน์ (ไม่แก้ `dim_calendar`) + คอลัมน์ BOOL `LatestDateFilter` ไว้ใช้เป็น
+page filter "วันล่าสุด" ใน Power BI ทุก model — **ไม่ได้รวมยอด แค่กรองวันที่**
+
+- **กฎ**: TRUE เมื่อ `PrevWorkDate < Date <= AnchorDate`
+  - `AnchorDate` = `CURRENT_DATE('Asia/Bangkok') - 1` (เมื่อวาน = วันที่ข้อมูลล่าสุดตามรอบ Dataform)
+  - `PrevWorkDate` = วันทำงานล่าสุดก่อน `AnchorDate`
+  - วันหยุด = `HolidayFlag = 'Yes'` (อาทิตย์ + นักขัตฤกษ์) **หรือวันเสาร์** — `dim_calendar` นับเสาร์เป็น
+    วันทำงาน แต่ filter นี้นับเป็นวันหยุด (ผู้ใช้ตัดสิน 2026-09-28)
+- **ตัวอย่าง** (วันที่เปิดรายงาน → filter): จ. 28/09/2026 → ส. 26, อา. 27 · อ. 29/09 → ส. 26, อา. 27, จ. 28 ·
+  พ. 30/09 → อ. 29 · อ. 27/10 → ศ. 23 (วันปิยะ), ส. 24, อา. 25, จ. 26
+- **คิดจาก `dim_calendar` อย่างเดียว** — ตั้งใจไม่อิง fact (เช่น `MAX(mix_date)`) เพื่อให้ใช้ร่วมกันได้ทุก model
+  ข้อแลก: ถ้า Dataform รอบคืนล้ม ธงยังชี้เมื่อวานทั้งที่ข้อมูลยังไม่เข้า
+- `CURRENT_DATE` ถูกประเมินตอน query view → model แบบ Import ต้อง **refresh รายวัน** ธงถึงจะขยับ
+- ขึ้นกับ `dim_holiday` — ถ้าวันหยุดปีไหนยังไม่ถูกบันทึก (ณ 2026-09-28 ปี 2027 = 0 วัน) วันนั้นจะถูกนับเป็นวันทำงาน
+
 ## Compile-verification checklist (local `dataform` CLI unavailable)
 
-1. All 33 views compile and the `view` tag runs after the table-building tags.
+1. All 34 views compile and the `view` tag runs after the table-building tags.
 2. Views referencing other views (chains — e.g. `view_dim_aging` → `view_dim_channel`,
    `Model_Invoice_Transaction` → `view_fact_transcation`) resolve in the right order.
 
