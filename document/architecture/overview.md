@@ -47,7 +47,7 @@ GCS AVRO files  gs://file-raw-data  (Hive partition: ASATDATE=YYYYMMDD)
 | Curated | 11 | `curated_*` | incremental / table | join ข้าม validated, JSON parsing, split-sale (ag01), รวม sell-out ทุกห้าง |
 | Dimension | 67 | `dimension_table` | table rebuild / operations MERGE | ออก surrogate key, SCD |
 | Fact | 15 | `fact_table` | table / operations | join SK ทุก dimension, retention 4 ปี |
-| View | 33 | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | view | BI/reporting อ่านจาก dim/fact/curated (`type: "view"`, tag `view`) |
+| View | 34 | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | view | BI/reporting อ่านจาก dim/fact/curated (`type: "view"`, tag `view`) |
 | CDC | 2 | `cdc_dataset` | operations | จับ NEW/CHANGED จาก config |
 | Process | 2 | `process_dataset` | table / operations | AI แกะที่อยู่ไทย (row ที่ CDC เปลี่ยน) + RLS (`rls_customer360`) |
 

@@ -60,7 +60,7 @@ LEFT JOIN `${DimCompanyTableRef}` AS com ON ...
 ```
 
 ถ้า view อ่านแต่ validated/curated → **ไม่ต้องมี js block เลย**
-(ณ 2026-09-15 ยังไม่มีตัวอย่างจริงใน repo — view ทั้ง 33 ตัวมี js block หมด)
+(ณ 2026-09-28 ยังไม่มีตัวอย่างจริงใน repo — view ทั้ง 34 ตัวมี js block หมด)
 
 ### 4. ข้อควรระวัง
 
@@ -107,3 +107,4 @@ dataform run --tags view
 - [ ] ไม่มี declaration ที่ประกาศแล้วไม่ได้ใช้
 - [ ] อัปเดต inventory ใน [project_wiki/view/view-layer.md](../project_wiki/view/view-layer.md)
 - [ ] **deploy จริงบน BigQuery แล้ว** และ `bq-drift-scan` ขึ้น identical ([deploy-view.md](deploy-view.md))
+- [ ] comment สั้น 1 บรรทัด บอก "ทำไม" — รายละเอียดไปไว้ใน `document/` ([coding-standard §9](../coding-standards/sqlx-coding-standard.md))

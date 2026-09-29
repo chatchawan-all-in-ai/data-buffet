@@ -52,6 +52,7 @@
 - [ ] คอลัมน์ `MdsID` ปิดท้าย (ไว้ trace)
 - [ ] `dependencies: ["dim_company"]` + tag `TAG_DIM_DAILY`
 - [ ] เพิ่มแถวใน `project_wiki/dimension/inventory.md`
+- [ ] comment สั้น 1 บรรทัด บอก "ทำไม" — รายละเอียดไปไว้ใน `document/` ([coding-standard §9](../coding-standards/sqlx-coding-standard.md))
 
 ## เพิ่ม dim แบบ SK เสถียร (MERGE — เคสพิเศษเท่านั้น)
 

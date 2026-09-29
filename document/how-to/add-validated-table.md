@@ -73,3 +73,4 @@ dataform run --actions validated_<source>.<table>
 - [ ] tag ตรงกับ load pattern
 - [ ] QUALIFY dedup อยู่ท้าย SELECT
 - [ ] post_operations PK ครอบด้วย `when(!incremental(), ...)`
+- [ ] comment สั้น 1 บรรทัด บอก "ทำไม" — รายละเอียดไปไว้ใน `document/` ([coding-standard §9](../coding-standards/sqlx-coding-standard.md))

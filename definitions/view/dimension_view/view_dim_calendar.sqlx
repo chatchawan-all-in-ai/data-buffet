@@ -1,0 +1,30 @@
+config {
+  type: "view",
+  schema: databuffet.DIMENSION_VIEW,
+  dependencies: ["dim_calendar"],
+  tags: [databuffet.TAG_VIEW],
+}
+
+js {
+    const DimCalendarTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_calendar",
+    };
+    const DimCalendarTableRef = `${DimCalendarTable.database}.${DimCalendarTable.schema}.${DimCalendarTable.name}`;
+}
+
+-- LatestDateFilter: เมื่อวาน + สะสมวันหยุด (ส. อา. นักขัตฤกษ์) ย้อนไปถึงวันทำงานล่าสุด
+WITH latest AS (
+  SELECT
+    DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 1 DAY) AS Yesterday,
+    MAX(IF(HolidayFlag = 'No' AND EXTRACT(DAYOFWEEK FROM Date) != 7
+           AND Date < CURRENT_DATE('Asia/Bangkok'), Date, NULL)) AS LastWorkDate
+  FROM `${DimCalendarTableRef}`
+)
+
+SELECT
+  cal.*,
+  cal.Date BETWEEN latest.LastWorkDate AND latest.Yesterday AS LatestDateFilter
+FROM `${DimCalendarTableRef}` AS cal
+CROSS JOIN latest

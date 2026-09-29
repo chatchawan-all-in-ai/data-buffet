@@ -103,6 +103,6 @@ All depend on `dim_company` except `dim_company` (deps `[]`) and `dim_holiday` (
 
 | File | What it does |
 |---|---|
-| dim_calendar | Date spine via `GENERATE_DATE_ARRAY` (next-year start → current+2 Dec-31), joins dim_holiday, weekend/holiday/long-weekend flags; TEMP → DELETE-by-Date → INSERT. **Tag `dimension_yearly`** |
+| dim_calendar | Date spine via `GENERATE_DATE_ARRAY` (next-year start → current+2 Dec-31), joins dim_holiday, weekend/holiday/long-weekend flags; TEMP → DELETE-by-Date → INSERT. **Tag `dimension_yearly`** · ธงรายวัน `LatestDateFilter` อยู่ที่ `dimension_view.view_dim_calendar` (ไม่ได้อยู่ในตารางนี้) |
 | dim_aging | ~500-line AR aging engine over chq/cql/mir/mie/ar_s/cfs + curated mih/mil + dim_aging_history + view_dim_aging + fact_mir_vs + onetime.cfsinvclose2024 |
 | update_sk_sale_rep_group | UPDATE-only: backfills FK SKs (RegionManagerSK, DirectorSK, SectionSK, ...) across the 7 `_last` tables via temp_data |

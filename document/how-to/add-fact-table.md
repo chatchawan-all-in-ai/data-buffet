@@ -75,3 +75,4 @@ END;
 - [ ] retention purge block แยกท้ายไฟล์
 - [ ] `mix_date` + `asatdate` ตาม convention
 - [ ] tag `fact_daily`
+- [ ] comment สั้น 1 บรรทัด บอก "ทำไม" — รายละเอียดไปไว้ใน `document/` ([coding-standard §9](../coding-standards/sqlx-coding-standard.md))
