@@ -373,6 +373,30 @@ WITH hp AS (
       AND fs.m          = t.m
     GROUP BY 1, 2
 
+), feed_start AS (
+
+    -- วันแรกที่ฟีดของแต่ละห้างสร้างแถวเข้า curated ได้จริง
+    -- ก่อนวันนี้ = ไม่มีฟีด ใช้ไฟล์ Excel ของ BI (lastyear) เติมประวัติ
+    -- ตั้งแต่วันนี้ไป = เชื่อฟีดอย่างเดียว ช่องว่างปล่อยให้เห็น จะได้ไปทวงห้างได้
+    --
+    -- ⚠️ เขียนตายตัวโดยตั้งใจ (ตัดสินใจ 2026-09-28) ไม่ใช้ MIN(sale_date) คำนวณเอง
+    --    เพราะจุดตัดเป็นการตัดสินใจทางธุรกิจ ถ้าวันหนึ่งฟีดส่งวันที่เพี้ยนย้อนหลังมา
+    --    จุดตัดจะเลื่อนเอง แล้วประวัติทั้งก้อนหายเงียบ ๆ โดยไม่มีใครรู้
+    --    มีห้างใหม่เมื่อไร มาเพิ่มบรรทัดตรงนี้
+    --
+    -- ที่มาของแต่ละค่า (วัด 2026-09-28):
+    --   HP MH GB  ตรงกับ MIN(sale_date) ของ validated
+    --   BT        validated เริ่ม 2026-02-01 แต่เป็นยอดสะสม MTD
+    --             วันแรกที่หาส่วนต่างรายวันได้คือ 02-10
+    --   TW        วัดจาก curated เพราะ validated ใช้ Last_Sold_Date
+    --             ซึ่งย้อนถึง 2013 (วันขายล่าสุดของสินค้า ไม่ใช่วันที่ฟีดเริ่ม)
+    --   DH        ไม่มีฟีดเลย จึงไม่ใส่ในตารางนี้ -> เก็บ lastyear ทั้งหมด
+    SELECT 'HP' AS store_code, DATE '2026-02-09' AS feed_from
+    UNION ALL SELECT 'MH', DATE '2026-02-09'
+    UNION ALL SELECT 'GB', DATE '2026-02-09'
+    UNION ALL SELECT 'BT', DATE '2026-02-10'
+    UNION ALL SELECT 'TW', DATE '2026-05-13'
+
 ), lastyear_topup AS (
 
     -- แถวเติม — วันที่เป็นวันประมาณ (date_is_estimated = TRUE) ครอบทุกวันที่ฟีดไม่มีในเดือนนั้น
@@ -435,9 +459,12 @@ WITH hp AS (
     LEFT JOIN partial_months AS pm
       ON  pm.store_code = ly.store_code
       AND pm.m          = DATE_TRUNC(ly.sale_date, MONTH)
+    LEFT JOIN feed_start AS fs
+      ON fs.store_code = ly.store_code
     WHERE ly.sale_date IS NOT NULL
       AND f.sale_date IS NULL
       AND pm.m IS NULL
+      AND (fs.feed_from IS NULL OR ly.sale_date < fs.feed_from)
     GROUP BY sale_date, store_code, branch_code, product_code, doc_type
 )
 SELECT * FROM hp
@@ -449,8 +476,8 @@ UNION ALL
 SELECT * FROM tw
 UNION ALL
 SELECT * FROM lastyear
-UNION ALL
-SELECT * FROM lastyear_topup
+-- UNION ALL
+-- SELECT * FROM lastyear_topup
 pre_operations {
 }
 

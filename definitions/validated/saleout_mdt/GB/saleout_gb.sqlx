@@ -3,7 +3,7 @@ config {
     schema: databuffet.VALIDATED_SALEOUT_MDT,
     dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
     tags: [databuffet.TAG_VALIDATED],
-    uniqueKey: ["sale_no", "sale_date", "branch_code", "product_code","row_no"],
+    uniqueKey: ["sale_no", "sale_date", "branch_code", "product_code"],
     bigquery: {
         partitionBy: "asatdate",
                 clusterBy: ["sale_date", "branch_code", "product_code", "sale_no"]
@@ -11,7 +11,7 @@ config {
 }
 
 js {
-    const pk_key = ["sale_no", "sale_date", "branch_code", "product_code", "row_no"]
+    const pk_key = ["sale_no", "sale_date", "branch_code", "product_code"]
     
     // เลขแต่ละช่องของ Sale_Date — 0 = ตัวแรก · 1 = ตัวกลาง · 2 = ปี
     const datePart = (i) => `CAST(SPLIT(TRIM(Sale_Date), '/')[SAFE_OFFSET(${i})] AS INT64)`;

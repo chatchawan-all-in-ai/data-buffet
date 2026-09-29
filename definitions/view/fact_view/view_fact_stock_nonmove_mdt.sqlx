@@ -1,0 +1,82 @@
+config {
+  type: "view",
+  schema: databuffet.FACT_VIEW,
+  dependencies: ["fact_stock_mdt", "fact_saleout_mdt"],
+  tags: [databuffet.TAG_VIEW],
+}
+
+
+js {
+    const FactStockRef =
+        `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_stock_mdt`;
+    const FactSaleoutRef =
+        `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_saleout_mdt`;
+}
+
+WITH last_sale AS (
+
+  -- วันขายล่าสุดของแต่ละ (ห้าง สาขา สินค้า) จากยอดขายทั้งหมดที่มี
+  -- นับเฉพาะ sale_qty > 0 เพื่อไม่ให้ใบคืนของนับเป็นการขาย
+  SELECT
+    store_code,
+    branch_code,
+    product_code,
+    MAX(sale_date)   AS last_sold_date,
+    SUM(sale_qty)    AS lifetime_sold_qty,
+    SUM(sale_amount) AS lifetime_sold_amount
+  FROM `${FactSaleoutRef}`
+  WHERE sale_qty > 0
+  GROUP BY 1, 2, 3
+
+), latest_stock AS (
+
+  -- สต็อกวันล่าสุดของแต่ละ (ห้าง สาขา สินค้า)
+  -- แต่ละห้างส่งไฟล์คนละรอบ วันล่าสุดจึงไม่จำเป็นต้องเท่ากันทุกแถว
+  -- ใช้ stock_date ของแถวตัวเองเป็นฐานนับวัน ไม่ใช่วันนี้ จะได้ไม่เพี้ยนตอนฟีดค้าง
+  -- ⚠️ ต้องเลือกวันล่าสุดก่อน แล้วค่อยกรองของคงเหลือทีหลัง
+  --    ถ้ากรอง onhand_qty > 0 ก่อน จะไปหยิบวันเก่าที่ยังมีของ
+  --    ของที่ขายหมดไปแล้วจะโผล่มาเป็น "ของค้าง" ทั้งที่ตอนนี้เหลือศูนย์
+  SELECT *
+  FROM `${FactStockRef}`
+  QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY store_code, branch_code, product_code ORDER BY stock_date DESC
+  ) = 1
+
+)
+
+SELECT
+  s.stock_date,
+  s.store_code,
+  s.branch_code,
+  s.branch_sk,
+  s.zone_sk,
+
+  s.product_code,
+  s.product_mdt_sk,
+  s.product_sk,
+  s.product_mkt_sk,
+
+  s.onhand_qty,
+  s.onhand_amt,
+  s.onorder_qty,
+
+  l.last_sold_date,
+  DATE_DIFF(s.stock_date, l.last_sold_date, DAY) AS days_since_last_sale,
+  l.lifetime_sold_qty,
+  l.lifetime_sold_amount,
+
+  CASE
+    WHEN l.last_sold_date IS NULL                                     THEN 'ไม่มีประวัติขาย'
+    WHEN DATE_DIFF(s.stock_date, l.last_sold_date, DAY) <= 30         THEN '0-30 วัน'
+    WHEN DATE_DIFF(s.stock_date, l.last_sold_date, DAY) <= 60         THEN '31-60 วัน'
+    WHEN DATE_DIFF(s.stock_date, l.last_sold_date, DAY) <= 90         THEN '61-90 วัน'
+    ELSE 'เกิน 90 วัน'
+  END AS move_status,
+
+  s.asatdate
+FROM latest_stock AS s
+LEFT JOIN last_sale AS l
+  ON  s.store_code  = l.store_code
+  AND s.branch_code = l.branch_code
+  AND s.product_code = l.product_code
+WHERE s.onhand_qty > 0
