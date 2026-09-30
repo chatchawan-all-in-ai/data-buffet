@@ -1,78 +1,74 @@
 config {
   type: "view",
   schema: databuffet.FACT_VIEW,
-  dependencies: ["fact_saleout_mdt", "dim_pc", "dim_product_mkt"],
+  dependencies: ["fact_saleout_monthly_mdt", "dim_pc", "dim_product_mkt"],
   tags: [databuffet.TAG_VIEW],
 }
 
 
-js {
-    const DimPcTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_pc",
-    };
-    const DimPcRef = `${DimPcTable.database}.${DimPcTable.schema}.${DimPcTable.name}`;
 
-    const DimProductMktTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_product_mkt",
-    };
-    const DimProductMktRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
+js {
+    const FactMonthlyRef = `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_saleout_monthly_mdt`;
+    const DimPcRef       = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_pc`;
+    const DimProductMktRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_product_mkt`;
 }
 
-WITH pc_assign AS (
-  -- PC ที่ดูแลแต่ละ (สาขา, กลุ่มสินค้า) พร้อมจำนวนคนในช่องนั้นเพื่อใช้เป็นตัวหาร
-   SELECT
-    BranchMdtSK,
-    MarketingGroupID,
-    PcSK,
-    StartDate AS AssignStart,
-    EndDate   AS AssignEnd,
-    COUNT(*) OVER (PARTITION BY BranchMdtSK, MarketingGroupID) AS PcCountInCell
-  FROM `${DimPcRef}`
-  WHERE PcSK <> -1
-    AND IsPlaceholder = FALSE
 
-), sale_with_group AS (
+WITH mkt_group AS (
+
+  -- ProductMktSK -> MarketingGroupID เพราะ dim_pc มอบหมายที่ระดับกลุ่ม ไม่ใช่ SK
+  SELECT ProductMktSK, ANY_VALUE(MarketingGroupID) AS MarketingGroupID
+  FROM `${DimProductMktRef}`
+  WHERE CompanyID = 'ag01'
+  GROUP BY 1
+
+), sale AS (
+
+  SELECT f.*, m.MarketingGroupID
+  FROM `${FactMonthlyRef}` AS f
+  LEFT JOIN mkt_group AS m ON f.product_mkt_sk = m.ProductMktSK
+
+), pc_per_month AS (
+
+  -- PC ที่รับผิดชอบช่องนั้นในเดือนนั้น — นับแยกก่อน ไม่ให้ยอดขายแตกตัว
+  -- ⚠️ ห้าม join ตัวนี้เข้ากับยอดขายก่อนรวม ช่องที่มีหลาย PC จะนับยอดซ้ำตามจำนวนคน
   SELECT
-    f.*,
-    mkt.MarketingGroupID
-  FROM `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_saleout_mdt` AS f
-  LEFT JOIN `${DimProductMktRef}` AS mkt
-    ON f.product_mkt_sk = mkt.ProductMktSK
+    DATE_TRUNC(d, MONTH) AS month_date,
+    BranchMdtSK, MarketingGroupID,
+    COUNT(DISTINCT PcSK)                           AS pc_count,
+    STRING_AGG(DISTINCT CAST(PcSK AS STRING), ",") AS pc_sk_list
+  FROM `${DimPcRef}`,
+  UNNEST(GENERATE_DATE_ARRAY(StartDate, LEAST(EndDate, DATE '2099-12-31'), INTERVAL 1 MONTH)) AS d
+  WHERE PcSK <> -1 AND IsPlaceholder = FALSE
+  GROUP BY 1, 2, 3
+
 )
 
 SELECT
-  s.sale_date,
+  s.month_date,
   s.store_code,
+  s.branch_code,
   s.branch_sk,
   s.zone_sk,
+  s.sales_channel,
+
+  s.product_code,
+  s.product_name,
   s.product_mdt_sk,
   s.product_sk,
   s.product_mkt_sk,
   s.MarketingGroupID,
   s.report_sk,
-  -- ชุด transaction — ค่า ณ วันที่ขาย (fact จับ BETWEEN StartDate/EndDate มาแล้ว)
-  s.region_sk,
-  s.region_manager_sk,
-  s.director_sk,
 
-  IFNULL(a.PcSK, -1)          AS pc_sk,
-  IFNULL(a.PcCountInCell, 1)  AS pc_count_in_cell,
+  IFNULL(p.pc_count, 0) AS pc_count,
+  p.pc_sk_list,
 
-  s.doc_type,
-  -- แบ่งเท่ากัน  ห้าม SUM คอลัมน์ sale_amount ในมุมมองนี้ ให้ใช้ 2 คอลัมน์ล่างเท่านั้น
-  s.sale_amount / IFNULL(a.PcCountInCell, 1) AS sale_amount_allocated,
-  s.sale_qty    / IFNULL(a.PcCountInCell, 1) AS sale_qty_allocated,
-
-  s.branch_code,
-  s.product_code,
+  s.sale_qty,
+  s.sale_amount,
   s.asatdate
-FROM sale_with_group AS s
-LEFT JOIN pc_assign AS a
-  ON  s.branch_sk        = a.BranchMdtSK
-  AND s.MarketingGroupID = a.MarketingGroupID
-  -- แบ่งยอดให้เฉพาะช่วงที่ PC คนนั้นยังรับผิดชอบสาขานั้นอยู่
-  AND s.sale_date BETWEEN a.AssignStart AND a.AssignEnd
+FROM sale AS s
+LEFT JOIN pc_per_month AS p
+  ON  p.month_date       = s.month_date
+  AND p.BranchMdtSK      = s.branch_sk
+  AND p.MarketingGroupID = s.MarketingGroupID
+
