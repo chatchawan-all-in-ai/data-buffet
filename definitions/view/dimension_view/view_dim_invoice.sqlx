@@ -1,7 +1,7 @@
 config {
   type: "view",
   schema: databuffet.DIMENSION_VIEW,
-  dependencies: ["dim_invoice", "dim_aging", "view_dim_customer","dim_order"],
+  dependencies: ["dim_invoice", "dim_aging", "view_dim_customer","dim_order","mec"],
   tags: [databuffet.TAG_VIEW],
 }
 
@@ -61,6 +61,13 @@ js {
         name: "dim_order",
     };
     const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
+       const MecTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mec",
+    };
+    const MecTableRef = `${MecTable.database}.${MecTable.schema}.${MecTable.name}`;
+
 
 }
 
@@ -109,6 +116,7 @@ with tab_main as (
 
     COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName) as CRCShopName, 
     (CASE
+      WHEN mecdesc is not null THEN `${CleanCompanyPrefixTableRef}`(mecdesc)
       WHEN cust.FlagMDSNickName = True THEN cust.NicknameCustomer
       WHEN COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName) is not null THEN COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName)
       ELSE `${CleanCompanyPrefixTableRef}`(cust.debnamet)
@@ -127,6 +135,9 @@ with tab_main as (
     and main.CompanySK = dim_order.CompanySK
     and main.mihType in ('BS', 'AS')
     and main.OrderSK is null
+  left join `${MecTableRef}` as mec
+    on main.mihMec = mec.meccode
+    and main.companyID = mec.company_id
   left join `${MdsDataCrcShopNameRenameTableRef}` as mds_crc
     on main.CRCShopName = mds_crc.crc_shop_name
     and main.CRCShopName is not null

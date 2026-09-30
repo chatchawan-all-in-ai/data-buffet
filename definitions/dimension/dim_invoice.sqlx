@@ -46,7 +46,7 @@ BEGIN
             WHEN mihType in ('QP', 'PP', 'IP', 'AP', 'BP', 'VP', 'RP') THEN ap_snamet
             ELSE null
           END) as StatusDesc,
-          mihCancel,mihDep,mihJob,mihNotes,mih.mihDesc
+          mihCancel,mihDep,mihJob,mihNotes,mih.mihDesc,mih.mihMec
         FROM ${ref(databuffet.CURATED_MAC5, 'curated_mih')} as mih
         left join ${ref(databuffet.VALIDATED_MAC5, 'ar_s')} as ar_s
           on mih.mihStatus = ar_s.ar_scode
@@ -70,7 +70,7 @@ BEGIN
             WHEN mih.mihType in ('QP', 'PP', 'IP', 'AP', 'BP', 'VP', 'RP') THEN ap_s.ap_snamet
             ELSE null
           END) as StatusDesc,
-          mih.mihCancel, mih.mihDep, mih.mihJob,mihNotes,mih.mihDesc
+          mih.mihCancel, mih.mihDep, mih.mihJob,mihNotes,mih.mihDesc,mih.mihMec
         FROM ${ref(databuffet.CURATED_MAC5, 'curated_mih')} as mih
         left join ${ref(databuffet.VALIDATED_MAC5, 'ar_s')} as ar_s
           on mih.mihStatus = ar_s.ar_scode
@@ -110,7 +110,7 @@ BEGIN
           mihDay, mihMonth, mihYear, mihType, mihCus, mih.mihVnos, mihPer,
           per_sale1, mih2per2, per_sale2,
           mihStatus, StatusDesc, mihCancel, mihRef1, mihRef2,
-          mihDep,mihJob,mihNotes,mihDesc
+          mihDep,mihJob,mihNotes,mihDesc,mih.mihMec
         FROM mih_raw as mih
         INNER JOIN filter_mih2 as mih2
           ON mih.mihref1 = mih2.mih2vnos
@@ -126,7 +126,7 @@ BEGIN
           '0' as mih2per2,
           0 as per_sale2,
           mihStatus, StatusDesc, mihCancel, mihRef1, mihRef2,
-          mihDep,mihJob,mihNotes,mihDesc
+          mihDep,mihJob,mihNotes,mihDesc,mihMec
         FROM mih_raw2 as mih2
         WHERE NOT EXISTS (
           SELECT 1
@@ -177,6 +177,7 @@ BEGIN
       t1.InvoiceSalesFlag,
       t1.mihNotes,
       t1.mihDesc,
+      t1.mihMec,
       dim_order.OrderSK
     FROM source_combined AS t1
     LEFT JOIN `${DimInvoiceTableRef}` AS t2
@@ -223,6 +224,7 @@ BEGIN
       T.mihJob = S.mihJob,
       T.mihNotes = S.mihNotes,
       T.mihDesc = S.mihDesc,
+      T.mihMec = S.mihMec,
       T.InvoiceSalesFlag = S.InvoiceSalesFlag
       -- ยกเว้น: OrderSK, InvoiceSK, QuotationSK ไม่ถูก update
 
@@ -233,7 +235,7 @@ BEGIN
       mix_date, mihDay, mihMonth, mihYear,
       mihType, mihVnos, mihCus, milLinkVcno,
       mihRef1, mihRef2, mihPer, pernamet, mihStatus, StatusDesc, mihCancel,
-      per_sale1, mih2per2, per_sale2, mihDep, mihJob, mihNotes, mihDesc,
+      per_sale1, mih2per2, per_sale2, mihDep, mihJob, mihNotes, mihDesc, mihMec,
       InvoiceSalesFlag
     )
     VALUES (
@@ -241,7 +243,7 @@ BEGIN
       S.mix_date, S.mihDay, S.mihMonth, S.mihYear,
       S.mihType, S.mihVnos, S.mihCus, S.milLinkVcno,
       S.mihRef1, S.mihRef2, S.mihPer, S.pernamet, S.mihStatus, S.StatusDesc, S.mihCancel,
-      S.per_sale1, S.mih2per2, S.per_sale2, S.mihDep, S.mihJob, S.mihNotes, S.mihDesc,
+      S.per_sale1, S.mih2per2, S.per_sale2, S.mihDep, S.mihJob, S.mihNotes, S.mihDesc, S.mihMec,
       S.InvoiceSalesFlag
     );
 END;
