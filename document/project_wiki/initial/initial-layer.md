@@ -52,7 +52,7 @@
 | `fn_get_scg_customer_ids` | `()` — ไม่รับพารามิเตอร์ | คืนชุดรหัสลูกค้า SCG ที่ `fn_flag_scg` ใช้อ้างอิง |
 | `fn_order_type` | `(mihref2 STRING)` | prefix `QOAG` → `Online-AllkonsM`, ที่เหลือ `Offline` (ใช้โดย `view_dim_order`) |
 | `EXTRACT_CHQ_DATA` | `(memo_raw STRING, datec DATETIME, total FLOAT64)` → `STRUCT<chqmemo, extract_text, extract_value ARRAY<STRUCT<extract_date DATE, extract_amount FLOAT64>>>` | แกะ memo เช็ค/โอนภาษาไทย รองรับเดือนย่อไทย + แปลง พ.ศ. → ค.ศ. เริ่มแกะเฉพาะเมื่อ **trigger** ติด (ดูหัวข้อถัดไป) |
-| `clean_company_prefix` | `(text_input STRING)` | ตัดคำนำหน้า (`บริษัท`, `บจก.`, `บมจ.`, `หจก.`, `ร้าน`, `ห้างหุ้นส่วนจำกัด`, `+` นำหน้า) และคำต่อท้าย (`จำกัด`, `(มหาชน)`) → เหลือชื่อบริษัทเปล่า ไว้จับคู่ |
+| `clean_company_prefix` | `(text_input STRING)` | ตัดคำนำหน้า (`บริษัท`, `บจก.`, `บมจ.`, `หจก.`, `ร้าน`, `ห้างหุ้นส่วนจำกัด`, `+` นำหน้า) → ตัด `จำกัด`/`จก.`/`(มหาชน)` ที่อยู่หน้าวงเล็บท้ายชื่อ (`… จำกัด (สาขา…)` → `… (สาขา…)`) → ตัดคำต่อท้าย (`จำกัด`, `จก.`, `ก.`, `(มหาชน)`) **ซ้ำจนหมด** (`จำกัด (มหาชน)` หายทั้งคู่ — ก่อน 2026-09-30 ตัดได้ครั้งเดียว เหลือ `จำกัด`) → ชื่อบริษัทเปล่า ใช้สร้าง `CRCShopName` และ `CustomerReportName` ใน `view_dim_invoice` · ไม่ตัด: `จำกัด` กลางชื่อที่ไม่มีวงเล็บตามหลัง, `จํากัด` (นิคหิต+า), ชื่ออังกฤษ `CO.,LTD.`, `คุณ`/`นาย` |
 
 > **UDF ไม่ใช่ Dataform action แยกตัว** — ทั้ง 7 ตัวถูกสร้างโดย `operations` action
 > เดียวนี้ ผู้ใช้จึง `ref()` ไม่ได้ ให้ interpolate `${databuffet.FUNCTION_DATASET}`

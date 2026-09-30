@@ -28,7 +28,7 @@ layer (validated/curated/dimension/fact/…) as in
 13. Modern trade (MDT) — sell-out/สต็อกห้างค้าปลีก
 14. Reference / misc — ตารางอ้างอิงอื่นๆ
 
-**Uncovered dim/fact/curated objects (not in any topic):** `dim_zone_ta_mdt`, `fact_target_saleout_mdt`
+**Uncovered dim/fact/curated objects (not in any topic):** `dim_zone_ta_mdt`, `fact_saleout_monthly_mdt`, `fact_target_saleout_mdt`
 
 ---
 
@@ -180,8 +180,9 @@ flowchart LR
     dim_target_product_group_by_sale_dayofwork["dim_target_product_group_by_sale_dayofwork"]
     update_sk_sale_rep_group["update_sk_sale_rep_group"]
   end
-  subgraph fact["fact (2)"]
+  subgraph fact["fact (3)"]
     fact_saleout_mdt["fact_saleout_mdt"]
+    fact_saleout_monthly_mdt["fact_saleout_monthly_mdt"]
     fact_transcation["fact_transcation"]
   end
   dim_calendar --> dim_target_product_group_by_sale_dayofwork
@@ -217,6 +218,7 @@ flowchart LR
   dim_director_last --> update_sk_sale_rep_group
   dim_product_mkt --> dim_target_product_group_by_sale
   dim_product_mkt --> fact_saleout_mdt
+  dim_product_mkt --> fact_saleout_monthly_mdt
   dim_product_mkt --> fact_transcation
   dim_rate_target --> dim_target_product_group_by_sale
   dim_rate_target --> dim_target_product_group_by_sale_dayofwork
@@ -234,6 +236,7 @@ flowchart LR
   dim_region_manager_last --> update_sk_sale_rep_group
   dim_report --> dim_target_product_group_by_sale
   dim_report --> fact_saleout_mdt
+  dim_report --> fact_saleout_monthly_mdt
   dim_sale_representative --> dim_sale_representative_last
   dim_sale_representative --> dim_target_product_group_by_sale_dayofwork
   dim_sale_representative --> fact_transcation
@@ -258,7 +261,7 @@ flowchart LR
   classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
   class dim_calendar,dim_company,dim_department,dim_department_last,dim_director,dim_director_last,dim_product_mkt,dim_rate_target,dim_region,dim_region_last,dim_region_manager,dim_region_manager_last,dim_report,dim_sale_representative,dim_sale_representative_last,dim_section,dim_section_last,dim_section_manager,dim_section_manager_last,dim_target_product_group,dim_target_product_group_by_sale,dim_target_product_group_by_sale_dayofwork,update_sk_sale_rep_group dimension;
-  class fact_saleout_mdt,fact_transcation fact;
+  class fact_saleout_mdt,fact_saleout_monthly_mdt,fact_transcation fact;
 ```
 
 ---
@@ -555,13 +558,14 @@ flowchart LR
     dim_region["dim_region"]
     dim_stk_mkt["dim_stk_mkt"]
   end
-  subgraph fact["fact (8)"]
+  subgraph fact["fact (9)"]
     fact_backlog_store["fact_backlog_store"]
     fact_invoice_store["fact_invoice_store"]
     fact_order["fact_order"]
     fact_order_store["fact_order_store"]
     fact_quotation["fact_quotation"]
     fact_saleout_mdt["fact_saleout_mdt"]
+    fact_saleout_monthly_mdt["fact_saleout_monthly_mdt"]
     fact_transaction_delivery["fact_transaction_delivery"]
     fact_transcation["fact_transcation"]
   end
@@ -592,6 +596,7 @@ flowchart LR
   dim_product_mkt --> dim_product_master
   dim_product_mkt --> dim_pump_information
   dim_product_mkt --> fact_saleout_mdt
+  dim_product_mkt --> fact_saleout_monthly_mdt
   dim_product_mkt --> fact_transcation
   dim_rebate --> dim_product_master
   dim_region --> dim_pump_information
@@ -620,7 +625,7 @@ flowchart LR
   class brand,category__mastersku,product,product_detail,stg,stk,unit,vendor validated;
   class curated_product,product_for_aisearch curated;
   class dim_company,dim_product_master,dim_product_master_fc,dim_product_mkt,dim_product_mkt_director,dim_pump_information,dim_rebate,dim_region,dim_stk_mkt dimension;
-  class fact_backlog_store,fact_invoice_store,fact_order,fact_order_store,fact_quotation,fact_saleout_mdt,fact_transaction_delivery,fact_transcation fact;
+  class fact_backlog_store,fact_invoice_store,fact_order,fact_order_store,fact_quotation,fact_saleout_mdt,fact_saleout_monthly_mdt,fact_transaction_delivery,fact_transcation fact;
 ```
 
 ---
@@ -1145,8 +1150,9 @@ flowchart LR
     dim_zone_mdt["dim_zone_mdt"]
     dim_zone_ta_mdt["dim_zone_ta_mdt"]
   end
-  subgraph fact["fact (4)"]
+  subgraph fact["fact (5)"]
     fact_saleout_mdt["fact_saleout_mdt"]
+    fact_saleout_monthly_mdt["fact_saleout_monthly_mdt"]
     fact_stock_mdt["fact_stock_mdt"]
     fact_stock_mdt_monthly["fact_stock_mdt_monthly"]
     fact_target_saleout_mdt["fact_target_saleout_mdt"]
@@ -1155,17 +1161,21 @@ flowchart LR
   curated_stock_mdt --> fact_stock_mdt
   dim_director --> fact_saleout_mdt
   dim_product_mdt --> fact_saleout_mdt
+  dim_product_mdt --> fact_saleout_monthly_mdt
   dim_product_mdt --> fact_stock_mdt
   dim_product_mkt --> dim_target_saleout_mdt
   dim_product_mkt --> fact_saleout_mdt
+  dim_product_mkt --> fact_saleout_monthly_mdt
   dim_region --> dim_region_last
   dim_region --> fact_saleout_mdt
   dim_region_last --> dim_sales_branch_mdt
   dim_region_manager --> fact_saleout_mdt
   dim_report --> fact_saleout_mdt
+  dim_report --> fact_saleout_monthly_mdt
   dim_sales_branch_mdt --> dim_pc
   dim_sales_branch_mdt --> dim_target_saleout_mdt
   dim_sales_branch_mdt --> fact_saleout_mdt
+  dim_sales_branch_mdt --> fact_saleout_monthly_mdt
   dim_sales_branch_mdt --> fact_stock_mdt
   dim_sales_branch_mdt --> fact_target_saleout_mdt
   dim_section_last --> dim_sales_branch_mdt
@@ -1189,7 +1199,7 @@ flowchart LR
   class report_sale_subscription,sale_by_branch_detail,saleout_gb,saleout_hp,saleout_lastyear,stock_by_branch validated;
   class curated_saleout_mdt,curated_stock_mdt curated;
   class dim_director,dim_pc,dim_product_mdt,dim_product_mkt,dim_region,dim_region_last,dim_region_manager,dim_report,dim_sales_branch_mdt,dim_section_last,dim_target_saleout_mdt,dim_zone_mdt,dim_zone_ta_mdt dimension;
-  class fact_saleout_mdt,fact_stock_mdt,fact_stock_mdt_monthly,fact_target_saleout_mdt fact;
+  class fact_saleout_mdt,fact_saleout_monthly_mdt,fact_stock_mdt,fact_stock_mdt_monthly,fact_target_saleout_mdt fact;
 ```
 
 ---
