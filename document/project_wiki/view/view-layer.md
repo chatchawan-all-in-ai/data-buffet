@@ -257,7 +257,7 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 (MDS `Customer_Segment_Master`) — dim full rebuild รายวัน 2 ตัว · ใน Power BI ผูกเป็นทอด:
 `view_fact_transcation` → `dim_customer_report_info` (`CustomerReportInfoSK`) → `dim_customer_segment` (`CustomerSegmentSK`)
 
-- **`dim_customer_report_info` มีทุกชื่อร้านใน `view_dim_invoice`** (ag01 40,790 ชื่อหลัง rebuild ด้วยสูตร SCG 2026-10-02 — เดิม 40,921; ในนั้นจาก MDS 1,872 = `FlagMDS`)
+- **`dim_customer_report_info` มีทุกชื่อร้านใน `view_dim_invoice`**
   ไม่ใช่แค่ชื่อใน MDS — ไม่งั้น relationship ใน Power BI กรองแถวที่ชื่อไม่อยู่ใน MDS หายหมด · dim อ่าน
   `view_dim_invoice` จึง**ห้าม**ให้ `view_dim_invoice` join dim นี้กลับ (วนกัน) — join อยู่ที่ `view_fact_transcation`
 - หนึ่งแถวต่อ `CompanyID` + `CustomerReportKey` (ชื่อที่ตัด whitespace ทั้งหมด): MDS เลือก `updated_at DESC, id`
@@ -265,17 +265,20 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 - `DepartmentID` จาก MDS จับคู่ `dim_department_last` ด้วย `CompanySK` + `DepartmentID`;
   ชื่อนอก MDS มี `FlagMDS = FALSE` และข้อมูล MDS เป็น NULL. `FlagPC` ส่งผ่าน BOOL, `OnlinePercent` cast เป็น FLOAT64
 - `CustomerReportInfoSK` ออกใหม่ทุกครั้งที่ rebuild จึง join ที่ view ด้วย natural key ไม่เก็บลงตาราง fact
-- **`view_dim_invoice.CustomerReportName` เลือกตามลำดับ** (`CASE` ใน `view_dim_invoice.sqlx`, แก้ 2026-10-02):
-  1. บิล SCG (`fn_flag_scg(RefOrder, mihCus)` ไม่ NULL = `RefOrder` ขึ้นต้น `CRC`) **และ** `mec.mecdesc` ไม่ว่าง
+- **`view_dim_invoice.CustomerReportName` เลือกตามลำดับ** (`CASE` ใน [view_dim_invoice.sqlx](../../../definitions/view/dimension_view/view_dim_invoice.sqlx), แก้ 2026-10-02):
+  1. บิล SCG (`fn_flag_scg(RefOrder, mihCus) IS NOT NULL`) **และ** `mec.mecdesc IS NOT NULL`
      → `clean_company_prefix(mec.mecdesc)` (ชื่อสาขาที่ส่งของจาก `mihMec`)
   2. `cust.FlagMDSNickName = TRUE` → `cust.NicknameCustomer` (ชื่อเล่นใน MDS)
-  3. ชื่อร้าน CRC: `COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName)`
+  3. `COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName) IS NOT NULL` → ใช้ชื่อร้าน CRC ค่านี้
   4. ไม่งั้น `clean_company_prefix(cust.debnamet)`
-  - บิลที่ไม่ใช่ SCG ไม่ใช้ `mecdesc` แม้มี `mihMec` → ลูกค้า Modern Trade รายงานเป็น**ชื่อเครือ**ไม่ใช่ชื่อสาขา
-    ชื่อสาขาดิบ (ไม่ผ่าน `clean_company_prefix`) ยังอยู่ในคอลัมน์ `mecdesc` ของ view · ผลวัด: [known-issues 2026-10-02](../../operations/known-issues.md)
+  - บิลที่ไม่ใช่ SCG หรือ `mec.mecdesc` เป็น NULL ใช้ลำดับ 2–4
+- **`view_dim_invoice.mecdesc`** — ชื่อสาขาที่ส่งของจาก `validated_mac5.mec` จับคู่ด้วย `mihMec = meccode`
+  และ `companyID = company_id` · ส่งออกโดยไม่ผ่าน `clean_company_prefix` ทั้งบิล SCG และบิลอื่น;
+  ถ้า join ไม่พบจะเป็น NULL · Power BI ที่ต้องการยอดรายสาขาของลูกค้าที่ชื่อรายงานรวมเป็นชื่อเครือ
+  ให้ใช้คอลัมน์นี้จาก `view_dim_invoice` โดยผูกกับ fact ผ่าน `InvoiceSK`
 - **`view_fact_transcation.CustomerReportInfoSK`** — `InvoiceSK` → `CustomerReportName` ของ invoice นั้นใน `view_dim_invoice`
-  → ชนกับ `CustomerReportKey` แบบ **ไม่สนช่องว่าง** (`REGEXP_REPLACE(..., r'\s', '')`) · วัด 2026-10-01: ทุกแถวผูกได้
-  ยกเว้น ag01 44 แถวที่ invoice ไม่มี CustomerReportName (รหัสลูกค้าไม่อยู่ใน `deb` เช่น `TEST`) → NULL
+  → ชนกับ `CustomerReportKey` แบบ **ไม่สนช่องว่าง** (`REGEXP_REPLACE(..., r'\s', '')`);
+  invoice ที่ไม่มี CustomerReportName (รหัสลูกค้าไม่อยู่ใน `deb` เช่น `TEST`) → NULL
 - **`dim_customer_report_info.CustomerSegmentSK`** — 1 ชื่อ = 1 Segment, ค่าปัจจุบัน (ไม่ย้อนตามเดือนบิล) เลือกตามลำดับ:
   1. `CustomerTier` ไม่ว่าง → ใช้รหัส tier จับคู่ `Segment3` · เมื่อจับคู่ได้ `SegmentSource = 'MDS'`
      ถ้า tier ไม่มีใน segment master จะ fallback เป็น DC โดยไม่ลอง channel
@@ -293,8 +296,24 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 - ผลวัด 2026-10-01 (ag01 40,921 ชื่อ): MDS 1,872 (SILVER 1,145 · PLATINUM 458 · GOLD 269) ·
   CHANNEL 11,136 (DC 4,454 · DD 1,976 · DT 1,974 · SILVER 1,503 · DG 1,061 · DA 168) · DEFAULT (DC) 27,913 ·
   `view_fact_transcation` จำนวนแถวเท่าเดิมทุกบริษัท (ag01 2,657,912)
-  · หลังสูตร SCG (2026-10-02) ag01 ลด 131 ชื่อ invoice-only → 40,790: CHANNEL −27 (สาขาดูโฮม), DEFAULT −104 (สาขาโกลบอลเฮ้าส์ 102 + โครงการ SC 2)
 - `CURRENT_DATE` ถูกประเมินตอน dim รัน → BRONZE→SILVER ขยับวันละครั้งตามรอบ `dimension_daily`
+
+### ผลกระทบสูตร SCG (2026-10-02)
+
+สูตรก่อนแก้ใช้ `mecdesc` ที่ไม่เป็น NULL กับทุกบิล · ผลเปรียบเทียบกับสูตรที่เลือกข้างบนราย `InvoiceSK`:
+เปลี่ยนเฉพาะ ag01 **14,414 invoice** จากชื่อสาขาเป็นชื่อเครือ 3 ชื่อ; บริษัทอื่นไม่เปลี่ยน
+
+| ชื่อเครือ | ชื่อสาขา/โครงการที่รวม | invoice ที่เปลี่ยน |
+|---|---:|---:|
+| `สยามโกลบอลเฮ้าส์` | 102 | 9,981 |
+| `ดูโฮม` | 27 | 4,431 |
+| `เอสซี แอสเสท คอร์ปอเรชั่น` | 2 | 2 |
+
+- ยอดที่ย้ายชื่อรายงาน: 41,190 แถว fact / 265,328,119.43 บาท · จำนวนแถว fact ไม่เปลี่ยน
+- MDS match เท่าเดิม **1,850/1,872** · แถว fact ที่ไม่มี `CustomerReportInfoSK` เท่าเดิม **44** · join key ไม่ซ้ำ
+- หลัง **full rebuild รอบถัดไป** คาดว่า `dim_customer_report_info` ลดจาก **41,456 → 41,325 แถว**
+  (ag01 **40,921 → 40,790**) เพราะชื่อ invoice-only รวมกัน · `SegmentSource = 'CHANNEL'` ลด 27 ชื่อ
+  และ `'DEFAULT'` ลด 104 ชื่อ · จำนวนชื่อจาก MDS ไม่เปลี่ยน
 
 ## Compile-verification checklist
 

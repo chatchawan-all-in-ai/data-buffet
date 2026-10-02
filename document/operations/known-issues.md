@@ -238,19 +238,8 @@
 
 - **2026-10-02 — `CustomerReportName` ใช้ `mecdesc` เฉพาะบิล SCG**
 
-  **เดิม**: `mecdesc` (ชื่อสาขาที่ส่งของจาก `mihMec`) ไม่ว่าง → ใช้เป็น `CustomerReportName` ทุกบิล ·
-  ลูกค้า Modern Trade 2 รายเริ่มกรอก `mihMec` ตั้งแต่ 2025-09-27 → ยอดปีหลังแตกเป็นรายสาขา ขณะที่บิลก่อนหน้าเป็นชื่อเครือ
-
-  **ใหม่**: ใช้ `mecdesc` เฉพาะเมื่อ `fn_flag_scg(RefOrder, mihCus)` ไม่ NULL (บิลที่อ้าง order `CRC`) และเพิ่ม
-  คอลัมน์ `mecdesc` (ดิบ) ใน view · ผู้ใช้แก้มือแล้ว deploy จาก Dataform workspace 09:02 UTC ก่อนเข้า git
-  แล้วเลือกเก็บสูตรนี้ · ลำดับเต็ม: [view-layer](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01)
-
-  **ผลกระทบที่วัด** (สูตรเดิม vs ใหม่ ราย InvoiceSK): เปลี่ยนเฉพาะ ag01 **14,414 invoice / 3 ลูกค้า** —
-  ชื่อสาขา 131 ชื่อยุบเป็นชื่อเครือ 3 ชื่อ: `สยามโกลบอลเฮ้าส์` (102 สาขา, 9,981 invoice), `ดูโฮม` (27, 4,431),
-  `เอสซี แอสเสท คอร์ปอเรชั่น` (2 โครงการ, 2) · ยอดที่ย้าย 41,190 แถว fact / 265,328,119.43 บาท ·
-  บริษัทอื่น 0 · MDS match เท่าเดิม 1,850/1,872 · แถว fact ไม่มี `CustomerReportInfoSK` เท่าเดิม 44 ·
-  join key ไม่ซ้ำ · `dim_customer_report_info` 41,456 → **41,325 แถว** หลัง rebuild รอบถัดไป ·
-  **Power BI ที่ต้องการยอดรายสาขาของ 2 เครือนี้ต้องใช้คอลัมน์ `mecdesc` แทน**
+  สูตรที่เลือก ลำดับ fallback คอลัมน์รายสาขาสำหรับ Power BI และผลกระทบหลัง rebuild อยู่ที่
+  [Customer Report Info + Customer Segment](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
 
 - **2026-10-01 — Customer Report Info + Customer Segment: SK ลง view, Segment อยู่ใน dim**
 
@@ -269,8 +258,9 @@
   **ผลกระทบที่วัดก่อน deploy** (`view_dim_invoice` เดิม vs inline สูตรใหม่ เทียบราย InvoiceSK):
   `CustomerReportName` เปลี่ยน ag01 **295 ชื่อ / 435,308 invoice** (ส่วนใหญ่สาขา ซีอาร์ซี ไทวัสดุ)
   + ac02 17 / ak02 3 / aa05 2 / ab01 1 ชื่อ · 2 ชื่อรวมเข้ากับชื่อที่มีอยู่แล้ว
-  (`เนาวรัตน์พัฒนาการ`, `โฮมโปรดักส์ เซ็นเตอร์`) · consumer ในโปรเจกต์มีแค่ `view_dim_invoice`
-  (`view_fact_transcation` อ่านแค่ OrderSK/RefOrder) — **Power BI ที่อ้างชื่อเดิมต้องปรับเอง**
+  (`เนาวรัตน์พัฒนาการ`, `โฮมโปรดักส์ เซ็นเตอร์`) · consumer และกฎ relationship:
+  [Customer Report Info + Customer Segment](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01)
+  — **Power BI ที่อ้างชื่อเดิมต้องปรับเอง**
 
   **ต้องทำหลัง deploy**: key ใน `mds_data_crc_shop_name_rename` 2 แถวจะไม่ match อีก
   (`ระยองภาคินทร์ จก.(SCG Dist)` 333 invoice, `แสงไพบูลย์เชียงราย จก.(เอสซีจี-บุญถาวร)` 194)
