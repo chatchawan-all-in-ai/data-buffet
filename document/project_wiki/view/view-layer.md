@@ -201,8 +201,14 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 > `CompanySK` + `IFNULL(milStk,'')` + `FlagNewProductMKT` + `IFNULL(RegionID,'')`)
 | `Model_Invoice_Transaction` | 15 dims, view_fact_transcation, view_dim_customer | — |
 | `Model_Target_DayOfWork` | 11 dims | — |
-| `Product_Attribute` | dim_company, dim_product_master, stg, stk, mastersku ×4 | — |
+| `Product_Attribute` | See [SQLX definition](../../../definitions/view/onetime/Product_Attribute.sqlx) for active upstream sources | — |
 | `Product_Master_ALL` | dim_product_master, dim_product_mkt_director, view_dim_product_mkt, Product_Attribute | — |
+
+`Product_Attribute` retains the matched series' `SeriesSK` and `SeriesCode`;
+unmatched or NULL product series use the `OTHERS` values for both columns.
+The fallback requires exactly one `OTHERS` row, supplied by the
+[dimension definition](../../../definitions/dimension/dim_product_series.sqlx),
+to avoid multiplying product rows.
 
 ### `process_dataset` → schema `PROCESS_DATASET` (5)
 
