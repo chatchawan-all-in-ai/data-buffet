@@ -1,11 +1,11 @@
-# Dimension Inventory — ทั้งหมด 67 ไฟล์
+# Dimension Inventory — ทั้งหมด 69 ไฟล์
 
 > **LLM context**: SK = surrogate key column; NK = natural/business key · dim ส่วนใหญ่
 > ถือ FK `CompanySK` จาก `dim_company` · ตรวจกับโค้ดจริง 2026-09-15
 >
 > | กลุ่ม | จำนวน | ลักษณะ |
 > |---|---:|---|
-> | (a) mds **full daily rebuild** | **41** | SK ออกใหม่ทุกวัน — ห้ามเก็บข้ามวัน |
+> | (a) mds **full daily rebuild** | **43** | SK ออกใหม่ทุกวัน — ห้ามเก็บข้ามวัน |
 > | (a2) mds MERGE legacy | 2 | `dim_company`, `dim_aging_rang` — SK เสถียรตลอดกาล |
 > | (b) lake MERGE (validated/curated) | 10 | SK เสถียร ไม่มี mds tombstone |
 > | (c) full rebuild อื่น | 11 | `_last` snapshots, target, store, pump |
@@ -15,7 +15,7 @@
 > MDT อ้าง mds ผ่าน const ใน `js {}` (`${databuffet.MDS_DATASET}.mds_data_...`)
 > ถ้าจับแค่ `name:` จะนับขาดไป 6 ตัว
 
-## Group (a) — mds dims (43 รวม: 41 full rebuild + 2 MERGE legacy)
+## Group (a) — mds dims (45 รวม: 43 full rebuild + 2 MERGE legacy)
 
 > ตั้งแต่ 2026-07-20 ทุก dim ในตารางนี้เป็น **full rebuild รายวัน**
 > ([full-rebuild-pattern.md](full-rebuild-pattern.md)) — natural key เป็นตัวกำหนดลำดับ
@@ -59,6 +59,8 @@
 | dim_stk_mkt | StkMktSK | companyID, StkCode | mds_data_product_market_group_by_product_id_master + validated_mac5.stk (placeholders) |
 | dim_target_product_group | TargetProductGroupSK | companyID, Year, Month, MarketingGroupID, SubMarketingID, SegmentID, ChannelTargetGroup, TargetID | mds_data_sales_target_by_product_group_master |
 | dim_waterpac | WaterPacSK | CompanyID, WaterPacCode | mds_data_waterpac_master |
+| dim_customer_report_info | CustomerReportInfoSK | CompanyID, CustomerReportKey | [Customer Report Info: sources, deduplication, segment rules and relationships](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01) |
+| dim_customer_segment | CustomerSegmentSK | CompanyID, Segment3 | mds_data_customer_segment_master (มีแค่ ag01) |
 | dim_weight_score | WeightSK | CompanyID, Typeeng, Typethai, StartDate, EndDate | mds_data_custgrade_weight_score_master |
 
 All depend on `dim_company` except `dim_company` (deps `[]`) and `dim_holiday` (no deps).

@@ -1,6 +1,6 @@
 # Known Issues & Gotchas
 
-รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-09-30
+รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-10-01
 
 ## CustomerFlag ใน mds sales representative (2026-09-15)
 
@@ -34,7 +34,7 @@
 
 ## พฤติกรรมที่ตั้งใจ (อย่า "แก้")
 
-- **mds dims 34 ตัวเป็น full daily rebuild** (ตัดสินใจ 2026-07-20 · เลข 34 คือจำนวน ณ วันนั้น **ปัจจุบัน 41 ตัว**): แปลงจาก MERGE
+- **mds dims 34 ตัวเป็น full daily rebuild** (ตัดสินใจ 2026-07-20 · เลข 34 คือจำนวน ณ วันนั้น **ปัจจุบัน 43 ตัว**): แปลงจาก MERGE
   เป็น `type: "table"` ปั้นใหม่ทุกวันจาก `is_active = TRUE` — **SK ออกเลขใหม่ทุกวัน
   ห้าม persist SK พวกนี้ข้ามวัน** เหตุผล: mds มี overwrite import mode (ล้างแล้วลง
   ใหม่ id ใหม่หมด) ซึ่ง MERGE pattern รับมือไม่ครบ (zombie rows) ตรวจ consumer ครบ
@@ -182,7 +182,9 @@
 
 ## ข้อจำกัด environment
 
-- เครื่อง local WSL ไม่มี `dataform` CLI (`dataform` และ `npx dataform` fail ทั้งคู่)
+- `dataform` CLI ไม่ได้มากับเครื่อง — ลงเองตาม onboarding §3.2 (`npm install -g @dataform/cli@3.0.0`
+  ฝั่ง Windows, 2026-10-02 เครื่อง Warayut ลงแล้ว compile ทั้ง repo 0 error) · ใช้ได้แค่
+  `compile`/`format` — `run` ยังทำผ่าน Dataform UI
 - `bq` ต้องระบุ `--project_id=databuffet-nonprd` (default gcloud project เป็นตัวอื่น)
 - INFORMATION_SCHEMA ระดับ region ถูก deny — ใช้ระดับ dataset
 - `workflow_settings.yaml` เป็นค่าเฉพาะ environment — `BACKFILL_DAYS` ตั้งเองในแต่ละ
@@ -233,6 +235,11 @@
   (ตอนนี้ได้ 0 บรรทัด)
 
 ## การตัดสินใจเชิงออกแบบ
+
+- **2026-10-01 — Customer Report Info + Customer Segment: SK ลง view, Segment อยู่ใน dim**
+
+  กฎ relationship, การเลือก Segment และข้อจำกัดอยู่ที่
+  [Customer Report Info + Customer Segment](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
 
 - **2026-09-30 — `clean_company_prefix` ตัดคำลงท้ายซ้ำจนหมด + ตัด `จำกัด` หน้า `(สาขา…)`**
 

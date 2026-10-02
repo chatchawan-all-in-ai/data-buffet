@@ -23,7 +23,7 @@ GCS AVRO files  gs://file-raw-data  (Hive partition: ASATDATE=YYYYMMDD)
       ▼                               ▼
 ┌────────────┐                 ┌────────────┐
 │ DIMENSION  │ ◄──── SK ────── │    FACT    │
-│ (67 ไฟล์)  │                 │ (15 ไฟล์)  │
+│ (69 ไฟล์)  │                 │ (15 ไฟล์)  │
 └────────────┘                 └────────────┘
  dimension_table                 fact_table
       └───────────────┬───────────────┘
@@ -45,17 +45,17 @@ GCS AVRO files  gs://file-raw-data  (Hive partition: ASATDATE=YYYYMMDD)
 | Initial | 17 | `raw_*`, `function_dataset` | operations | external table ชี้ GCS, สร้าง schema/UDF |
 | Validated | 136 | `validated_*` | incremental / table | cast type, ลบ string ว่าง, dedup ตาม PK |
 | Curated | 11 | `curated_*` | incremental / table | join ข้าม validated, JSON parsing, split-sale (ag01), รวม sell-out ทุกห้าง |
-| Dimension | 67 | `dimension_table` | table rebuild / operations MERGE | ออก surrogate key, SCD |
+| Dimension | 69 | `dimension_table` | table rebuild / operations MERGE | ออก surrogate key, SCD |
 | Fact | 15 | `fact_table` | table / operations | join SK ทุก dimension, retention 4 ปี |
 | View | 34 | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | view | BI/reporting อ่านจาก dim/fact/curated (`type: "view"`, tag `view`) |
 | CDC | 2 | `cdc_dataset` | operations | จับ NEW/CHANGED จาก config |
 | Process | 2 | `process_dataset` | table / operations | AI แกะที่อยู่ไทย (row ที่ CDC เปลี่ยน) + RLS (`rls_customer360`) |
 
-### แยกย่อย dimension 67 ไฟล์
+### แยกย่อย dimension 69 ไฟล์
 
 | กลุ่ม | จำนวน | ลักษณะ |
 |---|---:|---|
-| mds full daily rebuild | **41** | `type: "table"` · SK ออกใหม่ทุกวัน |
+| mds full daily rebuild | **43** | `type: "table"` · SK ออกใหม่ทุกวัน |
 | mds MERGE legacy | 2 | `dim_company`, `dim_aging_rang` · SK เสถียร |
 | lake MERGE (validated/curated) | 10 | SK เสถียร ไม่มี tombstone |
 | full rebuild อื่น | 11 | `_last` 7 ตัว, target 2 ตัว, `dim_store`, `dim_pump_information` |
@@ -80,7 +80,7 @@ GCS AVRO files  gs://file-raw-data  (Hive partition: ASATDATE=YYYYMMDD)
   ออกด้วย `max_sk + ROW_NUMBER()` + dual self-join รักษา SK เดิมตลอดชีพ —
   ห้าม regenerate เด็ดขาด ดู
   [project_wiki/dimension/merge-sk-pattern.md](../project_wiki/dimension/merge-sk-pattern.md)
-- **SK รายวัน** (mds dims **41 ตัว** — ปั้น full ใหม่ทุกวัน): `ROW_NUMBER()` ออกเลขใหม่
+- **SK รายวัน** (mds dims **43 ตัว** — ปั้น full ใหม่ทุกวัน): `ROW_NUMBER()` ออกเลขใหม่
   ทุกคืน — consumer ทุกตัว re-derive รายวัน (ตรวจครบแล้ว) **ห้าม persist SK
   พวกนี้ข้ามวัน** ดู
   [project_wiki/dimension/full-rebuild-pattern.md](../project_wiki/dimension/full-rebuild-pattern.md)
@@ -90,7 +90,7 @@ GCS AVRO files  gs://file-raw-data  (Hive partition: ASATDATE=YYYYMMDD)
 ตาราง `mds_data_*_master` ทุกตัวมี `id`, `is_active`, `updated_at`
 และรองรับ **overwrite import** (ล้างแล้วลงใหม่ = id ใหม่หมด)
 
-- **dims 41 ตัว (full rebuild)**: อ่านเฉพาะ `is_active = TRUE` ทั้งตารางทุกคืน —
+- **dims 43 ตัว (full rebuild)**: อ่านเฉพาะ `is_active = TRUE` ทั้งตารางทุกคืน —
   soft delete และ overwrite import หายเองอัตโนมัติ (ตัดสินใจ 2026-07-20)
 - **dims 2 ตัว (MERGE)**: window `MDS_BACKFILL_DAYS` (1 วัน) + tombstone DELETE
   ลบ row ที่ต้นทาง `is_active = FALSE` (hard delete, ตัดสินใจ 2026-07-10)

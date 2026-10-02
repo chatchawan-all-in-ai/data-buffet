@@ -42,7 +42,7 @@ GCS AVRO files (gs://file-raw-data)
         ▼                              ▼
 ┌─────────────────┐            ┌─────────────────┐
 │ DIMENSION       │            │ FACT            │
-│ (67 files, SCD) │◄───────────│ (15 fact tables)│
+│ (69 files, SCD) │◄───────────│ (15 fact tables)│
 └─────────────────┘            └─────────────────┘
    definitions/dimension/         definitions/fact/
         ▲          │                    │
@@ -70,7 +70,7 @@ unit.
 | **Initial** | `definitions/initial/` | 17 | Create raw external tables over GCS AVRO; bootstrap schemas & UDFs |
 | **Validated** | `definitions/validated/` | 132 | Clean, cast, dedup; one table per source object (136 files incl. 4 schema-bootstrap) |
 | **Curated** | `definitions/curated/` | 7 | Business-ready joins, enrichment, JSON parsing (11 files incl. 4 schema-bootstrap) |
-| **Dimension** | `definitions/dimension/` | 67 | Conformed dimensions with surrogate keys (MERGE + SCD intervals) |
+| **Dimension** | `definitions/dimension/` | 69 | Conformed dimensions with surrogate keys (MERGE + SCD intervals) |
 | **Fact** | `definitions/fact/` | 15 | Star-schema fact tables joined to dimensions (4-year retention) |
 | **View** | `definitions/view/` | 33 | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` |
 | **CDC** | `definitions/cdc/` | 2 | Config-driven change log over validated tables |
@@ -79,7 +79,7 @@ unit.
 **Validated breakdown:** MAC5 `87` · CIS360 `25` · MASTERSKU `12` · SALEOUT_MDT `12`
 (+1 schema-bootstrap file per source — 4 sources) · ALLKONS_COMMISSION มีเฉพาะชั้น initial ยังไม่มี validated
 
-**Dimension breakdown:** `41` full-daily-rebuild dims from `mds_dataset` (default
+**Dimension breakdown:** `43` full-daily-rebuild dims from `mds_dataset` (default
 since 2026-07-20) · `2` legacy MERGE mds dims with stable SKs (`dim_company`,
 `dim_aging_rang`) · `10` MERGE dims from validated/curated · `11` full-rebuild tables
 (`*_last` snapshots, target aggregates) · `3` other (`dim_calendar`, `dim_aging`,
@@ -222,7 +222,7 @@ Run any subset of the graph by tag (`dataform run --tags <tag>`):
 | Initial | `initial`, `re-initial` (⚠️ drops validated/curated MAC5 tables) |
 | Validated | `validated`, `validated_full`, `validated_incremental` |
 | Curated | `curated` |
-| Dimension | `dimension_daily` (58 files), `dimension_yearly` (`dim_calendar` only) |
+| Dimension | `dimension_daily` (68 files), `dimension_yearly` (`dim_calendar` only) |
 | Fact | `fact_daily` |
 | Support | `process`, `cdc`, `cdc_incremental` |
 

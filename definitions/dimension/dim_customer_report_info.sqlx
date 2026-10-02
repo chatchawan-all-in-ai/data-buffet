@@ -1,0 +1,185 @@
+config {
+  type: "table",
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: ["dim_company", "dim_department_last", "dim_customer_segment",
+                 "dim_invoice", "dim_aging", "dim_order", "dim_customer", "dim_group_customer", "mec"],
+  tags: [databuffet.TAG_DIM_DAILY],
+  uniqueKey: ["CustomerReportInfoSK"],
+  bigquery: {
+    clusterBy: ["CustomerReportInfoSK"],
+  },
+}
+
+js {
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_customer_report_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
+
+    const ViewDimInvoiceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_VIEW,
+        name: "view_dim_invoice",
+    };
+    const ViewDimInvoiceTableRef = `${ViewDimInvoiceTable.database}.${ViewDimInvoiceTable.schema}.${ViewDimInvoiceTable.name}`;
+
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+
+    const DimDepartmentLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_department_last",
+    };
+    const DimDepartmentLastTableRef = `${DimDepartmentLastTable.database}.${DimDepartmentLastTable.schema}.${DimDepartmentLastTable.name}`;
+
+    const DimCustomerSegmentTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer_segment",
+    };
+    const DimCustomerSegmentTableRef = `${DimCustomerSegmentTable.database}.${DimCustomerSegmentTable.schema}.${DimCustomerSegmentTable.name}`;
+}
+
+with mds as (
+  SELECT
+    ${databuffet.functionData.cleanString("t1.companyID")} AS CompanyID,
+    ${databuffet.functionData.cleanString("t1.CustomerReportName")} AS CustomerReportName,
+    -- key ไม่สนช่องว่าง ใช้ join กับ CustomerReportName ของ invoice
+    REGEXP_REPLACE(${databuffet.functionData.cleanString("t1.CustomerReportName")}, r'\s', '') AS CustomerReportKey,
+    ${databuffet.functionData.cleanCode("t1.DepartmentID")} AS DepartmentID,
+    UPPER(${databuffet.functionData.cleanString("t1.CustomerTier")}) AS CustomerTier,
+    t1.FlagPC,
+    ${databuffet.functionData.cleanString("t1.ShopOnline")} AS ShopOnline,
+    ${databuffet.functionData.castFloat64("t1.OnlinePercent")} AS OnlinePercent,
+    ${databuffet.functionData.cleanString("t1.id")} AS MdsID
+  FROM `${MdsSourceTableRef}` AS t1
+  WHERE t1.is_active = TRUE
+  -- ชื่อที่ต่างกันแค่ช่องว่างต้องเหลือแถวเดียว ไม่งั้น join แล้วแถว fact ซ้ำ
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanyID, CustomerReportKey ORDER BY t1.updated_at DESC, t1.id) = 1
+
+), inv_rows as (
+  -- ทุกชื่อร้านใน invoice ให้ relationship ใน Power BI ครบทุกแถว ไม่ใช่แค่ชื่อใน MDS
+  -- dependencies ประกาศเป็นตารางที่อยู่หลัง view_dim_invoice (กฎ Run order ใน view-layer.md)
+  SELECT
+    inv.companyID AS CompanyID,
+    REGEXP_REPLACE(${databuffet.functionData.cleanString("inv.CustomerReportName")}, r'\s', '') AS CustomerReportKey,
+    ${databuffet.functionData.cleanString("inv.CustomerReportName")} AS CustomerReportName,
+    ${databuffet.functionData.cleanString("inv.mihCus")} AS mihCus,
+    inv.mix_date,
+    inv.mihVnos
+  FROM `${ViewDimInvoiceTableRef}` AS inv
+  WHERE ${databuffet.functionData.cleanString("inv.CustomerReportName")} IS NOT NULL
+
+), inv as (
+  -- ชื่อที่ต่างกันแค่ช่องว่าง ใช้ตัวสะกดที่มี invoice มากสุด
+  SELECT CompanyID, CustomerReportKey, CustomerReportName
+  FROM inv_rows
+  GROUP BY 1, 2, 3
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanyID, CustomerReportKey ORDER BY COUNT(*) DESC, CustomerReportName) = 1
+
+), inv_cus as (
+  -- ลูกค้าของบิลล่าสุด ใช้หา channel เมื่อชื่อไม่อยู่ใน MDS (ชื่อเดียวมีหลาย debcode ได้)
+  SELECT CompanyID, CustomerReportKey, mihCus AS debcode
+  FROM inv_rows
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanyID, CustomerReportKey ORDER BY mix_date DESC, mihVnos DESC) = 1
+
+), cust_channel as (
+  -- กรอง channel ที่รู้จักก่อนเลือกแถวล่าสุด; channel ว่าง/นอก allowlist ไม่แทนที่แถวเก่า
+  SELECT q.company_id, q.debcode, q.channel, deb.debdate
+  FROM (
+    SELECT company_id, TRIM(SPLIT(agent1, ' ')[SAFE_OFFSET(0)]) AS debcode, channel
+    FROM ${ref(databuffet.VALIDATED_MAC5, "tbook_quotation")}
+    WHERE channel IN ('TT', 'DC', 'DA', 'DG', 'DD', 'DT', 'DR')
+      AND NULLIF(TRIM(agent1), '') IS NOT NULL
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY company_id, TRIM(SPLIT(agent1, ' ')[SAFE_OFFSET(0)]) ORDER BY dinsert DESC, SAFE_CAST(id AS INT64) DESC) = 1
+  ) AS q
+  LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, "deb")} AS deb
+    ON q.company_id = deb.company_id
+    AND q.debcode = deb.debcode
+
+), all_names as (
+  SELECT
+    COALESCE(mds.CompanyID, inv.CompanyID) AS CompanyID,
+    COALESCE(mds.CustomerReportKey, inv.CustomerReportKey) AS CustomerReportKey,
+    COALESCE(mds.CustomerReportName, inv.CustomerReportName) AS CustomerReportName,
+    mds.MdsID IS NOT NULL AS FlagMDS,
+    mds.DepartmentID,
+    mds.CustomerTier,
+    mds.FlagPC,
+    mds.ShopOnline,
+    mds.OnlinePercent,
+    mds.MdsID
+  FROM mds
+  FULL OUTER JOIN inv
+    ON mds.CompanyID = inv.CompanyID
+    AND mds.CustomerReportKey = inv.CustomerReportKey
+
+), with_segment as (
+  SELECT
+    t.*,
+    cus.debcode AS SegmentDebcode,
+    ch.channel AS SegmentChannel,
+    -- Tier ที่ไม่ว่างแต่ไม่มีใน segment master จะ fallback DC โดยไม่ลอง channel
+    (CASE
+      WHEN t.CustomerTier IS NOT NULL THEN t.CustomerTier
+      WHEN ch.channel = 'TT'
+        THEN IF(DATE_TRUNC(DATE(ch.debdate), MONTH) = DATE_TRUNC(CURRENT_DATE('Asia/Bangkok'), MONTH), 'BRONZE', 'SILVER')
+      ELSE ch.channel
+    END) AS SegmentCode
+  FROM all_names AS t
+  LEFT JOIN inv_cus AS cus
+    ON t.CompanyID = cus.CompanyID
+    AND t.CustomerReportKey = cus.CustomerReportKey
+  LEFT JOIN cust_channel AS ch
+    ON cus.CompanyID = ch.company_id
+    AND cus.debcode = ch.debcode
+)
+SELECT
+  ROW_NUMBER() OVER(ORDER BY t.CompanyID, t.CustomerReportKey) AS CustomerReportInfoSK,
+  dim_com.CompanySK,
+  t.CompanyID,
+  t.CustomerReportName,
+  t.CustomerReportKey,
+  t.FlagMDS,
+  dep.DepartmentSK,
+  t.DepartmentID,
+  dep.DepartmentName,
+  dep.SectionID,
+  dep.RegionID,
+  t.CustomerTier,
+  t.FlagPC,
+  t.ShopOnline,
+  t.OnlinePercent,
+  -- ไม่เข้าเงื่อนไขไหนเลย = DC · บริษัทที่ไม่มีแถวใน segment master = NULL
+  COALESCE(seg.CustomerSegmentSK, seg_dc.CustomerSegmentSK) AS CustomerSegmentSK,
+  (CASE
+    WHEN seg.CustomerSegmentSK IS NOT NULL AND t.CustomerTier IS NOT NULL THEN 'MDS'
+    WHEN seg.CustomerSegmentSK IS NOT NULL THEN 'CHANNEL'
+    WHEN seg_dc.CustomerSegmentSK IS NOT NULL THEN 'DEFAULT'
+  END) AS SegmentSource,
+  t.SegmentDebcode,
+  t.SegmentChannel,
+  t.MdsID
+FROM with_segment AS t
+LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+  ON t.CompanyID = dim_com.companyID
+LEFT JOIN `${DimDepartmentLastTableRef}` AS dep
+  ON dim_com.CompanySK = dep.CompanySK
+  AND t.DepartmentID = dep.DepartmentID
+LEFT JOIN `${DimCustomerSegmentTableRef}` AS seg
+  ON dim_com.CompanySK = seg.CompanySK
+  AND t.SegmentCode = seg.Segment3
+LEFT JOIN `${DimCustomerSegmentTableRef}` AS seg_dc
+  ON dim_com.CompanySK = seg_dc.CompanySK
+  AND seg_dc.Segment3 = 'DC'
+
+pre_operations {}
+
+post_operations {}

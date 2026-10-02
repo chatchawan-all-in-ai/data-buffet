@@ -5,7 +5,7 @@
 ## รันด้วย tag
 
 ```bash
-dataform compile                      # ตรวจ syntax + graph (ไม่รันจริง)
+dataform compile                      # ตรวจ JS/ref/dependencies/วน (ไม่รันจริง · ไม่ตรวจ SQL)
 dataform run --dry-run                # ดูแผนก่อนรัน
 dataform run --tags validated_incremental
 dataform run --tags dimension_daily
@@ -15,9 +15,10 @@ dataform run --actions validated_mac5.mih          # รันตัวเดี
 dataform run --actions validated_mac5.mih --include-deps
 ```
 
-> ⚠️ เครื่อง local (Windows + WSL) **ไม่มี dataform CLI** — `dataform` และ `npx dataform`
-> ล้มทั้งคู่ · compile/run ต้องทำผ่าน Dataform UI บน GCP · ให้ถือว่าการ verify compile
-> **ทำไม่ได้ในเครื่อง** และวางแผนตรวจด้วยวิธีอื่นแทน (ดูหัวข้อ "ตรวจ SQL โดยไม่มี CLI")
+> ⚠️ ในเครื่องใช้ CLI ได้แค่ **`compile` / `format`** — ลงตาม
+> [onboarding §3.2](../getting-started/onboarding.md) (`npm install -g @dataform/cli@3.0.0`
+> ฝั่ง Windows เวอร์ชันตรง `dataformCoreVersion`) · **`run` ทำผ่าน Dataform UI บน GCP**
+> (ไม่ได้ตั้ง `.df-credentials.json`) · เครื่องที่ยังไม่ได้ลง CLI ดูหัวข้อ "ตรวจ SQL โดยไม่มี CLI"
 
 ### Tag ทั้งหมด
 
@@ -64,6 +65,10 @@ SELECT COUNT(*) FROM `databuffet-nonprd.dimension_table.dim_company`'
 
 ## ตรวจ SQL โดยไม่มี dataform CLI
 
+`dataform compile` **ไม่ตรวจ SQL** (ทดสอบ 2026-10-02: ใส่คอลัมน์ที่ไม่มีจริง + พิมพ์ `FORM`
+แทน `FROM` ยัง compile ผ่าน) — ต้องใช้ `--dry_run` ของ `bq` เสมอ ไม่ว่าจะมี CLI หรือไม่
+ถ้ามี CLI เอา SQL จาก `dataform compile --json` (`.tables[].query`) ได้เลย ไม่ต้องขยายเอง
+
 `--dry_run` ของ `bq` ตรวจ syntax + ชื่อคอลัมน์ได้ฟรี ไม่คิดเงิน:
 
 ```bash
@@ -94,7 +99,7 @@ wsl -e bash -lc "bq --project_id=databuffet-nonprd query --use_legacy_sql=false 
 | `Unrecognized name: <col>` ตอนสร้างตาราง | `partitionBy`/`clusterBy` ใน config ชี้คอลัมน์ที่ SELECT ไม่ได้คืนมา — ถอดคอลัมน์เมื่อไรต้องเช็ค config ด้วยเสมอ |
 | `Octal escape sequences are not allowed in template strings` | มี `\1`–`\9` ใน **คอมเมนต์ `--`** ของ SQLX (คอมเมนต์ถูกประมวลเป็น template literal) — เขียน `\\1` ใน comment ส่วนโค้ด SQL ใช้ backslash เดี่ยวได้ ดู [coding-standard §3.3](../coding-standards/sqlx-coding-standard.md) |
 | dim MERGE บอก table not found | ตาราง `operations` ต้องมีใน BigQuery ก่อนรันครั้งแรก Dataform ไม่สร้างให้ |
-| dim ไม่เห็นข้อมูล mds ที่แก้ไปแล้ว | เกิน window `MDS_BACKFILL_DAYS` (1 วัน) — ใช้ skill `backfill-dimension` · **เฉพาะ dim แบบ MERGE 12 ตัว** dim full-rebuild 41 ตัวเห็นทันทีอยู่แล้ว |
+| dim ไม่เห็นข้อมูล mds ที่แก้ไปแล้ว | เกิน window `MDS_BACKFILL_DAYS` (1 วัน) — ใช้ skill `backfill-dimension` · **เฉพาะ dim แบบ MERGE 12 ตัว** dim full-rebuild 43 ตัวเห็นทันทีอยู่แล้ว |
 | validated ขาดข้อมูลย้อนหลัง | window incremental = `BACKFILL_DAYS` (1 วัน, string compare `ASATDATE`) — เพิ่มค่าชั่วคราวใน `workflow_settings.yaml` แล้วรันรอบเดียว |
 | บรรทัดที่ต้นทางลบไปแล้วยังค้าง | PK ระดับบรรทัด MERGE ลบให้ไม่ได้ — `mih`/`mil`/`mir`/`curated_mil` ใช้ doc-grain purge ใน `pre_operations` แล้ว ถ้าตารางใหม่มีอาการนี้ต้องทำแบบเดียวกัน |
 | parse datetime fail | รูปแบบ timestamp จาก raw เปลี่ยน — `parseFlexibleDatetime` รองรับ 2 แบบ ถ้ามีแบบที่ 3 ต้องเพิ่ม |
