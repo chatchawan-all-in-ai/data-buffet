@@ -69,7 +69,7 @@ left join `${DimProductMasterTableRef}` as dim_product
 left join `${DimProductSeriesTableRef}` as dim_series
   on pd.pd_series = dim_series.SeriesName
   and dim_series.SeriesName <> 'OTHERS'
-cross join (select SeriesSK from `${DimProductSeriesTableRef}` where SeriesName = 'OTHERS') as dim_series_others
+cross join (select SeriesSK, SeriesCode from `${DimProductSeriesTableRef}` where SeriesName = 'OTHERS') as dim_series_others
 where a.STKcode885 is not null and a.STKcode885 <> '' 
   and a.company_id = 'ag01'
   and dim_product.ProductSK is not null

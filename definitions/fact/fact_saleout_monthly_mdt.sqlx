@@ -1,7 +1,7 @@
 config {
     type: "table",
     schema: databuffet.FACT_TABLE,
-    dependencies: ["dim_sales_branch_mdt", "dim_product_mdt", "dim_product_mkt", "dim_report"],
+    dependencies: ["dim_sales_branch_mdt", "dim_product_mdt", "dim_product_mkt", "dim_report", "dim_region", "dim_region_manager", "dim_director"],
     tags: [databuffet.TAG_FACT_MONTHLY],
     uniqueKey: ["month_date", "store_code", "branch_code", "sales_channel", "product_code"],
     bigquery: {
@@ -23,6 +23,10 @@ js {
     const DimProductRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_product_mdt`;
     const DimProductMktRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_product_mkt`;
     const DimReportRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_report`;
+    const DimRegionRef        = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_region`;
+    const DimRegionManagerRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_region_manager`;
+    const DimDirectorRef      = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_director`;
+
 }
 
 WITH branch_lookup AS (
@@ -61,10 +65,34 @@ WITH branch_lookup AS (
   FROM `${DimProductRef}`
   GROUP BY 1
 
+), region_at_month AS (
+  -- ภาคขาย ณ เดือนนั้น — ลอกแพตเทิร์นจาก fact_saleout_mdt (region_at_sale) ทุกประการ
+  -- ตรวจ 2026-10-02: dim ทั้ง 3 ตัวเปลี่ยนค่าเฉพาะวันที่ 1 ของเดือน ไม่เคยเปลี่ยนกลางเดือนเลย
+  -- จึง lookup ด้วยวันไหนในเดือนก็ได้ผลเท่ากัน ใช้ LAST_DAY(month_date) ให้ตรงกับคอลัมน์ผลลัพธ์
+  SELECT RegionID, SubRegionID, RegionSK, DirectorID, StartDate, EndDate
+  FROM `${DimRegionRef}`
+  WHERE companyID = 'ag01'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionSK) = 1
+
+), region_manager_at_month AS (
+
+  SELECT RegionID, RegionManagerSK, StartDate, EndDate
+  FROM `${DimRegionManagerRef}`
+  WHERE companyID = 'ag01'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionManagerSK) = 1
+
+), director_at_month AS (
+  -- ต้องผ่าน dim_region ก่อนเพราะ DirectorID อยู่ที่นั่น ไม่ได้อยู่กับ store_code
+  SELECT DirectorID, DirectorSK, StartDate, EndDate
+  FROM `${DimDirectorRef}`
+  WHERE companyID = 'ag01'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY DirectorID, StartDate ORDER BY DirectorSK) = 1
+
+
 )
 
 SELECT
-  s.month_date,
+  LAST_DAY(s.month_date) AS month_date,
   s.store_code,
   s.branch_code,
   s.sales_channel,
@@ -77,6 +105,10 @@ SELECT
   IFNULL(p.ProductSK,    -1) AS product_sk,
   IFNULL(p.ProductMktSK, -1) AS product_mkt_sk,
   COALESCE(rep.ReportSK, rep_fb.ReportSK, -1) AS report_sk,
+  IFNULL(rg.RegionSK,         -1) AS region_sk,
+  IFNULL(rgm.RegionManagerSK, -1) AS region_manager_sk,
+  IFNULL(dr.DirectorSK,       -1) AS director_sk,
+
 
   s.sale_qty,
   s.sale_amount,
@@ -95,4 +127,17 @@ LEFT JOIN report_exact AS rep
   ON  rep.store_code = s.store_code AND rep.MarketingGroupID = mkt.MarketingGroupID
 LEFT JOIN report_fallback AS rep_fb
   ON rep_fb.store_code = s.store_code
+
+-- ⚠️ ต้องใช้ LAST_DAY(s.month_date) ไม่ใช่ alias month_date — JOIN อ้าง alias ของ SELECT ไม่ได้
+LEFT JOIN region_at_month AS rg
+  ON  rg.RegionID = s.store_code
+  AND LAST_DAY(s.month_date) BETWEEN rg.StartDate AND rg.EndDate
+LEFT JOIN region_manager_at_month AS rgm
+  ON  rgm.RegionID = s.store_code
+  AND LAST_DAY(s.month_date) BETWEEN rgm.StartDate AND rgm.EndDate
+LEFT JOIN director_at_month AS dr
+  ON  dr.DirectorID = rg.DirectorID
+  AND LAST_DAY(s.month_date) BETWEEN dr.StartDate AND dr.EndDate
+
+
 

@@ -3,7 +3,7 @@ config {
     schema: databuffet.VALIDATED_SALEOUT_MDT,
     dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
     tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_FULL],
-    uniqueKey: ["sale_date", "branch_code", "product_code"],
+    uniqueKey: ["sale_date", "branch_code", "product_code", "is_return"],
     bigquery: {
         partitionBy: "asatdate",
         clusterBy: ["branch_code", "product_code"]
@@ -16,7 +16,7 @@ js {
     // full rebuild ทุกรอบ ไม่มีหน้าต่าง incremental
     // ASATDATE ของ DH คือวันขายท้ายสุดในไฟล์ ไม่ใช่วันที่ DAG รัน (1 ไฟล์ = 1 เดือน)
     // เงื่อนไข ASATDATE >= เมื่อวาน จึงไม่มีวันเป็นจริง รันรอบสองจะได้ 0 แถว
-    const pk_key = ["sale_date", "branch_code", "product_code"]
+    const pk_key = ["sale_date", "branch_code", "product_code", "is_return"]
 
     const post_operations_statement = `
 BEGIN
@@ -45,6 +45,7 @@ WITH src AS (
         ${databuffet.functionData.cleanString('PRODUCT_NAME')} AS product_name,
         SALES_QTY,
         SALES_AMOUNT,
+        SALES_AMOUNT < 0                                 AS is_return,
         ${databuffet.functionData.cleanString('SOURCE_FOLDER')} AS source_folder,
 
         -- IFNULL กัน SAFE.PARSE คืน NULL แล้วเงื่อนไขเทียบ MAX เป็นเท็จทุกแถว -> ทิ้งทั้งไฟล์เงียบ ๆ
@@ -82,14 +83,14 @@ SELECT
     -- curated.sale_qty เป็น INT64 แต่ DH ส่ง double มา ต้อง CAST ให้ชัด
     CAST(ROUND(SUM(SALES_QTY)) AS INT64)      AS sale_qty,
     SUM(SALES_AMOUNT)                         AS sale_amount,
-    SUM(SALES_QTY) < 0                        AS is_return,
+    is_return,
 
     ANY_VALUE(source_folder)                  AS source_folder,
     MAX(file_modified)                        AS file_modified,
     MAX(asatdate)                             AS asatdate
 
 FROM latest_file
-GROUP BY sale_date, branch_code, product_code
+GROUP BY sale_date, branch_code, product_code, is_return
 
 pre_operations {
 }

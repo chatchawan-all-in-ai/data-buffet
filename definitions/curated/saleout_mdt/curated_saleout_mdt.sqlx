@@ -211,6 +211,39 @@ WITH hp AS (
     FROM tw_dedup
     JOIN tw_full_days USING (Last_Sold_Date) 
     GROUP BY sale_date, store_code, branch_code, branch_name, product_code, doc_type
+
+), dh AS (
+
+    -- DoHome — ฟีดมาทาง SharePoint เดือนละไฟล์ต่อสาขา ไม่ใช่รายวัน
+    -- validated รวมยอดมาให้แล้วที่เกรน (วัน, สาขา, สินค้า, ขาย/คืน) จึงอ่านตรงได้เลย
+    -- ต้นทาง 2,646 แถว / 18,165,981.96 / 2026-07-01 ถึง 2026-08-31 (วัด 2026-10-02)
+    --
+    -- ⚠️ ห้ามใส่กรอง asatdate แบบ incremental เหมือน CTE hp
+    --    asatdate ของ DH คือวันขายท้ายสุดในไฟล์ ไม่ใช่วันที่ DAG รัน
+    --    เงื่อนไข asatdate >= เมื่อวาน จึงเป็นเท็จเสมอ แล้ว DH จะหายไปจาก curated ทั้งก้อน
+    --    ตารางมีแค่ 2,646 แถว อ่านเต็มทุกรอบไม่แพง
+    --
+    -- ไม่มีชื่อสาขาในฟีด (SOURCE_FOLDER เป็นชื่อเขต ไม่ใช่สาขา) ชื่อจริงมาจาก dim ตอนขึ้น fact
+    -- product_code เป็นรหัสสินค้าของบริษัทเอง ไม่ใช่บาร์โค้ด จึงไม่มี barcode_match
+    SELECT
+        sale_date,
+        store_code,                                    -- 'DH' คงที่มาจาก validated
+        branch_code,
+        CAST(NULL AS STRING)            AS branch_name,
+        product_code,
+        product_name,
+        CAST(NULL AS STRING)            AS barcode_match,
+        sale_qty,
+        sale_amount,
+        IF(is_return, 'RETURN', 'SALE') AS doc_type,
+        'DERIVED'                       AS doc_type_source,   -- ห้างไม่ส่งชนิดเอกสาร ดูจากเครื่องหมาย
+        1                               AS days_covered,      -- วันขายแม่นยำ ไม่ใช่ค่าประมาณ
+        FALSE                           AS date_is_estimated,
+        asatdate
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_dh")}
+    WHERE sale_date IS NOT NULL
+      AND (sale_qty <> 0 OR sale_amount <> 0)
+
 ), hp_all_days AS (
 
     -- (ห้าง, วัน) ทั้งหมดที่ HP/MH เคยส่งมา — อ่าน validated ตรง ๆ ไม่ผ่าน CTE hp
@@ -238,6 +271,7 @@ WITH hp AS (
     FROM bt, UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(sale_date, INTERVAL days_covered - 1 DAY), sale_date)) AS d
     UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM gb
     UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM tw
+    UNION DISTINCT SELECT DISTINCT store_code, sale_date FROM dh
 
 ), bi_end AS (
 
@@ -312,6 +346,7 @@ WITH hp AS (
     UNION ALL SELECT sale_date, store_code, branch_code, product_code, sale_qty, sale_amount FROM bt
     UNION ALL SELECT sale_date, store_code, branch_code, product_code, sale_qty, sale_amount FROM gb
     UNION ALL SELECT sale_date, store_code, branch_code, product_code, sale_qty, sale_amount FROM tw
+    UNION ALL SELECT sale_date, store_code, branch_code, product_code, sale_qty, sale_amount FROM dh
 
 ), feed_items AS (
 
@@ -390,12 +425,14 @@ WITH hp AS (
     --             วันแรกที่หาส่วนต่างรายวันได้คือ 02-10
     --   TW        วัดจาก curated เพราะ validated ใช้ Last_Sold_Date
     --             ซึ่งย้อนถึง 2013 (วันขายล่าสุดของสินค้า ไม่ใช่วันที่ฟีดเริ่ม)
-    --   DH        ไม่มีฟีดเลย จึงไม่ใส่ในตารางนี้ -> เก็บ lastyear ทั้งหมด
+    --   DH        ฟีด SharePoint เริ่ม 2026-07-01 = MIN(sale_date) ของ validated
+    --             lastyear ของ DH ทับ ก.ค. ครบทั้ง 31 วัน (10.05M ชน 8.85M) ไม่ตัดยอดเบิ้ล
     SELECT 'HP' AS store_code, DATE '2026-02-09' AS feed_from
     UNION ALL SELECT 'MH', DATE '2026-02-09'
     UNION ALL SELECT 'GB', DATE '2026-02-09'
     UNION ALL SELECT 'BT', DATE '2026-02-10'
     UNION ALL SELECT 'TW', DATE '2026-05-13'
+    UNION ALL SELECT 'DH', DATE '2026-07-01'
 
 ), lastyear_topup AS (
 
@@ -474,6 +511,8 @@ UNION ALL
 SELECT * FROM gb
 UNION ALL
 SELECT * FROM tw
+UNION ALL
+SELECT * FROM dh
 UNION ALL
 SELECT * FROM lastyear
 -- UNION ALL
