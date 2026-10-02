@@ -213,7 +213,7 @@ PK เป็น `NOT ENFORCED` — เป็น hint ให้ optimizer ไม�
 
 ## 8. Dimension patterns (สรุปย่อ)
 
-**Default — full rebuild** (mds dims **41 ตัว**):
+**Default — full rebuild** (mds dims **43 ตัว**):
 [project_wiki/dimension/full-rebuild-pattern.md](../project_wiki/dimension/full-rebuild-pattern.md)
 `type: "table"` → SELECT เดียว: `ROW_NUMBER() OVER(ORDER BY natural key)` AS SK →
 join dim_company → `WHERE is_active = TRUE` → `MdsID` ปิดท้าย — SK ใหม่ทุกวัน

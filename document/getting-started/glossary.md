@@ -42,7 +42,7 @@
 | **Incremental** | โหลดเฉพาะ partition ช่วงหลัง (`asatdate >= CURRENT_DATE('Asia/Bangkok') - N`) (tag `validated_incremental`) |
 | **QUALIFY dedup** | `QUALIFY ROW_NUMBER() OVER(PARTITION BY <pk> ORDER BY file_load_datetime DESC) = 1` — เก็บ row ล่าสุดต่อคีย์ |
 | **MERGE upsert** | `MERGE ... WHEN MATCHED UPDATE / WHEN NOT MATCHED INSERT` — ใช้ใน dimension ที่ต้องรักษา SK เดิม (dim_company, dim_aging_rang, lake dims) |
-| **Full rebuild dim** | pattern หลักของ mds dims 41 ตัว (ตั้งแต่ 2026-07-20): `type: "table"` ปั้นใหม่ทุกวันจาก `is_active = TRUE` — SK ออกเลขใหม่ทุกวัน ห้ามเก็บข้ามวัน |
+| **Full rebuild dim** | pattern หลักของ mds dims 43 ตัว (ตั้งแต่ 2026-07-20): `type: "table"` ปั้นใหม่ทุกวันจาก `is_active = TRUE` — SK ออกเลขใหม่ทุกวัน ห้ามเก็บข้ามวัน |
 | **mds inactive DELETE (tombstone)** | ท้าย dimension MERGE (เหลือ 2 ตัว): `DELETE FROM dim WHERE MdsID IN (SELECT id FROM mds WHERE is_active = FALSE)` — ลบ row ที่ต้นทาง soft-delete |
 | **Overwrite import** | โหมด import ของ mds ที่ล้างตารางแล้วลงใหม่ (id เปลี่ยนหมด) — full rebuild รองรับเองอัตโนมัติ |
 | **MDS_BACKFILL_DAYS** | ตัวแปรโปรเจกต์ (ปัจจุบัน `1`) จำกัดหน้าต่าง `updated_at` ของ dim แบบ MERGE (full rebuild ไม่ใช้) |

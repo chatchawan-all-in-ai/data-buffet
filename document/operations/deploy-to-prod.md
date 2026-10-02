@@ -760,7 +760,7 @@ WORKFLOW CONFIGURATIONS**
 - Step 23 (SK ของ 12 MERGE dim) ต้อง **ยังตรงเป๊ะ**
 - Step 22 ชื่อตารางครบ ไม่มีตัวไหนหาย
 
-> SK ของ dim อีก 41 ตัว (ที่เป็น full rebuild ไม่ใช่ 12 ตัวใน Step 23) **จะออกเลขใหม่
+> SK ของ dim อีก 43 ตัว (ที่เป็น full rebuild ไม่ใช่ 12 ตัวใน Step 23) **จะออกเลขใหม่
 > ไม่ตรงกับ nonprd** — เป็นพฤติกรรมที่ตั้งใจตั้งแต่ 2026-07-20 เพราะ fact ปั้นใหม่ในรอบเดียวกัน
 > ดู [known-issues.md](known-issues.md) และ
 > [full-rebuild-pattern](../project_wiki/dimension/full-rebuild-pattern.md)

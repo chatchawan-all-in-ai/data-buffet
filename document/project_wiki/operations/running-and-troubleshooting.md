@@ -1,8 +1,10 @@
 # Running & Troubleshooting
 
 > **LLM context**: How to execute and debug this project. Important environment facts:
-> the `dataform` CLI is NOT installed in the local WSL environment (both `dataform` and
-> `npx dataform` fail) — execution happens through the Dataform service in GCP.
+> the `dataform` CLI 3.0.0 is a recommended install on the Windows side
+> (`npm install -g @dataform/cli@3.0.0`, must match `dataformCoreVersion`) and is used for
+> `compile`/`format` only — execution happens through the Dataform service in GCP.
+> Machines without it fall back to render + `bq --dry_run`.
 > Ad-hoc queries: `bq --project_id=databuffet-nonprd` (default gcloud project differs!).
 
 ## Run graph by tag
@@ -13,7 +15,7 @@
 | `re-initial` | ⚠️ DROP validated/curated MAC5 tables (destructive, mac5 only) |
 | `validated` / `validated_full` / `validated_incremental` | Validated layer |
 | `curated` | Curated layer (no sub-tags in use) |
-| `dimension_daily` | 66 of 67 dims |
+| `dimension_daily` | 68 of 69 dims (all but `dim_calendar`) |
 | `dimension_yearly` | `dim_calendar` only |
 | `fact_daily` | All 15 facts |
 | `cdc` / `cdc_incremental` | CDC change log |
