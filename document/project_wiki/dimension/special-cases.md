@@ -81,14 +81,10 @@ that backfill or the MDT join matches nothing.
 
 ## `dim_customer_report_info` — mds + every invoice name (2026-10-01)
 
-`type: "table"` full rebuild, but not mds-only: `FULL OUTER JOIN` of `mds_data_customer_report_master`
-with every distinct `CustomerReportName` in `view_dim_invoice` (key = name with all whitespace removed),
-so a Power BI relationship from `view_fact_transcation.CustomerReportInfoSK` never drops rows.
-Invoice-only names have `FlagMDS = FALSE` and NULL mds columns. Segment rules are owned by the
+Sources, deduplication, output columns, hierarchy dependencies, segment rules and
+Power BI relationships are owned by the
 [Customer Report Info section](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
-Reads a view, so `dependencies[]` lists the tables behind `view_dim_invoice` (view-layer Run order rule) —
-and `view_dim_invoice` must never join this dim back (cycle). Full rules:
-[view-layer.md](../view/view-layer.md) § Customer Report Info.
+For its view-backed build dependencies, follow [view-layer.md](../view/view-layer.md) § Run order.
 
 ## `dim_change_district` — mds-sourced but not a MERGE
 

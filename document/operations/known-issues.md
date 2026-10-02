@@ -236,6 +236,11 @@
 
 ## การตัดสินใจเชิงออกแบบ
 
+- **2026-10-02 — `CustomerReportName` ใช้ `mecdesc` เฉพาะบิล SCG**
+
+  สูตรที่เลือก ลำดับ fallback คอลัมน์รายสาขาสำหรับ Power BI และผลกระทบหลัง rebuild อยู่ที่
+  [Customer Report Info + Customer Segment](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
+
 - **2026-10-01 — Customer Report Info + Customer Segment: SK ลง view, Segment อยู่ใน dim**
 
   กฎ relationship, การเลือก Segment และข้อจำกัดอยู่ที่
@@ -253,8 +258,9 @@
   **ผลกระทบที่วัดก่อน deploy** (`view_dim_invoice` เดิม vs inline สูตรใหม่ เทียบราย InvoiceSK):
   `CustomerReportName` เปลี่ยน ag01 **295 ชื่อ / 435,308 invoice** (ส่วนใหญ่สาขา ซีอาร์ซี ไทวัสดุ)
   + ac02 17 / ak02 3 / aa05 2 / ab01 1 ชื่อ · 2 ชื่อรวมเข้ากับชื่อที่มีอยู่แล้ว
-  (`เนาวรัตน์พัฒนาการ`, `โฮมโปรดักส์ เซ็นเตอร์`) · consumer ในโปรเจกต์มีแค่ `view_dim_invoice`
-  (`view_fact_transcation` อ่านแค่ OrderSK/RefOrder) — **Power BI ที่อ้างชื่อเดิมต้องปรับเอง**
+  (`เนาวรัตน์พัฒนาการ`, `โฮมโปรดักส์ เซ็นเตอร์`) · consumer และกฎ relationship:
+  [Customer Report Info + Customer Segment](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01)
+  — **Power BI ที่อ้างชื่อเดิมต้องปรับเอง**
 
   **ต้องทำหลัง deploy**: key ใน `mds_data_crc_shop_name_rename` 2 แถวจะไม่ match อีก
   (`ระยองภาคินทร์ จก.(SCG Dist)` 333 invoice, `แสงไพบูลย์เชียงราย จก.(เอสซีจี-บุญถาวร)` 194)
