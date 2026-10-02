@@ -260,10 +260,14 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 - **`dim_customer_report_info` มีทุกชื่อร้านใน `view_dim_invoice`**
   ไม่ใช่แค่ชื่อใน MDS — ไม่งั้น relationship ใน Power BI กรองแถวที่ชื่อไม่อยู่ใน MDS หายหมด · dim อ่าน
   `view_dim_invoice` จึง**ห้าม**ให้ `view_dim_invoice` join dim นี้กลับ (วนกัน) — join อยู่ที่ `view_fact_transcation`
-- หนึ่งแถวต่อ `CompanyID` + `CustomerReportKey` (ชื่อที่ตัด whitespace ทั้งหมด): MDS เลือก `updated_at DESC, id`
+- หนึ่งแถวต่อ `CompanyID` + ชื่อที่ตัด whitespace ทั้งหมด (`CustomerReportKey` ใช้ภายใน dim ไม่ออกเป็นคอลัมน์): MDS เลือก `updated_at DESC, id`
   ส่วน invoice เลือกตัวสะกดที่มีจำนวน invoice มากสุด แล้วเรียงชื่อตัดสินกรณีเสมอ; ชื่อว่างใน invoice ไม่ถูกนำเข้า dim
-- `DepartmentID` จาก MDS จับคู่ `dim_department_last` ด้วย `CompanySK` + `DepartmentID`;
-  ชื่อนอก MDS มี `FlagMDS = FALSE` และข้อมูล MDS เป็น NULL. `FlagPC` ส่งผ่าน BOOL, `OnlinePercent` cast เป็น FLOAT64
+- คอลัมน์ SK อยู่หน้าสุด: `CustomerReportInfoSK`, `CompanySK`, `CustomerSegmentSK`, `DepartmentSK`, `SectionSK`,
+  `RegionSK`, `DirectorSK` — 4 ตัวหลังมาจาก `dim_department_last` ตรง ๆ (ไม่เอา ID/ชื่อของสายงาน) โดยจับคู่ `DepartmentID` ของ MDS
+  ด้วย `CompanySK` + `DepartmentID` · `SectionSK`/`RegionSK`/`DirectorSK` ถูกเติมโดย `update_sk_sale_rep_group`
+  จึงประกาศเป็น dependency. ชื่อนอก MDS มี `MdsID` และข้อมูล MDS เป็น NULL. `FlagPC` ส่งผ่าน BOOL, `OnlinePercent` cast เป็น FLOAT64
+- ไม่มีคอลัมน์ `CustomerReportKey`, `FlagMDS`, `DepartmentID`, `DepartmentName`, `SectionID`, `RegionID`, `CustomerTier`
+  ในผลลัพธ์ (ตัดออก 2026-10-02) — `CustomerTier` ยังใช้ภายในเลือก Segment
 - `CustomerReportInfoSK` ออกใหม่ทุกครั้งที่ rebuild จึง join ที่ view ด้วย natural key ไม่เก็บลงตาราง fact
 - **`view_dim_invoice.CustomerReportName` เลือกตามลำดับ** (`CASE` ใน [view_dim_invoice.sqlx](../../../definitions/view/dimension_view/view_dim_invoice.sqlx), แก้ 2026-10-02):
   1. บิล SCG (`fn_flag_scg(RefOrder, mihCus) IS NOT NULL`) **และ** `mec.mecdesc IS NOT NULL`
@@ -277,7 +281,8 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
   ถ้า join ไม่พบจะเป็น NULL · Power BI ที่ต้องการยอดรายสาขาของลูกค้าที่ชื่อรายงานรวมเป็นชื่อเครือ
   ให้ใช้คอลัมน์นี้จาก `view_dim_invoice` โดยผูกกับ fact ผ่าน `InvoiceSK`
 - **`view_fact_transcation.CustomerReportInfoSK`** — `InvoiceSK` → `CustomerReportName` ของ invoice นั้นใน `view_dim_invoice`
-  → ชนกับ `CustomerReportKey` แบบ **ไม่สนช่องว่าง** (`REGEXP_REPLACE(..., r'\s', '')`);
+  → จับคู่ด้วย `CompanySK` และชื่อแบบ **ไม่สนช่องว่าง** (`REGEXP_REPLACE(..., r'\s', '')` ทั้งชื่อจาก invoice และ `cri.CustomerReportName`)
+  (ผลเท่ากับ join `CustomerReportKey` เดิม — วัด 2026-10-02: 1,671,914 InvoiceSK ได้ SK ตรงกันทุกแถว);
   invoice ที่ไม่มี CustomerReportName (รหัสลูกค้าไม่อยู่ใน `deb` เช่น `TEST`) → NULL
 - **`dim_customer_report_info.CustomerSegmentSK`** — 1 ชื่อ = 1 Segment, ค่าปัจจุบัน (ไม่ย้อนตามเดือนบิล) เลือกตามลำดับ:
   1. `CustomerTier` ไม่ว่าง → ใช้รหัส tier จับคู่ `Segment3` · เมื่อจับคู่ได้ `SegmentSource = 'MDS'`

@@ -989,7 +989,7 @@ with dim_calendar as (
     on t2.InvoiceSK = inv_cri.InvoiceSK
   left join `${DimCustomerReportInfoTableRef}` as cri
     on inv_cri.CompanySK = cri.CompanySK
-    and inv_cri.CustomerReportKey = cri.CustomerReportKey
+    and inv_cri.CustomerReportKey = REGEXP_REPLACE(cri.CustomerReportName, r'\s', '')
 
 )
   select distinct

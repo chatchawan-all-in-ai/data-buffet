@@ -59,7 +59,7 @@
 | dim_stk_mkt | StkMktSK | companyID, StkCode | mds_data_product_market_group_by_product_id_master + validated_mac5.stk (placeholders) |
 | dim_target_product_group | TargetProductGroupSK | companyID, Year, Month, MarketingGroupID, SubMarketingID, SegmentID, ChannelTargetGroup, TargetID | mds_data_sales_target_by_product_group_master |
 | dim_waterpac | WaterPacSK | CompanyID, WaterPacCode | mds_data_waterpac_master |
-| dim_customer_report_info | CustomerReportInfoSK | CompanyID, CustomerReportKey | [Customer Report Info: sources, deduplication, segment rules and relationships](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01) |
+| dim_customer_report_info | CustomerReportInfoSK | CompanyID, whitespace-stripped CustomerReportName | [Customer Report Info: sources, deduplication, segment rules and relationships](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01) |
 | dim_customer_segment | CustomerSegmentSK | CompanyID, Segment3 | mds_data_customer_segment_master (มีแค่ ag01) |
 | dim_weight_score | WeightSK | CompanyID, Typeeng, Typethai, StartDate, EndDate | mds_data_custgrade_weight_score_master |
 

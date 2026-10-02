@@ -1,7 +1,7 @@
 config {
   type: "table",
   schema: databuffet.DIMENSION_TABLE,
-  dependencies: ["dim_company", "dim_department_last", "dim_customer_segment",
+  dependencies: ["dim_company", "dim_department_last", "update_sk_sale_rep_group", "dim_customer_segment",
                  "dim_invoice", "dim_aging", "dim_order", "dim_customer", "dim_group_customer", "mec"],
   tags: [databuffet.TAG_DIM_DAILY],
   uniqueKey: ["CustomerReportInfoSK"],
@@ -109,7 +109,6 @@ with mds as (
     COALESCE(mds.CompanyID, inv.CompanyID) AS CompanyID,
     COALESCE(mds.CustomerReportKey, inv.CustomerReportKey) AS CustomerReportKey,
     COALESCE(mds.CustomerReportName, inv.CustomerReportName) AS CustomerReportName,
-    mds.MdsID IS NOT NULL AS FlagMDS,
     mds.DepartmentID,
     mds.CustomerTier,
     mds.FlagPC,
@@ -144,21 +143,18 @@ with mds as (
 SELECT
   ROW_NUMBER() OVER(ORDER BY t.CompanyID, t.CustomerReportKey) AS CustomerReportInfoSK,
   dim_com.CompanySK,
+  -- ไม่เข้าเงื่อนไขไหนเลย = DC · บริษัทที่ไม่มีแถวใน segment master = NULL
+  COALESCE(seg.CustomerSegmentSK, seg_dc.CustomerSegmentSK) AS CustomerSegmentSK,
+  -- SK ของสายงานจาก dim_department_last (update_sk_sale_rep_group เติม Section/Region/Director)
+  dep.DepartmentSK,
+  dep.SectionSK,
+  dep.RegionSK,
+  dep.DirectorSK,
   t.CompanyID,
   t.CustomerReportName,
-  t.CustomerReportKey,
-  t.FlagMDS,
-  dep.DepartmentSK,
-  t.DepartmentID,
-  dep.DepartmentName,
-  dep.SectionID,
-  dep.RegionID,
-  t.CustomerTier,
   t.FlagPC,
   t.ShopOnline,
   t.OnlinePercent,
-  -- ไม่เข้าเงื่อนไขไหนเลย = DC · บริษัทที่ไม่มีแถวใน segment master = NULL
-  COALESCE(seg.CustomerSegmentSK, seg_dc.CustomerSegmentSK) AS CustomerSegmentSK,
   (CASE
     WHEN seg.CustomerSegmentSK IS NOT NULL AND t.CustomerTier IS NOT NULL THEN 'MDS'
     WHEN seg.CustomerSegmentSK IS NOT NULL THEN 'CHANNEL'

@@ -28,7 +28,7 @@ layer (validated/curated/dimension/fact/…) as in
 13. Modern trade (MDT) — sell-out/สต็อกห้างค้าปลีก
 14. Reference / misc — ตารางอ้างอิงอื่นๆ
 
-**Uncovered dim/fact/curated objects (not in any topic):** `dim_customer_report_info`, `dim_customer_segment`, `dim_zone_ta_mdt`, `fact_saleout_monthly_mdt`, `fact_target_saleout_mdt`
+**Uncovered dim/fact/curated objects (not in any topic):** `dim_customer_report_info`, `dim_customer_segment`, `dim_product_series`, `dim_target_series_mdt`, `dim_zone_ta_mdt`, `fact_saleout_monthly_mdt`, `fact_target_saleout_mdt`, `fact_target_series_mdt`
 
 ---
 
@@ -1150,12 +1150,13 @@ flowchart LR
     dim_zone_mdt["dim_zone_mdt"]
     dim_zone_ta_mdt["dim_zone_ta_mdt"]
   end
-  subgraph fact["fact (5)"]
+  subgraph fact["fact (6)"]
     fact_saleout_mdt["fact_saleout_mdt"]
     fact_saleout_monthly_mdt["fact_saleout_monthly_mdt"]
     fact_stock_mdt["fact_stock_mdt"]
     fact_stock_mdt_monthly["fact_stock_mdt_monthly"]
     fact_target_saleout_mdt["fact_target_saleout_mdt"]
+    fact_target_series_mdt["fact_target_series_mdt"]
   end
   curated_saleout_mdt --> fact_saleout_mdt
   curated_stock_mdt --> fact_stock_mdt
@@ -1178,6 +1179,7 @@ flowchart LR
   dim_sales_branch_mdt --> fact_saleout_monthly_mdt
   dim_sales_branch_mdt --> fact_stock_mdt
   dim_sales_branch_mdt --> fact_target_saleout_mdt
+  dim_sales_branch_mdt --> fact_target_series_mdt
   dim_section_last --> dim_sales_branch_mdt
   dim_target_saleout_mdt --> fact_target_saleout_mdt
   dim_zone_mdt --> dim_sales_branch_mdt
@@ -1199,7 +1201,7 @@ flowchart LR
   class report_sale_subscription,sale_by_branch_detail,saleout_gb,saleout_hp,saleout_lastyear,stock_by_branch validated;
   class curated_saleout_mdt,curated_stock_mdt curated;
   class dim_director,dim_pc,dim_product_mdt,dim_product_mkt,dim_region,dim_region_last,dim_region_manager,dim_report,dim_sales_branch_mdt,dim_section_last,dim_target_saleout_mdt,dim_zone_mdt,dim_zone_ta_mdt dimension;
-  class fact_saleout_mdt,fact_saleout_monthly_mdt,fact_stock_mdt,fact_stock_mdt_monthly,fact_target_saleout_mdt fact;
+  class fact_saleout_mdt,fact_saleout_monthly_mdt,fact_stock_mdt,fact_stock_mdt_monthly,fact_target_saleout_mdt,fact_target_series_mdt fact;
 ```
 
 ---
