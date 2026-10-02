@@ -257,7 +257,7 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 (MDS `Customer_Segment_Master`) — dim full rebuild รายวัน 2 ตัว · ใน Power BI ผูกเป็นทอด:
 `view_fact_transcation` → `dim_customer_report_info` (`CustomerReportInfoSK`) → `dim_customer_segment` (`CustomerSegmentSK`)
 
-- **`dim_customer_report_info` มีทุกชื่อร้านใน `view_dim_invoice`** (ag01 40,921 ชื่อ, ในนั้นจาก MDS 1,872 = `FlagMDS`)
+- **`dim_customer_report_info` มีทุกชื่อร้านใน `view_dim_invoice`** (ag01 40,790 ชื่อหลัง rebuild ด้วยสูตร SCG 2026-10-02 — เดิม 40,921; ในนั้นจาก MDS 1,872 = `FlagMDS`)
   ไม่ใช่แค่ชื่อใน MDS — ไม่งั้น relationship ใน Power BI กรองแถวที่ชื่อไม่อยู่ใน MDS หายหมด · dim อ่าน
   `view_dim_invoice` จึง**ห้าม**ให้ `view_dim_invoice` join dim นี้กลับ (วนกัน) — join อยู่ที่ `view_fact_transcation`
 - หนึ่งแถวต่อ `CompanyID` + `CustomerReportKey` (ชื่อที่ตัด whitespace ทั้งหมด): MDS เลือก `updated_at DESC, id`
@@ -265,6 +265,14 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 - `DepartmentID` จาก MDS จับคู่ `dim_department_last` ด้วย `CompanySK` + `DepartmentID`;
   ชื่อนอก MDS มี `FlagMDS = FALSE` และข้อมูล MDS เป็น NULL. `FlagPC` ส่งผ่าน BOOL, `OnlinePercent` cast เป็น FLOAT64
 - `CustomerReportInfoSK` ออกใหม่ทุกครั้งที่ rebuild จึง join ที่ view ด้วย natural key ไม่เก็บลงตาราง fact
+- **`view_dim_invoice.CustomerReportName` เลือกตามลำดับ** (`CASE` ใน `view_dim_invoice.sqlx`, แก้ 2026-10-02):
+  1. บิล SCG (`fn_flag_scg(RefOrder, mihCus)` ไม่ NULL = `RefOrder` ขึ้นต้น `CRC`) **และ** `mec.mecdesc` ไม่ว่าง
+     → `clean_company_prefix(mec.mecdesc)` (ชื่อสาขาที่ส่งของจาก `mihMec`)
+  2. `cust.FlagMDSNickName = TRUE` → `cust.NicknameCustomer` (ชื่อเล่นใน MDS)
+  3. ชื่อร้าน CRC: `COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName)`
+  4. ไม่งั้น `clean_company_prefix(cust.debnamet)`
+  - บิลที่ไม่ใช่ SCG ไม่ใช้ `mecdesc` แม้มี `mihMec` → ลูกค้า Modern Trade รายงานเป็น**ชื่อเครือ**ไม่ใช่ชื่อสาขา
+    ชื่อสาขาดิบ (ไม่ผ่าน `clean_company_prefix`) ยังอยู่ในคอลัมน์ `mecdesc` ของ view · ผลวัด: [known-issues 2026-10-02](../../operations/known-issues.md)
 - **`view_fact_transcation.CustomerReportInfoSK`** — `InvoiceSK` → `CustomerReportName` ของ invoice นั้นใน `view_dim_invoice`
   → ชนกับ `CustomerReportKey` แบบ **ไม่สนช่องว่าง** (`REGEXP_REPLACE(..., r'\s', '')`) · วัด 2026-10-01: ทุกแถวผูกได้
   ยกเว้น ag01 44 แถวที่ invoice ไม่มี CustomerReportName (รหัสลูกค้าไม่อยู่ใน `deb` เช่น `TEST`) → NULL
@@ -285,6 +293,7 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 - ผลวัด 2026-10-01 (ag01 40,921 ชื่อ): MDS 1,872 (SILVER 1,145 · PLATINUM 458 · GOLD 269) ·
   CHANNEL 11,136 (DC 4,454 · DD 1,976 · DT 1,974 · SILVER 1,503 · DG 1,061 · DA 168) · DEFAULT (DC) 27,913 ·
   `view_fact_transcation` จำนวนแถวเท่าเดิมทุกบริษัท (ag01 2,657,912)
+  · หลังสูตร SCG (2026-10-02) ag01 ลด 131 ชื่อ invoice-only → 40,790: CHANNEL −27 (สาขาดูโฮม), DEFAULT −104 (สาขาโกลบอลเฮ้าส์ 102 + โครงการ SC 2)
 - `CURRENT_DATE` ถูกประเมินตอน dim รัน → BRONZE→SILVER ขยับวันละครั้งตามรอบ `dimension_daily`
 
 ## Compile-verification checklist

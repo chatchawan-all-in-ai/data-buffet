@@ -236,6 +236,22 @@
 
 ## การตัดสินใจเชิงออกแบบ
 
+- **2026-10-02 — `CustomerReportName` ใช้ `mecdesc` เฉพาะบิล SCG**
+
+  **เดิม**: `mecdesc` (ชื่อสาขาที่ส่งของจาก `mihMec`) ไม่ว่าง → ใช้เป็น `CustomerReportName` ทุกบิล ·
+  ลูกค้า Modern Trade 2 รายเริ่มกรอก `mihMec` ตั้งแต่ 2025-09-27 → ยอดปีหลังแตกเป็นรายสาขา ขณะที่บิลก่อนหน้าเป็นชื่อเครือ
+
+  **ใหม่**: ใช้ `mecdesc` เฉพาะเมื่อ `fn_flag_scg(RefOrder, mihCus)` ไม่ NULL (บิลที่อ้าง order `CRC`) และเพิ่ม
+  คอลัมน์ `mecdesc` (ดิบ) ใน view · ผู้ใช้แก้มือแล้ว deploy จาก Dataform workspace 09:02 UTC ก่อนเข้า git
+  แล้วเลือกเก็บสูตรนี้ · ลำดับเต็ม: [view-layer](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01)
+
+  **ผลกระทบที่วัด** (สูตรเดิม vs ใหม่ ราย InvoiceSK): เปลี่ยนเฉพาะ ag01 **14,414 invoice / 3 ลูกค้า** —
+  ชื่อสาขา 131 ชื่อยุบเป็นชื่อเครือ 3 ชื่อ: `สยามโกลบอลเฮ้าส์` (102 สาขา, 9,981 invoice), `ดูโฮม` (27, 4,431),
+  `เอสซี แอสเสท คอร์ปอเรชั่น` (2 โครงการ, 2) · ยอดที่ย้าย 41,190 แถว fact / 265,328,119.43 บาท ·
+  บริษัทอื่น 0 · MDS match เท่าเดิม 1,850/1,872 · แถว fact ไม่มี `CustomerReportInfoSK` เท่าเดิม 44 ·
+  join key ไม่ซ้ำ · `dim_customer_report_info` 41,456 → **41,325 แถว** หลัง rebuild รอบถัดไป ·
+  **Power BI ที่ต้องการยอดรายสาขาของ 2 เครือนี้ต้องใช้คอลัมน์ `mecdesc` แทน**
+
 - **2026-10-01 — Customer Report Info + Customer Segment: SK ลง view, Segment อยู่ใน dim**
 
   กฎ relationship, การเลือก Segment และข้อจำกัดอยู่ที่
