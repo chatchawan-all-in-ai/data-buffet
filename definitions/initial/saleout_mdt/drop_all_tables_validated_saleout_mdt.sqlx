@@ -15,3 +15,4 @@ DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.saleout_gb`;
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.saleout_hp`;
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.report_sale_subscription`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.saleout_dh`;

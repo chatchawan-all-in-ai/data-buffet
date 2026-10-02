@@ -1,0 +1,68 @@
+config {
+    type: "table",
+    schema: databuffet.FACT_TABLE,
+    dependencies: ["dim_target_series_mdt", "dim_sales_branch_mdt"],
+    tags: [databuffet.TAG_FACT_DAILY],
+    uniqueKey: ["target_date", "branch_code", "series_code"],
+    bigquery: {
+        partitionBy: "target_date",
+        clusterBy: ["store_code", "branch_sk", "series_sk"]
+    },
+}
+
+js {
+    const DimTargetTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_target_series_mdt",
+    };
+    const DimTargetTableRef = `${DimTargetTable.database}.${DimTargetTable.schema}.${DimTargetTable.name}`;
+
+    const DimBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimBranchTableRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
+}
+
+-- เป้ารายวันราย series — pattern เดียวกับ fact_target_saleout_mdt
+-- BI เทียบกับยอดขายผ่าน Product_Attribute.SeriesSK (ชื่อ series ไม่ตรง = OTHERS)
+WITH source_data AS (
+  SELECT
+    t.TargetDate AS target_date,
+    t.StoreCode  AS store_code,
+
+    IFNULL(t.BranchMdtSK,    -1) AS branch_sk,
+    IFNULL(dim_br.ZoneMdtSK, -1) AS zone_sk,
+    IFNULL(t.SeriesSK,       -1) AS series_sk,
+
+    t.SeriesCode AS series_code,
+    t.SeriesName AS series_name,
+
+    -- ต้นทาง Value = 0 ทุกแถว (วัด 2026-10-02) — ตอนนี้เป้ามีแค่จำนวน
+    t.Amt AS target_amt,
+    t.Qty AS target_qty,
+
+    t.TargetYear  AS target_year,
+    t.TargetMonth AS target_month,
+    -- เป้าเดือนถูกหารเท่า ๆ กันทุกวันในเดือน คูณกลับด้วย days_in_month = ยอดเป้าเดือนเดิม
+    t.DaysInMonth AS days_in_month,
+
+    -- degenerate: รหัสสาขาจาก MDS ใช้สืบกลับตอน branch_sk = -1
+    t.BranchCodeMdt AS branch_code,
+    t.MdsID         AS mds_id
+  FROM `${DimTargetTableRef}` AS t
+  LEFT JOIN `${DimBranchTableRef}` AS dim_br
+    ON t.BranchMdtSK = dim_br.BranchMdtSK
+  -- ตัดแถว unknown (SK = -1) ของ dim ทิ้ง — fact ไม่ควรมีแถวที่ไม่มีวันที่
+  WHERE t.TargetDate IS NOT NULL
+)
+
+SELECT
+  source_data.*
+FROM source_data
+
+pre_operations {}
+
+post_operations {}

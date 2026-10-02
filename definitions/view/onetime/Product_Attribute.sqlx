@@ -1,7 +1,7 @@
 config {
   type: "view",
   schema: databuffet.ONETIME,
-  dependencies: ["dim_company", "dim_product_master"],
+  dependencies: ["dim_company", "dim_product_master", "dim_product_series"],
   tags: [databuffet.TAG_VIEW],
 }
 
@@ -19,11 +19,21 @@ js {
         name: "dim_product_master",
     };
     const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
+    
+    const DimProductSeriesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_series",
+    };
+    const DimProductSeriesTableRef = `${DimProductSeriesTable.database}.${DimProductSeriesTable.schema}.${DimProductSeriesTable.name}`;
+
 }
 
 select 
 dim_product.ProductSK,
 dim_com.CompanySK,
+COALESCE(dim_series.SeriesSK, dim_series_others.SeriesSK) as SeriesSK,
+COALESCE(dim_series.SeriesCode, dim_series_others.SeriesCode) as SeriesCode,
 dim_com.companyID,
 a.stkcode as ProductCode ,
 p.prd_color as ProductColor , 
@@ -55,6 +65,11 @@ left join `${DimCompanyTableRef}` as dim_com
 left join `${DimProductMasterTableRef}` as dim_product
   on a.stkcode = dim_product.ProductCode
   and a.company_id = dim_product.companyID
+-- series ที่ชื่อไม่ตรงกับ dim (รวม NULL) ลงเป็น OTHERS ทั้งหมด
+left join `${DimProductSeriesTableRef}` as dim_series
+  on pd.pd_series = dim_series.SeriesName
+  and dim_series.SeriesName <> 'OTHERS'
+cross join (select SeriesSK from `${DimProductSeriesTableRef}` where SeriesName = 'OTHERS') as dim_series_others
 where a.STKcode885 is not null and a.STKcode885 <> '' 
   and a.company_id = 'ag01'
   and dim_product.ProductSK is not null

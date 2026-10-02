@@ -96,6 +96,20 @@ OPTIONS (
 );
 ------------------------------------- BT ----------------------------------------------
 
+------------------------------------- DH ----------------------------------------------
+-- Table: saleout_mdt_dh
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_dh`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_dh`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING 
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/dh/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/dh/'
+);
+------------------------------------- DH ----------------------------------------------
+
 ------------------------------------- GB ----------------------------------------------
 -- Table: saleout_mdt_gb
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_gb`;

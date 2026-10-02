@@ -1,0 +1,99 @@
+config {
+    type: "table",
+    schema: databuffet.VALIDATED_SALEOUT_MDT,
+    dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_FULL],
+    uniqueKey: ["sale_date", "branch_code", "product_code"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["branch_code", "product_code"]
+    },
+}
+
+js {
+    const sourceTableRef = `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_dh`;
+
+    // full rebuild ทุกรอบ ไม่มีหน้าต่าง incremental
+    // ASATDATE ของ DH คือวันขายท้ายสุดในไฟล์ ไม่ใช่วันที่ DAG รัน (1 ไฟล์ = 1 เดือน)
+    // เงื่อนไข ASATDATE >= เมื่อวาน จึงไม่มีวันเป็นจริง รันรอบสองจะได้ 0 แถว
+    const pk_key = ["sale_date", "branch_code", "product_code"]
+
+    const post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+}
+
+WITH src AS (
+
+    SELECT
+        PARSE_DATE('%Y-%m-%d', SALES_DATE)                AS sale_date,
+        ${databuffet.functionData.cleanCode('BRANCH_CODE')}   AS branch_code,
+        ${databuffet.functionData.cleanCode('PRODUCT_CODE')}  AS product_code,
+        ${databuffet.functionData.cleanString('PRODUCT_NAME')} AS product_name,
+        SALES_QTY,
+        SALES_AMOUNT,
+        ${databuffet.functionData.cleanString('SOURCE_FOLDER')} AS source_folder,
+
+        -- IFNULL กัน SAFE.PARSE คืน NULL แล้วเงื่อนไขเทียบ MAX เป็นเท็จทุกแถว -> ทิ้งทั้งไฟล์เงียบ ๆ
+        IFNULL(SAFE.PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%SZ', FILE_MODIFIED),
+               TIMESTAMP '1900-01-01')                    AS file_modified,
+
+        ${databuffet.functionData.parseAsatDate()}         AS asatdate
+    FROM `${sourceTableRef}`
+    WHERE SALES_DATE IS NOT NULL
+      AND BRANCH_CODE IS NOT NULL
+      AND PRODUCT_CODE IS NOT NULL
+
+), latest_file AS (
+
+    -- 1 สาขา 1 เดือน = 1 ไฟล์ · DoHome ส่งไฟล์ใหม่ต่องวด ไม่ทับของเก่า
+    -- ถ้าเขาส่งเดือนเดิมแก้ใหม่ จะมี 2 ไฟล์ของเดือนเดียวกัน เอาเฉพาะตัวที่ใหม่กว่า
+    -- ⚠️ ห้ามรวมก่อนขั้นนี้ ยอดจะเบิ้ลตามจำนวนครั้งที่เขาส่ง
+    SELECT * FROM src
+    QUALIFY file_modified = MAX(file_modified)
+            OVER (PARTITION BY source_folder, DATE_TRUNC(sale_date, MONTH))
+
+)
+
+-- ⚠️ ต้องรวม ห้ามตัดซ้ำด้วย ROW_NUMBER
+-- วัด 2026-10-01: คีย์ (วันขาย+สาขา+สินค้า) ซ้ำ 139 ชุด 151 บรรทัด
+-- เป็นคนละรายการจริง เช่น ขาย +1 กับคืน -1 วันเดียวกัน และขาย 38 ชิ้นกับ 27 ชิ้นแยกบิล
+-- ตัดซ้ำเมื่อไหร่ยอดหายทันที
+SELECT
+    sale_date,
+    'DH'                                      AS store_code,
+    branch_code,
+    product_code,
+    ANY_VALUE(product_name)                   AS product_name,
+
+    -- curated.sale_qty เป็น INT64 แต่ DH ส่ง double มา ต้อง CAST ให้ชัด
+    CAST(ROUND(SUM(SALES_QTY)) AS INT64)      AS sale_qty,
+    SUM(SALES_AMOUNT)                         AS sale_amount,
+    SUM(SALES_QTY) < 0                        AS is_return,
+
+    ANY_VALUE(source_folder)                  AS source_folder,
+    MAX(file_modified)                        AS file_modified,
+    MAX(asatdate)                             AS asatdate
+
+FROM latest_file
+GROUP BY sale_date, branch_code, product_code
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

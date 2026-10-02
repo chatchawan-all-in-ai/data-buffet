@@ -1,0 +1,108 @@
+config {
+  type: "table",
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: ["dim_sales_branch_mdt", "dim_product_series"],
+  tags: [databuffet.TAG_DIM_DAILY],
+  uniqueKey: ["TargetSeriesMdtSK"],
+  bigquery: {
+    partitionBy: "TargetDate",
+    clusterBy: ["BranchMdtSK", "SeriesSK"],
+  },
+}
+
+js {
+    const TargetSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_target_by_series`;
+
+    const DimBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimBranchTableRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
+
+    const DimSeriesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_series",
+    };
+    const DimSeriesTableRef = `${DimSeriesTable.database}.${DimSeriesTable.schema}.${DimSeriesTable.name}`;
+}
+
+-- เป้ารายเดือนราย series (ตอนนี้มีแค่ TITAN) — pattern เดียวกับ dim_target_saleout_mdt
+WITH monthly AS (
+  SELECT
+    CAST(t1.Year  AS INT64) AS TargetYear,
+    CAST(t1.Month AS INT64) AS TargetMonth,
+    DATE(CAST(t1.Year AS INT64), CAST(t1.Month AS INT64), 1) AS MonthStart,
+    ${databuffet.functionData.cleanString("t1.BranchCode")} AS BranchCodeMdt,
+    ${databuffet.functionData.cleanString("t1.SeriesCode")} AS SeriesCode,
+    ${databuffet.functionData.cleanString("t1.SeriesName")} AS SeriesName,
+    t1.Value    AS MonthAmt,
+    t1.Quantity AS MonthQty,
+    ${databuffet.functionData.cleanString("t1.id")} AS MdsID
+  FROM `${TargetSourceRef}` AS t1
+  WHERE t1.is_active = TRUE
+    AND t1.Year IS NOT NULL
+    AND t1.Month IS NOT NULL
+
+), daily AS (
+  SELECT
+    m.*,
+    d AS TargetDate,
+    DATE_DIFF(DATE_ADD(m.MonthStart, INTERVAL 1 MONTH), m.MonthStart, DAY) AS DaysInMonth
+  FROM monthly AS m,
+  UNNEST(GENERATE_DATE_ARRAY(m.MonthStart, LAST_DAY(m.MonthStart))) AS d
+
+), target_master AS (
+  SELECT
+    ROW_NUMBER() OVER(
+      ORDER BY d.TargetDate, d.BranchCodeMdt, d.SeriesCode
+    ) AS TargetSeriesMdtSK,
+    IFNULL(dim_br.BranchMdtSK, -1) AS BranchMdtSK,
+      -- รหัสที่ไม่มีใน dim ลง OTHERS (999999) — dim_product_series ไม่มีแถว -1
+    COALESCE(dim_series.SeriesSK, dim_series_others.SeriesSK) AS SeriesSK,
+    dim_br.StoreCode,
+    d.BranchCodeMdt,
+    d.SeriesCode,
+    d.SeriesName,
+    d.TargetDate,
+    d.TargetYear,
+    d.TargetMonth,
+    d.DaysInMonth,
+    d.MonthAmt / d.DaysInMonth AS Amt,
+    d.MonthQty / d.DaysInMonth AS Qty,
+    d.MdsID
+  FROM daily AS d
+  LEFT JOIN `${DimBranchTableRef}` AS dim_br
+    ON IF(STARTS_WITH(d.BranchCodeMdt, 'GH_'),
+          CONCAT('GB_', SUBSTR(d.BranchCodeMdt, 4)),
+          d.BranchCodeMdt) = dim_br.BranchCodeMdt
+  LEFT JOIN `${DimSeriesTableRef}` AS dim_series
+    ON d.SeriesCode = dim_series.SeriesCode
+  CROSS JOIN (SELECT SeriesSK FROM `${DimSeriesTableRef}` WHERE SeriesCode = '999999') AS dim_series_others
+
+), unknown_target AS (
+  SELECT
+    -1                    AS TargetSeriesMdtSK,
+    -1                    AS BranchMdtSK,
+    -1                    AS SeriesSK,
+    CAST(NULL AS STRING)  AS StoreCode,
+    CAST(NULL AS STRING)  AS BranchCodeMdt,
+    CAST(NULL AS STRING)  AS SeriesCode,
+    'ไม่ระบุซีรีส์'            AS SeriesName,
+    CAST(NULL AS DATE)    AS TargetDate,
+    CAST(NULL AS INT64)   AS TargetYear,
+    CAST(NULL AS INT64)   AS TargetMonth,
+    CAST(NULL AS INT64)   AS DaysInMonth,
+    CAST(NULL AS FLOAT64) AS Amt,
+    CAST(NULL AS FLOAT64) AS Qty,
+    CAST(NULL AS STRING)  AS MdsID
+)
+
+SELECT * FROM target_master
+UNION ALL
+SELECT * FROM unknown_target
+
+pre_operations {}
+
+post_operations {}

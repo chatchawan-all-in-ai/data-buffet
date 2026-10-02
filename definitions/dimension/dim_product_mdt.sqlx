@@ -26,6 +26,19 @@ WITH mac5_dedup AS (
   SELECT ProductSK, ProductMktSK, companyID, ProductCode
   FROM `${DimProductMasterTableRef}`
   QUALIFY ROW_NUMBER() OVER(PARTITION BY companyID, ProductCode ORDER BY ProductSK) = 1
+  
+), product_src AS (
+  -- mds มีรหัสซ้ำได้ (HP/MH ใช้รหัสเดียวกัน — วัด 2026-10-02 ซ้ำ 39 รหัส) และ fact join ด้วยรหัสอย่างเดียว
+  -- ซ้ำ = ยอดเบิ้ล จึงยุบเหลือรหัสละแถว (เลือกแถวที่มีรหัส mac5 ก่อน)
+  SELECT *
+  FROM `${ProductSourceRef}`
+  WHERE is_active = TRUE
+    AND product_mdt_code IS NOT NULL
+  QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY CAST(product_mdt_code AS INT64)
+    ORDER BY product_mac5_code IS NULL, region_id, id
+  ) = 1
+
 
 ), product_master AS (
   SELECT
@@ -40,12 +53,10 @@ WITH mac5_dedup AS (
     ${databuffet.functionData.cleanString("t1.region_id")}         AS StoreCode,
     ${databuffet.functionData.cleanString("t1.commpy")}            AS CompanyID,
     ${databuffet.functionData.cleanString("t1.id")}                AS MdsID
-  FROM `${ProductSourceRef}` AS t1
+  FROM product_src AS t1
   LEFT JOIN mac5_dedup AS mac5
     ON  ${databuffet.functionData.cleanString("t1.product_mac5_code")} = mac5.ProductCode
     AND ${databuffet.functionData.cleanString("t1.commpy")}            = mac5.companyID
-  WHERE t1.is_active = TRUE
-    AND t1.product_mdt_code IS NOT NULL
 
 ), unknown_product AS (
   SELECT
