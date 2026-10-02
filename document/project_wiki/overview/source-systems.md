@@ -11,7 +11,7 @@
 | CIS360 | `raw_cis360` | `validated_cis360` — 25 ไฟล์ | `curated_cis360` — **schema เปล่า** | ใช้งาน (ยังไม่มี curated) |
 | SALEOUT_MDT | `raw_saleout_mdt` | `validated_saleout_mdt` — 12 ไฟล์ | `curated_saleout_mdt` — 2 ตาราง | ใช้งานเต็ม (ชุดใหม่ 2026-09) |
 | ALLKONS_COMMISSION | `raw_allkons_commission` | **ไม่มีแล้ว** | — | ⚠️ **หยุดอยู่ชั้น initial** |
-| mds_dataset | — (โหลดจากภายนอก) | — | — | เป็น master ของ 43 dims |
+| mds_dataset | — (โหลดจากภายนอก) | — | — | เป็น master ของ 45 dims |
 
 ## MAC5 — POS / ERP / Ledger (แหล่งหลัก)
 
@@ -87,7 +87,7 @@
 - **ไม่ได้สร้างโดย repo นี้** ตารางชื่อ `mds_data_<entity>_master`
 - คอลัมน์มาตรฐานทุกตาราง: `id` (row id → เก็บใน dim เป็น `MdsID`),
   `is_active` (soft-delete flag), `updated_at`
-- เป็นต้นทางของ **43 dims** (41 full rebuild + 2 MERGE legacy)
+- เป็นต้นทางของ **45 dims** (43 full rebuild + 2 MERGE legacy)
 - dim แบบ full rebuild อ่านเฉพาะ `is_active = TRUE` ทั้งตารางทุกคืน soft delete และ
   overwrite import จึงหายเองอัตโนมัติ · dim แบบ MERGE (2 ตัว) ต้องมี tombstone DELETE
   ปิดท้าย ดู [dimension/mds-delete-pattern.md](../dimension/mds-delete-pattern.md)

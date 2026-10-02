@@ -1,7 +1,7 @@
 # The MDS Full-Rebuild Pattern (canonical since 2026-07-20)
 
-> **LLM context**: This is the default pattern for mds-sourced dimensions — **41 files**
-> (นับ 2026-09-15 — รวมชุด MDT 6 ตัวที่อ้าง mds ผ่าน const ใน `js {}`)
+> **LLM context**: This is the default pattern for mds-sourced dimensions — **43 files**
+> (รวมชุด MDT 6 ตัวที่อ้าง mds ผ่าน const ใน `js {}` และ customer-report dims 2 ตัวที่เพิ่ม 2026-10-01)
 > follow it (all mds dims except `dim_company` and `dim_aging_rang`, which keep the
 > legacy [MERGE pattern](merge-sk-pattern.md)). Reference implementation:
 > `definitions/dimension/dim_waterpac.sqlx`.
@@ -73,7 +73,7 @@ Verified 2026-07-20 (repo scan + live BQ + 90-day query history):
   into the repo as `type: "table"` daily full rebuilds tagged `fact_daily`
   (see [fact/fact-layer.md](../fact/fact-layer.md)).
 
-## Special files within the 41
+## Special files within the 43
 
 - `dim_sale_representative` — `UNION ALL` of the mds block and the ledger block
   (per-employees with NULL DepartmentID + sentinel dates 1900-01-01/2499-12-31, `MdsID NULL`).
@@ -87,6 +87,9 @@ Verified 2026-07-20 (repo scan + live BQ + 90-day query history):
 - `dim_rate_target` — extra deps `dim_department_last`/`dim_director_last` + a real
   `post_operations` block that reallocates `Percent` for MDT departments after the
   rebuild (see [special-cases.md](special-cases.md)).
+- `dim_customer_report_info` — FULL JOIN of the mds block with **every** `CustomerReportName`
+  in `view_dim_invoice` (`MdsID NULL` for invoice-only names) + `CustomerSegmentSK` derived from
+  `tbook_quotation`/`deb` (see [special-cases.md](special-cases.md)).
 
 ## Why this replaced the MERGE pattern (2026-07-20)
 

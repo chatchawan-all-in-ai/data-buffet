@@ -31,7 +31,7 @@
 2. Strings pass through `cleanString` (empty → NULL); use `functionData` helpers, not raw casts.
 3. Never hardcode dataset names/tags — use `databuffet.*` constants.
 4. SK stability is per-pattern: MERGE dims (`dim_company`, `dim_aging_rang`, lake dims)
-   have SKs that are stable forever — never regenerate them. The 41 full-rebuild mds
+   have SKs that are stable forever — never regenerate them. The 43 full-rebuild mds
    dims regenerate SKs daily — never persist those SKs across days.
 5. `type: "operations"` targets (MERGE dims, `fact_transcation`) pre-exist in
    BigQuery — Dataform does not create them.

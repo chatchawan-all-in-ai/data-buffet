@@ -9,7 +9,8 @@ config {
                   "dim_cost_group", "dim_stk_mkt", "dim_region_last", "dim_product_master", 
                   "fact_invoice", "view_dim_aging", "fact_order", "view_dim_invoice", 
                   "dim_region", "dim_company", "dim_director", "dim_region_manager", 
-                  "dim_section_manager", "dim_pump_information"],
+                  "dim_section_manager", "dim_pump_information",
+                  "dim_customer_report_info"],
   tags: [databuffet.TAG_VIEW],
 }
 
@@ -230,6 +231,13 @@ js {
         name: "dim_pump_information",
     };
     const DimPumpInfoTableRef = `${DimPumpInfoTable.database}.${DimPumpInfoTable.schema}.${DimPumpInfoTable.name}`;
+
+    const DimCustomerReportInfoTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer_report_info",
+    };
+    const DimCustomerReportInfoTableRef = `${DimCustomerReportInfoTable.database}.${DimCustomerReportInfoTable.schema}.${DimCustomerReportInfoTable.name}`;
 
 }
 
@@ -877,7 +885,8 @@ with dim_calendar as (
     COALESCE(t2.FactOrderSK, t3.FactOrderSK) as FactOrderSK,
     COALESCE(t2.QuotationSK, t3.QuotationSK) as QuotationSK,
     COALESCE(t2.FactQuotationSK, t3.FactQuotationSK) as FactQuotationSK,
-  
+    cri.CustomerReportInfoSK,
+
     `${FnFlagExcTableRef}`(
       t1.mihCancel, 
       t1.mihStatus, 
@@ -970,7 +979,18 @@ with dim_calendar as (
   ) as t6
     on t1.CompanySK = t6.CompanySK
     and t1.millinkvcno = t6.mihVnos
-    
+
+  -- Customer Report Info ของชื่อร้านใน invoice นั้น ชนแบบไม่สนช่องว่าง (GROUP BY กันแถวบานถ้า view_dim_invoice ซ้ำ)
+  left join (
+    SELECT InvoiceSK, MAX(CompanySK) as CompanySK, MAX(REGEXP_REPLACE(CustomerReportName, r'\s', '')) as CustomerReportKey
+    FROM `${ViewDimInvoiceTableRef}`
+    GROUP BY 1
+  ) as inv_cri
+    on t2.InvoiceSK = inv_cri.InvoiceSK
+  left join `${DimCustomerReportInfoTableRef}` as cri
+    on inv_cri.CompanySK = cri.CompanySK
+    and inv_cri.CustomerReportKey = cri.CustomerReportKey
+
 )
   select distinct
     trans.* except(

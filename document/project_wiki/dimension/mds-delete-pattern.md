@@ -4,7 +4,7 @@
 > [full daily rebuild](full-rebuild-pattern.md) (rebuild from `is_active = TRUE`
 > makes the tombstone unnecessary), so this pattern now applies to only the **2
 > remaining MERGE dims: `dim_company` and `dim_aging_rang`**.
-> (ตัวเลข 34 คือจำนวน ณ วันที่แปลง · ปัจจุบัน full-rebuild มี **41 ตัว** เพราะมี dim ใหม่เพิ่มหลังจากนั้น)
+> (ตัวเลข 34 คือจำนวน ณ วันที่แปลง · ปัจจุบัน full-rebuild มี **43 ตัว** เพราะมี dim ใหม่เพิ่มหลังจากนั้น)
 > History: implemented 2026-07-10 across all then-MERGE mds dims (commit `e64a62d`).
 > Design decision: **hard DELETE, no downstream FK checks** — chosen explicitly over
 > a soft-delete `IsActive` flag.
@@ -49,7 +49,7 @@ Properties:
 | `dim_company` | CompanySK ถูก persist ไว้ทั่วทั้ง warehouse |
 | `dim_aging_rang` | AgingRangSK ถูกแช่แข็งใน `dim_aging_history` |
 
-**dim ที่อ่าน mds อีก 41 ตัวไม่ต้องมี tombstone** — เพราะอ่านเฉพาะ
+**dim ที่อ่าน mds อีก 43 ตัวไม่ต้องมี tombstone** — เพราะอ่านเฉพาะ
 `is_active = TRUE` ทั้งตารางทุกคืน แถวที่ต้นทาง soft-delete จึงหายเอง
 ดู [full-rebuild-pattern.md](full-rebuild-pattern.md)
 

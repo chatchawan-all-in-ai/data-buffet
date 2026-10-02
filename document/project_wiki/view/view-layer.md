@@ -182,7 +182,7 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 
 | View | Key upstream | External refs |
 |---|---|---|
-| `view_fact_transcation` | fact_invoice, fact_order, fact_transcation, curated_mih, deb, ~20 dims, dim_pump_information, view_dim_aging, view_dim_invoice | onetime.mapping_invoice, fn_flag_scg/exc |
+| `view_fact_transcation` | fact_invoice, fact_order, fact_transcation, curated_mih, deb, ~20 dims, dim_pump_information, dim_customer_report_info, view_dim_aging, view_dim_invoice | onetime.mapping_invoice, fn_flag_scg/exc |
 | `view_aging_ri` | fact_mir_vs, dim_aging_rang, dim_invoice, dim_status_not_receive, curated_mih, ar_s/chq/cql/mir, view_dim_aging | — |
 | `view_fact_mir_rs` | fact_mir_rs, dim_aging, curated_mih, ar_s | — |
 | `view_fact_mir_vs` | fact_mir_vs, dim_aging | — |
@@ -251,7 +251,45 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 - `CURRENT_DATE` ถูกประเมินตอน query view → model แบบ Import ต้อง **refresh รายวัน** ธงถึงจะขยับ
 - ขึ้นกับ `dim_holiday` — ถ้าวันหยุดปีไหนยังไม่ถูกบันทึก (ณ 2026-09-28 ปี 2027 = 0 วัน) วันนั้นจะถูกนับเป็นวันทำงาน
 
-## Compile-verification checklist (local `dataform` CLI unavailable)
+## Customer Report Info + Customer Segment (2026-10-01)
+
+ข้อมูลร้านค้าตาม `CustomerReportName` (MDS `Customer_Report_Master`) และ Segment ลูกค้า
+(MDS `Customer_Segment_Master`) — dim full rebuild รายวัน 2 ตัว · ใน Power BI ผูกเป็นทอด:
+`view_fact_transcation` → `dim_customer_report_info` (`CustomerReportInfoSK`) → `dim_customer_segment` (`CustomerSegmentSK`)
+
+- **`dim_customer_report_info` มีทุกชื่อร้านใน `view_dim_invoice`** (ag01 40,921 ชื่อ, ในนั้นจาก MDS 1,872 = `FlagMDS`)
+  ไม่ใช่แค่ชื่อใน MDS — ไม่งั้น relationship ใน Power BI กรองแถวที่ชื่อไม่อยู่ใน MDS หายหมด · dim อ่าน
+  `view_dim_invoice` จึง**ห้าม**ให้ `view_dim_invoice` join dim นี้กลับ (วนกัน) — join อยู่ที่ `view_fact_transcation`
+- หนึ่งแถวต่อ `CompanyID` + `CustomerReportKey` (ชื่อที่ตัด whitespace ทั้งหมด): MDS เลือก `updated_at DESC, id`
+  ส่วน invoice เลือกตัวสะกดที่มีจำนวน invoice มากสุด แล้วเรียงชื่อตัดสินกรณีเสมอ; ชื่อว่างใน invoice ไม่ถูกนำเข้า dim
+- `DepartmentID` จาก MDS จับคู่ `dim_department_last` ด้วย `CompanySK` + `DepartmentID`;
+  ชื่อนอก MDS มี `FlagMDS = FALSE` และข้อมูล MDS เป็น NULL. `FlagPC` ส่งผ่าน BOOL, `OnlinePercent` cast เป็น FLOAT64
+- `CustomerReportInfoSK` ออกใหม่ทุกครั้งที่ rebuild จึง join ที่ view ด้วย natural key ไม่เก็บลงตาราง fact
+- **`view_fact_transcation.CustomerReportInfoSK`** — `InvoiceSK` → `CustomerReportName` ของ invoice นั้นใน `view_dim_invoice`
+  → ชนกับ `CustomerReportKey` แบบ **ไม่สนช่องว่าง** (`REGEXP_REPLACE(..., r'\s', '')`) · วัด 2026-10-01: ทุกแถวผูกได้
+  ยกเว้น ag01 44 แถวที่ invoice ไม่มี CustomerReportName (รหัสลูกค้าไม่อยู่ใน `deb` เช่น `TEST`) → NULL
+- **`dim_customer_report_info.CustomerSegmentSK`** — 1 ชื่อ = 1 Segment, ค่าปัจจุบัน (ไม่ย้อนตามเดือนบิล) เลือกตามลำดับ:
+  1. `CustomerTier` ไม่ว่าง → ใช้รหัส tier จับคู่ `Segment3` · เมื่อจับคู่ได้ `SegmentSource = 'MDS'`
+     ถ้า tier ไม่มีใน segment master จะ fallback เป็น DC โดยไม่ลอง channel
+  2. `CustomerTier` ว่าง → debcode ของ**บิลล่าสุด**ของชื่อนั้น (`mix_date DESC, mihVnos DESC` — ชื่อเดียวมีหลาย debcode ได้)
+     → channel ล่าสุดจาก `validated_mac5.tbook_quotation` **ใน allowlist `TT/DC/DA/DG/DD/DT/DR`**
+     (debcode = คำแรกของ `agent1` ที่ไม่ว่าง, เรียง `dinsert DESC, SAFE_CAST(id AS INT64) DESC`)
+     กรอง allowlist ก่อนเลือกแถวล่าสุด: channel ว่างหรือนอก allowlist ไม่แทนที่แถวเก่าที่อยู่ใน allowlist
+     · `SegmentSource = 'CHANNEL'`
+     - `TT` → `BRONZE` ถ้า `deb.debdate` อยู่ในเดือนปัจจุบัน (Asia/Bangkok) ไม่งั้น `SILVER`
+       (debdate ว่าง = SILVER) — เงื่อนไขจาก `เงื่อนไข cust.xlsx`: ร้าน TT เปิดใหม่ = BRONZE เดือนถัดไป auto SILVER
+     - channel อื่น → Segment3 เดียวกัน (DD/DA/DC/DT/DG)
+  3. ไม่เข้าเงื่อนไขไหนเลย (ไม่มี quotation, หรือ channel ไม่มีใน segment master เช่น `DR`) → `DC` · `SegmentSource = 'DEFAULT'`
+  - บริษัทที่ไม่มีแถวใน segment master (ตอนนี้ทุกบริษัทนอกจาก ag01) → **NULL** โดยตั้งใจ
+  - trace: `SegmentDebcode`, `SegmentChannel`
+- ผลวัด 2026-10-01 (ag01 40,921 ชื่อ): MDS 1,872 (SILVER 1,145 · PLATINUM 458 · GOLD 269) ·
+  CHANNEL 11,136 (DC 4,454 · DD 1,976 · DT 1,974 · SILVER 1,503 · DG 1,061 · DA 168) · DEFAULT (DC) 27,913 ·
+  `view_fact_transcation` จำนวนแถวเท่าเดิมทุกบริษัท (ag01 2,657,912)
+- `CURRENT_DATE` ถูกประเมินตอน dim รัน → BRONZE→SILVER ขยับวันละครั้งตามรอบ `dimension_daily`
+
+## Compile-verification checklist
+
+CLI availability and setup: [onboarding §3.2](../../getting-started/onboarding.md).
 
 1. All 34 views compile and the `view` tag runs after the table-building tags.
 2. Views referencing other views (chains — e.g. `view_dim_aging` → `view_dim_channel`,

@@ -86,7 +86,7 @@ work on Opus, pattern-following work on Sonnet):
 | Initial | `definitions/initial/` | 17 | `raw_*`, `function_dataset` | operations (external tables, UDFs) |
 | Validated | `definitions/validated/` | 136 | `validated_<source>` | incremental / table + QUALIFY dedup |
 | Curated | `definitions/curated/` | 11 | `curated_<source>` | incremental (+ post_operations) |
-| Dimension | `definitions/dimension/` | 67 | `dimension_table` | **table rebuild** (41 mds + 11 other) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
+| Dimension | `definitions/dimension/` | 69 | `dimension_table` | **table rebuild** (43 mds + 11 other) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
 | Fact | `definitions/fact/` | 15 | `fact_table` | table rebuild / operations upsert — **no MERGE** |
 | View | `definitions/view/` | 34 | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |
 | CDC | `definitions/cdc/` | 2 | `cdc_dataset` | operations, generated from `cdc-config.json` |
@@ -144,7 +144,7 @@ ag01 rebuild now DELETEs at doc grain. `curated_mih` needs nothing — its `uniq
 already **is** the document key (0 stale rows).
 
 ### Dimension (patterns split 2026-07-20)
-**Default for mds dims (34 files) — full daily rebuild**
+**Default for mds dims (43 files) — full daily rebuild**
 (`document/project_wiki/dimension/full-rebuild-pattern.md`): `type: "table"`,
 SK = `ROW_NUMBER() OVER(ORDER BY <natural key>)`, `WHERE is_active = TRUE` only,
 `MdsID` kept as trace column. **SKs regenerate every run — never persist them across
@@ -190,7 +190,7 @@ addresses, gated on today's CDC changes (cost control — don't remove the gate)
 2. Every string column through `cleanString`/`cleanCode`; empty string → NULL.
 3. No hardcoded dataset names/tags — use `databuffet.*`.
 4. SK stability is per-pattern: MERGE dims (`dim_company`, `dim_aging_rang`, 10 lake
-   dims) have SKs that are stable forever — never regenerate or update them. The 34
+   dims) have SKs that are stable forever — never regenerate or update them. The 43
    full-rebuild mds dims regenerate SKs daily — never persist those SKs across days,
    and any new consumer that stores them must itself rebuild daily after `dimension_daily`.
 5. MERGE-pattern mds dims must end with the tombstone DELETE before `END;`
@@ -239,9 +239,16 @@ exist.**
   Run BigQuery/GCS commands through WSL, e.g.
   `wsl -e bash -lc "bq --project_id=databuffet-nonprd query --use_legacy_sql=false '...'"`.
   Windows has `python` (3.14) and `node`; WSL has `python3` (3.12).
-- **No `dataform` CLI** on either side (`dataform` and `npx dataform` both fail) —
-  compile/run via the Dataform service; treat compile verification as unavailable
-  locally.
+- **Dataform CLI 3.0.0 is a recommended install** (onboarding §3.2:
+  `npm install -g @dataform/cli@3.0.0`, Windows side, version must match
+  `dataformCoreVersion`). Check with `dataform --version`: if it works, verify SQLX
+  with `dataform compile` (0 errors) — it catches JS/config errors, unresolved `ref()`,
+  missing `dependencies[]` and cycles, but **not SQL** (bad column / `FORM` typo still
+  compiles), so also `bq --dry_run` the action's `query` from `dataform compile --json`
+  (inline any not-yet-deployed table it reads); if not, fall back to render + `bq --dry_run` and tell the user to
+  check compile in the Dataform UI. **Runs still go through the Dataform service** (no
+  `.df-credentials.json`). `dataform format` rewrites files — run it only on files you
+  changed, or ask first.
 - Ad-hoc queries: `bq --project_id=databuffet-nonprd query --use_legacy_sql=false '...'`
   — **always pass `--project_id`** (default gcloud project is a different one).
 - Region-level `INFORMATION_SCHEMA` is mostly permission-denied; dataset-level works.

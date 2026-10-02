@@ -1,0 +1,50 @@
+config {
+  type: "table",
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: ["dim_company"],
+  tags: [databuffet.TAG_DIM_DAILY],
+  uniqueKey: ["CustomerSegmentSK"],
+  bigquery: {
+    clusterBy: ["CustomerSegmentSK"],
+  },
+}
+
+js {
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_customer_segment_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
+}
+
+SELECT
+  ROW_NUMBER() OVER(
+    ORDER BY
+      ${databuffet.functionData.cleanString("t1.companyID")},
+      ${databuffet.functionData.cleanString("t1.Segment3")}
+  ) AS CustomerSegmentSK,
+  dim_com.CompanySK,
+  ${databuffet.functionData.cleanString("t1.companyID")} AS CompanyID,
+  ${databuffet.functionData.cleanString("t1.Segment1")} AS Segment1,
+  ${databuffet.functionData.cleanString("t1.Segment2")} AS Segment2,
+  ${databuffet.functionData.cleanString("t1.Segment3")} AS Segment3,
+  ${databuffet.functionData.cleanString("t1.DescriptionThai")} AS DescriptionThai,
+  ${databuffet.functionData.cleanString("t1.DescriptionEng")} AS DescriptionEng,
+  ${databuffet.functionData.castInt64("t1.SortOrder")} AS SortOrder,
+  ${databuffet.functionData.cleanString("t1.id")} AS MdsID
+FROM `${MdsSourceTableRef}` AS t1
+LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+  ON ${databuffet.functionData.cleanString("t1.companyID")} = dim_com.companyID
+WHERE t1.is_active = TRUE
+
+pre_operations {}
+
+post_operations {}

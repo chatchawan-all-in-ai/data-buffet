@@ -18,7 +18,7 @@ GCS AVRO (gs://file-raw-data)
   → initial   (external table + schema + UDF 7 ตัว — 17 ไฟล์)
   → validated (ทำความสะอาด cast dedup — 136 ไฟล์ = 132 transformation + 4 schema)
   → curated   (business logic, join — 11 ไฟล์ = 7 transformation + 4 schema)
-  → dimension (67 ไฟล์) + fact (15 ไฟล์)
+  → dimension (69 ไฟล์) + fact (15 ไฟล์)
   → view      (ชั้น BI/report — 34 ไฟล์)
   ท่อเสริม: cdc (จับ change) + process (แกะที่อยู่ไทยด้วย AI)
 ```
@@ -82,7 +82,8 @@ document/            เอกสาร (โฟลเดอร์นี้)
 | `gcloud` + `bq` + `gsutil` (Cloud SDK) | query ตรง: `bq --project_id=databuffet-nonprd query --use_legacy_sql=false '...'` — **ต้องใส่ `--project_id` เสมอ** เพราะ default project ของเครื่องมักไม่ใช่ตัวนี้ |
 | Python 3.x | hooks และ `document/diagrams/generate_lineage.py` ใช้ |
 | git | branch: `dev` (ทำงาน) → `nonprod` → `prod` |
-| Dataform CLI | **ไม่บังคับ** เครื่องทีมส่วนใหญ่ไม่มี — compile/run ผ่าน Dataform UI บน GCP ถ้ามีค่อยใช้ `dataform compile` ตรวจ syntax ก่อน push |
+| Node.js 20+ (มี `npm`) | ใช้ลง Dataform CLI · Windows: ลงฝั่ง Windows (`node --version`) |
+| Dataform CLI **3.0.0** (แนะนำ) | `npm install -g @dataform/cli@3.0.0` · เวอร์ชัน**ต้องตรง** `dataformCoreVersion` ใน `workflow_settings.yaml` · เช็ก: `dataform --version` · `dataform compile` ตรวจ JS/config, `ref()`, `dependencies` ที่ไม่มีจริง และ dependency วน ในเครื่องก่อน push (ไม่ต้องล็อกอิน) — **ไม่ตรวจ SQL** (ชื่อคอลัมน์ผิด, พิมพ์ `FORM` ก็ผ่าน) ต้องเอา SQL จาก `dataform compile --json` ไปยิง `bq --dry_run` ต่อ · Claude Code ใช้ตัวนี้ตรวจงานที่เขียนให้ — ไม่มีก็ทำงานได้ แต่ต้องไปดู compile ใน Dataform UI แทน · **run ยังทำผ่าน Dataform UI** (ไม่ได้ตั้ง `.df-credentials.json`) · `dataform format` แก้ไฟล์ทั้ง repo — รันเฉพาะตอนตั้งใจ |
 
 **ถ้าใช้ Windows**: Cloud SDK ของทีมติดตั้งฝั่ง **WSL (Ubuntu)** ไม่ใช่ฝั่ง Windows
 เพราะฉะนั้นสั่ง `bq` / `gcloud` / `gsutil` จาก terminal WSL (repo อยู่ที่
@@ -117,7 +118,7 @@ hooks ของ Claude Code) แล้วบอก `PASS` `FAIL` `SKIP` พร�
 | Project context | `CLAUDE.md` (root ของ repo — **อยู่ใน git** ตั้งแต่ 2026-09-01, มากับ clone เลย ไม่ต้อง copy) | สรุปสถาปัตยกรรม + กติกา ให้ Claude อ่านอัตโนมัติทุก session |
 | Skills (16) | `.claude/skills/*/SKILL.md` | `add-*-table`, `dataform-run`, `check-runs`, `data-quality-check`, `fk-integrity-scan`, `bq-drift-scan`, `backfill-dimension`, `enable-cdc`, `update-docs`, `ship`, `verify-setup` — เรียกด้วย `/<ชื่อ skill>` |
 | Agents (5) | `.claude/agents/*.md` | `dataform-expert`, `data-architect`, `bigquery-optimizer`, `data-quality-auditor`, `bq-drift-auditor` |
-| Hooks | `.claude/hooks/` | `ensure-hookspath.sh` (SessionStart — ตั้ง `core.hooksPath` + `chmod +x` ให้เองครั้งแรก), `guard-dangerous.sh` (บล็อกคำสั่งทำลายข้อมูล), `doc-sync-check.sh` (กันลืมอัปเดตเอกสาร), `pre-commit.sh` (เตือน doc-sync + regenerate diagram — **block commit ถ้า regenerate ไม่ผ่าน**; ไม่มี CI สำรองแล้วตั้งแต่ 2026-08-27; ขั้น `dataform format`/`compile` ถูกถอดออก 2026-09-23 — ตรวจ compile ใน Dataform UI) |
+| Hooks | `.claude/hooks/` | `ensure-hookspath.sh` (SessionStart — ตั้ง `core.hooksPath` + `chmod +x` ให้เองครั้งแรก), `guard-dangerous.sh` (บล็อกคำสั่งทำลายข้อมูล), `doc-sync-check.sh` (กันลืมอัปเดตเอกสาร), `pre-commit.sh` (เตือน doc-sync + regenerate diagram — **block commit ถ้า regenerate ไม่ผ่าน**; ไม่มี CI สำรองแล้วตั้งแต่ 2026-08-27; ขั้น `dataform format`/`compile` ถูกถอดออก 2026-09-23 — สั่ง `dataform compile` เองก่อน commit (§3.2) หรือดูใน Dataform UI) |
 | Permissions | `.claude/settings.json` | allowlist แบบอ่านอย่างเดียว — ของส่วนตัวใส่ `settings.local.json` (git ไม่เก็บ) |
 
 ### 4.1 การส่งมอบ `.claude/` (สำหรับคนที่ส่งให้)
@@ -187,7 +188,7 @@ chmod +x .claude/hooks/*.sh .claude/hooks/pre-commit .claude/skills/verify-setup
 1. แตกงานจาก branch `dev` (หรือแก้บน `dev` ตามธรรมเนียมทีม)
 2. แก้/เพิ่มไฟล์ `.sqlx` ตาม pattern ของ layer นั้น — ดู [how-to/](../how-to/)
 3. ตรวจว่าใช้ `databuffet.*` ไม่ hardcode ชื่อ dataset
-4. `dataform compile` (ถ้ามี CLI) หรือ push แล้วดู compile ใน Dataform UI
+4. `dataform compile` ในเครื่อง (ต้องได้ 0 error — ลง CLI ตาม §3.2) · ถ้ายังไม่ได้ลง push แล้วดู compile ใน Dataform UI
 5. อัปเดต `document/` ถ้าการแก้กระทบ pattern/inventory
 6. commit → push `dev` → merge เข้า `nonprod` เมื่อพร้อมทดสอบ
    (ขึ้น prod: [../operations/deploy-to-prod.md](../operations/deploy-to-prod.md))
@@ -197,7 +198,7 @@ chmod +x .claude/hooks/*.sh .claude/hooks/pre-commit .claude/skills/verify-setup
 1. **Timezone Bangkok เสมอ** — `CURRENT_DATE('Asia/Bangkok')`
 2. **String ทุกตัวผ่าน `cleanString`** — `''` ต้องกลายเป็น `NULL`
 3. **SK มี 2 ระบบ** — dim แบบ MERGE (`dim_company`, `dim_aging_rang`, lake dims):
-   SK คงที่ตลอดชีพ ห้าม regenerate / dim mds แบบ full rebuild (41 ตัว): SK ออกเลขใหม่
+   SK คงที่ตลอดชีพ ห้าม regenerate / dim mds แบบ full rebuild (43 ตัว): SK ออกเลขใหม่
    ทุกวัน **ห้ามเก็บข้ามวัน**
 4. **ตาราง `type: "operations"` Dataform ไม่สร้างให้** — dim แบบ MERGE และ
    `fact_transcation` ต้องมีตารางอยู่ก่อน
