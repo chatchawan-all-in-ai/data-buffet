@@ -90,6 +90,8 @@ Verified 2026-07-20 (repo scan + live BQ + 90-day query history):
 - `dim_customer_report_info` — FULL JOIN of the mds block with **every** `CustomerReportName`
   in `view_dim_invoice` (`MdsID NULL` for invoice-only names) + `CustomerSegmentSK` derived from
   `tbook_quotation`/`deb` (see [special-cases.md](special-cases.md)).
+- `dim_customer_segment` — member and fallback contracts are owned by the
+  [Customer Report Info section](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
 
 ## Why this replaced the MERGE pattern (2026-07-20)
 

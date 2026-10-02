@@ -125,7 +125,7 @@ with mds as (
     t.*,
     cus.debcode AS SegmentDebcode,
     ch.channel AS SegmentChannel,
-    -- Tier ที่ไม่ว่างแต่ไม่มีใน segment master จะ fallback DC โดยไม่ลอง channel
+    -- Tier ที่ระบุแต่ไม่มีใน master ไม่ลอง channel เพื่อคงลำดับ fallback เดิม
     (CASE
       WHEN t.CustomerTier IS NOT NULL THEN t.CustomerTier
       WHEN ch.channel = 'TT'
@@ -143,8 +143,8 @@ with mds as (
 SELECT
   ROW_NUMBER() OVER(ORDER BY t.CompanyID, t.CustomerReportKey) AS CustomerReportInfoSK,
   dim_com.CompanySK,
-  -- ไม่เข้าเงื่อนไขไหนเลย = DC · บริษัทที่ไม่มีแถวใน segment master = NULL
-  COALESCE(seg.CustomerSegmentSK, seg_dc.CustomerSegmentSK) AS CustomerSegmentSK,
+  -- คง DC fallback เดิม; ใช้ Non-Segment เฉพาะเมื่อ join ไม่เจอทั้ง segment และ DC
+  COALESCE(seg.CustomerSegmentSK, seg_dc.CustomerSegmentSK, -1) AS CustomerSegmentSK,
   -- SK ของสายงานจาก dim_department_last (update_sk_sale_rep_group เติม Section/Region/Director)
   dep.DepartmentSK,
   dep.SectionSK,
@@ -158,7 +158,7 @@ SELECT
   (CASE
     WHEN seg.CustomerSegmentSK IS NOT NULL AND t.CustomerTier IS NOT NULL THEN 'MDS'
     WHEN seg.CustomerSegmentSK IS NOT NULL THEN 'CHANNEL'
-    WHEN seg_dc.CustomerSegmentSK IS NOT NULL THEN 'DEFAULT'
+    ELSE 'DEFAULT'
   END) AS SegmentSource,
   t.SegmentDebcode,
   t.SegmentChannel,

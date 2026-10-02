@@ -290,23 +290,33 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
   → จับคู่ด้วย `CompanySK` และชื่อแบบ **ไม่สนช่องว่าง** (`REGEXP_REPLACE(..., r'\s', '')` ทั้งชื่อจาก invoice และ `cri.CustomerReportName`)
   (ผลเท่ากับ join `CustomerReportKey` เดิม — วัด 2026-10-02: 1,671,914 InvoiceSK ได้ SK ตรงกันทุกแถว);
   invoice ที่ไม่มี CustomerReportName (รหัสลูกค้าไม่อยู่ใน `deb` เช่น `TEST`) → NULL
-- **`dim_customer_report_info.CustomerSegmentSK`** — 1 ชื่อ = 1 Segment, ค่าปัจจุบัน (ไม่ย้อนตามเดือนบิล) เลือกตามลำดับ:
+- **`dim_customer_report_info.CustomerSegmentSK`** — 1 ชื่อ = 1 Segment, ค่าปัจจุบัน (ไม่ย้อนตามเดือนบิล)
+  จับคู่แถวของบริษัทเดียวกันด้วย `CompanySK` ตามลำดับ:
   1. `CustomerTier` ไม่ว่าง → ใช้รหัส tier จับคู่ `Segment3` · เมื่อจับคู่ได้ `SegmentSource = 'MDS'`
-     ถ้า tier ไม่มีใน segment master จะ fallback เป็น DC โดยไม่ลอง channel
+     ถ้า tier ไม่มีใน segment master จะใช้ fallback ข้อ 3 โดยไม่ลอง channel
   2. `CustomerTier` ว่าง → debcode ของ**บิลล่าสุด**ของชื่อนั้น (`mix_date DESC, mihVnos DESC` — ชื่อเดียวมีหลาย debcode ได้)
      → channel ล่าสุดจาก `validated_mac5.tbook_quotation` **ใน allowlist `TT/DC/DA/DG/DD/DT/DR`**
      (debcode = คำแรกของ `agent1` ที่ไม่ว่าง, เรียง `dinsert DESC, SAFE_CAST(id AS INT64) DESC`)
      กรอง allowlist ก่อนเลือกแถวล่าสุด: channel ว่างหรือนอก allowlist ไม่แทนที่แถวเก่าที่อยู่ใน allowlist
-     · `SegmentSource = 'CHANNEL'`
+     · เมื่อจับคู่ `Segment3` ได้ `SegmentSource = 'CHANNEL'`
      - `TT` → `BRONZE` ถ้า `deb.debdate` อยู่ในเดือนปัจจุบัน (Asia/Bangkok) ไม่งั้น `SILVER`
        (debdate ว่าง = SILVER) — เงื่อนไขจาก `เงื่อนไข cust.xlsx`: ร้าน TT เปิดใหม่ = BRONZE เดือนถัดไป auto SILVER
      - channel อื่น → Segment3 เดียวกัน (DD/DA/DC/DT/DG)
-  3. ไม่เข้าเงื่อนไขไหนเลย (ไม่มี quotation, หรือ channel ไม่มีใน segment master เช่น `DR`) → `DC` · `SegmentSource = 'DEFAULT'`
-  - บริษัทที่ไม่มีแถวใน segment master (ตอนนี้ทุกบริษัทนอกจาก ag01) → **NULL** โดยตั้งใจ
+  3. join รหัส segment ไม่พบ (tier ไม่มีใน master, ไม่มี quotation, หรือ channel ไม่มีใน master เช่น `DR`)
+     → ใช้แถว `Segment3 = 'DC'` ของบริษัทนั้นเมื่อมี · `SegmentSource = 'DEFAULT'` · fallback DC เดิมคงไว้
+  4. join ไม่เจอทั้ง segment และ `DC` ของบริษัทนั้น (เช่น บริษัทที่ไม่มีแถวใน segment master — ณ 2026-10-02 ทุกบริษัทนอกจาก ag01)
+     → **Non-Segment `CustomerSegmentSK = -1`** · `SegmentSource = 'DEFAULT'` · **ไม่มีแถวที่ `CustomerSegmentSK` เป็น NULL**
+     (แก้ 2026-10-02 — เดิมได้ NULL)
+  - `dim_customer_segment` มีแถว default `CustomerSegmentSK = -1` (`UNION ALL` ตาม convention แถว Unknown ของ
+    `dim_store`/MDT dims): `Segment1/2/3` และ `DescriptionThai/Eng` = `Non-Segment`, `SortOrder = 99`,
+    `CompanySK`/`CompanyID`/`MdsID` NULL · SK ของแถว MDS ยัง `ROW_NUMBER()` 1..n เหมือนเดิม
   - trace: `SegmentDebcode`, `SegmentChannel`
 - ผลวัด 2026-10-01 (ag01 40,921 ชื่อ): MDS 1,872 (SILVER 1,145 · PLATINUM 458 · GOLD 269) ·
   CHANNEL 11,136 (DC 4,454 · DD 1,976 · DT 1,974 · SILVER 1,503 · DG 1,061 · DA 168) · DEFAULT (DC) 27,913 ·
   `view_fact_transcation` จำนวนแถวเท่าเดิมทุกบริษัท (ag01 2,657,912)
+- ผลจำลอง Non-Segment 2026-10-02 (inline SQL ที่ compile แล้ว เทียบตาราง live 41,325 แถว): `CustomerReportInfoSK`
+  ไม่ซ้ำและจำนวนแถวเท่าเดิม · NULL → Non-Segment **512** ชื่อ (ac02 377 · ak02 91 · aa05 43 · ab01 1) ·
+  ag01 ไม่เปลี่ยนเลย (0 แถวเปลี่ยน SK, DEFAULT/DC ยัง 27,827) · `CustomerSegmentSK` NULL เหลือ 0
 - `CURRENT_DATE` ถูกประเมินตอน dim รัน → BRONZE→SILVER ขยับวันละครั้งตามรอบ `dimension_daily`
 
 ### ผลกระทบสูตร SCG (2026-10-02)

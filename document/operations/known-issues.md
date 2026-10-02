@@ -236,6 +236,11 @@
 
 ## การตัดสินใจเชิงออกแบบ
 
+- **2026-10-02 — Customer Segment fallback**
+
+  กฎ fallback และผลจำลองอยู่ที่
+  [Customer Report Info + Customer Segment](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
+
 - **2026-10-02 — `CustomerReportName` ใช้ `mecdesc` เฉพาะบิล SCG**
 
   สูตรที่เลือก ลำดับ fallback คอลัมน์รายสาขาสำหรับ Power BI และผลกระทบหลัง rebuild อยู่ที่

@@ -25,25 +25,45 @@ js {
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 }
 
-SELECT
-  ROW_NUMBER() OVER(
-    ORDER BY
-      ${databuffet.functionData.cleanString("t1.companyID")},
-      ${databuffet.functionData.cleanString("t1.Segment3")}
-  ) AS CustomerSegmentSK,
-  dim_com.CompanySK,
-  ${databuffet.functionData.cleanString("t1.companyID")} AS CompanyID,
-  ${databuffet.functionData.cleanString("t1.Segment1")} AS Segment1,
-  ${databuffet.functionData.cleanString("t1.Segment2")} AS Segment2,
-  ${databuffet.functionData.cleanString("t1.Segment3")} AS Segment3,
-  ${databuffet.functionData.cleanString("t1.DescriptionThai")} AS DescriptionThai,
-  ${databuffet.functionData.cleanString("t1.DescriptionEng")} AS DescriptionEng,
-  ${databuffet.functionData.castInt64("t1.SortOrder")} AS SortOrder,
-  ${databuffet.functionData.cleanString("t1.id")} AS MdsID
-FROM `${MdsSourceTableRef}` AS t1
-LEFT JOIN `${DimCompanyTableRef}` AS dim_com
-  ON ${databuffet.functionData.cleanString("t1.companyID")} = dim_com.companyID
-WHERE t1.is_active = TRUE
+WITH segment_master AS (
+  SELECT
+    ROW_NUMBER() OVER(
+      ORDER BY
+        ${databuffet.functionData.cleanString("t1.companyID")},
+        ${databuffet.functionData.cleanString("t1.Segment3")}
+    ) AS CustomerSegmentSK,
+    dim_com.CompanySK,
+    ${databuffet.functionData.cleanString("t1.companyID")} AS CompanyID,
+    ${databuffet.functionData.cleanString("t1.Segment1")} AS Segment1,
+    ${databuffet.functionData.cleanString("t1.Segment2")} AS Segment2,
+    ${databuffet.functionData.cleanString("t1.Segment3")} AS Segment3,
+    ${databuffet.functionData.cleanString("t1.DescriptionThai")} AS DescriptionThai,
+    ${databuffet.functionData.cleanString("t1.DescriptionEng")} AS DescriptionEng,
+    ${databuffet.functionData.castInt64("t1.SortOrder")} AS SortOrder,
+    ${databuffet.functionData.cleanString("t1.id")} AS MdsID
+  FROM `${MdsSourceTableRef}` AS t1
+  LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+    ON ${databuffet.functionData.cleanString("t1.companyID")} = dim_com.companyID
+  WHERE t1.is_active = TRUE
+
+), non_segment AS (
+  -- สงวน SK -1 ให้แถวกลางที่ไม่ผูกบริษัท เพื่อให้ dim_customer_report_info มีสมาชิกอ้างอิงเมื่อ join ไม่เจอ
+  SELECT
+    -1                    AS CustomerSegmentSK,
+    CAST(NULL AS INT64)   AS CompanySK,
+    CAST(NULL AS STRING)  AS CompanyID,
+    'Non-Segment'         AS Segment1,
+    'Non-Segment'         AS Segment2,
+    'Non-Segment'         AS Segment3,
+    'Non-Segment'         AS DescriptionThai,
+    'Non-Segment'         AS DescriptionEng,
+    99                    AS SortOrder,
+    CAST(NULL AS STRING)  AS MdsID
+)
+
+SELECT * FROM segment_master
+UNION ALL
+SELECT * FROM non_segment
 
 pre_operations {}
 
