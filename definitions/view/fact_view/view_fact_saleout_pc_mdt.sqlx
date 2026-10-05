@@ -59,6 +59,9 @@ SELECT
   s.product_mkt_sk,
   s.MarketingGroupID,
   s.report_sk,
+  s.region_sk,
+  s.region_manager_sk,
+  s.director_sk,
 
   IFNULL(p.pc_count, 0) AS pc_count,
   p.pc_sk_list,

@@ -1,7 +1,7 @@
 config {
     type: "table",
     schema: databuffet.FACT_TABLE,
-    dependencies: ["dim_target_saleout_mdt", "dim_sales_branch_mdt"],
+    dependencies: ["dim_target_saleout_mdt", "dim_sales_branch_mdt", "dim_region", "dim_region_manager", "dim_director"],
     tags: [databuffet.TAG_FACT_DAILY],
     uniqueKey: ["target_date", "branch_code", "marketing_group_id", "sub_marketing_id", "segment_id"],
     bigquery: {
@@ -24,9 +24,33 @@ js {
         name: "dim_sales_branch_mdt",
     };
     const DimBranchTableRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
+    const DimRegionRef        = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_region`;
+    const DimRegionManagerRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_region_manager`;
+    const DimDirectorRef      = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_director`;
+
 }
 
-WITH source_data AS (
+WITH region_at_date AS (
+  -- ชุด Region Transaction เหมือน fact_saleout_mdt — ค่า ณ วันที่ของเป้า ไม่ใช่ค่าปัจจุบัน
+  SELECT RegionID, RegionSK, DirectorID, StartDate, EndDate
+  FROM `${DimRegionRef}`
+  WHERE companyID = 'ag01'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionSK) = 1
+
+), region_manager_at_date AS (
+  SELECT RegionID, RegionManagerSK, StartDate, EndDate
+  FROM `${DimRegionManagerRef}`
+  WHERE companyID = 'ag01'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionManagerSK) = 1
+
+), director_at_date AS (
+  -- ต้องผ่าน dim_region ก่อนเพราะ DirectorID อยู่ที่นั่น
+  SELECT DirectorID, DirectorSK, StartDate, EndDate
+  FROM `${DimDirectorRef}`
+  WHERE companyID = 'ag01'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY DirectorID, StartDate ORDER BY DirectorSK) = 1
+
+), source_data AS (
   SELECT
     t.TargetDate AS target_date,
     t.StoreCode  AS store_code,
@@ -34,6 +58,9 @@ WITH source_data AS (
     IFNULL(t.BranchMdtSK,        -1) AS branch_sk,
     IFNULL(dim_br.ZoneMdtSK,     -1) AS zone_sk,
     IFNULL(t.ProductMktSK,       -1) AS product_mkt_sk,
+    IFNULL(rg.RegionSK,         -1) AS region_sk,
+    IFNULL(rgm.RegionManagerSK, -1) AS region_manager_sk,
+    IFNULL(dr.DirectorSK,       -1) AS director_sk,
 
 
     -- เป้าอยู่ที่เกรนกลุ่มการตลาด ไม่ใช่รายสินค้า — ไม่มี SK ระดับกลุ่มใน dim_product_mkt
@@ -60,6 +87,15 @@ WITH source_data AS (
   FROM `${DimTargetTableRef}` AS t
   LEFT JOIN `${DimBranchTableRef}` AS dim_br
     ON t.BranchMdtSK = dim_br.BranchMdtSK
+    LEFT JOIN region_at_date AS rg
+    ON  t.StoreCode = rg.RegionID
+    AND t.TargetDate BETWEEN rg.StartDate AND rg.EndDate
+  LEFT JOIN region_manager_at_date AS rgm
+    ON  t.StoreCode = rgm.RegionID
+    AND t.TargetDate BETWEEN rgm.StartDate AND rgm.EndDate
+  LEFT JOIN director_at_date AS dr
+    ON  rg.DirectorID = dr.DirectorID
+    AND t.TargetDate BETWEEN dr.StartDate AND dr.EndDate
   -- ตัดแถว unknown (SK = -1) ของ dim ทิ้ง — fact ไม่ควรมีแถวที่ไม่มีวันที่
   WHERE t.TargetDate IS NOT NULL
 )
