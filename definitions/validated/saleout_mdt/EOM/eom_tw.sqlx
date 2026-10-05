@@ -1,0 +1,84 @@
+config {
+    type: "table",
+    schema: databuffet.VALIDATED_SALEOUT_MDT,
+    dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_FULL],
+    uniqueKey: ["month_date", "branch_code", "product_code"],
+    bigquery: {
+        partitionBy: "month_date",
+        clusterBy: ["branch_code", "product_code"]
+    },
+}
+
+/*
+  ยอดปิดรายเดือนที่ไทวัสดุส่งมาเอง (โฟลเดอร์ SO_MDT_EOM/TW)
+  คนละชุดกับ report_sale_subscription ซึ่งเป็นฟีดรายวัน — ตัวนี้คือ "ยอดที่ห้างแจ้ง"
+
+  TW ปิดงวดวันที่ 8 ของเดือนถัดไป ช้ากว่าห้างอื่นที่ปิดวันที่ 5
+  type: "table" เพราะ ASATDATE เป็นวันที่ DAG รัน ไม่ใช่งวด · ดู known-issues 2026-10-05
+*/
+
+js {
+    const sourceTableRef = `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_tw`;
+}
+
+WITH src AS (
+
+    SELECT
+        -- งวดมาจากคอลัมน์ PERIOD ที่ DAG อ่านจากหัวไฟล์ (`Period : 2026-08`) แล้วแปะทุกแถว
+        -- ⚠️ ห้ามใช้ ASATDATE เป็นงวด และห้ามใช้ Last_Sold_Date ด้วย — ไฟล์เป็นสต็อก+ยอดขาย
+        --    Last_Sold_Date คือวันขายล่าสุดของ SKU นั้น ซึ่งย้อนไปไกลกว่างวดได้ (เจอ 13/07 ในงวด 08)
+        PARSE_DATE('%Y-%m-%d', CONCAT(TRIM(PERIOD), '-01')) AS month_date,
+
+        -- TW ใช้สตริงเต็ม `60001-CRC Thai Watsadu ...` เป็นรหัสสาขา เหมือนฟีดรายวัน
+        ${databuffet.functionData.cleanString('Store')} AS branch_code,
+
+        -- ตัดศูนย์นำหน้าให้ตรงกับ product_code ของ curated (LTRIM(SKU,'0'))
+        -- ไม่ตัดแล้วเทียบกับฟีดรายวันไม่ติดสักแถว
+        LTRIM(${databuffet.functionData.cleanCode('SKU')}, '0') AS product_code,
+        ${databuffet.functionData.cleanString('Description')}   AS product_name,
+        ${databuffet.functionData.cleanCode('Barcode')}         AS barcode_match,
+
+        Sales_Qty    AS sale_qty,
+        Sales_Amount AS sale_amount,
+
+        ${databuffet.functionData.parseAsatDate()} AS asatdate,
+        ASATDATE AS asat_raw
+
+    FROM `${sourceTableRef}`
+
+    -- ⚠️ ไฟล์มีแถวสรุปต่อท้าย เหมือน GB แต่คนละหน้าตา — ไม่กรองยอดเบิ้ลสองเท่าพอดี
+    --    วัด 2026-10-05 งวด 08: Store ว่าง 2 แถว รวม 24,091,003.12 = ยอดทั้งงวดเป๊ะ
+    --    และอีก 1 แถวที่ Store เขียนว่า 'Count of Rows - 5452'
+    --    ไม่กรอง: 48,182,006.24  ·  กรองแล้ว: 24,091,003.12
+    WHERE PERIOD IS NOT NULL
+      AND Store IS NOT NULL AND TRIM(Store) <> ''
+      AND NOT STARTS_WITH(TRIM(Store), 'Count of Rows')
+      AND SKU IS NOT NULL
+
+      -- ไฟล์เป็นรายงานสต็อก+ยอดขาย แถวที่ไม่มีการขายเลยคือรายการสต็อกเฉย ๆ ไม่ใช่ยอดปิดงวด
+      -- เก็บแถวที่ qty เป็น 0 แต่มียอดเงิน (และกลับกัน) ไว้ เพราะเป็นการขายจริงที่ผิดปกติ ต้องเห็น
+      AND NOT (IFNULL(Sales_Qty, 0) = 0 AND IFNULL(Sales_Amount, 0) = 0)
+
+), latest AS (
+
+    -- งวดเดียวกันถูกส่งซ้ำได้ (ห้างแก้ไฟล์ย้อนหลัง) และจะไปอยู่คนละพาร์ทิชัน ASATDATE
+    -- TW ไม่มีคอลัมน์เวลาสร้างไฟล์แบบ CRDATE ของ HP จึงใช้ ASATDATE เป็นตัวตัด
+    -- ตัดข้ามพาร์ทิชันโดยตั้งใจ (PARTITION BY month_date อย่างเดียว) ไม่งั้นงวดเดิมจะได้ 2 ชุด
+    SELECT * FROM src
+    QUALIFY asat_raw = MAX(asat_raw) OVER (PARTITION BY month_date)
+
+)
+
+SELECT
+    month_date,
+    'TW'                      AS store_code,
+    branch_code,
+    product_code,
+    ANY_VALUE(product_name)   AS product_name,
+    ANY_VALUE(barcode_match)  AS barcode_match,
+    SUM(sale_qty)             AS sale_qty,
+    SUM(sale_amount)          AS sale_amount,
+    MAX(asatdate)             AS asatdate
+FROM latest
+GROUP BY month_date, branch_code, product_code
