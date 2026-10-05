@@ -1,10 +1,8 @@
 # Running & Troubleshooting
 
-> **LLM context**: How to execute and debug this project. Important environment facts:
-> the `dataform` CLI 3.0.0 is a recommended install on the Windows side
-> (`npm install -g @dataform/cli@3.0.0`, must match `dataformCoreVersion`) and is used for
-> `compile`/`format` only — execution happens through the Dataform service in GCP.
-> Machines without it fall back to render + `bq --dry_run`.
+> **LLM context**: How to execute and debug this project. Local validation, cached
+> tooling, credential handling, and execution constraints are owned by the
+> [run/debug guide](../../how-to/run-and-debug.md).
 > Ad-hoc queries: `bq --project_id=databuffet-nonprd` (default gcloud project differs!).
 
 ## Run graph by tag
@@ -24,13 +22,8 @@
 Unused-but-defined: `dimension_monthly`, `fact_monthly`, `fact_yearly`,
 `curated_full`, `curated_incremental`. There is **no** `assertions` tag.
 
-```bash
-dataform compile                 # syntax + graph check (on a machine that has the CLI)
-dataform run --dry-run
-dataform run --tags dimension_daily
-dataform run --actions validated_mac5.mih
-dataform compile --json | jq '.tables[] | {name: .target.name, deps: .dependencyTargets}'
-```
+For local commands see [README — Common Commands](../../../README.md#common-commands);
+for executing tags/actions see the [run guide](../../how-to/run-and-debug.md#รันด้วย-tag).
 
 ## Ad-hoc BigQuery from local WSL
 

@@ -56,8 +56,8 @@
 
 | คำ | ความหมาย |
 |---|---|
-| **`dataform compile`** | ตรวจ syntax + สร้าง execution graph (ไม่รันจริง) |
-| **`dataform run --tags <tag>`** | รันเฉพาะกลุ่ม เช่น `dimension_daily`, `validated_incremental` |
+| **Dataform compile** | สร้าง execution graph — วิธีตรวจและข้อจำกัดดู [run/debug guide](../how-to/run-and-debug.md#compile-กับ-sql-dry-run) |
+| **Dataform execution** | รัน action/tag ที่เลือก — วิธีรันดู [run/debug guide](../how-to/run-and-debug.md#รันด้วย-tag) |
 | **`bq` CLI** | Query BigQuery ตรง ๆ — ต้องระบุ `--project_id=databuffet-nonprd` เสมอ |
 
 ## คำที่เพิ่มมาใหม่ (2026-09)

@@ -76,7 +76,7 @@
     > `dim_rebate` ซึ่ง**มี** .sqlx) และ `RLS_Customer360` (ตอนนี้ repo สร้างเองแล้วที่
     > `definitions/process/rls_customer360.sqlx` และเป็นตัวพิมพ์เล็ก) ทั้งคู่อยู่ใน
     > `dependencies[]` ของผู้ใช้เรียบร้อยแล้ว
-  - ⚠️ ยังไม่ได้ compile-verify (เครื่องนี้ไม่มี dataform CLI) — ต้องเช็คตอนขึ้น service:
+  - ⚠️ ตอนบันทึกรายการนี้ยังไม่ได้ compile-verify — ตรวจในเครื่องได้ตาม [run/debug guide](../how-to/run-and-debug.md#ตรวจงานในเครื่องด้วย-no-mistakes) และต้องเช็คตอนขึ้น service:
     (1) view ที่อ้าง view อื่น (chain เช่น `view_dim_aging`→`view_dim_channel`,
     `Model_Invoice_Transaction`→`view_fact_transcation`) resolve เรียงลำดับถูก
     (2) `fact_transcation.sqlx` อ่าน `onetime.Transaction_Data_Mart` และ
@@ -182,9 +182,7 @@
 
 ## ข้อจำกัด environment
 
-- `dataform` CLI ไม่ได้มากับเครื่อง — ลงเองตาม onboarding §3.2 (`npm install -g @dataform/cli@3.0.0`
-  ฝั่ง Windows, 2026-10-02 เครื่อง Warayut ลงแล้ว compile ทั้ง repo 0 error) · ใช้ได้แค่
-  `compile`/`format` — `run` ยังทำผ่าน Dataform UI
+- การตรวจในเครื่อง, environment ที่ใช้ซ้ำ และข้อจำกัดการรัน: [run/debug guide](../how-to/run-and-debug.md)
 - `bq` ต้องระบุ `--project_id=databuffet-nonprd` (default gcloud project เป็นตัวอื่น)
 - INFORMATION_SCHEMA ระดับ region ถูก deny — ใช้ระดับ dataset
 - `workflow_settings.yaml` เป็นค่าเฉพาะ environment — `BACKFILL_DAYS` ตั้งเองในแต่ละ

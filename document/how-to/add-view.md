@@ -87,11 +87,8 @@ LEFT JOIN `${DimCompanyTableRef}` AS com ON ...
 สรุปสั้น: แก้ `.sqlx` → commit → render SQL → `CREATE OR REPLACE VIEW` บน console →
 รัน `bq-drift-scan` ให้ขึ้น identical
 
-ถ้าวันไหนใส่ tag `view` เข้าตารางเวลาแล้ว คำสั่งคือ:
-
-```bash
-dataform run --tags view
-```
+ถ้าวันไหนใส่ tag `view` เข้าตารางเวลาแล้ว ให้เลือก tag นี้ตาม
+[คู่มือรันงาน](run-and-debug.md#รันด้วย-tag)
 
 ไม่ว่าทางไหน view ต้องมาหลัง table layer (`dimension_daily` / `fact_daily`) เสมอ
 

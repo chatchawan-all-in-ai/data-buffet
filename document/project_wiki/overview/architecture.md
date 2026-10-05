@@ -95,5 +95,4 @@ Side pipelines:
 - `workflow_settings.yaml` (environment-specific): defaultProject `databuffet-nonprd`,
   vars `RAW_BUCKET`, `MDS_BACKFILL_DAYS` (currently 1).
 - Branches: `dev` (working) → `nonprod` → `prod`; also `hotfix`.
-- `dataform` CLI is not installed in the local WSL environment — compile/run happens
-  via the Dataform service; `bq --project_id=databuffet-nonprd` works for ad-hoc queries.
+- Local validation and execution setup: [run/debug guide](../../how-to/run-and-debug.md).
