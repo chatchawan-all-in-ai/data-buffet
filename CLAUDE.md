@@ -55,9 +55,9 @@ git `core.hooksPath` points to `.claude/hooks` — **the only diagram-sync net**
 since the `diagrams-up-to-date` GitHub Action was removed 2026-08-27 (user
 decision: check locally before commit, not on GitHub). pre-commit now **blocks**
 the commit if `generate_lineage.py` is missing/fails. Its old `dataform format` +
-`compile` step was **removed 2026-09-23** (user decision — no machine has the CLI,
-so it only ever printed a skip warning); nothing checks SQLX compile locally, verify
-in the Dataform UI. **No manual setup needed any more**: the
+`compile` step was **removed 2026-09-23** (user decision — the CLI was unavailable
+then, so it only printed a skip warning); local checks are documented in the
+[run/debug guide](document/how-to/run-and-debug.md). **No manual setup needed any more**: the
 `SessionStart` hook `ensure-hookspath.sh` sets `core.hooksPath` and `chmod +x`
 on the first session in a freshly copied `.claude/` (idempotent; never
 overrides a hooksPath the user set to something else).
@@ -239,16 +239,8 @@ exist.**
   Run BigQuery/GCS commands through WSL, e.g.
   `wsl -e bash -lc "bq --project_id=databuffet-nonprd query --use_legacy_sql=false '...'"`.
   Windows has `python` (3.14) and `node`; WSL has `python3` (3.12).
-- **Dataform CLI 3.0.0 is a recommended install** (onboarding §3.2:
-  `npm install -g @dataform/cli@3.0.0`, Windows side, version must match
-  `dataformCoreVersion`). Check with `dataform --version`: if it works, verify SQLX
-  with `dataform compile` (0 errors) — it catches JS/config errors, unresolved `ref()`,
-  missing `dependencies[]` and cycles, but **not SQL** (bad column / `FORM` typo still
-  compiles), so also `bq --dry_run` the action's `query` from `dataform compile --json`
-  (inline any not-yet-deployed table it reads); if not, fall back to render + `bq --dry_run` and tell the user to
-  check compile in the Dataform UI. **Runs still go through the Dataform service** (no
-  `.df-credentials.json`). `dataform format` rewrites files — run it only on files you
-  changed, or ask first.
+- Local Dataform validation, tool setup, and execution limits:
+  [run/debug guide](document/how-to/run-and-debug.md).
 - Ad-hoc queries: `bq --project_id=databuffet-nonprd query --use_legacy_sql=false '...'`
   — **always pass `--project_id`** (default gcloud project is a different one).
 - Region-level `INFORMATION_SCHEMA` is mostly permission-denied; dataset-level works.

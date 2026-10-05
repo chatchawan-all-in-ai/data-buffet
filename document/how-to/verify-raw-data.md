@@ -167,10 +167,8 @@ for f in r.writer_schema['fields']:
 
 ## 7. ตรวจโค้ดหลังเขียนเสร็จ
 
-```bash
-dataform compile          # syntax + ลำดับ dependency — ต้องไม่มี error
-dataform compile --json   # ดู SQL ที่ compile ออกมาจริง
-```
+ตรวจ compile/SQL ตาม [README — Common Commands](../../README.md#common-commands)
+และดูวิธีอ่าน compiled SQL ใน [run/debug guide](run-and-debug.md#รันด้วย-tag)
 
 ## 8. ตรวจทั้ง source ทีเดียว
 

@@ -116,8 +116,8 @@ OPTIONS(format='AVRO', uris=['gs://file-raw-data/<gcs_prefix>/<table>/*.avro'])
 ## การผูก dependency
 
 `create_all_table_raw_<source>` ขึ้นกับ `drop_all_tables_*` ของ source นั้น ส่วนไฟล์
-`validated_schema_*` ขึ้นกับ create action อีกที · `dataform run --tags initial` จึง
-สร้าง raw external table ใหม่ได้สะอาด
+`validated_schema_*` ขึ้นกับ create action อีกที · เลือก tag `initial` ตาม
+[คู่มือรันงาน](../../how-to/run-and-debug.md#รันด้วย-tag) เพื่อสร้าง raw external table ใหม่ได้สะอาด
 
 ⚠️ tag `re-initial` **DROP ตาราง validated/curated ของ MAC5** — ใช้เฉพาะตอน rebuild
 ทั้งก้อน ข้อมูลใน incremental table จะหายจนกว่าจะรันใหม่ (PreToolUse hook บล็อกคำสั่งนี้

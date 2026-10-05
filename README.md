@@ -215,7 +215,8 @@ loaded `mds_dataset` (master-data tables `mds_data_*_master` with `id` / `is_act
 
 ## Tags
 
-Run any subset of the graph by tag (`dataform run --tags <tag>`):
+Select tags for an execution in the Dataform service (see the
+[run guide](document/how-to/run-and-debug.md#รันด้วย-tag)):
 
 | Group | Tags in use |
 |-------|-------------|
@@ -235,23 +236,21 @@ There is no `assertions` tag — the project has no Dataform assertions.
 ## Common Commands
 
 ```bash
-# Validate compilation (catch SQLX/JS errors)
-dataform compile
+# Compile the project graph without querying BigQuery
+bash scripts/nm-test.sh
 
-# Show the execution plan without running
-dataform run --dry-run
+# Check whitespace and dry-run SQL for committed changes
+bash scripts/nm-lint.sh
 
-# Run a single layer
-dataform run --tags validated_incremental
-dataform run --tags dimension_daily
-dataform run --tags fact_daily
-
-# Run a single action (with dependencies)
-dataform run --actions validated_mac5.mih --include-deps
-
-# Inspect the dependency graph
-dataform compile --json | jq '.tables[] | {name: .target.name, deps: .dependencyTargets}'
+# Request dry-run checks for all table/operation actions
+bash scripts/nm-lint.sh --all
 ```
+
+These are the commands configured in [`.no-mistakes.yaml`](.no-mistakes.yaml).
+See the [local validation guide](document/how-to/run-and-debug.md#ตรวจงานในเครื่องด้วย-no-mistakes)
+for prerequisites, the reusable environment, action selection, credentials, and
+validation limits; see [running by tag](document/how-to/run-and-debug.md#รันด้วย-tag)
+for execution in GCP.
 
 Ad-hoc queries: `bq --project_id=databuffet-nonprd query --use_legacy_sql=false '...'`
 (always pass `--project_id`).

@@ -59,10 +59,8 @@ config {
 
 ### 5. ตรวจและรัน
 
-```bash
-dataform compile
-dataform run --actions validated_<source>.<table>
-```
+ตรวจ compile/SQL ตาม [README — Common Commands](../../README.md#common-commands)
+แล้วเลือก action `validated_<source>.<table>` ตาม [คู่มือรันงาน](run-and-debug.md#รันด้วย-tag)
 
 ## Checklist
 
