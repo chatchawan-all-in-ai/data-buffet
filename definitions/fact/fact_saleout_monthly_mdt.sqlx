@@ -1,7 +1,7 @@
 config {
     type: "table",
     schema: databuffet.FACT_TABLE,
-    dependencies: ["dim_sales_branch_mdt", "dim_product_mdt", "dim_product_mkt", "dim_report", "dim_region", "dim_region_manager", "dim_director"],
+    dependencies: ["curated_saleout_monthly_mdt", "dim_sales_branch_mdt", "dim_product_mdt", "dim_product_mkt", "dim_report", "dim_region", "dim_region_manager", "dim_director"],
     tags: [databuffet.TAG_FACT_MONTHLY],
     uniqueKey: ["month_date", "store_code", "branch_code", "sales_channel", "product_code"],
     bigquery: {
@@ -17,8 +17,10 @@ config {
 */
 
 js {
-    // ต้นทางชั่วคราว — สลับเป็น validated เมื่อไฟล์ขึ้น GCS แล้ว (ดูเอกสาร §สิ่งที่ยังขาด)
-    const SourceRef = `${databuffet.DATABASE}.onetime.saleout_monthly_mdt`;
+    // ต้นทางอยู่ใน Dataform แล้วตั้งแต่ 2026-10-05 — เลิกใช้ onetime.saleout_monthly_mdt
+    // ที่ปั้นด้วยมือและสร้างใหม่จากโค้ดไม่ได้ · ตัวใหม่เลือกแหล่งเองต่อ (เดือน, ห้าง):
+    // ไฟล์ปิดงวดจากห้าง > ไฟล์ BI > ยุบจากฟีดรายวัน — ดู curated_saleout_monthly_mdt.sqlx
+    const SourceRef = `${databuffet.DATABASE}.${databuffet.CURATED_SALEOUT_MDT}.curated_saleout_monthly_mdt`;
     const DimBranchRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_sales_branch_mdt`;
     const DimProductRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_product_mdt`;
     const DimProductMktRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_product_mkt`;
@@ -41,6 +43,18 @@ WITH branch_lookup AS (
 
   SELECT ProductMktSK, ANY_VALUE(MarketingGroupID) AS MarketingGroupID
   FROM `${DimProductMktRef}` WHERE CompanyID = 'ag01' GROUP BY 1
+
+), waiting_mkt AS (
+
+  -- แถว dummy สำหรับสินค้าที่ยังไม่รู้กลุ่มการตลาด (999 / Waiting Master)
+  -- มีอยู่ใน dim_product_mkt อยู่แล้วแต่เดิมไม่มีใครถูกส่งมาที่นี่เลย — สินค้าที่จับไม่ได้
+  -- ตกไปที่ SK -1 ซึ่ง BI โชว์เป็นช่องว่าง ลูกค้าดูไม่ออกว่ามีอะไรรอเติมอยู่ (แก้ 2026-10-05)
+  --
+  -- ⚠️ หาด้วย MarketingGroupID ไม่ใช่ฮาร์ดโค้ด SK — dim_product_mkt rebuild ทุกวัน SK เปลี่ยนได้
+  -- ถ้าวันไหนแถวนี้หายไป IFNULL ชั้นนอกจะคืน -1 เหมือนเดิม ไม่พังเงียบ
+  SELECT ANY_VALUE(ProductMktSK) AS WaitingMktSK
+  FROM `${DimProductMktRef}`
+  WHERE CompanyID = 'ag01' AND MarketingGroupID = '999'
 
 ), report_exact AS (
 
@@ -103,7 +117,8 @@ SELECT
   IFNULL(b.ZoneMdtSK,    -1) AS zone_sk,
   IFNULL(p.ProductMdtSK, -1) AS product_mdt_sk,
   IFNULL(p.ProductSK,    -1) AS product_sk,
-  IFNULL(p.ProductMktSK, -1) AS product_mkt_sk,
+   -- NULLIF จับทั้งสองกรณี: สินค้าที่ไม่มีในทะเบียนเลย (NULL) และที่มีแต่ยังไม่ได้จัดกลุ่ม (-1)
+  IFNULL(NULLIF(p.ProductMktSK, -1), IFNULL((SELECT WaitingMktSK FROM waiting_mkt), -1)) AS product_mkt_sk,
   COALESCE(rep.ReportSK, rep_fb.ReportSK, -1) AS report_sk,
   IFNULL(rg.RegionSK,         -1) AS region_sk,
   IFNULL(rgm.RegionManagerSK, -1) AS region_manager_sk,

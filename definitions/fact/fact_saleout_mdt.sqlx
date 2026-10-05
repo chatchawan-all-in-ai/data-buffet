@@ -50,6 +50,18 @@ WITH mkt_group AS (
   WHERE CompanyID = 'ag01'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY ProductMktSK ORDER BY MarketingGroupID) = 1
 
+), waiting_mkt AS (
+
+  -- แถว dummy สำหรับสินค้าที่ยังไม่รู้กลุ่มการตลาด (999 / Waiting Master)
+  -- มีอยู่ใน dim_product_mkt อยู่แล้วแต่เดิมไม่มีใครถูกส่งมาที่นี่เลย — สินค้าที่จับไม่ได้
+  -- ตกไปที่ SK -1 ซึ่ง BI โชว์เป็นช่องว่าง ลูกค้าดูไม่ออกว่ามีอะไรรอเติมอยู่ (แก้ 2026-10-05)
+  -- วัด 2026-10-05: 1,389 แถว 36,052,492.68 บาท เกือบทั้งหมดเป็นรหัสสั่งพิเศษ/งานโครงการ
+  --
+  -- ⚠️ หาด้วย MarketingGroupID ไม่ใช่ฮาร์ดโค้ด SK — dim_product_mkt rebuild ทุกวัน SK เปลี่ยนได้
+  -- ถ้าวันไหนแถวนี้หายไป IFNULL ชั้นนอกจะคืน -1 เหมือนเดิม ไม่พังเงียบ
+  SELECT ANY_VALUE(ProductMktSK) AS WaitingMktSK
+  FROM `${DimProductMktTableRef}`
+  WHERE CompanyID = 'ag01' AND MarketingGroupID = '999'
 ), report_exact AS (
   -- บรรทัดรายงานที่ระบุกลุ่มสินค้าไว้ เช่น BT+001 -> 17 (Modern Trade_PE)
   -- ⚠️ dim_report.RegionID เก็บ "หน่วยที่ออกรายงาน" ไม่ใช่ภูมิภาค
@@ -106,7 +118,8 @@ WITH mkt_group AS (
     IFNULL(dim_br.ZoneMdtSK,     -1) AS zone_sk,
     IFNULL(dim_pr.ProductMdtSK,  -1) AS product_mdt_sk,
     IFNULL(dim_pr.ProductSK,     -1) AS product_sk,
-    IFNULL(dim_pr.ProductMktSK,  -1) AS product_mkt_sk,
+     -- NULLIF จับทั้งสองกรณี: สินค้าที่ไม่มีในทะเบียนเลย (NULL) และที่มีแต่ยังไม่ได้จัดกลุ่ม (-1)
+    IFNULL(NULLIF(dim_pr.ProductMktSK, -1), IFNULL((SELECT WaitingMktSK FROM waiting_mkt), -1)) AS product_mkt_sk,
     COALESCE(rep.ReportSK, rep_fb.ReportSK, -1) AS report_sk,
     -- ชุด "Transaction" ตามเอกสาร requirement — ค่า ณ วันที่ขาย ไม่ใช่ค่าปัจจุบัน
     -- ต่างจาก RegionSK/RegionManagerSK ใน dim_sales_branch_mdt ซึ่งมาจาก _last = ค่าล่าสุด

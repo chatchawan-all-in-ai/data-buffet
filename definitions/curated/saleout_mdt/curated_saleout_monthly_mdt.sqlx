@@ -1,0 +1,124 @@
+config {
+    type: "table",
+    schema: databuffet.CURATED_SALEOUT_MDT,
+    dependencies: ["curated_schema_saleout"],
+    tags: [databuffet.TAG_CURATED, databuffet.TAG_CURATED_FULL],
+    uniqueKey: ["month_date", "store_code", "branch_code", "product_code"],
+    bigquery: {
+        partitionBy: "month_date",
+        clusterBy: ["store_code", "branch_code", "product_code"]
+    },
+}
+
+/*
+  ยอดขาย Sales Out รายเดือน — ตัวที่ fact_saleout_monthly_mdt ควรอ่าน
+  แทนที่ onetime.saleout_monthly_mdt ซึ่งปั้นด้วยมือ สร้างใหม่จากโค้ดไม่ได้ และเคยพังมาแล้ว
+  (สคริปต์แปลงไฟล์เดือน 8 คูณ -1 ซ้ำ ทำให้รายการคืนของ GB กลายเป็นบวก เกิน 548,340 บาท
+   สคริปต์ตัวนั้นอยู่ใน scratchpad ที่ถูกลบไปแล้ว ไล่กลับไม่ได้ — ดู known-issues 2026-10-05)
+
+  เกรน: เดือน + ห้าง + สาขา + สินค้า  (month_date = วันแรกของเดือน)
+  fact ครอบ LAST_DAY() เองอยู่แล้ว ชั้นนี้จึงใช้วันแรกให้สม่ำเสมอ
+
+  เลือกแหล่งต่อ 1 เดือน ต่อ 1 ห้าง ตามลำดับความน่าเชื่อถือ — ตัวแรกที่มีข้อมูลชนะ
+    1 CHAIN_FILE    ไฟล์ปิดงวดที่ห้างส่งมาเอง (ชั้น EOM)      ส.ค. 2026 เป็นต้นมา
+    2 BI            ไฟล์ที่ทีม BI ส่งให้ตอนตั้งระบบ            2022-01 ถึง 2026-07
+    3 DAILY_ROLLUP  ยุบจากฟีดรายวัน                          เดือนที่กำลังเดินอยู่
+
+  ช่วงเวลาแทบไม่ทับกัน — BI จบ ก.ค. 2026 พอดีตรงที่ EOM เริ่ม ส.ค. 2026
+  ที่ทับคือเดือนที่ห้างยังไม่ปิดงวด ซึ่ง DAILY_ROLLUP รับไปจนกว่าไฟล์ปิดงวดจะเข้า แล้วสลับเอง
+
+  ⚠️ ห้ามยุบ 3 แหล่งเข้าด้วยกันแบบ SUM เด็ดขาด — มันคือยอดเดียวกันคนละแหล่ง บวกกันคือเบิ้ล
+*/
+
+js {
+    const LastYearMonthlyRef = `${databuffet.DATABASE}.${databuffet.ONETIME}.saleout_lastyear_monthly`;
+}
+
+WITH eom AS (
+
+    -- ⚠️ เอาเฉพาะงวดที่ปิดแล้ว — eom_hp มีงวดเดือนปัจจุบันติดมาด้วยเพราะห้าง export
+    -- เดือนที่ยังไม่จบ (วัด 2026-10-05: งวด 10 มีแค่ 1.5M จาก 3 วันแรก)
+    -- ถ้าไม่กรอง เดือนปัจจุบันจะถูกตีเป็น CHAIN_FILE ทั้งที่เป็นยอดไม่ครบเดือน
+    SELECT * FROM (
+        SELECT month_date, store_code, branch_code, branch_name,
+               product_code, product_name, sale_qty, sale_amount
+        FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "eom_gb")}
+        UNION ALL
+        SELECT month_date, store_code, branch_code, branch_name,
+               product_code, product_name, sale_qty, sale_amount
+        FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "eom_hp")}
+        UNION ALL
+        -- TW กับ BT ไม่ส่งชื่อสาขาแยกมา ปล่อย NULL ให้ตรงกับที่ onetime เคยเป็น
+        SELECT month_date, store_code, branch_code, CAST(NULL AS STRING),
+               product_code, product_name, sale_qty, sale_amount
+        FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "eom_tw")}
+        UNION ALL
+        SELECT month_date, store_code, branch_code, CAST(NULL AS STRING),
+               product_code, product_name, sale_qty, sale_amount
+        FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "eom_bt")}
+    )
+    WHERE month_date < DATE_TRUNC(CURRENT_DATE('Asia/Bangkok'), MONTH)
+
+), bi AS (
+
+    -- ไฟล์ที่ทีม BI ให้มาตอนตั้งระบบ เป็นแหล่งเดียวที่มีประวัติก่อนฟีดรายวันจะเริ่ม
+    -- ⚠️ สร้างใหม่จากฟีดรายวันไม่ได้ — ตรวจ 2026-10-05: ตรงกันแค่ 23 จาก 55 เดือน
+    --    ต่างกันตั้งแต่ ม.ค. 2023 และเดือนล่าสุดต่างหลักสิบล้าน (ก.พ. 2026 ต่าง 34.1M)
+    --    ตารางนี้จึงยังต้องพึ่ง onetime อยู่ 1 จุด และเป็นจุดเดียวที่เหลือ
+    SELECT
+        DATE_TRUNC(month_date, MONTH) AS month_date,   -- ต้นทางใช้วันสุดท้ายของเดือน
+        store_code, branch_code, branch_name,
+        product_code, product_name, sale_qty, sale_amount
+    FROM `${LastYearMonthlyRef}`
+
+), daily AS (
+
+    -- ยุบฟีดรายวัน · รับเดือนที่ยังไม่มีไฟล์ปิดงวด และเดือนที่กำลังเดินอยู่
+    -- ยอดจะโตขึ้นทุกวันที่รัน จนกว่าไฟล์ปิดงวดจะเข้ามาทับ
+    SELECT
+        DATE_TRUNC(sale_date, MONTH) AS month_date,
+        store_code,
+        branch_code,
+        ANY_VALUE(branch_name)  AS branch_name,
+        product_code,
+        ANY_VALUE(product_name) AS product_name,
+        SUM(sale_qty)           AS sale_qty,
+        SUM(sale_amount)        AS sale_amount
+    FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_mdt")}
+    WHERE store_code IS NOT NULL AND branch_code IS NOT NULL
+    GROUP BY month_date, store_code, branch_code, product_code
+
+), all_src AS (
+
+    SELECT 1 AS prio, 'CHAIN_FILE'   AS source_type, * FROM eom
+    UNION ALL
+    SELECT 2, 'BI',           * FROM bi
+    UNION ALL
+    SELECT 3, 'DAILY_ROLLUP', * FROM daily
+
+), winner AS (
+
+    -- แหล่งที่ดีที่สุดที่มีจริงของแต่ละ (เดือน, ห้าง)
+    -- ตัดสินที่ระดับห้าง ไม่ใช่ระดับสาขาหรือสินค้า — ไม่งั้นเดือนเดียวจะผสมแหล่งกันจนเทียบไม่ได้
+    SELECT month_date, store_code, MIN(prio) AS prio
+    FROM all_src
+    GROUP BY month_date, store_code
+
+)
+
+SELECT
+    s.month_date,
+    s.store_code,
+    s.branch_code,
+    s.branch_name,
+    '-'           AS sales_channel,   -- เกรนนี้ไม่มีช่องทาง เก็บไว้ให้ schema ตรงกับตัวเดิม
+    s.product_code,
+    s.product_name,
+    s.sale_qty,
+    s.sale_amount,
+    s.source_type
+FROM all_src AS s
+JOIN winner AS w
+  ON  s.month_date = w.month_date
+  AND s.store_code = w.store_code
+  AND s.prio       = w.prio

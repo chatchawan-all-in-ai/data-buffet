@@ -71,7 +71,7 @@ SELECT
   s.asatdate
 FROM sale AS s
 LEFT JOIN pc_per_month AS p
-  ON  p.month_date       = s.month_date
+  ON  p.month_date       = DATE_TRUNC(s.month_date, MONTH)
   AND p.BranchMdtSK      = s.branch_sk
   AND p.MarketingGroupID = s.MarketingGroupID
 
