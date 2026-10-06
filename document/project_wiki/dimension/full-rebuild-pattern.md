@@ -52,6 +52,7 @@ post_operations {}
 | mds soft delete (`is_active = FALSE`) | Row simply drops out of the rebuild — no tombstone needed |
 | mds **overwrite import** (all new `id`s) | Handled automatically — rebuild reads current active rows; `MdsID` refreshes |
 | Attribute changes | Always current (full re-read) |
+| `CompanySK` build order | Run after `dim_company`; declare it directly unless another declared dependency already guarantees that order transitively. For view-backed inputs, follow the [view run-order rule](../view/view-layer.md#run-order-ประกาศ-dependency-เป็น-ตาราง-ไม่ใช่-view-ตัดสินใจ-2026-08-11). |
 | `MDS_BACKFILL_DAYS` | Not used — no window |
 | Table ownership | **Dataform creates/replaces the table** (unlike operations dims) |
 
@@ -87,9 +88,8 @@ Verified 2026-07-20 (repo scan + live BQ + 90-day query history):
 - `dim_rate_target` — extra deps `dim_department_last`/`dim_director_last` + a real
   `post_operations` block that reallocates `Percent` for MDT departments after the
   rebuild (see [special-cases.md](special-cases.md)).
-- `dim_customer_report_info` — FULL JOIN of the mds block with **every** `CustomerReportName`
-  in `view_dim_invoice` (`MdsID NULL` for invoice-only names) + `CustomerSegmentSK` derived from
-  `tbook_quotation`/`deb` (see [special-cases.md](special-cases.md)).
+- `dim_customer_report_info` — sources, customer-name grain and Segment/TA contracts are owned by the
+  [Customer Report Info section](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
 - `dim_customer_segment` — member and fallback contracts are owned by the
   [Customer Report Info section](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
 

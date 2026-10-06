@@ -25,7 +25,7 @@
 | SELECT columns | attributes ของ entity (string ผ่าน `cleanString`) + `dim_com.CompanySK` + ปิดท้าย `MdsID` |
 | `WHERE` | `t1.is_active = TRUE` เท่านั้น (ไม่มี window `updated_at`) |
 
-- `dependencies: ["dim_company"]` เสมอ (join ผ่าน string interpolation)
+- กฎ `dependencies[]`: [ลำดับ build ของ CompanySK](../project_wiki/dimension/full-rebuild-pattern.md#properties)
 - ไม่ต้องมี MERGE, max_sk, tombstone DELETE, `MDS_BACKFILL_DAYS` — pattern นี้ไม่ใช้
 - Dataform สร้าง/แทนที่ตารางให้เอง — **ไม่ต้องสร้างตารางใน BigQuery ก่อน**
 - ไม่ต้อง backfill — รันครั้งแรกได้ข้อมูลเต็มทันที
@@ -50,7 +50,7 @@
 - [ ] `ROW_NUMBER ORDER BY` ครอบ natural key ครบ ลำดับ deterministic
 - [ ] `WHERE t1.is_active = TRUE` เท่านั้น
 - [ ] คอลัมน์ `MdsID` ปิดท้าย (ไว้ trace)
-- [ ] `dependencies: ["dim_company"]` + tag `TAG_DIM_DAILY`
+- [ ] `dependencies[]` ตาม [กฎลำดับ build](../project_wiki/dimension/full-rebuild-pattern.md#properties) + tag `TAG_DIM_DAILY`
 - [ ] เพิ่มแถวใน `project_wiki/dimension/inventory.md`
 - [ ] comment สั้น 1 บรรทัด บอก "ทำไม" — รายละเอียดไปไว้ใน `document/` ([coding-standard §9](../coding-standards/sqlx-coding-standard.md))
 

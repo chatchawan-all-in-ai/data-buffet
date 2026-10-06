@@ -81,8 +81,8 @@ that backfill or the MDT join matches nothing.
 
 ## `dim_customer_report_info` — mds + every invoice name (2026-10-01)
 
-Sources, deduplication, output columns, hierarchy dependencies, segment rules and
-Power BI relationships are owned by the
+Sources, deduplication, output columns, hierarchy dependencies, segment rules, TA rules
+and Power BI relationships are owned by the
 [Customer Report Info section](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
 For its view-backed build dependencies, follow [view-layer.md](../view/view-layer.md) § Run order.
 

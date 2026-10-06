@@ -168,7 +168,7 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 | `view_dim_customer` | dim_customer, dim_group_customer | mds ×3, dim_districts/provinces/geographies/sub_districts |
 | `view_dim_customer_credit_management` | dim_customer, dim_customer_grade | — |
 | `view_dim_guarantee` | dim_customer, dim_guarantee | — |
-| `view_dim_invoice` | dim_aging, dim_invoice | fn_flag_scg |
+| `view_dim_invoice` | See [SQLX definition](../../../definitions/view/dimension_view/view_dim_invoice.sqlx) for active upstream sources | fn_flag_scg |
 | `view_dim_order` | dim_order, mih2 | fn_order_type, mds_data_document_expire_rule_master |
 | `view_dim_product_master` | dim_product_master, dim_product_mkt, dim_rebate, dim_waterpac | — |
 | `view_dim_product_mkt` | dim_product_mkt, dim_product_mkt_director | — |
@@ -268,12 +268,41 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
   `view_dim_invoice` จึง**ห้าม**ให้ `view_dim_invoice` join dim นี้กลับ (วนกัน) — join อยู่ที่ `view_fact_transcation`
 - หนึ่งแถวต่อ `CompanyID` + ชื่อที่ตัด whitespace ทั้งหมด (`CustomerReportKey` ใช้ภายใน dim ไม่ออกเป็นคอลัมน์): MDS เลือก `updated_at DESC, id`
   ส่วน invoice เลือกตัวสะกดที่มีจำนวน invoice มากสุด แล้วเรียงชื่อตัดสินกรณีเสมอ; ชื่อว่างใน invoice ไม่ถูกนำเข้า dim
-- คอลัมน์ SK อยู่หน้าสุด: `CustomerReportInfoSK`, `CompanySK`, `CustomerSegmentSK`, `DepartmentSK`, `SectionSK`,
-  `RegionSK`, `DirectorSK` — 4 ตัวหลังมาจาก `dim_department_last` ตรง ๆ (ไม่เอา ID/ชื่อของสายงาน) โดยจับคู่ `DepartmentID` ของ MDS
-  ด้วย `CompanySK` + `DepartmentID` · `SectionSK`/`RegionSK`/`DirectorSK` ถูกเติมโดย `update_sk_sale_rep_group`
-  จึงประกาศเป็น dependency. ชื่อนอก MDS มี `MdsID` และข้อมูล MDS เป็น NULL. `FlagPC` ส่งผ่าน BOOL, `OnlinePercent` cast เป็น FLOAT64
-- ไม่มีคอลัมน์ `CustomerReportKey`, `FlagMDS`, `DepartmentID`, `DepartmentName`, `SectionID`, `RegionID`, `CustomerTier`
-  ในผลลัพธ์ (ตัดออก 2026-10-02) — `CustomerTier` ยังใช้ภายในเลือก Segment
+- คอลัมน์ SK อยู่หน้าสุด: `CustomerReportInfoSK`, `CompanySK`, `CustomerSegmentSK`.
+  ชื่อนอก MDS มี `MdsID` และข้อมูล MDS เป็น NULL. `FlagPC` ส่งผ่าน BOOL, `OnlinePercent` cast เป็น FLOAT64
+- ไม่มีคอลัมน์ `CustomerReportKey`, `FlagMDS`, `DepartmentName`, `SectionID`, `RegionID`, `CustomerTier`
+  ในผลลัพธ์ (ตัดออก 2026-10-02 ตอนเปลี่ยนผลลัพธ์เป็น SK ของสายงาน) — `CustomerTier` ยังใช้ภายในเลือก Segment
+- **ไม่มี `DepartmentSK`/`SectionSK`/`RegionSK`/`DirectorSK` แล้ว (ตัดออก 2026-10-06)** — TA ของร้านออกเป็น
+  `DepartmentID` คอลัมน์เดียว (natural key ของ TA ที่เลือกใน `dim_department_last` ไม่ใช่ค่า MDS ดิบแบบก่อน 2026-10-02)
+  ภายใน dim ยัง join ด้วย SK · `dependencies[]` เป็นชุดเล็กสุด (2026-10-06): `update_sk_sale_rep_group` (รันหลัง `*_last`
+  ทั้งหมดและเติม `DepartmentSK` ของ `dim_sale_representative_last` ที่ใช้หา TA), `dim_customer_segment`, และตารางหลัง view
+  ตามกฎ Run order: `dim_aging`, `dim_order`, `mec` (`view_dim_invoice` อ่านตรง ๆ; `dim_aging` ครอบ
+  `dim_invoice`/`dim_customer` ด้วย) และ `dim_group_customer` (`view_dim_customer`) · **Power BI (ขั้นตอนภายนอกหลัง merge)**: ตาราง `Dimension Customer Report Info` ต้องลบ 4 คอลัมน์
+  (ซ่อนอยู่) ออกก่อน refresh ครั้งถัดไป ไม่งั้น refresh ล้ม · ใน repo/BigQuery ไม่มีผู้อ่าน 4 คอลัมน์นี้
+  (`view_fact_transcation` อ่านแค่ `CustomerReportInfoSK`/`CompanySK`/`CustomerReportName`)
+- **TA ของร้าน (`DepartmentID`, แก้ 2026-10-06)** — 1 แถว = 1 TA หรือว่าง ตามลำดับ:
+  1. **MDS ชนะเสมอ**: `DepartmentID` ใน `mds_data_customer_report_master` ที่จับคู่ `dim_department_last`
+     ได้ (`CompanySK` + `DepartmentID`) → `TASource = 'MDS'`
+  2. ไม่งั้นเลือก**รหัสลูกค้าที่ชื่อของตัวเองตรงกับชื่อรายงาน** จาก `mihCus` ทุกบิลของชื่อนั้นใน `view_dim_invoice`
+     (ชื่อของรหัส = สูตรเดียวกับ `view_dim_invoice`: `NicknameCustomer` เมื่อ `FlagMDSNickName` ไม่งั้น
+     `clean_company_prefix(debnamet)` จาก `view_dim_customer`, ตัด whitespace) · หลายรหัสตรงใช้**บิลล่าสุด**
+     (`mix_date DESC, mihVnos DESC` แบบ Segment) · ไม่มีรหัสที่ชื่อตรง (ชื่อจาก SCG/CRC/`mec`) → ว่าง
+  3. รหัสนั้น → `validated_mac5.deb.debsalesp` (บริษัทเดียวกัน) → `dim_sale_representative_last` ที่ `EmployeeID = debsalesp`,
+     ตรวจสิทธิ์ทั้งบริษัท + พนักงาน **ก่อนกรองวันที่**: ถ้าแถว `DepartmentID` ไม่ว่างและไม่ใช่ `Dummy*` ของพนักงาน
+     ใน `dim_sale_representative_last` มี `CostChannelID` หรือ `DepCode` ไม่ว่างแม้เพียงแถวเดียว
+     (รวมแถวปัจจุบัน หมดอายุ และยังไม่เริ่มมีผล โดยไม่ต้องจับคู่ `dim_department_last` ได้) → TA จาก `debsalesp` ว่าง (ยังไม่ทำ MDT)
+     · พนักงานปกติที่ไม่มีแถวดังกล่าว ใช้แถว `DepartmentID` ไม่ว่าง, วันนี้อยู่ใน `StartDate..EndDate`,
+     TA ไม่ใช่ `Dummy*` และ `dim_department_last.EndDate` ยังไม่หมด (วันที่เป็น NULL ไม่จำกัดขอบเขตด้านนั้น)
+     → **TA เดียวเท่านั้น** ได้ `TASource = 'DEBSALESP'`
+     · ย้ายจาก TA หมดอายุมา TA ปัจจุบันเดียวได้ TA ปัจจุบัน · ไม่มี TA หรือมีหลาย TA ปัจจุบัน → ว่าง
+  - trace: `TASource` (`MDS`/`DEBSALESP`/NULL), `TADebcode`, `TAEmployeeID` — 2 ตัวหลังเป็นรหัส/`debsalesp` ที่ใช้หา TA
+    ในข้อ 2–3 (NULL เมื่อใช้ MDS) จึงมีค่าในแถวที่ TA ว่างด้วย ใช้ไล่สาเหตุ
+  - ข้อจำกัด: `debsalesp` คือพนักงานที่ลงไว้ใน Mac5 (มักเป็นคนเปิดลูกค้า) ไม่ได้อัปเดตตามคนดูแลปัจจุบัน
+  - ไม่เติม TA จากบิล (`DepartmentSKLast` ของ fact) ในไฟล์นี้ — `view_fact_transcation` อ่าน dim นี้ จึงวนกัน
+  - ผลวัด 2026-10-06 (SQL แบบ SELECT บนข้อมูล live 41,357 แถว หลังตัดพนักงาน MDT ก่อนกรองวันที่):
+    MDS 1,631 · DEBSALESP 13,349 · ว่าง 26,377 (ไม่มี `debsalesp` 15,340 · พนักงานปกติไม่มี TA ที่ใช้ได้หรือมีหลาย TA 9,646 ·
+    ไม่มีรหัสที่ชื่อตรง 845 · พนักงาน MDT 546) ·
+    SK/จำนวนแถว/คอลัมน์ Segment เท่าเดิมทุกแถว · แถว MDS เดิมได้ TA เดิม
 - `CustomerReportInfoSK` ออกใหม่ทุกครั้งที่ rebuild จึง join ที่ view ด้วย natural key ไม่เก็บลงตาราง fact
 - **`view_dim_invoice.CustomerReportName` เลือกตามลำดับ** (`CASE` ใน [view_dim_invoice.sqlx](../../../definitions/view/dimension_view/view_dim_invoice.sqlx), แก้ 2026-10-02):
   1. บิล SCG (`fn_flag_scg(RefOrder, mihCus) IS NOT NULL`) **และ** `mec.mecdesc IS NOT NULL`
@@ -332,7 +361,7 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 
 - ยอดที่ย้ายชื่อรายงาน: 41,190 แถว fact / 265,328,119.43 บาท · จำนวนแถว fact ไม่เปลี่ยน
 - MDS match เท่าเดิม **1,850/1,872** · แถว fact ที่ไม่มี `CustomerReportInfoSK` เท่าเดิม **44** · join key ไม่ซ้ำ
-- หลัง **full rebuild รอบถัดไป** คาดว่า `dim_customer_report_info` ลดจาก **41,456 → 41,325 แถว**
+- ผลจำลองก่อน **full rebuild (2026-10-02)**: `dim_customer_report_info` ลดจาก **41,456 → 41,325 แถว**
   (ag01 **40,921 → 40,790**) เพราะชื่อ invoice-only รวมกัน · `SegmentSource = 'CHANNEL'` ลด 27 ชื่อ
   และ `'DEFAULT'` ลด 104 ชื่อ · จำนวนชื่อจาก MDS ไม่เปลี่ยน
 

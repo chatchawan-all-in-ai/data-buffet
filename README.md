@@ -306,8 +306,8 @@ DELETE FROM `<dim>` WHERE MdsID IN (
 );
 ```
 
-`dim_company` is the DAG root — every mds dim lists it in `dependencies[]` and joins
-it for `CompanySK`. MERGE pattern & invariants:
+Dimension build dependencies: [full-rebuild properties](document/project_wiki/dimension/full-rebuild-pattern.md#properties).
+MERGE pattern & invariants:
 [document/project_wiki/dimension/merge-sk-pattern.md](document/project_wiki/dimension/merge-sk-pattern.md).
 
 ### Fact — star-schema joins to dimensions (no MERGE)
