@@ -3,6 +3,7 @@
 
 No ADC or production endpoint is used. The fixtures are the action's input tables,
 not a Python reimplementation of the transformation. Requires Dataform CLI 3.0.0.
+The server must refresh table metadata after a schema-changing CREATE OR REPLACE.
 """
 
 import argparse
@@ -23,7 +24,7 @@ import urllib.request
 PROJECT = "nm-local-cri"
 ACTION = "dim_customer_report_info"
 SOURCE = f"definitions/dimension/{ACTION}.sqlx"
-BASE = "639824c3e82599b62fa8c55f9517b83781b8caf0"
+BASE = "c9b7089aa5c3e8209c4f98d406fbfa6f36c7ef12"
 BEFORE_FIX = "4bfa8aa"
 
 
@@ -249,8 +250,7 @@ def main():
             if channel is not None:
                 quotes.append({"company_id": company, "agent1": code + " customer", "channel": channel,
                                "dinsert": f"{today} 00:00:00", "id": str(len(quotes) + 1)})
-        expected[(company, "".join(name.split()))] = {"DepartmentID": ta, "TASource": source,
-            "TADebcode": code if source != "MDS" else None, "TAEmployeeID": employee if source != "MDS" else None}
+        expected[(company, "".join(name.split()))] = {"DepartmentID": ta, "TASource": source}
 
     def mds(name, department, *, tier="GOLD", active=True, updated=None, ident=None):
         masters.append({"companyID": "ag01", "CustomerReportName": name, "DepartmentID": department,
@@ -260,7 +260,7 @@ def main():
 
     shop("ชื่อ XX", code="A4566666", date=f"{yesterday} 10:00:00")
     shop("ชื่อ XX", "REP_B", code="A05699", own="ชื่อ XY", channel="DA")
-    expected[("ag01", "ชื่อXX")].update(DepartmentID="TA_A", TADebcode="A4566666", TAEmployeeID="REP_A")
+    expected[("ag01", "ชื่อXX")].update(DepartmentID="TA_A")
     shop("Latest Matching", code="OLDER", date=f"{yesterday} 10:00:00")
     shop("Latest Matching", "REP_B", code="NEWER", ta="TA_B")
     shop("Tie Matching", code="TIE_A", vnos="V001")
@@ -279,7 +279,7 @@ def main():
     shop("Inactive MDS")
     mds("Inactive MDS", "TA_MDS", active=False)
     mds("MDS Only", "TA_MDS")
-    expected[("ag01", "MDSOnly")] = dict(DepartmentID="TA_MDS", TASource="MDS", TADebcode=None, TAEmployeeID=None)
+    expected[("ag01", "MDSOnly")] = dict(DepartmentID="TA_MDS", TASource="MDS")
     for name, employee in (("Single Cost Chain", "CHAIN_COST"), ("Single Depcode Chain", "CHAIN_CODE"),
                            ("Expired Chain", "CHAIN_EXPIRED"), ("Dangling Expired Chain", "CHAIN_DANGLING"),
                            ("Future Chain", "CHAIN_FUTURE")):
@@ -296,10 +296,8 @@ def main():
         shop(name, employee, ta=None, source=None)
     for name in ("SCG Branch", "CRC Branch", "Mec Branch"):
         shop(name, own="Different customer name", ta=None, source=None)
-        expected[("ag01", "".join(name.split()))].update(TADebcode=None, TAEmployeeID=None)
     shop("Missing Deb", ta=None, source=None)
     debs[:] = [d for d in debs if d["debcode"] != "MissingDeb"]
-    expected[("ag01", "MissingDeb")]["TAEmployeeID"] = None
     shop("Company Boundary", "REUSED_EMPLOYEE", code="SHARED_CODE")
     shop("Company Boundary", "REUSED_EMPLOYEE", code="SHARED_CODE", company="aa05", ta=None, source=None)
     shop("TT Current Month", channel="TT")
@@ -312,10 +310,9 @@ def main():
                    "dinsert": f"{tomorrow} 00:00:00", "id": "999"})
     shop("Dup Name", code="DUP1")
     shop("Dup  Name", code="DUP2", own="Dup Name", date=f"{yesterday} 10:00:00")
-    expected[("ag01", "DupName")].update(TADebcode="DUP1")
     mds("Dup Name", "TA_B", tier="GOLD", updated=f"{yesterday}T00:00:00Z", ident="OLD_MASTER")
     mds("Dup  Name", "TA_MDS", tier="GOLD", ident="NEW_MASTER")
-    expected[("ag01", "DupName")].update(DepartmentID="TA_MDS", TASource="MDS", TADebcode=None, TAEmployeeID=None)
+    expected[("ag01", "DupName")].update(DepartmentID="TA_MDS", TASource="MDS")
     invoice.append({"companyID": "ag01", "CustomerReportName": "   ", "mihCus": "BLANK",
                     "mix_date": f"{today} 00:00:00", "mihVnos": "BLANK"})
 
@@ -356,27 +353,35 @@ def main():
         (args.evidence / f"{label}-compiled.sql").write_text(target["query"])
         return project, graph, target["query"]
 
-    _, _, base_sql = compile_action("base", BASE)
+    base_project, _, _ = compile_action("base", BASE)
     _, _, before_sql = compile_action("before-r2", BEFORE_FIX)
     project, graph, target_sql = compile_action("target")
     functions = next(o for o in graph["operations"] if o["target"]["name"] == "create_all_function")
     # Execute the compiler-emitted final SQL UDF, clean_company_prefix.
     udf_sql = "CREATE OR REPLACE FUNCTION" + "\n".join(functions["queries"]).rsplit("CREATE OR REPLACE FUNCTION", 1)[1]
     query(udf_sql)
-    base_rows, _ = query(base_sql)
     before_rows, _ = query(before_sql)
-    credentials = project / ".df-credentials.json"
-    credentials.write_text(json.dumps({"projectId": PROJECT, "location": "us-central1"}))
     env = dict(os.environ, BIGQUERY_EMULATOR_HOST=f"{endpoint}/bigquery/v2")
     # A custom endpoint makes the official BigQuery client omit authentication.
     for key in ("GOOGLE_APPLICATION_CREDENTIALS", "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE"):
         env.pop(key, None)
-    command = [str(cli), "run", str(project), "--actions", ACTION, "--credentials", str(credentials)]
-    result = subprocess.run(command, env=env, capture_output=True, text=True, timeout=180)
-    transcripts.append({"command": command, "returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr})
-    (args.evidence / "dataform-run.json").write_text(json.dumps(transcripts, indent=2))
-    if result.returncode:
-        raise RuntimeError(result.stdout + result.stderr)
+
+    def run_action(action_project):
+        credentials = action_project / ".df-credentials.json"
+        credentials.write_text(json.dumps({"projectId": PROJECT, "location": "us-central1"}))
+        command = [str(cli), "run", str(action_project), "--actions", ACTION, "--credentials", str(credentials)]
+        result = subprocess.run(command, env=env, capture_output=True, text=True, timeout=180)
+        transcripts.append({"command": command, "returncode": result.returncode,
+                            "stdout": result.stdout, "stderr": result.stderr})
+        (args.evidence / "dataform-run.json").write_text(json.dumps(transcripts, indent=2))
+        if result.returncode:
+            raise RuntimeError(result.stdout + result.stderr)
+
+    # Rebuild an existing table, rather than checking only a fresh SELECT schema.
+    run_action(base_project)
+    base_rows, base_fields = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
+    (args.evidence / "base-schema.json").write_text(json.dumps(base_fields, indent=2))
+    run_action(project)
     actual_rows, fields = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
 
     def index(rows):
@@ -405,19 +410,48 @@ def main():
         check(f"TA selection: {key[0]} / {key[1]}", observed == values, {"expected": values, "actual": observed})
     stable_columns = ("CustomerReportInfoSK", "CompanySK", "CustomerSegmentSK", "CompanyID", "CustomerReportName",
                       "FlagPC", "ShopOnline", "OnlinePercent", "SegmentSource", "SegmentDebcode", "SegmentChannel", "MdsID")
+    retained_columns = stable_columns + ("DepartmentID", "TASource")
     stable = actual.keys() == base.keys() and all(
-        {k: r[k] for k in stable_columns} == {k: actual[key][k] for k in stable_columns}
+        {k: r[k] for k in retained_columns} == {k: actual[key][k] for k in retained_columns}
         for key, r in base.items())
-    check("every original SK, segment and MDS information value equals base output", stable, {"columns": stable_columns})
+    check("every retained value, including department and TA source, equals base output",
+          stable, {"columns": retained_columns})
     for name, segment, source in (("ชื่อ XX", 1002, "CHANNEL"), ("SCG Branch", 1001, "CHANNEL"),
                                   ("TT Current Month", 1004, "CHANNEL"), ("TT Previous Month", 1005, "CHANNEL"),
                                   ("Unknown Tier", 1001, "DEFAULT"), ("No Channel", 1001, "DEFAULT"),
                                   ("Channel Guard", 1002, "CHANNEL"), ("MDS Priority", 1003, "MDS")):
         row = actual[("ag01", "".join(name.split()))]
         check(f"segment contract: {name}", (row["CustomerSegmentSK"], row["SegmentSource"]) == (segment, source), row)
-    expected_schema = list(stable_columns) + ["DepartmentID", "TASource", "TADebcode", "TAEmployeeID"]
-    check("materialized schema exposes DepartmentID and trace fields without four removed hierarchy SKs",
+    expected_schema = list(stable_columns) + ["DepartmentID", "TASource"]
+    removed_columns = ("TAEmployeeID", "TADebcode")
+    check("base materialized table reproduces exposed employee and TA customer codes",
+          all(c in {f["name"] for f in base_fields} for c in removed_columns)
+          and any(all(row[c] is not None for c in removed_columns) for row in base_rows), base_fields)
+    check("rebuilding the existing table removes TAEmployeeID and TADebcode from its schema",
           [f["name"] for f in fields] == expected_schema, fields)
+    check("all retained column types equal the base materialized schema",
+          fields == [f for f in base_fields if f["name"] not in removed_columns], fields)
+    metadata = api(f"datasets/dimension_table/tables/{ACTION}")
+    (args.evidence / "target-table-metadata.json").write_text(json.dumps(metadata, indent=2))
+    check("table metadata also exposes exactly the retained columns",
+          [f["name"] for f in metadata["schema"]["fields"]] == expected_schema, metadata["schema"])
+    rejected = []
+    for column in removed_columns:
+        sql = f"SELECT {column} FROM `{PROJECT}.dimension_table.{ACTION}`"
+        try:
+            query(sql)
+        except RuntimeError as error:
+            rejected.append({"query": sql, "error": str(error)})
+            missing_column = any(f"{phrase}{column}".lower() in str(error).lower()
+                                 for phrase in ("Unrecognized name: ", "Column not found: ", "no such column: "))
+            check(f"consumers cannot select removed column {column}", missing_column, str(error))
+        else:
+            check(f"consumers cannot select removed column {column}", False, "query unexpectedly succeeded")
+    (args.evidence / "removed-column-query-errors.json").write_text(json.dumps(rejected, indent=2))
+    run_action(project)
+    rerun_rows, rerun_fields = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
+    check("a second rebuild keeps the removed columns absent and all retained values unchanged",
+          rerun_fields == fields and rerun_rows == actual_rows, {"schema": rerun_fields, "rows": len(rerun_rows)})
     for key in (("ag01", "SingleCostChain"), ("ag01", "SingleDepcodeChain"),
                 ("ag01", "ExpiredChain"), ("ag01", "DanglingExpiredChain"), ("ag01", "FutureChain")):
         check(f"R2 regression reproduced before fix and corrected: {key[1]}",

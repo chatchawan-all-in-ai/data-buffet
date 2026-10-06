@@ -218,10 +218,7 @@ with mds as (
     (CASE
       WHEN dep_mds.DepartmentSK IS NOT NULL THEN 'MDS'
       WHEN dta.DepartmentSK IS NOT NULL THEN 'DEBSALESP'
-    END) AS TASource,
-    -- รหัส/พนักงานที่ใช้หา TA (NULL เมื่อใช้ MDS) เก็บไว้ตรวจร้านที่ TA ว่าง
-    IF(dep_mds.DepartmentSK IS NULL, tc.debcode, NULL) AS TADebcode,
-    IF(dep_mds.DepartmentSK IS NULL, dta.debsalesp, NULL) AS TAEmployeeID
+    END) AS TASource
   FROM with_segment AS t
   LEFT JOIN `${DimCompanyTableRef}` AS dim_com
     ON t.CompanyID = dim_com.companyID
@@ -255,9 +252,7 @@ SELECT
   t.MdsID,
   -- TA ที่เลือกใน with_ta (DepartmentID ของ dim_department_last) · NULL เมื่อไม่มี TA
   dep.DepartmentID,
-  t.TASource,
-  t.TADebcode,
-  t.TAEmployeeID
+  t.TASource
 FROM with_ta AS t
 LEFT JOIN `${DimDepartmentLastTableRef}` AS dep
   ON t.CompanySK = dep.CompanySK

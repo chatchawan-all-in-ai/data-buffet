@@ -295,8 +295,13 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
      TA ไม่ใช่ `Dummy*` และ `dim_department_last.EndDate` ยังไม่หมด (วันที่เป็น NULL ไม่จำกัดขอบเขตด้านนั้น)
      → **TA เดียวเท่านั้น** ได้ `TASource = 'DEBSALESP'`
      · ย้ายจาก TA หมดอายุมา TA ปัจจุบันเดียวได้ TA ปัจจุบัน · ไม่มี TA หรือมีหลาย TA ปัจจุบัน → ว่าง
-  - trace: `TASource` (`MDS`/`DEBSALESP`/NULL), `TADebcode`, `TAEmployeeID` — 2 ตัวหลังเป็นรหัส/`debsalesp` ที่ใช้หา TA
-    ในข้อ 2–3 (NULL เมื่อใช้ MDS) จึงมีค่าในแถวที่ TA ว่างด้วย ใช้ไล่สาเหตุ
+  - trace: `TASource` (`MDS`/`DEBSALESP`/NULL) · **ไม่มี `TAEmployeeID` หรือ `TADebcode` ในผลลัพธ์แล้ว (ตัดออก 2026-10-06)**
+    — TA ส่งออกเป็น `DepartmentID` ตามขอบเขตระดับ department ขึ้นไป; debcode และ `debsalesp` ยังใช้ภายในหา TA ตามกฎเดิม
+    · กฎเลือก TA/Segment และ trace ของ Segment ด้านล่างไม่เปลี่ยน
+    · เมื่อรัน Dataform action นี้ (`type: "table"`) ครั้งถัดไป จะ rebuild `dimension_table.dim_customer_report_info`
+    ใน BigQuery โดยไม่มี 2 คอลัมน์นี้ใน schema — merge โค้ดอย่างเดียวไม่เปลี่ยนตาราง live
+    · **Power BI (ขั้นตอนภายนอกก่อน refresh)**: ลบ 2 คอลัมน์นี้ที่ยังอยู่ในตาราง `Dimension Customer Report Info`
+    และลบการอ้างถึงจาก partition `SELECT` ก่อน refresh ครั้งถัดไป
   - ข้อจำกัด: `debsalesp` คือพนักงานที่ลงไว้ใน Mac5 (มักเป็นคนเปิดลูกค้า) ไม่ได้อัปเดตตามคนดูแลปัจจุบัน
   - ไม่เติม TA จากบิล (`DepartmentSKLast` ของ fact) ในไฟล์นี้ — `view_fact_transcation` อ่าน dim นี้ จึงวนกัน
   - ผลวัด 2026-10-06 (SQL แบบ SELECT บนข้อมูล live 41,357 แถว หลังตัดพนักงาน MDT ก่อนกรองวันที่):
