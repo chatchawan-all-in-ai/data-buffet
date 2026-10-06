@@ -21,6 +21,7 @@
 | CDC / change tracking | [cdc-process/cdc.md](cdc-process/cdc.md) |
 | AI address parsing | [cdc-process/process.md](cdc-process/process.md) |
 | Config, tags, helpers | [includes/databuffet-js.md](includes/databuffet-js.md), [includes/variables.md](includes/variables.md), [includes/function-data.md](includes/function-data.md), [includes/cdc-config.md](includes/cdc-config.md) |
+| Sales Out MDT (anything) | [saleout/README.md](saleout/README.md) |
 | Run / debug / env facts | [operations/running-and-troubleshooting.md](operations/running-and-troubleshooting.md) |
 
 ## Hard rules (apply to every change)
