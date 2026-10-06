@@ -59,11 +59,11 @@
 | dim_stk_mkt | StkMktSK | companyID, StkCode | mds_data_product_market_group_by_product_id_master + validated_mac5.stk (placeholders) |
 | dim_target_product_group | TargetProductGroupSK | companyID, Year, Month, MarketingGroupID, SubMarketingID, SegmentID, ChannelTargetGroup, TargetID | mds_data_sales_target_by_product_group_master |
 | dim_waterpac | WaterPacSK | CompanyID, WaterPacCode | mds_data_waterpac_master |
-| dim_customer_report_info | CustomerReportInfoSK | CompanyID, whitespace-stripped CustomerReportName | [Customer Report Info: sources, deduplication, segment rules and relationships](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01) |
+| dim_customer_report_info | CustomerReportInfoSK | CompanyID, whitespace-stripped CustomerReportName | [Customer Report Info: sources, deduplication, segment/TA rules and relationships](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01) |
 | dim_customer_segment | CustomerSegmentSK | CompanyID, Segment3 (MDS rows) | mds_data_customer_segment_master · [Member and fallback rules](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01) |
 | dim_weight_score | WeightSK | CompanyID, Typeeng, Typethai, StartDate, EndDate | mds_data_custgrade_weight_score_master |
 
-All depend on `dim_company` except `dim_company` (deps `[]`) and `dim_holiday` (no deps).
+Build dependency rules: [full-rebuild properties](full-rebuild-pattern.md#properties).
 | dim_zone_mdt | ZoneMdtSK | zone_id | mds_data_sales_zone_master |
 | dim_zone_manager_mdt | ZoneManagerMdtSK | ZoneCode (+ แถว Unknown) | mds_data_sales_zone_manager_master |
 | dim_sales_branch_mdt | BranchMdtSK | รหัสสาขาของห้าง | mds_data_sales_branch_master |

@@ -7,7 +7,7 @@
 > inline `ref(...)` + `tags: [...]`), so the views — and `topic_flows.md` — always
 > match the repo.
 
-**Objects: 296** — initial 17 · validated 137 · curated 11 · dimension 71 · fact 18 · view 38 · cdc 2 · process 2
+**Objects: 301** — initial 17 · validated 141 · curated 12 · dimension 71 · fact 18 · view 38 · cdc 2 · process 2
 
 **Paused (config commented out):** —
 
@@ -25,8 +25,8 @@ The medallion → star-schema map. Counts are live.
 flowchart LR
   raw["Raw AVRO<br/>gs://file-raw-data"]
   I["initial (17)<br/>ext tables + UDFs"]
-  V["validated (137)<br/>clean · cast · dedup"]
-  C["curated (11)<br/>business joins"]
+  V["validated (141)<br/>clean · cast · dedup"]
+  C["curated (12)<br/>business joins"]
   D["dimension (71)<br/>SK + SCD"]
   F["fact (18)<br/>star-schema"]
   VW["view (38)<br/>BI/reporting views"]
@@ -78,8 +78,8 @@ flowchart TB
 
   subgraph nightly["Nightly run - Asia/Bangkok (top to bottom = run order)"]
     direction TB
-    V["validated | 137<br/>clean - cast - dedup<br/>tags: validated_incremental (50) / validated_full (78)"]
-    C["curated | 11<br/>business joins<br/>tag: curated"]
+    V["validated | 141<br/>clean - cast - dedup<br/>tags: validated_incremental (50) / validated_full (82)"]
+    C["curated | 12<br/>business joins<br/>tag: curated"]
     D["dimension_daily | 70<br/>SK + SCD rebuild<br/>tag: dimension_daily"]
     Fd["fact_daily | 17<br/>star-schema load<br/>tag: fact_daily"]
     Vw["view | 38<br/>BI/reporting views<br/>tag: view"]
@@ -134,10 +134,11 @@ flowchart LR
     ttrip["ttrip"]
     ttrip_document["ttrip_document"]
   end
-  subgraph curated["curated (4)"]
+  subgraph curated["curated (5)"]
     curated_mih["curated_mih"]
     curated_mil["curated_mil"]
     curated_saleout_mdt["curated_saleout_mdt"]
+    curated_saleout_monthly_mdt["curated_saleout_monthly_mdt"]
     curated_stock_mdt["curated_stock_mdt"]
   end
   subgraph dimension["dimension (29)"]
@@ -214,6 +215,7 @@ flowchart LR
   curated_mil --> fact_order_store
   curated_mil --> fact_transaction_delivery
   curated_saleout_mdt --> fact_saleout_mdt
+  curated_saleout_monthly_mdt --> fact_saleout_monthly_mdt
   curated_stock_mdt --> fact_stock_mdt
   deb --> fact_delivery
   deb --> fact_transcation
@@ -247,6 +249,9 @@ flowchart LR
   dim_delivery --> fact_delivery
   dim_department --> fact_transcation
   dim_director --> fact_saleout_mdt
+  dim_director --> fact_saleout_monthly_mdt
+  dim_director --> fact_target_saleout_mdt
+  dim_director --> fact_target_series_mdt
   dim_director --> fact_transcation
   dim_invoice --> fact_invoice
   dim_invoice --> fact_invoice_store
@@ -273,8 +278,14 @@ flowchart LR
   dim_product_mkt --> fact_transcation
   dim_quotation --> fact_quotation
   dim_region --> fact_saleout_mdt
+  dim_region --> fact_saleout_monthly_mdt
+  dim_region --> fact_target_saleout_mdt
+  dim_region --> fact_target_series_mdt
   dim_region --> fact_transcation
   dim_region_manager --> fact_saleout_mdt
+  dim_region_manager --> fact_saleout_monthly_mdt
+  dim_region_manager --> fact_target_saleout_mdt
+  dim_region_manager --> fact_target_series_mdt
   dim_region_manager --> fact_transcation
   dim_report --> fact_saleout_mdt
   dim_report --> fact_saleout_monthly_mdt
@@ -317,7 +328,7 @@ flowchart LR
   classDef view fill:#cfeae6,stroke:#3a9d94,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
   class chq,cps,cql,deb,mie,mir,tbook_quodetail,tdelivery,ttrip,ttrip_document validated;
-  class curated_mih,curated_mil,curated_saleout_mdt,curated_stock_mdt curated;
+  class curated_mih,curated_mil,curated_saleout_mdt,curated_saleout_monthly_mdt,curated_stock_mdt curated;
   class dim_change_district,dim_channel_cost,dim_collection_status,dim_company,dim_cost_group,dim_cost_stk,dim_customer,dim_delivery,dim_department,dim_director,dim_invoice,dim_order,dim_payment,dim_product_master,dim_product_mdt,dim_product_mkt,dim_quotation,dim_region,dim_region_manager,dim_report,dim_sale_representative,dim_sales_branch_mdt,dim_section,dim_section_manager,dim_stk_mkt,dim_store,dim_target_product_group_by_sale_dayofwork,dim_target_saleout_mdt,dim_target_series_mdt dimension;
   class fact_backlog_store,fact_chq,fact_delivery,fact_invoice,fact_invoice_store,fact_mir_rs,fact_mir_vs,fact_order,fact_order_store,fact_quotation,fact_saleout_mdt,fact_saleout_monthly_mdt,fact_stock_mdt,fact_stock_mdt_monthly,fact_target_saleout_mdt,fact_target_series_mdt,fact_transaction_delivery,fact_transcation fact;
   class Transaction_Data_Mart,view_deb_address_data,view_dim_channel view;
@@ -428,7 +439,6 @@ flowchart LR
   dim_company --> dim_cost_group
   dim_company --> dim_cost_stk
   dim_company --> dim_customer
-  dim_company --> dim_customer_report_info
   dim_company --> dim_customer_segment
   dim_company --> dim_delivery
   dim_company --> dim_department
@@ -471,13 +481,11 @@ flowchart LR
   dim_contact_score --> dim_group_customer_grade
   dim_customer --> dim_aging
   dim_customer --> dim_customer_grade
-  dim_customer --> dim_customer_report_info
   dim_customer --> dim_group_customer
   dim_customer --> dim_group_customer_grade
   dim_customer_segment --> dim_customer_report_info
   dim_department --> dim_department_last
   dim_department --> dim_target_product_group_by_sale_dayofwork
-  dim_department_last --> dim_customer_report_info
   dim_department_last --> dim_rate_target
   dim_department_last --> dim_target_product_group_by_sale
   dim_department_last --> update_sk_sale_rep_group
@@ -491,7 +499,6 @@ flowchart LR
   dim_group_customer --> dim_group_customer_grade
   dim_holiday --> dim_calendar
   dim_invoice --> dim_aging
-  dim_invoice --> dim_customer_report_info
   dim_order --> dim_customer_report_info
   dim_order --> dim_invoice
   dim_payment_receive_score --> dim_customer_grade
@@ -559,7 +566,7 @@ excluded). This is the densest view — open it on GitHub or mermaid.live to zoo
 
 ```mermaid
 flowchart LR
-  subgraph validated["validated (43)"]
+  subgraph validated["validated (48)"]
     ap_s["ap_s"]
     ar_s["ar_s"]
     brand["brand"]
@@ -573,6 +580,10 @@ flowchart LR
     customer_status["customer_status"]
     customer_type["customer_type"]
     deb["deb"]
+    eom_bt["eom_bt"]
+    eom_gb["eom_gb"]
+    eom_hp["eom_hp"]
+    eom_tw["eom_tw"]
     match_customer["match_customer"]
     mec["mec"]
     mie["mie"]
@@ -586,6 +597,7 @@ flowchart LR
     product_detail["product_detail"]
     report_sale_subscription["report_sale_subscription"]
     sale_by_branch_detail["sale_by_branch_detail"]
+    saleout_dh["saleout_dh"]
     saleout_gb["saleout_gb"]
     saleout_hp["saleout_hp"]
     saleout_lastyear["saleout_lastyear"]
@@ -604,16 +616,17 @@ flowchart LR
     unit["unit"]
     vendor["vendor"]
   end
-  subgraph curated["curated (7)"]
+  subgraph curated["curated (8)"]
     curated_mih["curated_mih"]
     curated_mil["curated_mil"]
     curated_product["curated_product"]
     curated_saleout_mdt["curated_saleout_mdt"]
+    curated_saleout_monthly_mdt["curated_saleout_monthly_mdt"]
     curated_stock_mdt["curated_stock_mdt"]
     curated_tbook_quotation["curated_tbook_quotation"]
     product_for_aisearch["product_for_aisearch"]
   end
-  subgraph dimension["dimension (15)"]
+  subgraph dimension["dimension (16)"]
     dim_aging["dim_aging"]
     dim_customer["dim_customer"]
     dim_customer_grade["dim_customer_grade"]
@@ -627,10 +640,11 @@ flowchart LR
     dim_quotation["dim_quotation"]
     dim_sale_representative["dim_sale_representative"]
     dim_sale_representative_last["dim_sale_representative_last"]
+    dim_sales_branch_mdt["dim_sales_branch_mdt"]
     dim_stk_mkt["dim_stk_mkt"]
     dim_store["dim_store"]
   end
-  subgraph fact["fact (14)"]
+  subgraph fact["fact (15)"]
     fact_backlog_store["fact_backlog_store"]
     fact_chq["fact_chq"]
     fact_delivery["fact_delivery"]
@@ -642,6 +656,7 @@ flowchart LR
     fact_order_store["fact_order_store"]
     fact_quotation["fact_quotation"]
     fact_saleout_mdt["fact_saleout_mdt"]
+    fact_saleout_monthly_mdt["fact_saleout_monthly_mdt"]
     fact_stock_mdt["fact_stock_mdt"]
     fact_transaction_delivery["fact_transaction_delivery"]
     fact_transcation["fact_transcation"]
@@ -690,7 +705,10 @@ flowchart LR
   curated_mil --> fact_order_store
   curated_mil --> fact_transaction_delivery
   curated_product --> product_for_aisearch
+  curated_saleout_mdt --> curated_saleout_monthly_mdt
+  curated_saleout_mdt --> dim_sales_branch_mdt
   curated_saleout_mdt --> fact_saleout_mdt
+  curated_saleout_monthly_mdt --> fact_saleout_monthly_mdt
   curated_stock_mdt --> fact_stock_mdt
   curated_tbook_quotation --> dim_quotation
   customer_profile --> dim_customer
@@ -704,6 +722,10 @@ flowchart LR
   deb --> dim_group_customer_grade
   deb --> fact_delivery
   deb --> fact_transcation
+  eom_bt --> curated_saleout_monthly_mdt
+  eom_gb --> curated_saleout_monthly_mdt
+  eom_hp --> curated_saleout_monthly_mdt
+  eom_tw --> curated_saleout_monthly_mdt
   match_customer --> dim_customer
   mec --> dim_customer_report_info
   mie --> dim_aging
@@ -737,6 +759,7 @@ flowchart LR
   report_sale_subscription --> curated_saleout_mdt
   report_sale_subscription --> curated_stock_mdt
   sale_by_branch_detail --> curated_saleout_mdt
+  saleout_dh --> curated_saleout_mdt
   saleout_gb --> curated_saleout_mdt
   saleout_hp --> curated_saleout_mdt
   saleout_lastyear --> curated_saleout_mdt
@@ -765,10 +788,10 @@ flowchart LR
   classDef dimension fill:#ffe0b3,stroke:#d98f2f,color:#111;
   classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
-  class ap_s,ar_s,brand,category__mastersku,cfs,chq,cps,cql,customer_profile,customer_profile_nature_business,customer_status,customer_type,deb,match_customer,mec,mie,mih,mih2,mil,mir,nature_business,per,product,product_detail,report_sale_subscription,sale_by_branch_detail,saleout_gb,saleout_hp,saleout_lastyear,stg,stg_report,stgacc,stk,sto,stock_by_branch,tbook_profilecomp,tbook_quodetail,tbook_quotation,tdelivery,ttrip,ttrip_document,unit,vendor validated;
-  class curated_mih,curated_mil,curated_product,curated_saleout_mdt,curated_stock_mdt,curated_tbook_quotation,product_for_aisearch curated;
-  class dim_aging,dim_customer,dim_customer_grade,dim_customer_report_info,dim_delivery,dim_group_customer_grade,dim_invoice,dim_order,dim_product_master,dim_project,dim_quotation,dim_sale_representative,dim_sale_representative_last,dim_stk_mkt,dim_store dimension;
-  class fact_backlog_store,fact_chq,fact_delivery,fact_invoice,fact_invoice_store,fact_mir_rs,fact_mir_vs,fact_order,fact_order_store,fact_quotation,fact_saleout_mdt,fact_stock_mdt,fact_transaction_delivery,fact_transcation fact;
+  class ap_s,ar_s,brand,category__mastersku,cfs,chq,cps,cql,customer_profile,customer_profile_nature_business,customer_status,customer_type,deb,eom_bt,eom_gb,eom_hp,eom_tw,match_customer,mec,mie,mih,mih2,mil,mir,nature_business,per,product,product_detail,report_sale_subscription,sale_by_branch_detail,saleout_dh,saleout_gb,saleout_hp,saleout_lastyear,stg,stg_report,stgacc,stk,sto,stock_by_branch,tbook_profilecomp,tbook_quodetail,tbook_quotation,tdelivery,ttrip,ttrip_document,unit,vendor validated;
+  class curated_mih,curated_mil,curated_product,curated_saleout_mdt,curated_saleout_monthly_mdt,curated_stock_mdt,curated_tbook_quotation,product_for_aisearch curated;
+  class dim_aging,dim_customer,dim_customer_grade,dim_customer_report_info,dim_delivery,dim_group_customer_grade,dim_invoice,dim_order,dim_product_master,dim_project,dim_quotation,dim_sale_representative,dim_sale_representative_last,dim_sales_branch_mdt,dim_stk_mkt,dim_store dimension;
+  class fact_backlog_store,fact_chq,fact_delivery,fact_invoice,fact_invoice_store,fact_mir_rs,fact_mir_vs,fact_order,fact_order_store,fact_quotation,fact_saleout_mdt,fact_saleout_monthly_mdt,fact_stock_mdt,fact_transaction_delivery,fact_transcation fact;
 ```
 
 ---

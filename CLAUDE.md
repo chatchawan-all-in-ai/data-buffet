@@ -162,8 +162,8 @@ pre-exists in BigQuery; `max_sk` → MERGE with CASE t3 (MdsID) → t2 (natural 
 Their SKs are stable forever — never regenerate. The 10 lake-sourced dims
 (dim_customer, dim_invoice, ...) also use MERGE with stable SKs.
 
-`dim_company` is the DAG root — mds dims list it in `dependencies[]` and join it for
-`CompanySK`. Special cases (UNION-block dim_sale_representative / dim_stk_mkt,
+Dimension build dependencies: [full-rebuild properties](document/project_wiki/dimension/full-rebuild-pattern.md#properties).
+Special cases (UNION-block dim_sale_representative / dim_stk_mkt,
 SK-less dim_doctype/dim_holiday, dim_rate_target's reserved commented block,
 `_last` snapshots + `update_sk_sale_rep_group`):
 `document/project_wiki/dimension/special-cases.md`.

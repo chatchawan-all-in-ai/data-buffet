@@ -1,8 +1,10 @@
 config {
   type: "table",
   schema: databuffet.DIMENSION_TABLE,
-  dependencies: ["dim_company", "dim_department_last", "update_sk_sale_rep_group", "dim_customer_segment",
-                 "dim_invoice", "dim_aging", "dim_order", "dim_customer", "dim_group_customer", "mec"],
+  // ชุดเล็กสุด: update_sk_sale_rep_group รันหลัง *_last ทั้งหมด (รวม dim_department_last, dim_sale_representative_last, dim_company)
+  // ตารางหลัง view (กฎ Run order): view_dim_invoice อ่าน dim_aging (ครอบ dim_invoice, dim_customer), dim_order, mec ตรง ๆ
+  // · view_dim_customer อ่าน dim_group_customer
+  dependencies: ["update_sk_sale_rep_group", "dim_customer_segment", "dim_aging", "dim_order", "dim_group_customer", "mec"],
   tags: [databuffet.TAG_DIM_DAILY],
   uniqueKey: ["CustomerReportInfoSK"],
   bigquery: {
@@ -45,6 +47,29 @@ js {
         name: "dim_customer_segment",
     };
     const DimCustomerSegmentTableRef = `${DimCustomerSegmentTable.database}.${DimCustomerSegmentTable.schema}.${DimCustomerSegmentTable.name}`;
+
+    const DimSaleRepLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sale_representative_last",
+    };
+    const DimSaleRepLastTableRef = `${DimSaleRepLastTable.database}.${DimSaleRepLastTable.schema}.${DimSaleRepLastTable.name}`;
+
+    const ViewDimCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_VIEW,
+        name: "view_dim_customer",
+    };
+    const ViewDimCustomerTableRef = `${ViewDimCustomerTable.database}.${ViewDimCustomerTable.schema}.${ViewDimCustomerTable.name}`;
+
+    const CleanCompanyPrefixTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FUNCTION_DATASET,
+        name: "clean_company_prefix",
+    };
+    const CleanCompanyPrefixTableRef = `${CleanCompanyPrefixTable.database}.${CleanCompanyPrefixTable.schema}.${CleanCompanyPrefixTable.name}`;
+    // ชื่อของรหัสลูกค้า สูตรเดียวกับ CustomerReportName ใน view_dim_invoice (ไม่รวมสาขา SCG/CRC)
+    const CodeNameExpr = `IF(IFNULL(cust.FlagMDSNickName, FALSE), cust.NicknameCustomer, \`${CleanCompanyPrefixTableRef}\`(cust.debnamet))`;
 }
 
 with mds as (
@@ -89,6 +114,50 @@ with mds as (
   SELECT CompanyID, CustomerReportKey, mihCus AS debcode
   FROM inv_rows
   QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanyID, CustomerReportKey ORDER BY mix_date DESC, mihVnos DESC) = 1
+
+), ta_cus as (
+  -- รหัสที่ใช้หา TA: เฉพาะรหัสที่ชื่อของตัวเองตรงกับชื่อรายงาน (สูตรชื่อเดียวกับ view_dim_invoice:
+  -- ชื่อเล่น MDS ถ้ามี ไม่งั้น clean_company_prefix(debnamet)) หลายรหัสใช้บิลล่าสุดแบบ inv_cus · ไม่มีรหัสตรง = ไม่ได้ TA จาก debsalesp
+  SELECT r.CompanyID, r.CustomerReportKey, r.mihCus AS debcode
+  FROM inv_rows AS r
+  JOIN `${ViewDimCustomerTableRef}` AS cust
+    ON r.CompanyID = cust.companyID
+    AND r.mihCus = cust.debcode
+  WHERE REGEXP_REPLACE(${databuffet.functionData.cleanString(CodeNameExpr)}, r'\s', '') = r.CustomerReportKey
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY r.CompanyID, r.CustomerReportKey ORDER BY r.mix_date DESC, r.mihVnos DESC) = 1
+
+), rep_ta as (
+  -- ห้ามใช้จำนวน TA หลังกรองวันตัดสิน MDT: เชนที่หมดอายุอาจทำให้พนักงาน MDT ดูเหมือนมี TA เดียว
+  -- ตรวจแถว non-Dummy ทั้งปัจจุบันและหมดอายุของบริษัท + พนักงาน ก่อนเลือก TA ที่ใช้ได้วันนี้
+  SELECT sr.companyID, sr.EmployeeID, sr.DepartmentSK
+  FROM `${DimSaleRepLastTableRef}` AS sr
+  JOIN `${DimDepartmentLastTableRef}` AS dep
+    ON sr.CompanySK = dep.CompanySK
+    AND sr.DepartmentSK = dep.DepartmentSK
+  WHERE sr.DepartmentID IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1
+      FROM `${DimSaleRepLastTableRef}` AS history
+      WHERE history.companyID = sr.companyID
+        AND history.EmployeeID = sr.EmployeeID
+        AND history.DepartmentID IS NOT NULL
+        AND NOT STARTS_WITH(LOWER(history.DepartmentID), 'dummy')
+        AND (history.CostChannelID IS NOT NULL OR history.DepCode IS NOT NULL)
+    )
+    AND IFNULL(sr.StartDate <= CURRENT_DATE('Asia/Bangkok'), TRUE)
+    AND IFNULL(sr.EndDate >= CURRENT_DATE('Asia/Bangkok'), TRUE)
+    AND NOT STARTS_WITH(LOWER(dep.DepartmentID), 'dummy')
+    AND IFNULL(dep.EndDate >= CURRENT_DATE('Asia/Bangkok'), TRUE)
+
+), deb_ta as (
+  -- deb.debsalesp -> TA; พนักงานที่มีหลาย TA ที่ใช้ได้วันนี้ = ไม่ให้ TA
+  SELECT deb.company_id, deb.debcode, deb.debsalesp,
+    IF(COUNT(DISTINCT r.DepartmentSK) = 1, ANY_VALUE(r.DepartmentSK), NULL) AS DepartmentSK
+  FROM ${ref(databuffet.VALIDATED_MAC5, "deb")} AS deb
+  LEFT JOIN rep_ta AS r
+    ON deb.company_id = r.companyID
+    AND deb.debsalesp = r.EmployeeID
+  GROUP BY 1, 2, 3
 
 ), cust_channel as (
   -- กรอง channel ที่รู้จักก่อนเลือกแถวล่าสุด; channel ว่าง/นอก allowlist ไม่แทนที่แถวเก่า
@@ -139,17 +208,38 @@ with mds as (
   LEFT JOIN cust_channel AS ch
     ON cus.CompanyID = ch.company_id
     AND cus.debcode = ch.debcode
+
+), with_ta as (
+  -- TA: MDS ชนะเสมอ (DepartmentID ที่มีใน dim_department_last) ไม่งั้นใช้ debsalesp ของรหัสใน ta_cus
+  SELECT
+    t.*,
+    dim_com.CompanySK,
+    COALESCE(dep_mds.DepartmentSK, dta.DepartmentSK) AS TADepartmentSK,
+    (CASE
+      WHEN dep_mds.DepartmentSK IS NOT NULL THEN 'MDS'
+      WHEN dta.DepartmentSK IS NOT NULL THEN 'DEBSALESP'
+    END) AS TASource,
+    -- รหัส/พนักงานที่ใช้หา TA (NULL เมื่อใช้ MDS) เก็บไว้ตรวจร้านที่ TA ว่าง
+    IF(dep_mds.DepartmentSK IS NULL, tc.debcode, NULL) AS TADebcode,
+    IF(dep_mds.DepartmentSK IS NULL, dta.debsalesp, NULL) AS TAEmployeeID
+  FROM with_segment AS t
+  LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+    ON t.CompanyID = dim_com.companyID
+  LEFT JOIN `${DimDepartmentLastTableRef}` AS dep_mds
+    ON dim_com.CompanySK = dep_mds.CompanySK
+    AND t.DepartmentID = dep_mds.DepartmentID
+  LEFT JOIN ta_cus AS tc
+    ON t.CompanyID = tc.CompanyID
+    AND t.CustomerReportKey = tc.CustomerReportKey
+  LEFT JOIN deb_ta AS dta
+    ON tc.CompanyID = dta.company_id
+    AND tc.debcode = dta.debcode
 )
 SELECT
   ROW_NUMBER() OVER(ORDER BY t.CompanyID, t.CustomerReportKey) AS CustomerReportInfoSK,
-  dim_com.CompanySK,
+  t.CompanySK,
   -- คง DC fallback เดิม; ใช้ Non-Segment เฉพาะเมื่อ join ไม่เจอทั้ง segment และ DC
   COALESCE(seg.CustomerSegmentSK, seg_dc.CustomerSegmentSK, -1) AS CustomerSegmentSK,
-  -- SK ของสายงานจาก dim_department_last (update_sk_sale_rep_group เติม Section/Region/Director)
-  dep.DepartmentSK,
-  dep.SectionSK,
-  dep.RegionSK,
-  dep.DirectorSK,
   t.CompanyID,
   t.CustomerReportName,
   t.FlagPC,
@@ -162,18 +252,21 @@ SELECT
   END) AS SegmentSource,
   t.SegmentDebcode,
   t.SegmentChannel,
-  t.MdsID
-FROM with_segment AS t
-LEFT JOIN `${DimCompanyTableRef}` AS dim_com
-  ON t.CompanyID = dim_com.companyID
+  t.MdsID,
+  -- TA ที่เลือกใน with_ta (DepartmentID ของ dim_department_last) · NULL เมื่อไม่มี TA
+  dep.DepartmentID,
+  t.TASource,
+  t.TADebcode,
+  t.TAEmployeeID
+FROM with_ta AS t
 LEFT JOIN `${DimDepartmentLastTableRef}` AS dep
-  ON dim_com.CompanySK = dep.CompanySK
-  AND t.DepartmentID = dep.DepartmentID
+  ON t.CompanySK = dep.CompanySK
+  AND t.TADepartmentSK = dep.DepartmentSK
 LEFT JOIN `${DimCustomerSegmentTableRef}` AS seg
-  ON dim_com.CompanySK = seg.CompanySK
+  ON t.CompanySK = seg.CompanySK
   AND t.SegmentCode = seg.Segment3
 LEFT JOIN `${DimCustomerSegmentTableRef}` AS seg_dc
-  ON dim_com.CompanySK = seg_dc.CompanySK
+  ON t.CompanySK = seg_dc.CompanySK
   AND seg_dc.Segment3 = 'DC'
 
 pre_operations {}

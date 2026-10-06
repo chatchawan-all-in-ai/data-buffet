@@ -38,7 +38,7 @@
 6. Preserve load-bearing typos verbatim: `fact_transcation`, `CDC_DATESET`, `prdDiminsionData`.
 7. mds **MERGE** dims (dim_company, dim_aging_rang) must end with the inactive-row
    DELETE before `END;` — full-rebuild dims need no tombstone.
-8. `dim_company` is the DAG root; mds dims list it in `dependencies`.
+8. Dimension build dependencies: [full-rebuild properties](dimension/full-rebuild-pattern.md#properties).
 
 ## Companion tooling
 
