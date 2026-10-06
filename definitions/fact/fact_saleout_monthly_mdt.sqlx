@@ -2,7 +2,7 @@ config {
     type: "table",
     schema: databuffet.FACT_TABLE,
     dependencies: ["curated_saleout_monthly_mdt", "dim_sales_branch_mdt", "dim_product_mdt", "dim_product_mkt", "dim_report", "dim_region", "dim_region_manager", "dim_director"],
-    tags: [databuffet.TAG_FACT_MONTHLY],
+    tags: [databuffet.TAG_FACT_DAILY],
     uniqueKey: ["month_date", "store_code", "branch_code", "sales_channel", "product_code"],
     bigquery: {
         partitionBy: "month_date",
@@ -106,12 +106,18 @@ WITH branch_lookup AS (
 )
 
 SELECT
-  LAST_DAY(s.month_date) AS month_date,
+  -- ⚠️ เกรนผสม — เดือนที่กำลังเดินอยู่เป็น **รายวัน** (1 แถวต่อวันขาย)
+  -- ส่วนเดือนที่ปิดแล้วเป็นก้อนเดียวติดป้ายวันสิ้นเดือน
+  -- ต้นทาง curated_saleout_monthly_mdt ตัดสินให้แล้ว ชั้นนี้ส่งต่อตรง ๆ ห้ามครอบ LAST_DAY ทับ
+  -- เวลา query ให้ group ด้วย DATE_TRUNC(month_date, MONTH) เสมอ อย่า filter ด้วย = ตรง ๆ
+  s.month_date,
   s.store_code,
   s.branch_code,
   s.sales_channel,
   s.product_code,
   s.product_name,
+  
+ 
 
   IFNULL(b.BranchMdtSK,  -1) AS branch_sk,
   IFNULL(b.ZoneMdtSK,    -1) AS zone_sk,
@@ -146,13 +152,13 @@ LEFT JOIN report_fallback AS rep_fb
 -- ⚠️ ต้องใช้ LAST_DAY(s.month_date) ไม่ใช่ alias month_date — JOIN อ้าง alias ของ SELECT ไม่ได้
 LEFT JOIN region_at_month AS rg
   ON  rg.RegionID = s.store_code
-  AND LAST_DAY(s.month_date) BETWEEN rg.StartDate AND rg.EndDate
+ AND s.month_date BETWEEN rg.StartDate AND rg.EndDate
 LEFT JOIN region_manager_at_month AS rgm
   ON  rgm.RegionID = s.store_code
-  AND LAST_DAY(s.month_date) BETWEEN rgm.StartDate AND rgm.EndDate
+  AND s.month_date BETWEEN rgm.StartDate AND rgm.EndDate
 LEFT JOIN director_at_month AS dr
   ON  dr.DirectorID = rg.DirectorID
-  AND LAST_DAY(s.month_date) BETWEEN dr.StartDate AND dr.EndDate
+  AND s.month_date BETWEEN dr.StartDate AND dr.EndDate
 
 
 

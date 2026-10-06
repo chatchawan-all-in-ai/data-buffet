@@ -40,24 +40,24 @@ WITH eom AS (
     -- เดือนที่ยังไม่จบ (วัด 2026-10-05: งวด 10 มีแค่ 1.5M จาก 3 วันแรก)
     -- ถ้าไม่กรอง เดือนปัจจุบันจะถูกตีเป็น CHAIN_FILE ทั้งที่เป็นยอดไม่ครบเดือน
     SELECT * FROM (
-        SELECT month_date, store_code, branch_code, branch_name,
+        SELECT LAST_DAY(month_date) AS month_date, store_code, branch_code, branch_name,
                product_code, product_name, sale_qty, sale_amount
         FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "eom_gb")}
         UNION ALL
-        SELECT month_date, store_code, branch_code, branch_name,
+        SELECT LAST_DAY(month_date), store_code, branch_code, branch_name,
                product_code, product_name, sale_qty, sale_amount
         FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "eom_hp")}
         UNION ALL
         -- TW กับ BT ไม่ส่งชื่อสาขาแยกมา ปล่อย NULL ให้ตรงกับที่ onetime เคยเป็น
-        SELECT month_date, store_code, branch_code, CAST(NULL AS STRING),
+        SELECT LAST_DAY(month_date), store_code, branch_code, CAST(NULL AS STRING),
                product_code, product_name, sale_qty, sale_amount
         FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "eom_tw")}
         UNION ALL
-        SELECT month_date, store_code, branch_code, CAST(NULL AS STRING),
+        SELECT LAST_DAY(month_date), store_code, branch_code, CAST(NULL AS STRING),
                product_code, product_name, sale_qty, sale_amount
         FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "eom_bt")}
     )
-    WHERE month_date < DATE_TRUNC(CURRENT_DATE('Asia/Bangkok'), MONTH)
+    WHERE DATE_TRUNC(month_date, MONTH) < DATE_TRUNC(CURRENT_DATE('Asia/Bangkok'), MONTH)
 
 ), bi AS (
 
@@ -66,7 +66,7 @@ WITH eom AS (
     --    ต่างกันตั้งแต่ ม.ค. 2023 และเดือนล่าสุดต่างหลักสิบล้าน (ก.พ. 2026 ต่าง 34.1M)
     --    ตารางนี้จึงยังต้องพึ่ง onetime อยู่ 1 จุด และเป็นจุดเดียวที่เหลือ
     SELECT
-        DATE_TRUNC(month_date, MONTH) AS month_date,   -- ต้นทางใช้วันสุดท้ายของเดือน
+        LAST_DAY(month_date) AS month_date,   -- ต้นทางใช้วันสุดท้ายของเดือนอยู่แล้ว ย้ำให้ชัด
         store_code, branch_code, branch_name,
         product_code, product_name, sale_qty, sale_amount
     FROM `${LastYearMonthlyRef}`
@@ -76,7 +76,11 @@ WITH eom AS (
     -- ยุบฟีดรายวัน · รับเดือนที่ยังไม่มีไฟล์ปิดงวด และเดือนที่กำลังเดินอยู่
     -- ยอดจะโตขึ้นทุกวันที่รัน จนกว่าไฟล์ปิดงวดจะเข้ามาทับ
     SELECT
-        DATE_TRUNC(sale_date, MONTH) AS month_date,
+         -- เดือนที่กำลังเดินอยู่ = เก็บรายวัน ให้ BI เห็นว่าแต่ละวันขายได้เท่าไร
+        -- เดือนที่ปิดแล้ว = ยุบเป็นก้อนเดียวติดป้ายวันสิ้นเดือน (และไฟล์ปิดงวดจะมาทับอยู่แล้ว)
+        IF(DATE_TRUNC(sale_date, MONTH) = DATE_TRUNC(CURRENT_DATE('Asia/Bangkok'), MONTH),
+           sale_date,
+           LAST_DAY(sale_date)) AS month_date,
         store_code,
         branch_code,
         ANY_VALUE(branch_name)  AS branch_name,
@@ -88,21 +92,24 @@ WITH eom AS (
     WHERE store_code IS NOT NULL AND branch_code IS NOT NULL
     GROUP BY month_date, store_code, branch_code, product_code
 
+
 ), all_src AS (
 
-    SELECT 1 AS prio, 'CHAIN_FILE'   AS source_type, * FROM eom
+    SELECT 1 AS prio, 'CHAIN_FILE'   AS source_type, DATE_TRUNC(month_date, MONTH) AS period, * FROM eom
     UNION ALL
-    SELECT 2, 'BI',           * FROM bi
+    SELECT 2, 'BI',           DATE_TRUNC(month_date, MONTH), * FROM bi
     UNION ALL
-    SELECT 3, 'DAILY_ROLLUP', * FROM daily
+    SELECT 3, 'DAILY_ROLLUP', DATE_TRUNC(month_date, MONTH), * FROM daily
 
 ), winner AS (
 
     -- แหล่งที่ดีที่สุดที่มีจริงของแต่ละ (เดือน, ห้าง)
     -- ตัดสินที่ระดับห้าง ไม่ใช่ระดับสาขาหรือสินค้า — ไม่งั้นเดือนเดียวจะผสมแหล่งกันจนเทียบไม่ได้
-    SELECT month_date, store_code, MIN(prio) AS prio
+    -- ⚠️ เทียบที่ period (เดือน) ไม่ใช่ month_date — เพราะ DAILY_ROLLUP ของเดือนปัจจุบัน
+    -- มี month_date หลายค่า (วันละค่า) ส่วน CHAIN_FILE/BI มีค่าเดียวต่อเดือน
+    SELECT period, store_code, MIN(prio) AS prio
     FROM all_src
-    GROUP BY month_date, store_code
+    GROUP BY period, store_code
 
 )
 
@@ -116,9 +123,11 @@ SELECT
     s.product_name,
     s.sale_qty,
     s.sale_amount,
-    s.source_type
+   s.source_type
+   
 FROM all_src AS s
 JOIN winner AS w
-  ON  s.month_date = w.month_date
+  ON  s.period     = w.period
   AND s.store_code = w.store_code
   AND s.prio       = w.prio
+

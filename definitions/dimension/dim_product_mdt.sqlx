@@ -1,7 +1,7 @@
 config {
   type: "table",
   schema: databuffet.DIMENSION_TABLE,
-  dependencies: [],
+  dependencies: ["dim_product_master", "dim_stk_mkt", "dim_product_mkt"],
   tags: [databuffet.TAG_DIM_DAILY],
   uniqueKey: ["ProductMdtSK"],
   bigquery: {
@@ -18,6 +18,10 @@ js {
         name: "dim_product_master",
     };
     const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
+
+    const DimStkMktTableRef     = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_stk_mkt`;
+    const DimProductMktTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_product_mkt`;
+   
     
 }
 
@@ -26,6 +30,20 @@ WITH mac5_dedup AS (
   SELECT ProductSK, ProductMktSK, companyID, ProductCode
   FROM `${DimProductMasterTableRef}`
   QUALIFY ROW_NUMBER() OVER(PARTITION BY companyID, ProductCode ORDER BY ProductSK) = 1
+
+  ), mkt_fallback AS (
+  -- รหัสตัวแทนที่ master สร้างไว้รองรับสินค้า MDT ที่ไม่มีที่ไป (PE001OTHERS ฯลฯ)
+  -- มีใน dim_stk_mkt แต่ไม่มีใน validated_mac5.stk ซึ่งเป็นต้นทางของ dim_product_master
+  -- จึง join กับ mac5_dedup ไม่ติด ต้องหากลุ่มการตลาดจาก dim_stk_mkt เอง
+  SELECT k.StkCode, k.companyID, m.ProductMktSK
+  FROM `${DimStkMktTableRef}` AS k
+  JOIN `${DimProductMktTableRef}` AS m
+    ON  k.MarketingGroupID = m.MarketingGroupID
+    AND k.SubMarketingID   = m.SubMarketingID
+    AND k.SegmentID        = m.SegmentID
+    AND k.companyID        = m.companyID
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY k.companyID, k.StkCode ORDER BY m.ProductMktSK) = 1
+
   
 ), product_src AS (
   -- mds มีรหัสซ้ำได้ (HP/MH ใช้รหัสเดียวกัน — วัด 2026-10-02 ซ้ำ 39 รหัส) และ fact join ด้วยรหัสอย่างเดียว
@@ -44,10 +62,10 @@ WITH mac5_dedup AS (
   SELECT
     ROW_NUMBER() OVER(ORDER BY CAST(t1.product_mdt_code AS INT64)) AS ProductMdtSK,
     IFNULL(mac5.ProductSK, -1)    AS ProductSK,
-    IFNULL(mac5.ProductMktSK, -1) AS ProductMktSK,
+    IFNULL(NULLIF(mac5.ProductMktSK, -1), IFNULL(fb.ProductMktSK, -1)) AS ProductMktSK,
     CAST(CAST(t1.product_mdt_code AS INT64) AS STRING)          AS ProductCode,
     ${databuffet.functionData.cleanString("t1.product_mdt_name")}  AS ProductName,
-    IF(mac5.ProductSK IS NULL,
+    IF(mac5.ProductSK IS NULL AND fb.ProductMktSK IS NULL,
        'ยังไม่มีข้อมูล',
        ${databuffet.functionData.cleanString("t1.product_mac5_code")}) AS ProductMac5Code,
     ${databuffet.functionData.cleanString("t1.region_id")}         AS StoreCode,
@@ -57,6 +75,10 @@ WITH mac5_dedup AS (
   LEFT JOIN mac5_dedup AS mac5
     ON  ${databuffet.functionData.cleanString("t1.product_mac5_code")} = mac5.ProductCode
     AND ${databuffet.functionData.cleanString("t1.commpy")}            = mac5.companyID
+   LEFT JOIN mkt_fallback AS fb
+    ON  ${databuffet.functionData.cleanString("t1.product_mac5_code")} = fb.StkCode
+    AND ${databuffet.functionData.cleanString("t1.commpy")}            = fb.companyID
+
 
 ), unknown_product AS (
   SELECT
