@@ -218,7 +218,8 @@ with mds as (
     (CASE
       WHEN dep_mds.DepartmentSK IS NOT NULL THEN 'MDS'
       WHEN dta.DepartmentSK IS NOT NULL THEN 'DEBSALESP'
-    END) AS TASource
+    END) AS TASource,
+    IF(dep_mds.DepartmentSK IS NULL, tc.debcode, NULL) AS TADebcode
   FROM with_segment AS t
   LEFT JOIN `${DimCompanyTableRef}` AS dim_com
     ON t.CompanyID = dim_com.companyID
@@ -252,7 +253,8 @@ SELECT
   t.MdsID,
   -- TA ที่เลือกใน with_ta (DepartmentID ของ dim_department_last) · NULL เมื่อไม่มี TA
   dep.DepartmentID,
-  t.TASource
+  t.TASource,
+  t.TADebcode
 FROM with_ta AS t
 LEFT JOIN `${DimDepartmentLastTableRef}` AS dep
   ON t.CompanySK = dep.CompanySK

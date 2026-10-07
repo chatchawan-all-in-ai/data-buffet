@@ -26,6 +26,8 @@ ACTION = "dim_customer_report_info"
 SOURCE = f"definitions/dimension/{ACTION}.sqlx"
 BASE = "c9b7089aa5c3e8209c4f98d406fbfa6f36c7ef12"
 BEFORE_FIX = "4bfa8aa"
+REMOVED_BASE = "f783450054355cf07bdaf956a94b406089353837"
+NARROWED_TRACE = "81e9d7819477e2700752975f07912b22b5020746"
 
 
 def compatibility_transport(upstream, evidence):
@@ -294,6 +296,7 @@ def main():
                            ("Expired Rep", "REP_EXPIRED"), ("Future Rep", "REP_FUTURE"),
                            ("Missing Rep", "NO_SUCH_REP"), ("No Debsalesp", None)):
         shop(name, employee, ta=None, source=None)
+    expected[("ag01", "NoDebsalesp")].update(TADebcode="NoDebsalesp")
     for name in ("SCG Branch", "CRC Branch", "Mec Branch"):
         shop(name, own="Different customer name", ta=None, source=None)
     shop("Missing Deb", ta=None, source=None)
@@ -355,12 +358,15 @@ def main():
 
     base_project, _, _ = compile_action("base", BASE)
     _, _, before_sql = compile_action("before-r2", BEFORE_FIX)
+    removed_project, _, _ = compile_action("removed-base", REMOVED_BASE)
+    _, _, narrowed_sql = compile_action("narrowed-trace", NARROWED_TRACE)
     project, graph, target_sql = compile_action("target")
     functions = next(o for o in graph["operations"] if o["target"]["name"] == "create_all_function")
     # Execute the compiler-emitted final SQL UDF, clean_company_prefix.
     udf_sql = "CREATE OR REPLACE FUNCTION" + "\n".join(functions["queries"]).rsplit("CREATE OR REPLACE FUNCTION", 1)[1]
     query(udf_sql)
     before_rows, _ = query(before_sql)
+    narrowed_rows, _ = query(narrowed_sql)
     env = dict(os.environ, BIGQUERY_EMULATOR_HOST=f"{endpoint}/bigquery/v2")
     # A custom endpoint makes the official BigQuery client omit authentication.
     for key in ("GOOGLE_APPLICATION_CREDENTIALS", "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE"):
@@ -381,6 +387,10 @@ def main():
     run_action(base_project)
     base_rows, base_fields = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
     (args.evidence / "base-schema.json").write_text(json.dumps(base_fields, indent=2))
+    run_action(removed_project)
+    removed_rows, removed_fields = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
+    (args.evidence / "removed-base-schema.json").write_text(json.dumps(removed_fields, indent=2))
+    (args.evidence / "removed-base-rows.json").write_text(json.dumps(removed_rows, ensure_ascii=False, indent=2))
     run_action(project)
     actual_rows, fields = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
 
@@ -390,9 +400,12 @@ def main():
     actual = index(actual_rows)
     before = index(before_rows)
     base = index(base_rows)
+    removed = index(removed_rows)
+    narrowed = index(narrowed_rows)
     (args.evidence / "materialized-target-rows.json").write_text(json.dumps(actual_rows, ensure_ascii=False, indent=2))
     (args.evidence / "base-rows.json").write_text(json.dumps(base_rows, ensure_ascii=False, indent=2))
     (args.evidence / "before-r2-rows.json").write_text(json.dumps(before_rows, ensure_ascii=False, indent=2))
+    (args.evidence / "narrowed-trace-rows.json").write_text(json.dumps(narrowed_rows, ensure_ascii=False, indent=2))
     (args.evidence / "target-schema.json").write_text(json.dumps(fields, indent=2))
     failures = []
     checks = []
@@ -410,11 +423,11 @@ def main():
         check(f"TA selection: {key[0]} / {key[1]}", observed == values, {"expected": values, "actual": observed})
     stable_columns = ("CustomerReportInfoSK", "CompanySK", "CustomerSegmentSK", "CompanyID", "CustomerReportName",
                       "FlagPC", "ShopOnline", "OnlinePercent", "SegmentSource", "SegmentDebcode", "SegmentChannel", "MdsID")
-    retained_columns = stable_columns + ("DepartmentID", "TASource")
+    retained_columns = stable_columns + ("DepartmentID", "TASource", "TADebcode")
     stable = actual.keys() == base.keys() and all(
         {k: r[k] for k in retained_columns} == {k: actual[key][k] for k in retained_columns}
         for key, r in base.items())
-    check("every retained value, including department and TA source, equals base output",
+    check("every retained value, including TA lookup code, equals base output",
           stable, {"columns": retained_columns})
     for name, segment, source in (("ชื่อ XX", 1002, "CHANNEL"), ("SCG Branch", 1001, "CHANNEL"),
                                   ("TT Current Month", 1004, "CHANNEL"), ("TT Previous Month", 1005, "CHANNEL"),
@@ -422,12 +435,37 @@ def main():
                                   ("Channel Guard", 1002, "CHANNEL"), ("MDS Priority", 1003, "MDS")):
         row = actual[("ag01", "".join(name.split()))]
         check(f"segment contract: {name}", (row["CustomerSegmentSK"], row["SegmentSource"]) == (segment, source), row)
-    expected_schema = list(stable_columns) + ["DepartmentID", "TASource"]
-    removed_columns = ("TAEmployeeID", "TADebcode")
+    expected_schema = list(stable_columns) + ["DepartmentID", "TASource", "TADebcode"]
+    removed_columns = ("TAEmployeeID",)
+    check("TADebcode is NULL when MDS supplies the TA",
+          all(r["TADebcode"] is None for r in actual_rows if r["TASource"] == "MDS"), actual_rows)
+    check("TADebcode keeps the customer code that supplied the TA",
+          actual[("ag01", "ชื่อXX")]["TADebcode"] == "A4566666", actual[("ag01", "ชื่อXX")])
+    for name in ("NoDebsalesp", "MissingRep", "MissingDeb", "PlainMultiple", "SingleCostChain",
+                 "ExpiredDepartment", "DummyOnly", "ExpiredRep", "FutureRep", "LatestUnusable"):
+        row = actual[("ag01", name)]
+        code = "CHAIN_LATEST" if name == "LatestUnusable" else name
+        check(f"diagnostic customer code survives unresolved TA: {name}",
+              row["DepartmentID"] is None and row["TASource"] is None and row["TADebcode"] == code, row)
+    for name in ("SCGBranch", "CRCBranch", "MecBranch"):
+        check(f"a mismatched customer name cannot supply a TA lookup code: {name}",
+              actual[("ag01", name)]["TADebcode"] is None, actual[("ag01", name)])
+    check("diagnostic-code regression reproduced before review fix and corrected",
+          narrowed[("ag01", "NoDebsalesp")]["TADebcode"] is None
+          and actual[("ag01", "NoDebsalesp")]["TADebcode"] == "NoDebsalesp",
+          {"before": narrowed[("ag01", "NoDebsalesp")], "after": actual[("ag01", "NoDebsalesp")]})
+    check("immediate base table omits both TA trace columns",
+          [f["name"] for f in removed_fields] == list(stable_columns) + ["DepartmentID", "TASource"], removed_fields)
+    check("rebuilding the immediate base restores only the TADebcode column",
+          fields == removed_fields + [{"name": "TADebcode", "type": "STRING", "mode": "NULLABLE"}], fields)
+    check("all existing values equal the immediate base output after restoration",
+          removed.keys() == actual.keys() and all(
+              {k: actual[key][k] for k in row} == row for key, row in removed.items()),
+          {"columns": [f["name"] for f in removed_fields]})
     check("base materialized table reproduces exposed employee and TA customer codes",
-          all(c in {f["name"] for f in base_fields} for c in removed_columns)
-          and any(all(row[c] is not None for c in removed_columns) for row in base_rows), base_fields)
-    check("rebuilding the existing table removes TAEmployeeID and TADebcode from its schema",
+          all(c in {f["name"] for f in base_fields} for c in ("TAEmployeeID", "TADebcode"))
+          and any(all(row[c] is not None for c in ("TAEmployeeID", "TADebcode")) for row in base_rows), base_fields)
+    check("rebuilding the existing table removes TAEmployeeID and keeps TADebcode in its schema",
           [f["name"] for f in fields] == expected_schema, fields)
     check("all retained column types equal the base materialized schema",
           fields == [f for f in base_fields if f["name"] not in removed_columns], fields)
