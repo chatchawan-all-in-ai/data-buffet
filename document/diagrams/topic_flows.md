@@ -1135,7 +1135,7 @@ flowchart LR
 
 **Objects in this topic (10):** `curated_saleout_mdt`, `curated_stock_mdt`, `dim_pc`, `dim_product_mdt`, `dim_sales_branch_mdt`, `dim_target_saleout_mdt`, `dim_zone_mdt`, `fact_saleout_mdt`, `fact_stock_mdt`, `fact_stock_mdt_monthly`
 
-**Fed by (15):** `dim_director`, `dim_product_mkt`, `dim_region`, `dim_region_last`, `dim_region_manager`, `dim_report`, `dim_section_last`, `dim_zone_ta_mdt`, `report_sale_subscription`, `sale_by_branch_detail`, `saleout_dh`, `saleout_gb`, `saleout_hp`, `saleout_lastyear`, `stock_by_branch`
+**Fed by (17):** `dim_director`, `dim_product_master`, `dim_product_mkt`, `dim_region`, `dim_region_last`, `dim_region_manager`, `dim_report`, `dim_section_last`, `dim_stk_mkt`, `dim_zone_ta_mdt`, `report_sale_subscription`, `sale_by_branch_detail`, `saleout_dh`, `saleout_gb`, `saleout_hp`, `saleout_lastyear`, `stock_by_branch`
 
 ```mermaid
 flowchart LR
@@ -1152,9 +1152,10 @@ flowchart LR
     curated_saleout_mdt["curated_saleout_mdt"]
     curated_stock_mdt["curated_stock_mdt"]
   end
-  subgraph dimension["dimension (13)"]
+  subgraph dimension["dimension (15)"]
     dim_director["dim_director"]
     dim_pc["dim_pc"]
+    dim_product_master["dim_product_master"]
     dim_product_mdt["dim_product_mdt"]
     dim_product_mkt["dim_product_mkt"]
     dim_region["dim_region"]
@@ -1163,6 +1164,7 @@ flowchart LR
     dim_report["dim_report"]
     dim_sales_branch_mdt["dim_sales_branch_mdt"]
     dim_section_last["dim_section_last"]
+    dim_stk_mkt["dim_stk_mkt"]
     dim_target_saleout_mdt["dim_target_saleout_mdt"]
     dim_zone_mdt["dim_zone_mdt"]
     dim_zone_ta_mdt["dim_zone_ta_mdt"]
@@ -1182,9 +1184,12 @@ flowchart LR
   dim_director --> fact_saleout_monthly_mdt
   dim_director --> fact_target_saleout_mdt
   dim_director --> fact_target_series_mdt
+  dim_product_master --> dim_product_mdt
   dim_product_mdt --> fact_saleout_mdt
   dim_product_mdt --> fact_saleout_monthly_mdt
   dim_product_mdt --> fact_stock_mdt
+  dim_product_mkt --> dim_product_master
+  dim_product_mkt --> dim_product_mdt
   dim_product_mkt --> dim_target_saleout_mdt
   dim_product_mkt --> fact_saleout_mdt
   dim_product_mkt --> fact_saleout_monthly_mdt
@@ -1208,6 +1213,8 @@ flowchart LR
   dim_sales_branch_mdt --> fact_target_saleout_mdt
   dim_sales_branch_mdt --> fact_target_series_mdt
   dim_section_last --> dim_sales_branch_mdt
+  dim_stk_mkt --> dim_product_master
+  dim_stk_mkt --> dim_product_mdt
   dim_target_saleout_mdt --> fact_target_saleout_mdt
   dim_zone_mdt --> dim_sales_branch_mdt
   dim_zone_mdt --> dim_zone_ta_mdt
@@ -1228,7 +1235,7 @@ flowchart LR
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
   class report_sale_subscription,sale_by_branch_detail,saleout_dh,saleout_gb,saleout_hp,saleout_lastyear,stock_by_branch validated;
   class curated_saleout_mdt,curated_stock_mdt curated;
-  class dim_director,dim_pc,dim_product_mdt,dim_product_mkt,dim_region,dim_region_last,dim_region_manager,dim_report,dim_sales_branch_mdt,dim_section_last,dim_target_saleout_mdt,dim_zone_mdt,dim_zone_ta_mdt dimension;
+  class dim_director,dim_pc,dim_product_master,dim_product_mdt,dim_product_mkt,dim_region,dim_region_last,dim_region_manager,dim_report,dim_sales_branch_mdt,dim_section_last,dim_stk_mkt,dim_target_saleout_mdt,dim_zone_mdt,dim_zone_ta_mdt dimension;
   class fact_saleout_mdt,fact_saleout_monthly_mdt,fact_stock_mdt,fact_stock_mdt_monthly,fact_target_saleout_mdt,fact_target_series_mdt fact;
 ```
 

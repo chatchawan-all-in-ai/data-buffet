@@ -209,7 +209,7 @@ with mds as (
     ON cus.CompanyID = ch.company_id
     AND cus.debcode = ch.debcode
 
-), with_ta as (
+), with_ta_code as (
   -- TA: MDS ชนะเสมอ (DepartmentID ที่มีใน dim_department_last) ไม่งั้นใช้ debsalesp ของรหัสใน ta_cus
   SELECT
     t.*,
@@ -234,6 +234,20 @@ with mds as (
   LEFT JOIN deb_ta AS dta
     ON tc.CompanyID = dta.company_id
     AND tc.debcode = dta.debcode
+
+), with_ta as (
+  SELECT
+    t.*,
+    sr.SaleRepSK
+  FROM with_ta_code AS t
+  LEFT JOIN (
+    SELECT CompanySK, EmployeeID, SaleRepSK
+    FROM `${DimSaleRepLastTableRef}`
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, EmployeeID
+      ORDER BY IF(EmployeeName IS NOT NULL, 0, 1), SaleRepSK) = 1
+  ) AS sr
+    ON t.CompanySK = sr.CompanySK
+    AND t.TAEmployeeID = sr.EmployeeID
 )
 SELECT
   ROW_NUMBER() OVER(ORDER BY t.CompanyID, t.CustomerReportKey) AS CustomerReportInfoSK,
@@ -253,11 +267,17 @@ SELECT
   t.SegmentDebcode,
   t.SegmentChannel,
   t.MdsID,
-  -- TA ที่เลือกใน with_ta (DepartmentID ของ dim_department_last) · NULL เมื่อไม่มี TA
-  dep.DepartmentID,
+  -- TA chain เป็น SK ของ dim_department_last แถวที่เลือก (ตามที่ update_sk_sale_rep_group ตั้งไว้) · NULL เมื่อไม่มี TA
+  dep.DepartmentSK,
+  dep.SectionSK,
+  dep.RegionSK,
+  dep.SectionManagerSK,
+  dep.RegionManagerSK,
+  dep.DirectorSK,
   t.TASource,
+  -- รหัสลูกค้าที่ใช้หา TA และพนักงาน (SK) · NULL เมื่อใช้ MDS · ชื่อ/รหัสพนักงานอยู่ใน view_dim_customer_report_info
   t.TADebcode,
-  t.TAEmployeeID
+  t.SaleRepSK
 FROM with_ta AS t
 LEFT JOIN `${DimDepartmentLastTableRef}` AS dep
   ON t.CompanySK = dep.CompanySK
