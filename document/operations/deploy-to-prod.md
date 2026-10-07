@@ -11,7 +11,7 @@
 - **Step 27–30** เช้าถัดไป
 
 > **ทบทวนตัวเลขเมื่อ 2026-09-15** — เนื้อหา step ปฏิบัติไม่เปลี่ยน แต่ขอบเขตข้อมูลโตขึ้น:
-> เพิ่ม dataset `curated_saleout_mdt` (Step 5, 9, 17, 22) · view เป็น **33 ตัว** (Step 19) ·
+> เพิ่ม dataset `curated_saleout_mdt` (Step 5, 9, 17, 22) · ขอบเขต view ปัจจุบันดู Step 19 ·
 > **ALLKONS_COMMISSION หยุดที่ชั้น initial แล้ว** (commit `74a10e0` ลบ
 > `definitions/validated/allkons_commission/` ทิ้ง) — dataset `validated_allkons_commission`
 > ยังค้างข้อมูลเก่าใน nonprd และ **ไม่มีอะไร downstream ใช้** ตัดสินใจก่อน cutover ว่าจะ
@@ -559,6 +559,8 @@ DROP VIEW IF EXISTS `databuffet-prd.process_dataset.view_rls_special_data`;
 
 **ไปที่**: Dataform workspace `cutover` → **START EXECUTION → Tags**
 
+**ก่อนรัน**: ตรวจ schema ตารางต้นทางตาม [Customer Report Info deployment contract](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01)
+
 **ทำ**: เลือก tag **`view`** · ไม่ติ๊ก dependencies/dependents/full refresh ·
 Service account = `dbuffet-dataform-prd@` · **START EXECUTION**
 
@@ -568,9 +570,8 @@ Service account = `dbuffet-dataform-prd@` · **START EXECUTION**
 
 **ไปที่**: BigQuery Studio (prd) เปิดดูแต่ละ dataset
 
-**ต้องเห็น** (นับตาม `config.schema` ไม่ใช่ชื่อโฟลเดอร์ — โฟลเดอร์ ≠ dataset ปลายทาง):
-`dimension_view` 16 · `fact_view` 6 · `bridge_dataset` 1 · `onetime` 5 ·
-`process_dataset` 5 — **รวม 33** = จำนวนไฟล์ใน `definitions/view/`
+**ต้องเห็น**: view ครบตาม [generated lineage](../diagrams/pipeline_lineage.md#6-view-layer--what-each-view-reads)
+ใน dataset ที่ `config.schema` ระบุ (ชื่อโฟลเดอร์ ≠ dataset ปลายทาง)
 
 **ถ้าไม่ตรง**: ใช้ skill `bq-drift-scan` เทียบ repo กับ BigQuery ทีละตัว —
 จะบอกได้ว่าตัวไหนขาด ตัวไหนเกิน ตัวไหนเนื้อหาต่าง

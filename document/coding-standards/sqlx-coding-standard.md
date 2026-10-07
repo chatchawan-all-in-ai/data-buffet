@@ -99,7 +99,7 @@ FROM `${DimCompanyTableRef}`
 > **tech debt**: ไฟล์เก่าบางไฟล์ยัง inline อยู่ เช่น `fact_transcation.sqlx` ใช้
 > `${databuffet.DATABASE}.onetime.Transaction_Data_Mart` แบบ inline (ควรเป็น js-block Ref)
 > — ของใหม่ยึดกฎข้างบน ของเก่าค่อยแปลงเมื่อแตะไฟล์นั้น
-> `definitions/view/` ทั้ง **34 ไฟล์** ทำตามกฎนี้ครบ (นับ 2026-09-28)
+> กฎนี้ใช้กับทุก view ใน `definitions/view/` — ดู [View Layer](../project_wiki/view/view-layer.md#pattern)
 
 ### 3.3 Backslash ใน SQL body — เขียนตรง ๆ ตัวเดียว
 

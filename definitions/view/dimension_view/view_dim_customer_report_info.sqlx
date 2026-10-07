@@ -1,0 +1,111 @@
+config {
+  type: "view",
+  schema: databuffet.DIMENSION_VIEW,
+  // ตารางหลัง view (กฎ Run order): ทุกตารางที่ join ประกาศตรง ๆ
+  dependencies: ["dim_customer_report_info", "dim_department_last", "dim_section_last", "dim_region_last", "dim_section_manager_last", "dim_region_manager_last", "dim_director_last", "dim_sale_representative_last"],
+  tags: [databuffet.TAG_VIEW],
+}
+
+js {
+    const DimCustomerReportInfoTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer_report_info",
+    };
+    const DimCustomerReportInfoTableRef = `${DimCustomerReportInfoTable.database}.${DimCustomerReportInfoTable.schema}.${DimCustomerReportInfoTable.name}`;
+
+    const DimDepartmentLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_department_last",
+    };
+    const DimDepartmentLastTableRef = `${DimDepartmentLastTable.database}.${DimDepartmentLastTable.schema}.${DimDepartmentLastTable.name}`;
+
+    const DimSectionLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_section_last",
+    };
+    const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
+
+    const DimRegionLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region_last",
+    };
+    const DimRegionLastTableRef = `${DimRegionLastTable.database}.${DimRegionLastTable.schema}.${DimRegionLastTable.name}`;
+
+    const DimSectionManagerLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_section_manager_last",
+    };
+    const DimSectionManagerLastTableRef = `${DimSectionManagerLastTable.database}.${DimSectionManagerLastTable.schema}.${DimSectionManagerLastTable.name}`;
+
+    const DimRegionManagerLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region_manager_last",
+    };
+    const DimRegionManagerLastTableRef = `${DimRegionManagerLastTable.database}.${DimRegionManagerLastTable.schema}.${DimRegionManagerLastTable.name}`;
+
+    const DimDirectorLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_director_last",
+    };
+    const DimDirectorLastTableRef = `${DimDirectorLastTable.database}.${DimDirectorLastTable.schema}.${DimDirectorLastTable.name}`;
+
+    const DimSaleRepLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sale_representative_last",
+    };
+    const DimSaleRepLastTableRef = `${DimSaleRepLastTable.database}.${DimSaleRepLastTable.schema}.${DimSaleRepLastTable.name}`;
+}
+
+-- dim_customer_report_info เก็บแค่ SK ของ TA chain · view นี้ get รหัส/ชื่อตาม SK · CustomerSegmentSK ส่งผ่านเฉย ๆ (Power BI relate กับ Dimension Customer Segment เอง) (หนึ่งแถวต่อร้าน: SK ทุกตัว unique ในตารางปลายทาง)
+SELECT
+  cri.* REPLACE(
+    -- Power BI: FlagPC เป็น Yes/No (ไม่อยู่ใน MDS = No) · OnlinePercent เป็นสัดส่วน 0-1 ให้ใช้ format Percentage
+    IF(IFNULL(cri.FlagPC, FALSE), 'Yes', 'No') AS FlagPC,
+    cri.OnlinePercent / 100 AS OnlinePercent
+  ),
+  dep.DepartmentID AS TADepartmentID,
+  dep.DepartmentName AS TADepartmentName,
+  sec.SectionID AS TASectionID,
+  sec.SectionName AS TASectionName,
+  reg.RegionID AS TARegionID,
+  reg.RegionName AS TARegionName,
+  sm.SectionManagerEmployeeID AS TASectionManagerID,
+  NULLIF(CONCAT(
+    TRIM(CONCAT(IFNULL(TRIM(sm.SectionManagerName), ''), ' ', IFNULL(TRIM(sm.SectionManagerSurname), ''))),
+    IFNULL(CONCAT(' (', NULLIF(TRIM(sm.SectionManagerNickname), ''), ')'), '')
+  ), '') AS TASectionManagerName,
+  rm.RegionManagerEmployeeID AS TARegionManagerID,
+  NULLIF(CONCAT(
+    TRIM(CONCAT(IFNULL(TRIM(rm.RegionManagerName), ''), ' ', IFNULL(TRIM(rm.RegionManagerSurname), ''))),
+    IFNULL(CONCAT(' (', NULLIF(TRIM(rm.RegionManagerNickname), ''), ')'), '')
+  ), '') AS TARegionManagerName,
+  dir.DirectorID AS TADirectorID,
+  dir.DirectorName AS TADirectorName,
+  rep.EmployeeID AS TAEmployeeID,
+  NULLIF(CONCAT(
+    TRIM(CONCAT(IFNULL(TRIM(rep.EmployeeName), ''), ' ', IFNULL(TRIM(rep.EmployeeSurname), ''))),
+    IFNULL(CONCAT(' (', NULLIF(TRIM(rep.EmployeeNickname), ''), ')'), '')
+  ), '') AS TAEmployeeName
+FROM `${DimCustomerReportInfoTableRef}` AS cri
+LEFT JOIN `${DimDepartmentLastTableRef}` AS dep
+  ON cri.DepartmentSK = dep.DepartmentSK
+LEFT JOIN `${DimSectionLastTableRef}` AS sec
+  ON cri.SectionSK = sec.SectionSK
+LEFT JOIN `${DimRegionLastTableRef}` AS reg
+  ON cri.RegionSK = reg.RegionSK
+LEFT JOIN `${DimSectionManagerLastTableRef}` AS sm
+  ON cri.SectionManagerSK = sm.SectionManagerSK
+LEFT JOIN `${DimRegionManagerLastTableRef}` AS rm
+  ON cri.RegionManagerSK = rm.RegionManagerSK
+LEFT JOIN `${DimDirectorLastTableRef}` AS dir
+  ON cri.DirectorSK = dir.DirectorSK
+LEFT JOIN `${DimSaleRepLastTableRef}` AS rep
+  ON cri.SaleRepSK = rep.SaleRepSK

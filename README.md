@@ -48,7 +48,7 @@ GCS AVRO files (gs://file-raw-data)
         ▲          │                    │
         │          └────────┬───────────┘
         │                   ▼
-        │          ┌─────────────────┐   definitions/view/  (32 views)
+        │          ┌─────────────────┐   definitions/view/
         │          │ VIEW            │   BI/reporting layer (type: "view")
         │          └─────────────────┘   reads dim/fact/curated + other views
         │  mds_dataset (external master-data-service tables — not built by this repo)
@@ -72,7 +72,7 @@ unit.
 | **Curated** | `definitions/curated/` | 7 | Business-ready joins, enrichment, JSON parsing (11 files incl. 4 schema-bootstrap) |
 | **Dimension** | `definitions/dimension/` | 69 | Conformed dimensions with surrogate keys (MERGE + SCD intervals) |
 | **Fact** | `definitions/fact/` | 15 | Star-schema fact tables joined to dimensions (4-year retention) |
-| **View** | `definitions/view/` | 33 | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` |
+| **View** | `definitions/view/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` |
 | **CDC** | `definitions/cdc/` | 2 | Config-driven change log over validated tables |
 | **Process** | `definitions/process/` | 2 | AI address parsing + row-level security (`rls_customer360`) |
 

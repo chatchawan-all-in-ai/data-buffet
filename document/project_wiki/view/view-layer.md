@@ -3,7 +3,8 @@
 > **LLM context**: The presentation layer — BigQuery **views** that sit on top of the
 > physical dim/fact/curated/validated tables (and a few external sources). Migrated
 > into Dataform on **2026-07-24** from views that previously lived only in BigQuery
-> (created by hand in the console). **34 views**, `type: "view"`, tag `view`. นับ 2026-09-28 (+`view_dim_calendar`)
+> (created by hand in the console). `type: "view"`, tag `view`. Current counts are in the
+> [generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview).
 >
 > **Non-obvious constraints:**
 > - **A view's folder is not its dataset.** Files live under `definitions/view/<dataset>/`
@@ -68,8 +69,7 @@ Rules:
    does build (`type: "table"` in `process_dataset`).
 3. No inline `` `${databuffet.DATABASE}.${databuffet.X}.tbl` ``, no `databuffet-nonprd`
    literal. Declarations follow first-use order; declare only what is used. A view that
-   reads only validated/curated needs **no `js` block** — as of 2026-09-28 all 34 views
-   happen to have one, so there is no live example.
+   reads only validated/curated needs **no `js` block**.
 4. No trailing `;` (the view DDL wraps the query).
 4b. **Backslash ในโค้ด SQL ใช้ตัวเดียว** — Dataform ส่งผ่านให้ตรงๆ ไม่กิน
    ([coding-standard §3.3](../../coding-standards/sqlx-coding-standard.md)). `r'\d'`,
@@ -151,12 +151,12 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 > 13 เส้น เพราะ dims เหล่านั้นปั้น SK ใหม่ทุกคืน ถ้ารันสลับลำดับจะได้ SK ของเมื่อวาน
 > ตรวจ timestamp แล้วที่ผ่านมาเรียงถูกตลอด — เป็นการกันไว้ ไม่ใช่แก้ของที่พังอยู่
 
-## Inventory (34 views)
+## Inventory
 
 > นับตาม `config.schema` ไม่ใช่ชื่อโฟลเดอร์ — โฟลเดอร์ ≠ dataset ปลายทาง
-> `DIMENSION_VIEW` 17 · `FACT_VIEW` 6 · `ONETIME` 5 · `PROCESS_DATASET` 5 · `BRIDGE` 1
+> จำนวนและ dependencies จากโค้ด: [generated lineage](../../diagrams/pipeline_lineage.md#6-view-layer--what-each-view-reads)
 
-### `dimension_view` → schema `DIMENSION_VIEW` (17)
+### `dimension_view` → schema `DIMENSION_VIEW`
 
 | View | Key upstream (repo tables) | External refs (not deps) |
 |---|---|---|
@@ -166,6 +166,7 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 | `view_dim_channel` | dim_channel, dim_channel_cost, dim_channel_finance, dim_channel_sales | — |
 | `view_dim_company` | dim_company | — |
 | `view_dim_customer` | dim_customer, dim_group_customer | mds ×3, dim_districts/provinces/geographies/sub_districts |
+| `view_dim_customer_report_info` | See [SQLX definition](../../../definitions/view/dimension_view/view_dim_customer_report_info.sqlx) for active upstream sources | — · [Customer Report Info contract](#customer-report-info--customer-segment-2026-10-01) |
 | `view_dim_customer_credit_management` | dim_customer, dim_customer_grade | — |
 | `view_dim_guarantee` | dim_customer, dim_guarantee | — |
 | `view_dim_invoice` | See [SQLX definition](../../../definitions/view/dimension_view/view_dim_invoice.sqlx) for active upstream sources | fn_flag_scg |
@@ -178,7 +179,7 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 | `view_dim_target_by_agent_dayofwork` | dim_calendar + 8 dims | — |
 | `view_sales_representative_last` | dim_department_last, dim_region_last, dim_section_last, view_dim_sale_representative_last | — |
 
-### `fact_view` → schema `FACT_VIEW` (4)
+### `fact_view` → schema `FACT_VIEW`
 
 | View | Key upstream | External refs |
 |---|---|---|
@@ -187,8 +188,13 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 | `view_fact_mir_rs` | fact_mir_rs, dim_aging, curated_mih, ar_s | — |
 | `view_fact_mir_vs` | fact_mir_vs, dim_aging | — |
 | `view_fact_salein_mdt` | fact_transcation, dim_customer, dim_sales_branch_mdt — ตัวเชื่อม sell-**in** (ขายเข้าห้าง) กับชุด MDT ที่เป็น sell-**out** | — |
+| `view_fact_salein_director_mdt` | See [SQLX definition](../../../definitions/view/fact_view/view_fact_salein_director_mdt.sqlx) for active upstream sources | — |
+| `view_fact_saleout_pc_mdt` | See [SQLX definition](../../../definitions/view/fact_view/view_fact_saleout_pc_mdt.sqlx) for active upstream sources | — |
+| `view_fact_stock_nonmove_mdt` | See [SQLX definition](../../../definitions/view/fact_view/view_fact_stock_nonmove_mdt.sqlx) for active upstream sources | — |
+| `view_fact_target_product_group_mdt` | See [SQLX definition](../../../definitions/view/fact_view/view_fact_target_product_group_mdt.sqlx) for active upstream sources | — |
+| `view_fact_target_section_mdt` | See [SQLX definition](../../../definitions/view/fact_view/view_fact_target_section_mdt.sqlx) for active upstream sources | — |
 
-### `onetime` → schema `ONETIME` (6 — data marts / Power BI / models)
+### `onetime` → schema `ONETIME` (data marts / Power BI / models)
 
 | View | Key upstream | External refs |
 |---|---|---|
@@ -261,7 +267,9 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 
 ข้อมูลร้านค้าตาม `CustomerReportName` (MDS `Customer_Report_Master`) และ Segment ลูกค้า
 (MDS `Customer_Segment_Master`) — dim full rebuild รายวัน 2 ตัว · ใน Power BI ผูกเป็นทอด:
-`view_fact_transcation` → `dim_customer_report_info` (`CustomerReportInfoSK`) → `dim_customer_segment` (`CustomerSegmentSK`)
+`view_fact_transcation` → `view_dim_customer_report_info` (`CustomerReportInfoSK`) → `dim_customer_segment` (`CustomerSegmentSK`)
+· ตั้งแต่ 2026-10-07 ตาราง Power BI `Dimension Customer Report Info` ควรอ่านจาก **`view_dim_customer_report_info`**
+(`SELECT` ธรรมดา ไม่ต้อง left join เอง) — สลับ source เป็นขั้นตอนแยกหลัง merge + deploy view
 
 - **`dim_customer_report_info` มีทุกชื่อร้านใน `view_dim_invoice`**
   ไม่ใช่แค่ชื่อใน MDS — ไม่งั้น relationship ใน Power BI กรองแถวที่ชื่อไม่อยู่ใน MDS หายหมด · dim อ่าน
@@ -269,18 +277,35 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 - หนึ่งแถวต่อ `CompanyID` + ชื่อที่ตัด whitespace ทั้งหมด (`CustomerReportKey` ใช้ภายใน dim ไม่ออกเป็นคอลัมน์): MDS เลือก `updated_at DESC, id`
   ส่วน invoice เลือกตัวสะกดที่มีจำนวน invoice มากสุด แล้วเรียงชื่อตัดสินกรณีเสมอ; ชื่อว่างใน invoice ไม่ถูกนำเข้า dim
 - คอลัมน์ SK อยู่หน้าสุด: `CustomerReportInfoSK`, `CompanySK`, `CustomerSegmentSK`.
-  ชื่อนอก MDS มี `MdsID` และข้อมูล MDS เป็น NULL. `FlagPC` ส่งผ่าน BOOL, `OnlinePercent` cast เป็น FLOAT64
+  ชื่อนอก MDS มี `MdsID` และข้อมูล MDS เป็น NULL. ในตาราง `FlagPC` ยังเป็น BOOL, `OnlinePercent` cast เป็น FLOAT64
 - ไม่มีคอลัมน์ `CustomerReportKey`, `FlagMDS`, `DepartmentName`, `SectionID`, `RegionID`, `CustomerTier`
-  ในผลลัพธ์ (ตัดออก 2026-10-02 ตอนเปลี่ยนผลลัพธ์เป็น SK ของสายงาน) — `CustomerTier` ยังใช้ภายในเลือก Segment
-- **ไม่มี `DepartmentSK`/`SectionSK`/`RegionSK`/`DirectorSK` แล้ว (ตัดออก 2026-10-06)** — TA ของร้านออกเป็น
-  `DepartmentID` คอลัมน์เดียว (natural key ของ TA ที่เลือกใน `dim_department_last` ไม่ใช่ค่า MDS ดิบแบบก่อน 2026-10-02)
-  ภายใน dim ยัง join ด้วย SK · `dependencies[]` เป็นชุดเล็กสุด (2026-10-06): `update_sk_sale_rep_group` (รันหลัง `*_last`
+  ในผลลัพธ์ของตาราง (ตัดออก 2026-10-02 ตอนเปลี่ยนผลลัพธ์เป็น SK ของสายงาน) — `CustomerTier` ยังใช้ภายในเลือก Segment
+- **TA chain เก็บเป็น SK เท่านั้น (2026-10-07)** — ตารางเก็บ `DepartmentSK`, `SectionSK`, `RegionSK`,
+  `SectionManagerSK`, `RegionManagerSK`, `DirectorSK` ของแถว `dim_department_last` ที่เป็น TA ที่เลือก
+  (ค่าที่ `update_sk_sale_rep_group` ตั้งไว้) และ `SaleRepSK` ของพนักงาน; **ไม่มี** `DepartmentID`/`TAEmployeeID`/
+  `TAEmployeeName` ในตาราง — รหัส/ชื่อทั้งหมดไป get ที่ **`view_dim_customer_report_info`**
+  (ส่งผ่านคอลัมน์ตารางโดยแปลงค่าตามสัญญาด้านล่าง + `LEFT JOIN` ตาม SK ซึ่ง unique ทุกตัวในตารางปลายทาง จึงไม่มีแถวบาน):
+  `TADepartmentID`/`TADepartmentName`, `TASectionID`/`TASectionName`, `TARegionID`/`TARegionName`,
+  `TASectionManagerID`/`TASectionManagerName`, `TARegionManagerID`/`TARegionManagerName`,
+  `TADirectorID`/`TADirectorName` (`dim_director_last.DirectorID/DirectorName` ไม่ใช่ DirectorOfSales; ไม่มีระดับ director manager),
+  `TAEmployeeID`/`TAEmployeeName` · ชื่อคน = `ชื่อ นามสกุล (ชื่อเล่น)` ตัดช่องว่าง ไม่มีชื่อเล่นก็ไม่มีวงเล็บ
+  · `CustomerSegmentSK` ส่งผ่านเฉย ๆ ไม่ join `dim_customer_segment` ใน view (Power BI relate เองแล้ว)
+  · view แปลงให้ Power BI (2026-10-07; ตารางยังเก็บแบบเดิม): `FlagPC` เป็น STRING `'Yes'`/`'No'` (TRUE → Yes, FALSE หรือ NULL
+  → No ไม่มีค่าว่าง รวมร้านที่ไม่อยู่ใน MDS; ร้านใน MDS ที่ค่าเป็น FALSE หรือ NULL ก็ได้ No)
+  · `OnlinePercent` = ค่าเปอร์เซ็นต์ในตาราง / 100 เป็น FLOAT64 สัดส่วนสำหรับ format Percentage
+  (เช่น 25.5 → 0.255, 0 → 0, 100 → 1; NULL ยังคงเป็น NULL)
+  · ผลวัด 2026-10-07: Yes 149 · No 41,228 (NULL ในตาราง 39,505) · `OnlinePercent` 22 แถว สูงสุด 0.8
+  · `TADebcode` เก็บเป็นคอลัมน์ธรรมดาในตาราง (ไม่ใช่ SK)
+  · ภายใน dim ยัง join ด้วย SK · `dependencies[]` เป็นชุดเล็กสุด (2026-10-06): `update_sk_sale_rep_group` (รันหลัง `*_last`
   ทั้งหมดและเติม `DepartmentSK` ของ `dim_sale_representative_last` ที่ใช้หา TA), `dim_customer_segment`, และตารางหลัง view
   ตามกฎ Run order: `dim_aging`, `dim_order`, `mec` (`view_dim_invoice` อ่านตรง ๆ; `dim_aging` ครอบ
-  `dim_invoice`/`dim_customer` ด้วย) และ `dim_group_customer` (`view_dim_customer`) · **Power BI (ขั้นตอนภายนอกหลัง merge)**: ตาราง `Dimension Customer Report Info` ต้องลบ 4 คอลัมน์
-  (ซ่อนอยู่) ออกก่อน refresh ครั้งถัดไป ไม่งั้น refresh ล้ม · ใน repo/BigQuery ไม่มีผู้อ่าน 4 คอลัมน์นี้
-  (`view_fact_transcation` อ่านแค่ `CustomerReportInfoSK`/`CompanySK`/`CustomerReportName`)
-- **TA ของร้าน (`DepartmentID`, แก้ 2026-10-06)** — 1 แถว = 1 TA หรือว่าง ตามลำดับ:
+  `dim_invoice`/`dim_customer` ด้วย) และ `dim_group_customer` (`view_dim_customer`)
+  · ใน repo/BigQuery ผู้อ่านตารางนี้คือ `view_fact_transcation` (อ่านแค่ `CustomerReportInfoSK`/`CompanySK`/`CustomerReportName`)
+  และ `view_dim_customer_report_info`
+  · **Deploy**: view อยู่ tag `view` ไม่อยู่ในรอบรันกลางคืน — หลัง merge ต้องรันตาราง (ตัวรันรายวัน) แล้ว deploy view ครั้งเดียว
+  · **Power BI (ขั้นตอนภายนอกหลัง deploy)**: เปลี่ยน source ของ `Dimension Customer Report Info` เป็น
+  `view_dim_customer_report_info` แบบ `SELECT` ธรรมดา; ตารางเดิมไม่มี `DepartmentID` แล้ว
+- **TA ของร้าน (`DepartmentSK` → `TADepartmentID` ใน view, กฎแก้ 2026-10-06)** — 1 แถว = 1 TA หรือว่าง ตามลำดับ:
   1. **MDS ชนะเสมอ**: `DepartmentID` ใน `mds_data_customer_report_master` ที่จับคู่ `dim_department_last`
      ได้ (`CompanySK` + `DepartmentID`) → `TASource = 'MDS'`
   2. ไม่งั้นเลือก**รหัสลูกค้าที่ชื่อของตัวเองตรงกับชื่อรายงาน** จาก `mihCus` ทุกบิลของชื่อนั้นใน `view_dim_invoice`
@@ -296,14 +321,21 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
      → **TA เดียวเท่านั้น** ได้ `TASource = 'DEBSALESP'`
      · ย้ายจาก TA หมดอายุมา TA ปัจจุบันเดียวได้ TA ปัจจุบัน · ไม่มี TA หรือมีหลาย TA ปัจจุบัน → ว่าง
   - trace: `TASource` (`MDS`/`DEBSALESP`/NULL), `TADebcode` — รหัสลูกค้า (debcode/`mihCus`) ที่ใช้ค้นหา TA ในข้อ 2–3
-    NULL เมื่อใช้ MDS; หากมีรหัสที่ชื่อตรงก็เก็บไว้แม้ TA ว่าง เพื่อใช้ตรวจสอบ · **ไม่มี `TAEmployeeID` ในผลลัพธ์ (ตัดออก 2026-10-06)**
-    — TA ส่งออกเป็น `DepartmentID` ตามขอบเขตระดับ department ขึ้นไป; `debsalesp` ยังใช้ภายในหา TA ตามกฎเดิม
-    · `TADebcode` นำกลับมา 2026-10-07 (ตัดไปพร้อม `TAEmployeeID` 2026-10-06) · กฎเลือก TA/Segment ไม่เปลี่ยน
+    NULL เมื่อใช้ MDS; หากมีรหัสที่ชื่อตรงก็เก็บไว้แม้ TA ว่าง เพื่อใช้ตรวจสอบ
+    · `SaleRepSK` — พนักงาน `deb.debsalesp` ของ `TADebcode` (NULL เมื่อใช้ MDS หรือ `debsalesp` ว่าง): แถว
+    `dim_sale_representative_last` หนึ่งแถวต่อบริษัท + `EmployeeID` โดยเลือกแถวที่ `EmployeeName` ไม่เป็น NULL ก่อน
+    (รวมแถวชื่ออย่างเดียวจาก `per`); ถ้ามีหลายแถวเลือก `SaleRepSK` ต่ำสุดในกลุ่มที่มีชื่อ
+    ถ้าไม่มีแถวที่มีชื่อ เลือก `SaleRepSK` ต่ำสุดของพนักงานนั้น
+    · เลือกพนักงานแยกจาก TA: ไม่กรองด้วย `DepartmentSK`/`DepartmentID` หรือวันที่ จึงมี SK ได้แม้ TA ว่าง
+    · พนักงานที่ไม่อยู่ใน `dim_sale_representative_last` → `SaleRepSK` ว่าง (`TAEmployeeID`/`TAEmployeeName` ใน view เป็น NULL)
+    แต่รหัสเดิมยังตรวจได้ผ่าน `TADebcode` → `deb.debsalesp` (ผลวัด live 2026-10-07 พบ 52 แถว)
+    · ประวัติ: ตัด `TAEmployeeID`/`TADebcode` 2026-10-06 · `TADebcode` กลับมา 2026-10-07 ·
+    พนักงานกลับมาเป็น `SaleRepSK` + TA chain เป็น SK + view 2026-10-07 · กฎเลือก TA/Segment ไม่เปลี่ยน
     · เมื่อรัน Dataform action นี้ (`type: "table"`) ครั้งถัดไป จะ rebuild `dimension_table.dim_customer_report_info`
-    ใน BigQuery ให้มี `TADebcode` และไม่มี `TAEmployeeID` — merge โค้ดอย่างเดียวไม่เปลี่ยนตาราง live
-    · **Power BI (ขั้นตอนภายนอกก่อน refresh)**: หาก `Dimension Customer Report Info` ยังมี `TAEmployeeID`
-    ให้ลบคอลัมน์นี้และการอ้างถึงใน partition `SELECT` ก่อน refresh ครั้งถัดไป · ไม่ select `TADebcode`,
-    `debcode`, `SegmentChannel`, `SegmentDebcode`, `SegmentSource` ใน partition `SELECT`
+    ใน BigQuery ด้วย schema ใหม่ — merge โค้ดอย่างเดียวไม่เปลี่ยนตาราง live
+    · ผลวัด 2026-10-07 ก่อนแยกการเลือกพนักงานจาก TA (SELECT บน live 41,377 แถว; SK unique, TASource เท่าเดิม MDS 1,631 · DEBSALESP 13,354 · ว่าง 26,392):
+    TA SK ครบ 6 ระดับ 14,985 แถว (= MDS + DEBSALESP) · `SaleRepSK` 23,510 · `TADebcode` 38,901 (ไม่มี `debsalesp` 15,339 ·
+    พนักงานไม่อยู่ใน `dim_sale_representative_last` 52) · view 41,377 แถว ไม่บาน, SK ทุกตัวหาเจอ 100%, ชื่อเต็มทุกแถวที่มี SK
   - ข้อจำกัด: `debsalesp` คือพนักงานที่ลงไว้ใน Mac5 (มักเป็นคนเปิดลูกค้า) ไม่ได้อัปเดตตามคนดูแลปัจจุบัน
   - ไม่เติม TA จากบิล (`DepartmentSKLast` ของ fact) ในไฟล์นี้ — `view_fact_transcation` อ่าน dim นี้ จึงวนกัน
   - ผลวัด 2026-10-06 (SQL แบบ SELECT บนข้อมูล live 41,357 แถว หลังตัดพนักงาน MDT ก่อนกรองวันที่):
@@ -376,7 +408,7 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 
 CLI availability and setup: [onboarding §3.2](../../getting-started/onboarding.md).
 
-1. All 34 views compile and the `view` tag runs after the table-building tags.
+1. All views compile and the `view` tag runs after the table-building tags.
 2. Views referencing other views (chains — e.g. `view_dim_aging` → `view_dim_channel`,
    `Model_Invoice_Transaction` → `view_fact_transcation`) resolve in the right order.
 

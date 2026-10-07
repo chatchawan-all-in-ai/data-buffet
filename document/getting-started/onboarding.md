@@ -19,9 +19,11 @@ GCS AVRO (gs://file-raw-data)
   → validated (ทำความสะอาด cast dedup — 136 ไฟล์ = 132 transformation + 4 schema)
   → curated   (business logic, join — 11 ไฟล์ = 7 transformation + 4 schema)
   → dimension (69 ไฟล์) + fact (15 ไฟล์)
-  → view      (ชั้น BI/report — 34 ไฟล์)
+  → view      (ชั้น BI/report)
   ท่อเสริม: cdc (จับ change) + process (แกะที่อยู่ไทยด้วย AI)
 ```
+
+จำนวน view ปัจจุบันดู [lineage ที่สร้างจากโค้ด](../diagrams/pipeline_lineage.md#1-layer-overview)
 
 > จำนวนไฟล์ในเอกสารนี้นับ **ไฟล์ `.sqlx` ทั้งหมด** ส่วน `README.md` บางตารางนับเฉพาะ
 > **transformation** (ไม่รวมไฟล์ `*_schema_*.sqlx` ที่ใช้ bootstrap dataset) ตัวเลข

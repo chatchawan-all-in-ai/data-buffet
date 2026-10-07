@@ -19,7 +19,7 @@
 | `TAG_FACT_DAILY` / `TAG_FACT_MONTHLY` / `TAG_FACT_YEARLY` | `fact_daily`, `fact_monthly`, `fact_yearly` | Fact refresh cadence |
 | `TAG_PROCESS` | `process` | Process layer (address parsing) |
 | `TAG_CDC` / `TAG_CDC_INCREMENTAL` | `cdc`, `cdc_incremental` | CDC pipeline |
-| `TAG_VIEW` | `view` | View layer (`definitions/view/`) — presentation views over dim/fact/curated · เพิ่ม 2026-07-24 · **ย้ายครบทั้ง 33 view แล้ว** — ต้องใส่ tag นี้ในตารางเวลา ไม่งั้น view จะไม่ถูก deploy และ drift จาก BigQuery |
+| `TAG_VIEW` | `view` | View layer (`definitions/view/`) — presentation views over dim/fact/curated · [Deployment procedure](../../how-to/deploy-view.md) |
 | `ONETIME` | `onetime` | One-off actions |
 
 ## Dataset (BigQuery schema) names
