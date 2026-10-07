@@ -119,22 +119,22 @@ WITH section_lookup AS (
     branch_code,
     ANY_VALUE(branch_name) AS branch_name,
     MIN(sale_date)         AS first_sale
-  FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_mdt")}
+   FROM (
+    SELECT store_code, branch_code, branch_name, sale_date
+    FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_mdt")}
+    UNION ALL
+    -- รายเดือนไม่มี sale_date ใช้ month_date แทน เป็นวันโดยประมาณอยู่แล้ว
+    SELECT store_code, branch_code, branch_name, month_date
+    FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_monthly_mdt")}
+  )
   WHERE store_code IS NOT NULL
     AND branch_code IS NOT NULL
   GROUP BY store_code, branch_code
 
 ), new_branch AS (
 
-  -- ร้านเกิดใหม่: ขายแล้วแต่ยังไม่มีใน mds_data_sales_branch_master
-  -- RegionName เป็น NULL หมด BI จึงโชว์เป็นช่องว่าง ลูกค้าดูไม่ออกว่าเป็นสาขาไหนของห้างไหน
-  -- เลยเติม master ให้เราไม่ได้ · วัด 2026-10-05: GB GH-218 สาขาเชียงคำ 22 แถว 107,330 บาท
-  --
-  -- เติมเท่าที่หาได้จริง — รหัสสาขา ห้าง และทุกอย่างฝั่ง Region ซึ่ง join จาก store_code ได้ปกติ
-  -- ส่วน Section/Zone ไม่มีทางรู้จนกว่าลูกค้าจะบอก จึงเป็น -1 และ ZoneName บอกตรง ๆ ว่ารออยู่
   SELECT
-    -- ต่อท้าย SK ของ master · ดิมตัวนี้ rebuild ทุกวัน SK จึงรันใหม่ทั้งตารางอยู่แล้ว
-    -- IFNULL กัน master ว่างแล้ว MAX คืน NULL ทำให้ SK หายทั้งก้อน
+
     IFNULL((SELECT MAX(BranchMdtSK) FROM branch_master), 0)
       + ROW_NUMBER() OVER(ORDER BY f.store_code, f.branch_code) AS BranchMdtSK,
 
@@ -165,7 +165,9 @@ WITH section_lookup AS (
    AND dim_region.companyID = 'ag01'
   -- BranchCode ไม่ซ้ำข้ามห้าง (494 แถว = 494 รหัส) จึงเทียบรหัสเดียวพอ
   WHERE NOT EXISTS (
-    SELECT 1 FROM branch_master AS b WHERE b.BranchCode = f.branch_code
+    SELECT 1 FROM branch_master AS b
+    WHERE b.BranchCode = f.branch_code
+      AND b.StoreCode  = f.store_code
   )
 
 ), unknown_branch AS (

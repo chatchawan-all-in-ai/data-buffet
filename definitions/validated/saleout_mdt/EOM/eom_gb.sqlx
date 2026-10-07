@@ -44,7 +44,8 @@ WITH src AS (
         --    อาการเดียวกับบั๊กเครื่องหมายคืนของ onetime.saleout_monthly_mdt ที่แก้ไปเมื่อเช้า
         SAFE_CAST(REPLACE(REPLACE(TRIM(Sale_Amount), "'", ''), ',', '') AS FLOAT64) AS sale_amount,
 
-        ${databuffet.functionData.parseAsatDate()} AS asatdate
+        ${databuffet.functionData.parseAsatDate()} AS asatdate,
+        ASATDATE AS asat_raw
 
     FROM `${sourceTableRef}`
 
@@ -58,9 +59,15 @@ WITH src AS (
       -- ฟีดรายวันมีกฎนี้อยู่แล้ว ใส่ให้ตรงกัน: รหัสที่ไม่ใช่ตัวเลขคือ 'รายได้ค่าขนส่ง' ไม่ใช่การขายสินค้า
       AND (Product_Code IS NULL OR REGEXP_CONTAINS(TRIM(Product_Code), r'^[0-9]+$'))
 
-      AND TRIM(Product_Code) NOT IN (${HITACHI_PUMPS})
+            AND TRIM(Product_Code) NOT IN (${HITACHI_PUMPS})
+
+), latest AS (
+
+    SELECT * FROM src
+    QUALIFY asat_raw = MAX(asat_raw) OVER (PARTITION BY month_date)
 
 )
+
 
 -- รวมเป็นเกรนรายเดือน · ห้างส่งมาเป็นรายบรรทัดบิล ต้องยุบ
 SELECT
@@ -74,5 +81,5 @@ SELECT
     SUM(sale_qty)             AS sale_qty,
     SUM(sale_amount)          AS sale_amount,
     MAX(asatdate)             AS asatdate
-FROM src
+FROM latest
 GROUP BY month_date, branch_code, product_code, doc_type

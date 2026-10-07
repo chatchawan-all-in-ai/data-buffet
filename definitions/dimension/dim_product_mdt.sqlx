@@ -59,10 +59,11 @@ WITH mac5_dedup AS (
 
 
 ), product_master AS (
-  SELECT
+    SELECT
     ROW_NUMBER() OVER(ORDER BY CAST(t1.product_mdt_code AS INT64)) AS ProductMdtSK,
     IFNULL(mac5.ProductSK, -1)    AS ProductSK,
-    IFNULL(NULLIF(mac5.ProductMktSK, -1), IFNULL(fb.ProductMktSK, -1)) AS ProductMktSK,
+    IFNULL(NULLIF(mac5.ProductMktSK, -1),
+           IFNULL(fb.ProductMktSK, IFNULL(wait.ProductMktSK, -1))) AS ProductMktSK,
     CAST(CAST(t1.product_mdt_code AS INT64) AS STRING)          AS ProductCode,
     ${databuffet.functionData.cleanString("t1.product_mdt_name")}  AS ProductName,
     IF(mac5.ProductSK IS NULL AND fb.ProductMktSK IS NULL,
@@ -78,6 +79,13 @@ WITH mac5_dedup AS (
    LEFT JOIN mkt_fallback AS fb
     ON  ${databuffet.functionData.cleanString("t1.product_mac5_code")} = fb.StkCode
     AND ${databuffet.functionData.cleanString("t1.commpy")}            = fb.companyID
+     -- ถังรอตรวจสอบของบริษัทเดียวกัน · master สร้าง WAITING999 ไว้ใน STK MKT เมื่อ 2026-10-06
+  -- ⚠️ อ้างด้วยรหัส ไม่ใช่ SK — ดิมสร้างใหม่ทุกวัน SK เปลี่ยนได้
+  -- ถ้าวันไหน master ลบรหัสนี้ทิ้ง IFNULL ชั้นนอกจะคืน -1 เหมือนเดิม ไม่พังเงียบ
+  LEFT JOIN mkt_fallback AS wait
+    ON  wait.StkCode  = 'WAITING999'
+    AND wait.companyID = ${databuffet.functionData.cleanString("t1.commpy")}
+
 
 
 ), unknown_product AS (
