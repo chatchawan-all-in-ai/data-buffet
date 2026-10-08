@@ -92,6 +92,10 @@ def compatibility_transport(upstream, evidence):
     return f"http://127.0.0.1:{server.server_port}"
 
 
+def without_mds_employee(row):
+    return {c: v for c, v in row.items() if not (c == "SaleRepSK" and row["TASource"] == "MDS")}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cli", required=True, type=Path)
@@ -181,7 +185,8 @@ def main():
                                 (12, "BT_BK1_TA01", future), (13, "GB_BK1_TA01", future),
                                 (14, "MH_BK1_TA01", future), (15, "DH_BK1_TA01", future),
                                 (16, "HP_EXPIRED_TA01", yesterday), (17, "HPX_BK1_TA01", future),
-                                (18, "hp_lower_TA01", future)):
+                                (18, "hp_lower_TA01", future), (19, "TA_MDS_SHARED", future),
+                                (20, "TA_MDS_VACANT", future)):
             departments.append({"CompanySK": company_sk, "DepartmentSK": company_sk * 100 + sk,
                                 "DepartmentID": dep_id, "StartDate": past, "EndDate": end,
                                 "DepartmentName": dep_id + " name",
@@ -289,6 +294,13 @@ def main():
     person("REUSED_EMPLOYEE", "Second", "Company", company="aa05")
     person("PERSON_ONLY", "Person", "Only")
     person("NAMED_DEPARTMENT", None, None)
+    # Current holders of MDS departments: TA_MDS has one, TA_MDS_SHARED two, TA_MDS_VACANT none.
+    rep("MDS_HOLDER", 3)
+    rep("MDS_HOLDER_EXPIRED", 3, end=yesterday)
+    rep("MDS_HOLDER_FUTURE", 3, start=tomorrow)
+    person("MDS_HOLDER", "Mds", "Holder")
+    rep("MDS_SHARED_A", 19)
+    rep("MDS_SHARED_B", 19)
     invoice = table("dimension_view", "view_dim_invoice", {
         "companyID": "STRING", "CustomerReportName": "STRING", "mihCus": "STRING",
         "mix_date": "DATETIME", "mihVnos": "STRING", "mihPer": "STRING", "mihDep": "STRING",
@@ -337,7 +349,7 @@ def main():
         expected[(company, "".join(name.split()))] = {"TADepartmentID": ta, "TASource": source}
         if employee and employee.startswith("MDT_"):
             mdt_expected[(company, "".join(name.split()))] = {
-                "TAEmployeeID": None if source == "MDS" else employee,
+                "TAEmployeeID": "MDS_HOLDER" if source == "MDS" else employee,
                 "TADebcode": None if source == "MDS" else code,
             }
 
@@ -372,6 +384,10 @@ def main():
     mds("Inactive MDS", "TA_MDS", active=False)
     mds("MDS Only", "TA_MDS", flag_pc=None, online_percent="100")
     expected[("ag01", "MDSOnly")] = dict(TADepartmentID="TA_MDS", TASource="MDS")
+    shop("MDS Shared", ta="TA_MDS_SHARED", source="MDS")
+    mds("MDS Shared", "TA_MDS_SHARED")
+    mds("MDS Vacant", "TA_MDS_VACANT")
+    expected[("ag01", "MDSVacant")] = dict(TADepartmentID="TA_MDS_VACANT", TASource="MDS")
     shop("Person Only", "PERSON_ONLY", ta=None, source=None)
     shop("Named Department", "NAMED_DEPARTMENT", ta=None, source=None)
     for name, employee in (("Single Cost Chain", "CHAIN_COST"), ("Single Depcode Chain", "CHAIN_CODE"),
@@ -567,13 +583,15 @@ def main():
                            {column: actual[key][column] for column in values} == values, actual[key])
         ta_columns = {"DepartmentSK", "SectionSK", "RegionSK", "SectionManagerSK", "RegionManagerSK", "DirectorSK"}
         allowed = ta_columns | {"TASource"}
-        regional_check("regional assignment preserves names, segments, lookup codes and employee SKs",
+
+        regional_check("regional assignment preserves names, segments, lookup codes and non-MDS employee SKs",
                        raw.keys() == base.keys() and all(
-                           {c: v for c, v in row.items() if c not in allowed}
-                           == {c: v for c, v in base[key].items() if c not in allowed}
+                           {c: v for c, v in without_mds_employee(row).items() if c not in allowed}
+                           == {c: v for c, v in base[key].items() if c not in allowed and c in without_mds_employee(row)}
                            for key, row in raw.items()), {"allowed_changes": sorted(allowed)})
-        regional_check("non-MDT rows and already assigned MDT TAs remain identical to branch base",
-                       all(row == base[key] for key, row in raw.items()
+        regional_check("non-MDT rows and already assigned MDT TAs match branch base except MDS employee SKs",
+                       all(without_mds_employee(row) == {c: base[key][c] for c in without_mds_employee(row)}
+                           for key, row in raw.items()
                            if key not in mdt_expected or base[key]["DepartmentSK"] is not None), {})
         for name, after_sk in (("MDTRegionalCancelledLatest", 109), ("MDTRegionalCancelledOnly", None)):
             key = ("ag01", name)
@@ -718,13 +736,15 @@ def main():
         check(f"segment contract: {name}", (row["CustomerSegmentSK"], row["SegmentSource"]) == (segment, source), row)
     ta_sk_columns = ["DepartmentSK", "SectionSK", "RegionSK", "SectionManagerSK", "RegionManagerSK", "DirectorSK"]
     mdt_changed_columns = set(ta_sk_columns) | {"TASource"}
-    check("MDT fallback changes only the selected TA hierarchy and source relative to the branch base",
+    check("MDT fallback preserves other values and non-MDS employee SKs relative to the branch base",
           raw.keys() == mdt_before.keys() and all(
-              {k: v for k, v in row.items() if k not in mdt_changed_columns}
-              == {k: v for k, v in mdt_before[key].items() if k not in mdt_changed_columns}
+              {k: v for k, v in without_mds_employee(row).items() if k not in mdt_changed_columns}
+              == {k: v for k, v in mdt_before[key].items()
+                  if k not in mdt_changed_columns and k in without_mds_employee(row)}
               for key, row in raw.items()), {"allowed_changes": sorted(mdt_changed_columns)})
-    check("MDT fallback leaves every non-MDT customer-report row identical to the branch base",
-          all(row == mdt_before[key] for key, row in raw.items() if key not in mdt_keys),
+    check("non-MDT customer-report rows match the branch base except MDS employee SKs",
+          all(without_mds_employee(row) == {k: mdt_before[key][k] for k in without_mds_employee(row)}
+              for key, row in raw.items() if key not in mdt_keys),
           {"non_mdt_rows": len(raw) - len(mdt_keys)})
     check("the missing chain TA is reproduced before this change and resolved by the running product",
           all(mdt_before[key]["DepartmentSK"] is None and mdt_before[key]["TASource"] is None
@@ -754,8 +774,20 @@ def main():
     check("unresolved TA rows expose no hierarchy information",
           all(all(row[c] is None for c in chain_information) for row in actual_rows if row["DepartmentSK"] is None),
           [row for row in actual_rows if row["DepartmentSK"] is None])
+    def mds_holder(row):
+        # The one employee currently holding the MDS department, else None.
+        dep = dep_by_sk[row["DepartmentSK"]]
+        holders = {r["EmployeeID"] for r in reps
+                   if r["CompanySK"] == row["CompanySK"] and r["DepartmentSK"] == row["DepartmentSK"]
+                   and r["DepartmentID"] is not None and (r["StartDate"] is None or r["StartDate"] <= str(today))
+                   and (r["EndDate"] is None or r["EndDate"] >= str(today))
+                   and not dep["DepartmentID"].lower().startswith("dummy")
+                   and (dep["EndDate"] is None or dep["EndDate"] >= str(today))}
+        return holders.pop() if len(holders) == 1 else None
+
     for row in raw_rows:
-        employee = deb_by_code.get((row["CompanyID"], row["TADebcode"]), {}).get("debsalesp")
+        employee = (mds_holder(row) if row["TASource"] == "MDS"
+                    else deb_by_code.get((row["CompanyID"], row["TADebcode"]), {}).get("debsalesp"))
         candidates = [r for r in reps if employee is not None
                       and r["CompanySK"] == row["CompanySK"] and r["EmployeeID"] == employee]
         chosen = min(candidates, key=lambda r: (r.get("EmployeeName") is None, r["SaleRepSK"])) if candidates else None
@@ -789,9 +821,13 @@ def main():
           and employee_before[("ag01", "ชื่อXX")]["TAEmployeeName"] is None
           and actual[("ag01", "ชื่อXX")]["TAEmployeeName"] == "สมชาย ใจดี (ชาย)",
           {"before": employee_before[("ag01", "ชื่อXX")], "after": actual[("ag01", "ชื่อXX")]})
-    check("TAEmployeeID is NULL for MDS rows and only set alongside TADebcode",
-          all(r["TAEmployeeID"] is None for r in actual_rows if r["TASource"] == "MDS")
-          and all(r["TADebcode"] is not None for r in actual_rows if r["TAEmployeeID"] is not None)
+    check("MDS rows take the single current holder of the MDS TA; several or no holders stay empty",
+          [(actual[("ag01", name)]["TAEmployeeID"], actual[("ag01", name)]["TAEmployeeName"])
+           for name in ("MDSPriority", "MDSOnly", "MDSShared", "MDSVacant")]
+          == [("MDS_HOLDER", "Mds Holder"), ("MDS_HOLDER", "Mds Holder"), (None, None), (None, None)],
+          [actual[("ag01", name)] for name in ("MDSPriority", "MDSOnly", "MDSShared", "MDSVacant")])
+    check("outside MDS, TAEmployeeID is only set alongside TADebcode",
+          all(r["TADebcode"] is not None for r in actual_rows if r["TAEmployeeID"] is not None and r["TASource"] != "MDS")
           and actual[("ag01", "NoDebsalesp")]["TAEmployeeID"] is None, actual_rows)
     check("TAEmployeeID keeps the debsalesp employee of the lookup code",
           actual[("ag01", "ชื่อXX")]["TAEmployeeID"] == "REP_A", actual[("ag01", "ชื่อXX")])

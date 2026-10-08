@@ -341,12 +341,17 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
      · `TADebcode`/`SaleRepSK` ของร้าน MDT เหมือนเดิม (พนักงาน `debsalesp`)
   - trace: `TASource` (`MDS`/`DEBSALESP`/`MDT`/NULL), `TADebcode` — รหัสลูกค้า (debcode/`mihCus`) ที่ใช้ค้นหา TA ในข้อ 2–4
     NULL เมื่อใช้ MDS; หากมีรหัสที่ชื่อตรงก็เก็บไว้แม้ TA ว่าง เพื่อใช้ตรวจสอบ
-    · `SaleRepSK` — พนักงาน `deb.debsalesp` ของ `TADebcode` (NULL เมื่อใช้ MDS หรือ `debsalesp` ว่าง): แถว
+    · `SaleRepSK` — **แถวที่ไม่ใช่ MDS**: พนักงาน `deb.debsalesp` ของ `TADebcode` (NULL เมื่อ `debsalesp` ว่าง) · **แถว `TASource = 'MDS'`
+    (2026-10-08, CTE `mds_emp`)**: พนักงานที่ถือ TA นั้นอยู่วันนี้ใน `dim_sale_representative_last` (บริษัทเดียวกัน,
+    `DepartmentSK` เดียวกัน, เงื่อนไขวัน/Dummy/`dim_department_last.EndDate` เดียวกับ `rep_cur`, นับ `EmployeeID` ไม่ซ้ำ —
+    รวมพนักงาน MDT) **คนเดียว** = คนนั้น · หลายคนหรือไม่มีคนถือ = NULL (ไม่ใช้ tie-break) · ไม่ใช้ `debsalesp` ของร้าน (ต่างจาก MDS ~31%)
+    · `TADebcode` ของแถว MDS ยังเป็น NULL · ทั้งสองกรณี map เป็น SK ด้วยกฎเดียวกัน: แถว
     `dim_sale_representative_last` หนึ่งแถวต่อบริษัท + `EmployeeID` โดยเลือกแถวที่ `EmployeeName` ไม่เป็น NULL ก่อน
     (รวมแถวชื่ออย่างเดียวจาก `per`); ถ้ามีหลายแถวเลือก `SaleRepSK` ต่ำสุดในกลุ่มที่มีชื่อ
     ถ้าไม่มีแถวที่มีชื่อ เลือก `SaleRepSK` ต่ำสุดของพนักงานนั้น
-    · เลือกพนักงานแยกจาก TA: ไม่กรองด้วย `DepartmentSK`/`DepartmentID` หรือวันที่ จึงมี SK ได้แม้ TA ว่าง
-    · พนักงานที่ไม่อยู่ใน `dim_sale_representative_last` → `SaleRepSK` ว่าง (`TAEmployeeID`/`TAEmployeeName` ใน view เป็น NULL)
+    · การ map `EmployeeID` ที่เลือกแล้วเป็น `SaleRepSK` ไม่กรองด้วย `DepartmentSK`/`DepartmentID` หรือวันที่;
+    แถวที่ไม่ใช่ MDS จึงมี SK ได้แม้ TA ว่าง ส่วน MDS ต้องได้พนักงานจาก `mds_emp` ตามเงื่อนไขข้างต้นก่อน
+    · แถวที่ไม่ใช่ MDS: พนักงานที่ไม่อยู่ใน `dim_sale_representative_last` → `SaleRepSK` ว่าง (`TAEmployeeID`/`TAEmployeeName` ใน view เป็น NULL)
     แต่รหัสเดิมยังตรวจได้ผ่าน `TADebcode` → `deb.debsalesp` (ผลวัด live 2026-10-07 พบ 52 แถว)
     · ประวัติ: ตัด `TAEmployeeID`/`TADebcode` 2026-10-06 · `TADebcode` กลับมา 2026-10-07 ·
     พนักงานกลับมาเป็น `SaleRepSK` + TA chain เป็น SK + view 2026-10-07 · กฎเลือก TA/Segment ไม่เปลี่ยน
@@ -365,6 +370,11 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
     **MDT 286** (เดิม 210 ได้ `DepartmentSK` เดิมทุกร้าน + ใหม่ 76) · ว่าง 26,116 · แถวอื่นทั้งหมดตรงกับตารางเดิม 100% ·
     แถว MDT ใหม่มี `SectionSK` ครบ และ `DepCode` ของ TA = `mihDep` ของบิลล่าสุดที่ตรงทุกร้าน (76/76) ·
     ร้านใหม่ตามพนักงาน 1053173: 39 · 1062411: 25 · 1065043: 12 (HP 46 · TW 24 · BT 6) · ยอด 12 เดือน 148.1M
+  - ผลวัด 2026-10-08 หลังเติมพนักงานให้แถว MDS (SELECT query ที่ compile แล้วเทียบกับ query ที่ 3c7bad4 และตาราง live 41,389 แถว ไม่ได้รันตาราง):
+    แถวที่มี TA แต่ไม่มีพนักงาน **MDS 1,631 → 243** (DEBSALESP 0 · MDT 0 ทั้งก่อน/หลัง) · MDS ได้พนักงาน 1,388 ·
+    ว่าง 243 ร้านเพราะ TA มีคนถือพร้อมกันหลายคน (14 TA เช่น `N2_TA03` 39 ร้าน, `NE4_TA03` 30, `S1_TA04` 29;
+    `*_OTHER` มี 2–5 คน) · TA ที่ไม่มีคนถือวันนี้ 0 ร้าน · แถวที่ไม่ใช่ MDS และคอลัมน์อื่นของแถว MDS ตรงเดิม 100% ·
+    1 แถวต่อ (`CompanyID`, ชื่อไม่สนช่องว่าง), SK unique, TASource เท่าเดิม (MDS 1,631 · DEBSALESP 13,356 · MDT 286)
   - ข้อจำกัด: `debsalesp` คือพนักงานที่ลงไว้ใน Mac5 (มักเป็นคนเปิดลูกค้า) ไม่ได้อัปเดตตามคนดูแลปัจจุบัน
   - ไม่เติม TA จากบิล (`DepartmentSKLast` ของ fact) ในไฟล์นี้ — `view_fact_transcation` อ่าน dim นี้ จึงวนกัน
   - ผลวัด 2026-10-06 (SQL แบบ SELECT บนข้อมูล live 41,357 แถว หลังตัดพนักงาน MDT ก่อนกรองวันที่):
