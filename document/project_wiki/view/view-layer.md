@@ -305,7 +305,7 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
   · **Deploy**: view อยู่ tag `view` ไม่อยู่ในรอบรันกลางคืน — หลัง merge ต้องรันตาราง (ตัวรันรายวัน) แล้ว deploy view ครั้งเดียว
   · **Power BI (ขั้นตอนภายนอกหลัง deploy)**: เปลี่ยน source ของ `Dimension Customer Report Info` เป็น
   `view_dim_customer_report_info` แบบ `SELECT` ธรรมดา; ตารางเดิมไม่มี `DepartmentID` แล้ว
-- **TA ของร้าน (`DepartmentSK` → `TADepartmentID` ใน view, กฎแก้ 2026-10-06)** — 1 แถว = 1 TA หรือว่าง ตามลำดับ:
+- **TA ของร้าน (`DepartmentSK` → `TADepartmentID` ใน view, กฎแก้ 2026-10-08)** — 1 แถว = 1 TA หรือว่าง ตามลำดับ:
   1. **MDS ชนะเสมอ**: `DepartmentID` ใน `mds_data_customer_report_master` ที่จับคู่ `dim_department_last`
      ได้ (`CompanySK` + `DepartmentID`) → `TASource = 'MDS'`
   2. ไม่งั้นเลือก**รหัสลูกค้าที่ชื่อของตัวเองตรงกับชื่อรายงาน** จาก `mihCus` ทุกบิลของชื่อนั้นใน `view_dim_invoice`
@@ -315,12 +315,22 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
   3. รหัสนั้น → `validated_mac5.deb.debsalesp` (บริษัทเดียวกัน) → `dim_sale_representative_last` ที่ `EmployeeID = debsalesp`,
      ตรวจสิทธิ์ทั้งบริษัท + พนักงาน **ก่อนกรองวันที่**: ถ้าแถว `DepartmentID` ไม่ว่างและไม่ใช่ `Dummy*` ของพนักงาน
      ใน `dim_sale_representative_last` มี `CostChannelID` หรือ `DepCode` ไม่ว่างแม้เพียงแถวเดียว
-     (รวมแถวปัจจุบัน หมดอายุ และยังไม่เริ่มมีผล โดยไม่ต้องจับคู่ `dim_department_last` ได้) → TA จาก `debsalesp` ว่าง (ยังไม่ทำ MDT)
+     (รวมแถวปัจจุบัน หมดอายุ และยังไม่เริ่มมีผล โดยไม่ต้องจับคู่ `dim_department_last` ได้) = **พนักงาน MDT** (CTE `mdt_emp`)
+     → ไม่ใช้กฎ TA เดียวด้านล่าง แต่ใช้ข้อ 4
      · พนักงานปกติที่ไม่มีแถวดังกล่าว ใช้แถว `DepartmentID` ไม่ว่าง, วันนี้อยู่ใน `StartDate..EndDate`,
      TA ไม่ใช่ `Dummy*` และ `dim_department_last.EndDate` ยังไม่หมด (วันที่เป็น NULL ไม่จำกัดขอบเขตด้านนั้น)
      → **TA เดียวเท่านั้น** ได้ `TASource = 'DEBSALESP'`
      · ย้ายจาก TA หมดอายุมา TA ปัจจุบันเดียวได้ TA ปัจจุบัน · ไม่มี TA หรือมีหลาย TA ปัจจุบัน → ว่าง
-  - trace: `TASource` (`MDS`/`DEBSALESP`/NULL), `TADebcode` — รหัสลูกค้า (debcode/`mihCus`) ที่ใช้ค้นหา TA ในข้อ 2–3
+  4. **พนักงาน MDT (ห้างเชน, 2026-10-08)** — CTE `mdt_ta` ต่อ (บริษัท, รหัสลูกค้าใน `TADebcode`): แปลง
+     `deb.debgroup` ของรหัสนั้นเป็นเชนด้วยกฎเดียวกับ `view_fact_transcation` (HP/HPEXPO→`hp`, TW/TWEXPO→`tw`,
+     BT/BT.C→`bt`, GB→`gb`, MH→`mh`, DOHOME→`dh`; ค่าอื่นหรือว่าง = ไม่ใช่เชน) แล้วเลือกแถว TA ของพนักงานคนนั้น
+     ที่ใช้ได้วันนี้และไม่ใช่ `Dummy*` (เงื่อนไขวัน/Dummy เดียวกับข้อ 3, CTE `rep_cur`) และ `LOWER(DepartmentID)` ขึ้นต้นด้วย
+     `<เชน>_` → **TA เดียวเท่านั้น** ได้ `TASource = 'MDT'` · หลาย TA ในเชน (พนักงานแยกภาคด้วย `DepCode` เช่น
+     `*_S01_TA01`/`*_S02_TA01`), ไม่มี TA ปัจจุบันในเชน, หรือ debgroup ไม่ใช่เชน → ว่าง
+     · ยอมรับ: ร้าน "โฮมโปรดักส์ เซ็นเตอร์ สาขาเมกาโฮม-…" มี debgroup = HP จึงได้ TA ของโฮมโปร (`HP_*`) แม้บิลจะลง
+     เมกาโฮม (`MH_*`) — ไม่มีกฎจากชื่อร้านหรือแผนกในบิล · ไม่แก้ `fact_transcation`/`view_fact_transcation`
+     · `TADebcode`/`SaleRepSK` ของร้าน MDT เหมือนเดิม (พนักงาน `debsalesp`)
+  - trace: `TASource` (`MDS`/`DEBSALESP`/`MDT`/NULL), `TADebcode` — รหัสลูกค้า (debcode/`mihCus`) ที่ใช้ค้นหา TA ในข้อ 2–4
     NULL เมื่อใช้ MDS; หากมีรหัสที่ชื่อตรงก็เก็บไว้แม้ TA ว่าง เพื่อใช้ตรวจสอบ
     · `SaleRepSK` — พนักงาน `deb.debsalesp` ของ `TADebcode` (NULL เมื่อใช้ MDS หรือ `debsalesp` ว่าง): แถว
     `dim_sale_representative_last` หนึ่งแถวต่อบริษัท + `EmployeeID` โดยเลือกแถวที่ `EmployeeName` ไม่เป็น NULL ก่อน
@@ -336,6 +346,11 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
     · ผลวัด 2026-10-07 ก่อนแยกการเลือกพนักงานจาก TA (SELECT บน live 41,377 แถว; SK unique, TASource เท่าเดิม MDS 1,631 · DEBSALESP 13,354 · ว่าง 26,392):
     TA SK ครบ 6 ระดับ 14,985 แถว (= MDS + DEBSALESP) · `SaleRepSK` 23,510 · `TADebcode` 38,901 (ไม่มี `debsalesp` 15,339 ·
     พนักงานไม่อยู่ใน `dim_sale_representative_last` 52) · view 41,377 แถว ไม่บาน, SK ทุกตัวหาเจอ 100%, ชื่อเต็มทุกแถวที่มี SK
+  - ผลวัด 2026-10-08 หลังเพิ่มข้อ 4 (SELECT query ที่ compile แล้วเทียบกับตาราง live 41,389 แถว ไม่ได้รันตาราง):
+    จำนวนแถว/SK unique/1 แถวต่อ (`CompanyID`, ชื่อไม่สนช่องว่าง) เท่าเดิม · MDS 1,631 · DEBSALESP 13,356 (เท่าเดิม) ·
+    **MDT 210** · ว่าง 26,192 (เดิม 26,402) · แถวที่ไม่ใช่ MDT TA/SK ทั้ง 6 ระดับ/`TADebcode`/`SaleRepSK` ตรงกับตารางเดิม 100% ·
+    แถว MDT มี `SectionSK` ครบ · ยอดขายร้าน MDT ที่ได้ TA = 14.30% ของยอด 4 ปี / 14.75% ของ 12 เดือน
+    · ร้าน MDT ที่ยังว่าง 336 ร้าน (หลาย TA ภาคในเชน 89 · debgroup ไม่ใช่เชน 247)
   - ข้อจำกัด: `debsalesp` คือพนักงานที่ลงไว้ใน Mac5 (มักเป็นคนเปิดลูกค้า) ไม่ได้อัปเดตตามคนดูแลปัจจุบัน
   - ไม่เติม TA จากบิล (`DepartmentSKLast` ของ fact) ในไฟล์นี้ — `view_fact_transcation` อ่าน dim นี้ จึงวนกัน
   - ผลวัด 2026-10-06 (SQL แบบ SELECT บนข้อมูล live 41,357 แถว หลังตัดพนักงาน MDT ก่อนกรองวันที่):
