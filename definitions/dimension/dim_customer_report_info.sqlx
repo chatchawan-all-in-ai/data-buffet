@@ -98,7 +98,11 @@ with mds as (
     ${databuffet.functionData.cleanString("inv.CustomerReportName")} AS CustomerReportName,
     ${databuffet.functionData.cleanString("inv.mihCus")} AS mihCus,
     inv.mix_date,
-    inv.mihVnos
+    inv.mihVnos,
+    -- พนักงานผู้ขาย + แผนกของบิล ใช้เลือก TA ภาคของพนักงาน MDT (mdt_slot)
+    inv.mihPer,
+    TRIM(inv.mihDep) AS mihDep,
+    inv.mihCancel
   FROM `${ViewDimInvoiceTableRef}` AS inv
   WHERE ${databuffet.functionData.cleanString("inv.CustomerReportName")} IS NOT NULL
 
@@ -126,28 +130,45 @@ with mds as (
   WHERE REGEXP_REPLACE(${databuffet.functionData.cleanString(CodeNameExpr)}, r'\s', '') = r.CustomerReportKey
   QUALIFY ROW_NUMBER() OVER(PARTITION BY r.CompanyID, r.CustomerReportKey ORDER BY r.mix_date DESC, r.mihVnos DESC) = 1
 
-), rep_ta as (
-  -- ห้ามใช้จำนวน TA หลังกรองวันตัดสิน MDT: เชนที่หมดอายุอาจทำให้พนักงาน MDT ดูเหมือนมี TA เดียว
-  -- ตรวจแถว non-Dummy ทั้งปัจจุบันและหมดอายุของบริษัท + พนักงาน ก่อนเลือก TA ที่ใช้ได้วันนี้
-  SELECT sr.companyID, sr.EmployeeID, sr.DepartmentSK
+), rep_cur as (
+  -- แถว TA ที่ใช้ได้วันนี้และไม่ใช่ Dummy ของพนักงานทุกคน (ปกติ + MDT)
+  SELECT sr.companyID, sr.EmployeeID, sr.DepartmentSK, sr.DepartmentID, sr.DepCode
   FROM `${DimSaleRepLastTableRef}` AS sr
   JOIN `${DimDepartmentLastTableRef}` AS dep
     ON sr.CompanySK = dep.CompanySK
     AND sr.DepartmentSK = dep.DepartmentSK
   WHERE sr.DepartmentID IS NOT NULL
-    AND NOT EXISTS (
-      SELECT 1
-      FROM `${DimSaleRepLastTableRef}` AS history
-      WHERE history.companyID = sr.companyID
-        AND history.EmployeeID = sr.EmployeeID
-        AND history.DepartmentID IS NOT NULL
-        AND NOT STARTS_WITH(LOWER(history.DepartmentID), 'dummy')
-        AND (history.CostChannelID IS NOT NULL OR history.DepCode IS NOT NULL)
-    )
     AND IFNULL(sr.StartDate <= CURRENT_DATE('Asia/Bangkok'), TRUE)
     AND IFNULL(sr.EndDate >= CURRENT_DATE('Asia/Bangkok'), TRUE)
     AND NOT STARTS_WITH(LOWER(dep.DepartmentID), 'dummy')
     AND IFNULL(dep.EndDate >= CURRENT_DATE('Asia/Bangkok'), TRUE)
+
+), mdt_emp as (
+  -- ห้ามใช้จำนวน TA หลังกรองวันตัดสิน MDT: เชนที่หมดอายุอาจทำให้พนักงาน MDT ดูเหมือนมี TA เดียว
+  -- ตรวจแถว non-Dummy ทั้งปัจจุบันและหมดอายุของบริษัท + พนักงาน ก่อนเลือก TA ที่ใช้ได้วันนี้
+  SELECT DISTINCT history.companyID, history.EmployeeID
+  FROM `${DimSaleRepLastTableRef}` AS history
+  WHERE history.DepartmentID IS NOT NULL
+    AND NOT STARTS_WITH(LOWER(history.DepartmentID), 'dummy')
+    AND (history.CostChannelID IS NOT NULL OR history.DepCode IS NOT NULL)
+
+), rep_ta as (
+  -- TA ของพนักงานปกติ = rep_cur ที่ไม่ใช่พนักงาน MDT
+  SELECT r.companyID, r.EmployeeID, r.DepartmentSK
+  FROM rep_cur AS r
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM mdt_emp AS m
+    WHERE m.companyID = r.companyID
+      AND m.EmployeeID = r.EmployeeID
+  )
+
+), mds_emp as (
+  -- พนักงานของ TA จาก MDS: คนที่ถือ TA นั้นอยู่วันนี้ (rep_cur) คนเดียว = คนนั้น · หลายคน = ว่าง
+  SELECT companyID, DepartmentSK,
+    IF(COUNT(DISTINCT EmployeeID) = 1, ANY_VALUE(EmployeeID), NULL) AS EmployeeID
+  FROM rep_cur
+  GROUP BY 1, 2
 
 ), deb_ta as (
   -- deb.debsalesp -> TA; พนักงานที่มีหลาย TA ที่ใช้ได้วันนี้ = ไม่ให้ TA
@@ -158,6 +179,55 @@ with mds as (
     ON deb.company_id = r.companyID
     AND deb.debsalesp = r.EmployeeID
   GROUP BY 1, 2, 3
+
+), mdt_cand as (
+  -- พนักงาน MDT: เชนจาก deb.debgroup (กฎเดียวกับ view_fact_transcation) แล้วตัวเลือก = TA ปัจจุบันในเชนนั้น
+  SELECT d.company_id, d.debcode, d.debsalesp, r.DepartmentSK, r.DepCode
+  FROM (
+    SELECT deb.company_id, deb.debcode, deb.debsalesp,
+      (CASE
+        WHEN deb.debgroup IN ('HP', 'HPEXPO') THEN 'hp'
+        WHEN deb.debgroup IN ('TW', 'TWEXPO') THEN 'tw'
+        WHEN deb.debgroup IN ('BT', 'BT.C') THEN 'bt'
+        WHEN deb.debgroup IN ('GB') THEN 'gb'
+        WHEN deb.debgroup IN ('MH') THEN 'mh'
+        WHEN deb.debgroup IN ('DOHOME') THEN 'dh'
+      END) AS chain
+    FROM ${ref(databuffet.VALIDATED_MAC5, "deb")} AS deb
+    JOIN mdt_emp AS m
+      ON deb.company_id = m.companyID
+      AND deb.debsalesp = m.EmployeeID
+  ) AS d
+  JOIN rep_cur AS r
+    ON d.company_id = r.companyID
+    AND d.debsalesp = r.EmployeeID
+    AND STARTS_WITH(LOWER(r.DepartmentID), d.chain || '_')
+
+), mdt_slot as (
+  -- หลาย TA ในเชน (แยกภาคด้วย DepCode): ใช้ mihDep ของบิลล่าสุดที่พนักงานคนนี้ขายให้ร้านนี้ (ชื่อรายงานเดียวกับ ta_cus)
+  -- ที่ตรงกับ DepCode ของตัวเลือก · ไม่มีบิลตรง = ว่าง
+  SELECT c.company_id, c.debcode, c.DepartmentSK
+  FROM mdt_cand AS c
+  JOIN ta_cus AS tc
+    ON c.company_id = tc.CompanyID
+    AND c.debcode = tc.debcode
+  JOIN inv_rows AS i
+    ON tc.CompanyID = i.CompanyID
+    AND tc.CustomerReportKey = i.CustomerReportKey
+    AND c.debsalesp = i.mihPer
+    AND c.DepCode = i.mihDep
+    AND IFNULL(i.mihCancel, 0) <> -1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY c.company_id, c.debcode ORDER BY i.mix_date DESC, i.mihVnos DESC, c.DepartmentSK) = 1
+
+), mdt_ta as (
+  -- TA เดียวในเชน ใช้ตัวนั้น · หลาย TA ใช้ mdt_slot · ไม่มีตัวเลือก / debgroup ไม่ใช่เชน = ว่าง
+  SELECT c.company_id, c.debcode,
+    IF(COUNT(DISTINCT c.DepartmentSK) = 1, ANY_VALUE(c.DepartmentSK), ANY_VALUE(slot.DepartmentSK)) AS DepartmentSK
+  FROM mdt_cand AS c
+  LEFT JOIN mdt_slot AS slot
+    ON c.company_id = slot.company_id
+    AND c.debcode = slot.debcode
+  GROUP BY 1, 2
 
 ), cust_channel as (
   -- กรอง channel ที่รู้จักก่อนเลือกแถวล่าสุด; channel ว่าง/นอก allowlist ไม่แทนที่แถวเก่า
@@ -211,29 +281,38 @@ with mds as (
 
 ), with_ta_code as (
   -- TA: MDS ชนะเสมอ (DepartmentID ที่มีใน dim_department_last) ไม่งั้นใช้ debsalesp ของรหัสใน ta_cus
+  -- (พนักงานปกติ) แล้วจึงเชนของพนักงาน MDT
   SELECT
     t.*,
     dim_com.CompanySK,
-    COALESCE(dep_mds.DepartmentSK, dta.DepartmentSK) AS TADepartmentSK,
+    COALESCE(dep_mds.DepartmentSK, dta.DepartmentSK, mdt.DepartmentSK) AS TADepartmentSK,
     (CASE
       WHEN dep_mds.DepartmentSK IS NOT NULL THEN 'MDS'
       WHEN dta.DepartmentSK IS NOT NULL THEN 'DEBSALESP'
+      WHEN mdt.DepartmentSK IS NOT NULL THEN 'MDT'
     END) AS TASource,
-    -- รหัส/พนักงานที่ใช้หา TA (NULL เมื่อใช้ MDS) เก็บไว้ตรวจร้านที่ TA ว่าง
+    -- รหัสที่ใช้หา TA (NULL เมื่อใช้ MDS) เก็บไว้ตรวจร้านที่ TA ว่าง
     IF(dep_mds.DepartmentSK IS NULL, tc.debcode, NULL) AS TADebcode,
-    IF(dep_mds.DepartmentSK IS NULL, dta.debsalesp, NULL) AS TAEmployeeID
+    -- พนักงาน: MDS = คนเดียวที่ถือ TA นั้นวันนี้ (mds_emp) ไม่งั้น debsalesp ของรหัสที่ใช้หา TA
+    IF(dep_mds.DepartmentSK IS NULL, dta.debsalesp, mds_emp.EmployeeID) AS TAEmployeeID
   FROM with_segment AS t
   LEFT JOIN `${DimCompanyTableRef}` AS dim_com
     ON t.CompanyID = dim_com.companyID
   LEFT JOIN `${DimDepartmentLastTableRef}` AS dep_mds
     ON dim_com.CompanySK = dep_mds.CompanySK
     AND t.DepartmentID = dep_mds.DepartmentID
+  LEFT JOIN mds_emp
+    ON t.CompanyID = mds_emp.companyID
+    AND dep_mds.DepartmentSK = mds_emp.DepartmentSK
   LEFT JOIN ta_cus AS tc
     ON t.CompanyID = tc.CompanyID
     AND t.CustomerReportKey = tc.CustomerReportKey
   LEFT JOIN deb_ta AS dta
     ON tc.CompanyID = dta.company_id
     AND tc.debcode = dta.debcode
+  LEFT JOIN mdt_ta AS mdt
+    ON tc.CompanyID = mdt.company_id
+    AND tc.debcode = mdt.debcode
 
 ), with_ta as (
   SELECT
@@ -275,7 +354,7 @@ SELECT
   dep.RegionManagerSK,
   dep.DirectorSK,
   t.TASource,
-  -- รหัสลูกค้าที่ใช้หา TA และพนักงาน (SK) · NULL เมื่อใช้ MDS · ชื่อ/รหัสพนักงานอยู่ใน view_dim_customer_report_info
+  -- รหัสลูกค้าที่ใช้หา TA (NULL เมื่อใช้ MDS) และพนักงาน (SK) · ชื่อ/รหัสพนักงานอยู่ใน view_dim_customer_report_info
   t.TADebcode,
   t.SaleRepSK
 FROM with_ta AS t

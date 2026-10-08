@@ -32,6 +32,7 @@ REMOVED_BASE = "f783450054355cf07bdaf956a94b406089353837"
 NARROWED_TRACE = "81e9d7819477e2700752975f07912b22b5020746"
 EMPLOYEE_BEFORE_FIX = "d183fbafbb942ac7e65bfd03792f7f5c41f378cb"
 ACCEPTANCE_BASE = "a694ce5608ecc02ad74ebb9702087d1b7648e7d8"
+MDT_BEFORE_CHANGE = "106973d5b5ce374a18a36eddefd31ad19ca07b1c"
 
 
 def compatibility_transport(upstream, evidence):
@@ -91,12 +92,18 @@ def compatibility_transport(upstream, evidence):
     return f"http://127.0.0.1:{server.server_port}"
 
 
+def without_mds_employee(row):
+    return {c: v for c, v in row.items() if not (c == "SaleRepSK" and row["TASource"] == "MDS")}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cli", required=True, type=Path)
     parser.add_argument("--scratch", required=True, type=Path)
     parser.add_argument("--evidence", required=True, type=Path)
     parser.add_argument("--endpoint", required=True)
+    parser.add_argument("--regional-mdt", action="store_true",
+                        help="run only regional MDT acceptance and cancellation regressions")
     parser.add_argument("--quoted-udf-workaround", action="store_true",
                         help="normalize equivalent UDF identifier quoting for bigquery-emulator 0.8.1")
     args = parser.parse_args()
@@ -172,7 +179,14 @@ def main():
     for company_sk in (1, 2):
         for sk, dep_id, end in ((1, "TA_A", future), (2, "TA_B", future), (3, "TA_MDS", future),
                                 (4, "TA_EXPIRED", yesterday), (5, "DummyTA", future),
-                                (6, "TA_TODAY", str(today)), (7, "TA_NULLDATE", None)):
+                                (6, "TA_TODAY", str(today)), (7, "TA_NULLDATE", None),
+                                (8, "HP_BK1_TA01", future), (9, "HP_S01_TA01", future),
+                                (10, "HP_S02_TA01", future), (11, "TW_E01_TA01", future),
+                                (12, "BT_BK1_TA01", future), (13, "GB_BK1_TA01", future),
+                                (14, "MH_BK1_TA01", future), (15, "DH_BK1_TA01", future),
+                                (16, "HP_EXPIRED_TA01", yesterday), (17, "HPX_BK1_TA01", future),
+                                (18, "hp_lower_TA01", future), (19, "TA_MDS_SHARED", future),
+                                (20, "TA_MDS_VACANT", future)):
             departments.append({"CompanySK": company_sk, "DepartmentSK": company_sk * 100 + sk,
                                 "DepartmentID": dep_id, "StartDate": past, "EndDate": end,
                                 "DepartmentName": dep_id + " name",
@@ -248,6 +262,31 @@ def main():
     rep("REUSED_EMPLOYEE", 2, company="aa05", cost="CHAIN_OTHER_COMPANY")
     rep("NAMED_DEPARTMENT", 2, cost="NAMED_CHAIN")
     reps[-1].update(EmployeeName="Named", EmployeeSurname="Department", EmployeeNickname="ND")
+    # MDT (chain-store) employees: TA picked from the shop's deb.debgroup chain.
+    rep("MDT_ONE", 8, cost="COST_HP")
+    rep("MDT_ONE", 11, cost="COST_TW", end=yesterday)
+    rep("MDT_SPLIT", 9, code="HP_S1")
+    rep("MDT_SPLIT", 10, code="HP_S2")
+    for dep in (8, 11, 12, 13, 14, 15):
+        rep("MDT_ALL_CHAINS", dep, cost="CHAIN")
+    rep("MDT_FILTERED", 8)
+    rep("MDT_FILTERED", 9, end=yesterday, code="EXPIRED_REP")
+    rep("MDT_FILTERED", 10, start=tomorrow, code="FUTURE_REP")
+    rep("MDT_FILTERED", 16, cost="EXPIRED_DEPARTMENT")
+    rep("MDT_FILTERED", 5, cost="DUMMY")
+    rep("MDT_FILTERED", 17, cost="PREFIX_COLLISION")
+    rep("MDT_FILTERED", 99, dep_id="HP_MISSING_TA01", code="MISSING_MASTER")
+    rep("MDT_NO_CURRENT", 9, end=yesterday, code="EXPIRED_REP")
+    rep("MDT_NO_CURRENT", 10, start=tomorrow, code="FUTURE_REP")
+    rep("MDT_NO_CURRENT", 16, cost="EXPIRED_DEPARTMENT")
+    rep("MDT_NO_CURRENT", 5, cost="DUMMY")
+    rep("MDT_TODAY", 8, start=str(today), end=str(today), code="HP")
+    rep("MDT_NULL_DATES", 8, start=None, end=None, cost="HP")
+    rep("MDT_DUPLICATE", 8, cost="HP")
+    rep("MDT_DUPLICATE", 8, code="HP")
+    rep("MDT_LOWER", 18, code="HP")
+    rep("MDT_SHARED", 8, company="ag01", cost="HP")
+    rep("MDT_SHARED", 11, company="aa05", cost="TW")
     person("REP_A", "สมชาย", "ใจดี", "ชาย")
     person("REP_A", "Alternate", "Name")
     person("REP_B", " Somsri ", "Dee", " ")
@@ -255,9 +294,17 @@ def main():
     person("REUSED_EMPLOYEE", "Second", "Company", company="aa05")
     person("PERSON_ONLY", "Person", "Only")
     person("NAMED_DEPARTMENT", None, None)
+    # Current holders of MDS departments: TA_MDS has one, TA_MDS_SHARED two, TA_MDS_VACANT none.
+    rep("MDS_HOLDER", 3)
+    rep("MDS_HOLDER_EXPIRED", 3, end=yesterday)
+    rep("MDS_HOLDER_FUTURE", 3, start=tomorrow)
+    person("MDS_HOLDER", "Mds", "Holder")
+    rep("MDS_SHARED_A", 19)
+    rep("MDS_SHARED_B", 19)
     invoice = table("dimension_view", "view_dim_invoice", {
         "companyID": "STRING", "CustomerReportName": "STRING", "mihCus": "STRING",
-        "mix_date": "DATETIME", "mihVnos": "STRING",
+        "mix_date": "DATETIME", "mihVnos": "STRING", "mihPer": "STRING", "mihDep": "STRING",
+        "mihCancel": "INTEGER",
     })
     customers = table("dimension_view", "view_dim_customer", {
         "companyID": "STRING", "debcode": "STRING", "debnamet": "STRING",
@@ -265,6 +312,7 @@ def main():
     })
     debs = table("validated_mac5", "deb", {
         "company_id": "STRING", "debcode": "STRING", "debsalesp": "STRING", "debdate": "DATETIME",
+        "debgroup": "STRING",
     })
     quotes = table("validated_mac5", "tbook_quotation", {
         "company_id": "STRING", "agent1": "STRING", "channel": "STRING", "dinsert": "DATETIME", "id": "STRING",
@@ -281,22 +329,29 @@ def main():
         for sk, name in enumerate(("DC", "DA", "GOLD", "BRONZE", "SILVER"), 1):
             segments.append({"CompanySK": company_sk, "CustomerSegmentSK": company_sk * 1000 + sk, "Segment3": name})
     expected = {}
+    mdt_expected = {}
 
     def shop(name, employee="REP_A", *, company="ag01", code=None, own=None, date=None,
-             vnos="V001", nickname=None, channel="DC", debdate=None, ta="TA_A", source="DEBSALESP"):
+             vnos="V001", nickname=None, channel="DC", debdate=None, ta="TA_A", source="DEBSALESP",
+             debgroup=None, seller=None, dep=None, cancel=0):
         code = code or "".join(name.split())
         date = date or f"{today} 10:00:00"
         invoice.append({"companyID": company, "CustomerReportName": name, "mihCus": code,
-                        "mix_date": date, "mihVnos": vnos})
+                        "mix_date": date, "mihVnos": vnos, "mihPer": seller, "mihDep": dep, "mihCancel": cancel})
         if not any(c["companyID"] == company and c["debcode"] == code for c in customers):
             customers.append({"companyID": company, "debcode": code, "debnamet": own or name,
                               "FlagMDSNickName": nickname is not None, "NicknameCustomer": nickname})
             debs.append({"company_id": company, "debcode": code, "debsalesp": employee,
-                         "debdate": debdate or f"{today} 00:00:00"})
+                         "debdate": debdate or f"{today} 00:00:00", "debgroup": debgroup})
             if channel is not None:
                 quotes.append({"company_id": company, "agent1": code + " customer", "channel": channel,
                                "dinsert": f"{today} 00:00:00", "id": str(len(quotes) + 1)})
         expected[(company, "".join(name.split()))] = {"TADepartmentID": ta, "TASource": source}
+        if employee and employee.startswith("MDT_"):
+            mdt_expected[(company, "".join(name.split()))] = {
+                "TAEmployeeID": "MDS_HOLDER" if source == "MDS" else employee,
+                "TADebcode": None if source == "MDS" else code,
+            }
 
     def mds(name, department, *, tier="GOLD", active=True, updated=None, ident=None,
             flag_pc=True, online_percent="25.5"):
@@ -310,6 +365,8 @@ def main():
     expected[("ag01", "ชื่อXX")].update(TADepartmentID="TA_A")
     shop("Latest Matching", code="OLDER", date=f"{yesterday} 10:00:00")
     shop("Latest Matching", "REP_B", code="NEWER", ta="TA_B")
+    shop("Cancelled Latest Lookup", code="VALID_LOOKUP", date=f"{yesterday} 10:00:00")
+    shop("Cancelled Latest Lookup", "REP_B", code="CANCELLED_LOOKUP", cancel=-1, channel="DA", ta="TA_B")
     shop("Tie Matching", code="TIE_A", vnos="V001")
     shop("Tie Matching", "REP_B", code="TIE_B", vnos="V002", ta="TA_B")
     shop("Latest Unusable", code="USABLE_OLDER", date=f"{yesterday} 10:00:00")
@@ -327,6 +384,10 @@ def main():
     mds("Inactive MDS", "TA_MDS", active=False)
     mds("MDS Only", "TA_MDS", flag_pc=None, online_percent="100")
     expected[("ag01", "MDSOnly")] = dict(TADepartmentID="TA_MDS", TASource="MDS")
+    shop("MDS Shared", ta="TA_MDS_SHARED", source="MDS")
+    mds("MDS Shared", "TA_MDS_SHARED")
+    mds("MDS Vacant", "TA_MDS_VACANT")
+    expected[("ag01", "MDSVacant")] = dict(TADepartmentID="TA_MDS_VACANT", TASource="MDS")
     shop("Person Only", "PERSON_ONLY", ta=None, source=None)
     shop("Named Department", "NAMED_DEPARTMENT", ta=None, source=None)
     for name, employee in (("Single Cost Chain", "CHAIN_COST"), ("Single Depcode Chain", "CHAIN_CODE"),
@@ -347,6 +408,70 @@ def main():
     for name in ("SCG Branch", "CRC Branch", "Mec Branch"):
         shop(name, own="Different customer name", ta=None, source=None)
     shop("Missing Deb", ta=None, source=None)
+    shop("MDT Single Chain TA", "MDT_ONE", debgroup="HPEXPO", ta="HP_BK1_TA01", source="MDT")
+    shop("MDT Expired Chain TA", "MDT_ONE", debgroup="TW", ta=None, source=None)
+    shop("MDT Regional TAs", "MDT_SPLIT", debgroup="HP", ta=None, source=None)
+    shop("MDT Single Ignores Invoice", "MDT_ONE", debgroup="HP", seller="MDT_ONE", dep="HP_S2",
+         ta="HP_BK1_TA01", source="MDT")
+    shop("MDT Single Cancelled Invoice", "MDT_ONE", debgroup="HP", seller="MDT_ONE", dep="HP_S2", cancel=-1,
+         ta="HP_BK1_TA01", source="MDT")
+    # Several regional TAs in the chain: the latest invoice the employee sold to the shop picks the DepCode.
+    shop("MDT Regional Latest", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S1",
+         date=f"{yesterday} 10:00:00", ta=None, source=None)
+    shop("MDT Regional Latest", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep=" HP_S2 ",
+         ta="HP_S02_TA01", source="MDT")
+    shop("MDT Regional Cancelled Latest", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S1",
+         date=f"{yesterday} 10:00:00", ta=None, source=None)
+    shop("MDT Regional Cancelled Latest", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S2", cancel=-1,
+         ta="HP_S01_TA01", source="MDT")
+    shop("MDT Regional Cancelled Only", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S2", cancel=-1,
+         ta=None, source=None)
+    shop("MDT Regional Null Cancellation", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S1", cancel=None,
+         ta="HP_S01_TA01", source="MDT")
+    shop("MDT Regional Same Day", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S2", vnos="V001",
+         ta=None, source=None)
+    shop("MDT Regional Same Day", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S1", vnos="V002",
+         ta="HP_S01_TA01", source="MDT")
+    shop("MDT Regional Other Seller", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S2",
+         date=f"{yesterday} 10:00:00", ta=None, source=None)
+    shop("MDT Regional Other Seller", "MDT_SPLIT", debgroup="HP", seller="REP_A", dep="HP_S1",
+         ta="HP_S02_TA01", source="MDT")
+    shop("MDT Regional Unmatched Dep", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S1",
+         date=f"{yesterday} 10:00:00", ta=None, source=None)
+    shop("MDT Regional Unmatched Dep", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="TW_S1",
+         ta="HP_S01_TA01", source="MDT")
+    shop("MDT Regional No Match", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="TW_S1", ta=None, source=None)
+    shop("MDT Regional Not A Chain", "MDT_SPLIT", debgroup="SCG", seller="MDT_SPLIT", dep="HP_S1",
+         ta=None, source=None)
+    shop("MDT Not A Chain", "MDT_ONE", debgroup="SCG", ta=None, source=None)
+    shop("MDT Blank Group", "MDT_ONE", ta=None, source=None)
+    for group, ta in (("HP", "HP_BK1_TA01"), ("HPEXPO", "HP_BK1_TA01"),
+                      ("TW", "TW_E01_TA01"), ("TWEXPO", "TW_E01_TA01"),
+                      ("BT", "BT_BK1_TA01"), ("BT.C", "BT_BK1_TA01"),
+                      ("GB", "GB_BK1_TA01"), ("MH", "MH_BK1_TA01"), ("DOHOME", "DH_BK1_TA01")):
+        shop("MDT Mapping " + group, "MDT_ALL_CHAINS", debgroup=group, ta=ta, source="MDT")
+    shop("MDT Filtered Candidates", "MDT_FILTERED", debgroup="HP", ta="HP_BK1_TA01", source="MDT")
+    shop("MDT No Current Candidates", "MDT_NO_CURRENT", debgroup="HP", ta=None, source=None)
+    shop("MDT Today Inclusive", "MDT_TODAY", debgroup="HP", ta="HP_BK1_TA01", source="MDT")
+    shop("MDT Null Dates", "MDT_NULL_DATES", debgroup="HP", ta="HP_BK1_TA01", source="MDT")
+    shop("MDT Duplicate Department", "MDT_DUPLICATE", debgroup="HP", ta="HP_BK1_TA01", source="MDT")
+    shop("MDT Lower Department", "MDT_LOWER", debgroup="HP", ta="hp_lower_TA01", source="MDT")
+    for label, group in (("Empty", ""), ("Lowercase", "hp"), ("Prefix", "HPX")):
+        shop("MDT Invalid Group " + label, "MDT_ALL_CHAINS", debgroup=group, ta=None, source=None)
+    shop("MDT Shared Company", "MDT_SHARED", code="MDT_SHARED_CODE", debgroup="HP", ta="HP_BK1_TA01", source="MDT")
+    shop("MDT Shared Company", "MDT_SHARED", code="MDT_SHARED_CODE", company="aa05", debgroup="HP", ta=None, source=None)
+    shop("MDT Other Company TW", "MDT_SHARED", company="aa05", debgroup="TW", ta="TW_E01_TA01", source="MDT")
+    shop("MDT MDS Wins", "MDT_ALL_CHAINS", debgroup="HP", ta="TA_MDS", source="MDS")
+    mds("MDT MDS Wins", "TA_MDS")
+    shop("MDT Missing MDS Department", "MDT_ALL_CHAINS", debgroup="HP", ta="HP_BK1_TA01", source="MDT")
+    mds("MDT Missing MDS Department", "TA_NOT_FOUND")
+    shop("MDT Blank MDS Department", "MDT_ALL_CHAINS", debgroup="HP", ta="HP_BK1_TA01", source="MDT")
+    mds("MDT Blank MDS Department", None)
+    shop("MDT Name Mismatch", "MDT_ALL_CHAINS", debgroup="HP", own="Different legal name", ta=None, source=None)
+    mdt_expected[("ag01", "MDTNameMismatch")] = {"TAEmployeeID": None, "TADebcode": None}
+    shop("โฮมโปรดักส์ เซ็นเตอร์ สาขาเมกาโฮม-ทดสอบ", "MDT_ALL_CHAINS", debgroup="HP", ta="HP_BK1_TA01", source="MDT")
+    invoice[-1]["mihDep"] = "MH_BK1_TA01"
+    shop("Plain Chain Group", debgroup="HP")
     debs[:] = [d for d in debs if d["debcode"] != "MissingDeb"]
     shop("Company Boundary", "REUSED_EMPLOYEE", code="SHARED_CODE")
     shop("Company Boundary", "REUSED_EMPLOYEE", code="SHARED_CODE", company="aa05", ta=None, source=None)
@@ -405,12 +530,105 @@ def main():
         (args.evidence / f"{label}-compiled.sql").write_text(target["query"])
         return project, graph, target["query"]
 
+    if args.regional_mdt:
+        _, _, base_sql = compile_action("regional-base", "2edcb9ff6613bf575f32732d8eab2266fbdc046c")
+        _, _, before_cancel_sql = compile_action("before-cancellation-fix", "109fa84")
+        project, graph, _ = compile_action("target")
+        view_sql = next(t for t in graph["tables"] if t["target"]["name"] == VIEW_ACTION)["query"]
+        (args.evidence / "target-view-compiled.sql").write_text(view_sql)
+        functions = next(o for o in graph["operations"] if o["target"]["name"] == "create_all_function")
+        udf_sql = "CREATE OR REPLACE FUNCTION" + "\n".join(functions["queries"]).rsplit("CREATE OR REPLACE FUNCTION", 1)[1]
+        query(udf_sql)
+        base_rows, base_fields = query(base_sql)
+        before_cancel_rows, _ = query(before_cancel_sql)
+        env = dict(os.environ, BIGQUERY_EMULATOR_HOST=f"{endpoint}/bigquery/v2")
+        for key in ("GOOGLE_APPLICATION_CREDENTIALS", "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE"):
+            env.pop(key, None)
+        credentials = project / ".df-credentials.json"
+        credentials.write_text(json.dumps({"projectId": PROJECT, "location": "us-central1"}))
+
+        def run_regional_action(action):
+            command = [str(cli), "run", str(project), "--actions", action, "--credentials", str(credentials)]
+            result = subprocess.run(command, env=env, capture_output=True, text=True, timeout=180)
+            transcripts.append({"command": command, "returncode": result.returncode,
+                                "stdout": result.stdout, "stderr": result.stderr})
+            (args.evidence / "dataform-run.json").write_text(json.dumps(transcripts, indent=2))
+            if result.returncode:
+                raise RuntimeError(result.stdout + result.stderr)
+
+        run_regional_action(ACTION)
+        raw_rows, fields = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
+        run_regional_action(VIEW_ACTION)
+        actual_rows, _ = query(f"SELECT * FROM `{PROJECT}.dimension_view.{VIEW_ACTION}` ORDER BY CustomerReportInfoSK")
+
+        def regional_index(rows):
+            return {(r["CompanyID"], "".join(r["CustomerReportName"].split())): r for r in rows}
+
+        actual, raw, base, before_cancel = map(regional_index, (actual_rows, raw_rows, base_rows, before_cancel_rows))
+        checks = []
+
+        def regional_check(name, passed, detail):
+            checks.append({"name": name, "passed": passed, "detail": detail})
+
+        regional_check("reporting rows remain unique and complete",
+                       len(actual_rows) == len(raw_rows) == len(actual) == len(expected)
+                       and actual.keys() == expected.keys(), {"rows": len(actual_rows), "expected": len(expected)})
+        regional_check("public table schema is unchanged", fields == base_fields, fields)
+        for key in mdt_expected.keys() | {("ag01", "CancelledLatestLookup")}:
+            observed = {column: actual.get(key, {}).get(column) for column in expected[key]}
+            regional_check(f"TA selection: {key[0]} / {key[1]}", observed == expected[key],
+                           {"expected": expected[key], "actual": observed, "row": actual.get(key)})
+        for key, values in mdt_expected.items():
+            regional_check(f"MDT employee and customer code: {key[0]} / {key[1]}",
+                           {column: actual[key][column] for column in values} == values, actual[key])
+        ta_columns = {"DepartmentSK", "SectionSK", "RegionSK", "SectionManagerSK", "RegionManagerSK", "DirectorSK"}
+        allowed = ta_columns | {"TASource"}
+
+        regional_check("regional assignment preserves names, segments, lookup codes and non-MDS employee SKs",
+                       raw.keys() == base.keys() and all(
+                           {c: v for c, v in without_mds_employee(row).items() if c not in allowed}
+                           == {c: v for c, v in base[key].items() if c not in allowed and c in without_mds_employee(row)}
+                           for key, row in raw.items()), {"allowed_changes": sorted(allowed)})
+        regional_check("non-MDT rows and already assigned MDT TAs match branch base except MDS employee SKs",
+                       all(without_mds_employee(row) == {c: base[key][c] for c in without_mds_employee(row)}
+                           for key, row in raw.items()
+                           if key not in mdt_expected or base[key]["DepartmentSK"] is not None), {})
+        for name, after_sk in (("MDTRegionalCancelledLatest", 109), ("MDTRegionalCancelledOnly", None)):
+            key = ("ag01", name)
+            regional_check(f"cancelled-invoice regression reproduced before fix: {name}",
+                           before_cancel[key]["DepartmentSK"] == 110 and raw[key]["DepartmentSK"] == after_sk,
+                           {"before": before_cancel[key], "after": raw[key]})
+        lookup = actual[("ag01", "CancelledLatestLookup")]
+        regional_check("cancelled invoices still supply names, segment customer and ordinary TA customer",
+                       (lookup["SegmentDebcode"], lookup["SegmentChannel"], lookup["TADebcode"], lookup["TAEmployeeID"])
+                       == ("CANCELLED_LOOKUP", "DA", "CANCELLED_LOOKUP", "REP_B"), lookup)
+        dep_by_sk = {d["DepartmentSK"]: d for d in departments}
+        regional_check("selected TAs expose the full department hierarchy",
+                       all({c: r[c] for c in ta_columns} == (
+                           {c: dep_by_sk[r["DepartmentSK"]][c] for c in ta_columns}
+                           if r["DepartmentSK"] is not None else dict.fromkeys(ta_columns)) for r in raw_rows), raw_rows)
+        run_regional_action(ACTION)
+        rerun_rows, _ = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
+        regional_check("a daily rebuild produces identical persisted assignments", rerun_rows == raw_rows, {})
+        for name, rows in (("regional-base-rows", base_rows), ("before-cancellation-fix-rows", before_cancel_rows),
+                           ("materialized-target-table-rows", raw_rows), ("materialized-target-rows", actual_rows)):
+            (args.evidence / f"{name}.json").write_text(json.dumps(rows, ensure_ascii=False, indent=2))
+        (args.evidence / "behavior-checks.json").write_text(json.dumps(checks, ensure_ascii=False, indent=2))
+        (args.evidence / "query-responses.json").write_text(json.dumps(responses, ensure_ascii=False, indent=2))
+        failures = [check["name"] for check in checks if not check["passed"]]
+        print(json.dumps({"failures": failures, "fixture_date": str(today), "materialized_rows": len(actual_rows),
+                          "evidence": str(args.evidence)}, ensure_ascii=False, indent=2))
+        if failures:
+            raise SystemExit(1)
+        return
+
     base_project, _, _ = compile_action("base", BASE)
     _, _, before_sql = compile_action("before-r2", BEFORE_FIX)
     removed_project, _, _ = compile_action("removed-base", REMOVED_BASE)
     _, _, narrowed_sql = compile_action("narrowed-trace", NARROWED_TRACE)
     _, _, employee_before_sql = compile_action("before-employee", EMPLOYEE_BEFORE_FIX)
     acceptance_project, _, _ = compile_action("acceptance-base", ACCEPTANCE_BASE)
+    _, _, mdt_before_sql = compile_action("before-mdt", MDT_BEFORE_CHANGE)
     project, graph, _ = compile_action("target")
     view_sql = next(t for t in graph["tables"] if t["target"]["name"] == VIEW_ACTION)["query"]
     (args.evidence / "target-view-compiled.sql").write_text(view_sql)
@@ -421,6 +639,7 @@ def main():
     before_rows, _ = query(before_sql)
     narrowed_rows, _ = query(narrowed_sql)
     employee_before_raw, _ = query(employee_before_sql)
+    mdt_before_rows, _ = query(mdt_before_sql)
     employee_before_rows, _ = query(view_sql.replace(
         f"`{PROJECT}.dimension_table.{ACTION}`", f"({employee_before_sql})"))
     env = dict(os.environ, BIGQUERY_EMULATOR_HOST=f"{endpoint}/bigquery/v2")
@@ -464,12 +683,16 @@ def main():
 
     actual = index(actual_rows)
     raw = index(raw_rows)
+    # Shops of MDT employees gain a TA in this change; earlier commits are compared on the rest.
+    mdt_keys = set(mdt_expected)
     before = index(before_rows)
     base = index(base_rows)
     removed = index(removed_rows)
     narrowed = index(narrowed_rows)
     employee_before = index(employee_before_rows)
     employee_before_table = index(employee_before_raw)
+    mdt_before = index(mdt_before_rows)
+    (args.evidence / "before-mdt-rows.json").write_text(json.dumps(mdt_before_rows, ensure_ascii=False, indent=2))
     (args.evidence / "materialized-target-table-rows.json").write_text(json.dumps(raw_rows, ensure_ascii=False, indent=2))
     (args.evidence / "materialized-target-rows.json").write_text(json.dumps(actual_rows, ensure_ascii=False, indent=2))
     (args.evidence / "base-rows.json").write_text(json.dumps(base_rows, ensure_ascii=False, indent=2))
@@ -498,19 +721,37 @@ def main():
     check("TA and segment values are preserved from the configured acceptance base",
           index(acceptance_rows).keys() == raw.keys() and all(
               {k: actual[key]["TADepartmentID"] if k == "DepartmentID" else raw[key][k] for k in row} == row
-              for key, row in index(acceptance_rows).items()), acceptance_rows)
+              for key, row in index(acceptance_rows).items() if key not in mdt_keys), acceptance_rows)
     stable = raw.keys() == base.keys() and all(
         {k: r[k] for k in retained_columns} == {k: raw[key][k] for k in retained_columns}
-        for key, r in base.items())
+        for key, r in base.items() if key not in mdt_keys)
     check("every retained value, including TA lookup code, equals base output",
           stable, {"columns": retained_columns})
     for name, segment, source in (("ชื่อ XX", 1002, "CHANNEL"), ("SCG Branch", 1001, "CHANNEL"),
+                                  ("Cancelled Latest Lookup", 1002, "CHANNEL"),
                                   ("TT Current Month", 1004, "CHANNEL"), ("TT Previous Month", 1005, "CHANNEL"),
                                   ("Unknown Tier", 1001, "DEFAULT"), ("No Channel", 1001, "DEFAULT"),
                                   ("Channel Guard", 1002, "CHANNEL"), ("MDS Priority", 1003, "MDS")):
         row = actual[("ag01", "".join(name.split()))]
         check(f"segment contract: {name}", (row["CustomerSegmentSK"], row["SegmentSource"]) == (segment, source), row)
     ta_sk_columns = ["DepartmentSK", "SectionSK", "RegionSK", "SectionManagerSK", "RegionManagerSK", "DirectorSK"]
+    mdt_changed_columns = set(ta_sk_columns) | {"TASource"}
+    check("MDT fallback preserves other values and non-MDS employee SKs relative to the branch base",
+          raw.keys() == mdt_before.keys() and all(
+              {k: v for k, v in without_mds_employee(row).items() if k not in mdt_changed_columns}
+              == {k: v for k, v in mdt_before[key].items()
+                  if k not in mdt_changed_columns and k in without_mds_employee(row)}
+              for key, row in raw.items()), {"allowed_changes": sorted(mdt_changed_columns)})
+    check("non-MDT customer-report rows match the branch base except MDS employee SKs",
+          all(without_mds_employee(row) == {k: mdt_before[key][k] for k in without_mds_employee(row)}
+              for key, row in raw.items() if key not in mdt_keys),
+          {"non_mdt_rows": len(raw) - len(mdt_keys)})
+    check("the missing chain TA is reproduced before this change and resolved by the running product",
+          all(mdt_before[key]["DepartmentSK"] is None and mdt_before[key]["TASource"] is None
+              and raw[key]["DepartmentSK"] is not None and raw[key]["TASource"] == "MDT"
+              for key in mdt_keys if expected[key]["TASource"] == "MDT"),
+          [{"before": mdt_before[key], "after": raw[key]}
+           for key in mdt_keys if expected[key]["TASource"] == "MDT"])
     expected_schema = list(stable_columns) + ta_sk_columns + ["TASource", "TADebcode", "SaleRepSK"]
     removed_columns = ("DepartmentID", "TAEmployeeID", "TAEmployeeName")
     check("TA chain SKs all come from the chosen dim_department_last row",
@@ -533,8 +774,20 @@ def main():
     check("unresolved TA rows expose no hierarchy information",
           all(all(row[c] is None for c in chain_information) for row in actual_rows if row["DepartmentSK"] is None),
           [row for row in actual_rows if row["DepartmentSK"] is None])
+    def mds_holder(row):
+        # The one employee currently holding the MDS department, else None.
+        dep = dep_by_sk[row["DepartmentSK"]]
+        holders = {r["EmployeeID"] for r in reps
+                   if r["CompanySK"] == row["CompanySK"] and r["DepartmentSK"] == row["DepartmentSK"]
+                   and r["DepartmentID"] is not None and (r["StartDate"] is None or r["StartDate"] <= str(today))
+                   and (r["EndDate"] is None or r["EndDate"] >= str(today))
+                   and not dep["DepartmentID"].lower().startswith("dummy")
+                   and (dep["EndDate"] is None or dep["EndDate"] >= str(today))}
+        return holders.pop() if len(holders) == 1 else None
+
     for row in raw_rows:
-        employee = deb_by_code.get((row["CompanyID"], row["TADebcode"]), {}).get("debsalesp")
+        employee = (mds_holder(row) if row["TASource"] == "MDS"
+                    else deb_by_code.get((row["CompanyID"], row["TADebcode"]), {}).get("debsalesp"))
         candidates = [r for r in reps if employee is not None
                       and r["CompanySK"] == row["CompanySK"] and r["EmployeeID"] == employee]
         chosen = min(candidates, key=lambda r: (r.get("EmployeeName") is None, r["SaleRepSK"])) if candidates else None
@@ -544,7 +797,7 @@ def main():
           raw.keys() == employee_before_table.keys() and all(
               {k: v for k, v in r.items() if k != "SaleRepSK"}
               == {k: v for k, v in employee_before_table[key].items() if k != "SaleRepSK"}
-              for key, r in raw.items()), raw_rows)
+              for key, r in raw.items() if key not in mdt_keys), raw_rows)
     for company, name, employee, full_name in (
             ("ag01", "ชื่อXX", "REP_A", "สมชาย ใจดี (ชาย)"),
             ("ag01", "LatestMatching", "REP_B", "Somsri Dee"),
@@ -568,9 +821,13 @@ def main():
           and employee_before[("ag01", "ชื่อXX")]["TAEmployeeName"] is None
           and actual[("ag01", "ชื่อXX")]["TAEmployeeName"] == "สมชาย ใจดี (ชาย)",
           {"before": employee_before[("ag01", "ชื่อXX")], "after": actual[("ag01", "ชื่อXX")]})
-    check("TAEmployeeID is NULL for MDS rows and only set alongside TADebcode",
-          all(r["TAEmployeeID"] is None for r in actual_rows if r["TASource"] == "MDS")
-          and all(r["TADebcode"] is not None for r in actual_rows if r["TAEmployeeID"] is not None)
+    check("MDS rows take the single current holder of the MDS TA; several or no holders stay empty",
+          [(actual[("ag01", name)]["TAEmployeeID"], actual[("ag01", name)]["TAEmployeeName"])
+           for name in ("MDSPriority", "MDSOnly", "MDSShared", "MDSVacant")]
+          == [("MDS_HOLDER", "Mds Holder"), ("MDS_HOLDER", "Mds Holder"), (None, None), (None, None)],
+          [actual[("ag01", name)] for name in ("MDSPriority", "MDSOnly", "MDSShared", "MDSVacant")])
+    check("outside MDS, TAEmployeeID is only set alongside TADebcode",
+          all(r["TADebcode"] is not None for r in actual_rows if r["TAEmployeeID"] is not None and r["TASource"] != "MDS")
           and actual[("ag01", "NoDebsalesp")]["TAEmployeeID"] is None, actual_rows)
     check("TAEmployeeID keeps the debsalesp employee of the lookup code",
           actual[("ag01", "ชื่อXX")]["TAEmployeeID"] == "REP_A", actual[("ag01", "ชื่อXX")])
@@ -608,7 +865,7 @@ def main():
     check("all existing values equal the immediate base output after restoration",
           removed.keys() == raw.keys() and all(
               {k: actual[key]["TADepartmentID"] if k == "DepartmentID" else raw[key][k] for k in row} == row
-              for key, row in removed.items()),
+              for key, row in removed.items() if key not in mdt_keys),
           {"columns": [f["name"] for f in removed_fields]})
     check("base materialized table reproduces exposed employee and TA customer codes",
           all(c in {f["name"] for f in base_fields} for c in ("TAEmployeeID", "TADebcode"))
@@ -679,6 +936,11 @@ def main():
               (row["FlagPC"], row["OnlinePercent"]) == (flag_pc, online_percent), row)
     check("every reporting row has a non-null Yes/No FlagPC",
           all(row["FlagPC"] in ("Yes", "No") for row in actual_rows), actual_rows)
+    check("MDT shops keep the debsalesp employee and lookup code whether or not a chain TA resolves",
+          all({c: actual[key][c] for c in values} == values for key, values in mdt_expected.items()),
+          [actual[key] for key in mdt_keys])
+    check("an MDT TA carries its full hierarchy",
+          raw[("ag01", "MDTSingleChainTA")]["SectionSK"] == 10, raw[("ag01", "MDTSingleChainTA")])
     check("the reporting view preserves ShopOnline",
           all(actual[key]["ShopOnline"] == row["ShopOnline"] for key, row in raw.items()), actual_rows)
     (args.evidence / "behavior-checks.json").write_text(json.dumps(checks, ensure_ascii=False, indent=2))
