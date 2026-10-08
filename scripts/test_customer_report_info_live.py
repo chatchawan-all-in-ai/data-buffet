@@ -98,6 +98,8 @@ def main():
     parser.add_argument("--scratch", required=True, type=Path)
     parser.add_argument("--evidence", required=True, type=Path)
     parser.add_argument("--endpoint", required=True)
+    parser.add_argument("--regional-mdt", action="store_true",
+                        help="run only regional MDT acceptance and cancellation regressions")
     parser.add_argument("--quoted-udf-workaround", action="store_true",
                         help="normalize equivalent UDF identifier quoting for bigquery-emulator 0.8.1")
     args = parser.parse_args()
@@ -289,7 +291,8 @@ def main():
     person("NAMED_DEPARTMENT", None, None)
     invoice = table("dimension_view", "view_dim_invoice", {
         "companyID": "STRING", "CustomerReportName": "STRING", "mihCus": "STRING",
-        "mix_date": "DATETIME", "mihVnos": "STRING", "mihDep": "STRING",
+        "mix_date": "DATETIME", "mihVnos": "STRING", "mihPer": "STRING", "mihDep": "STRING",
+        "mihCancel": "INTEGER",
     })
     customers = table("dimension_view", "view_dim_customer", {
         "companyID": "STRING", "debcode": "STRING", "debnamet": "STRING",
@@ -318,11 +321,11 @@ def main():
 
     def shop(name, employee="REP_A", *, company="ag01", code=None, own=None, date=None,
              vnos="V001", nickname=None, channel="DC", debdate=None, ta="TA_A", source="DEBSALESP",
-             debgroup=None):
+             debgroup=None, seller=None, dep=None, cancel=0):
         code = code or "".join(name.split())
         date = date or f"{today} 10:00:00"
         invoice.append({"companyID": company, "CustomerReportName": name, "mihCus": code,
-                        "mix_date": date, "mihVnos": vnos})
+                        "mix_date": date, "mihVnos": vnos, "mihPer": seller, "mihDep": dep, "mihCancel": cancel})
         if not any(c["companyID"] == company and c["debcode"] == code for c in customers):
             customers.append({"companyID": company, "debcode": code, "debnamet": own or name,
                               "FlagMDSNickName": nickname is not None, "NicknameCustomer": nickname})
@@ -350,6 +353,8 @@ def main():
     expected[("ag01", "ชื่อXX")].update(TADepartmentID="TA_A")
     shop("Latest Matching", code="OLDER", date=f"{yesterday} 10:00:00")
     shop("Latest Matching", "REP_B", code="NEWER", ta="TA_B")
+    shop("Cancelled Latest Lookup", code="VALID_LOOKUP", date=f"{yesterday} 10:00:00")
+    shop("Cancelled Latest Lookup", "REP_B", code="CANCELLED_LOOKUP", cancel=-1, channel="DA", ta="TA_B")
     shop("Tie Matching", code="TIE_A", vnos="V001")
     shop("Tie Matching", "REP_B", code="TIE_B", vnos="V002", ta="TA_B")
     shop("Latest Unusable", code="USABLE_OLDER", date=f"{yesterday} 10:00:00")
@@ -390,6 +395,38 @@ def main():
     shop("MDT Single Chain TA", "MDT_ONE", debgroup="HPEXPO", ta="HP_BK1_TA01", source="MDT")
     shop("MDT Expired Chain TA", "MDT_ONE", debgroup="TW", ta=None, source=None)
     shop("MDT Regional TAs", "MDT_SPLIT", debgroup="HP", ta=None, source=None)
+    shop("MDT Single Ignores Invoice", "MDT_ONE", debgroup="HP", seller="MDT_ONE", dep="HP_S2",
+         ta="HP_BK1_TA01", source="MDT")
+    shop("MDT Single Cancelled Invoice", "MDT_ONE", debgroup="HP", seller="MDT_ONE", dep="HP_S2", cancel=-1,
+         ta="HP_BK1_TA01", source="MDT")
+    # Several regional TAs in the chain: the latest invoice the employee sold to the shop picks the DepCode.
+    shop("MDT Regional Latest", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S1",
+         date=f"{yesterday} 10:00:00", ta=None, source=None)
+    shop("MDT Regional Latest", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep=" HP_S2 ",
+         ta="HP_S02_TA01", source="MDT")
+    shop("MDT Regional Cancelled Latest", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S1",
+         date=f"{yesterday} 10:00:00", ta=None, source=None)
+    shop("MDT Regional Cancelled Latest", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S2", cancel=-1,
+         ta="HP_S01_TA01", source="MDT")
+    shop("MDT Regional Cancelled Only", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S2", cancel=-1,
+         ta=None, source=None)
+    shop("MDT Regional Null Cancellation", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S1", cancel=None,
+         ta="HP_S01_TA01", source="MDT")
+    shop("MDT Regional Same Day", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S2", vnos="V001",
+         ta=None, source=None)
+    shop("MDT Regional Same Day", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S1", vnos="V002",
+         ta="HP_S01_TA01", source="MDT")
+    shop("MDT Regional Other Seller", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S2",
+         date=f"{yesterday} 10:00:00", ta=None, source=None)
+    shop("MDT Regional Other Seller", "MDT_SPLIT", debgroup="HP", seller="REP_A", dep="HP_S1",
+         ta="HP_S02_TA01", source="MDT")
+    shop("MDT Regional Unmatched Dep", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="HP_S1",
+         date=f"{yesterday} 10:00:00", ta=None, source=None)
+    shop("MDT Regional Unmatched Dep", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="TW_S1",
+         ta="HP_S01_TA01", source="MDT")
+    shop("MDT Regional No Match", "MDT_SPLIT", debgroup="HP", seller="MDT_SPLIT", dep="TW_S1", ta=None, source=None)
+    shop("MDT Regional Not A Chain", "MDT_SPLIT", debgroup="SCG", seller="MDT_SPLIT", dep="HP_S1",
+         ta=None, source=None)
     shop("MDT Not A Chain", "MDT_ONE", debgroup="SCG", ta=None, source=None)
     shop("MDT Blank Group", "MDT_ONE", ta=None, source=None)
     for group, ta in (("HP", "HP_BK1_TA01"), ("HPEXPO", "HP_BK1_TA01"),
@@ -476,6 +513,96 @@ def main():
         target = next(t for t in graph["tables"] if t["target"]["name"] == ACTION)
         (args.evidence / f"{label}-compiled.sql").write_text(target["query"])
         return project, graph, target["query"]
+
+    if args.regional_mdt:
+        _, _, base_sql = compile_action("regional-base", "2edcb9ff6613bf575f32732d8eab2266fbdc046c")
+        _, _, before_cancel_sql = compile_action("before-cancellation-fix", "109fa84")
+        project, graph, _ = compile_action("target")
+        view_sql = next(t for t in graph["tables"] if t["target"]["name"] == VIEW_ACTION)["query"]
+        (args.evidence / "target-view-compiled.sql").write_text(view_sql)
+        functions = next(o for o in graph["operations"] if o["target"]["name"] == "create_all_function")
+        udf_sql = "CREATE OR REPLACE FUNCTION" + "\n".join(functions["queries"]).rsplit("CREATE OR REPLACE FUNCTION", 1)[1]
+        query(udf_sql)
+        base_rows, base_fields = query(base_sql)
+        before_cancel_rows, _ = query(before_cancel_sql)
+        env = dict(os.environ, BIGQUERY_EMULATOR_HOST=f"{endpoint}/bigquery/v2")
+        for key in ("GOOGLE_APPLICATION_CREDENTIALS", "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE"):
+            env.pop(key, None)
+        credentials = project / ".df-credentials.json"
+        credentials.write_text(json.dumps({"projectId": PROJECT, "location": "us-central1"}))
+
+        def run_regional_action(action):
+            command = [str(cli), "run", str(project), "--actions", action, "--credentials", str(credentials)]
+            result = subprocess.run(command, env=env, capture_output=True, text=True, timeout=180)
+            transcripts.append({"command": command, "returncode": result.returncode,
+                                "stdout": result.stdout, "stderr": result.stderr})
+            (args.evidence / "dataform-run.json").write_text(json.dumps(transcripts, indent=2))
+            if result.returncode:
+                raise RuntimeError(result.stdout + result.stderr)
+
+        run_regional_action(ACTION)
+        raw_rows, fields = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
+        run_regional_action(VIEW_ACTION)
+        actual_rows, _ = query(f"SELECT * FROM `{PROJECT}.dimension_view.{VIEW_ACTION}` ORDER BY CustomerReportInfoSK")
+
+        def regional_index(rows):
+            return {(r["CompanyID"], "".join(r["CustomerReportName"].split())): r for r in rows}
+
+        actual, raw, base, before_cancel = map(regional_index, (actual_rows, raw_rows, base_rows, before_cancel_rows))
+        checks = []
+
+        def regional_check(name, passed, detail):
+            checks.append({"name": name, "passed": passed, "detail": detail})
+
+        regional_check("reporting rows remain unique and complete",
+                       len(actual_rows) == len(raw_rows) == len(actual) == len(expected)
+                       and actual.keys() == expected.keys(), {"rows": len(actual_rows), "expected": len(expected)})
+        regional_check("public table schema is unchanged", fields == base_fields, fields)
+        for key in mdt_expected.keys() | {("ag01", "CancelledLatestLookup")}:
+            observed = {column: actual.get(key, {}).get(column) for column in expected[key]}
+            regional_check(f"TA selection: {key[0]} / {key[1]}", observed == expected[key],
+                           {"expected": expected[key], "actual": observed, "row": actual.get(key)})
+        for key, values in mdt_expected.items():
+            regional_check(f"MDT employee and customer code: {key[0]} / {key[1]}",
+                           {column: actual[key][column] for column in values} == values, actual[key])
+        ta_columns = {"DepartmentSK", "SectionSK", "RegionSK", "SectionManagerSK", "RegionManagerSK", "DirectorSK"}
+        allowed = ta_columns | {"TASource"}
+        regional_check("regional assignment preserves names, segments, lookup codes and employee SKs",
+                       raw.keys() == base.keys() and all(
+                           {c: v for c, v in row.items() if c not in allowed}
+                           == {c: v for c, v in base[key].items() if c not in allowed}
+                           for key, row in raw.items()), {"allowed_changes": sorted(allowed)})
+        regional_check("non-MDT rows and already assigned MDT TAs remain identical to branch base",
+                       all(row == base[key] for key, row in raw.items()
+                           if key not in mdt_expected or base[key]["DepartmentSK"] is not None), {})
+        for name, after_sk in (("MDTRegionalCancelledLatest", 109), ("MDTRegionalCancelledOnly", None)):
+            key = ("ag01", name)
+            regional_check(f"cancelled-invoice regression reproduced before fix: {name}",
+                           before_cancel[key]["DepartmentSK"] == 110 and raw[key]["DepartmentSK"] == after_sk,
+                           {"before": before_cancel[key], "after": raw[key]})
+        lookup = actual[("ag01", "CancelledLatestLookup")]
+        regional_check("cancelled invoices still supply names, segment customer and ordinary TA customer",
+                       (lookup["SegmentDebcode"], lookup["SegmentChannel"], lookup["TADebcode"], lookup["TAEmployeeID"])
+                       == ("CANCELLED_LOOKUP", "DA", "CANCELLED_LOOKUP", "REP_B"), lookup)
+        dep_by_sk = {d["DepartmentSK"]: d for d in departments}
+        regional_check("selected TAs expose the full department hierarchy",
+                       all({c: r[c] for c in ta_columns} == (
+                           {c: dep_by_sk[r["DepartmentSK"]][c] for c in ta_columns}
+                           if r["DepartmentSK"] is not None else dict.fromkeys(ta_columns)) for r in raw_rows), raw_rows)
+        run_regional_action(ACTION)
+        rerun_rows, _ = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
+        regional_check("a daily rebuild produces identical persisted assignments", rerun_rows == raw_rows, {})
+        for name, rows in (("regional-base-rows", base_rows), ("before-cancellation-fix-rows", before_cancel_rows),
+                           ("materialized-target-table-rows", raw_rows), ("materialized-target-rows", actual_rows)):
+            (args.evidence / f"{name}.json").write_text(json.dumps(rows, ensure_ascii=False, indent=2))
+        (args.evidence / "behavior-checks.json").write_text(json.dumps(checks, ensure_ascii=False, indent=2))
+        (args.evidence / "query-responses.json").write_text(json.dumps(responses, ensure_ascii=False, indent=2))
+        failures = [check["name"] for check in checks if not check["passed"]]
+        print(json.dumps({"failures": failures, "fixture_date": str(today), "materialized_rows": len(actual_rows),
+                          "evidence": str(args.evidence)}, ensure_ascii=False, indent=2))
+        if failures:
+            raise SystemExit(1)
+        return
 
     base_project, _, _ = compile_action("base", BASE)
     _, _, before_sql = compile_action("before-r2", BEFORE_FIX)
@@ -583,6 +710,7 @@ def main():
     check("every retained value, including TA lookup code, equals base output",
           stable, {"columns": retained_columns})
     for name, segment, source in (("ชื่อ XX", 1002, "CHANNEL"), ("SCG Branch", 1001, "CHANNEL"),
+                                  ("Cancelled Latest Lookup", 1002, "CHANNEL"),
                                   ("TT Current Month", 1004, "CHANNEL"), ("TT Previous Month", 1005, "CHANNEL"),
                                   ("Unknown Tier", 1001, "DEFAULT"), ("No Channel", 1001, "DEFAULT"),
                                   ("Channel Guard", 1002, "CHANNEL"), ("MDS Priority", 1003, "MDS")):

@@ -98,7 +98,11 @@ with mds as (
     ${databuffet.functionData.cleanString("inv.CustomerReportName")} AS CustomerReportName,
     ${databuffet.functionData.cleanString("inv.mihCus")} AS mihCus,
     inv.mix_date,
-    inv.mihVnos
+    inv.mihVnos,
+    -- พนักงานผู้ขาย + แผนกของบิล ใช้เลือก TA ภาคของพนักงาน MDT (mdt_slot)
+    inv.mihPer,
+    TRIM(inv.mihDep) AS mihDep,
+    inv.mihCancel
   FROM `${ViewDimInvoiceTableRef}` AS inv
   WHERE ${databuffet.functionData.cleanString("inv.CustomerReportName")} IS NOT NULL
 
@@ -128,7 +132,7 @@ with mds as (
 
 ), rep_cur as (
   -- แถว TA ที่ใช้ได้วันนี้และไม่ใช่ Dummy ของพนักงานทุกคน (ปกติ + MDT)
-  SELECT sr.companyID, sr.EmployeeID, sr.DepartmentSK, sr.DepartmentID
+  SELECT sr.companyID, sr.EmployeeID, sr.DepartmentSK, sr.DepartmentID, sr.DepCode
   FROM `${DimSaleRepLastTableRef}` AS sr
   JOIN `${DimDepartmentLastTableRef}` AS dep
     ON sr.CompanySK = dep.CompanySK
@@ -169,11 +173,9 @@ with mds as (
     AND deb.debsalesp = r.EmployeeID
   GROUP BY 1, 2, 3
 
-), mdt_ta as (
-  -- พนักงาน MDT: เชนจาก deb.debgroup (กฎเดียวกับ view_fact_transcation) แล้วเลือก TA ปัจจุบันในเชนนั้น
-  -- ได้ TA เมื่อเหลือตัวเดียวเท่านั้น · หลาย TA (แยกภาคด้วย DepCode) / ไม่มี / debgroup ไม่ใช่เชน = ว่าง
-  SELECT d.company_id, d.debcode,
-    IF(COUNT(DISTINCT r.DepartmentSK) = 1, ANY_VALUE(r.DepartmentSK), NULL) AS DepartmentSK
+), mdt_cand as (
+  -- พนักงาน MDT: เชนจาก deb.debgroup (กฎเดียวกับ view_fact_transcation) แล้วตัวเลือก = TA ปัจจุบันในเชนนั้น
+  SELECT d.company_id, d.debcode, d.debsalesp, r.DepartmentSK, r.DepCode
   FROM (
     SELECT deb.company_id, deb.debcode, deb.debsalesp,
       (CASE
@@ -193,6 +195,31 @@ with mds as (
     ON d.company_id = r.companyID
     AND d.debsalesp = r.EmployeeID
     AND STARTS_WITH(LOWER(r.DepartmentID), d.chain || '_')
+
+), mdt_slot as (
+  -- หลาย TA ในเชน (แยกภาคด้วย DepCode): ใช้ mihDep ของบิลล่าสุดที่พนักงานคนนี้ขายให้ร้านนี้ (ชื่อรายงานเดียวกับ ta_cus)
+  -- ที่ตรงกับ DepCode ของตัวเลือก · ไม่มีบิลตรง = ว่าง
+  SELECT c.company_id, c.debcode, c.DepartmentSK
+  FROM mdt_cand AS c
+  JOIN ta_cus AS tc
+    ON c.company_id = tc.CompanyID
+    AND c.debcode = tc.debcode
+  JOIN inv_rows AS i
+    ON tc.CompanyID = i.CompanyID
+    AND tc.CustomerReportKey = i.CustomerReportKey
+    AND c.debsalesp = i.mihPer
+    AND c.DepCode = i.mihDep
+    AND IFNULL(i.mihCancel, 0) <> -1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY c.company_id, c.debcode ORDER BY i.mix_date DESC, i.mihVnos DESC, c.DepartmentSK) = 1
+
+), mdt_ta as (
+  -- TA เดียวในเชน ใช้ตัวนั้น · หลาย TA ใช้ mdt_slot · ไม่มีตัวเลือก / debgroup ไม่ใช่เชน = ว่าง
+  SELECT c.company_id, c.debcode,
+    IF(COUNT(DISTINCT c.DepartmentSK) = 1, ANY_VALUE(c.DepartmentSK), ANY_VALUE(slot.DepartmentSK)) AS DepartmentSK
+  FROM mdt_cand AS c
+  LEFT JOIN mdt_slot AS slot
+    ON c.company_id = slot.company_id
+    AND c.debcode = slot.debcode
   GROUP BY 1, 2
 
 ), cust_channel as (
