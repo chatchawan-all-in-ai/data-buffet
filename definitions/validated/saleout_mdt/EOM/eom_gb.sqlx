@@ -10,6 +10,13 @@ config {
     },
 }
 
+/*
+  ยอดปิดรายเดือนที่โกลบอลเฮ้าส์ส่งมาเอง (โฟลเดอร์ SO_MDT_EOM)
+  คนละชุดกับ saleout_gb ซึ่งเป็นฟีดรายวัน — ตัวนี้คือ "ยอดที่ห้างแจ้ง" ไว้เทียบว่าเราเก็บหายไปเท่าไร
+
+  type: "table" เพราะห้างส่งไฟล์แก้ย้อนหลังได้ และ ASATDATE เป็นวันที่ DAG รัน ไม่ใช่งวด
+  หน้าต่าง incremental จึงใช้ไม่ได้ — ดู known-issues 2026-10-05
+*/
 
 js {
     const sourceTableRef = `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_gb`;
@@ -45,6 +52,8 @@ WITH src AS (
         SAFE_CAST(REPLACE(REPLACE(TRIM(Sale_Amount), "'", ''), ',', '') AS FLOAT64) AS sale_amount,
 
         ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+        -- ไว้ตัดงวดที่ถูกส่งซ้ำ ต้องใช้ค่าดิบเพราะ parseAsatDate แปลงเป็น DATE แล้ว
         ASATDATE AS asat_raw
 
     FROM `${sourceTableRef}`
@@ -59,15 +68,20 @@ WITH src AS (
       -- ฟีดรายวันมีกฎนี้อยู่แล้ว ใส่ให้ตรงกัน: รหัสที่ไม่ใช่ตัวเลขคือ 'รายได้ค่าขนส่ง' ไม่ใช่การขายสินค้า
       AND (Product_Code IS NULL OR REGEXP_CONTAINS(TRIM(Product_Code), r'^[0-9]+$'))
 
-            AND TRIM(Product_Code) NOT IN (${HITACHI_PUMPS})
+      AND TRIM(Product_Code) NOT IN (${HITACHI_PUMPS})
 
 ), latest AS (
 
+    -- ⚠️ งวดเดียวกันถูกส่งซ้ำได้ (ห้างส่งไฟล์เดิมอีกรอบ) แล้วไปอยู่คนละพาร์ทิชัน ASATDATE
+    -- ถ้าไม่ตัด GROUP BY ข้างล่างจะบวกรวมทุกพาร์ทิชัน ยอดเบิ้ลตามจำนวนครั้งที่ส่ง
+    -- วัด 2026-10-08: ก.ย. มาถึง 4 พาร์ทิชัน (05/06/07/08) ยอดเป็น 4 เท่าพอดี
+    --   ของจริง 15,638,676.75 กลายเป็น 62,554,707.00
+    -- ตัดข้ามพาร์ทิชันโดยตั้งใจ (ไม่ใส่ asat_raw ใน PARTITION BY) — เหมือน eom_hp/eom_tw/eom_bt
+    -- GB ไม่มีคอลัมน์เวลาสร้างไฟล์แบบ CRDATE ของ HP จึงใช้ ASATDATE เป็นตัวตัด
     SELECT * FROM src
     QUALIFY asat_raw = MAX(asat_raw) OVER (PARTITION BY month_date)
 
 )
-
 
 -- รวมเป็นเกรนรายเดือน · ห้างส่งมาเป็นรายบรรทัดบิล ต้องยุบ
 SELECT

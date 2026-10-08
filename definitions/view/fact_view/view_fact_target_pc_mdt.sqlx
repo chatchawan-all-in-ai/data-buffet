@@ -1,0 +1,79 @@
+config {
+  type: "view",
+  schema: databuffet.FACT_VIEW,
+  dependencies: ["fact_target_saleout_mdt", "dim_pc"],
+  tags: [databuffet.TAG_VIEW],
+}
+
+
+
+js {
+    const FactTargetRef = `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_target_saleout_mdt`;
+    const DimPcRef      = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_pc`;
+}
+
+
+/*
+  เป้ายอดขายแตกเป็นรายคน PC — คู่ขนานกับ view_fact_saleout_pc_mdt ฝั่งยอดขาย
+  ไว้ให้รายงานคำนวณ %Achieve รายคนได้ (เดิมมีแต่ยอดขายรายคน ไม่มีเป้ามาเทียบ)
+
+  ⚠️ หารเท่า ๆ กันตามจำนวน PC ของช่องนั้น (ตัดสินใจ 2026-10-08)
+  เป็นข้อตกลง ไม่ใช่ข้อเท็จจริง — เราไม่รู้ว่าใครควรได้เป้าเท่าไร
+  ใช้วิธีเดียวกับที่ยอดขายใช้ เพื่อให้ %Achieve = ยอด/เป้า ออกมาสมเหตุสมผล
+  ถ้าวันหน้า master ใส่เป้ารายคนมาเอง ให้เลิกใช้ view นี้
+
+  ⚠️ เป้าที่ไม่มี PC ดูแลช่องนั้น คงยอดเต็มไว้ ไม่ให้เป้าหาย
+*/
+
+WITH pc_per_month AS (
+
+  -- 1 แถว = 1 PC ที่รับผิดชอบช่องนั้นในเดือนนั้น (ช่อง = สาขา + กลุ่มการตลาด)
+  SELECT DISTINCT
+    DATE_TRUNC(d, MONTH) AS month_date,
+    BranchMdtSK, MarketingGroupID, PcSK
+  FROM `${DimPcRef}`,
+  UNNEST(GENERATE_DATE_ARRAY(StartDate, LEAST(EndDate, DATE '2099-12-31'), INTERVAL 1 MONTH)) AS d
+  WHERE PcSK <> -1 AND IsPlaceholder = FALSE
+
+), pc_share AS (
+
+  -- ช่องหนึ่งมี PC กี่คน = ตัวหารแบ่งเป้า (เป้ารวมยังเท่าเดิมเมื่อบวกกลับ)
+  SELECT *,
+    COUNT(*) OVER(PARTITION BY month_date, BranchMdtSK, MarketingGroupID) AS pc_in_slot
+  FROM pc_per_month
+
+)
+
+SELECT
+  t.target_date,
+  t.store_code,
+  t.branch_code,
+  t.branch_sk,
+  t.zone_sk,
+  t.region_sk,
+  t.region_manager_sk,
+  t.director_sk,
+
+  t.product_mkt_sk,
+  t.marketing_group_id,
+  t.marketing_group_name,
+  t.sub_marketing_id,
+  t.sub_marketing_name,
+  t.segment_id,
+  t.segment_name,
+
+  p.PcSK AS pc_sk_list,
+
+  -- หารเท่า ๆ กันตามจำนวน PC ของช่องนั้น · ไม่มี PC ก็คงเป้าเต็มไว้ ไม่ให้เป้าหาย
+  t.target_amt / IFNULL(p.pc_in_slot, 1) AS target_amt,
+  t.target_qty / IFNULL(p.pc_in_slot, 1) AS target_qty,
+
+  t.target_year,
+  t.target_month,
+  t.days_in_month
+FROM `${FactTargetRef}` AS t
+LEFT JOIN pc_share AS p
+  -- เป้าเป็นรายวัน แต่การมอบหมาย PC เป็นรายเดือน ต้องยุบเป็นเดือนก่อน join
+  ON  p.month_date       = DATE_TRUNC(t.target_date, MONTH)
+  AND p.BranchMdtSK      = t.branch_sk
+  AND p.MarketingGroupID = t.marketing_group_id

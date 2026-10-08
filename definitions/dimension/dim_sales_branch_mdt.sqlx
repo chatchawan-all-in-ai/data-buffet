@@ -122,10 +122,19 @@ WITH section_lookup AS (
    FROM (
     SELECT store_code, branch_code, branch_name, sale_date
     FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_mdt")}
-    UNION ALL
+        UNION ALL
     -- รายเดือนไม่มี sale_date ใช้ month_date แทน เป็นวันโดยประมาณอยู่แล้ว
     SELECT store_code, branch_code, branch_name, month_date
     FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_monthly_mdt")}
+    UNION ALL
+    -- ⚠️ ต้องอ่านสต็อกด้วย (เพิ่ม 2026-10-08) — บางสาขามีแต่สต็อกไม่เคยมียอดขาย
+    -- เช่น คลัง/สำนักงานที่ถือของ (BT DC รังสิต · TW Head Office)
+    -- ถ้าไม่อ่าน สาขาพวกนี้ตกเป็น branch_sk = -1 ใน fact_stock_mdt_monthly
+    -- วัด 2026-10-08: BT 211 แถว · TW 201 แถว กำพร้าอยู่
+    -- curated_stock_mdt ไม่มีคอลัมน์ชื่อสาขา จึงใส่ NULL — ANY_VALUE ข้าม NULL ให้เอง
+    -- ถ้าสาขานั้นมีในยอดขายด้วยก็จะได้ชื่อจากฝั่งนั้น
+    SELECT store_code, branch_code, CAST(NULL AS STRING), stock_date
+    FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_stock_mdt")}
   )
   WHERE store_code IS NOT NULL
     AND branch_code IS NOT NULL
@@ -150,7 +159,8 @@ WITH section_lookup AS (
     dim_region.SubRegionID AS SubRegionID,
     f.branch_code          AS BranchCode,
     CAST(NULL AS STRING)   AS BranchCodeMdt,
-    f.branch_name          AS BranchName,
+        -- สาขาที่มีแต่สต็อกไม่มีชื่อมาด้วย ใช้รหัสสาขาแทนไปก่อน ดีกว่าโชว์ช่องว่าง
+    IFNULL(f.branch_name, f.branch_code) AS BranchName,
     CAST(NULL AS STRING)   AS ZoneCode,
     'รอข้อมูล Master'       AS ZoneName,
     CAST(NULL AS STRING)   AS Warehouse,
