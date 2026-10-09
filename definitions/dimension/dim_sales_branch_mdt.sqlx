@@ -161,8 +161,8 @@ WITH section_lookup AS (
     CAST(NULL AS STRING)   AS BranchCodeMdt,
         -- สาขาที่มีแต่สต็อกไม่มีชื่อมาด้วย ใช้รหัสสาขาแทนไปก่อน ดีกว่าโชว์ช่องว่าง
     IFNULL(f.branch_name, f.branch_code) AS BranchName,
-    CAST(NULL AS STRING)   AS ZoneCode,
-    'รอข้อมูล Master'       AS ZoneName,
+    'WAITING'              AS ZoneCode,
+    'Waiting Master'       AS ZoneName,
     CAST(NULL AS STRING)   AS Warehouse,
     -- วันขายแรกที่เจอในฟีด ไม่ใช่วันเปิดสาขาจริง — ไว้ให้ลูกค้าไล่ย้อนได้ว่าตกหล่นมาตั้งแต่เมื่อไร
     f.first_sale           AS StartDate,
@@ -190,15 +190,15 @@ WITH section_lookup AS (
     -1                   AS ZoneMdtSK,
     -1                   AS ZoneTaMdtSK,
 
-    CAST(NULL AS STRING) AS StoreCode,
-    CAST(NULL AS STRING) AS RegionName,
-    CAST(NULL AS STRING) AS SubRegionID,
-    CAST(NULL AS STRING) AS BranchCode,
-    CAST(NULL AS STRING) AS BranchCodeMdt,
+    'NotStore'           AS StoreCode,
+    'ไม่ระบุภูมิภาค'        AS RegionName,
+    'NotSubRegion'       AS SubRegionID,
+    'NotBranch'          AS BranchCode,
+    'NotBranch'          AS BranchCodeMdt,
     'ไม่ระบุสาขา'          AS BranchName,
-    CAST(NULL AS STRING) AS ZoneCode,
+    'NotZone'            AS ZoneCode,
     'ไม่ระบุโซน'           AS ZoneName,
-    CAST(NULL AS STRING) AS Warehouse,
+    'NotWarehouse'       AS Warehouse,
     CAST(NULL AS DATE)   AS StartDate,
     CAST(NULL AS DATE)   AS EndDate,
 )

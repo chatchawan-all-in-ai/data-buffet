@@ -46,8 +46,8 @@ WITH zone_master AS (
   SELECT
     -1                      AS ZoneMdtSK,
 
-    CAST(NULL AS STRING)    AS ZoneCode,
-    'ไม่ระบุโซน'              AS ZoneName,
+    'NotZone'               AS ZoneCode,
+    'ไม่ระบุโซน'               AS ZoneName,
     CAST(NULL AS DATE)      AS StartDate,
     CAST(NULL AS DATE)      AS EndDate,
 

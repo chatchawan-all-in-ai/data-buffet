@@ -93,11 +93,11 @@ WITH mac5_dedup AS (
     -1                   AS ProductMdtSK,
     -1                   AS ProductSK,
     -1                   AS ProductMktSK,
-    CAST(NULL AS STRING) AS ProductCode,
+    'NotProduct'         AS ProductCode,
     'ไม่ระบุสินค้า'           AS ProductName,
     'ยังไม่มีข้อมูล'           AS ProductMac5Code,
-    CAST(NULL AS STRING) AS StoreCode,
-    CAST(NULL AS STRING) AS CompanyID,
+    'NotStore'           AS StoreCode,
+    'NotCompany'         AS CompanyID,
     CAST(NULL AS STRING) AS MdsID
 )
 

@@ -67,7 +67,11 @@ WITH eom AS (
     --    ตารางนี้จึงยังต้องพึ่ง onetime อยู่ 1 จุด และเป็นจุดเดียวที่เหลือ
     SELECT
         LAST_DAY(month_date) AS month_date,   -- ต้นทางใช้วันสุดท้ายของเดือนอยู่แล้ว ย้ำให้ชัด
-        store_code, branch_code, branch_name,
+        store_code,
+        IF(store_code = 'DH' AND REGEXP_CONTAINS(branch_code, r'^M[0-9]+$'),
+           CONCAT(branch_code, '_TG'),
+           branch_code) AS branch_code,
+        branch_name,
         product_code, product_name, sale_qty, sale_amount
     FROM `${LastYearMonthlyRef}`
 

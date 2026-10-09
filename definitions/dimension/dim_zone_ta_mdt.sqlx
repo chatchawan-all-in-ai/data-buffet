@@ -50,9 +50,9 @@ WITH zone_ta_master AS (
     -1                      AS ZoneTaMdtSK,
     -1                      AS ZoneMdtSK,
 
-    CAST(NULL AS STRING)    AS ZoneCode,
-    CAST(NULL AS STRING)    AS ZoneName,
-    CAST(NULL AS STRING)    AS EmployeeID,
+    'NotZone'               AS ZoneCode,
+    'ไม่ระบุโซน'              AS ZoneName,
+    'NotEmployee'           AS EmployeeID,
     'ไม่ระบุผู้จัดการโซน'         AS EmployeeName,
     CAST(NULL AS STRING)    AS EmployeeSurname,
     CAST(NULL AS STRING)    AS EmployeeNickname,

@@ -42,7 +42,7 @@ WITH bt AS (
     -- ⚠️ ทิ้งแถวที่ Stock_On_Hand ว่าง (13,349 แถว) — ไม่รู้ว่าเหลือเท่าไหร่
     --    ต่างจากศูนย์ที่แปลว่าของหมด
     SELECT
-        asatdate                     AS stock_date,
+        DATE_SUB(asatdate, INTERVAL 1 DAY) AS stock_date,
         'TW'                         AS store_code,
         Store                        AS branch_code,   -- สตริงเต็ม `60001-CRC Thai Watsadu ...`
         LTRIM(SKU, '0')              AS product_code,
