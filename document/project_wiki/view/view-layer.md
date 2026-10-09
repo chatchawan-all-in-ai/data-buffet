@@ -274,8 +274,12 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 - **`dim_customer_report_info` มีทุกชื่อร้านใน `view_dim_invoice`**
   ไม่ใช่แค่ชื่อใน MDS — ไม่งั้น relationship ใน Power BI กรองแถวที่ชื่อไม่อยู่ใน MDS หายหมด · dim อ่าน
   `view_dim_invoice` จึง**ห้าม**ให้ `view_dim_invoice` join dim นี้กลับ (วนกัน) — join อยู่ที่ `view_fact_transcation`
-- หนึ่งแถวต่อ `CompanyID` + ชื่อที่ตัด whitespace ทั้งหมด (`CustomerReportKey` ใช้ภายใน dim ไม่ออกเป็นคอลัมน์): MDS เลือก `updated_at DESC, id`
+- แถวร้านมีหนึ่งแถวต่อ `CompanyID` + ชื่อที่ตัด whitespace ทั้งหมด (`CustomerReportKey` ใช้ภายใน dim ไม่ออกเป็นคอลัมน์): MDS เลือก `updated_at DESC, id`
   ส่วน invoice เลือกตัวสะกดที่มีจำนวน invoice มากสุด แล้วเรียงชื่อตัดสินกรณีเสมอ; ชื่อว่างใน invoice ไม่ถูกนำเข้า dim
+- **แถวสงวน `CustomerReportInfoSK = -1` (2026-10-09)** — `UNION ALL` ท้าย dim หนึ่งแถวร่วมทุกบริษัท: `CustomerReportName`/`CompanyID`/
+  `CompanySK` เป็น NULL, `CustomerSegmentSK = -1` (Non-Segment), `SegmentSource = 'DEFAULT'`, ไม่มีข้อมูล MDS/TA ·
+  อยู่นอก `ROW_NUMBER` จึง**ไม่ทำให้ SK ของร้านขยับ** · มีเสมอแม้วันนั้นไม่มีบิลที่ join ไม่เจอ · ใช้กับบิลที่ join ไม่พบร้าน
+  (ดู `view_fact_transcation.CustomerReportInfoSK`) · `view_dim_invoice` ไม่แก้ (ชื่อยังเป็น NULL ตามเดิม)
 - คอลัมน์ SK อยู่หน้าสุด: `CustomerReportInfoSK`, `CompanySK`, `CustomerSegmentSK`.
   ชื่อนอก MDS มี `MdsID` และข้อมูล MDS เป็น NULL. ในตาราง `FlagPC` ยังเป็น BOOL, `OnlinePercent` cast เป็น FLOAT64
 - ไม่มีคอลัมน์ `CustomerReportKey`, `FlagMDS`, `DepartmentName`, `SectionID`, `RegionID`, `CustomerTier`
@@ -292,9 +296,11 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
   · `CustomerSegmentSK` ส่งผ่านเฉย ๆ ไม่ join `dim_customer_segment` ใน view (Power BI relate เองแล้ว)
   · view แปลงให้ Power BI (2026-10-07; ตารางยังเก็บแบบเดิม): `FlagPC` เป็น STRING `'Yes'`/`'No'` (TRUE → Yes, FALSE หรือ NULL
   → No ไม่มีค่าว่าง รวมร้านที่ไม่อยู่ใน MDS; ร้านใน MDS ที่ค่าเป็น FALSE หรือ NULL ก็ได้ No)
-  · `OnlinePercent` = ค่าเปอร์เซ็นต์ในตาราง / 100 เป็น FLOAT64 สัดส่วนสำหรับ format Percentage
-  (เช่น 25.5 → 0.255, 0 → 0, 100 → 1; NULL ยังคงเป็น NULL)
-  · ผลวัด 2026-10-07: Yes 149 · No 41,228 (NULL ในตาราง 39,505) · `OnlinePercent` 22 แถว สูงสุด 0.8
+  · `OnlinePercent` = **STRING** ค่าเปอร์เซ็นต์ของร้านนั้นในตาราง + `%` (2026-10-09, `CAST(... AS STRING) || '%'`;
+  เดิม 2026-10-07 เป็น FLOAT64 / 100 สำหรับ format Percentage) เช่น 80 → `80%`, 12.5 → `12.5%`, 0 → `0%`, 100 → `100%`
+  (ไม่มี `.0` ต่อท้าย; NULL ยังคงเป็น NULL) · ตารางยังเก็บตัวเลข FLOAT64 เหมือนเดิม
+  · ผลวัด 2026-10-07 ก่อนเปลี่ยนเปอร์เซ็นต์เป็นข้อความ: Yes 149 · No 41,228 (NULL ในตาราง 39,505) · `OnlinePercent` 22 แถว สูงสุด 0.8
+  · ผลวัด 2026-10-09 (SELECT query ที่ compile แล้วบน live): `OnlinePercent` 22 แถว = `0%` 12 · `20%` 1 · `70%` 1 · `80%` 8
   · `TADebcode` เก็บเป็นคอลัมน์ธรรมดาในตาราง (ไม่ใช่ SK)
   · ภายใน dim ยัง join ด้วย SK · `dependencies[]` เป็นชุดเล็กสุด (2026-10-06): `update_sk_sale_rep_group` (รันหลัง `*_last`
   ทั้งหมดและเติม `DepartmentSK` ของ `dim_sale_representative_last` ที่ใช้หา TA), `dim_customer_segment`, และตารางหลัง view
@@ -302,13 +308,18 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
   `dim_invoice`/`dim_customer` ด้วย) และ `dim_group_customer` (`view_dim_customer`)
   · ใน repo/BigQuery ผู้อ่านตารางนี้คือ `view_fact_transcation` (อ่านแค่ `CustomerReportInfoSK`/`CompanySK`/`CustomerReportName`)
   และ `view_dim_customer_report_info`
-  · **Deploy**: view อยู่ tag `view` ไม่อยู่ในรอบรันกลางคืน — หลัง merge ต้องรันตาราง (ตัวรันรายวัน) แล้ว deploy view ครั้งเดียว
+  · **Deploy (2026-10-09)**: หลัง merge รัน `dim_customer_report_info` (`dimension_daily`) ให้มีแถว -1 **ก่อน**
+  deploy `view_fact_transcation` แล้ว deploy `view_dim_customer_report_info` — ทั้งสอง view อยู่ tag `view` ไม่อยู่ในรอบรันกลางคืน
+  (ถ้า deploy fact view ก่อน rebuild จะมี SK -1 ที่ dim ยังไม่มี; merge โค้ดอย่างเดียวไม่เปลี่ยนตาราง live)
   · **Power BI (ขั้นตอนภายนอกหลัง deploy)**: เปลี่ยน source ของ `Dimension Customer Report Info` เป็น
-  `view_dim_customer_report_info` แบบ `SELECT` ธรรมดา; ตารางเดิมไม่มี `DepartmentID` แล้ว
-- **TA ของร้าน (`DepartmentSK` → `TADepartmentID` ใน view, กฎแก้ 2026-10-08)** — 1 แถว = 1 TA หรือว่าง ตามลำดับ:
-  1. **MDS ชนะเสมอ**: `DepartmentID` ใน `mds_data_customer_report_master` ที่จับคู่ `dim_department_last`
-     ได้ (`CompanySK` + `DepartmentID`) → `TASource = 'MDS'`
-  2. ไม่งั้นเลือก**รหัสลูกค้าที่ชื่อของตัวเองตรงกับชื่อรายงาน** จาก `mihCus` ทุกบิลของชื่อนั้นใน `view_dim_invoice`
+  `view_dim_customer_report_info` แบบ `SELECT` ธรรมดา; ตารางเดิมไม่มี `DepartmentID` แล้ว · ตั้งชนิด `OnlinePercent` เป็น **Text**
+  แทนชนิดตัวเลข/format Percentage เดิม แล้วทำ **full refresh** ของ model เพื่อโหลด dimension และ fact ตามสัญญาใหม่
+- **TA ของร้าน (`DepartmentSK` → `TADepartmentID` ใน view, กฎแก้ 2026-10-09)** — 1 แถว = 1 TA หรือว่าง ตามลำดับ:
+  1. **ไม่อ่าน TA จาก MDS แล้ว (ตัด 2026-10-09 ตามที่ผู้ใช้สั่ง)** — เดิม `DepartmentID` ใน `mds_data_customer_report_master`
+     ชนะเสมอ (`TASource = 'MDS'`) และพนักงานมาจากคนเดียวที่ถือ TA นั้น (CTE `mds_emp`, PR #25) — ตัดทั้งคู่ ทุกร้านใช้ข้อ 2–4
+     · dim **ไม่ select `DepartmentID` จาก MDS เลย** เพื่อให้ MDS ลบคอลัมน์นี้ได้ (ขั้นตอนแยกใน MDS app หลัง deploy)
+     · MDS ยังให้ `CustomerTier` (Segment), `FlagPC`, `ShopOnline`, `OnlinePercent`, `MdsID` เหมือนเดิม
+  2. เลือก**รหัสลูกค้าที่ชื่อของตัวเองตรงกับชื่อรายงาน** จาก `mihCus` ทุกบิลของชื่อนั้นใน `view_dim_invoice`
      (ชื่อของรหัส = สูตรเดียวกับ `view_dim_invoice`: `NicknameCustomer` เมื่อ `FlagMDSNickName` ไม่งั้น
      `clean_company_prefix(debnamet)` จาก `view_dim_customer`, ตัด whitespace) · หลายรหัสตรงใช้**บิลล่าสุด**
      (`mix_date DESC, mihVnos DESC` แบบ Segment) · ไม่มีรหัสที่ชื่อตรง (ชื่อจาก SCG/CRC/`mec`) → ว่าง
@@ -337,26 +348,20 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
      · ว่าง: ไม่มี TA ปัจจุบันในเชน หรือ debgroup ว่าง/ไม่ใช่เชน (ลูกค้าบุคคล ลูกค้าต่างประเทศ — ไม่มี fallback จาก `DepCode` อย่างเดียว,
      ไม่ใช้ `*_OTHER`)
      · ยอมรับ: ร้าน "โฮมโปรดักส์ เซ็นเตอร์ สาขาเมกาโฮม-…" มี debgroup = HP จึงได้ TA ของโฮมโปร (`HP_*`) แม้บิลจะลง
-     เมกาโฮม (`MH_*`) — ไม่มีกฎจากชื่อร้าน และแผนกในบิลใช้แค่เลือกภาคในเชนที่ได้จาก debgroup · ไม่แก้ `fact_transcation`/`view_fact_transcation`
+     เมกาโฮม (`MH_*`) — ไม่มีกฎจากชื่อร้าน และแผนกในบิลใช้แค่เลือกภาคในเชนที่ได้จาก debgroup · กฎ TA ของ `fact_transcation`/`view_fact_transcation` คงเดิม
      · `TADebcode`/`SaleRepSK` ของร้าน MDT เหมือนเดิม (พนักงาน `debsalesp`)
-  - trace: `TASource` (`MDS`/`DEBSALESP`/`MDT`/NULL), `TADebcode` — รหัสลูกค้า (debcode/`mihCus`) ที่ใช้ค้นหา TA ในข้อ 2–4
-    NULL เมื่อใช้ MDS; หากมีรหัสที่ชื่อตรงก็เก็บไว้แม้ TA ว่าง เพื่อใช้ตรวจสอบ
-    · `SaleRepSK` — **แถวที่ไม่ใช่ MDS**: พนักงาน `deb.debsalesp` ของ `TADebcode` (NULL เมื่อ `debsalesp` ว่าง) · **แถว `TASource = 'MDS'`
-    (2026-10-08, CTE `mds_emp`)**: พนักงานที่ถือ TA นั้นอยู่วันนี้ใน `dim_sale_representative_last` (บริษัทเดียวกัน,
-    `DepartmentSK` เดียวกัน, เงื่อนไขวัน/Dummy/`dim_department_last.EndDate` เดียวกับ `rep_cur`, นับ `EmployeeID` ไม่ซ้ำ —
-    รวมพนักงาน MDT) **คนเดียว** = คนนั้น · หลายคนหรือไม่มีคนถือ = NULL (ไม่ใช้ tie-break) · ไม่ใช้ `debsalesp` ของร้าน (ต่างจาก MDS ~31%)
-    · `TADebcode` ของแถว MDS ยังเป็น NULL · ทั้งสองกรณี map เป็น SK ด้วยกฎเดียวกัน: แถว
+  - trace: `TASource` (`DEBSALESP`/`MDT`/NULL — ไม่มี `MDS` ตั้งแต่ 2026-10-09), `TADebcode` — รหัสลูกค้า (debcode/`mihCus`)
+    ที่ใช้ค้นหา TA ในข้อ 2–4; หากมีรหัสที่ชื่อตรงก็เก็บไว้แม้ TA ว่าง เพื่อใช้ตรวจสอบ
+    · `SaleRepSK` — พนักงาน `deb.debsalesp` ของ `TADebcode` ทุกแถว (NULL เมื่อ `debsalesp` ว่าง) · map เป็น SK: แถว
     `dim_sale_representative_last` หนึ่งแถวต่อบริษัท + `EmployeeID` โดยเลือกแถวที่ `EmployeeName` ไม่เป็น NULL ก่อน
     (รวมแถวชื่ออย่างเดียวจาก `per`); ถ้ามีหลายแถวเลือก `SaleRepSK` ต่ำสุดในกลุ่มที่มีชื่อ
     ถ้าไม่มีแถวที่มีชื่อ เลือก `SaleRepSK` ต่ำสุดของพนักงานนั้น
     · การ map `EmployeeID` ที่เลือกแล้วเป็น `SaleRepSK` ไม่กรองด้วย `DepartmentSK`/`DepartmentID` หรือวันที่;
-    แถวที่ไม่ใช่ MDS จึงมี SK ได้แม้ TA ว่าง ส่วน MDS ต้องได้พนักงานจาก `mds_emp` ตามเงื่อนไขข้างต้นก่อน
-    · แถวที่ไม่ใช่ MDS: พนักงานที่ไม่อยู่ใน `dim_sale_representative_last` → `SaleRepSK` ว่าง (`TAEmployeeID`/`TAEmployeeName` ใน view เป็น NULL)
+    จึงมี SK ได้แม้ TA ว่าง
+    · พนักงานที่ไม่อยู่ใน `dim_sale_representative_last` → `SaleRepSK` ว่าง (`TAEmployeeID`/`TAEmployeeName` ใน view เป็น NULL)
     แต่รหัสเดิมยังตรวจได้ผ่าน `TADebcode` → `deb.debsalesp` (ผลวัด live 2026-10-07 พบ 52 แถว)
     · ประวัติ: ตัด `TAEmployeeID`/`TADebcode` 2026-10-06 · `TADebcode` กลับมา 2026-10-07 ·
     พนักงานกลับมาเป็น `SaleRepSK` + TA chain เป็น SK + view 2026-10-07 · กฎเลือก TA/Segment ไม่เปลี่ยน
-    · เมื่อรัน Dataform action นี้ (`type: "table"`) ครั้งถัดไป จะ rebuild `dimension_table.dim_customer_report_info`
-    ใน BigQuery ด้วย schema ใหม่ — merge โค้ดอย่างเดียวไม่เปลี่ยนตาราง live
     · ผลวัด 2026-10-07 ก่อนแยกการเลือกพนักงานจาก TA (SELECT บน live 41,377 แถว; SK unique, TASource เท่าเดิม MDS 1,631 · DEBSALESP 13,354 · ว่าง 26,392):
     TA SK ครบ 6 ระดับ 14,985 แถว (= MDS + DEBSALESP) · `SaleRepSK` 23,510 · `TADebcode` 38,901 (ไม่มี `debsalesp` 15,339 ·
     พนักงานไม่อยู่ใน `dim_sale_representative_last` 52) · view 41,377 แถว ไม่บาน, SK ทุกตัวหาเจอ 100%, ชื่อเต็มทุกแถวที่มี SK
@@ -375,13 +380,20 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
     ว่าง 243 ร้านเพราะ TA มีคนถือพร้อมกันหลายคน (14 TA เช่น `N2_TA03` 39 ร้าน, `NE4_TA03` 30, `S1_TA04` 29;
     `*_OTHER` มี 2–5 คน) · TA ที่ไม่มีคนถือวันนี้ 0 ร้าน · แถวที่ไม่ใช่ MDS และคอลัมน์อื่นของแถว MDS ตรงเดิม 100% ·
     1 แถวต่อ (`CompanyID`, ชื่อไม่สนช่องว่าง), SK unique, TASource เท่าเดิม (MDS 1,631 · DEBSALESP 13,356 · MDT 286)
+  - ผลวัด 2026-10-09 หลังตัด MDS (SELECT query ที่ compile แล้ว เทียบ query ที่ 350ebec บน live, ไม่ได้รันตาราง/deploy view):
+    TASource **MDS 1,631 · DEBSALESP 13,361 · MDT 286 → DEBSALESP 14,394 · MDT 286** · ว่าง 26,129 → 26,727 ·
+    ร้าน MDS เดิม 1,631: TA เดิมจาก debsalesp **715** (17.79% ของยอด 12 เดือน) · TA ต่าง **318** (4.76%) ·
+    **ว่าง 598** (11.12%) — คอลัมน์อื่นนอกจาก TA chain/`TASource`/`TADebcode`/`SaleRepSK` ตรงเดิมทุกแถว ·
+    แถวอื่น 39,776 ตรงเดิม 100% · ร้าน 41,407 แถวเท่าเดิม + แถวสงวน -1 = 41,408 แถว, 1 แถวต่อ (`CompanyID`, ชื่อไม่สนช่องว่าง),
+    SK unique ไม่ NULL · **`CustomerReportInfoSK` ของร้านไม่ขยับเลย** (0 แถว)
   - ข้อจำกัด: `debsalesp` คือพนักงานที่ลงไว้ใน Mac5 (มักเป็นคนเปิดลูกค้า) ไม่ได้อัปเดตตามคนดูแลปัจจุบัน
   - ไม่เติม TA จากบิล (`DepartmentSKLast` ของ fact) ในไฟล์นี้ — `view_fact_transcation` อ่าน dim นี้ จึงวนกัน
   - ผลวัด 2026-10-06 (SQL แบบ SELECT บนข้อมูล live 41,357 แถว หลังตัดพนักงาน MDT ก่อนกรองวันที่):
     MDS 1,631 · DEBSALESP 13,349 · ว่าง 26,377 (ไม่มี `debsalesp` 15,340 · พนักงานปกติไม่มี TA ที่ใช้ได้หรือมีหลาย TA 9,646 ·
     ไม่มีรหัสที่ชื่อตรง 845 · พนักงาน MDT 546) ·
     SK/จำนวนแถว/คอลัมน์ Segment เท่าเดิมทุกแถว · แถว MDS เดิมได้ TA เดิม
-- `CustomerReportInfoSK` ออกใหม่ทุกครั้งที่ rebuild จึง join ที่ view ด้วย natural key ไม่เก็บลงตาราง fact
+- `CustomerReportInfoSK` ของแถวร้านออกใหม่ทุกครั้งที่ rebuild จึง join ที่ view ด้วย natural key ไม่เก็บลงตาราง fact;
+  แถวสงวนใช้สัญญาข้างต้น
 - **`view_dim_invoice.CustomerReportName` เลือกตามลำดับ** (`CASE` ใน [view_dim_invoice.sqlx](../../../definitions/view/dimension_view/view_dim_invoice.sqlx), แก้ 2026-10-02):
   1. บิล SCG (`fn_flag_scg(RefOrder, mihCus) IS NOT NULL`) **และ** `mec.mecdesc IS NOT NULL`
      → `clean_company_prefix(mec.mecdesc)` (ชื่อสาขาที่ส่งของจาก `mihMec`)
@@ -396,8 +408,14 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 - **`view_fact_transcation.CustomerReportInfoSK`** — `InvoiceSK` → `CustomerReportName` ของ invoice นั้นใน `view_dim_invoice`
   → จับคู่ด้วย `CompanySK` และชื่อแบบ **ไม่สนช่องว่าง** (`REGEXP_REPLACE(..., r'\s', '')` ทั้งชื่อจาก invoice และ `cri.CustomerReportName`)
   (ผลเท่ากับ join `CustomerReportKey` เดิม — วัด 2026-10-02: 1,671,914 InvoiceSK ได้ SK ตรงกันทุกแถว);
-  invoice ที่ไม่มี CustomerReportName (รหัสลูกค้าไม่อยู่ใน `deb` เช่น `TEST`) → NULL
-- **`dim_customer_report_info.CustomerSegmentSK`** — 1 ชื่อ = 1 Segment, ค่าปัจจุบัน (ไม่ย้อนตามเดือนบิล)
+  แถวที่มี `InvoiceSK` (บิลจริง) แต่ join ไม่เจอ → **-1** = แถวสงวนของ dim (2026-10-09, เดิม NULL) ทั้งชื่อว่าง
+  (ชื่อมีแค่คำนำหน้า, `debnamet` ว่าง, รหัสลูกค้าไม่อยู่ใน `deb` เช่น `111020730.`/`TEST`) และชื่อไม่ว่างที่ยังไม่มีใน dim ·
+  แถวที่ `InvoiceSK` เป็น NULL ไม่ถูกแทนด้วย -1 รวมแถวเติมปฏิทิน (ยอด 0) ที่ยังเป็น NULL ตามเดิม ·
+  แก้แค่คอลัมน์นี้ใน `final` CTE (`IF(t2.InvoiceSK IS NOT NULL AND cri... IS NULL, -1, ...)`)
+  · ผลวัด 2026-10-09 (query ที่ compile แล้ว เทียบ view live, ไม่ได้ deploy): 2,695,179 แถวเท่าเดิม ยอดรวมเท่าเดิม ·
+  บิลที่ SK ว่าง 44 บรรทัด (24 บรรทัดยอดไม่เป็น 0) → **0** · SK -1 = 44 บรรทัด / 11 invoice / **147,013.60** (ag01 IS 2022–2024
+  ที่เดิมเป็นแถวว่างใน Power BI) · แถวเติมปฏิทิน 4,005 แถว SK NULL เท่าเดิม · กลุ่ม SK อื่นตรงเดิมทุกกลุ่ม
+- **`dim_customer_report_info.CustomerSegmentSK` ของแถวร้าน** — 1 ชื่อ = 1 Segment, ค่าปัจจุบัน (ไม่ย้อนตามเดือนบิล)
   จับคู่แถวของบริษัทเดียวกันด้วย `CompanySK` ตามลำดับ:
   1. `CustomerTier` ไม่ว่าง → ใช้รหัส tier จับคู่ `Segment3` · เมื่อจับคู่ได้ `SegmentSource = 'MDS'`
      ถ้า tier ไม่มีใน segment master จะใช้ fallback ข้อ 3 โดยไม่ลอง channel

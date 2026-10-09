@@ -78,7 +78,6 @@ with mds as (
     ${databuffet.functionData.cleanString("t1.CustomerReportName")} AS CustomerReportName,
     -- key ไม่สนช่องว่าง ใช้ join กับ CustomerReportName ของ invoice
     REGEXP_REPLACE(${databuffet.functionData.cleanString("t1.CustomerReportName")}, r'\s', '') AS CustomerReportKey,
-    ${databuffet.functionData.cleanCode("t1.DepartmentID")} AS DepartmentID,
     UPPER(${databuffet.functionData.cleanString("t1.CustomerTier")}) AS CustomerTier,
     t1.FlagPC,
     ${databuffet.functionData.cleanString("t1.ShopOnline")} AS ShopOnline,
@@ -163,12 +162,6 @@ with mds as (
       AND m.EmployeeID = r.EmployeeID
   )
 
-), mds_emp as (
-  -- พนักงานของ TA จาก MDS: คนที่ถือ TA นั้นอยู่วันนี้ (rep_cur) คนเดียว = คนนั้น · หลายคน = ว่าง
-  SELECT companyID, DepartmentSK,
-    IF(COUNT(DISTINCT EmployeeID) = 1, ANY_VALUE(EmployeeID), NULL) AS EmployeeID
-  FROM rep_cur
-  GROUP BY 1, 2
 
 ), deb_ta as (
   -- deb.debsalesp -> TA; พนักงานที่มีหลาย TA ที่ใช้ได้วันนี้ = ไม่ให้ TA
@@ -248,7 +241,6 @@ with mds as (
     COALESCE(mds.CompanyID, inv.CompanyID) AS CompanyID,
     COALESCE(mds.CustomerReportKey, inv.CustomerReportKey) AS CustomerReportKey,
     COALESCE(mds.CustomerReportName, inv.CustomerReportName) AS CustomerReportName,
-    mds.DepartmentID,
     mds.CustomerTier,
     mds.FlagPC,
     mds.ShopOnline,
@@ -280,30 +272,22 @@ with mds as (
     AND cus.debcode = ch.debcode
 
 ), with_ta_code as (
-  -- TA: MDS ชนะเสมอ (DepartmentID ที่มีใน dim_department_last) ไม่งั้นใช้ debsalesp ของรหัสใน ta_cus
-  -- (พนักงานปกติ) แล้วจึงเชนของพนักงาน MDT
+  -- TA: debsalesp ของรหัสใน ta_cus (พนักงานปกติ) แล้วจึงเชนของพนักงาน MDT · ไม่อ่าน TA จาก MDS (ตัด 2026-10-09)
   SELECT
     t.*,
     dim_com.CompanySK,
-    COALESCE(dep_mds.DepartmentSK, dta.DepartmentSK, mdt.DepartmentSK) AS TADepartmentSK,
+    COALESCE(dta.DepartmentSK, mdt.DepartmentSK) AS TADepartmentSK,
     (CASE
-      WHEN dep_mds.DepartmentSK IS NOT NULL THEN 'MDS'
       WHEN dta.DepartmentSK IS NOT NULL THEN 'DEBSALESP'
       WHEN mdt.DepartmentSK IS NOT NULL THEN 'MDT'
     END) AS TASource,
-    -- รหัสที่ใช้หา TA (NULL เมื่อใช้ MDS) เก็บไว้ตรวจร้านที่ TA ว่าง
-    IF(dep_mds.DepartmentSK IS NULL, tc.debcode, NULL) AS TADebcode,
-    -- พนักงาน: MDS = คนเดียวที่ถือ TA นั้นวันนี้ (mds_emp) ไม่งั้น debsalesp ของรหัสที่ใช้หา TA
-    IF(dep_mds.DepartmentSK IS NULL, dta.debsalesp, mds_emp.EmployeeID) AS TAEmployeeID
+    -- รหัสที่ใช้หา TA เก็บไว้ตรวจร้านที่ TA ว่าง
+    tc.debcode AS TADebcode,
+    -- พนักงาน: debsalesp ของรหัสที่ใช้หา TA
+    dta.debsalesp AS TAEmployeeID
   FROM with_segment AS t
   LEFT JOIN `${DimCompanyTableRef}` AS dim_com
     ON t.CompanyID = dim_com.companyID
-  LEFT JOIN `${DimDepartmentLastTableRef}` AS dep_mds
-    ON dim_com.CompanySK = dep_mds.CompanySK
-    AND t.DepartmentID = dep_mds.DepartmentID
-  LEFT JOIN mds_emp
-    ON t.CompanyID = mds_emp.companyID
-    AND dep_mds.DepartmentSK = mds_emp.DepartmentSK
   LEFT JOIN ta_cus AS tc
     ON t.CompanyID = tc.CompanyID
     AND t.CustomerReportKey = tc.CustomerReportKey
@@ -354,7 +338,7 @@ SELECT
   dep.RegionManagerSK,
   dep.DirectorSK,
   t.TASource,
-  -- รหัสลูกค้าที่ใช้หา TA (NULL เมื่อใช้ MDS) และพนักงาน (SK) · ชื่อ/รหัสพนักงานอยู่ใน view_dim_customer_report_info
+  -- รหัสลูกค้าที่ใช้หา TA และพนักงาน (SK) · ชื่อ/รหัสพนักงานอยู่ใน view_dim_customer_report_info
   t.TADebcode,
   t.SaleRepSK
 FROM with_ta AS t
@@ -367,6 +351,33 @@ LEFT JOIN `${DimCustomerSegmentTableRef}` AS seg
 LEFT JOIN `${DimCustomerSegmentTableRef}` AS seg_dc
   ON t.CompanySK = seg_dc.CompanySK
   AND seg_dc.Segment3 = 'DC'
+
+UNION ALL
+
+-- แถวสงวน SK -1: view_fact_transcation ใส่ -1 ให้บิลจริงที่ชื่อร้าน join ไม่เจอ (ชื่อว่าง/รหัสลูกค้าไม่อยู่ใน deb)
+-- ชื่อว่าง · Non-Segment (-1 ของ dim_customer_segment) · ไม่มี TA/ข้อมูล MDS · ไม่นับใน ROW_NUMBER จึงไม่ทำให้ SK อื่นขยับ
+SELECT
+  -1 AS CustomerReportInfoSK,
+  NULL AS CompanySK,
+  -1 AS CustomerSegmentSK,
+  NULL AS CompanyID,
+  NULL AS CustomerReportName,
+  NULL AS FlagPC,
+  NULL AS ShopOnline,
+  NULL AS OnlinePercent,
+  'DEFAULT' AS SegmentSource,
+  NULL AS SegmentDebcode,
+  NULL AS SegmentChannel,
+  NULL AS MdsID,
+  NULL AS DepartmentSK,
+  NULL AS SectionSK,
+  NULL AS RegionSK,
+  NULL AS SectionManagerSK,
+  NULL AS RegionManagerSK,
+  NULL AS DirectorSK,
+  NULL AS TASource,
+  NULL AS TADebcode,
+  NULL AS SaleRepSK
 
 pre_operations {}
 
