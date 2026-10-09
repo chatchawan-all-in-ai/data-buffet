@@ -67,9 +67,10 @@ js {
 -- dim_customer_report_info เก็บแค่ SK ของ TA chain · view นี้ get รหัส/ชื่อตาม SK · CustomerSegmentSK ส่งผ่านเฉย ๆ (Power BI relate กับ Dimension Customer Segment เอง) (หนึ่งแถวต่อร้าน: SK ทุกตัว unique ในตารางปลายทาง)
 SELECT
   cri.* REPLACE(
-    -- Power BI: FlagPC เป็น Yes/No (ไม่อยู่ใน MDS = No) · OnlinePercent เป็นสัดส่วน 0-1 ให้ใช้ format Percentage
+    -- Power BI: FlagPC เป็น Yes/No (ไม่อยู่ใน MDS = No) · OnlinePercent เป็นข้อความค่าของร้านนั้น + '%'
+    -- (80 → '80%', 12.5 → '12.5%', 0 → '0%' ไม่มี .0 ต่อท้าย; NULL คง NULL)
     IF(IFNULL(cri.FlagPC, FALSE), 'Yes', 'No') AS FlagPC,
-    cri.OnlinePercent / 100 AS OnlinePercent
+    CAST(cri.OnlinePercent AS STRING) || '%' AS OnlinePercent
   ),
   dep.DepartmentID AS TADepartmentID,
   dep.DepartmentName AS TADepartmentName,

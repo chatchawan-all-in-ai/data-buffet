@@ -885,7 +885,8 @@ with dim_calendar as (
     COALESCE(t2.FactOrderSK, t3.FactOrderSK) as FactOrderSK,
     COALESCE(t2.QuotationSK, t3.QuotationSK) as QuotationSK,
     COALESCE(t2.FactQuotationSK, t3.FactQuotationSK) as FactQuotationSK,
-    cri.CustomerReportInfoSK,
+    -- บิลจริงที่ชื่อร้าน join dim ไม่เจอ (ชื่อว่าง/รหัสลูกค้าไม่อยู่ใน deb) = แถวสงวน -1 ของ dim_customer_report_info · ไม่มีบิล = NULL ตามเดิม
+    IF(t2.InvoiceSK IS NOT NULL AND cri.CustomerReportInfoSK IS NULL, -1, cri.CustomerReportInfoSK) as CustomerReportInfoSK,
 
     `${FnFlagExcTableRef}`(
       t1.mihCancel, 

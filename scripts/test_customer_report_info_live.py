@@ -3,7 +3,8 @@
 
 No ADC or production endpoint is used. The fixtures are the action's input tables,
 not a Python reimplementation of the transformation. Requires Dataform CLI 3.0.0.
-The server must refresh table metadata after a schema-changing CREATE OR REPLACE.
+The server must refresh table metadata after a schema-changing CREATE OR REPLACE
+(bigquery-emulator 0.8.1 does not: pass --recreate-on-schema-change).
 """
 
 import argparse
@@ -33,17 +34,30 @@ NARROWED_TRACE = "81e9d7819477e2700752975f07912b22b5020746"
 EMPLOYEE_BEFORE_FIX = "d183fbafbb942ac7e65bfd03792f7f5c41f378cb"
 ACCEPTANCE_BASE = "a694ce5608ecc02ad74ebb9702087d1b7648e7d8"
 MDT_BEFORE_CHANGE = "106973d5b5ce374a18a36eddefd31ad19ca07b1c"
+# Last commit that still took the TA (and its single current holder) from MDS DepartmentID.
+MDS_TA_BEFORE_CHANGE = "350ebecd6ff394acf55023c2b30c551b8c28c18d"
+# Reserved member for invoices whose customer-report join finds no shop (view_fact_transcation maps them to -1).
+RESERVED_SK = -1
+RESERVED_ROW = {"CustomerReportInfoSK": RESERVED_SK, "CompanySK": None, "CustomerSegmentSK": -1, "CompanyID": None,
+                "CustomerReportName": None, "FlagPC": None, "ShopOnline": None, "OnlinePercent": None,
+                "SegmentSource": "DEFAULT", "SegmentDebcode": None, "SegmentChannel": None, "MdsID": None,
+                "DepartmentSK": None, "SectionSK": None, "RegionSK": None, "SectionManagerSK": None,
+                "RegionManagerSK": None, "DirectorSK": None, "TASource": None, "TADebcode": None, "SaleRepSK": None}
 
 
-def compatibility_transport(upstream, evidence):
+def shop_rows(rows):
+    return [r for r in rows if r["CustomerReportInfoSK"] != RESERVED_SK]
+
+
+def compatibility_transport(upstream, evidence, functions=("clean_company_prefix",)):
     """Normalize equivalent UDF identifier quoting for bigquery-emulator 0.8.1.
 
     Its catalog cannot resolve the full dotted path inside one pair of backticks.
     This adapter changes identifier quoting only, never the transformation or UDF
     body, and records every normalized request for review.
     """
-    quoted = f"`{PROJECT}.function_dataset.clean_company_prefix`"
-    segmented = f"`{PROJECT}`.function_dataset.clean_company_prefix"
+    identifiers = [(f"`{PROJECT}.function_dataset.{name}`", f"`{PROJECT}`.function_dataset.{name}")
+                   for name in functions]
     log = evidence / "udf-compatibility-requests.jsonl"
 
     class Proxy(BaseHTTPRequestHandler):
@@ -53,8 +67,10 @@ def compatibility_transport(upstream, evidence):
                 payload = json.loads(body)
                 holder = payload if "query" in payload else payload.get("configuration", {}).get("query", {})
                 sql = holder.get("query")
-                if isinstance(sql, str) and quoted in sql:
-                    normalized = sql.replace(quoted, segmented)
+                if isinstance(sql, str) and any(quoted in sql for quoted, _ in identifiers):
+                    normalized = sql
+                    for quoted, segmented in identifiers:
+                        normalized = normalized.replace(quoted, segmented)
                     with log.open("a") as output:
                         output.write(json.dumps({"path": self.path, "original": sql, "normalized": normalized},
                                                 ensure_ascii=False) + "\n")
@@ -92,10 +108,6 @@ def compatibility_transport(upstream, evidence):
     return f"http://127.0.0.1:{server.server_port}"
 
 
-def without_mds_employee(row):
-    return {c: v for c, v in row.items() if not (c == "SaleRepSK" and row["TASource"] == "MDS")}
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cli", required=True, type=Path)
@@ -106,6 +118,9 @@ def main():
                         help="run only regional MDT acceptance and cancellation regressions")
     parser.add_argument("--quoted-udf-workaround", action="store_true",
                         help="normalize equivalent UDF identifier quoting for bigquery-emulator 0.8.1")
+    parser.add_argument("--recreate-on-schema-change", action="store_true",
+                        help="drop the table before each historical schema transition; bigquery-emulator 0.8.1 "
+                             "keeps stale column metadata after a schema-changing CREATE OR REPLACE")
     args = parser.parse_args()
     endpoint = args.endpoint.rstrip("/")
     if urllib.parse.urlparse(endpoint).hostname not in ("127.0.0.1", "localhost"):
@@ -294,7 +309,8 @@ def main():
     person("REUSED_EMPLOYEE", "Second", "Company", company="aa05")
     person("PERSON_ONLY", "Person", "Only")
     person("NAMED_DEPARTMENT", None, None)
-    # Current holders of MDS departments: TA_MDS has one, TA_MDS_SHARED two, TA_MDS_VACANT none.
+    # Current holders of the departments named in MDS DepartmentID (TA_MDS has one, TA_MDS_SHARED two,
+    # TA_MDS_VACANT none). The TA no longer comes from MDS, so none of them may be selected.
     rep("MDS_HOLDER", 3)
     rep("MDS_HOLDER_EXPIRED", 3, end=yesterday)
     rep("MDS_HOLDER_FUTURE", 3, start=tomorrow)
@@ -348,10 +364,7 @@ def main():
                                "dinsert": f"{today} 00:00:00", "id": str(len(quotes) + 1)})
         expected[(company, "".join(name.split()))] = {"TADepartmentID": ta, "TASource": source}
         if employee and employee.startswith("MDT_"):
-            mdt_expected[(company, "".join(name.split()))] = {
-                "TAEmployeeID": "MDS_HOLDER" if source == "MDS" else employee,
-                "TADebcode": None if source == "MDS" else code,
-            }
+            mdt_expected[(company, "".join(name.split()))] = {"TAEmployeeID": employee, "TADebcode": code}
 
     def mds(name, department, *, tier="GOLD", active=True, updated=None, ident=None,
             flag_pc=True, online_percent="25.5"):
@@ -374,20 +387,21 @@ def main():
     shop("Whitespace Name", own="Whitespace\tName", nickname="Whitespace\tName")
     shop("Nickname Wins", own="Different legal name", nickname="Nickname Wins")
     shop("ชื่อไทย", own="บริษัท ชื่อไทย จำกัด")
-    shop("MDS Priority", "REP_B", ta="TA_MDS", source="MDS")
-    mds("MDS Priority", " TA_MDS\t")
-    shop("MDS Chain Priority", "CHAIN_EXPIRED", ta="TA_MDS", source="MDS")
-    mds("MDS Chain Priority", "TA_MDS", flag_pc=False, online_percent="0")
+    # MDS DepartmentID is ignored: the TA comes from debsalesp, then the MDT chain rule.
+    shop("MDS Department Ignored", "REP_B", ta="TA_B")
+    mds("MDS Department Ignored", " TA_MDS\t")
+    shop("MDS Chain Department Ignored", "CHAIN_EXPIRED", ta=None, source=None)
+    mds("MDS Chain Department Ignored", "TA_MDS", flag_pc=False, online_percent="0")
     shop("Invalid MDS Fallback")
     mds("Invalid MDS Fallback", "TA_NOT_FOUND")
     shop("Inactive MDS")
     mds("Inactive MDS", "TA_MDS", active=False)
     mds("MDS Only", "TA_MDS", flag_pc=None, online_percent="100")
-    expected[("ag01", "MDSOnly")] = dict(TADepartmentID="TA_MDS", TASource="MDS")
-    shop("MDS Shared", ta="TA_MDS_SHARED", source="MDS")
-    mds("MDS Shared", "TA_MDS_SHARED")
-    mds("MDS Vacant", "TA_MDS_VACANT")
-    expected[("ag01", "MDSVacant")] = dict(TADepartmentID="TA_MDS_VACANT", TASource="MDS")
+    expected[("ag01", "MDSOnly")] = dict(TADepartmentID=None, TASource=None)
+    shop("MDS Shared")
+    mds("MDS Shared", "TA_MDS_SHARED", online_percent="80")
+    mds("MDS Vacant", "TA_MDS_VACANT", online_percent="12.5")
+    expected[("ag01", "MDSVacant")] = dict(TADepartmentID=None, TASource=None)
     shop("Person Only", "PERSON_ONLY", ta=None, source=None)
     shop("Named Department", "NAMED_DEPARTMENT", ta=None, source=None)
     for name, employee in (("Single Cost Chain", "CHAIN_COST"), ("Single Depcode Chain", "CHAIN_CODE"),
@@ -461,8 +475,8 @@ def main():
     shop("MDT Shared Company", "MDT_SHARED", code="MDT_SHARED_CODE", debgroup="HP", ta="HP_BK1_TA01", source="MDT")
     shop("MDT Shared Company", "MDT_SHARED", code="MDT_SHARED_CODE", company="aa05", debgroup="HP", ta=None, source=None)
     shop("MDT Other Company TW", "MDT_SHARED", company="aa05", debgroup="TW", ta="TW_E01_TA01", source="MDT")
-    shop("MDT MDS Wins", "MDT_ALL_CHAINS", debgroup="HP", ta="TA_MDS", source="MDS")
-    mds("MDT MDS Wins", "TA_MDS")
+    shop("MDT Ignores MDS Department", "MDT_ALL_CHAINS", debgroup="HP", ta="HP_BK1_TA01", source="MDT")
+    mds("MDT Ignores MDS Department", "TA_MDS")
     shop("MDT Missing MDS Department", "MDT_ALL_CHAINS", debgroup="HP", ta="HP_BK1_TA01", source="MDT")
     mds("MDT Missing MDS Department", "TA_NOT_FOUND")
     shop("MDT Blank MDS Department", "MDT_ALL_CHAINS", debgroup="HP", ta="HP_BK1_TA01", source="MDT")
@@ -487,7 +501,9 @@ def main():
     shop("Dup  Name", code="DUP2", own="Dup Name", date=f"{yesterday} 10:00:00")
     mds("Dup Name", "TA_B", tier="GOLD", updated=f"{yesterday}T00:00:00Z", ident="OLD_MASTER")
     mds("Dup  Name", "TA_MDS", tier="GOLD", ident="NEW_MASTER", online_percent=None)
-    expected[("ag01", "DupName")].update(TADepartmentID="TA_MDS", TASource="MDS")
+    # Shops whose TA came from MDS DepartmentID before this change; their TA columns may differ from earlier commits.
+    mds_ta_keys = {("ag01", name) for name in ("MDSDepartmentIgnored", "MDSChainDepartmentIgnored", "MDSOnly",
+                                               "MDSShared", "MDSVacant", "MDTIgnoresMDSDepartment", "DupName")}
     invoice.append({"companyID": "ag01", "CustomerReportName": "   ", "mihCus": "BLANK",
                     "mix_date": f"{today} 00:00:00", "mihVnos": "BLANK"})
 
@@ -562,7 +578,7 @@ def main():
         actual_rows, _ = query(f"SELECT * FROM `{PROJECT}.dimension_view.{VIEW_ACTION}` ORDER BY CustomerReportInfoSK")
 
         def regional_index(rows):
-            return {(r["CompanyID"], "".join(r["CustomerReportName"].split())): r for r in rows}
+            return {(r["CompanyID"], "".join(r["CustomerReportName"].split())): r for r in shop_rows(rows)}
 
         actual, raw, base, before_cancel = map(regional_index, (actual_rows, raw_rows, base_rows, before_cancel_rows))
         checks = []
@@ -571,7 +587,7 @@ def main():
             checks.append({"name": name, "passed": passed, "detail": detail})
 
         regional_check("reporting rows remain unique and complete",
-                       len(actual_rows) == len(raw_rows) == len(actual) == len(expected)
+                       len(shop_rows(actual_rows)) == len(shop_rows(raw_rows)) == len(actual) == len(expected)
                        and actual.keys() == expected.keys(), {"rows": len(actual_rows), "expected": len(expected)})
         regional_check("public table schema is unchanged", fields == base_fields, fields)
         for key in mdt_expected.keys() | {("ag01", "CancelledLatestLookup")}:
@@ -584,15 +600,17 @@ def main():
         ta_columns = {"DepartmentSK", "SectionSK", "RegionSK", "SectionManagerSK", "RegionManagerSK", "DirectorSK"}
         allowed = ta_columns | {"TASource"}
 
-        regional_check("regional assignment preserves names, segments, lookup codes and non-MDS employee SKs",
+        # Former MDS-TA shops changed after the regional base; they are checked in default mode.
+        later_changes = mds_ta_keys
+        regional_check("regional assignment preserves names, segments, lookup codes and employee SKs",
                        raw.keys() == base.keys() and all(
-                           {c: v for c, v in without_mds_employee(row).items() if c not in allowed}
-                           == {c: v for c, v in base[key].items() if c not in allowed and c in without_mds_employee(row)}
-                           for key, row in raw.items()), {"allowed_changes": sorted(allowed)})
-        regional_check("non-MDT rows and already assigned MDT TAs match branch base except MDS employee SKs",
-                       all(without_mds_employee(row) == {c: base[key][c] for c in without_mds_employee(row)}
-                           for key, row in raw.items()
-                           if key not in mdt_expected or base[key]["DepartmentSK"] is not None), {})
+                           {c: v for c, v in row.items() if c not in allowed}
+                           == {c: v for c, v in base[key].items() if c not in allowed}
+                           for key, row in raw.items() if key not in later_changes), {"allowed_changes": sorted(allowed)})
+        regional_check("non-MDT rows and already assigned MDT TAs match branch base",
+                       all(row == base[key]
+                           for key, row in raw.items() if key not in later_changes
+                           and (key not in mdt_expected or base[key]["DepartmentSK"] is not None)), {})
         for name, after_sk in (("MDTRegionalCancelledLatest", 109), ("MDTRegionalCancelledOnly", None)):
             key = ("ag01", name)
             regional_check(f"cancelled-invoice regression reproduced before fix: {name}",
@@ -629,6 +647,7 @@ def main():
     _, _, employee_before_sql = compile_action("before-employee", EMPLOYEE_BEFORE_FIX)
     acceptance_project, _, _ = compile_action("acceptance-base", ACCEPTANCE_BASE)
     _, _, mdt_before_sql = compile_action("before-mdt", MDT_BEFORE_CHANGE)
+    _, _, mds_ta_before_sql = compile_action("before-debsalesp-only", MDS_TA_BEFORE_CHANGE)
     project, graph, _ = compile_action("target")
     view_sql = next(t for t in graph["tables"] if t["target"]["name"] == VIEW_ACTION)["query"]
     (args.evidence / "target-view-compiled.sql").write_text(view_sql)
@@ -640,6 +659,7 @@ def main():
     narrowed_rows, _ = query(narrowed_sql)
     employee_before_raw, _ = query(employee_before_sql)
     mdt_before_rows, _ = query(mdt_before_sql)
+    mds_ta_before_rows, mds_ta_before_fields = query(mds_ta_before_sql)
     employee_before_rows, _ = query(view_sql.replace(
         f"`{PROJECT}.dimension_table.{ACTION}`", f"({employee_before_sql})"))
     env = dict(os.environ, BIGQUERY_EMULATOR_HOST=f"{endpoint}/bigquery/v2")
@@ -647,7 +667,15 @@ def main():
     for key in ("GOOGLE_APPLICATION_CREDENTIALS", "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE"):
         env.pop(key, None)
 
-    def run_action(action_project, action=ACTION):
+    def run_action(action_project, action=ACTION, schema_change=False):
+        if schema_change and args.recreate_on_schema_change:
+            req = urllib.request.Request(
+                f"{endpoint}/bigquery/v2/projects/{PROJECT}/datasets/dimension_table/tables/{action}", method="DELETE")
+            try:
+                urllib.request.urlopen(req, timeout=90).close()
+            except urllib.error.HTTPError as error:
+                if error.code != 404:
+                    raise
         credentials = action_project / ".df-credentials.json"
         credentials.write_text(json.dumps({"projectId": PROJECT, "location": "us-central1"}))
         command = [str(cli), "run", str(action_project), "--actions", action, "--credentials", str(credentials)]
@@ -659,17 +687,17 @@ def main():
             raise RuntimeError(result.stdout + result.stderr)
 
     # Rebuild an existing table, rather than checking only a fresh SELECT schema.
-    run_action(base_project)
+    run_action(base_project, schema_change=True)
     base_rows, base_fields = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
     (args.evidence / "base-schema.json").write_text(json.dumps(base_fields, indent=2))
-    run_action(removed_project)
+    run_action(removed_project, schema_change=True)
     removed_rows, removed_fields = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
     (args.evidence / "removed-base-schema.json").write_text(json.dumps(removed_fields, indent=2))
     (args.evidence / "removed-base-rows.json").write_text(json.dumps(removed_rows, ensure_ascii=False, indent=2))
-    run_action(acceptance_project)
+    run_action(acceptance_project, schema_change=True)
     acceptance_rows, _ = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
     (args.evidence / "acceptance-base-rows.json").write_text(json.dumps(acceptance_rows, ensure_ascii=False, indent=2))
-    run_action(project)
+    run_action(project, schema_change=True)
     raw_rows, fields = query(f"SELECT * FROM `{PROJECT}.dimension_table.{ACTION}` ORDER BY CustomerReportInfoSK")
     run_action(project, VIEW_ACTION)
     actual_rows, view_fields = query(
@@ -679,7 +707,7 @@ def main():
     deb_by_code = {(d["company_id"], d["debcode"]): d for d in debs}
 
     def index(rows):
-        return {(r["CompanyID"], "".join(r["CustomerReportName"].split())): r for r in rows}
+        return {(r["CompanyID"], "".join(r["CustomerReportName"].split())): r for r in shop_rows(rows)}
 
     actual = index(actual_rows)
     raw = index(raw_rows)
@@ -692,6 +720,10 @@ def main():
     employee_before = index(employee_before_rows)
     employee_before_table = index(employee_before_raw)
     mdt_before = index(mdt_before_rows)
+    mds_ta_before = index(mds_ta_before_rows)
+    # Rows this change alters; comparisons with earlier commits cover every other row.
+    later_changes = mds_ta_keys
+    historical_skip = mdt_keys | later_changes
     (args.evidence / "before-mdt-rows.json").write_text(json.dumps(mdt_before_rows, ensure_ascii=False, indent=2))
     (args.evidence / "materialized-target-table-rows.json").write_text(json.dumps(raw_rows, ensure_ascii=False, indent=2))
     (args.evidence / "materialized-target-rows.json").write_text(json.dumps(actual_rows, ensure_ascii=False, indent=2))
@@ -710,7 +742,8 @@ def main():
             failures.append(name)
 
     check("output has exactly one row per company and whitespace-normalized name",
-          len(raw_rows) == len(actual_rows) == len(actual) == len(expected) and actual.keys() == expected.keys(),
+          len(shop_rows(raw_rows)) == len(shop_rows(actual_rows)) == len(actual) == len(expected)
+          and actual.keys() == expected.keys(),
           {"rows": len(actual_rows), "expected": len(expected)})
     for key, values in expected.items():
         observed = {k: actual.get(key, {}).get(k) for k in values}
@@ -721,37 +754,74 @@ def main():
     check("TA and segment values are preserved from the configured acceptance base",
           index(acceptance_rows).keys() == raw.keys() and all(
               {k: actual[key]["TADepartmentID"] if k == "DepartmentID" else raw[key][k] for k in row} == row
-              for key, row in index(acceptance_rows).items() if key not in mdt_keys), acceptance_rows)
+              for key, row in index(acceptance_rows).items() if key not in historical_skip), acceptance_rows)
     stable = raw.keys() == base.keys() and all(
         {k: r[k] for k in retained_columns} == {k: raw[key][k] for k in retained_columns}
-        for key, r in base.items() if key not in mdt_keys)
+        for key, r in base.items() if key not in historical_skip)
     check("every retained value, including TA lookup code, equals base output",
           stable, {"columns": retained_columns})
     for name, segment, source in (("ชื่อ XX", 1002, "CHANNEL"), ("SCG Branch", 1001, "CHANNEL"),
                                   ("Cancelled Latest Lookup", 1002, "CHANNEL"),
                                   ("TT Current Month", 1004, "CHANNEL"), ("TT Previous Month", 1005, "CHANNEL"),
                                   ("Unknown Tier", 1001, "DEFAULT"), ("No Channel", 1001, "DEFAULT"),
-                                  ("Channel Guard", 1002, "CHANNEL"), ("MDS Priority", 1003, "MDS")):
+                                  ("Channel Guard", 1002, "CHANNEL"), ("MDS Department Ignored", 1003, "MDS")):
         row = actual[("ag01", "".join(name.split()))]
         check(f"segment contract: {name}", (row["CustomerSegmentSK"], row["SegmentSource"]) == (segment, source), row)
     ta_sk_columns = ["DepartmentSK", "SectionSK", "RegionSK", "SectionManagerSK", "RegionManagerSK", "DirectorSK"]
     mdt_changed_columns = set(ta_sk_columns) | {"TASource"}
-    check("MDT fallback preserves other values and non-MDS employee SKs relative to the branch base",
+    check("MDT fallback preserves other values and employee SKs relative to the branch base",
           raw.keys() == mdt_before.keys() and all(
-              {k: v for k, v in without_mds_employee(row).items() if k not in mdt_changed_columns}
-              == {k: v for k, v in mdt_before[key].items()
-                  if k not in mdt_changed_columns and k in without_mds_employee(row)}
-              for key, row in raw.items()), {"allowed_changes": sorted(mdt_changed_columns)})
-    check("non-MDT customer-report rows match the branch base except MDS employee SKs",
-          all(without_mds_employee(row) == {k: mdt_before[key][k] for k in without_mds_employee(row)}
-              for key, row in raw.items() if key not in mdt_keys),
-          {"non_mdt_rows": len(raw) - len(mdt_keys)})
+              {k: v for k, v in row.items() if k not in mdt_changed_columns}
+              == {k: v for k, v in mdt_before[key].items() if k not in mdt_changed_columns}
+              for key, row in raw.items() if key not in later_changes), {"allowed_changes": sorted(mdt_changed_columns)})
+    check("non-MDT customer-report rows match the branch base",
+          all(row == mdt_before[key] for key, row in raw.items() if key not in historical_skip),
+          {"non_mdt_rows": len(raw) - len(historical_skip)})
     check("the missing chain TA is reproduced before this change and resolved by the running product",
           all(mdt_before[key]["DepartmentSK"] is None and mdt_before[key]["TASource"] is None
               and raw[key]["DepartmentSK"] is not None and raw[key]["TASource"] == "MDT"
-              for key in mdt_keys if expected[key]["TASource"] == "MDT"),
+              for key in mdt_keys - later_changes if expected[key]["TASource"] == "MDT"),
           [{"before": mdt_before[key], "after": raw[key]}
-           for key in mdt_keys if expected[key]["TASource"] == "MDT"])
+           for key in mdt_keys - later_changes if expected[key]["TASource"] == "MDT"])
+    # Debsalesp-only TA: compare with the commit that still read MDS DepartmentID.
+    ta_trace_columns = set(ta_sk_columns) | {"TASource", "TADebcode", "SaleRepSK"}
+    check("the TA change keeps the table schema of the MDS-TA commit",
+          fields == mds_ta_before_fields, {"before": mds_ta_before_fields, "after": fields})
+    check("rows that never took an MDS TA equal the MDS-TA commit",
+          raw.keys() == mds_ta_before.keys() and all(
+              row == mds_ta_before[key] for key, row in raw.items() if key not in later_changes),
+          {"compared_rows": len(raw) - len(later_changes)})
+    check("the MDS-TA commit reproduces MDS TAs that this change removes",
+          all(mds_ta_before[key]["TASource"] == "MDS" for key in mds_ta_keys)
+          and all(raw[key]["TASource"] != "MDS" for key in raw),
+          {"before": [mds_ta_before[key] for key in mds_ta_keys], "after": [raw[key] for key in mds_ta_keys]})
+    check("former MDS-TA shops change only TA chain, TASource, TADebcode and SaleRepSK",
+          all({k: v for k, v in raw[key].items() if k not in ta_trace_columns}
+              == {k: v for k, v in mds_ta_before[key].items() if k not in ta_trace_columns}
+              for key in mds_ta_keys), [raw[key] for key in mds_ta_keys])
+    reserved = [r for r in raw_rows if r["CustomerReportInfoSK"] == RESERVED_SK]
+    check("the table has exactly one reserved SK -1 row: blank name, Non-Segment, no company, MDS or TA",
+          reserved == [RESERVED_ROW], reserved)
+    reserved_view = [r for r in actual_rows if r["CustomerReportInfoSK"] == RESERVED_SK]
+    check("the reporting view exposes the reserved row with FlagPC No and no hierarchy or employee",
+          len(reserved_view) == 1 and reserved_view[0]["FlagPC"] == "No" and reserved_view[0]["CustomerReportName"] is None
+          and all(v is None for k, v in reserved_view[0].items() if k.startswith("TA") and k != "TASource")
+          and reserved_view[0]["TASource"] is None, reserved_view)
+    check("the reserved row is outside the shop numbering: shop SKs stay 1..n as at the MDS-TA commit",
+          sorted(r["CustomerReportInfoSK"] for r in shop_rows(raw_rows))
+          == sorted(r["CustomerReportInfoSK"] for r in mds_ta_before_rows) == list(range(1, len(mds_ta_before_rows) + 1)),
+          [r["CustomerReportInfoSK"] for r in raw_rows])
+    check("TASource only takes DEBSALESP, MDT or NULL",
+          {r["TASource"] for r in raw_rows} <= {"DEBSALESP", "MDT", None}, sorted({str(r["TASource"]) for r in raw_rows}))
+    # MDS will drop DepartmentID later; the table must build from a master without that column.
+    query(f"CREATE TABLE `{PROJECT}.mds_dataset.master_without_department` AS "
+          f"SELECT * EXCEPT(DepartmentID) FROM `{PROJECT}.mds_dataset.mds_data_customer_report_master`")
+    master_ref = f"`{PROJECT}.mds_dataset.mds_data_customer_report_master`"
+    target_sql = (args.evidence / "target-compiled.sql").read_text()
+    without_department_rows, _ = query(target_sql.replace(master_ref, f"`{PROJECT}.mds_dataset.master_without_department`"))
+    check("the table builds identically after MDS drops DepartmentID",
+          master_ref in target_sql
+          and sorted(without_department_rows, key=lambda r: r["CustomerReportInfoSK"]) == raw_rows, len(without_department_rows))
     expected_schema = list(stable_columns) + ta_sk_columns + ["TASource", "TADebcode", "SaleRepSK"]
     removed_columns = ("DepartmentID", "TAEmployeeID", "TAEmployeeName")
     check("TA chain SKs all come from the chosen dim_department_last row",
@@ -774,20 +844,8 @@ def main():
     check("unresolved TA rows expose no hierarchy information",
           all(all(row[c] is None for c in chain_information) for row in actual_rows if row["DepartmentSK"] is None),
           [row for row in actual_rows if row["DepartmentSK"] is None])
-    def mds_holder(row):
-        # The one employee currently holding the MDS department, else None.
-        dep = dep_by_sk[row["DepartmentSK"]]
-        holders = {r["EmployeeID"] for r in reps
-                   if r["CompanySK"] == row["CompanySK"] and r["DepartmentSK"] == row["DepartmentSK"]
-                   and r["DepartmentID"] is not None and (r["StartDate"] is None or r["StartDate"] <= str(today))
-                   and (r["EndDate"] is None or r["EndDate"] >= str(today))
-                   and not dep["DepartmentID"].lower().startswith("dummy")
-                   and (dep["EndDate"] is None or dep["EndDate"] >= str(today))}
-        return holders.pop() if len(holders) == 1 else None
-
     for row in raw_rows:
-        employee = (mds_holder(row) if row["TASource"] == "MDS"
-                    else deb_by_code.get((row["CompanyID"], row["TADebcode"]), {}).get("debsalesp"))
+        employee = deb_by_code.get((row["CompanyID"], row["TADebcode"]), {}).get("debsalesp")
         candidates = [r for r in reps if employee is not None
                       and r["CompanySK"] == row["CompanySK"] and r["EmployeeID"] == employee]
         chosen = min(candidates, key=lambda r: (r.get("EmployeeName") is None, r["SaleRepSK"])) if candidates else None
@@ -797,7 +855,7 @@ def main():
           raw.keys() == employee_before_table.keys() and all(
               {k: v for k, v in r.items() if k != "SaleRepSK"}
               == {k: v for k, v in employee_before_table[key].items() if k != "SaleRepSK"}
-              for key, r in raw.items() if key not in mdt_keys), raw_rows)
+              for key, r in raw.items() if key not in historical_skip), raw_rows)
     for company, name, employee, full_name in (
             ("ag01", "ชื่อXX", "REP_A", "สมชาย ใจดี (ชาย)"),
             ("ag01", "LatestMatching", "REP_B", "Somsri Dee"),
@@ -821,13 +879,15 @@ def main():
           and employee_before[("ag01", "ชื่อXX")]["TAEmployeeName"] is None
           and actual[("ag01", "ชื่อXX")]["TAEmployeeName"] == "สมชาย ใจดี (ชาย)",
           {"before": employee_before[("ag01", "ชื่อXX")], "after": actual[("ag01", "ชื่อXX")]})
-    check("MDS rows take the single current holder of the MDS TA; several or no holders stay empty",
-          [(actual[("ag01", name)]["TAEmployeeID"], actual[("ag01", name)]["TAEmployeeName"])
-           for name in ("MDSPriority", "MDSOnly", "MDSShared", "MDSVacant")]
-          == [("MDS_HOLDER", "Mds Holder"), ("MDS_HOLDER", "Mds Holder"), (None, None), (None, None)],
-          [actual[("ag01", name)] for name in ("MDSPriority", "MDSOnly", "MDSShared", "MDSVacant")])
-    check("outside MDS, TAEmployeeID is only set alongside TADebcode",
-          all(r["TADebcode"] is not None for r in actual_rows if r["TAEmployeeID"] is not None and r["TASource"] != "MDS")
+    check("shops in MDS take the debsalesp employee, never the holder of the MDS DepartmentID",
+          [(actual[("ag01", name)]["TAEmployeeID"], actual[("ag01", name)]["TADebcode"])
+           for name in ("MDSDepartmentIgnored", "MDSOnly", "MDSShared", "MDSVacant", "MDTIgnoresMDSDepartment")]
+          == [("REP_B", "MDSDepartmentIgnored"), (None, None), ("REP_A", "MDSShared"), (None, None),
+              ("MDT_ALL_CHAINS", "MDTIgnoresMDSDepartment")]
+          and all(r["TAEmployeeID"] != "MDS_HOLDER" for r in actual_rows),
+          [actual[("ag01", name)] for name in ("MDSDepartmentIgnored", "MDSOnly", "MDSShared", "MDSVacant")])
+    check("TAEmployeeID is only set alongside TADebcode",
+          all(r["TADebcode"] is not None for r in actual_rows if r["TAEmployeeID"] is not None)
           and actual[("ag01", "NoDebsalesp")]["TAEmployeeID"] is None, actual_rows)
     check("TAEmployeeID keeps the debsalesp employee of the lookup code",
           actual[("ag01", "ชื่อXX")]["TAEmployeeID"] == "REP_A", actual[("ag01", "ชื่อXX")])
@@ -840,8 +900,9 @@ def main():
     check("a missing employee remains SK-only while its raw employee code is traceable through TADebcode",
           missing_employee == [{"TADebcode": "MissingRep", "SaleRepSK": None, "TAEmployeeID": None,
                                 "TAEmployeeName": None, "debsalesp": "NO_SUCH_REP"}], missing_employee)
-    check("TADebcode is NULL when MDS supplies the TA",
-          all(r["TADebcode"] is None for r in actual_rows if r["TASource"] == "MDS"), actual_rows)
+    check("shops in MDS keep the customer code that supplied the TA",
+          actual[("ag01", "MDSDepartmentIgnored")]["TADebcode"] == "MDSDepartmentIgnored",
+          actual[("ag01", "MDSDepartmentIgnored")])
     check("TADebcode keeps the customer code that supplied the TA",
           actual[("ag01", "ชื่อXX")]["TADebcode"] == "A4566666", actual[("ag01", "ชื่อXX")])
     for name in ("NoDebsalesp", "MissingRep", "MissingDeb", "PlainMultiple", "SingleCostChain",
@@ -865,7 +926,7 @@ def main():
     check("all existing values equal the immediate base output after restoration",
           removed.keys() == raw.keys() and all(
               {k: actual[key]["TADepartmentID"] if k == "DepartmentID" else raw[key][k] for k in row} == row
-              for key, row in removed.items() if key not in mdt_keys),
+              for key, row in removed.items() if key not in historical_skip),
           {"columns": [f["name"] for f in removed_fields]})
     check("base materialized table reproduces exposed employee and TA customer codes",
           all(c in {f["name"] for f in base_fields} for c in ("TAEmployeeID", "TADebcode"))
@@ -921,16 +982,17 @@ def main():
               before[key]["DepartmentID"] is not None and actual[key]["TADepartmentID"] is None,
               {"before": before[key], "after": actual[key]})
     check("MDS fields retain their stored types and values in the table",
-          raw[("ag01", "MDSPriority")]["FlagPC"] is True
-          and raw[("ag01", "MDSPriority")]["OnlinePercent"] == 25.5
-          and raw[("ag01", "MDSPriority")]["ShopOnline"] == "Online shop",
-          raw[("ag01", "MDSPriority")])
-    check("the view exposes FlagPC as STRING and OnlinePercent as FLOAT",
+          raw[("ag01", "MDSDepartmentIgnored")]["FlagPC"] is True
+          and raw[("ag01", "MDSDepartmentIgnored")]["OnlinePercent"] == 25.5
+          and raw[("ag01", "MDSDepartmentIgnored")]["ShopOnline"] == "Online shop",
+          raw[("ag01", "MDSDepartmentIgnored")])
+    check("the view exposes FlagPC and OnlinePercent as STRING",
           {f["name"]: f["type"] for f in view_fields if f["name"] in ("FlagPC", "OnlinePercent")}
-          == {"FlagPC": "STRING", "OnlinePercent": "FLOAT"}, view_fields)
+          == {"FlagPC": "STRING", "OnlinePercent": "STRING"}, view_fields)
     for name, flag_pc, online_percent in (
-            ("MDSPriority", "Yes", 0.255), ("MDSChainPriority", "No", 0.0),
-            ("MDSOnly", "No", 1.0), ("DupName", "Yes", None), ("NoChannel", "No", None)):
+            ("MDSDepartmentIgnored", "Yes", "25.5%"), ("MDSChainDepartmentIgnored", "No", "0%"),
+            ("MDSOnly", "No", "100%"), ("MDSShared", "Yes", "80%"), ("MDSVacant", "Yes", "12.5%"),
+            ("DupName", "Yes", None), ("NoChannel", "No", None)):
         row = actual[("ag01", name)]
         check(f"view converts FlagPC and OnlinePercent for Power BI: {name}",
               (row["FlagPC"], row["OnlinePercent"]) == (flag_pc, online_percent), row)

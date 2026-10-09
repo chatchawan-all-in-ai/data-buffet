@@ -234,10 +234,9 @@
 
 ## การตัดสินใจเชิงออกแบบ
 
-- **2026-10-06 — TA ของ Customer Report Info: MDS ก่อน แล้ว `deb.debsalesp`**
+- **2026-10-09 — Customer Report Info: สัญญาและลำดับ deploy**
 
-  กฎ TA, คอลัมน์ผลลัพธ์, ข้อจำกัด, ผลวัด
-  และขั้นตอน Power BI หลัง merge ก่อน refresh อยู่ที่
+  สัญญาข้อมูลและลำดับ deploy/Power BI refresh อยู่ที่
   [Customer Report Info + Customer Segment](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
 
 - **2026-10-02 — Customer Segment fallback**
