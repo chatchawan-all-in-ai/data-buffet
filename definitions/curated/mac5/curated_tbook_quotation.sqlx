@@ -13,7 +13,7 @@ config {
 select
     company_id as company_id,
     id as ID,
-    running as Running,
+    IFNULL(running, '') as Running,
     atten as Atten,
     address as Address,
     sdate as SDate,

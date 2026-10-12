@@ -198,7 +198,7 @@ chmod +x .claude/hooks/*.sh .claude/hooks/pre-commit .claude/skills/verify-setup
 ## 6. กติกาที่ห้ามพลาด
 
 1. **Timezone Bangkok เสมอ** — `CURRENT_DATE('Asia/Bangkok')`
-2. **String ทุกตัวผ่าน `cleanString`** — `''` ต้องกลายเป็น `NULL`
+2. **การทำความสะอาด string และข้อยกเว้นสำหรับ incremental key** — ดู [coding-standard §4](../coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล)
 3. **SK มี 2 ระบบ** — dim แบบ MERGE (`dim_company`, `dim_aging_rang`, lake dims):
    SK คงที่ตลอดชีพ ห้าม regenerate / dim mds แบบ full rebuild (43 ตัว): SK ออกเลขใหม่
    ทุกวัน **ห้ามเก็บข้ามวัน**

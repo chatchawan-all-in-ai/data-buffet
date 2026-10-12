@@ -116,7 +116,7 @@ WITH mih_raw as (
             ROUND(CAST(NULLIF(REPLACE(REGEXP_REPLACE(mih2per2pc, r'[^0-9.%]', ''), '%', ''), '') AS FLOAT64), 2) AS per_sale2,
         FROM ${ref(databuffet.VALIDATED_MAC5, "mih2")}
         WHERE company_id = 'ag01'
-            AND mih2cus IS NOT NULL
+            AND NULLIF(mih2cus, '') IS NOT NULL
             AND mih2per2 IS NOT NULL
             AND mih2per2pc IS NOT NULL
         QUALIFY ROW_NUMBER() OVER(PARTITION BY company_id, mih2vnos, mih2cus ORDER BY mih2rev DESC) = 1

@@ -34,7 +34,7 @@ js {
 }
 
 SELECT
-    ${databuffet.functionData.cleanString('id')} as id,
+    IFNULL(${databuffet.functionData.cleanString('id')}, '') as id,
     ${databuffet.functionData.castBool('active_status')} as active_status,
     ${databuffet.functionData.parseFlexibleDatetime('create_date')} as create_date,
     ${databuffet.functionData.parseAsatDate()} AS asatdate,
@@ -164,19 +164,34 @@ rows. Deleting at `(type, vnos)` grain would drop **67,946 rows across 4,744 doc
 that the batch does not re-supply (measured 2026-09-10) — see
 [known-issues.md](../../operations/known-issues.md).
 
-**NULL in a `uniqueKey` column (2026-10-12)**: Dataform's incremental MERGE matches
-`uniqueKey` with `=`, so a row whose key column is NULL never matches and is
-re-inserted every run. `mie.miecus` (blank customer → `cleanString` → NULL) piled up
-98,474 duplicate rows, up to 219 copies each. Fix: key string columns use
-`IFNULL(cleanString(...), '')` — the one exception to the empty→NULL rule. `mie_dummy`
-has no blank `miecus`. Any other incremental table whose PK includes a column
-`cleanString` can null out has the same latent bug.
-
 **Accepted trade-off**: `pre_operations` and the body are statements in the same
 Dataform action, but the DELETE lands before the MERGE — if the MERGE fails after the
 DELETE, those documents are missing until the next run. The reverse (an INSERT that
 never deleted, which would duplicate) cannot happen: Dataform fails the whole action
 when `pre_operations` fails.
+
+## NULL in a `uniqueKey` column (2026-10-12)
+
+The [data-cleaning standard](../../coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล)
+owns the incremental string-key exception and its MERGE rationale.
+The A/B/C1 fix applies that exception to the cleaned string key columns of
+`mih2`, `cst`, `mie`, `cql`, `mih_dummy`, `mie_dummy` and `mil_dummy`; `mie` and `cql`
+apply it in all five company branches. Literal `company_id` values already have
+no NULLs. Non-key strings still use the normal helper output, and non-string key
+columns are unchanged.
+
+`curated_mac5.curated_tbook_quotation.Running` uses `IFNULL(running, '')` because its
+input has already passed through `cleanString` in `validated_mac5.tbook_quotation`.
+This does not change the full-rebuild validated table's `running` values or key.
+
+The `mih2cus` filters in `curated_mih`, `curated_mil` and `dim_invoice` use
+`NULLIF(mih2cus, '') IS NOT NULL`, so they still exclude missing customers.
+Equality joins to fields that retain empty→NULL cleaning still do not match the
+empty-string key sentinel.
+
+This fix does not migrate existing target rows. The scan findings, one-time cleanup
+status and deliberately deferred tables are owned by
+[known-issues.md — NULL-key cleanup](../../operations/known-issues.md#null-key-cleanup-2026-10-12).
 
 ## Per-source summary
 

@@ -139,7 +139,7 @@ post_operations {
           ROUND(CAST(NULLIF(REPLACE(REGEXP_REPLACE(mih2per2pc, r'[^0-9.%]', ''), '%', ''), '') AS FLOAT64), 2) AS per_sale2,
         FROM ${ref(databuffet.VALIDATED_MAC5, "mih2")} AS mih2
         WHERE mih2.company_id = 'ag01'
-          AND mih2.mih2cus IS NOT NULL
+          AND NULLIF(mih2.mih2cus, '') IS NOT NULL
           AND mih2.mih2per2 IS NOT NULL
           AND mih2.mih2per2pc IS NOT NULL
           --   AND mih2type = 'PS'
