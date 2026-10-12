@@ -1,11 +1,11 @@
 # Initial Layer — `definitions/initial/`
 
-> **LLM context**: **17 files** that bootstrap everything: datasets, external tables over
+> **LLM context**: **19 files** that bootstrap everything: datasets, external tables over
 > GCS AVRO, and UDFs. All `type: "operations"`. Tags: `initial` (create) and
 > `re-initial` (drop for rebuild). Verified against the repo and
 > `function_dataset.INFORMATION_SCHEMA.ROUTINES` on 2026-09-15.
 
-## File map (17)
+## File map (19)
 
 | File | Tag | หน้าที่ |
 |---|---|---|
@@ -22,6 +22,8 @@
 | `cis360/drop_all_tables_validated_cis360.sqlx` | initial | DROP 24 validated tables |
 | `mastersku/create_all_table_raw_mastersku.sqlx` | initial | 11 hive-partitioned external tables |
 | `mastersku/drop_all_tables_validated_mastersku.sqlx` | initial | DROP 11 validated tables |
+| `master_sku/create_all_table_raw_master_sku.sqlx` | initial | 16 hive-partitioned external tables in `raw_master_sku`; depends on the validated_master_sku drop file by design |
+| `master_sku/drop_all_tables_validated_master_sku.sqlx` | initial | DROP the 16 validated_master_sku tables |
 | `saleout_mdt/create_all_table_raw_saleout_mdt.sqlx` | initial | 11 hive-partitioned external tables แยกตามร้าน (bt/gb/hp/tw) |
 | `saleout_mdt/drop_all_tables_validated_saleout_mdt.sqlx` | initial | DROP 10 validated tables |
 | `allkons_commission/create_all_table_raw_allkons_commission.sqlx` | initial | 7 hive-partitioned external tables |

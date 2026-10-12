@@ -26,6 +26,7 @@ dataset กลาง: `dimension_table`, `dimension_view`, `fact_table`, `fact_v
 | ที่ | Convention | ตัวอย่าง |
 |---|---|---|
 | validated (mac5) | ชื่อ raw ตัวพิมพ์เล็ก | `MIHvnos` → `mihvnos` |
+| validated (master_sku) | ชื่อ raw คงเดิม (snake_case) ไม่เติม prefix | `brand_id`, `language_id`, `created_at` |
 | validated (mastersku) | prefix `prd_*` snake_case | `prd_id` |
 | curated | camelCase | `mihVnos`, `prdSku` |
 | dimension/fact | PascalCase | `CompanyID`, `WaterPacName` |

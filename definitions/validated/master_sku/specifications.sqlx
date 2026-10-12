@@ -27,7 +27,6 @@ js {
     let partition_statement, post_operations_statement;
 
     if (pk_key && pk_key.length > 0) {
-        // updated_at breaks ties: the same key can appear twice in one day's file
         partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY asatdate DESC, updated_at DESC) = 1`;
         post_operations_statement = `
 BEGIN
@@ -53,8 +52,8 @@ END;`;
 }
 
 SELECT
-  ${databuffet.functionData.cleanString('group_id')} AS group_id,
-  ${databuffet.functionData.cleanString('attribute_id')} AS attribute_id,
+  IFNULL(${databuffet.functionData.cleanString('group_id')}, '') AS group_id,
+  IFNULL(${databuffet.functionData.cleanString('attribute_id')}, '') AS attribute_id,
   ${databuffet.functionData.castInt64('sort_order')} AS sort_order,
   ${databuffet.functionData.castBool('is_displayed')} AS is_displayed,
   ${databuffet.functionData.castBool('is_required')} AS is_required,

@@ -1,7 +1,8 @@
 # Validated Layer — `definitions/validated/`
 
-> **LLM context**: 143 files (mac5 87 · cis360 25 · mastersku 12 · saleout_mdt 11 ·
-> allkons_commission 8; each source has 1 `validated_schema_*` bootstrap). Pure mechanical
+> **LLM context**: 158 files (mac5 87 · cis360 25 · master_sku 17 · mastersku 12 · saleout_mdt +
+> allkons_commission 17; each source has 1 `validated_schema_*` bootstrap; `master_sku` = 16
+> incremental tables + schema file). Pure mechanical
 > cleaning: read raw, trim/cast every column with `functionData` helpers, standardize
 > `asatdate`, dedup on PK, write to `validated_<source>`. No business logic (rare
 > exceptions in mac5).
@@ -195,14 +196,14 @@ status and deliberately deferred tables are owned by
 
 ## Per-source summary
 
-| Aspect | mac5 | cis360 | mastersku | saleout_mdt |
-|---|---|---|---|---|
-| Raw datasets | `raw_mac5_ag01` + 4 companies | `raw_cis360` | `raw_mastersku` | `raw_saleout_mdt` |
-| Default type | mostly `table` (full) | all incremental | all incremental | all incremental |
-| Sub-tag | FULL / INCREMENTAL | INCREMENTAL | INCREMENTAL | **none** (only `validated`) |
-| PK | table-specific composites | `id` | `prd_id` / `*_id` | wide business composites |
-| Partition | `asatdate` when incremental | `asatdate` | `asatdate` | usually none |
-| Quirks | multi-company UNION, sign flips, Thai-text cleanup | heavy `castBool` | `prd_*` prefix | vendor subfolders BT/GB/HP/TW, `PARSE_DATE('%Y/%m/%d', ...)` |
+| Aspect | mac5 | cis360 | master_sku | mastersku | saleout_mdt |
+|---|---|---|---|---|---|
+| Raw datasets | `raw_mac5_ag01` + 4 companies | `raw_cis360` | `raw_master_sku` | `raw_mastersku` | `raw_saleout_mdt` |
+| Default type | mostly `table` (full) | all incremental | all incremental (16) | all incremental | all incremental |
+| Sub-tag | FULL / INCREMENTAL | INCREMENTAL | INCREMENTAL | INCREMENTAL | **none** (only `validated`) |
+| PK | table-specific composites | `id` | `id`, `<parent>_id` + `language_id`, or `group_id` + `attribute_id` (`specifications`); string keys wrapped `IFNULL(..., '')` | `prd_id` / `*_id` | wide business composites |
+| Partition | `asatdate` when incremental | `asatdate` | `asatdate` (cluster by key) | `asatdate` | usually none |
+| Quirks | multi-company UNION, sign flips, Thai-text cleanup | heavy `castBool` | raw column names kept; `parseFlexibleUtcDatetime` for `created_at`/`updated_at`; dedup `ORDER BY asatdate DESC, updated_at DESC` | `prd_*` prefix | vendor subfolders BT/GB/HP/TW, `PARSE_DATE('%Y/%m/%d', ...)` |
 
 ### MAC5 multi-company UNION (14 files)
 
