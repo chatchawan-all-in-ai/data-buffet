@@ -175,6 +175,9 @@ ${databuffet.functionData.parseAsatDate()}             AS asatdate,
 ```
 
 - string ทุกคอลัมน์ → `cleanString` (หรือ `cleanCode` ถ้ามี control character)
+- **ยกเว้น** คอลัมน์ string ที่อยู่ใน `uniqueKey` ของตาราง incremental ห้ามเป็น NULL →
+  `IFNULL(cleanString(...), '')` เพราะ MERGE เทียบ key ด้วย `=` และ `NULL = NULL` ไม่จริง
+  แถวนั้นจะถูก INSERT ซ้ำทุกรอบ (เคส `mie.miecus` 2026-10-12)
 - ใน JOIN condition ก็ต้องใช้ `cleanString` ฝั่งต้นทางให้ตรงกับค่าที่เก็บ
 - datetime จาก raw → `parseFlexibleDatetime` (SAFE, พังเป็น NULL)
 - `castInt64/castFloat64` ไม่ SAFE — ตั้งใจให้ fail เมื่อ schema เพี้ยน

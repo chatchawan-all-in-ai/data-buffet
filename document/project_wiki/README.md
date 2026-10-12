@@ -28,7 +28,7 @@
 ## Hard rules (apply to every change)
 
 1. Timezone is always `Asia/Bangkok`.
-2. Strings pass through `cleanString` (empty → NULL); use `functionData` helpers, not raw casts.
+2. Follow the [data-cleaning rules, including incremental string keys](../coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล).
 3. Never hardcode dataset names/tags — use `databuffet.*` constants.
 4. SK stability is per-pattern: MERGE dims (`dim_company`, `dim_aging_rang`, lake dims)
    have SKs that are stable forever — never regenerate them. The 43 full-rebuild mds

@@ -92,7 +92,7 @@ BEGIN
           row_number() over(partition by mih2vnos, mih2cus order by mih2rev desc) as chk_row
         FROM ${ref(databuffet.VALIDATED_MAC5, 'mih2')} as mih2
         WHERE mih2.company_id = 'ag01'
-          and mih2cus is not null
+          and nullif(mih2cus, '') is not null
           and mih2per2 is not null
           and mih2per2pc is not null
           and (mih2perpc <> '100%' and mih2perpc <> '00%')

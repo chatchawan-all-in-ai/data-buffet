@@ -347,7 +347,7 @@ Step-by-step guides with checklists live in [`document/how-to/`](document/how-to
 ## Conventions
 
 - **Timezone:** always `Asia/Bangkok` (e.g. `CURRENT_DATE('Asia/Bangkok')`).
-- **NULL handling:** normalize empty strings to `NULL` via `cleanString` / `cleanCode`.
+- **NULL handling:** follow the [data-cleaning rules, including incremental string keys](document/coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล).
 - **DDL:** initial/validated/curated objects are created by Dataform; `operations`
   targets (all MERGE dimensions, `fact_transcation`) pre-exist in BigQuery.
 - **Primary keys:** declared `NOT ENFORCED` for query optimization, not constraints.

@@ -85,7 +85,7 @@ Build dependency rules: [full-rebuild properties](full-rebuild-pattern.md#proper
 | dim_delivery | DeliverySK | curated_mil, ttrip/ttrip_document/tdelivery, deb, curated_mih | dim_company |
 | dim_project | ProjectSK | validated_mac5.tbook_profilecomp | dim_company |
 | dim_quotation | QuotationSK | curated_tbook_quotation, tbook_quodetail, curated_mih/mil | dim_company, dim_project |
-| dim_product_master | ProductSK (MERGE ON ProductCode + CompanySK) | validated_mac5 stk/stg, validated_mastersku product/product_detail | dim_company, dim_product_mkt, dim_rebate, dim_stk_mkt |
+| dim_product_master | ProductSK (MERGE ON ProductCode + CompanySK) | validated_mac5 stk/stg, validated_mastersku product/product_detail · **+ 7 dummy ag01 `*OTHERS`** (สินค้าที่ไม่มีรหัส MDT เช่น `OTHERS099OTHERS`) ต่อท้าย `stk` ใน CTE — โครงคอลัมน์จาก `stk` เอง (`REPLACE` 3 คอลัมน์ ที่เหลือ NULL) เพิ่มรหัสใหม่ = เติมใน `UNNEST([...])` (2026-10-12) | dim_company, dim_product_mkt, dim_rebate, dim_stk_mkt |
 | dim_customer_grade | CustomerGradeSK | chq, cql, mie, mir, deb, mih, curated_mih | dim_customer, dim_aging, dim_calendar, dim_status_not_receive + 5 score dims |
 | dim_group_customer | GroupCustomerSK | dim_customer | dim_customer |
 | dim_group_customer_grade | GroupCustomerGradeSK | deb, chq, cql, mie, mir, mih, curated_mih | dim_calendar, dim_customer, dim_group_customer + score dims |

@@ -188,6 +188,9 @@ addresses, gated on today's CDC changes (cost control — don't remove the gate)
 
 1. Timezone: always `Asia/Bangkok`.
 2. Every string column through `cleanString`/`cleanCode`; empty string → NULL.
+   **Exception**: a string column in an incremental table's `uniqueKey` must never be NULL —
+   wrap it `IFNULL(cleanString(...), '')`, because Dataform's MERGE matches with `=` and a
+   NULL key is re-inserted every run (`mie.miecus`, 98,474 duplicate rows, fixed 2026-10-12).
 3. No hardcoded dataset names/tags — use `databuffet.*`.
 4. SK stability is per-pattern: MERGE dims (`dim_company`, `dim_aging_rang`, 10 lake
    dims) have SKs that are stable forever — never regenerate or update them. The 43

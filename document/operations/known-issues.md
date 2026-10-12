@@ -232,6 +232,45 @@
   ตรวจซ้ำได้ด้วย `for f in definitions/dimension/*.sqlx; do grep -q "schema:" "$f" || echo "$f"; done`
   (ตอนนี้ได้ 0 บรรทัด)
 
+- **2026-10-12 — `validated_mac5.mie` มีแถวซ้ำบน PK 98,474 แถว** (เจอตอน port query
+  commission) พบ 3,339 PK ทุกตัวมี `miecus` NULL
+  ซ้ำสูงสุด 219 ชุด ตั้งแต่ 2026-05-11 ทำให้ join `mie` ด้วยเลขเอกสารแตกแถว
+  (order commission ของ ag01 ปี 2026 เกิน ~370,000 แถว) ตอนสแกน `mie_dummy` ไม่พบปัญหานี้
+  สาเหตุและกฎป้องกันอยู่ที่ [coding-standard §4](../coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล);
+  ขอบเขตการแก้โค้ดอยู่ที่ [incremental string keys](../project_wiki/validated/validated-layer.md#null-in-a-uniquekey-column-2026-10-12).
+  ปลายทางไม่กระทบ: ที่ใช้ `miecus` มีแค่ `fact_mir_vs`/`fact_mir_rs` (`mir.mircus = mie.miecus`)
+  ซึ่งแถวลูกค้าว่างก็ join ไม่ติดทั้งก่อนและหลัง
+  **ล้างข้อมูล `miecus` แล้ววันที่ 2026-10-12** เหลือ 4,155,993 แถว ซ้ำ 0;
+  ตาราง downstream (`dim_aging`, `dim_customer_grade`, `dim_group_customer_grade`,
+  `fact_mir_vs`, `fact_mir_rs`) rebuild ทุกคืน หายเอง
+  ตรวจด้วย `COUNT(*) - COUNT(DISTINCT TO_JSON_STRING(STRUCT(<pk>)))`
+
+### NULL-key cleanup (2026-10-12)
+
+- **2026-10-12 — ไม่ได้เป็นแค่ latent: `mih2` กับ `cst` ซ้ำอยู่จริงแบบเดียวกับ `mie`**
+  สแกน incremental ทั้ง 77 ตัวหลังแก้ `mie` แล้วพบว่า
+  - ซ้ำอยู่ตอนนี้และเพิ่มขึ้นทุกคืน (A): `validated_mac5.mih2` ซ้ำ 134,332 แถว (963 PK สูงสุด 199 ชุด
+    `mih2cus` NULL เพิ่มคืนละประมาณ 543 แถว ไม่มียอดเงินติดมา) กับ `validated_mac5.cst` ซ้ำ 3,152 แถว
+    (32 PK ทั้งหมดเป็น `cststo` NULL ที่ `csttype = 'IS'` มี `cstquan` ส่วนเกินรวม 8,868 หน่วย ใน repo ไม่มีตารางไหนอ่าน `cst`)
+  - มี key เป็น NULL แต่ยังไม่ซ้ำ (B): `mie.mievnos` 3 แถว, `cql.cqlbank` 3 แถว, `mih_dummy.mihvnos` 2 แถว
+    ทั้งหมดมาจาก snapshot เก่า จะซ้ำเมื่อค่าว่างกลับมาใน raw
+  - ยังไม่มี NULL แต่เสี่ยงสูงเพราะอ่าน source ทั้งก้อนทุกวัน (C1): `mie_dummy`, `mil_dummy`, `mih_dummy.mihcus`,
+    `curated_mac5.curated_tbook_quotation.Running`
+
+  ขอบเขตการแก้คีย์และพฤติกรรม consumer อยู่ที่
+  [incremental string keys](../project_wiki/validated/validated-layer.md#null-in-a-uniquekey-column-2026-10-12).
+  ตอนสแกนไม่พบ NULL ใน key ที่ไม่ใช่ string จึงไม่อยู่ในขอบเขตการแก้
+  **ยังต้องล้างข้อมูลเก่าครั้งเดียวด้วยมือ** (guard hook บล็อก DML) สำหรับ `mih2`, `cst`, `mie`, `cql`, `mih_dummy`
+  คือแปลง NULL เฉพาะคีย์ string ที่แก้เป็น `''` แล้วเหลือ 1 แถวต่อ PK (เก็บ asatdate ล่าสุด)
+  **ยังไม่ได้ล้างตามบันทึกการสแกนนี้** ควรล้างหลัง deploy; การล้าง `mie.miecus` ด้านบนทำแล้ว
+  แต่ `mie.mievnos` ยังเป็นงานค้างแยกต่างหาก
+  ถ้าไม่ล้าง แถวเก่าที่เป็น NULL กับแถวใหม่ที่เป็น `''` จะไม่ match กัน (`mih2` จะได้แถว `''` เพิ่ม 543 แถวครั้งเดียว `cst` 8 แถว)
+  ตารางที่อยู่เฉพาะ C1 (`mie_dummy`, `mil_dummy`, `curated_tbook_quotation`) ไม่ต้องล้างตามผลสแกนนี้;
+  `mih_dummy` ยังต้องล้างคีย์ `mihvnos` ในกลุ่ม B
+  ส่วนที่ยังไม่ได้แก้ (ตัดสินใจไว้แล้ว): latent อื่น ๆ (cis360, master_sku, mastersku, saleout_mdt, `cps`, `rcv`, `curated_mih`,
+  `curated_saleout_mdt`), `curated_mil` ที่แบ่งบรรทัดเป็น 2 แถวตั้งใจแต่ key ไม่มีตัวแยก split, และ `curated_product`
+  ที่ `updatePartitionFilter` 7 วันทำให้ซ้ำ
+
 ## การตัดสินใจเชิงออกแบบ
 
 - **2026-10-09 — Customer Report Info: สัญญาและลำดับ deploy**
