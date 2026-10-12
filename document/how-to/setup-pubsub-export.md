@@ -91,7 +91,7 @@ export + column `update_on` + flag สถานะ) — เอกสารนี
   "table": "order",
   "run_date": "2026-10-12",
   "operation": "NEW",
-  "primary_key": { "company_id": "ag01", "Order_No": "SO2610-0042", "No": 1 },
+  "primary_key": { "company_source_id": "ag01", "Order_Type": "IS", "Order_No": "6901000123", "No": 1 },
   "data": { "...": "แถวข้อมูลเต็ม ชื่อคอลัมน์ตาม query ต้นฉบับ" }
 }
 ```
@@ -101,8 +101,13 @@ export + column `update_on` + flag สถานะ) — เอกสารนี
 | `table` | ชื่อชุดข้อมูล | ตรงกับชื่อท้าย topic (`order`, `stk`, ...) — เก็บไว้ให้ consumer ใช้ callback ตัวเดียวได้ |
 | `run_date` | วันที่ export | ใช้ debug/ตรวจสอบ ไม่ใช่ key |
 | `operation` | `NEW` \| `UPDATE` \| `DELETE` | ปลายทางใช้ตัดสินว่าจะ upsert หรือ delete |
-| `primary_key` | object ของ key column | key ของแต่ละชุดกำหนดตอน port query |
+| `primary_key` | object ของ key column (field จริงใน `data` ไม่ใช่ hash) | key ของแต่ละชุดกำหนดตอน port query — ค่าใน key เป็น `null` ได้ (เช่น ใบเสร็จเงินสดไม่มีเลขเช็ค) ฝั่งปลายทางต้องถือว่า `null` เท่ากัน |
 | `data` | แถวข้อมูลเต็ม | มีเฉพาะ `NEW`/`UPDATE`; `DELETE` = `null` (แถวไม่มีแล้วที่ต้นทาง) |
+
+JSON ทั้งก้อน **สร้างโดย BigQuery** (`TO_JSON_STRING`, ดูขั้น 6) จึงมีรูปแบบตายตัว: ไม่มีช่องว่าง,
+DATETIME = `"2026-01-30T09:10:00"`, ตัวเลขไม่มี `.0` เกิน (`700`), ค่าว่าง = `null` —
+คอลัมน์แรกของทุกชุดคือ `company_source_id` (บริษัทเจ้าของข้อมูล เช่น `ag01`) ไม่ใช่
+`companyid`/`companyname` ของต้นฉบับซึ่งคือลูกค้า
 
 ⚠️ **ข้อควรระวังตอนออกแบบ query ฝั่ง publish (ยังไม่ทำในเอกสารนี้ แต่ต้องรู้ไว้)**:
 query ต้อง drive จากตาราง CDC/flag เป็นหลัก ไม่ใช่ join ออกจากตาราง `mil`/`mih` ตรงๆ
@@ -203,9 +208,32 @@ watermark ขาดตัวไหน Cloud Function จะ permission denied �
   account จากขั้น 4 อัตโนมัติ ไม่ต้องเลือกเอง
 - วางโค้ดด้านล่างในตัวแก้ไข inline → **DEPLOY**
 
-**ทำไม**: นี่คือตัว "คนงาน" ตัวเดียวที่วนทีละชุด ดึงแถวที่เปลี่ยนจาก BigQuery แปลงเป็น
-message แล้วส่งเข้า topic ของชุดนั้น — timeout default 60 วินาทีไม่พอสำหรับ 14 ชุด
+**ทำไม**: นี่คือตัว "คนงาน" ตัวเดียวที่วนทีละชุด ดึง message ของแถวที่เปลี่ยนจาก BigQuery
+แล้วส่งต่อเข้า topic ของชุดนั้น — timeout default 60 วินาทีไม่พอสำหรับ 14 ชุด
 (ครั้ง backfill ยิ่งนาน) จึงต้องขยาย
+
+**BigQuery เป็นคนเขียน JSON — function แค่ส่งต่อ**: message ทั้งก้อนสร้างใน BigQuery ด้วย
+`TO_JSON_STRING` (view `fetch_<ชุด>` ด้านล่าง) function ห้ามสร้าง JSON เอง (`json.dumps`)
+เพราะจะได้หน้าตาต่างกัน (`"2026-01-30T09:10:00"` กับ `"2026-01-30 09:10:00"`, `700` กับ
+`700.0`, ช่องว่าง) — ทำแบบนี้แล้ว ข้อความที่ทีมปลายทางได้ (decode base64 แล้ว) ตรงกับไฟล์
+JSONL ที่ export จาก view เดียวกันทุกไบต์ ทีมจึงพัฒนาจากไฟล์ก่อน แล้วสลับมารับจริงได้โดยไม่แก้โค้ด
+
+view ต่อชุด — คืน 2 คอลัมน์ `message` + `update_on` (ตัวอย่าง; logic flag/`update_on` ผู้ใช้ออกแบบเอง):
+
+```sql
+CREATE OR REPLACE VIEW `databuffet-nonprd.<export_dataset>.fetch_order` AS
+SELECT
+  TO_JSON_STRING(STRUCT(
+    'order' AS `table`,
+    FORMAT_DATE('%F', DATE(t.update_on, 'Asia/Bangkok')) AS run_date,
+    t.record_status AS operation,                                   -- NEW / UPDATE / DELETE
+    STRUCT(t.company_source_id, t.Order_Type, t.Order_No, t.`No`) AS primary_key,  -- field PK ของชุดนั้น
+    IF(t.record_status = 'DELETE', NULL,
+       (SELECT AS STRUCT t.* EXCEPT (update_on, record_status))) AS data
+  )) AS message,
+  t.update_on
+FROM `databuffet-nonprd.<export_dataset>.order` AS t
+```
 
 **ตัวอย่างโค้ด** — วางเป็น 2 ไฟล์ในตัวแก้ไข inline (`requirements.txt` + `main.py`):
 
@@ -218,18 +246,16 @@ functions-framework
 
 ```python
 # main.py
-import json
 from google.cloud import bigquery, pubsub_v1
 import functions_framework
 
 PROJECT_ID = "databuffet-nonprd"
+EXPORT_DATASET = "<export_dataset>"   # dataset ที่เก็บ view fetch_<ชุด>
 
-# 1 ชุด = 1 topic: ตาราง export ใน BigQuery + primary key (key จริงกำหนดตอน port query)
-EXPORTS = {
-    "order": {"source": "<export_dataset>.order", "pk": ["company_id", "Order_No", "No"]},
-    "stk":   {"source": "<export_dataset>.stk",   "pk": ["company_id", "stkcode"]},
-    # ... ใส่ให้ครบ 14 ชุด ตามตาราง "รายชื่อ topic"
-}
+# 1 ชุด = 1 topic export-commission-<ชุด> = 1 view fetch_<ชุด>
+DATASETS = ["order", "invoice", "credit_note", "debit_note", "receipt", "chqri",
+            "status", "payment_method", "condition_payment", "company",
+            "sell", "warehouse", "stk", "fob"]
 
 bq_client = bigquery.Client()
 publisher = pubsub_v1.PublisherClient()
@@ -238,9 +264,9 @@ publisher = pubsub_v1.PublisherClient()
 @functions_framework.http
 def export_daily(request):
     published, failed = {}, []
-    for name, cfg in EXPORTS.items():
+    for name in DATASETS:
         try:
-            published[name] = export_one(name, cfg)
+            published[name] = export_one(name)
         except Exception as e:               # ชุดหนึ่งพัง ชุดอื่นยังส่งต่อได้
             failed.append(name)
             print(f"export {name} failed: {e}")
@@ -249,16 +275,16 @@ def export_daily(request):
     return f"published {published}", 200
 
 
-def export_one(name, cfg):
+def export_one(name):
     topic_path = publisher.topic_path(PROJECT_ID, f"export-commission-{name}")
 
     # 1) อ่าน watermark ล่าสุดของชุดนี้ จาก control table ของคุณ
     last_exported_at = get_last_watermark(name)
 
-    # 2) ดึงเฉพาะแถวที่เปลี่ยน — WHERE/flag column เป็นของคุณ ใส่ตัวอย่างไว้
+    # 2) ดึง message ของแถวที่เปลี่ยน — BigQuery สร้าง JSON มาให้แล้วใน view
     query = f"""
-        SELECT *
-        FROM `{PROJECT_ID}.{cfg['source']}`
+        SELECT message, update_on
+        FROM `{PROJECT_ID}.{EXPORT_DATASET}.fetch_{name}`
         WHERE update_on > @last_exported_at
     """
     job_config = bigquery.QueryJobConfig(
@@ -267,19 +293,11 @@ def export_one(name, cfg):
     )
     rows = bq_client.query(query, job_config=job_config).result()
 
-    # 3) แปลงเป็น message ตาม format ที่ตกลงกัน แล้ว publish
+    # 3) ส่งต่อ message ตามที่ได้ — ห้าม json.loads/json.dumps ใหม่ ไม่งั้นหน้าตา JSON เปลี่ยน
     futures = []
     latest_seen = last_exported_at
     for row in rows:
-        envelope = {
-            "table": name,
-            "run_date": str(row["update_on"].date()),
-            "operation": row["record_status"],       # "NEW"/"UPDATE"/"DELETE" จากตารางคุณ
-            "primary_key": {k: row[k] for k in cfg["pk"]},
-            "data": None if row["record_status"] == "DELETE" else dict(row.items()),
-        }
-        futures.append(publisher.publish(
-            topic_path, json.dumps(envelope, default=str).encode("utf-8")))
+        futures.append(publisher.publish(topic_path, row["message"].encode("utf-8")))
         latest_seen = max(latest_seen, row["update_on"])
 
     # 4) รอให้ publish จบจริงก่อนไปต่อ — ไม่รอจะเสี่ยงข้อความหาย
