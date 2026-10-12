@@ -47,7 +47,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('MIEyear')} AS mieyear,
     ${databuffet.functionData.cleanString('MIEtype')} AS mietype,
     ${databuffet.functionData.cleanString('MIEvnos')} AS mievnos,
-    ${databuffet.functionData.cleanString('MIEcus')} AS miecus,
+    IFNULL(${databuffet.functionData.cleanString('MIEcus')}, '') AS miecus,  -- PK column: '' not NULL, MERGE can't match NULL
     ${databuffet.functionData.castFloat64('MIErecDT3')} AS mierecdt3,
     ${databuffet.functionData.castFloat64('MIErecDT53')} AS mierecdt53,
     ${databuffet.functionData.castFloat64('MIErecDRND')} AS mierecdrnd,
@@ -93,7 +93,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('MIEyear')} AS mieyear,
     ${databuffet.functionData.cleanString('MIEtype')} AS mietype,
     ${databuffet.functionData.cleanString('MIEvnos')} AS mievnos,
-    ${databuffet.functionData.cleanString('MIEcus')} AS miecus,
+    IFNULL(${databuffet.functionData.cleanString('MIEcus')}, '') AS miecus,  -- PK column: '' not NULL, MERGE can't match NULL
     ${databuffet.functionData.castFloat64('MIErecDT3')} AS mierecdt3,
     ${databuffet.functionData.castFloat64('MIErecDT53')} AS mierecdt53,
     ${databuffet.functionData.castFloat64('MIErecDRND')} AS mierecdrnd,
@@ -139,7 +139,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('MIEyear')} AS mieyear,
     ${databuffet.functionData.cleanString('MIEtype')} AS mietype,
     ${databuffet.functionData.cleanString('MIEvnos')} AS mievnos,
-    ${databuffet.functionData.cleanString('MIEcus')} AS miecus,
+    IFNULL(${databuffet.functionData.cleanString('MIEcus')}, '') AS miecus,  -- PK column: '' not NULL, MERGE can't match NULL
     ${databuffet.functionData.castFloat64('MIErecDT3')} AS mierecdt3,
     ${databuffet.functionData.castFloat64('MIErecDT53')} AS mierecdt53,
     ${databuffet.functionData.castFloat64('MIErecDRND')} AS mierecdrnd,
@@ -185,7 +185,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('MIEyear')} AS mieyear,
     ${databuffet.functionData.cleanString('MIEtype')} AS mietype,
     ${databuffet.functionData.cleanString('MIEvnos')} AS mievnos,
-    ${databuffet.functionData.cleanString('MIEcus')} AS miecus,
+    IFNULL(${databuffet.functionData.cleanString('MIEcus')}, '') AS miecus,  -- PK column: '' not NULL, MERGE can't match NULL
     ${databuffet.functionData.castFloat64('MIErecDT3')} AS mierecdt3,
     ${databuffet.functionData.castFloat64('MIErecDT53')} AS mierecdt53,
     ${databuffet.functionData.castFloat64('MIErecDRND')} AS mierecdrnd,
@@ -231,7 +231,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('MIEyear')} AS mieyear,
     ${databuffet.functionData.cleanString('MIEtype')} AS mietype,
     ${databuffet.functionData.cleanString('MIEvnos')} AS mievnos,
-    ${databuffet.functionData.cleanString('MIEcus')} AS miecus,
+    IFNULL(${databuffet.functionData.cleanString('MIEcus')}, '') AS miecus,  -- PK column: '' not NULL, MERGE can't match NULL
     ${databuffet.functionData.castFloat64('MIErecDT3')} AS mierecdt3,
     ${databuffet.functionData.castFloat64('MIErecDT53')} AS mierecdt53,
     ${databuffet.functionData.castFloat64('MIErecDRND')} AS mierecdrnd,

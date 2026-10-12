@@ -164,6 +164,14 @@ rows. Deleting at `(type, vnos)` grain would drop **67,946 rows across 4,744 doc
 that the batch does not re-supply (measured 2026-09-10) — see
 [known-issues.md](../../operations/known-issues.md).
 
+**NULL in a `uniqueKey` column (2026-10-12)**: Dataform's incremental MERGE matches
+`uniqueKey` with `=`, so a row whose key column is NULL never matches and is
+re-inserted every run. `mie.miecus` (blank customer → `cleanString` → NULL) piled up
+98,474 duplicate rows, up to 219 copies each. Fix: key string columns use
+`IFNULL(cleanString(...), '')` — the one exception to the empty→NULL rule. `mie_dummy`
+has no blank `miecus`. Any other incremental table whose PK includes a column
+`cleanString` can null out has the same latent bug.
+
 **Accepted trade-off**: `pre_operations` and the body are statements in the same
 Dataform action, but the DELETE lands before the MERGE — if the MERGE fails after the
 DELETE, those documents are missing until the next run. The reverse (an INSERT that

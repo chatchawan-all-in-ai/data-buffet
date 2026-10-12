@@ -78,7 +78,9 @@ Side pipelines:
 ## Critical global conventions
 
 1. **Timezone**: always `Asia/Bangkok` (`CURRENT_DATE('Asia/Bangkok')`).
-2. **NULL policy**: empty string → NULL via `cleanString` everywhere.
+2. **NULL policy**: empty string → NULL via `cleanString` everywhere — except string
+   columns in an incremental `uniqueKey`, which use `IFNULL(cleanString(...), '')`
+   (MERGE can't match NULL; see `validated/validated-layer.md`, `mie.miecus`).
 3. **Config through `databuffet.*`** — no hardcoded dataset names/tags. The last
    holdout (`"mds_dataset"` as a literal in 36 dim files) was converted to
    `databuffet.MDS_DATASET` on 2026-08-26; there are now **zero** literals.

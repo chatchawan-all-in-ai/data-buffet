@@ -232,6 +232,23 @@
   ตรวจซ้ำได้ด้วย `for f in definitions/dimension/*.sqlx; do grep -q "schema:" "$f" || echo "$f"; done`
   (ตอนนี้ได้ 0 บรรทัด)
 
+- **2026-10-12 — `validated_mac5.mie` มีแถวซ้ำบน PK 98,474 แถว** (เจอตอน port query
+  commission) สาเหตุ: `miecus` เป็น `''` ที่ต้นทาง → `cleanString` ทำเป็น NULL → MERGE ของ
+  Dataform เทียบ `uniqueKey` ด้วย `=` และ `NULL = NULL` ไม่จริง จึง INSERT ใหม่ทุกคืน
+  (หน้าต่าง `BACKFILL_DAYS` อ่าน partition เมื่อวานซ้ำด้วย) — 3,339 PK ทุกตัวมี `miecus` NULL
+  ซ้ำสูงสุด 219 ชุด ตั้งแต่ 2026-05-11 ทำให้ join `mie` ด้วยเลขเอกสารแตกแถว
+  (order commission ของ ag01 ปี 2026 เกิน ~370,000 แถว) `mie_dummy` ไม่เป็น
+  **แก้**: `mie.sqlx` ใช้ `IFNULL(cleanString('MIEcus'), '') AS miecus` ทั้ง 5 บริษัท —
+  ยกเว้น hard rule ข้อ 2 เฉพาะคอลัมน์ string ใน `uniqueKey` ของตาราง incremental
+  ปลายทางไม่กระทบ: ที่ใช้ `miecus` มีแค่ `fact_mir_vs`/`fact_mir_rs` (`mir.mircus = mie.miecus`)
+  ซึ่งแถวลูกค้าว่างก็ join ไม่ติดทั้งก่อนและหลัง
+  **ต้องล้างข้อมูลเก่าครั้งเดียวด้วยมือ** (guard hook บล็อก DML): แปลง `miecus` NULL ที่ค้าง
+  เป็น `''` แล้วเหลือ 1 แถวต่อ PK — ไม่ล้าง = แถวเก่า NULL กับแถวใหม่ `''` ไม่ match
+  ซ้ำค้างไว้ ตาราง downstream (`dim_aging`, `dim_customer_grade`, `dim_group_customer_grade`,
+  `fact_mir_vs`, `fact_mir_rs`) rebuild ทุกคืน หายเอง
+  **บทเรียน**: incremental ที่ PK มีคอลัมน์ที่ `cleanString` ทำเป็น NULL ได้ จะซ้ำแบบนี้เงียบ ๆ
+  ตรวจด้วย `COUNT(*) - COUNT(DISTINCT TO_JSON_STRING(STRUCT(<pk>)))`
+
 ## การตัดสินใจเชิงออกแบบ
 
 - **2026-10-09 — Customer Report Info: สัญญาและลำดับ deploy**
