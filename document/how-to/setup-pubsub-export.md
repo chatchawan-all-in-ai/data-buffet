@@ -8,30 +8,37 @@
 
 ## ภาพรวม
 
-ทุกคืน หลัง Dataform nightly run เสร็จ ระบบจะดึง **เฉพาะแถวที่เปลี่ยน** จากตาราง
+ทุกเช้า 07:00 หลัง Dataform nightly run (06:00) เสร็จ ระบบจะดึง **เฉพาะแถวที่เปลี่ยน** จากตาราง
 export ทีละชุด แล้ว publish เข้า **topic ของชุดนั้น (1 query = 1 topic)** ทีมที่จะมาใช้
-ข้อมูล — ไม่ว่าอยู่ในบริษัทหรือนอกบริษัท — **ดึงข้อมูลด้วยวิธี pull เหมือนกันหมด**
-ไม่มี push/webhook
+ข้อมูล — ไม่ว่าอยู่ในบริษัทหรือนอกบริษัท — **รับข้อมูลแบบ push เหมือนกันหมด**:
+Pub/Sub ยิงทีละข้อความ (HTTPS POST) ไปที่ **endpoint ของทีมนั้นเอง** พร้อม OIDC token
+ที่ออกโดย service account ภายใน project เรา — **ไม่มี service account key ออกไปนอก
+project เลย** ทีมปลายทางไม่ต้องมีบัญชีหรือสิทธิ์อะไรใน `databuffet-nonprd`
 
 ```
-Dataform nightly run
+Dataform nightly run (06:00 เสร็จราว 06:08)
         │
         ▼
-Cloud Scheduler (03:30 ทุกคืน)
-        │  HTTP + OIDC
+Cloud Scheduler (07:00 ทุกเช้า)
+        │  HTTP + OIDC (default compute SA ต้องมี Cloud Run Invoker)
         ▼
 Cloud Function export_daily ── วนทีละชุด: query ตาราง export (update_on > watermark) ──▶ publish
         │
-        ├──▶ export-commission-order    ──▶ sub-tf-order    ─┐
-        ├──▶ export-commission-invoice  ──▶ sub-tf-invoice  ─┤
-        ├──▶ ...                        ──▶ ...             ─┼──▶ consumer ของ TF (โปรแกรมเดียว,
-        └──▶ export-commission-fob      ──▶ sub-tf-fob      ─┘     SA เดียว) ──▶ ตารางปลายทางของ TF
-            (14 topic)                      (14 sub ต่อ 1 ทีม)
+        ├──▶ export-commission-order    ──▶ sub-tf-order (push)    ─┐
+        ├──▶ export-commission-invoice  ──▶ sub-tf-invoice (push)  ─┤   HTTPS POST + OIDC token
+        ├──▶ ...                        ──▶ ...                    ─┼──▶ ของ sa-push-tf ──▶ endpoint ของ TF
+        └──▶ export-commission-fob      ──▶ sub-tf-fob (push)      ─┘   (ตรวจ token → upsert/delete
+            (14 topic)                      (14 sub ต่อ 1 ทีม)            → ตอบ 204) ──▶ ตารางปลายทางของ TF
 ```
+
+**จำนวน resource**: ส่วนกลาง (ทำครั้งเดียว) = topic 14 + Cloud Function 1 + Scheduler
+job 1 (ใช้ default compute SA ไม่สร้าง SA ใหม่) · ต่อ 1 ทีม = push subscription ตามจำนวน
+ชุดที่ได้รับ (TF = 14) + push service account ภายใน 1 ตัว (`sa-push-<ทีม>`, ไม่มี key)
++ alert policy 1
 
 **สิ่งที่เอกสารนี้ไม่ครอบคลุม** (ผู้ใช้ออกแบบเอง): logic การหา "แถวไหนเปลี่ยน" (query/table/view
 export + column `update_on` + flag สถานะ) — เอกสารนี้ครอบคลุมแค่ตัว Pub/Sub infra
-กับวิธีที่ทีมต่างๆ มาดึงข้อมูลออกไปใช้
+กับวิธีที่ทีมต่างๆ รับข้อมูลออกไปใช้
 
 ### ผู้รับผิดชอบ
 
@@ -40,9 +47,9 @@ export + column `update_on` + flag สถานะ) — เอกสารนี
 | query ต้นฉบับ 8 ไฟล์ (spec ของแต่ละชุดข้อมูล) | คุณแป้ง |
 | port T-SQL เป็นตาราง export บน BigQuery (+ `update_on`, flag) | Data Mart |
 | topic 14 อัน, Cloud Function, Cloud Scheduler, watermark | Data Mart |
-| subscription ของ TF 14 อัน + service account ของ TF + สิทธิ์ | Data Mart |
-| consumer code | Data Mart เขียน แล้วส่งให้ TF |
-| รัน consumer, เก็บ credential ของ SA, ดูแลตารางปลายทาง | ทีม TF |
+| push subscription ของ TF 14 อัน + push service account ภายใน (`sa-push-tf`) + สิทธิ์ | Data Mart |
+| ตัวอย่างโค้ด endpoint รับ push | Data Mart เขียน แล้วส่งให้ TF |
+| endpoint HTTPS (รัน + ดูแล), ตรวจ token, ดูแลตารางปลายทาง | ทีม TF |
 
 ### รายชื่อ topic (1 query = 1 topic)
 
@@ -72,8 +79,10 @@ export + column `update_on` + flag สถานะ) — เอกสารนี
 - 1 topic มีได้ **หลาย subscription** — ทีมละ 1 อัน ทุกทีมได้ข้อความครบของตัวเอง
 - ชื่อ subscription **ห้ามซ้ำทั้ง project** — ตั้ง `sub-tf` ซ้ำ 14 topic ไม่ได้ จึงใช้
   `sub-<ทีม>-<ชุด>`
-- "ตัวตนของ consumer" (เทียบ consumer group ของ Kafka) คือ **service account** ไม่ใช่
-  subscription — TF มี SA เดียว ได้สิทธิ์บน sub ทั้ง 14 อัน
+- แบบ push: Pub/Sub เป็นฝ่ายเรียก endpoint ของทีม — ดูรหัสตอบกลับที่ใช้ ack ใน
+  [รูปแบบ push body](#รูปแบบ-push-body-สิ่งที่-endpoint-ได้รับ) ด้านล่าง ทีมไม่ต้องเข้ามาดึง
+  และไม่ต้องมีสิทธิ์ใน project เรา; endpoint รู้ว่าข้อความมาจากเราจริงด้วยการตรวจ
+  OIDC token ที่ Pub/Sub แนบมา (ออกในนาม `sa-push-<ทีม>` ของเรา)
 
 ## Message format (มาตรฐานเดียว ทุก topic ทุกทีมใช้ร่วมกัน)
 
@@ -103,7 +112,7 @@ query ต้อง drive จากตาราง CDC/flag เป็นหลั
 ⚠️ **ทีมใหม่ที่ต่อครั้งแรก**: เพราะ export เป็น **delta อย่างเดียว** (ไม่ใช่ full dump
 ทุกวัน) ทีมใหม่จะได้แค่ข้อมูลที่เปลี่ยนตั้งแต่วันที่เขาต่อ subscription เท่านั้น **ต้องรัน
 export แบบไม่กรอง `update_on` (เอาทั้งหมดตั้งแต่แรกจนปัจจุบัน) ให้ 1 รอบ** ก่อนเข้าโหมด
-delta ปกติ (ขั้น 13)
+delta ปกติ (ขั้น 14)
 
 ## Prerequisites
 
@@ -161,8 +170,8 @@ service account) — จดชื่อเต็มไว้ใช้ในข�
 
 **ทำไม**: ตัดสินใจให้ service ภายใน GCP ที่คุยกันเอง (Cloud Scheduler → Cloud
 Function → BigQuery/Pub-Sub) **ใช้ default service account ร่วมกัน** ไม่สร้าง
-custom SA แยก เพื่อลดขั้นตอน setup — ต่างจาก service account ของทีมที่มาใช้ข้อมูล
-ในส่วน B ที่ยังคง **แยกต่อทีมเสมอ** (เรื่องนั้นกระทบความปลอดภัยข้ามทีมโดยตรง)
+custom SA แยก เพื่อลดขั้นตอน setup — ต่างจาก push service account ในส่วน B ที่ยังคง
+**แยกต่อทีมเสมอ** (endpoint ของแต่ละทีมใช้อีเมล SA นี้ยืนยันว่าข้อความมาถึงตัวเองจริง)
 
 ### 5. ให้สิทธิ์ default service account
 
@@ -178,7 +187,8 @@ custom SA แยก เพื่อลดขั้นตอน setup — ต่�
 (Google เปลี่ยนพฤติกรรม default นี้ไปแล้ว) ต้องเพิ่มเอง — Publisher ให้ระดับ project
 ครั้งเดียวแทนที่จะให้ทีละ topic 14 ครั้ง (SA นี้เป็นของภายใน Data Mart อยู่แล้ว),
 Job User เพื่อให้รัน query ได้, Data Viewer เพื่ออ่านตาราง, Data Editor เพื่อเขียน
-watermark ขาดตัวไหน Cloud Function จะ permission denied
+watermark ขาดตัวไหน Cloud Function จะ permission denied — สิทธิ์ **Cloud Run Invoker**
+ให้ทำในขั้น 7 เพราะต้อง deploy function ก่อนถึงจะมี service ให้ผูกสิทธิ์
 
 ### 6. Deploy Cloud Function
 
@@ -286,72 +296,119 @@ def export_one(name, cfg):
 (อัปเดตก่อนแล้ว publish fail กลางทาง = รอบถัดไปข้ามแถวที่ยังไม่ถูกส่งจริงไปเลย)
 watermark แยกต่อชุด — ชุดที่พังรอบนี้จะส่งซ้ำรอบหน้าเอง ไม่กระทบชุดที่ผ่านแล้ว
 
-### 7. ทดสอบ trigger มือ
+### 7. ให้สิทธิ์ Cloud Run Invoker กับ SA ที่ Scheduler ใช้เรียก function
+
+**ทำ**: เมนู ☰ → **Cloud Run** → service `databuffet-export-publisher` (function 2nd gen
+คือ Cloud Run service ชื่อเดียวกัน) → tab **SECURITY** หรือ **PERMISSIONS → ADD
+PRINCIPAL** → principal = default compute service account จากขั้น 4 → Role: **Cloud Run
+Invoker** → **SAVE** — ให้ที่ **ระดับ service นี้เท่านั้น ไม่ใช่ระดับ project**
+
+**ทำไม**: function ที่ติ๊ก Require authentication จะรับเฉพาะคนที่มี `roles/run.invoker`
+บน service นั้น — Cloud Scheduler ส่ง OIDC token ในนาม default compute SA (ขั้น 9)
+ซึ่ง **ไม่มี** role นี้มาแต่แรก ถ้าข้ามขั้นนี้ Scheduler จะได้ **403 ทุกรอบที่เรียก** ให้ระดับ service
+เพื่อให้ SA นี้เรียกได้แค่ function นี้ ไม่ใช่ทุก Cloud Run service ใน project
+
+### 8. ทดสอบ trigger มือ
 
 **ทำ**: หน้า Cloud Function → tab **TESTING → TEST THE FUNCTION** → เช็คว่า
 message เข้า `sub-test-poc` จริงไหม (ทำซ้ำแบบขั้น 3.3) และ response ไม่มีชุดไหนใน
 `failed`
 
 **ทำไม**: ยืนยันว่า Cloud Function ทำงานจริง (query ได้ + publish ได้) ก่อนตั้งให้
-รันอัตโนมัติทุกคืน — ถ้าตั้ง Scheduler ไปเลยแล้วพัง จะไม่รู้ว่าพังตรงไหนจนกว่าจะถึง
-กลางคืน
+รันอัตโนมัติทุกวัน — ⚠️ ปุ่ม test ใน console เรียกด้วยตัวตน **ของคนที่กด** ไม่ใช่ของ SA
+จึง **ผ่าน** แม้ลืมขั้น 7 ต้องทดสอบเส้นทางจริงอีกรอบด้วย **FORCE RUN** ในขั้น 9
 
-### 8. ตั้ง Cloud Scheduler ให้รันอัตโนมัติทุกคืน
+### 9. ตั้ง Cloud Scheduler ให้รันอัตโนมัติทุกวัน 07:00
 
 **ทำ**: เมนู ☰ → **Cloud Scheduler → CREATE JOB**
 - Name: `databuffet-export-trigger`, Region: `us-central1`
-- Frequency (cron): `30 3 * * *`, Timezone: `Asia/Bangkok`
+- Frequency (cron): `0 7 * * *`, Timezone: `Asia/Bangkok`
 - Target type: **HTTP** → URL: จาก Cloud Function (tab **TRIGGER**)
 - Auth header: **Add OIDC token** → Service account: default compute service
-  account (ตัวเดียวกับขั้น 4)
-- **Configure optional settings** → Attempt deadline: **30m** → **CREATE**
+  account (ตัวเดียวกับขั้น 4 ที่ได้ Cloud Run Invoker ในขั้น 7)
+- **Configure optional settings** → Attempt deadline: **30m** → ปล่อย retry settings
+  เป็น default → **CREATE**
+- กด **FORCE RUN** ที่ job แล้วดูคอลัมน์ result / log — ต้องสำเร็จและไม่มี 403
 
-**ทำไม**: ทำให้ Cloud Function รันอัตโนมัติทุกคืนโดยไม่ต้องมีคนกดเอง — เวลาต้องตั้ง
-**หลัง** Dataform nightly run (`validated`/`validated_full`) เสร็จจริง เช็คจาก
-`check-runs` skill ก่อนตั้ง ไม่ใช่เดา ส่วน attempt deadline default 3 นาที ถ้า
-function รันนานกว่านั้น Scheduler จะขึ้นว่า fail ทั้งที่ function ยังทำงานอยู่
+**ทำไม**: ทำให้ Cloud Function รันอัตโนมัติทุกวันโดยไม่ต้องมีคนกดเอง — 07:00 คือ **หลัง**
+Dataform nightly (`daily_process` 06:00 เสร็จราว 06:08 เช็คจาก `check-runs` skill)
+ส่วน attempt deadline default 3 นาที ถ้า function รันนานกว่านั้น Scheduler
+จะขึ้นว่า fail ทั้งที่ function ยังทำงานอยู่ · FORCE RUN ใช้ OIDC token ของ SA จริง จึงจับ
+403 จากการลืมขั้น 7 ได้ (ต่างจากปุ่ม test ในขั้น 8)
 
-### 9. ลบ subscription ทดสอบ
+### 10. ลบ subscription ทดสอบ
 
 **ทำ**: **Pub/Sub → Subscriptions → sub-test-poc → ⋮ → Delete**
 
 **ทำไม**: เป็น subscription ที่สร้างไว้ทดสอบเท่านั้น ปล่อยไว้จะมีข้อความ order สะสม
-ทุกคืนและสร้างความสับสนว่าเป็นของทีมจริง
+จากการ export และสร้างความสับสนว่าเป็นของทีมจริง
 
 ---
 
 ## ส่วน B — ต่อทีมที่มาใช้ข้อมูล (ทำซ้ำทุกครั้งที่มีทีมใหม่)
 
-ทุกทีม — ในบริษัทหรือนอกบริษัท — ใช้ขั้นตอนเดียวกันนี้เสมอ (pull เท่านั้น)
+ทุกทีม — ในบริษัทหรือนอกบริษัท — ใช้ขั้นตอนเดียวกันนี้เสมอ (push ไปที่ endpoint ของทีม)
 ตัวอย่างด้านล่างใช้ทีม TF (`<ทีม>` = `tf`)
 
-### 10. สร้าง subscription ให้ทีมนั้น — 1 อันต่อ 1 topic ที่ทีมได้รับ
+### 11. ขอ HTTPS endpoint จากทีมนั้น
 
-**ทำ**: **Pub/Sub → Topics → `export-commission-<ชุด>` → CREATE SUBSCRIPTION** →
-ID: `sub-<ทีม>-<ชุด>` (เช่น `sub-tf-order`) → Delivery: **Pull** → **CREATE**
+**ทำ**: ขอ URL ของ endpoint ที่จะรับข้อมูลจากทีม (เช่น `https://<โดเมนของทีม>/pubsub`)
+endpoint เดียวรับได้ทุกชุด (แยกชุดด้วย field `table` ใน message) — เงื่อนไขของ endpoint:
+- เป็น **HTTPS** ที่มี certificate ถูกต้อง และเปิดให้ Pub/Sub ของ Google เรียกจาก internet ได้
+  (ถ้าทีมใช้ GCP จะเป็น Cloud Run ก็ได้)
+- รับ `POST` ได้หลาย request พร้อมกัน และตอบภายในไม่กี่วินาที
+- ถ้าใช้ Cloud Run ให้ทีมส่ง **Service URL** จากหน้า service มาด้วย เช่น
+  `https://service.run.app` — ใช้เป็น audience ในขั้น 13 แม้ endpoint จะเป็น
+  `https://service.run.app/pubsub` หรือใช้โดเมนของทีมเอง
+
+**ทำไม**: แบบ push ทีมเป็นฝ่ายเปิดประตูรับ เราเป็นฝ่ายส่ง — ทีมจึงไม่ต้องมีบัญชีหรือ key
+ใดๆ ของ project เรา ไม่มี secret อายุยาวต้องส่งข้ามองค์กร ถ้าเลิกส่งให้ทีมนี้ก็แค่ลบ sub ของเขา
+
+### 12. สร้าง push service account ภายในให้ทีมนั้น (1 ทีม = 1 SA, ไม่สร้าง key)
+
+**ทำ**:
+1. **IAM & Admin → Service Accounts → CREATE SERVICE ACCOUNT** → name: `sa-push-<ทีม>`
+   → **CREATE AND CONTINUE** → ไม่ต้องให้ role ใดๆ ระดับ project → **DONE**
+   **ห้ามกด Keys → ADD KEY** — SA นี้ใช้แค่ภายใน project
+2. เปิด `sa-push-<ทีม>` → tab **PERMISSIONS → GRANT ACCESS** → principal = Pub/Sub
+   service agent `service-<PROJECT_NUMBER>@gcp-sa-pubsub.iam.gserviceaccount.com`
+   → Role: **Service Account Token Creator** → **SAVE**
+3. ถ้า endpoint เป็น **Cloud Run** ให้ทีมเปิด **Cloud Run ใน project ของทีม** → service
+   ที่รับ push → **PERMISSIONS → ADD PRINCIPAL** → principal =
+   `sa-push-<ทีม>@databuffet-nonprd.iam.gserviceaccount.com` → Role: **Cloud Run Invoker**
+   → **SAVE** — ให้เฉพาะ service ที่รับ push
+
+**ทำไม**: Pub/Sub แนบ OIDC token ที่ออกในนาม SA นี้ไปกับทุก request ที่ยิงไป endpoint ของทีม
+— ทีมตรวจลายเซ็นของ Google + อีเมล SA + audience ก็รู้ว่าข้อความมาจากเราจริง โดยไม่ต้อง
+มีอะไรของเราอยู่ในมือ · Token Creator ให้ที่ **ระดับ SA นี้** (ไม่ใช่ project) เพื่อให้ Pub/Sub
+ออก token ในนาม SA นี้ได้ (project ที่สร้างก่อน 8 เม.ย. 2021 ขาดไม่ได้ ใหม่กว่านั้นใส่ไว้ก็ไม่เสียหาย)
+· แยก SA ต่อทีม เพื่อให้แต่ละทีมเช็คอีเมลของตัวเอง และปิดทีมใดทีมหนึ่งได้ไม่กระทบทีมอื่น
+· คนที่จะสร้าง sub ในขั้น 13 ต้องมีสิทธิ์ใช้ SA นี้ (Service Account User — Owner มีอยู่แล้ว)
+· Cloud Run ตรวจสิทธิ์ Invoker ก่อนส่ง request เข้า handler ถ้าข้ามข้อ 3 จะได้ 403
+แม้ token ถูกต้อง — ดู [การต่อ Pub/Sub กับ Cloud Run](https://docs.cloud.google.com/run/docs/tutorials/pubsub)
+
+### 13. สร้าง push subscription ให้ทีมนั้น — 1 อันต่อ 1 topic ที่ทีมได้รับ
+
+**ทำ**: **Pub/Sub → Topics → `export-commission-<ชุด>` → CREATE SUBSCRIPTION**
+- ID: `sub-<ทีม>-<ชุด>` (เช่น `sub-tf-order`)
+- Delivery type: **Push** → Endpoint URL: URL จากขั้น 11
+- ติ๊ก **Enable authentication** → Service account: `sa-push-<ทีม>` (ขั้น 12) →
+  Audience: ถ้า endpoint เป็น **Cloud Run** ใส่ **Service URL** จากขั้น 11
+  (`https://service.run.app` ไม่รวม `/pubsub`); endpoint HTTPS อื่นใช้ endpoint URL
+  — ให้ทีมใช้ค่าเดียวกันตรวจ token
+- ปล่อย Acknowledgement deadline, Retry policy และ Message retention เป็น **default**
+  → **CREATE**
+
 ทำซ้ำทุก topic ที่ทีมนั้นได้รับ (TF ได้ครบ 14 → 14 อัน; ทีมที่ได้บางชุด สร้างเฉพาะชุดนั้น)
 
-**ทำไม**: subscription คือ "ตัวชี้ว่าอ่านถึงไหน" ส่วนตัวของแต่ละทีมบน topic นั้น — ทีมนี้
-ดึงช้า/ล่ม ไม่กระทบทีมอื่นที่ต่อ topic เดียวกัน 1 sub ผูกได้ 1 topic และชื่อห้ามซ้ำ
-ทั้ง project จึงต้องมีชื่อชุดต่อท้าย
+**ทำไม**: subscription คือ "ตัวชี้ว่าส่งถึงไหน" ส่วนตัวของแต่ละทีมบน topic นั้น — endpoint
+ทีมนี้ล่ม/ตอบช้า ไม่กระทบทีมอื่นที่ต่อ topic เดียวกัน 1 sub ผูกได้ 1 topic และชื่อห้ามซ้ำ
+ทั้ง project จึงต้องมีชื่อชุดต่อท้าย · ไม่ต้องให้สิทธิ์ Subscriber กับใครเลย เพราะทีมไม่ได้
+เข้ามาดึงเอง · Cloud Run ต้องใช้ Service URL เป็น audience แม้ POST จะส่งไปที่ path
+`/pubsub` — ดู [ข้อกำหนด audience ของ Cloud Run](https://docs.cloud.google.com/run/docs/authenticating/service-to-service)
+· ข้อความที่ส่งไม่สำเร็จเก็บไว้ได้ **7 วัน** ตาม default หลังจากนั้นหาย (เฝ้าด้วยขั้น 15)
 
-### 11. สร้าง service account ให้ทีมนั้น (1 ทีม = 1 SA)
-
-**ทำ**: **IAM & Admin → Service Accounts → CREATE SERVICE ACCOUNT** → name:
-`sa-consumer-<ทีม>`
-
-**ทำไม**: SA คือตัวตนของทีม (เทียบ consumer group ของ Kafka) — ทีมมี SA เดียว key
-ไฟล์เดียว ใช้ดึงได้ทุก sub ของตัวเอง และตัด/จำกัดสิทธิ์ทีมนี้ได้โดยไม่กระทบทีมอื่น
-
-### 12. ให้สิทธิ์เฉพาะ subscription ของทีมนั้น
-
-**ทำ**: หน้า `sub-<ทีม>-<ชุด>` → **PERMISSIONS → ADD PRINCIPAL** → service account
-จากขั้น 11 → Role: **Pub/Sub Subscriber** → **SAVE** ทำซ้ำทุก sub จากขั้น 10
-
-**ทำไม**: จำกัดสิทธิ์ให้แคบที่สุด — ทีมนี้ดึงได้แค่ sub ของตัวเอง **ห้ามให้ Subscriber
-ระดับ project** เพื่อลดงาน เพราะทีมนั้นจะดึง sub ของทีมอื่นได้ด้วย
-
-### 13. Backfill ให้ทีมใหม่ (ครั้งแรกที่ต่อเข้ามาเท่านั้น)
+### 14. Backfill ให้ทีมใหม่ (ครั้งแรกที่ต่อเข้ามาเท่านั้น)
 
 **ทำ**: หลังสร้าง sub ครบแล้ว รัน export แบบไม่กรอง `update_on` (ดึงทั้งหมดตั้งแต่แรก
 จนปัจจุบัน) 1 รอบ ก่อนให้ Cloud Scheduler เดินตามปกติ
@@ -361,80 +418,118 @@ backfill ก่อน — ข้อความ publish เข้า topic จ�
 ทีมใหม่ ทีมเดิมจึงได้ข้อมูลซ้ำด้วย ซึ่งไม่เพี้ยนเพราะ consumer เป็น upsert/delete ตาม key
 แต่ควรแจ้งทีมเดิมก่อนว่ารอบนั้นข้อความจะเยอะ (ทีม TF เป็นทีมแรก จึงไม่มีผลกับใคร)
 
-### 14. ตั้ง alert เมื่อข้อความค้าง
+### 15. ตั้ง alert เมื่อข้อความค้าง
 
 **ทำ**: **Monitoring → Alerting → CREATE POLICY** → metric
 `Pub/Sub Subscription → Unacked messages` (`num_undelivered_messages`) → filter
 `subscription_id` starts with `sub-<ทีม>-` → Group by `subscription_id` → threshold
 ตามที่เหมาะสม → ส่งแจ้งเตือนทาง channel ของทีม
 
-**ทำไม**: policy เดียวครอบ sub ของทีมนั้นทั้ง 14 อัน ไม่ต้องตั้งทีละอัน — ข้อความเก็บ
-ไว้ 7 วัน ถ้าทีมไม่ได้ดึงนานเกินนั้นข้อมูลจะหาย ต้องรู้ก่อน
+**ทำไม**: policy เดียวครอบ sub ของทีมนั้นทั้ง 14 อัน ไม่ต้องตั้งทีละอัน — ข้อความค้าง =
+endpoint ของทีมล่มหรือรับข้อความไม่สำเร็จ ข้อความเก็บไว้ 7 วัน ถ้า endpoint ไม่กลับมารับนาน
+เกินนั้นข้อมูลจะหาย ต้องรู้ก่อน
 
-### 15. ส่ง handover package ให้ทีม
+### 16. ส่ง handover package ให้ทีม
 
-ส่งให้ครบ 5 อย่าง:
-1. รายชื่อ subscription ของทีม (`sub-<ทีม>-<ชุด>` ทุกชุดที่ได้รับ)
-2. Credentials ของ service account จากขั้น 11 (ส่งผ่านช่องทาง secure เท่านั้น)
-3. Message format (ตารางด้านบน)
+ส่งให้ครบ 5 อย่าง (ไม่มีอะไรเป็น secret — ส่งช่องทางปกติได้):
+1. รายชื่อชุดข้อมูลที่จะถูก push ไป endpoint ของทีม (`sub-<ทีม>-<ชุด>` ทุกชุดที่ได้รับ)
+2. ค่าที่ endpoint ต้องใช้ตรวจ token: อีเมล `sa-push-<ทีม>@databuffet-nonprd.iam.gserviceaccount.com`
+   และ audience ที่ตั้งในขั้น 13 (Cloud Run = Service URL, HTTPS อื่น = endpoint URL)
+3. Message format (ตารางด้านบน) + รูปแบบ push body (ด้านล่าง)
 4. รายชื่อชุดข้อมูล + primary key ของแต่ละชุด
-5. consumer code (Data Mart เขียนให้ — ตัวอย่างด้านล่าง)
+5. ตัวอย่างโค้ด endpoint (Data Mart เขียนให้ — ตัวอย่างด้านล่าง)
 
 **ทำไม**: เป็น handover package มาตรฐานเดียว ใช้ซ้ำได้กับทุกทีมที่มาใหม่ ไม่ต้อง
-คิดใหม่ทุกครั้ง
+คิดใหม่ทุกครั้ง — และไม่มี service account key หรือ credential ใดๆ ของเราออกไปนอก project
 
-### ตัวอย่างโค้ด consumer (ฝั่งทีมที่มาใช้ — โปรแกรมเดียว ดึงทุก sub)
+### รูปแบบ push body (สิ่งที่ endpoint ได้รับ)
+
+Pub/Sub ยิง `POST` มาพร้อม header `Authorization: Bearer <OIDC token>` และ body JSON:
+
+```json
+{
+  "message": {
+    "data": "<base64 ของ JSON ตาม Message format ด้านบน>",
+    "attributes": {},
+    "messageId": "1234567890",
+    "publishTime": "2026-10-13T00:05:12.345Z"
+  },
+  "subscription": "projects/databuffet-nonprd/subscriptions/sub-tf-order"
+}
+```
+
+- `message.data` = message format ด้านบน (JSON) ที่เข้ารหัส **base64** — ต้อง decode ก่อน
+  ค่าในตัวอย่างเป็น placeholder ต้องแทนด้วย base64 ของ JSON จริงก่อนใช้
+- `message.attributes` = ตอนนี้ว่าง (publisher ไม่ได้ใส่)
+- รหัสตอบกลับที่ Pub/Sub ถือว่า **ack** คือ `102`, `200`, `201`, `202`, `204` —
+  ตัวอย่าง endpoint ใช้ **204 หลังเขียนสำเร็จ** รหัสอื่นหรือเกิน ack deadline = ส่งใหม่
+  ตามค่า default ของ subscription ดู [รหัสตอบกลับของ Pub/Sub push](https://docs.cloud.google.com/pubsub/docs/push#how_push_endpoints_receive_messages)
+
+### ตัวอย่างโค้ด endpoint (ฝั่งทีมที่มาใช้ — endpoint เดียว รับทุกชุด)
 
 ```python
-# pip install google-cloud-pubsub
+# pip install flask google-auth requests cachecontrol
+import base64
 import json
-from concurrent.futures import TimeoutError
-from google.cloud import pubsub_v1
-from google.oauth2 import service_account
+import cachecontrol
+import requests
+from flask import Flask, request
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 
-PROJECT_ID = "databuffet-nonprd"
-TEAM = "tf"
-KEY_FILE = "sa-consumer-tf.json"   # key ของ SA ที่ Data Mart ส่งให้ทางช่องทางปลอดภัย
-DATASETS = ["order", "invoice", "credit_note", "debit_note", "receipt", "chqri",
-            "status", "payment_method", "condition_payment", "company",
-            "sell", "warehouse", "stk", "fob"]   # ชุดใหม่ = เพิ่มชื่อที่นี่บรรทัดเดียว
+AUDIENCE = "https://service.run.app"   # ตรงกับ audience ที่ Data Mart ตั้งใน sub
+PUSH_SA = "sa-push-tf@databuffet-nonprd.iam.gserviceaccount.com"
 
-creds = service_account.Credentials.from_service_account_file(KEY_FILE)
-subscriber = pubsub_v1.SubscriberClient(credentials=creds)
+app = Flask(__name__)
+_google_request = google_requests.Request(
+    session=cachecontrol.CacheControl(requests.Session())
+)
 
 
-def callback(message):
-    env = json.loads(message.data.decode("utf-8"))
+@app.post("/pubsub")
+def receive():
+    # 1) ตรวจว่า request มาจาก Pub/Sub ของ Data Mart จริง (ลายเซ็น Google + audience + อีเมล SA)
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return "", 401
+    try:
+        claims = id_token.verify_oauth2_token(auth[7:], _google_request, audience=AUDIENCE)
+    except ValueError:
+        return "", 401
+    if claims.get("email") != PUSH_SA or not claims.get("email_verified"):
+        return "", 403
+
+    # 2) decode message
+    msg = request.get_json()["message"]
+    env = json.loads(base64.b64decode(msg["data"]))
     table, op, pk = env["table"], env["operation"], env["primary_key"]
+
+    # 3) เขียนลงปลายทางตาม primary key แล้วค่อย ack
     try:
         if op == "DELETE":
             delete_row(table, pk)
         else:                       # NEW กับ UPDATE ทำเหมือนกัน = upsert
             upsert_row(table, pk, env["data"])
-        message.ack()               # ack หลังเขียนสำเร็จเท่านั้น
     except Exception as e:
-        message.nack()              # ไม่ ack → Pub/Sub ส่งมาใหม่
-        print(f"nack {table} {op} {pk}: {e}")
+        print(f"retry {table} {op} {pk}: {e}")
+        return "", 500              # ไม่ ack → Pub/Sub ส่งมาใหม่ตาม backoff
+    return "", 204                  # ack หลังเขียนสำเร็จเท่านั้น
 
 
 def upsert_row(table, pk, data): ...   # ทีมปลายทางเขียนลงฐานข้อมูลของตัวเอง ตาม key
 def delete_row(table, pk): ...
-
-
-flow = pubsub_v1.types.FlowControl(max_messages=100)
-futures = [
-    subscriber.subscribe(subscriber.subscription_path(PROJECT_ID, f"sub-{TEAM}-{d}"),
-                         callback=callback, flow_control=flow)
-    for d in DATASETS
-]
-with subscriber:
-    for f in futures:
-        try:
-            f.result(timeout=600)   # ดึง 10 นาทีแล้วหยุด หรือเอา timeout ออกให้รันตลอด
-        except TimeoutError:
-            f.cancel()
-            f.result()
 ```
+
+ตั้ง `AUDIENCE` ให้ตรงกับค่าที่ได้รับใน handover (ขั้น 16): ตัวอย่างใช้ Cloud Run
+Service URL; ถ้าเป็น HTTPS endpoint อื่น ให้เปลี่ยนเป็น endpoint URL ที่ตั้งในขั้น 13
+ตัวตรวจ token ใช้ CacheControl cache certificate ตาม HTTP expiry โดยยังตรวจลายเซ็น,
+audience และอีเมล SA ทุก request — ดู [คำแนะนำ cache ของ google-auth](https://google-auth.readthedocs.io/en/latest/reference/google.oauth2.id_token.html)
+
+จุดที่พลาดบ่อย: **ห้ามข้ามการตรวจ token** (endpoint เปิดบน internet ใครก็ยิงข้อมูลปลอมเข้ามาได้)
+และ **ack หลังเขียนสำเร็จเท่านั้น** (ตอบก่อนแล้วเขียนพัง = ข้อความหายเพราะ Pub/Sub ถือว่า ack แล้ว)
+ถ้า body/base64/JSON หรือ field ที่จำเป็นอ่านไม่ได้ ให้ตอบรหัสที่ไม่ ack (ดู "รูปแบบ push body")
+งานเขียนแต่ละข้อความควรเสร็จในไม่กี่วินาที — ถ้าช้ากว่า ack deadline Pub/Sub จะส่งซ้ำทั้งที่
+ข้อความแรกยังทำอยู่
 
 ⚠️ Pub/Sub การันตีแค่ "ส่งอย่างน้อย 1 ครั้ง" (at-least-once) และไม่เรียงลำดับ —
 handler ต้อง idempotent (upsert/delete ตาม primary key ปลอดภัยอยู่แล้ว) ทุกข้อความเป็น
@@ -448,17 +543,26 @@ handler ต้อง idempotent (upsert/delete ตาม primary key ปลอ�
 - [ ] สร้าง topic `export-commission-<ชุด>` ครบ 14 อัน (ไม่มี default subscription ติดมา)
 - [ ] ทดสอบ publish/pull มือผ่านแล้ว (ขั้น 3)
 - [ ] Default compute service account มี Pub/Sub Publisher + BigQuery Job User
-      (project), BigQuery Data Viewer (dataset ต้นทาง/export), BigQuery Data Editor
-      (dataset watermark)
-- [ ] Cloud Function deploy แล้ว (timeout 1800s) และทดสอบ trigger มือผ่าน (ขั้น 7)
-- [ ] Cloud Scheduler ตั้งเวลาไว้ **หลัง** Dataform nightly run เสร็จจริง (เช็คจาก
-      `check-runs` ไม่ใช่เดา), attempt deadline 30m
+      (project), BigQuery Data Viewer (dataset ต้นทาง/export),
+      BigQuery Data Editor (dataset watermark)
+- [ ] Cloud Function deploy แล้ว (timeout 1800s) และทดสอบ trigger มือผ่าน (ขั้น 8)
+- [ ] Default compute SA ได้ **Cloud Run Invoker บน service `databuffet-export-publisher`**
+      (ระดับ service ไม่ใช่ project — ขั้น 7)
+- [ ] Cloud Scheduler `0 7 * * *` Asia/Bangkok (**หลัง** Dataform nightly 06:00 เสร็จจริง
+      เช็คจาก `check-runs` ไม่ใช่เดา), attempt deadline 30m, retry settings เป็น default,
+      **FORCE RUN แล้วไม่ได้ 403** (ปุ่ม test ของ function ไม่นับ)
 - [ ] ลบ `sub-test-poc` แล้ว
-- [ ] ต่อทีมใหม่: sub `sub-<ทีม>-<ชุด>` ครบทุกชุดที่ได้รับ + SA 1 ตัวต่อทีม + Subscriber
-      ทีละ sub (ไม่ใช่ระดับ project)
+- [ ] ต่อทีมใหม่: ได้ HTTPS endpoint จากทีมแล้ว
+- [ ] ต่อทีมใหม่: `sa-push-<ทีม>` (ไม่มี key) + Pub/Sub service agent เป็น Service Account
+      Token Creator บน SA นั้น
+- [ ] ต่อทีมใหม่ที่ใช้ Cloud Run: `sa-push-<ทีม>` ได้ Cloud Run Invoker บน service
+      ที่รับ push ใน project ของทีม (ขั้น 12.3)
+- [ ] ต่อทีมใหม่: push sub `sub-<ทีม>-<ชุด>` ครบทุกชุดที่ได้รับ — authentication =
+      `sa-push-<ทีม>` + audience ตรงกับ handover (Cloud Run = Service URL,
+      HTTPS อื่น = endpoint URL), acknowledgment/retry settings เป็น default
 - [ ] ต่อทีมใหม่: backfill แบบไม่กรอง `update_on` 1 รอบก่อนเข้าโหมด delta ปกติ
 - [ ] ต่อทีมใหม่: alert backlog 1 policy ครอบ `sub-<ทีม>-*`
-- [ ] ส่ง handover package ครบ 5 อย่าง
+- [ ] ส่ง handover package ครบ 5 อย่าง (ไม่มี SA key)
 
 ## งานที่ยังไม่ปิด (นอกเอกสารนี้)
 

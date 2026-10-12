@@ -33,7 +33,7 @@
 
 | งาน | Skill | เอกสาร |
 |---|---|---|
-| Setup Pub/Sub ส่งข้อมูลออกให้ระบบ/ทีมอื่น (POC) | — | [setup-pubsub-export.md](setup-pubsub-export.md) |
+| Setup Pub/Sub ส่งข้อมูลออกให้ระบบ/ทีมอื่น | — | [setup-pubsub-export.md](setup-pubsub-export.md) |
 
 ## ตรวจ / debug
 
