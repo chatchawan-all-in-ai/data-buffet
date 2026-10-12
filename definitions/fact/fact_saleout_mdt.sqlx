@@ -26,7 +26,7 @@ js {
     const DimProductMdtTableRef = `${DimProductMdtTable.database}.${DimProductMdtTable.schema}.${DimProductMdtTable.name}`;
 
 
-const DimProductMktTable = {
+    const DimProductMktTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_product_mkt",
@@ -52,16 +52,10 @@ WITH mkt_group AS (
 
 ), waiting_mkt AS (
 
-  -- แถว dummy สำหรับสินค้าที่ยังไม่รู้กลุ่มการตลาด (999 / Waiting Master)
-  -- มีอยู่ใน dim_product_mkt อยู่แล้วแต่เดิมไม่มีใครถูกส่งมาที่นี่เลย — สินค้าที่จับไม่ได้
-  -- ตกไปที่ SK -1 ซึ่ง BI โชว์เป็นช่องว่าง ลูกค้าดูไม่ออกว่ามีอะไรรอเติมอยู่ (แก้ 2026-10-05)
-  -- วัด 2026-10-05: 1,389 แถว 36,052,492.68 บาท เกือบทั้งหมดเป็นรหัสสั่งพิเศษ/งานโครงการ
-  --
-  -- ⚠️ หาด้วย MarketingGroupID ไม่ใช่ฮาร์ดโค้ด SK — dim_product_mkt rebuild ทุกวัน SK เปลี่ยนได้
-  -- ถ้าวันไหนแถวนี้หายไป IFNULL ชั้นนอกจะคืน -1 เหมือนเดิม ไม่พังเงียบ
   SELECT ANY_VALUE(ProductMktSK) AS WaitingMktSK
   FROM `${DimProductMktTableRef}`
   WHERE CompanyID = 'ag01' AND MarketingGroupID = '999'
+  
 ), report_exact AS (
   -- บรรทัดรายงานที่ระบุกลุ่มสินค้าไว้ เช่น BT+001 -> 17 (Modern Trade_PE)
   -- ⚠️ dim_report.RegionID เก็บ "หน่วยที่ออกรายงาน" ไม่ใช่ภูมิภาค

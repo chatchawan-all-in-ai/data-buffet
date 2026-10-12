@@ -1,7 +1,0 @@
-config {
-    type: "operations",
-    dependencies: ["drop_all_tables_validated_master_sku", "create_all_table_raw_master_sku"],
-    tags: [databuffet.TAG_VALIDATED],
-}
-
-CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}` OPTIONS(location="${databuffet.REGION}") ;
