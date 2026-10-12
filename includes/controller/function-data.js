@@ -21,10 +21,23 @@ function cleanCode(col, pattern = `r'[\\n\\r\\t]'`) {
 **/
 function parseFlexibleDatetime(col) {
     return `COALESCE(
-    SAFE.PARSE_DATETIME('%b %d %Y %I:%M%p', SUBSTR(${col}, 1, 19)),
-    SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR(${col}, 1, 19))
-  )`
+        SAFE.PARSE_DATETIME('%b %d %Y %I:%M%p', SUBSTR(${col}, 1, 19)),
+        SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR(${col}, 1, 19))
+    )`
 }
+
+
+/**
+ * @param {string} col - column name containing a UTC datetime string, with or without a '+00:00' offset
+ * @returns {string} GoogleSQL expression returning DATETIME in Asia/Bangkok (no-offset values are read as UTC)
+**/
+function parseUtcDatetime(col) {
+    return `DATETIME(COALESCE(
+    SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%E*S%Ez', ${col}),
+    SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%E*S', ${col})
+  ), 'Asia/Bangkok')`
+}
+
 
 /**
  * @returns {string} GoogleSQL expression to parse ASATDATE column (YYYYMMDD format) to DATE
@@ -61,6 +74,7 @@ module.exports = {
     cleanString,
     cleanCode,
     parseFlexibleDatetime,
+    parseUtcDatetime,
     parseAsatDate,
     castInt64,
     castFloat64,

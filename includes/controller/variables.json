@@ -34,6 +34,10 @@
     "VALIDATED_MASTERSKU": "validated_mastersku",
     "CURATED_MASTERSKU": "curated_mastersku",
 
+     "RAW_MASTER_SKU": "raw_master_sku",
+    "VALIDATED_MASTER_SKU": "validated_master_sku",
+    "CURATED_MASTER_SKU": "curated_master_sku",
+
     "RAW_CIS360": "raw_cis360",
     "VALIDATED_CIS360": "validated_cis360",
     "CURATED_CIS360": "curated_cis360",
@@ -65,6 +69,7 @@
     "GCS_MAC5_REPORT": "mac5_report",
     "GCS_MAC5_GPS": "mac5_gps",
     "GCS_MASTERSKU": "mastersku",
+    "GCS_MASTER_SKU": "master_sku",
     "GCS_CIS360": "cis360",
     "GCS_SALEOUT_MDT": "saleout_mdt",
     "GCS_ALLKONS_COMMISSION": "allkons_commission"

@@ -1,0 +1,22 @@
+config {
+  type: "operations",
+  dependencies: [],
+  tags: [databuffet.TAG_INITIAL],
+}
+
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.brand_translations`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.brand_vendors`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.brands`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.categories`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.category_translations`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.common_code_translations`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.common_codes`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.product_translations`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.products`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.spec_attribute_translations`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.spec_attributes`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.spec_group_translations`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.spec_groups`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.specifications`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.synonyms`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.vendors`;

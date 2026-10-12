@@ -1,0 +1,7 @@
+config {
+    type: "operations",
+    dependencies: ["validated_schema_master_sku"],
+    tags: [databuffet.TAG_CURATED],
+}
+
+CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.CURATED_MASTER_SKU}` OPTIONS(location="${databuffet.REGION}") ;

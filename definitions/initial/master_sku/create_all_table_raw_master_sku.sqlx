@@ -1,0 +1,204 @@
+config {
+  type: "operations",
+  dependencies: ["drop_all_tables_validated_master_sku"],
+  tags: [databuffet.TAG_INITIAL],
+}
+
+------------------------------------- SCHEMA --------------------------------------
+CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}` OPTIONS(location="${databuffet.REGION}");
+------------------------------------- SCHEMA --------------------------------------
+
+
+----------------------------------- INCREMENTAL ------------------------------------
+-- Table : brand_translations
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.brand_translations`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.brand_translations`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/brand_translations/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/brand_translations/'
+);
+
+-- Table : brand_vendors
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.brand_vendors`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.brand_vendors`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/brand_vendors/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/brand_vendors/'
+);
+
+-- Table : brands
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.brands`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.brands`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/brands/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/brands/'
+);
+
+-- Table : categories
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.categories`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.categories`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/categories/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/categories/'
+);
+
+-- Table : category_translations
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.category_translations`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.category_translations`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/category_translations/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/category_translations/'
+);
+
+-- Table : common_code_translations
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.common_code_translations`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.common_code_translations`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/common_code_translations/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/common_code_translations/'
+);
+
+-- Table : common_codes
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.common_codes`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.common_codes`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/common_codes/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/common_codes/'
+);
+
+-- Table : product_translations
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_translations`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_translations`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_translations/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_translations/'
+);
+
+-- Table : products
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.products`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.products`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/products/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/products/'
+);
+
+-- Table : spec_attribute_translations
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.spec_attribute_translations`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.spec_attribute_translations`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/spec_attribute_translations/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/spec_attribute_translations/'
+);
+
+-- Table : spec_attributes
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.spec_attributes`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.spec_attributes`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/spec_attributes/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/spec_attributes/'
+);
+
+-- Table : spec_group_translations
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.spec_group_translations`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.spec_group_translations`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/spec_group_translations/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/spec_group_translations/'
+);
+
+-- Table : spec_groups
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.spec_groups`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.spec_groups`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/spec_groups/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/spec_groups/'
+);
+
+-- Table : specifications
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.specifications`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.specifications`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/specifications/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/specifications/'
+);
+
+-- Table : synonyms
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.synonyms`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.synonyms`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/synonyms/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/synonyms/'
+);
+
+-- Table : vendors
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.vendors`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.vendors`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/vendors/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/vendors/'
+);
+----------------------------------- INCREMENTAL ------------------------------------
