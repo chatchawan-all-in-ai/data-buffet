@@ -1,0 +1,175 @@
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_MASTER_SKU,
+    dependencies: ["validated_schema_master_sku", "create_all_table_raw_master_sku"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["id"],
+    bigquery: {
+        partitionBy : "asatdate",
+        clusterBy: ["id"]
+    },
+}
+
+js {
+    // Define table references
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTER_SKU,
+        name: name(),
+    };
+
+    // Build source table reference
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    // Keep existing logic
+    const pk_key = ["id"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        // updated_at breaks ties: the same key can appear twice in one day's file
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY asatdate DESC, updated_at DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+SELECT
+  ${databuffet.functionData.cleanString('id')} AS id,
+  ${databuffet.functionData.cleanString('product_code')} AS product_code,
+  ${databuffet.functionData.cleanString('sku_code')} AS sku_code,
+  ${databuffet.functionData.cleanString('master_sku_code')} AS master_sku_code,
+  ${databuffet.functionData.cleanString('mac5_code')} AS mac5_code,
+  ${databuffet.functionData.cleanString('d365_code')} AS d365_code,
+  ${databuffet.functionData.cleanString('d365_size')} AS d365_size,
+  ${databuffet.functionData.cleanString('d365_style')} AS d365_style,
+  ${databuffet.functionData.cleanString('d365_color')} AS d365_color,
+  ${databuffet.functionData.cleanString('d365_configuration')} AS d365_configuration,
+  ${databuffet.functionData.cleanString('d365_variant')} AS d365_variant,
+  ${databuffet.functionData.cleanString('base_sku_id')} AS base_sku_id,
+  ${databuffet.functionData.cleanString('universal_barcode')} AS universal_barcode,
+  ${databuffet.functionData.cleanString('universal_barcode_history')} AS universal_barcode_history,
+  ${databuffet.functionData.cleanString('internal_barcode')} AS internal_barcode,
+  ${databuffet.functionData.cleanString('universal_barcode_format_id')} AS universal_barcode_format_id,
+  ${databuffet.functionData.cleanString('internal_barcode_format_id')} AS internal_barcode_format_id,
+  ${databuffet.functionData.cleanString('name')} AS name,
+  ${databuffet.functionData.cleanString('description_short')} AS description_short,
+  ${databuffet.functionData.cleanString('description')} AS description,
+  ${databuffet.functionData.cleanString('property')} AS property,
+  ${databuffet.functionData.cleanString('detail')} AS detail,
+  ${databuffet.functionData.cleanString('instruction')} AS instruction,
+  ${databuffet.functionData.cleanString('recommendation')} AS recommendation,
+  ${databuffet.functionData.cleanString('caution')} AS caution,
+  ${databuffet.functionData.cleanString('installation')} AS installation,
+  ${databuffet.functionData.cleanString('transportation')} AS transportation,
+  ${databuffet.functionData.cleanString('stack_over')} AS stack_over,
+  ${databuffet.functionData.cleanString('warranty_detail')} AS warranty_detail,
+  ${databuffet.functionData.cleanString('warranty_period')} AS warranty_period,
+  ${databuffet.functionData.castInt64('shelf_life_period_days')} AS shelf_life_period_days,
+  ${databuffet.functionData.cleanString('tis_no')} AS tis_no,
+  ${databuffet.functionData.cleanString('tis_permit_no')} AS tis_permit_no,
+  ${databuffet.functionData.cleanString('other_certification')} AS other_certification,
+  ${databuffet.functionData.castFloat64('net_weight')} AS net_weight,
+  ${databuffet.functionData.castFloat64('net_width')} AS net_width,
+  ${databuffet.functionData.castFloat64('net_length')} AS net_length,
+  ${databuffet.functionData.castFloat64('net_height')} AS net_height,
+  ${databuffet.functionData.castFloat64('gross_weight')} AS gross_weight,
+  ${databuffet.functionData.castFloat64('gross_width')} AS gross_width,
+  ${databuffet.functionData.castFloat64('gross_length')} AS gross_length,
+  ${databuffet.functionData.castFloat64('gross_height')} AS gross_height,
+  ${databuffet.functionData.cleanString('weight_unit_id')} AS weight_unit_id,
+  ${databuffet.functionData.cleanString('length_unit_id')} AS length_unit_id,
+  ${databuffet.functionData.cleanString('length_package_unit_id')} AS length_package_unit_id,
+  ${databuffet.functionData.cleanString('volume_unit_id')} AS volume_unit_id,
+  ${databuffet.functionData.castFloat64('volume')} AS volume,
+  ${databuffet.functionData.cleanString('uom_id')} AS uom_id,
+  ${databuffet.functionData.cleanString('uom_display_id')} AS uom_display_id,
+  ${databuffet.functionData.castBool('is_lowest_uom')} AS is_lowest_uom,
+  ${databuffet.functionData.castFloat64('uom_conversion')} AS uom_conversion,
+  ${databuffet.functionData.cleanString('uom_sales_id')} AS uom_sales_id,
+  ${databuffet.functionData.castFloat64('uom_sales_conversion')} AS uom_sales_conversion,
+  ${databuffet.functionData.cleanString('uom_sales_display_id')} AS uom_sales_display_id,
+  ${databuffet.functionData.cleanString('uom_purchase_id')} AS uom_purchase_id,
+  ${databuffet.functionData.castFloat64('uom_purchase_conversion')} AS uom_purchase_conversion,
+  ${databuffet.functionData.cleanString('uom_purchase_display_id')} AS uom_purchase_display_id,
+  ${databuffet.functionData.cleanString('uom_inventory_id')} AS uom_inventory_id,
+  ${databuffet.functionData.castFloat64('uom_inventory_conversion')} AS uom_inventory_conversion,
+  ${databuffet.functionData.cleanString('uom_inventory_display_id')} AS uom_inventory_display_id,
+  ${databuffet.functionData.cleanString('uom_bom_id')} AS uom_bom_id,
+  ${databuffet.functionData.castFloat64('uom_bom_conversion')} AS uom_bom_conversion,
+  ${databuffet.functionData.cleanString('uom_bom_display_id')} AS uom_bom_display_id,
+  ${databuffet.functionData.cleanString('search_name')} AS search_name,
+  ${databuffet.functionData.cleanString('tags')} AS tags,
+  ${databuffet.functionData.cleanString('supplier_country')} AS supplier_country,
+  ${databuffet.functionData.cleanString('model')} AS model,
+  ${databuffet.functionData.cleanString('series')} AS series,
+  ${databuffet.functionData.cleanString('material')} AS material,
+  ${databuffet.functionData.cleanString('package_shape')} AS package_shape,
+  ${databuffet.functionData.cleanString('shape')} AS shape,
+  ${databuffet.functionData.cleanString('shade')} AS shade,
+  ${databuffet.functionData.cleanString('pattern')} AS pattern,
+  ${databuffet.functionData.cleanString('color_descriptor_id')} AS color_descriptor_id,
+  ${databuffet.functionData.castFloat64('fob')} AS fob,
+  ${databuffet.functionData.cleanString('business_unit_id')} AS business_unit_id,
+  ${databuffet.functionData.cleanString('brand_id')} AS brand_id,
+  ${databuffet.functionData.cleanString('brand_vendor_id')} AS brand_vendor_id,
+  ${databuffet.functionData.cleanString('category_id')} AS category_id,
+  ${databuffet.functionData.cleanString('product_type_id')} AS product_type_id,
+  ${databuffet.functionData.cleanString('product_sub_type_id')} AS product_sub_type_id,
+  ${databuffet.functionData.cleanString('production_type_id')} AS production_type_id,
+  ${databuffet.functionData.cleanString('specification_group_id')} AS specification_group_id,
+  ${databuffet.functionData.cleanString('specification_attributes')} AS specification_attributes,
+  ${databuffet.functionData.cleanString('product_group_id')} AS product_group_id,
+  ${databuffet.functionData.cleanString('sales_group_id')} AS sales_group_id,
+  ${databuffet.functionData.cleanString('cost_group_id')} AS cost_group_id,
+  ${databuffet.functionData.cleanString('production_group_id')} AS production_group_id,
+  ${databuffet.functionData.cleanString('production_sale_group_id')} AS production_sale_group_id,
+  ${databuffet.functionData.cleanString('marketing_group_id')} AS marketing_group_id,
+  ${databuffet.functionData.cleanString('purchase_group_id')} AS purchase_group_id,
+  ${databuffet.functionData.cleanString('account_group_id')} AS account_group_id,
+  ${databuffet.functionData.cleanString('pricing_group_id')} AS pricing_group_id,
+  ${databuffet.functionData.cleanString('sales_status')} AS sales_status,
+  ${databuffet.functionData.cleanString('sales_status_remark')} AS sales_status_remark,
+  ${databuffet.functionData.parseFlexibleUtcDatetime('sales_status_date')} AS sales_status_date,
+  ${databuffet.functionData.cleanString('production_status')} AS production_status,
+  ${databuffet.functionData.cleanString('production_status_remark')} AS production_status_remark,
+  ${databuffet.functionData.parseFlexibleUtcDatetime('production_status_date')} AS production_status_date,
+  ${databuffet.functionData.cleanString('product_status')} AS product_status,
+  ${databuffet.functionData.cleanString('product_status_remark')} AS product_status_remark,
+  ${databuffet.functionData.parseFlexibleUtcDatetime('product_status_date')} AS product_status_date,
+  ${databuffet.functionData.cleanString('search_text')} AS search_text,
+  ${databuffet.functionData.cleanString('search_doc')} AS search_doc,
+  ${databuffet.functionData.parseFlexibleUtcDatetime('created_at')} AS created_at,
+  ${databuffet.functionData.cleanString('created_by')} AS created_by,
+  ${databuffet.functionData.parseFlexibleUtcDatetime('updated_at')} AS updated_at,
+  ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+  ${databuffet.functionData.parseAsatDate()} AS asatdate,
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

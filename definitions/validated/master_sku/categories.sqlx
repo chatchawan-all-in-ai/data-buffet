@@ -1,0 +1,79 @@
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_MASTER_SKU,
+    dependencies: ["validated_schema_master_sku", "create_all_table_raw_master_sku"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["id"],
+    bigquery: {
+        partitionBy : "asatdate",
+        clusterBy: ["id"]
+    },
+}
+
+js {
+    // Define table references
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTER_SKU,
+        name: name(),
+    };
+
+    // Build source table reference
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    // Keep existing logic
+    const pk_key = ["id"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        // updated_at breaks ties: the same key can appear twice in one day's file
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY asatdate DESC, updated_at DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+SELECT
+  ${databuffet.functionData.cleanString('id')} AS id,
+  ${databuffet.functionData.cleanString('code')} AS code,
+  ${databuffet.functionData.cleanString('name')} AS name,
+  ${databuffet.functionData.cleanString('detail')} AS detail,
+  ${databuffet.functionData.cleanString('tags')} AS tags,
+  ${databuffet.functionData.cleanString('parent_id')} AS parent_id,
+  ${databuffet.functionData.castInt64('level')} AS level,
+  ${databuffet.functionData.cleanString('status')} AS status,
+  ${databuffet.functionData.parseFlexibleUtcDatetime('created_at')} AS created_at,
+  ${databuffet.functionData.cleanString('created_by')} AS created_by,
+  ${databuffet.functionData.parseFlexibleUtcDatetime('updated_at')} AS updated_at,
+  ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+  ${databuffet.functionData.parseAsatDate()} AS asatdate,
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

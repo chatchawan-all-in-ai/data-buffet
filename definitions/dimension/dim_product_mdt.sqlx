@@ -109,13 +109,6 @@ WITH mac5_dedup AS (
 
 ), new_product AS (
 
-  -- สินค้าเกิดใหม่ที่ขายแล้วแต่ master ยังไม่ลงทะเบียน (เพิ่ม 2026-10-12 ตามที่ Wisut ขอ)
-  -- กลไกเดียวกับสาขาเกิดใหม่ใน dim_sales_branch_mdt — ยอดจะได้ไม่ตกเป็น -1 แล้วโชว์ "ไม่ระบุสินค้า"
-  -- วัด 2026-10-12: 36 รหัสจาก 4 ห้าง เช่น 10437381 ถังแกรนิต HY-69/GY-1500L/P73 (DH 27,289 บาท)
-  --
-  -- ⚠️ ProductSK = -1 เสมอ เพราะไม่มีทะเบียน MAC5 ให้ผูก และ ProductMac5Code เป็น 'ยังไม่มีข้อมูล'
-  --    ใช้ 2 ค่านี้เป็นตัวไล่ว่าสินค้าไหนยังต้องให้ master ลงทะเบียน
-  -- ⚠️ เทียบด้วย ProductCode อย่างเดียวให้ตรงกับที่ fact ใช้ join (ดูคอมเมนต์ product_src)
   SELECT
     (SELECT IFNULL(MAX(ProductMdtSK), 0) FROM product_master)
       + ROW_NUMBER() OVER(ORDER BY f.product_code)        AS ProductMdtSK,
@@ -123,7 +116,7 @@ WITH mac5_dedup AS (
     IFNULL(wait.ProductMktSK, -1)                        AS ProductMktSK,
     f.product_code                                       AS ProductCode,
     IFNULL(f.product_name, f.product_code)               AS ProductName,
-    'ยังไม่มีข้อมูล'                                        AS ProductMac5Code,
+    'ยังไม่มีข้อมูล'                                           AS ProductMac5Code,
     f.store_code                                         AS StoreCode,
     'ag01'                                               AS CompanyID,
     CAST(NULL AS STRING)                                 AS MdsID
@@ -151,6 +144,8 @@ WITH mac5_dedup AS (
 )
 
 SELECT * FROM product_master
+UNION ALL
+SELECT * FROM new_product
 UNION ALL
 SELECT * FROM unknown_product
 
