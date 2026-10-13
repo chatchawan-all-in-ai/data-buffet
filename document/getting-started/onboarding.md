@@ -17,7 +17,7 @@ Data warehouse บน **Google BigQuery** (project `databuffet-nonprd`, region `
 GCS AVRO (gs://file-raw-data)
   → initial   (external table + schema + UDF 7 ตัว — 17 ไฟล์)
   → validated (ทำความสะอาด cast dedup — 136 ไฟล์ = 132 transformation + 4 schema)
-  → curated   (business logic, join — 11 ไฟล์ = 7 transformation + 4 schema)
+  → curated   (business logic, join — 15 ไฟล์ = 10 transformation + 5 schema)
   → dimension (69 ไฟล์) + fact (15 ไฟล์)
   → view      (ชั้น BI/report)
   ท่อเสริม: cdc (จับ change) + process (แกะที่อยู่ไทยด้วย AI)

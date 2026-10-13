@@ -1,0 +1,183 @@
+config {
+    type: "operations",
+    dependencies: ["curated_schema_master_sku"],
+    tags: [databuffet.TAG_CURATED],
+}
+
+js {
+    // Define table references
+    const targetTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.CURATED_MASTER_SKU,
+        name: "product_for_aisearch_v3",
+    };
+
+    // Build target table reference
+    const targetTableRef = `${targetTable.database}.${targetTable.schema}.${targetTable.name}`;
+
+    // AI search expects the old lower-case unit codes (mm/cm/m/inch/ft, kg/g, l/ml),
+    // and no unit when the measurement itself is empty
+    const unitCode = (valueColumn, codeExpression) =>
+        `IF(${valueColumn} IS NULL, NULL, IF(${codeExpression} = 'IN', 'inch', LOWER(${codeExpression})))`;
+
+    // first non-empty variant value with this label, in array order
+    const specValue = (label) => `(SELECT ${databuffet.functionData.cleanString("JSON_VALUE(attr, '$.value')")}
+          FROM UNNEST(JSON_QUERY_ARRAY(product.specification_attributes)) AS attr WITH OFFSET AS pos
+          WHERE JSON_VALUE(attr, '$.label') = '${label}'
+            AND ${databuffet.functionData.cleanString("JSON_VALUE(attr, '$.value')")} IS NOT NULL
+          ORDER BY pos LIMIT 1)`;
+
+    // master_sku appends the old free-text sales unit to the name: "... (แผ่น)"
+    const nameSuffix = `NULLIF(TRIM(REGEXP_EXTRACT(product.name, r'\\(([^()]*)\\)$')), '')`;
+
+}
+
+DECLARE run_date DATE DEFAULT CURRENT_DATE('Asia/Bangkok');
+-- NULL = full load (target missing, empty, or only holds today's partition)
+DECLARE window_start DATE DEFAULT NULL;
+
+-- resume from the last earlier run instead of run_date-1, so a missed night is not lost;
+-- today's partition is excluded so a rerun on the same day rebuilds the same set
+BEGIN
+  SET window_start = (SELECT MAX(asatdate) - 1 FROM `${targetTableRef}` WHERE asatdate < run_date);
+EXCEPTION WHEN ERROR THEN
+  SET window_start = NULL;
+END;
+
+BEGIN
+  ------ CREATE TEMP TABLE
+  -- words that really are a sales unit: every variant 'หน่วยขาย' value + unit names in common_codes
+  CREATE OR REPLACE TEMP TABLE unit_vocab AS
+  SELECT v, MAX(asatdate) AS asatdate
+  FROM (
+    SELECT ${databuffet.functionData.cleanString("JSON_VALUE(attr, '$.value')")} AS v, asatdate
+    FROM ${ref(databuffet.VALIDATED_MASTER_SKU, "products")}, UNNEST(JSON_QUERY_ARRAY(specification_attributes)) AS attr
+    WHERE JSON_VALUE(attr, '$.label') = 'หน่วยขาย'
+    UNION ALL
+    SELECT name AS v, asatdate FROM ${ref(databuffet.VALIDATED_MASTER_SKU, "common_codes")}
+    WHERE type IN ('sales-unit', 'uom-general', 'uom-volume', 'uom-weight', 'uom-length')
+  )
+  WHERE v IS NOT NULL
+  GROUP BY v;
+
+  CREATE OR REPLACE TEMP TABLE temp_product_for_aisearch_v3 AS
+  SELECT
+    run_date as asatdate,
+    product.master_sku_code as id,
+    STRUCT(
+        product.name as product_name,
+        product.master_sku_code as sku_code,
+        -- 'ชิ้น' is the generic default; the name suffix or the variant value keeps the old, finer unit
+        IF(sales_unit.name = 'ชิ้น',
+           COALESCE(IF(${nameSuffix} IN (SELECT v FROM unit_vocab), ${nameSuffix}, NULL),
+                    ${specValue("หน่วยขาย")}, sales_unit.name),
+           sales_unit.name) as sales_unit,
+        -- old feed never sent NULL: no tags = {"mypro_tag":[]}
+        TO_JSON_STRING(STRUCT(IFNULL(JSON_VALUE_ARRAY(product.tags), []) AS mypro_tag)) as product_tags_json,
+        product.universal_barcode as barcode,
+        cate.name as cat_name,
+        -- 52 products have no brand_id; their brand comes through brand_vendors
+        COALESCE(brand.name, vendor_brand.name) as brand_name,
+        vendor.name as vd_name,
+        (CASE
+          WHEN product.product_status = 'Active' AND product.sales_status = 'Active' then 'Approve'
+          ELSE 'Non-Approve'
+        END) as product_status,
+        -- specification_attributes holds the variant values (old prdDiminsionData), kept in the {"dimFeild":[{label,value}]} shape
+        TO_JSON_STRING(STRUCT(ARRAY(
+          SELECT AS STRUCT JSON_VALUE(attr, '$.label') AS label, JSON_VALUE(attr, '$.value') AS value
+          FROM UNNEST(JSON_QUERY_ARRAY(product.specification_attributes)) AS attr WITH OFFSET AS pos
+          ORDER BY pos
+        ) AS dimFeild)) as product_dimensions_json,
+        -- detail = old pd_detail; products.description is never filled
+        -- ~6k details hold only a product code, not a description
+        IF(REGEXP_CONTAINS(TRIM(product.detail), r'^[A-Za-z0-9#_./\-]{4,40}$'), NULL, product.detail) as product_description,
+        product.series as product_series,
+        -- ~17k products keep the model only in the variant values
+        COALESCE(product.model, ${specValue("โมเดล")}, ${specValue("รุ่นสินค้า")}) as product_model,
+        COALESCE(product.material, NULLIF(NULLIF(NULLIF(${specValue("วัสดุ")}, 'โปรดระบุ'), '-'), '0')) as product_material,
+        -- old pd_shape is the package shape; products.shape is always empty
+        product.package_shape as product_shape,
+        product.gross_width as package_width,
+        ${unitCode("product.gross_width", "package_unit.code")} as package_width_unit,
+        product.gross_length as package_length,
+        ${unitCode("product.gross_length", "package_unit.code")} as package_length_unit,
+        product.gross_height as package_height,
+        ${unitCode("product.gross_height", "package_unit.code")} as package_height_unit,
+        product.net_weight as product_weight_net,
+        -- liquids carry their unit in volume_unit_id (l/ml)
+        ${unitCode("product.net_weight", "COALESCE(weight_unit.code, volume_unit.code)")} as product_weight_net_unit,
+        product.gross_weight as product_weight_gross,
+        ${unitCode("product.gross_weight", "COALESCE(weight_unit.code, volume_unit.code)")} as product_weight_gross_unit,
+        -- master_sku has no counterpart of the old pd_spacific_fields
+        '{"SpeciFeild":[]}' as special_specifications_json
+    ) as structData
+  FROM (
+    SELECT *
+    FROM ${ref(databuffet.VALIDATED_MASTER_SKU, "products")}
+    -- ~26k placeholder rows have no master_sku_code (created_at 2000-01-01)
+    WHERE master_sku_code IS NOT NULL
+    -- Pick the current row before delta eligibility so a changed lookup cannot surface an older duplicate SKU
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY master_sku_code ORDER BY updated_at DESC) = 1
+  ) as product
+
+  LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "brands")} as brand
+    ON product.brand_id = brand.id
+  LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "categories")} as cate
+    ON product.category_id = cate.id
+  -- products has no vendor_id; the vendor comes through brand_vendors
+  LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "brand_vendors")} as brand_vendor
+    ON product.brand_vendor_id = brand_vendor.id
+  LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "brands")} as vendor_brand
+    ON brand_vendor.brand_id = vendor_brand.id
+  LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "vendors")} as vendor
+    ON brand_vendor.vendor_id = vendor.id
+
+  -- units live in common_codes (type sales-unit / uom-length / uom-weight / uom-volume)
+  LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "common_codes")} as sales_unit
+    ON product.uom_sales_id = sales_unit.id
+  LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "common_codes")} as package_unit
+    ON product.length_package_unit_id = package_unit.id
+  LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "common_codes")} as weight_unit
+    ON product.weight_unit_id = weight_unit.id
+  LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "common_codes")} as volume_unit
+    ON product.volume_unit_id = volume_unit.id
+
+  -- Lookup corrections, including unit names/codes, must reach AI search even when the product itself did not change
+  WHERE window_start IS NULL
+    OR product.asatdate >= window_start
+    OR brand.asatdate >= window_start
+    OR cate.asatdate >= window_start
+    OR brand_vendor.asatdate >= window_start
+    OR vendor_brand.asatdate >= window_start
+    OR vendor.asatdate >= window_start
+    OR sales_unit.asatdate >= window_start
+    OR package_unit.asatdate >= window_start
+    OR weight_unit.asatdate >= window_start
+    OR volume_unit.asatdate >= window_start
+    OR (sales_unit.name = 'ชิ้น'
+        AND ${nameSuffix} IN (SELECT v FROM unit_vocab WHERE asatdate >= window_start));
+
+  ---- CREATE TARGET ON FIRST RUN
+  CREATE TABLE IF NOT EXISTS `${targetTableRef}`
+  PARTITION BY asatdate
+  CLUSTER BY id
+  AS SELECT * FROM temp_product_for_aisearch_v3 WHERE FALSE;
+
+    BEGIN TRANSACTION;
+
+    ---- DELETE DATA BEFOR INSERT
+    DELETE FROM `${targetTableRef}`
+    WHERE asatdate = run_date;
+
+    ---- INSERT DATA
+    INSERT INTO `${targetTableRef}`
+    SELECT * FROM temp_product_for_aisearch_v3;
+
+    COMMIT TRANSACTION;
+
+  ---- DROP TEMP TABLE
+  DROP TABLE IF EXISTS temp_product_for_aisearch_v3;
+  DROP TABLE IF EXISTS unit_vocab;
+
+END;

@@ -1,11 +1,11 @@
 # Curated Layer — `definitions/curated/`
 
-> **LLM context**: **11 ไฟล์** — 4 เป็น schema-bootstrap `operations` (source ละตัว),
-> 7 เป็น transformation จริง · dataset ต่อ source: `curated_mac5`, `curated_mastersku`,
-> `curated_saleout_mdt` (`curated_cis360` สร้าง schema ไว้แล้วแต่ยังไม่มีตาราง)
-> ตรวจกับโค้ดจริง 2026-09-15
+> **LLM context**: schema-bootstrap `operations` (source ละตัว) และ transformation ·
+> dataset ต่อ source: `curated_mac5`, `curated_mastersku`,
+> `curated_master_sku`, `curated_saleout_mdt` (`curated_cis360` สร้าง schema ไว้แล้วแต่ยังไม่มีตาราง)
+> จำนวนไฟล์ปัจจุบันดู [generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview)
 
-## Inventory (11)
+## Inventory
 
 | File | Target | Type | uniqueKey | Partition / Cluster | Tags |
 |---|---|---|---|---|---|
@@ -16,6 +16,9 @@
 | `mastersku/curated_schema_mastersku.sqlx` | schema `curated_mastersku` | operations | — | — | `curated` |
 | `mastersku/curated_product.sqlx` | `curated_mastersku.curated_product` | incremental | `prdSku` | `asatdate` / `prdSku, prdUniversalBarcode, prdVendorId, prdBrandId` | `curated` |
 | `mastersku/product_for_aisearch.sqlx` | `curated_mastersku.product_for_aisearch` | operations | — | — | `curated` |
+| `master_sku/curated_schema_master_sku.sqlx` | schema `curated_master_sku` | operations | — | — | `curated` |
+| `master_sku/product_for_aisearch_v3.sqlx` | `curated_master_sku.product_for_aisearch_v3` | operations | — | `asatdate` / `id` | `curated` |
+| `master_sku/curated_products.sqlx` | `curated_master_sku.curated_products` | **table** | — | `asatdate` / `prdSku, prdUniversalBarcode, prdVendorId, prdBrandId` | `curated` |
 | `cis360/curated_schema_cis360.sqlx` | schema `curated_cis360` | operations | — | — | `curated` |
 | `saleout_mdt/curated_schema_saleout.sqlx` | schema `curated_saleout_mdt` | operations | — | — | `curated` |
 | `saleout_mdt/curated_saleout_mdt.sqlx` | `curated_saleout_mdt.curated_saleout_mdt` | incremental | `sale_date, store_code, branch_code, product_code, doc_type` | `sale_date` / `store_code, branch_code, product_code` | `curated`, **`curated_incremental`** |
@@ -123,6 +126,72 @@ BigQuery จะไม่ตัดพาร์ทิชันให้
 - สร้างคอลัมน์ `STRUCT` ชื่อ `structData` join `product_detail`, `brand`, `category`,
   `vendor` และ `unit` **ห้าครั้ง** (กว้าง/ยาว/สูง/น้ำหนักสุทธิ/น้ำหนักรวม)
 - `product_status = 'Approve'` เมื่อ `prdIsActive AND prdIsUse AND pd_is_system`
+
+### `product_for_aisearch_v3` — feed AI search จาก master_sku (shadow)
+
+- **shadow table** ข้าง `product_for_aisearch` เดิม — ยังไม่มีผู้อ่าน ตัวเดิมยังอ่าน
+  `mastersku` อยู่ (การสลับผู้อ่านเป็นงานแยก ยังไม่ตัดสินใจ)
+- output เหมือนตัวเดิมทุกคอลัมน์ (`asatdate`, `id`, `structData` field ชื่อ/ชนิดเดิม)
+  เพราะ AI search อ่านรูปแบบนี้ · partition `asatdate` / cluster `id`
+- อ่าน `validated_master_sku` ตรง ๆ (ไม่มี curated_product คั่น) — `products` +
+  `brands`, `categories`, `brand_vendors` (→ `vendors`, brand สำรอง) และ `common_codes` ×4
+- `operations`: TEMP TABLE → `CREATE TABLE IF NOT EXISTS` (นอก transaction) →
+  `BEGIN TRANSACTION` → `DELETE WHERE asatdate = run_date` → `INSERT` → `COMMIT TRANSACTION`
+  · DELETE+INSERT เป็น atomic: ถ้า INSERT ล้มเหลว partition เดิมยังอยู่
+- **Required deploy step**: Drop the draft-built `curated_master_sku.product_for_aisearch_v3` table before the first run so the new code performs a full load.
+- **window**: `window_start = MAX(asatdate) - 1` ของ target เฉพาะ `asatdate < run_date`
+  - target ไม่มี / ว่าง / มีแค่ partition วันนี้ → `window_start` NULL = **ส่งทั้ง catalog**
+  - คืนที่รันพลาดไม่หาย (เริ่มจากรอบก่อนหน้าจริง ไม่ใช่ `run_date-1`) · รันซ้ำวันเดียวกันใช้ window เดิม
+    และแทนที่เฉพาะ partition วันนี้ โดยเก็บ partition ก่อนหน้าไว้
+  - ส่ง id เมื่อ `asatdate >= window_start` ของแถว `products` ที่เลือก หรือ lookup ที่ join กับแถวนั้น:
+    `brands` (ทั้ง brand ตรงและ brand สำรองผ่าน `brand_vendors`), `brand_vendors`, `vendors`,
+    `categories`, `common_codes` ทั้ง `sales_unit`, `package_unit`, `weight_unit`, `volume_unit`
+    (เปลี่ยนชื่อ brand หรือหน่วยโดยไม่แก้สินค้าก็ส่งใหม่)
+  - ส่งสินค้าที่หน่วยขายเป็น `ชิ้น` และท้ายชื่อเป็นคำใน `unit_vocab` ด้วย เมื่อแถวต้นทางของคำนั้น
+    (`products` ที่มี variant `หน่วยขาย` หรือ `common_codes` ประเภทหน่วยทั้ง 5) มี `asatdate >= window_start`
+- ตัด placeholder ที่ไม่มี `master_sku_code` · เลือก 1 แถวล่าสุดต่อ `master_sku_code`
+  ด้วย `QUALIFY ROW_NUMBER() ... ORDER BY updated_at DESC` **ก่อน** join และกรอง window
+  เพื่อไม่ให้ lookup ของแถวเก่าทำให้ส่งสินค้าซ้ำ SKU ที่ไม่ใช่แถวล่าสุด
+- mapping ที่ต่างจากการ copy ตรง ๆ:
+
+| field | มาจาก | เหตุผล |
+|---|---|---|
+| `product_shape` | `package_shape` | `pd_shape` เดิมคือรูปทรงบรรจุภัณฑ์ · `products.shape` ว่างทุกแถว |
+| `product_dimensions_json` | `{"dimFeild":[{label,value}]}` จาก `specification_attributes` (ตัด `id`) | `specification_attributes` คือค่า variant = `prdDiminsionData` เดิม · label เป็นไทย (`ขนาด`, `สี`, `โมเดล`) |
+| `special_specifications_json` | `'{"SpeciFeild":[]}'` คงที่ | master_sku ไม่มีข้อมูลแบบ `pd_spacific_fields` เดิม |
+| หน่วย ×5 | `LOWER(common_codes.code)` (`IN` → `inch`) เฉพาะเมื่อมีค่า · น้ำหนัก = `COALESCE(weight_unit.code, volume_unit.code)` | ตัวเดิมส่งรหัสตัวเล็ก `mm/cm/m/inch/ft`, `kg/g`, `l/ml` · master_sku มีหน่วยเดียวต่อกลุ่ม (กว้าง/ยาว/สูง ใช้ `length_package_unit_id`, น้ำหนักทั้งสองใช้ `weight_unit_id` สำรองด้วย `volume_unit_id` สำหรับของเหลว: net +401 / gross +369 แถว) · **ไม่ใช้ `NULLIF(…, 0)`** กับค่าขนาด/น้ำหนัก เพราะตัวเดิมก็ส่ง `0` |
+| `brand_name` | `COALESCE(brands[brand_id], brands[brand_vendors.brand_id])` | 52 สินค้าไม่มี `brand_id` |
+| `product_tags_json` | `{"mypro_tag":[…]}` ไม่มี tag = `{"mypro_tag":[]}` | ตัวเดิมไม่เคยส่ง NULL |
+| `product_model` | `COALESCE(model, variant 'โมเดล', variant 'รุ่นสินค้า')` (ค่าแรกที่ไม่ว่าง) | ~17k สินค้าเก็บ model ไว้ใน variant อย่างเดียว |
+| `product_material` | `COALESCE(material, variant 'วัสดุ')` ตัด `โปรดระบุ` / `-` / `0` | ได้ค่าเพิ่ม 245 แถว ไม่มีแถวไหนแย่ลง |
+| `product_description` | `detail` แต่เป็น NULL ถ้าเป็นแค่รหัส (`^[A-Za-z0-9#_./-]{4,40}$`) | ~6k แถวมีแค่รหัสสินค้า ไม่ใช่รายละเอียด |
+| `product_status` | `Approve` เมื่อ `product_status = 'Active' AND sales_status = 'Active'` | ไม่มี `pd_is_system` แล้ว |
+| `sales_unit` | `common_codes[uom_sales_id].name` · ถ้าเป็นค่า default `ชิ้น` ใช้หน่วยท้ายชื่อ `… (แผ่น)` (เฉพาะคำที่อยู่ใน `unit_vocab`) ก่อน variant `หน่วยขาย` ค่าแรกที่ไม่ว่างตามลำดับ array แล้วจึง `ชิ้น` | ค่าใน common_codes normalize แล้ว (`ชิ้น`, `ชุด`) · ตรงกับตัวเดิม 17.3% → 23.8% · `unit_vocab` = ค่า `หน่วยขาย` ที่ผ่าน `cleanString` และไม่ว่างจากทุก attribute ของทุกแถว `validated_master_sku.products` (รวมแถวซ้ำ SKU และค่า attribute ถัดไป) + ชื่อที่ไม่เป็น NULL จาก common_codes ประเภท `sales-unit`, `uom-general`, `uom-volume`, `uom-weight`, `uom-length` (กันคำที่ไม่ใช่หน่วย เช่น `Day Light`) |
+
+- เทียบตัวเดิม (แถวล่าสุดต่อ id, 101,849 id ที่ตรงกัน, 2026-10-12): `structData` เหมือนกันทุก field = 0 id
+  — ต่างเพราะ source เปลี่ยน (ชื่อสินค้า, หน่วยขาย, รายละเอียด, ตัวพิมพ์ brand) ดูก่อนสลับผู้อ่าน
+
+### `curated_products` — แคตตาล็อกสินค้าจาก master_sku
+
+- ตารางใหม่ข้าง `curated_mastersku.curated_product` เดิม (ไม่แตะของเดิม) · 50 คอลัมน์ชื่อ/ลำดับเดียวกับตัวเดิม
+- `type: "table"` rebuild ทุกวัน (~101.9k แถว) — 1 แถวต่อ `master_sku_code` ไม่มีปัญหา sku ซ้ำแบบ MERGE
+  ที่ใช้ `updatePartitionFilter` 7 วันของตัวเดิม · `asatdate` = `products.asatdate` ของแถวที่เลือก
+- อ่าน `products` (ตัด placeholder ที่ไม่มี `master_sku_code`), `brand_vendors` (vendor, brand สำรอง),
+  `common_codes` (หน่วยขาย, รูปแบบ barcode) · CTE `spec` เลือกค่า variant แรกที่ไม่ว่างตามลำดับ array
+  ของสินค้าที่เลือก ส่วน `unit_vocab` ใช้ทุก attribute ของทุกแถวตามนิยามใน mapping `sales_unit` ด้านบน
+- mapping ที่ไม่ตรงไปตรงมา:
+  - `prdSaleUnite` ใช้กฎและนิยาม `unit_vocab` เดียวกับ mapping `sales_unit` ของ v3 ด้านบน
+  - `prdSize` = variant `ขนาด`/`size` สำรองด้วย `d365_size` ที่ตัด 0 นำหน้า (`01000L` → `1000L`)
+  - `prdColorTH` / `prdColorEN` แยกจาก variant `สี`/`color` ด้วยช่วงอักขระไทยเท่านั้น · **ไม่ใช้ fallback `color_descriptor_id`**
+    (captain ตัดสิน 2026-10-12: ได้ค่ากลับมา 626 แถว แต่ ~165 แถวเป็นสีอื่นจริง)
+  - `prdModel` = `COALESCE(model, variant 'โมเดล', variant 'รุ่นสินค้า')`
+  - `prdBrandId` = id ชุดใหม่ของ master_sku (ไม่ใช่ id ของ `mastersku` เดิม) — ผู้อ่าน join `validated_master_sku.brands`
+  - `prdUpdatedDate`: เมื่อ `updated_at < '2000-01-02'` ใช้
+    `COALESCE(product_status_date, sales_status_date, updated_at)` แทนค่า placeholder
+  - `prdPsId` = id คงที่ของ lookup เดิม `On`/`Off` ตาม `product_status`
+  - `prdBarcodeFormat`: `EAN13` → `GTIN-13 / EAN-13` ให้ตรงชื่อเดิม
+  - เวลาเป็นเวลาไทย (ตัวเดิมเป็น UTC)
+  - คอลัมน์ที่ master_sku ไม่มี (`prdPasId`, `prdIdSource`, `prdRefMpId`, combo ฯลฯ) เป็น NULL
 
 ## กฎเวลาเพิ่มตาราง curated
 
