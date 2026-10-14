@@ -138,20 +138,11 @@ BigQuery จะไม่ตัดพาร์ทิชันให้
 - `operations`: TEMP TABLE → `CREATE TABLE IF NOT EXISTS` (นอก transaction) →
   `BEGIN TRANSACTION` → `DELETE WHERE asatdate = run_date` → `INSERT` → `COMMIT TRANSACTION`
   · DELETE+INSERT เป็น atomic: ถ้า INSERT ล้มเหลว partition เดิมยังอยู่
-- **Required deploy step**: Drop the draft-built `curated_master_sku.product_for_aisearch_v3` table before the first run so the new code performs a full load.
-- **window**: `window_start = MAX(asatdate) - 1` ของ target เฉพาะ `asatdate < run_date`
-  - target ไม่มี / ว่าง / มีแค่ partition วันนี้ → `window_start` NULL = **ส่งทั้ง catalog**
-  - คืนที่รันพลาดไม่หาย (เริ่มจากรอบก่อนหน้าจริง ไม่ใช่ `run_date-1`) · รันซ้ำวันเดียวกันใช้ window เดิม
-    และแทนที่เฉพาะ partition วันนี้ โดยเก็บ partition ก่อนหน้าไว้
-  - ส่ง id เมื่อ `asatdate >= window_start` ของแถว `products` ที่เลือก หรือ lookup ที่ join กับแถวนั้น:
-    `brands` (ทั้ง brand ตรงและ brand สำรองผ่าน `brand_vendors`), `brand_vendors`, `vendors`,
-    `categories`, `common_codes` ทั้ง `sales_unit`, `package_unit`, `weight_unit`, `volume_unit`
-    (เปลี่ยนชื่อ brand หรือหน่วยโดยไม่แก้สินค้าก็ส่งใหม่)
-  - ส่งสินค้าที่หน่วยขายเป็น `ชิ้น` และท้ายชื่อเป็นคำใน `unit_vocab` ด้วย เมื่อแถวต้นทางของคำนั้น
-    (`products` ที่มี variant `หน่วยขาย` หรือ `common_codes` ประเภทหน่วยทั้ง 5) มี `asatdate >= window_start`
+- **window**: เหมือน feed เดิม — เลือกเฉพาะแถว `products` ที่ `asatdate BETWEEN run_date-1 AND run_date`
+  โดย `run_date = CURRENT_DATE('Asia/Bangkok')` · การเปลี่ยน lookup (brand/category/vendor/หน่วย)
+  ไม่ทำให้สินค้าที่ `asatdate` อยู่นอก window ถูกส่งใหม่
 - ตัด placeholder ที่ไม่มี `master_sku_code` · เลือก 1 แถวล่าสุดต่อ `master_sku_code`
   ด้วย `QUALIFY ROW_NUMBER() ... ORDER BY updated_at DESC` **ก่อน** join และกรอง window
-  เพื่อไม่ให้ lookup ของแถวเก่าทำให้ส่งสินค้าซ้ำ SKU ที่ไม่ใช่แถวล่าสุด
 - mapping ที่ต่างจากการ copy ตรง ๆ:
 
 | field | มาจาก | เหตุผล |
