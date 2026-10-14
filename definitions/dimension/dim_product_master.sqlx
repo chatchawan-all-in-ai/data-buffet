@@ -68,7 +68,7 @@ BEGIN
       -- dummy สินค้าที่ไม่มีรหัส MDT: โครงคอลัมน์จาก stk เอง คอลัมน์ที่ไม่ระบุ = NULL
       SELECT s.* REPLACE ('ag01' AS company_id, code AS stkcode, 'รหัสสินค้าพิเศษสินค้าที่ไม่มีรหัสMDT' AS stkdesct1)
       FROM UNNEST(['LYNNDIY005OTHERS', 'OTHERS099OTHERS', 'HOMEPUMP002OTHERS', 'PUMPPROJECT007OTHERS',
-                   'WATERHEATER009OTHERS', 'PE001OTHERS', 'LITETITE006OTHERS']) AS code
+                   'WATERHEATER009OTHERS', 'PE001OTHERS', 'LITETITE006OTHERS', 'WAITING999']) AS code
       LEFT JOIN (SELECT * FROM stk_src WHERE FALSE) AS s ON TRUE
     ), raw_data AS (
       select
