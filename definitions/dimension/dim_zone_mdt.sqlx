@@ -9,7 +9,6 @@ config {
   },
 }
 
-
 js {
     const ZoneSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_mdt_sales_zone_master`;
     const DimZoneMdtTable = {
@@ -30,15 +29,6 @@ WITH zone_master AS (
     t1.start_date AS StartDate,
     t1.end_date   AS EndDate,
 
-    -- คอลัมน์กำกับการแก้ไขจาก MDS (เก็บครบตามที่ตกลง)
-    --t1.is_active  AS IsActive,
-    --t1.version    AS Version,
-    --t1.created_at AS CreatedAt,
-    --${databuffet.functionData.cleanString("t1.created_by")} AS CreatedBy,
-    --t1.updated_at AS UpdatedAt,
-    --${databuffet.functionData.cleanString("t1.updated_by")} AS UpdatedBy,
-
-    --${databuffet.functionData.cleanString("t1.id")} AS MdsID
   FROM `${ZoneSourceRef}` AS t1
   WHERE t1.is_active = TRUE
 
@@ -51,14 +41,6 @@ WITH zone_master AS (
     CAST(NULL AS DATE)      AS StartDate,
     CAST(NULL AS DATE)      AS EndDate,
 
-    --CAST(NULL AS BOOL)      AS IsActive,
-    --CAST(NULL AS INT64)     AS Version,
-    --CAST(NULL AS TIMESTAMP) AS CreatedAt,
-    --CAST(NULL AS STRING)    AS CreatedBy,
-    --CAST(NULL AS TIMESTAMP) AS UpdatedAt,
-    --CAST(NULL AS STRING)    AS UpdatedBy,
-
-    --CAST(NULL AS STRING)    AS MdsID
 )
 
 SELECT * FROM zone_master

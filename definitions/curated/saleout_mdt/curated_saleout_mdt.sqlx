@@ -83,7 +83,8 @@ WITH hp AS (
         s.net_inc_tax_mtd - IFNULL(LAG(s.net_inc_tax_mtd) OVER w, 0) AS sale_amount,
         s.sale_qty_mtd    - IFNULL(LAG(s.sale_qty_mtd)    OVER w, 0) AS sale_qty
     FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "sale_by_branch_detail")} AS s
-    JOIN bt_feed_gap AS g USING (end_date)
+    INNER JOIN bt_feed_gap AS g
+      ON g.end_date = s.end_date
     WHERE s.end_date IS NOT NULL
     WINDOW w AS (
         PARTITION BY s.branch, s.article_id, s.distribution_channel, DATE_TRUNC(s.end_date, MONTH)
@@ -175,7 +176,7 @@ WITH hp AS (
 ), tw AS (
 
     SELECT
-        Last_Sold_Date         AS sale_date,
+        d.Last_Sold_Date       AS sale_date,
         'TW'                   AS store_code,
         Store                  AS branch_code,   -- TW ใช้สตริงเต็ม `60001-CRC Thai Watsadu ...`
         Store                  AS branch_name,
@@ -189,8 +190,9 @@ WITH hp AS (
         1                      AS days_covered,
         FALSE                  AS date_is_estimated, -- วันขายมาจากต้นทาง ไม่ได้เดา
         MAX(asatdate)          AS asatdate
-    FROM tw_dedup
-    JOIN tw_full_days USING (Last_Sold_Date) 
+    FROM tw_dedup AS d
+    INNER JOIN tw_full_days AS fd
+      ON fd.Last_Sold_Date = d.Last_Sold_Date
     GROUP BY sale_date, store_code, branch_code, branch_name, product_code, doc_type
 
 ), dh AS (
@@ -328,7 +330,7 @@ WITH hp AS (
     SELECT r.store_code, r.branch_code, LTRIM(r.product_code, '0') AS pc, p.m,
            SUM(r.sale_qty) AS q, SUM(r.sale_amount) AS a
     FROM feed_rows AS r
-    JOIN partial_months AS p
+    INNER JOIN partial_months AS p
       ON  p.store_code = r.store_code
       AND p.m = DATE_TRUNC(r.sale_date, MONTH)
     CROSS JOIN bi_end AS e
@@ -345,7 +347,7 @@ WITH hp AS (
            SUM(ly.sale_qty) AS q, SUM(ly.sale_amount) AS a,
            MAX(ly.asatdate) AS asatdate
     FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_lastyear")} AS ly
-    JOIN partial_months AS p
+    INNER JOIN partial_months AS p
       ON  p.store_code = ly.store_code
       AND p.m = DATE_TRUNC(ly.sale_date, MONTH)
     GROUP BY 1, 2, 3, 4
@@ -407,10 +409,10 @@ WITH hp AS (
         TRUE                                 AS date_is_estimated,
         t.asatdate
     FROM topup_item AS t
-    JOIN topup_scale AS s
+    INNER JOIN topup_scale AS s
       ON  s.store_code = t.store_code
       AND s.m          = t.m
-    JOIN topup_day AS d
+    INNER JOIN topup_day AS d
       ON  d.store_code = t.store_code
       AND d.m          = t.m
     WHERE t.fill_a * s.scale > 0.005

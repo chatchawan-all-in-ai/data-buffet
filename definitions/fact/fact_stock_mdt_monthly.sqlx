@@ -77,7 +77,7 @@ SELECT
 
   f.asatdate
 FROM month_label AS m
-JOIN `${FactStockTableRef}` AS f
+INNER JOIN `${FactStockTableRef}` AS f
   ON  f.store_code  = m.store_code
   AND f.stock_date  = m.snapshot_date
 

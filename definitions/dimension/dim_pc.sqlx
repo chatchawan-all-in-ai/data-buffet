@@ -33,22 +33,12 @@ WITH pc_source AS (
     t1.start_date AS StartDate,
     t1.end_date   AS EndDate,
 
-    -- คอลัมน์กำกับการแก้ไขจาก MDS (เก็บครบตามที่ตกลง)
-    --t1.is_active  AS IsActive,
-    --t1.version    AS Version,
-    --t1.created_at AS CreatedAt,
-    --${databuffet.functionData.cleanString("t1.created_by")} AS CreatedBy,
-    --t1.updated_at AS UpdatedAt,
-    --${databuffet.functionData.cleanString("t1.updated_by")} AS UpdatedBy,
-
-  
     (
       ${databuffet.functionData.cleanString("t1.employee_id")} IS NULL
       OR ${databuffet.functionData.cleanString("t1.employee_id")} = 'Dummy_NotPC'
       OR IFNULL(TRIM(t1.employee_name),'') IN ('ไม่มี PC', 'Not PC')
     ) AS IsPlaceholder,
 
-    --${databuffet.functionData.cleanString("t1.id")} AS MdsID
   FROM `${PcSourceRef}` AS t1
   WHERE t1.is_active = TRUE
   -- ยุบซ้ำที่ระดับการมอบหมาย ไม่ใช่ระดับคน — ถ้า mds มีแถวซ้ำ เก็บแถวที่แก้ล่าสุด
@@ -73,26 +63,19 @@ WITH pc_source AS (
     -1                      AS PcSK,
     -1                      AS BranchMdtSK,
 
-    CAST(NULL AS STRING)    AS BranchCodeMdt,
-    CAST(NULL AS STRING)    AS EmployeeID,
+    -- ⚠️ ห้ามเป็น NULL — BI ใช้คอลัมน์นี้เป็น ID แล้วจะโชว์เป็นช่องว่าง (Wisut 2026-10-09)
+    'NotBranch'             AS BranchCodeMdt,
+    'NotEmployee'           AS EmployeeID,
     'ไม่ระบุ'                 AS EmployeeName,
     CAST(NULL AS STRING)    AS EmployeeSurname,
-    CAST(NULL AS STRING)    AS EmployeeType,
-    CAST(NULL AS STRING)    AS MarketingGroupID,
-    CAST(NULL AS STRING)    AS MarketingGroupName,
+    'NotType'               AS EmployeeType,
+    'NotGroup'              AS MarketingGroupID,
+    'ไม่ระบุกลุ่มการตลาด'        AS MarketingGroupName,
     CAST(NULL AS DATE)      AS StartDate,
     CAST(NULL AS DATE)      AS EndDate,
 
-    --CAST(NULL AS BOOL)      AS IsActive,
-    --CAST(NULL AS INT64)     AS Version,
-    --CAST(NULL AS TIMESTAMP) AS CreatedAt,
-    --CAST(NULL AS STRING)    AS CreatedBy,
-    --CAST(NULL AS TIMESTAMP) AS UpdatedAt,
-    --CAST(NULL AS STRING)    AS UpdatedBy,
-
     CAST(NULL AS BOOL)      AS IsPlaceholder,
 
-    --CAST(NULL AS STRING)    AS MdsID
 )
 
 SELECT * FROM pc_master

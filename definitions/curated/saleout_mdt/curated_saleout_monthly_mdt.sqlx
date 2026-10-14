@@ -3,7 +3,7 @@ config {
     schema: databuffet.CURATED_SALEOUT_MDT,
     dependencies: ["curated_schema_saleout"],
     tags: [databuffet.TAG_CURATED, databuffet.TAG_CURATED_FULL],
-    uniqueKey: ["month_date", "store_code", "branch_code", "product_code"],
+    uniqueKey: ["month_date", "store_code", "branch_code", "product_code"],  // month_date = รายวันในเดือนปัจจุบัน · วันสิ้นเดือนสำหรับเดือนที่ปิดแล้ว
     bigquery: {
         partitionBy: "month_date",
         clusterBy: ["store_code", "branch_code", "product_code"]
@@ -65,6 +65,11 @@ WITH eom AS (
     -- ⚠️ สร้างใหม่จากฟีดรายวันไม่ได้ — ตรวจ 2026-10-05: ตรงกันแค่ 23 จาก 55 เดือน
     --    ต่างกันตั้งแต่ ม.ค. 2023 และเดือนล่าสุดต่างหลักสิบล้าน (ก.พ. 2026 ต่าง 34.1M)
     --    ตารางนี้จึงยังต้องพึ่ง onetime อยู่ 1 จุด และเป็นจุดเดียวที่เหลือ
+    -- ⚠️ สาขา DH To go ในไฟล์นี้ไม่มี `_TG` ต่อท้าย (เช่น M008) แต่ master กับฟีดรายวัน
+    --    ใช้ M008_TG ทั้งคู่ — ถ้าไม่เติมกลับ จะจับ dim ไม่ได้ แล้ว dim_sales_branch_mdt
+    --    จะสร้างสาขาซ้ำขึ้นมาเอง ทำให้ Branch ID / Zone ID ว่างในรายงาน (เจอ 2026-10-09)
+    --    ครอบ 10 สาขา ปี 2023 · เติมแล้วจับ master ได้ครบทุกตัว
+    --    `KN` ยังจับไม่ได้แม้เติม _TG — ไม่มีใน master ต้องให้ทีม master เพิ่ม
     SELECT
         LAST_DAY(month_date) AS month_date,   -- ต้นทางใช้วันสุดท้ายของเดือนอยู่แล้ว ย้ำให้ชัด
         store_code,
@@ -80,7 +85,7 @@ WITH eom AS (
     -- ยุบฟีดรายวัน · รับเดือนที่ยังไม่มีไฟล์ปิดงวด และเดือนที่กำลังเดินอยู่
     -- ยอดจะโตขึ้นทุกวันที่รัน จนกว่าไฟล์ปิดงวดจะเข้ามาทับ
     SELECT
-         -- เดือนที่กำลังเดินอยู่ = เก็บรายวัน ให้ BI เห็นว่าแต่ละวันขายได้เท่าไร
+        -- เดือนที่กำลังเดินอยู่ = เก็บรายวัน ให้ BI เห็นว่าแต่ละวันขายได้เท่าไร
         -- เดือนที่ปิดแล้ว = ยุบเป็นก้อนเดียวติดป้ายวันสิ้นเดือน (และไฟล์ปิดงวดจะมาทับอยู่แล้ว)
         IF(DATE_TRUNC(sale_date, MONTH) = DATE_TRUNC(CURRENT_DATE('Asia/Bangkok'), MONTH),
            sale_date,
@@ -95,7 +100,6 @@ WITH eom AS (
     FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_mdt")}
     WHERE store_code IS NOT NULL AND branch_code IS NOT NULL
     GROUP BY month_date, store_code, branch_code, product_code
-
 
 ), all_src AS (
 
@@ -127,11 +131,9 @@ SELECT
     s.product_name,
     s.sale_qty,
     s.sale_amount,
-   s.source_type
-   
+    s.source_type
 FROM all_src AS s
-JOIN winner AS w
+INNER JOIN winner AS w
   ON  s.period     = w.period
   AND s.store_code = w.store_code
   AND s.prio       = w.prio
-

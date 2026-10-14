@@ -109,7 +109,7 @@ SELECT
 
   f.asatdate
 FROM `${FactTranscationRef}` AS f
-JOIN mdt_customer AS c
+INNER JOIN mdt_customer AS c
   ON f.CustomerSK = c.CustomerSK
 LEFT JOIN branch_lookup AS b
   ON  c.store_code = b.store_code
