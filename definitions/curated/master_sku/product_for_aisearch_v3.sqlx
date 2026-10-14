@@ -33,32 +33,21 @@ js {
 }
 
 DECLARE run_date DATE DEFAULT CURRENT_DATE('Asia/Bangkok');
--- NULL = full load (target missing, empty, or only holds today's partition)
-DECLARE window_start DATE DEFAULT NULL;
-
--- resume from the last earlier run instead of run_date-1, so a missed night is not lost;
--- today's partition is excluded so a rerun on the same day rebuilds the same set
-BEGIN
-  SET window_start = (SELECT MAX(asatdate) - 1 FROM `${targetTableRef}` WHERE asatdate < run_date);
-EXCEPTION WHEN ERROR THEN
-  SET window_start = NULL;
-END;
 
 BEGIN
   ------ CREATE TEMP TABLE
   -- words that really are a sales unit: every variant 'หน่วยขาย' value + unit names in common_codes
   CREATE OR REPLACE TEMP TABLE unit_vocab AS
-  SELECT v, MAX(asatdate) AS asatdate
+  SELECT DISTINCT v
   FROM (
-    SELECT ${databuffet.functionData.cleanString("JSON_VALUE(attr, '$.value')")} AS v, asatdate
+    SELECT ${databuffet.functionData.cleanString("JSON_VALUE(attr, '$.value')")} AS v
     FROM ${ref(databuffet.VALIDATED_MASTER_SKU, "products")}, UNNEST(JSON_QUERY_ARRAY(specification_attributes)) AS attr
     WHERE JSON_VALUE(attr, '$.label') = 'หน่วยขาย'
     UNION ALL
-    SELECT name AS v, asatdate FROM ${ref(databuffet.VALIDATED_MASTER_SKU, "common_codes")}
+    SELECT name AS v FROM ${ref(databuffet.VALIDATED_MASTER_SKU, "common_codes")}
     WHERE type IN ('sales-unit', 'uom-general', 'uom-volume', 'uom-weight', 'uom-length')
   )
-  WHERE v IS NOT NULL
-  GROUP BY v;
+  WHERE v IS NOT NULL;
 
   CREATE OR REPLACE TEMP TABLE temp_product_for_aisearch_v3 AS
   SELECT
@@ -117,7 +106,7 @@ BEGIN
     FROM ${ref(databuffet.VALIDATED_MASTER_SKU, "products")}
     -- ~26k placeholder rows have no master_sku_code (created_at 2000-01-01)
     WHERE master_sku_code IS NOT NULL
-    -- Pick the current row before delta eligibility so a changed lookup cannot surface an older duplicate SKU
+    -- Pick the current row before filtering the window so an older row cannot qualify instead
     QUALIFY ROW_NUMBER() OVER(PARTITION BY master_sku_code ORDER BY updated_at DESC) = 1
   ) as product
 
@@ -143,20 +132,8 @@ BEGIN
   LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "common_codes")} as volume_unit
     ON product.volume_unit_id = volume_unit.id
 
-  -- Lookup corrections, including unit names/codes, must reach AI search even when the product itself did not change
-  WHERE window_start IS NULL
-    OR product.asatdate >= window_start
-    OR brand.asatdate >= window_start
-    OR cate.asatdate >= window_start
-    OR brand_vendor.asatdate >= window_start
-    OR vendor_brand.asatdate >= window_start
-    OR vendor.asatdate >= window_start
-    OR sales_unit.asatdate >= window_start
-    OR package_unit.asatdate >= window_start
-    OR weight_unit.asatdate >= window_start
-    OR volume_unit.asatdate >= window_start
-    OR (sales_unit.name = 'ชิ้น'
-        AND ${nameSuffix} IN (SELECT v FROM unit_vocab WHERE asatdate >= window_start));
+  -- same window as the old feed: only product rows loaded today or yesterday
+  WHERE product.asatdate BETWEEN run_date - 1 AND run_date;
 
   ---- CREATE TARGET ON FIRST RUN
   CREATE TABLE IF NOT EXISTS `${targetTableRef}`
