@@ -10,7 +10,7 @@ config {
 }
 
 js {
-    const PcSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_pc_master`;
+    const PcSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_mdt_sales_pc_master`;
 
     const DimBranchTable = {
         database: databuffet.DATABASE,

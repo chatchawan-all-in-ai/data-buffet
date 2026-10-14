@@ -10,7 +10,7 @@ config {
 }
 
 js {
-    const ProductSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_product_master_mdt`;
+    const ProductSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_mdt_product_master`;
 
     const DimProductMasterTable = {
         database: databuffet.DATABASE,
@@ -26,15 +26,12 @@ js {
 }
 
 WITH mac5_dedup AS (
-  -- dim_product_master มีได้หลายแถวต่อ (companyID, ProductCode) — ยุบก่อนเพื่อกัน fan-out
   SELECT ProductSK, ProductMktSK, companyID, ProductCode
   FROM `${DimProductMasterTableRef}`
   QUALIFY ROW_NUMBER() OVER(PARTITION BY companyID, ProductCode ORDER BY ProductSK) = 1
 
   ), mkt_fallback AS (
-  -- รหัสตัวแทนที่ master สร้างไว้รองรับสินค้า MDT ที่ไม่มีที่ไป (PE001OTHERS ฯลฯ)
-  -- มีใน dim_stk_mkt แต่ไม่มีใน validated_mac5.stk ซึ่งเป็นต้นทางของ dim_product_master
-  -- จึง join กับ mac5_dedup ไม่ติด ต้องหากลุ่มการตลาดจาก dim_stk_mkt เอง
+
   SELECT k.StkCode, k.companyID, m.ProductMktSK
   FROM `${DimStkMktTableRef}` AS k
   INNER JOIN `${DimProductMktTableRef}` AS m
@@ -46,8 +43,6 @@ WITH mac5_dedup AS (
 
   
 ), product_src AS (
-  -- mds มีรหัสซ้ำได้ (HP/MH ใช้รหัสเดียวกัน — วัด 2026-10-02 ซ้ำ 39 รหัส) และ fact join ด้วยรหัสอย่างเดียว
-  -- ซ้ำ = ยอดเบิ้ล จึงยุบเหลือรหัสละแถว (เลือกแถวที่มีรหัส mac5 ก่อน)
   SELECT *
   FROM `${ProductSourceRef}`
   WHERE is_active = TRUE
@@ -79,14 +74,11 @@ WITH mac5_dedup AS (
    LEFT JOIN mkt_fallback AS fb
     ON  ${databuffet.functionData.cleanString("t1.product_mac5_code")} = fb.StkCode
     AND ${databuffet.functionData.cleanString("t1.commpy")}            = fb.companyID
-     -- ถังรอตรวจสอบของบริษัทเดียวกัน · master สร้าง WAITING999 ไว้ใน STK MKT เมื่อ 2026-10-06
-  -- ⚠️ อ้างด้วยรหัส ไม่ใช่ SK — ดิมสร้างใหม่ทุกวัน SK เปลี่ยนได้
-  -- ถ้าวันไหน master ลบรหัสนี้ทิ้ง IFNULL ชั้นนอกจะคืน -1 เหมือนเดิม ไม่พังเงียบ
+
   LEFT JOIN mkt_fallback AS wait
     ON  wait.StkCode  = 'WAITING999'
     AND wait.companyID = ${databuffet.functionData.cleanString("t1.commpy")}
-  -- แถว WAITING999 ที่ master ทำไว้ใน dim_product_master (ProductSK 118794 / ag01)
-  -- อ้างด้วยรหัส ไม่ใช่ SK — ดิมสร้างใหม่ได้ SK เปลี่ยนได้
+
   LEFT JOIN mac5_dedup AS wait5
     ON  wait5.ProductCode = 'WAITING999'
     AND wait5.companyID   = ${databuffet.functionData.cleanString("t1.commpy")}
@@ -96,7 +88,7 @@ WITH mac5_dedup AS (
   SELECT
     LTRIM(product_code, '0') AS product_code,
     ANY_VALUE(product_name) AS product_name,
-    MIN(store_code)         AS store_code     -- รหัสเดียวกันขายได้หลายห้าง เอาห้างแรกไว้ไล่ย้อน
+    MIN(store_code)         AS store_code     
   FROM (
     SELECT product_code, product_name, store_code
     FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_mdt")}

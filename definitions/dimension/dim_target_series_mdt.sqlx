@@ -11,7 +11,7 @@ config {
 }
 
 js {
-    const TargetSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_target_by_series`;
+    const TargetSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_mdt_sales_target_by_series`;
 
     const DimBranchTable = {
         database: databuffet.DATABASE,

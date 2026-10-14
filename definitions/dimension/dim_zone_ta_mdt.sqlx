@@ -10,8 +10,8 @@ config {
 }
 
 js {
-    const ZoneTaSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_zone_ta_master`;
-
+    const ZoneTaSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_mdt_sales_zone_ta_master`;
+    
     const DimZoneMdtTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,

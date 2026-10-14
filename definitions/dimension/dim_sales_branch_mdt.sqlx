@@ -10,7 +10,7 @@ config {
 }
 
 js {
-    const BranchSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_branch_master`;
+    const BranchSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_mdt_sales_branch_master`;
 
     const DimZoneMdtTable = {
         database: databuffet.DATABASE,
@@ -52,9 +52,7 @@ WITH section_lookup AS (
   QUALIFY ROW_NUMBER() OVER(PARTITION BY SectionID ORDER BY SectionSK) = 1
 
 ), zone_ta_current AS (
-  -- ตอนนี้ zone_manager เกรนเท่ากับ zone_master (1 แถว = 1 โซน) จึง join แบบเดียวกับ
-  -- dim_zone_mdt ได้เลย  QUALIFY เป็นตัวกันไว้เผื่อวันหน้าโซนหนึ่งมีผู้จัดการหลายคน
-  -- ไม่งั้นสาขาจะบวมตามจำนวนผู้จัดการแบบเงียบ ๆ
+ 
   SELECT ZoneTaMdtSK, ZoneCode
   FROM `${DimZoneTaMdtTableRef}`
   WHERE ZoneTaMdtSK <> -1
@@ -127,12 +125,6 @@ WITH section_lookup AS (
     SELECT store_code, branch_code, branch_name, month_date
     FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_monthly_mdt")}
     UNION ALL
-    -- ⚠️ ต้องอ่านสต็อกด้วย (เพิ่ม 2026-10-08) — บางสาขามีแต่สต็อกไม่เคยมียอดขาย
-    -- เช่น คลัง/สำนักงานที่ถือของ (BT DC รังสิต · TW Head Office)
-    -- ถ้าไม่อ่าน สาขาพวกนี้ตกเป็น branch_sk = -1 ใน fact_stock_mdt_monthly
-    -- วัด 2026-10-08: BT 211 แถว · TW 201 แถว กำพร้าอยู่
-    -- curated_stock_mdt ไม่มีคอลัมน์ชื่อสาขา จึงใส่ NULL — ANY_VALUE ข้าม NULL ให้เอง
-    -- ถ้าสาขานั้นมีในยอดขายด้วยก็จะได้ชื่อจากฝั่งนั้น
     SELECT store_code, branch_code, CAST(NULL AS STRING), stock_date
     FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_stock_mdt")}
   )

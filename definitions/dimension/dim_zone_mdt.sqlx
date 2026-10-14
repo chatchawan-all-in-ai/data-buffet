@@ -11,7 +11,7 @@ config {
 
 
 js {
-    const ZoneSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_sales_zone_master`;
+    const ZoneSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_mdt_sales_zone_master`;
     const DimZoneMdtTable = {
       database: databuffet.DATABASE,
       schema: databuffet.DIMENSION_TABLE,

@@ -154,19 +154,8 @@ OPTIONS (
 ----------------------------------- INCREMENTAL ---------------------------------------
 
 ------------------------------------- EOM ----------------------------------------------
--- ยอดปิดรายเดือนที่ห้างส่งมาเอง — ไว้เทียบกับฟีดรายวันว่าเราทำยอดหายไปเท่าไร
--- ต้นทาง Airflow DAG pipline_saleout_mdt_eom อ่าน /opt/airflow/dags/SaleOut_MDT/SO_MDT_EOM/
---
--- ⚠️ ASATDATE ของชั้นนี้คือ **วันที่ DAG รัน** ไม่ใช่งวดของข้อมูล
---    แต่ละห้างปิดเดือนคนละวัน (GB/BT/HP วันที่ 5 · TW วันที่ 8) วันเดียวกันจึงได้คนละเดือน
---    วัด 2026-10-05: ไฟล์ GB = ก.ย. แต่ไฟล์ TW = ส.ค.
---    **งวดจริงต้องอ่านจากเนื้อไฟล์ที่ชั้น validated** ห้ามเดาจาก ASATDATE เด็ดขาด
---
--- BT เอาเฉพาะ 2 ชีตที่ใช้เทียบยอดขาย (ตัดสินใจ 2026-10-05)
--- อีก 5 ชีต (stock_by_branch, stock_aging, turnover, turnover_brand, sale_by_branch_mch3)
--- ยังขึ้น GCS อยู่ แต่ไม่สร้าง external table เพราะยังไม่มีใครอ่าน เพิ่มทีหลังได้
 
--- Table: eom_gb   โกลบอลเฮ้าส์ — รายการขายรายบรรทัด + แถวผลรวมต่อท้าย (ต้องกรองทิ้งที่ validated)
+-- Table: eom_gb   โกลบอลเฮ้าส์ — รายการขายรายบรรทัด + แถวผลรวมต่อท้าย 
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_gb`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_gb`
 WITH PARTITION COLUMNS (
@@ -178,7 +167,7 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/so_mdt_eom/gb/'
 );
 
--- Table: eom_hp   โฮมโปร+เมกาโฮม — ⚠️ ยังดึงเดือนปัจจุบัน ไม่ใช่เดือน -1 รอห้างแก้
+-- Table: eom_hp   โฮมโปร+เมกาโฮม
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_hp`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_hp`
 WITH PARTITION COLUMNS (
@@ -190,7 +179,7 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/so_mdt_eom/hp/'
 );
 
--- Table: eom_tw   ไทวัสดุ — ชีตชื่อลงท้าย Month ต่างจากรายวัน
+-- Table: eom_tw   ไ
 
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_tw`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_tw`
@@ -203,7 +192,7 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/so_mdt_eom/tw/reportsalesubscriptionmonth/'
 );
 
--- Table: eom_bt_sales_by_branch   บุญถาวร — ยอดสรุป MTD/YTD รายสาขา
+-- Table: eom_bt_sales_by_branch
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_bt_sales_by_branch`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_bt_sales_by_branch`
 WITH PARTITION COLUMNS (
@@ -215,7 +204,7 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/so_mdt_eom/bt/sales_by_branch/'
 );
 
--- Table: eom_bt_sale_by_branch_detail   บุญถาวร — รายละเอียดรายสินค้า
+-- Table: eom_bt_sale_by_branch_detail  
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_bt_sale_by_branch_detail`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_bt_sale_by_branch_detail`
 WITH PARTITION COLUMNS (
@@ -227,9 +216,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/so_mdt_eom/bt/sale_by_branch_detail/'
 );
 ------------------------------------- EOM ----------------------------------------------
-
-------------------------------- LASTYEAR (ครั้งเดียว) ----------------------------------
-
 ------------------------------- LASTYEAR (ครั้งเดียว) ----------------------------------
 
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_lastyear`;
