@@ -90,7 +90,7 @@ BEGIN
         -- product.gross_weight as product_weight_gross,
         -- ${unitCode("product.gross_weight", "COALESCE(weight_unit.code, volume_unit.code)")} as product_weight_gross_unit,
         -- '{"SpeciFeild":[]}' as special_specifications_json
-    ) as structData
+    ) as jsonData
   FROM (
     SELECT *
     FROM ${ref(databuffet.VALIDATED_MASTER_SKU, "products")}
