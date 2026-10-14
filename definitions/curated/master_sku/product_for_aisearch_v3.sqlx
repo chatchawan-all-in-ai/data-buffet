@@ -36,7 +36,6 @@ DECLARE run_date DATE DEFAULT CURRENT_DATE('Asia/Bangkok');
 
 BEGIN
   ------ CREATE TEMP TABLE
-  -- words that really are a sales unit: every variant 'หน่วยขาย' value + unit names in common_codes
   CREATE OR REPLACE TEMP TABLE unit_vocab AS
   SELECT DISTINCT v
   FROM (
@@ -56,57 +55,46 @@ BEGIN
     STRUCT(
         product.name as product_name,
         product.master_sku_code as sku_code,
-        -- 'ชิ้น' is the generic default; the name suffix or the variant value keeps the old, finer unit
         IF(sales_unit.name = 'ชิ้น',
            COALESCE(IF(${nameSuffix} IN (SELECT v FROM unit_vocab), ${nameSuffix}, NULL),
                     ${specValue("หน่วยขาย")}, sales_unit.name),
            sales_unit.name) as sales_unit,
-        -- old feed never sent NULL: no tags = {"mypro_tag":[]}
-        TO_JSON_STRING(STRUCT(IFNULL(JSON_VALUE_ARRAY(product.tags), []) AS mypro_tag)) as product_tags_json,
+        product.tags as product_tags_json,
         product.universal_barcode as barcode,
         cate.name as cat_name,
-        -- 52 products have no brand_id; their brand comes through brand_vendors
         COALESCE(brand.name, vendor_brand.name) as brand_name,
         vendor.name as vd_name,
         (CASE
           WHEN product.product_status = 'Active' AND product.sales_status = 'Active' then 'Approve'
           ELSE 'Non-Approve'
         END) as product_status,
-        -- specification_attributes holds the variant values (old prdDiminsionData), kept in the {"dimFeild":[{label,value}]} shape
         TO_JSON_STRING(STRUCT(ARRAY(
           SELECT AS STRUCT JSON_VALUE(attr, '$.label') AS label, JSON_VALUE(attr, '$.value') AS value
           FROM UNNEST(JSON_QUERY_ARRAY(product.specification_attributes)) AS attr WITH OFFSET AS pos
           ORDER BY pos
         ) AS dimFeild)) as product_dimensions_json,
-        -- detail = old pd_detail; products.description is never filled
-        -- ~6k details hold only a product code, not a description
         IF(REGEXP_CONTAINS(TRIM(product.detail), r'^[A-Za-z0-9#_./\-]{4,40}$'), NULL, product.detail) as product_description,
         product.series as product_series,
-        -- ~17k products keep the model only in the variant values
         COALESCE(product.model, ${specValue("โมเดล")}, ${specValue("รุ่นสินค้า")}) as product_model,
         COALESCE(product.material, NULLIF(NULLIF(NULLIF(${specValue("วัสดุ")}, 'โปรดระบุ'), '-'), '0')) as product_material,
-        -- old pd_shape is the package shape; products.shape is always empty
-        product.package_shape as product_shape,
-        product.gross_width as package_width,
-        ${unitCode("product.gross_width", "package_unit.code")} as package_width_unit,
-        product.gross_length as package_length,
-        ${unitCode("product.gross_length", "package_unit.code")} as package_length_unit,
-        product.gross_height as package_height,
-        ${unitCode("product.gross_height", "package_unit.code")} as package_height_unit,
-        product.net_weight as product_weight_net,
-        -- liquids carry their unit in volume_unit_id (l/ml)
-        ${unitCode("product.net_weight", "COALESCE(weight_unit.code, volume_unit.code)")} as product_weight_net_unit,
-        product.gross_weight as product_weight_gross,
-        ${unitCode("product.gross_weight", "COALESCE(weight_unit.code, volume_unit.code)")} as product_weight_gross_unit,
-        -- master_sku has no counterpart of the old pd_spacific_fields
-        '{"SpeciFeild":[]}' as special_specifications_json
+        product.package_shape as product_shape
+
+        -- product.gross_width as package_width,
+        -- ${unitCode("product.gross_width", "package_unit.code")} as package_width_unit,
+        -- product.gross_length as package_length,
+        -- ${unitCode("product.gross_length", "package_unit.code")} as package_length_unit,
+        -- product.gross_height as package_height,
+        -- ${unitCode("product.gross_height", "package_unit.code")} as package_height_unit,
+        -- product.net_weight as product_weight_net,
+        -- ${unitCode("product.net_weight", "COALESCE(weight_unit.code, volume_unit.code)")} as product_weight_net_unit,
+        -- product.gross_weight as product_weight_gross,
+        -- ${unitCode("product.gross_weight", "COALESCE(weight_unit.code, volume_unit.code)")} as product_weight_gross_unit,
+        -- '{"SpeciFeild":[]}' as special_specifications_json
     ) as structData
   FROM (
     SELECT *
     FROM ${ref(databuffet.VALIDATED_MASTER_SKU, "products")}
-    -- ~26k placeholder rows have no master_sku_code (created_at 2000-01-01)
     WHERE master_sku_code IS NOT NULL
-    -- Pick the current row before filtering the window so an older row cannot qualify instead
     QUALIFY ROW_NUMBER() OVER(PARTITION BY master_sku_code ORDER BY updated_at DESC) = 1
   ) as product
 
@@ -114,15 +102,12 @@ BEGIN
     ON product.brand_id = brand.id
   LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "categories")} as cate
     ON product.category_id = cate.id
-  -- products has no vendor_id; the vendor comes through brand_vendors
   LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "brand_vendors")} as brand_vendor
     ON product.brand_vendor_id = brand_vendor.id
   LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "brands")} as vendor_brand
     ON brand_vendor.brand_id = vendor_brand.id
   LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "vendors")} as vendor
     ON brand_vendor.vendor_id = vendor.id
-
-  -- units live in common_codes (type sales-unit / uom-length / uom-weight / uom-volume)
   LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "common_codes")} as sales_unit
     ON product.uom_sales_id = sales_unit.id
   LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "common_codes")} as package_unit
@@ -131,8 +116,6 @@ BEGIN
     ON product.weight_unit_id = weight_unit.id
   LEFT JOIN ${ref(databuffet.VALIDATED_MASTER_SKU, "common_codes")} as volume_unit
     ON product.volume_unit_id = volume_unit.id
-
-  -- same window as the old feed: only product rows loaded today or yesterday
   WHERE product.asatdate BETWEEN run_date - 1 AND run_date;
 
   ---- CREATE TARGET ON FIRST RUN
