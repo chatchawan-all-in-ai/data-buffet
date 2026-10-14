@@ -37,7 +37,7 @@ WITH mac5_dedup AS (
   -- จึง join กับ mac5_dedup ไม่ติด ต้องหากลุ่มการตลาดจาก dim_stk_mkt เอง
   SELECT k.StkCode, k.companyID, m.ProductMktSK
   FROM `${DimStkMktTableRef}` AS k
-  JOIN `${DimProductMktTableRef}` AS m
+  INNER JOIN `${DimProductMktTableRef}` AS m
     ON  k.MarketingGroupID = m.MarketingGroupID
     AND k.SubMarketingID   = m.SubMarketingID
     AND k.SegmentID        = m.SegmentID
@@ -61,13 +61,13 @@ WITH mac5_dedup AS (
 ), product_master AS (
     SELECT
     ROW_NUMBER() OVER(ORDER BY CAST(t1.product_mdt_code AS INT64)) AS ProductMdtSK,
-    IFNULL(mac5.ProductSK, -1)    AS ProductSK,
+    IFNULL(mac5.ProductSK, IFNULL(wait5.ProductSK, -1)) AS ProductSK,
     IFNULL(NULLIF(mac5.ProductMktSK, -1),
            IFNULL(fb.ProductMktSK, IFNULL(wait.ProductMktSK, -1))) AS ProductMktSK,
     CAST(CAST(t1.product_mdt_code AS INT64) AS STRING)          AS ProductCode,
     ${databuffet.functionData.cleanString("t1.product_mdt_name")}  AS ProductName,
     IF(mac5.ProductSK IS NULL AND fb.ProductMktSK IS NULL,
-       'ยังไม่มีข้อมูล',
+       'WAITING999',
        ${databuffet.functionData.cleanString("t1.product_mac5_code")}) AS ProductMac5Code,
     ${databuffet.functionData.cleanString("t1.region_id")}         AS StoreCode,
     ${databuffet.functionData.cleanString("t1.commpy")}            AS CompanyID,
@@ -85,13 +85,16 @@ WITH mac5_dedup AS (
   LEFT JOIN mkt_fallback AS wait
     ON  wait.StkCode  = 'WAITING999'
     AND wait.companyID = ${databuffet.functionData.cleanString("t1.commpy")}
+  -- แถว WAITING999 ที่ master ทำไว้ใน dim_product_master (ProductSK 118794 / ag01)
+  -- อ้างด้วยรหัส ไม่ใช่ SK — ดิมสร้างใหม่ได้ SK เปลี่ยนได้
+  LEFT JOIN mac5_dedup AS wait5
+    ON  wait5.ProductCode = 'WAITING999'
+    AND wait5.companyID   = ${databuffet.functionData.cleanString("t1.commpy")}
 
     ), feed_product AS (
 
-  -- สินค้าที่ฟีดส่งมาจริง ไม่ว่าจะขายหรือมีสต็อก — ใช้หาตัวที่ยังไม่มีในทะเบียน
-  -- อ่าน 3 ตาราง เพราะสินค้าบางตัวมีแต่สต็อก หรือโผล่เฉพาะไฟล์ปิดงวด
   SELECT
-    product_code,
+    LTRIM(product_code, '0') AS product_code,
     ANY_VALUE(product_name) AS product_name,
     MIN(store_code)         AS store_code     -- รหัสเดียวกันขายได้หลายห้าง เอาห้างแรกไว้ไล่ย้อน
   FROM (
@@ -105,18 +108,18 @@ WITH mac5_dedup AS (
     FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_stock_mdt")}
   )
   WHERE product_code IS NOT NULL
-  GROUP BY product_code
+  GROUP BY LTRIM(product_code, '0')
 
 ), new_product AS (
 
   SELECT
     (SELECT IFNULL(MAX(ProductMdtSK), 0) FROM product_master)
       + ROW_NUMBER() OVER(ORDER BY f.product_code)        AS ProductMdtSK,
-    -1                                                   AS ProductSK,
+    IFNULL(wait5.ProductSK, -1)                          AS ProductSK,
     IFNULL(wait.ProductMktSK, -1)                        AS ProductMktSK,
     f.product_code                                       AS ProductCode,
     IFNULL(f.product_name, f.product_code)               AS ProductName,
-    'ยังไม่มีข้อมูล'                                           AS ProductMac5Code,
+    'WAITING999'                                           AS ProductMac5Code,
     f.store_code                                         AS StoreCode,
     'ag01'                                               AS CompanyID,
     CAST(NULL AS STRING)                                 AS MdsID
@@ -124,6 +127,9 @@ WITH mac5_dedup AS (
   LEFT JOIN mkt_fallback AS wait
     ON  wait.StkCode   = 'WAITING999'
     AND wait.companyID = 'ag01'
+  LEFT JOIN mac5_dedup AS wait5
+    ON  wait5.ProductCode = 'WAITING999'
+    AND wait5.companyID   = 'ag01'
   WHERE NOT EXISTS (
     SELECT 1 FROM product_master AS p WHERE p.ProductCode = f.product_code
   )

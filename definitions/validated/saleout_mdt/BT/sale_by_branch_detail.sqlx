@@ -13,8 +13,6 @@ config {
 js {
     const sourceTableRef = `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.sale_by_branch_detail`;
 
-    // end_date ต้องอยู่ในคีย์ ไม่งั้นเก็บได้แค่แถวเดียวต่อเดือน แล้วหายอดรายวันไม่ได้
-    // distribution_channel ต้องอยู่ในคีย์ ไม่งั้นยอด Showroom กับ Anyhome ทับกัน
     const pk_key = ["branch", "article_id", "distribution_channel", "end_date"]
 
     let partition_statement, post_operations_statement;
@@ -48,8 +46,7 @@ SELECT
     ${databuffet.functionData.cleanString('BRANCH')} AS branch,
     ${databuffet.functionData.cleanString('ARTICLE_ID')} AS article_id,
 
-    -- ห้างเปลี่ยนชื่อช่องทางกลางทาง: Web (พ.ค.-ก.ค.) → Website (ส.ค.-ก.ย.)
-    -- สาขาเดียวกัน (ECOMMERCE) ทั้งคู่ จึงรวมเป็นค่าเดียว
+
     CASE ${databuffet.functionData.cleanString('DISTRIBUTION_CHANNEL')}
         WHEN 'Website' THEN 'Web'
         ELSE ${databuffet.functionData.cleanString('DISTRIBUTION_CHANNEL')}
