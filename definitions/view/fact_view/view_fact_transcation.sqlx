@@ -678,7 +678,7 @@ with dim_calendar as (
               THEN FALSE
 
             WHEN IFNULL(TRIM(sale_sk.DepCode), '') != '' and IFNULL(TRIM(sale_sk.CostChannelID), '') != ''
-              THEN TRIM(trans.milDep) = TRIM(sale_sk.DepCode)
+              THEN TRIM(trans.milDep) IN UNNEST(SPLIT(REPLACE(sale_sk.DepCode, ' ', ''), '|'))
                 and trans.ChannelCostID = sale_sk.CostChannelID
 
             -- มี CustomerFlag และลูกค้าอยู่ใน list -> ชนด้วย EmployeeID + customer list
@@ -687,7 +687,7 @@ with dim_calendar as (
               THEN (
                 (IFNULL(TRIM(sale_sk.CustomerFlag), '') != ''
                   and TRIM(trans.milCus) IN UNNEST(SPLIT(REPLACE(sale_sk.CustomerFlag, ' ', ''), '|')))
-                OR TRIM(trans.milDep) = TRIM(sale_sk.DepCode)
+                OR TRIM(trans.milDep) IN UNNEST(SPLIT(REPLACE(sale_sk.DepCode, ' ', ''), '|'))
               )
 
             WHEN IFNULL(TRIM(sale_sk.DepCode), '') = '' and IFNULL(TRIM(sale_sk.CostChannelID), '') != ''

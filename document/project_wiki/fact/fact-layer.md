@@ -192,6 +192,30 @@ catch-all ผ่าน `ELSE TRUE`
 วัดเมื่อ 2026-09-15 (ag01 ทั้งตาราง เทียบกฎเดิมกับกฎใหม่บน dim ปัจจุบัน): เปลี่ยน **33 แถว**
 ของพนักงาน 1059254 จาก SK 254 (Lao_TA03) ไป SK 337 (Myanmar_TA01) พนักงานคนอื่นไม่ขยับ
 
+### DepCode รับหลายค่า `A|B` (2026-10-17)
+
+`DepCode` ของ `mds_data_sales_representative_master` เก็บได้หลายรหัสแผนก MAC5 คั่นด้วย `|`
+(เช่น `TW_S1|TW_S`) ส่วนรหัสลูกค้าอยู่ใน `CustomerFlag` — กิ่ง DepCode ทั้งสองกิ่งใน
+`saleRepMatchOn` (`seq_condition` 1 และ 2.5/3)
+เทียบเป็น `TRIM(trans.milDep) IN UNNEST(SPLIT(REPLACE(<rep>.DepCode, ' ', ''), '|'))`
+แทน `=` และ `view_fact_transcation` (สำเนากฎ `*Last`) แก้แบบเดียวกัน
+
+ตัดอักขระช่องว่างธรรมดา (`' '`) ทุกตัวใน DepCode ก่อน split แล้วเทียบรหัสเต็มแต่ละค่า;
+`dim_sale_representative` และ `dim_sale_representative_last` ยังเก็บ `A|B` เป็นค่าเดียว
+(รวม partition key ของ `_last`) ไม่มีการแตกแถวต่อรหัส · `dim_customer_report_info` ใช้การเทียบ list
+เดียวกันกับ `TRIM(mihDep)` ใน `inv_rows` — กฎเลือก TA อยู่ที่
+[Customer Report Info](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01)
+
+- ค่าเดียวที่ไม่มีช่องว่าง (`A`) ให้ผลเท่าเดิม: `SPLIT('A','|') = ['A']` · วัด 2026-10-17 ด้วย SELECT ของ
+  query ใหม่เทียบตารางปัจจุบัน: fact 2,707,406 แถว / view 2,703,216 แถว / `dim_customer_report_info`
+  41,497 แถว ต่างกัน 0
+- ไม่แตกแถว: `UNNEST` อยู่ใน predicate ของ join ไม่ใช่ FROM และ QUALIFY เดิมยังเลือก rep เดียวต่อบรรทัด
+- `seq_condition` ไม่เปลี่ยน — แถว `A|B` อยู่ priority เดียวกับแถว `A`
+- ทดสอบ: ag01/1053173 แถว `TW_S1` (SK 546) ใส่เป็น `TW_S1|TW_S` → บรรทัด `TW_S1` 746 แถวคง SK 546,
+  บรรทัด `TW_S` ในช่วงวันของแถวนั้น 11 แถวย้ายจาก SK 535 (TW_OTHER) มา 546 นอกนั้นไม่ขยับ
+- ข้อควรระวังเมื่อรหัสในหลายแถวซ้อนกันและขั้นตอนเปิดใช้: ดูหัวข้อ DepCode หลายค่าใน
+  [Known Issues](../../operations/known-issues.md#depcode-หลายค่า-ab-ใน-mds-sales-representative-2026-10-17)
+
 ### CompanySK ต่อเป็นลูกโซ่ตาม hierarchy (2026-08-20)
 
 join ปลายลูกโซ่ใช้ CompanySK ของ **dim ตัวก่อนหน้า** ไม่ใช่ `trans.CompanySK`

@@ -196,7 +196,7 @@ js {
             THEN FALSE
 
           WHEN IFNULL(${r}.DepCode, '') != '' AND IFNULL(${r}.CostChannelID, '') != ''
-            THEN TRIM(trans.milDep) = ${r}.DepCode
+            THEN TRIM(trans.milDep) IN UNNEST(SPLIT(REPLACE(${r}.DepCode, ' ', ''), '|'))
               AND trans.ChannelCostID = ${r}.CostChannelID
 
           WHEN IFNULL(${r}.DepCode, '') = '' AND IFNULL(${r}.CostChannelID, '') != ''
@@ -216,7 +216,7 @@ js {
             THEN (
               (IFNULL(${r}.CustomerFlag, '') != ''
                 AND TRIM(trans.milCus) IN UNNEST(SPLIT(REPLACE(${r}.CustomerFlag, ' ', ''), '|')))
-              OR TRIM(trans.milDep) = ${r}.DepCode
+              OR TRIM(trans.milDep) IN UNNEST(SPLIT(REPLACE(${r}.DepCode, ' ', ''), '|'))
             )
 
           WHEN IFNULL(${r}.ProvinceID, '') != ''
