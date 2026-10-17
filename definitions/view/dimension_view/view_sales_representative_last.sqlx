@@ -36,7 +36,7 @@ js {
 }
 
 SELECT
-  dim_sale.*,
+  dim_sale.* except(DepartmentName),
   dim_region.RegionID,
   dim_region.RegionName,
   dim_section.SectionID,

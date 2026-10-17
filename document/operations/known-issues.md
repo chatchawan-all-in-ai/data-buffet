@@ -1,6 +1,6 @@
 # Known Issues & Gotchas
 
-รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-10-01
+รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-10-17
 
 ## CustomerFlag ใน mds sales representative (2026-09-15)
 
@@ -14,14 +14,31 @@
    (`agg_normal` ไม่เช็ค CustomerFlag) ซึ่งวัดแล้วว่าย้าย fact `*Last` หลายร้อยแถว
    วิธีตรวจ: `SELECT` แถว mds ที่มี CustomerFlag แล้ว DepCode/Cost/Province ว่าง
    แล้วเทียบกับแถวที่โผล่ใน dim
-2. **พนักงานคนเดียวห้ามมี 2 แถวที่ DepCode เดียวกันแต่ต่าง DepartmentID และช่วงวันซ้อนกัน**
+2. **พนักงานคนเดียวในบริษัทเดียวกันห้ามมี 2 แถวที่รหัสภายใน DepCode ซ้อนกันแต่ต่าง DepartmentID และช่วงวันซ้อนกัน**
+   (รวมกรณี `A|B` กับ `B` — ดูหัวข้อ DepCode หลายค่าด้านล่าง)
    — `seq_condition = 2.5` ให้สิทธิ์ทั้งแถว ไม่ได้ดูว่า transaction นั้นชนผ่าน customer list
    หรือชนผ่าน DepCode ถ้าเกิดกรณีนี้แถวที่มี flag จะชนะแม้ตอนที่ชนด้วย DepCode เฉย ๆ
-   วัด 2026-09-15 ทั้ง mds: **0 คู่** ถ้าอยากกันจริงต้องย้าย priority ไปไว้ใน `ORDER BY`
+   วัด 2026-09-15 ทั้ง mds ก่อนรองรับ list ใน DepCode: **0 คู่** ถ้าอยากกันจริงต้องย้าย priority ไปไว้ใน `ORDER BY`
    ของ `QUALIFY` แทน (ตัดสินใจไม่ทำเพราะยังไม่มีเคส)
 3. **flag ใช้กับกิ่ง DepCode ล้วนเท่านั้น** — กิ่ง `seq_condition = 1`
    (DepCode + CostChannelID) ไม่ได้รับการ override จาก CustomerFlag ตาม spec ที่ตกลงกัน
    ("employeeid + depcode")
+
+## DepCode หลายค่า `A|B` ใน mds sales representative (2026-10-17)
+
+รูปแบบค่าและกฎ matching อยู่ที่ [DepCode รับหลายค่า](../project_wiki/fact/fact-layer.md#depcode-รับหลายค่า-ab-2026-10-17)
+ส่วนการกรอกใน MDS เป็นงานของ user
+
+- **อย่าให้รหัสซ้อนกัน** — พนักงานคนเดียวในบริษัทเดียวกันมีแถว `A|B` และแถว `B` (หรือ `A|B` สองแถว)
+  ที่ช่วงวันซ้อนกันและผ่านเงื่อนไขอื่นของบิลเดียวกัน บรรทัด `B` จะชนทั้งสองแถว;
+  `fact_transcation` เลือก `seq_condition` ต่ำสุดก่อน
+  แล้วเลือก `SaleRepSK` มากกว่าเมื่อ priority เท่ากัน
+  ซึ่งเปลี่ยนได้ทุกวันเพราะ SK ของ dim rebuild ใหม่ทุกวัน (พฤติกรรมเดียวกับมีแถว `A` ซ้ำสองแถวในปัจจุบัน)
+  · `view_fact_transcation` เรียง `seq_condition`, `dim_report.Segment` แล้ว `SaleRepSK DESC`
+  · การเลือก TA ใน `dim_customer_report_info` ใช้กฎเรียงของ
+  [Customer Report Info](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01)
+- หลัง merge ต้อง deploy view `view_fact_transcation` และ rebuild `fact_transcation` /
+  `dim_customer_report_info` ก่อน ค่าใหม่จึงมีผลกับข้อมูลจริง
 
 ## คำสะกดผิดที่เป็น identifier จริง (ห้ามแก้)
 

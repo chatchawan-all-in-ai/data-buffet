@@ -339,9 +339,11 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
      `<เชน>_` → **TA เดียว** ได้ TA นั้น `TASource = 'MDT'`
      · **หลาย TA ในเชน (2026-10-08, พนักงานแยกภาคด้วย `DepCode` เช่น `TW_S01_TA01`/`TW_S02_TA01`)** — CTE `mdt_slot`:
      ใช้ `TRIM(mihDep)` ของ**บิลล่าสุดที่พนักงานคนนี้ขายให้ร้านนี้** ใน `inv_rows` (`view_dim_invoice` บริษัท + ชื่อรายงาน
-     ไม่สนช่องว่างเดียวกับ `ta_cus`, `mihPer = debsalesp`) เฉพาะบิลที่ `mihDep` ตรงกับ `DepCode` ของตัวเลือก
+     ไม่สนช่องว่างเดียวกับ `ta_cus`, `mihPer = debsalesp`) เฉพาะบิลที่ `mihDep` อยู่ใน list `DepCode` ของตัวเลือก
+     ตาม [กฎ DepCode หลายค่า](../fact/fact-layer.md#depcode-รับหลายค่า-ab-2026-10-17)
      และตัดบิลยกเลิก (`mihCancel = -1`) ออกใน `mdt_slot` **ก่อนเรียงบิลล่าสุด**; `mihCancel` เป็น NULL ถือว่าไม่ยกเลิก
-     (`mix_date DESC, mihVnos DESC`) → TA ที่ `DepCode` ตรง ได้ `TASource = 'MDT'` เหมือนกัน · ไม่มีบิลตรง = ว่าง
+     (`mix_date DESC, mihVnos DESC, DepartmentSK ASC` — ถ้าบิลเดียวชนหลาย TA เลือก `DepartmentSK` ต่ำสุด)
+     → TA ที่ `DepCode` ตรง ได้ `TASource = 'MDT'` เหมือนกัน · ไม่มีบิลตรง = ว่าง
      (`mihDep` ตรงกับ `milDep` 99.8% ของบิลพนักงานเชน) · TA อาจเปลี่ยนเองเมื่อบิลล่าสุดย้ายภาค (ย้อนทดสอบ 1 ปี เปลี่ยน 3 ร้าน)
      · กรองบิลยกเลิกเฉพาะการเลือกภาคนี้: `inv_rows` ยังเก็บบิลเหล่านั้นให้ `inv`, `inv_cus`, `ta_cus` ใช้เลือกชื่อร้าน,
      รหัสลูกค้าสำหรับ Segment และ `TADebcode` ตามเดิม · กรณีมี TA เดียวในเชนยังใช้ TA นั้นโดยไม่ต้องมีบิลที่ไม่ยกเลิก

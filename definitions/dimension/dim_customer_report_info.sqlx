@@ -208,7 +208,7 @@ with mds as (
     ON tc.CompanyID = i.CompanyID
     AND tc.CustomerReportKey = i.CustomerReportKey
     AND c.debsalesp = i.mihPer
-    AND c.DepCode = i.mihDep
+    AND i.mihDep IN UNNEST(SPLIT(REPLACE(c.DepCode, ' ', ''), '|'))
     AND IFNULL(i.mihCancel, 0) <> -1
   QUALIFY ROW_NUMBER() OVER(PARTITION BY c.company_id, c.debcode ORDER BY i.mix_date DESC, i.mihVnos DESC, c.DepartmentSK) = 1
 

@@ -117,8 +117,8 @@ with tab_main as (
     COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName) as CRCShopName, 
     (CASE
       WHEN `${FnFlagScgTableRef}`(main.RefOrder, main.mihCus) is not null
-            and mec.mecdesc is not null
-        THEN `${CleanCompanyPrefixTableRef}`(mec.mecdesc)
+            and mecdesc is not null
+        THEN `${CleanCompanyPrefixTableRef}`(mecdesc)
       WHEN cust.FlagMDSNickName = True THEN cust.NicknameCustomer
       WHEN COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName) is not null
         THEN COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName)
