@@ -1,0 +1,90 @@
+config {
+    type: "table",
+    schema: databuffet.VALIDATED_D365,
+    dependencies: ["validated_schema_d365", "create_all_table_raw_d365"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_FULL],
+    uniqueKey: ["inventory_item_price_id"],
+}
+
+js {
+    // Define table references
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_D365,
+        name: name(),
+    };
+
+    // Build source table reference
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    // Keep existing logic
+    const pk_key = ["inventory_item_price_id"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY asatdate DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+-- raw เป็น snapshot เต็มทุกวัน → อ่านเฉพาะ partition ล่าสุด (แถวที่หายจากต้นทางจะหายจากตารางนี้ด้วย)
+-- วันเวลาใน raw ไม่มี timezone ติดมา จึงเก็บตามที่ส่งมา (ยังไม่ยืนยันว่าเป็น UTC หรือเวลาไทย)
+SELECT
+    ${databuffet.functionData.cleanString('inventory_item_price_id')} AS inventory_item_price_id,
+    ${databuffet.functionData.castInt64('record_id')} AS record_id,
+    ${databuffet.functionData.cleanString('item_number')} AS item_number,
+    ${databuffet.functionData.cleanString('costing_version_id')} AS costing_version_id,
+    ${databuffet.functionData.cleanString('price_type')} AS price_type,
+    DATE(${databuffet.functionData.parseFlexibleDatetime('from_date')}) AS from_date,
+    ${databuffet.functionData.cleanString('price_site_id')} AS price_site_id,
+    ${databuffet.functionData.cleanString('product_configuration_id')} AS product_configuration_id,
+    ${databuffet.functionData.cleanString('product_color_id')} AS product_color_id,
+    ${databuffet.functionData.cleanString('product_size_id')} AS product_size_id,
+    ${databuffet.functionData.cleanString('product_style_id')} AS product_style_id,
+    ${databuffet.functionData.cleanString('product_version_id')} AS product_version_id,
+    ${databuffet.functionData.cleanString('product_unit_symbol')} AS product_unit_symbol,
+    ${databuffet.functionData.castFloat64('price')} AS price,
+    ${databuffet.functionData.castFloat64('price_quantity')} AS price_quantity,
+    ${databuffet.functionData.castFloat64('price_charges_quantity')} AS price_charges_quantity,
+    ${databuffet.functionData.castFloat64('fixed_price_charges')} AS fixed_price_charges,
+    ${databuffet.functionData.cleanString('is_price_including_charges')} = 'Yes' AS is_price_including_charges,
+    ${databuffet.functionData.cleanString('calculation_number')} AS calculation_number,
+    ${databuffet.functionData.cleanString('is_active')} = 'Yes' AS is_active,
+    ${databuffet.functionData.parseFlexibleDatetime('price_created_datetime')} AS price_created_datetime,
+    ${databuffet.functionData.parseFlexibleDatetime('created_datetime')} AS created_datetime,
+    ${databuffet.functionData.cleanString('created_by')} AS created_by,
+    ${databuffet.functionData.parseFlexibleDatetime('updated_datetime')} AS updated_datetime,
+    ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+WHERE ASATDATE = (SELECT MAX(ASATDATE) FROM `${sourceTableRef}`)
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

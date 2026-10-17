@@ -1,0 +1,104 @@
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_D365,
+    dependencies: ["validated_schema_d365", "create_all_table_raw_d365"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["inventory_movement_journal_entries_id"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["inventory_movement_journal_entries_id"]
+    },
+}
+
+js {
+    // Define table references
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_D365,
+        name: name(),
+    };
+
+    // Build source table reference
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    // Keep existing logic
+    const pk_key = ["inventory_movement_journal_entries_id"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY asatdate DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+-- raw: 20260914–16 full load (20260915 มีไฟล์ซ้ำ _NNN_1.avro) แล้ว incremental รายวัน → QUALIFY ข้าม partition ตัดซ้ำ
+SELECT
+    ${databuffet.functionData.cleanString('inventory_movement_journal_entries_id')} AS inventory_movement_journal_entries_id,
+    ${databuffet.functionData.cleanString('movement_entries_id')} AS movement_entries_id,
+    ${databuffet.functionData.cleanString('journal_number')} AS journal_number,
+    ${databuffet.functionData.cleanString('journal_name_id')} AS journal_name_id,
+    ${databuffet.functionData.castFloat64('line_number')} AS line_number,
+    DATE(${databuffet.functionData.parseFlexibleUtcDatetime('transaction_date')}) AS transaction_date,
+    ${databuffet.functionData.cleanString('item_number')} AS item_number,
+    ${databuffet.functionData.cleanString('product_configuration_id')} AS product_configuration_id,
+    ${databuffet.functionData.cleanString('product_color_id')} AS product_color_id,
+    ${databuffet.functionData.cleanString('product_size_id')} AS product_size_id,
+    ${databuffet.functionData.cleanString('product_style_id')} AS product_style_id,
+    ${databuffet.functionData.cleanString('inventory_site_id')} AS inventory_site_id,
+    ${databuffet.functionData.cleanString('inventory_warehouse_id')} AS inventory_warehouse_id,
+    ${databuffet.functionData.cleanString('warehouse_location_id')} AS warehouse_location_id,
+    ${databuffet.functionData.cleanString('item_batch_number')} AS item_batch_number,
+    ${databuffet.functionData.cleanString('item_serial_number')} AS item_serial_number,
+    ${databuffet.functionData.cleanString('license_plate_number')} AS license_plate_number,
+    ${databuffet.functionData.cleanString('inventory_status_id')} AS inventory_status_id,
+    ${databuffet.functionData.cleanString('inventory_gtd_id')} AS inventory_gtd_id,
+    ${databuffet.functionData.cleanString('inventory_owner_id')} AS inventory_owner_id,
+    ${databuffet.functionData.cleanString('inventory_profile_id')} AS inventory_profile_id,
+    ${databuffet.functionData.castFloat64('inventory_quantity')} AS inventory_quantity,
+    ${databuffet.functionData.castFloat64('catch_weight_quantity')} AS catch_weight_quantity,
+    ${databuffet.functionData.castFloat64('unit_cost')} AS unit_cost,
+    ${databuffet.functionData.castFloat64('unit_cost_quantity')} AS unit_cost_quantity,
+    ${databuffet.functionData.castFloat64('cost_amount')} AS cost_amount,
+    ${databuffet.functionData.castFloat64('fixed_cost_charges')} AS fixed_cost_charges,
+    ${databuffet.functionData.cleanString('offset_main_account_id_display_value')} AS offset_main_account_id_display_value,
+    ${databuffet.functionData.cleanString('default_ledger_dimension_display_value')} AS default_ledger_dimension_display_value,
+    ${databuffet.functionData.cleanString('is_active')} = 'Y' AS is_active,
+    ${databuffet.functionData.cleanString('remarks')} AS remarks,
+    ${databuffet.functionData.parseFlexibleUtcDatetime('created_datetime')} AS created_datetime,
+    ${databuffet.functionData.cleanString('created_by')} AS created_by,
+    ${databuffet.functionData.parseFlexibleUtcDatetime('updated_datetime')} AS updated_datetime,
+    ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+    ${databuffet.functionData.cleanString('sync_hash')} AS sync_hash,
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

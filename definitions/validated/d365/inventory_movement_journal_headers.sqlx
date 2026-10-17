@@ -1,0 +1,91 @@
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_D365,
+    dependencies: ["validated_schema_d365", "create_all_table_raw_d365"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["inventory_movement_journal_headers_id"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["inventory_movement_journal_headers_id"]
+    },
+}
+
+js {
+    // Define table references
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_D365,
+        name: name(),
+    };
+
+    // Build source table reference
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    // Keep existing logic
+    const pk_key = ["inventory_movement_journal_headers_id"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY asatdate DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+-- raw: 20260914–16 full load (มีแถวซ้ำ) แล้ว incremental รายวัน → QUALIFY ข้าม partition ตัดซ้ำ
+SELECT
+    ${databuffet.functionData.cleanString('inventory_movement_journal_headers_id')} AS inventory_movement_journal_headers_id,
+    ${databuffet.functionData.cleanString('movement_id')} AS movement_id,
+    ${databuffet.functionData.cleanString('journal_number')} AS journal_number,
+    ${databuffet.functionData.cleanString('journal_name_id')} AS journal_name_id,
+    ${databuffet.functionData.cleanString('description')} AS description,
+    ${databuffet.functionData.cleanString('is_posted')} = 'Yes' AS is_posted,
+    ${databuffet.functionData.parseFlexibleUtcDatetime('posted_datetime')} AS posted_datetime,
+    ${databuffet.functionData.cleanString('posted_user_id')} AS posted_user_id,
+    ${databuffet.functionData.cleanString('default_inventory_site_id')} AS default_inventory_site_id,
+    ${databuffet.functionData.cleanString('default_warehouse_id')} AS default_warehouse_id,
+    ${databuffet.functionData.cleanString('reservation_mode')} AS reservation_mode,
+    ${databuffet.functionData.cleanString('posting_detail_level')} AS posting_detail_level,
+    ${databuffet.functionData.cleanString('voucher_number_selection_rule')} AS voucher_number_selection_rule,
+    ${databuffet.functionData.cleanString('voucher_number_allocation_rule')} AS voucher_number_allocation_rule,
+    ${databuffet.functionData.cleanString('voucher_number_sequence_code')} AS voucher_number_sequence_code,
+    ${databuffet.functionData.cleanString('are_lines_deleted_after_posting')} = 'Yes' AS are_lines_deleted_after_posting,
+    ${databuffet.functionData.cleanString('is_active')} = 'Y' AS is_active,
+    ${databuffet.functionData.cleanString('remarks')} AS remarks,
+    ${databuffet.functionData.parseFlexibleUtcDatetime('created_datetime')} AS created_datetime,
+    ${databuffet.functionData.cleanString('created_by')} AS created_by,
+    ${databuffet.functionData.parseFlexibleUtcDatetime('updated_datetime')} AS updated_datetime,
+    ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+    ${databuffet.functionData.cleanString('sync_hash')} AS sync_hash,
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}
