@@ -85,7 +85,10 @@ dataform compile --json | jq '.tables[] | {name: .target.name, deps: .dependency
 
 ### Tag ทั้งหมด
 
-**ใช้งานจริง**: `initial`, `re-initial` (⚠️ DROP ตาราง validated/curated ของ MAC5),
+**ใช้งานจริง**: `initial` (⚠️ DROP ตาราง validated ของ cis360, mastersku,
+master_sku, saleout_mdt, allkons_commission และ d365 — ห้ามรันทั้ง tag ให้รันเฉพาะ action
+`create_all_table_raw_<source>` ตัวเดียวโดยไม่ติ๊ก "include dependencies"),
+`re-initial` (⚠️ DROP ตาราง validated/curated ของ MAC5),
 `validated`, `validated_full`, `validated_incremental`, `curated`,
 `curated_full`, `curated_incremental` (เริ่มใช้กับชุด SALEOUT_MDT),
 `dimension_daily`, `dimension_yearly` (`dim_calendar` ตัวเดียว), `fact_daily`,
@@ -105,8 +108,13 @@ initial → validated → curated → dimension_daily → fact_daily → view
 cdc → process   (สายแยก — process gate อยู่บน CDC ของวันนั้น)
 ```
 
+`initial` ในแผนภาพหมายถึงสร้าง raw ครั้งแรกเท่านั้น — รันทีละ action
+`create_all_table_raw_<source>` ไม่ใช่ทั้ง tag (ดูคำเตือนด้านบน)
+
 `view` ต้องรัน **หลัง** `fact_daily` เสมอ เพราะ view อ่านจาก dim/fact
-ถ้าลืมใส่ `view` ในตารางเวลา view จะไม่ถูก deploy และ repo จะ drift จาก BigQuery เงียบ ๆ
+`view` **ไม่อยู่ในตารางเวลาโดยตั้งใจ** — ต้อง deploy มือ ไม่งั้น view บน BigQuery จะไม่ตรงกับ repo
+ตารางเวลาจริง (05:45 / 06:00 / 08:55 / ปีละครั้ง) ดูที่
+[running-and-troubleshooting § Schedule](../project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd)
 
 ## Query ตรงด้วย bq
 
@@ -162,8 +170,8 @@ wsl -e bash -lc "bq --project_id=databuffet-nonprd query --use_legacy_sql=false 
 | `Unrecognized name: <col>` ตอนสร้างตาราง | `partitionBy`/`clusterBy` ใน config ชี้คอลัมน์ที่ SELECT ไม่ได้คืนมา — ถอดคอลัมน์เมื่อไรต้องเช็ค config ด้วยเสมอ |
 | `Octal escape sequences are not allowed in template strings` | มี `\1`–`\9` ใน **คอมเมนต์ `--`** ของ SQLX (คอมเมนต์ถูกประมวลเป็น template literal) — เขียน `\\1` ใน comment ส่วนโค้ด SQL ใช้ backslash เดี่ยวได้ ดู [coding-standard §3.3](../coding-standards/sqlx-coding-standard.md) |
 | dim MERGE บอก table not found | ตาราง `operations` ต้องมีใน BigQuery ก่อนรันครั้งแรก Dataform ไม่สร้างให้ |
-| dim ไม่เห็นข้อมูล mds ที่แก้ไปแล้ว | เกิน window `MDS_BACKFILL_DAYS` (1 วัน) — ใช้ skill `backfill-dimension` · **เฉพาะ dim แบบ MERGE 12 ตัว** dim full-rebuild 43 ตัวเห็นทันทีอยู่แล้ว |
-| validated ขาดข้อมูลย้อนหลัง | window incremental = `BACKFILL_DAYS` (1 วัน, string compare `ASATDATE`) — เพิ่มค่าชั่วคราวใน `workflow_settings.yaml` แล้วรันรอบเดียว |
+| dim ไม่เห็นข้อมูล mds ที่แก้ไปแล้ว | เกิน window `MDS_BACKFILL_DAYS` (1 วัน) — ใช้ skill `backfill-dimension` · **เฉพาะ dim แบบ MERGE** (2 mds + 10 lake) dim full-rebuild เห็นทันทีอยู่แล้ว |
+| validated ขาดข้อมูลย้อนหลัง | window incremental = `BACKFILL_DAYS` (1 วัน, string compare `ASATDATE`) — เพิ่มค่าชั่วคราวใน `workflow_settings.yaml` แล้วรันรอบเดียว (รอบ schedule compile branch `nonprod` ตอน 05:45 — ถ้าจะให้รอบอัตโนมัติใช้ค่าใหม่ ต้อง commit ลง `nonprod` ก่อน 05:45) |
 | บรรทัดที่ต้นทางลบไปแล้วยังค้าง | PK ระดับบรรทัด MERGE ลบให้ไม่ได้ — `mih`/`mil`/`mir`/`curated_mil` ใช้ doc-grain purge ใน `pre_operations` แล้ว ถ้าตารางใหม่มีอาการนี้ต้องทำแบบเดียวกัน |
 | parse datetime fail | รูปแบบ timestamp จาก raw เปลี่ยน — `parseFlexibleDatetime` รองรับ 2 แบบ ถ้ามีแบบที่ 3 ต้องเพิ่ม |
 | ALTER PRIMARY KEY fail ซ้ำ ๆ | BigQuery metadata ชนกัน — retry loop จัดการเอง ถ้ายัง fail ให้รันใหม่ |
@@ -173,8 +181,14 @@ wsl -e bash -lc "bq --project_id=databuffet-nonprd query --use_legacy_sql=false 
 
 ## Environment / Git
 
-- Branch: `dev` → `nonprod` → `prod` (+ `hotfix`)
-- commit แล้ว push `dev` จากนั้น fast-forward `nonprod` (skill `ship`)
+- Branch: `dev` → `nonprod` → `prod` (+ `hotfix`) · schedule compile `nonprod` ตอน 05:45
+- งานเข้า `nonprod` ได้ 2 ทาง (ดู [release flow](../getting-started/onboarding.md#release-flow)):
+  (i) branch `fm/*` → no-mistakes → PR เข้า `dev` → fast-forward `nonprod`
+  (ii) commit ตรงบน `nonprod` ผ่านหน้า Dataform แล้ว merge กลับเข้า `dev`
+  — และบางครั้งมี commit ตรงบน `dev` (ไม่ผ่าน PR) ทาง (ii) และ commit ตรงไม่ผ่าน
+  pre-commit lineage gate และ doc-sync hook ต้อง regenerate lineage + อัปเดตเอกสารเองใน PR ถัดไป
+- skill `ship` (commit → push `dev` → `--ff-only` `nonprod`) ใช้ได้เฉพาะตอน `nonprod`
+  ไม่มี commit ของตัวเอง ถ้า ff ไม่ได้ ต้อง merge `nonprod` กลับเข้า `dev` ก่อน
 - `workflow_settings.yaml` **ถูก track ใน git** — แก้แล้ว commit ร่วมกัน (ค่า
   `BACKFILL_DAYS` อยู่ในนี้)
 - pre-commit hook regenerate แผนผัง lineage ให้อัตโนมัติ และ **บล็อกการ commit**

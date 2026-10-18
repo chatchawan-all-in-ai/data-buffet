@@ -1,7 +1,7 @@
 # The MDS Full-Rebuild Pattern (canonical since 2026-07-20)
 
-> **LLM context**: This is the default pattern for mds-sourced dimensions — **43 files**
-> (รวมชุด MDT 6 ตัวที่อ้าง mds ผ่าน const ใน `js {}` และ customer-report dims 2 ตัวที่เพิ่ม 2026-10-01)
+> **LLM context**: This is the default pattern for mds-sourced dimensions — **44 files** on 2026-10-18
+> (รวมชุด MDT 7 ตัวที่อ้าง mds ผ่าน const ใน `js {}`, `dim_change_district` และ customer-report dims 2 ตัวที่เพิ่ม 2026-10-01)
 > follow it (all mds dims except `dim_company` and `dim_aging_rang`, which keep the
 > legacy [MERGE pattern](merge-sk-pattern.md)). Reference implementation:
 > `definitions/dimension/dim_waterpac.sqlx`.
@@ -60,8 +60,10 @@ post_operations {}
 
 Verified 2026-07-20 (repo scan + live BQ + 90-day query history):
 
-- All SK consumers re-derive daily: 9 facts (rebuild/full-window upsert — verified
-  `fact_transcation` covers its whole 4-year window nightly with **0 orphan rows**),
+- All SK consumers re-derive daily: every fact (rebuild/full-window upsert — verified
+  `fact_transcation` covers its whole 4-year window nightly with **0 orphan rows**;
+  there were 9 facts then, and the facts added since — `fact_*_store`, `fact_*_mdt` —
+  are daily `type: "table"` rebuilds),
   `dim_*_last`, `dim_target_product_group_by_sale(_dayofwork)`,
   `update_sk_sale_rep_group`; `dim_product_master` and the two grade dims refresh
   their stored FK SKs in `WHEN MATCHED UPDATE`.
@@ -74,7 +76,7 @@ Verified 2026-07-20 (repo scan + live BQ + 90-day query history):
   into the repo as `type: "table"` daily full rebuilds tagged `fact_daily`
   (see [fact/fact-layer.md](../fact/fact-layer.md)).
 
-## Special files within the 43
+## Special files within the full-rebuild group
 
 - `dim_sale_representative` — `UNION ALL` of the mds block and the ledger block
   (per-employees with NULL DepartmentID + sentinel dates 1900-01-01/2499-12-31, `MdsID NULL`).

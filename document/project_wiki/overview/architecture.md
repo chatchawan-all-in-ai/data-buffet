@@ -8,21 +8,21 @@
 ## Data flow
 
 ```
-GCS AVRO files  gs://file-raw-data  (Hive-partitioned by ASATDATE=YYYYMMDD)
+GCS files  gs://file-raw-data  (AVRO, Hive-partitioned by ASATDATE=YYYYMMDD; 1 CSV table)
       │
       ▼
-INITIAL      definitions/initial/     External tables + CREATE SCHEMA + UDFs (17 files)
+INITIAL      definitions/initial/     External tables + UDFs + drop files (⚠️ tag `initial` drops validated)
       │
       ▼
-VALIDATED    definitions/validated/   Clean, cast, dedup — 1 file per source table (143 files)
-      │                               mac5 87 · cis360 25 · mastersku 12 · saleout_mdt 11 · allkons_commission 8
+VALIDATED    definitions/validated/   Clean, cast, dedup — 1 file per source table
+      │                               sources: mac5 · cis360 · mastersku · master_sku · saleout_mdt · d365
       ▼
-CURATED      definitions/curated/     Business joins, JSON parsing, split-sale (8 files)
+CURATED      definitions/curated/     Business joins, JSON parsing, split-sale
       │
       ├────────────────────────────┐
       ▼                            ▼
 DIMENSION    definitions/dimension/ FACT    definitions/fact/
-(61 files — SK dims)         ◄──── (12 files — star-schema joins)
+(SK dims)                    ◄──── (star-schema joins)
       │                            │
       └──────────────┬─────────────┘
                      ▼
@@ -32,9 +32,15 @@ VIEW         definitions/view/      Presentation views (type: "view") for Power 
                                     bridge_dataset (folder ≠ target dataset)
 
 Side pipelines:
-  CDC      definitions/cdc/       change log driven by cdc-config.json (2 files)
-  PROCESS  definitions/process/   AI Thai-address parsing, gated on CDC (1 file)
+  CDC      definitions/cdc/       change log driven by cdc-config.json
+  PROCESS  definitions/process/   AI Thai-address parsing, gated on CDC + RLS access map (rls_customer360)
 ```
+
+File counts per layer are generated from the code — see the
+[generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview). Per-source
+validated lists: [validated/source-inventory.md](../validated/source-inventory.md).
+Per-source context (what each system is, who reads it):
+[overview/source-systems.md](source-systems.md).
 
 ## Layer contracts
 
@@ -42,11 +48,11 @@ Side pipelines:
 |---|---|---|---|
 | Initial | `raw_*`, `function_dataset` | operations (external tables, UDFs) | [initial/initial-layer.md](../initial/initial-layer.md) |
 | Validated | `validated_*` | incremental / table + QUALIFY dedup | [validated/validated-layer.md](../validated/validated-layer.md) |
-| Curated | `curated_*` | incremental + post_operations | [curated/curated-layer.md](../curated/curated-layer.md) |
-| Dimension | `dimension_table`, `dimension_view` | table rebuild (43 mds + 11 other) / operations MERGE (2 mds + 10 lake) | [dimension/dimension-layer.md](../dimension/dimension-layer.md) |
+| Curated | `curated_*` | incremental / table / operations | [curated/curated-layer.md](../curated/curated-layer.md) |
+| Dimension | `dimension_table`, `dimension_view` | table rebuild (mds full rebuild + other tables) / operations MERGE (2 mds + 10 lake) / 3 other operations | [dimension/dimension-layer.md](../dimension/dimension-layer.md) |
 | Fact | `fact_table`, `fact_view` | table rebuild / operations upsert | [fact/fact-layer.md](../fact/fact-layer.md) |
 | CDC | `cdc_dataset` | operations (config-generated) | [cdc-process/cdc.md](../cdc-process/cdc.md) |
-| Process | `process_dataset` | incremental (AI.GENERATE) | [cdc-process/process.md](../cdc-process/process.md) |
+| Process | `process_dataset` | incremental (`deb_address_data`, AI.GENERATE) + table (`rls_customer360`) | [cdc-process/process.md](../cdc-process/process.md) |
 | View | `dimension_view`, `fact_view`, `onetime`, `process_dataset`, `bridge_dataset` | `type: "view"` (presentation; folder ≠ target dataset) | [view/view-layer.md](../view/view-layer.md) |
 
 ## External inputs NOT managed by this repo
@@ -54,24 +60,15 @@ Side pipelines:
 - **`mds_dataset`** — master-data-service tables (`mds_data_*_master`). Loaded by an
   external process. Every table has `id`, `is_active`, `updated_at`. Source of most
   dimensions.
-- **`onetime`** dataset — e.g. `onetime.Transaction_Data_Mart` (grain source of
-  `fact_transcation`), `cfsinvclose2024`.
+- **Externally loaded base tables** in `onetime`, `dimension_table` and
+  `process_dataset` — the authoritative list and consumers are in
+  [known-issues — BigQuery objects not built by the repo](../../operations/known-issues.md).
+  Keep every object in the required-input group; Dataform cannot recreate it.
 - **`dim_company` exists in `dimension_table`** and has a `dim_company.sqlx`, but note
   the repo README's caveat about dependencies — most dims list `dim_company` in
   `dependencies` and it is the DAG root.
-- **`onetime` also holds externally-loaded base tables** consumed by views but not
-  built here: `onetime.mapping_invoice`, `onetime.Transaction_Data_Mart` is now a
-  Dataform view but reads such bases. Likewise `process_dataset.mih_address_data`,
-  and geo dims `dim_districts` / `dim_provinces` / `dim_geographies` /
-  `dim_sub_districts`, `dim_aging_history`
-  — referenced by views but **not** built by any `.sqlx`.
-  > Corrected 2026-08-11: this list used to include `dim_product_rebate` (no such
-  > table — it is `dim_rebate`, which **is** built here) and
-  > `process_dataset.RLS_Customer360` (now built here as
-  > `definitions/process/rls_customer360.sqlx`, lowercase). Both are declared in the
-  > consuming files' `dependencies[]`.
 - **View layer now defined** (2026-07-24): views under `definitions/view/`
-  (e.g. `view_dim_aging`, `view_deb_address_data`) are Dataform-managed as of the view
+  (e.g. `onetime.Transaction_Data_Mart`, `view_dim_aging`, `view_deb_address_data`) are Dataform-managed as of the view
   migration. See [view/view-layer.md](../view/view-layer.md); current counts are in the
   [generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview).
 
@@ -85,7 +82,7 @@ Side pipelines:
    holdout (`"mds_dataset"` as a literal in 36 dim files) was converted to
    `databuffet.MDS_DATASET` on 2026-08-26; there are now **zero** literals.
 4. **`type: "operations"` tables are NOT created by Dataform** — they must pre-exist
-   in BigQuery (the 12 MERGE dims, `fact_transcation`). The 43 full-rebuild mds dims
+   in BigQuery (the 12 MERGE dims, `fact_transcation`). The full-rebuild mds dims
    are Dataform-managed tables whose **SKs regenerate daily** (see
    [dimension/full-rebuild-pattern.md](../dimension/full-rebuild-pattern.md)).
 5. **Load-bearing typos** — keep verbatim: `fact_transcation` (table + file),
@@ -95,7 +92,12 @@ Side pipelines:
 
 ## Environment
 
-- `workflow_settings.yaml` (environment-specific): defaultProject `databuffet-nonprd`,
-  vars `RAW_BUCKET`, `MDS_BACKFILL_DAYS` (currently 1).
-- Branches: `dev` (working) → `nonprod` → `prod`; also `hotfix`.
+- `workflow_settings.yaml` (environment-specific, tracked): defaultProject
+  `databuffet-nonprd`, vars `RAW_BUCKET`, `MDS_BACKFILL_DAYS` (currently 1),
+  `BACKFILL_DAYS` (currently 1 — validated/curated incremental look-back).
+- Branches: `dev` (working) → `nonprod` → `prod`; also `hotfix`. The schedule compiles
+  `nonprod` at 05:45 and runs at 06:00 / 08:55:
+  [operations/running-and-troubleshooting.md § Schedule](../operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd).
+  How work reaches `nonprod` (two lanes):
+  [release flow](../../getting-started/onboarding.md#release-flow).
 - Local validation and execution setup: [run/debug guide](../../how-to/run-and-debug.md).

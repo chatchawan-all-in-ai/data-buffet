@@ -23,6 +23,7 @@
 | `saleout_mdt/curated_schema_saleout.sqlx` | schema `curated_saleout_mdt` | operations | — | — | `curated` |
 | `saleout_mdt/curated_saleout_mdt.sqlx` | `curated_saleout_mdt.curated_saleout_mdt` | incremental | `sale_date, store_code, branch_code, product_code, doc_type` | `sale_date` / `store_code, branch_code, product_code` | `curated`, **`curated_incremental`** |
 | `saleout_mdt/curated_stock_mdt.sqlx` | `curated_saleout_mdt.curated_stock_mdt` | **table** | — | `stock_date` / `store_code, branch_code, product_code` | `curated`, **`curated_full`** |
+| `saleout_mdt/curated_saleout_monthly_mdt.sqlx` | `curated_saleout_mdt.curated_saleout_monthly_mdt` | **table** | (`month_date, store_code, branch_code, product_code`) | `month_date` / `store_code, branch_code, product_code` | `curated`, **`curated_full`** |
 
 > tag `curated_incremental` / `curated_full` **เริ่มถูกใช้จริงแล้ว** ตั้งแต่ชุด SALEOUT_MDT
 > (ก่อนหน้านี้ประกาศไว้เฉย ๆ ทั้งชั้นใช้แค่ `curated`)
@@ -88,7 +89,7 @@ BigQuery จะไม่ตัดพาร์ทิชันให้
 
 ### `curated_saleout_mdt` — sell-out modern trade รวมทุกห้าง
 
-รวม 5 แหล่งเป็น grain เดียว `(sale_date, store_code, branch_code, product_code, doc_type)`
+รวม feed ต่อไปนี้เป็น grain เดียว `(sale_date, store_code, branch_code, product_code, doc_type)`
 ผ่าน `UNION ALL` โดยแต่ละห้างส่งข้อมูลคนละแบบ:
 
 | CTE | ต้นทาง | ลักษณะเฉพาะ |
@@ -97,6 +98,7 @@ BigQuery จะไม่ตัดพาร์ทิชันให้
 | `bt_feed_gap` → `bt_daily` → `bt` | `sale_by_branch_detail` | บุญถาวรส่งเป็นช่วงวัน ต้องเฉลี่ยลงรายวันเอง · `days_covered > 1` ⇒ `date_is_estimated = TRUE` · `branch_code` เป็น**ชื่อไทย** จับคู่ dim ได้ 16/16 · ไม่ส่งบาร์โค้ด |
 | `gb` | `saleout_gb` | Global House ใช้บาร์โค้ด 13 หลักเป็นรหัสสินค้าอยู่แล้ว · ส่ง `SALE`/`RETURN` มาเอง · มี `bill_no` ห้างเดียว |
 | `tw_dedup` → `tw` | `report_sale_subscription` | ไทวัสดุ · `branch_code` เป็นสตริงเต็ม `60001-CRC Thai Watsadu ...` · ส่งบาร์โค้ดแยกคอลัมน์ · วันขายมาจากต้นทางไม่ได้เดา |
+| `dh` | `saleout_dh` | DoHome · อ่านเต็มโดยไม่ใช้ incremental window เพราะ `asatdate` เป็นวันขายท้ายสุดในไฟล์ · ไม่ส่งบาร์โค้ด · อนุมาน `SALE`/`RETURN` จากเครื่องหมายยอด |
 | `lastyear` | `saleout_lastyear` | ไฟล์ Excel ย้อนหลังก่อนที่ TW จะส่ง feed · ไม่มีบาร์โค้ด ไม่มีเลขบิล |
 
 คอลัมน์ธง 3 ตัวที่ทุก CTE ต้องเติม: `doc_type_source` (`DERIVED` = เราอนุมานเอง),
@@ -110,6 +112,27 @@ BigQuery จะไม่ตัดพาร์ทิชันให้
   อีก 4 วันส่งซ้ำ 2 ไฟล์ จึงเลือกไฟล์ล่าสุดต่อ (สาขา, สินค้า, วันสต็อก)
 - `onhand_amt` ของ BT เป็น **ต้นทุน ไม่ใช่ราคาขาย** · BT ไม่ส่ง `onorder_qty`
 - อีกแหล่งมาจาก `report_sale_subscription` (ไทวัสดุ)
+
+### `curated_saleout_monthly_mdt` — ยอด sell-out รายเดือน (เพิ่ม 2026-10-05, `639824c`)
+
+`type: "table"` ปั้นใหม่ทุกวัน (tag `curated_full`) partition `month_date` · ต้นทางของ
+`fact_saleout_monthly_mdt` · แทน `onetime.saleout_monthly_mdt` ที่ปั้นด้วยมือ สร้างใหม่จากโค้ดไม่ได้
+และเคยพัง (รายการคืนของ GB กลายเป็นบวก — ดู known-issues 2026-10-05)
+
+- เกรนผสม: `month_date` + ห้าง + สาขา + สินค้า — เดือนปัจจุบันเก็บวันที่ขายรายวัน
+  ส่วนเดือนที่ปิดแล้วใช้วันสิ้นเดือน · `fact_saleout_monthly_mdt` ส่งต่อ `month_date` ตามเดิม
+- รวมยอดรายเดือนด้วย `SUM(sale_qty)` / `SUM(sale_amount)` และ
+  `GROUP BY DATE_TRUNC(month_date, MONTH)` พร้อม key ห้าง/สาขา/สินค้าที่ต้องการ
+  · กรองเดือนด้วย `DATE_TRUNC(month_date, MONTH) = DATE '2026-10-01'`
+  ไม่ใช้ `month_date = DATE '2026-10-31'` เพราะจะตกหล่นยอดรายวันของเดือนปัจจุบัน
+- เลือก **แหล่งเดียวต่อ 1 เดือน ต่อ 1 ห้าง** ตามลำดับ — ตัวแรกที่มีข้อมูลชนะ:
+  1. `CHAIN_FILE` — ไฟล์ปิดงวดที่ห้างส่งเอง (`validated_saleout_mdt.eom_*`) ส.ค. 2026 เป็นต้นมา ·
+     เอาเฉพาะงวดที่ปิดแล้ว (`eom_hp` มีงวดเดือนปัจจุบันติดมา)
+  2. `BI` — ไฟล์ที่ทีม BI ส่งตอนตั้งระบบ 2022-01 ถึง 2026-07 (อ่านจาก
+     `onetime.saleout_lastyear_monthly` ซึ่ง **repo ไม่ได้สร้าง**)
+  3. `DAILY_ROLLUP` — จาก `curated_saleout_mdt` สำหรับเดือน/ห้างที่ไม่มีสองแหล่งข้างบน:
+     เดือนปัจจุบันรวมต่อวันขาย ส่วนเดือนที่ปิดแล้วรวมต่อเดือนและใช้วันสิ้นเดือน
+- ⚠️ ห้าม SUM 3 แหล่งรวมกัน — เป็นยอดเดียวกันคนละแหล่ง บวกกันคือเบิ้ล
 
 ### `curated_product` — แคตตาล็อกสินค้า
 

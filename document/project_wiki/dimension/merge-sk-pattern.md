@@ -3,7 +3,7 @@
 > **LLM context**: ⚠️ Since **2026-07-20** this pattern applies to only **2 files**:
 > `dim_company` and `dim_aging_rang` — the two dims whose SKs are persisted downstream
 > and must stay stable forever. The other 34 mds dims were converted to the
-> (34 = count on 2026-07-20; **43 full-rebuild mds dims today**)
+> (34 = count on 2026-07-20; current inventory: [inventory.md](inventory.md))
 > [full-rebuild pattern](full-rebuild-pattern.md), which is now the default for new
 > mds dims. Target tables of MERGE dims pre-exist in BigQuery (`type: "operations"`;
 > Dataform does not create them). Reference implementation:

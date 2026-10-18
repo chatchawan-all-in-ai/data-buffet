@@ -92,6 +92,18 @@ For its view-backed build dependencies, follow [view-layer.md](../view/view-laye
 joined to dim_company, filtered `WHERE t1.is_active = true`. No SK, no BEGIN, no
 tombstone needed (inactive rows drop out on every rebuild).
 
+## `dim_product_series` — hard-coded rows (pending move to mds)
+
+`type: "table"`, added 2026-10-02 (`e57d635`). It does **not** read `mds_dataset`: the
+rows are typed into the file with `UNNEST([...])` from BI's `dim_product_series.xlsx`
+(`100001` TITAN, `999999` OTHERS). `SeriesSK = ROW_NUMBER() OVER(ORDER BY SeriesCode)`,
+so it regenerates daily like the full-rebuild dims. There is no `-1` row:
+`dim_target_series_mdt` maps unknown series codes to `OTHERS` instead.
+
+Pending: move it to `mds_dataset` once BI loads the series master there (the file's
+own comment). Until then a new series means editing the `.sqlx` by hand. Tracked in
+[known-issues](../../operations/known-issues.md).
+
 ## `dim_target_product_group_by_sale` / `_dayofwork` — daily full rebuilds
 
 `type: "table"` with `uniqueKey`/`clusterBy` on their SK. `_dayofwork` joins

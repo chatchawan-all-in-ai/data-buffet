@@ -51,7 +51,7 @@
 
 ## พฤติกรรมที่ตั้งใจ (อย่า "แก้")
 
-- **mds dims 34 ตัวเป็น full daily rebuild** (ตัดสินใจ 2026-07-20 · เลข 34 คือจำนวน ณ วันนั้น **ปัจจุบัน 43 ตัว**): แปลงจาก MERGE
+- **mds dims 34 ตัวเป็น full daily rebuild** (ตัดสินใจ 2026-07-20 · เลข 34 คือจำนวน ณ วันนั้น ปัจจุบันมีมากกว่านั้น — ดู [inventory](../project_wiki/dimension/inventory.md)): แปลงจาก MERGE
   เป็น `type: "table"` ปั้นใหม่ทุกวันจาก `is_active = TRUE` — **SK ออกเลขใหม่ทุกวัน
   ห้าม persist SK พวกนี้ข้ามวัน** เหตุผล: mds มี overwrite import mode (ล้างแล้วลง
   ใหม่ id ใหม่หมด) ซึ่ง MERGE pattern รับมือไม่ครบ (zombie rows) ตรวจ consumer ครบ
@@ -202,8 +202,8 @@
 - การตรวจในเครื่อง, environment ที่ใช้ซ้ำ และข้อจำกัดการรัน: [run/debug guide](../how-to/run-and-debug.md)
 - `bq` ต้องระบุ `--project_id=databuffet-nonprd` (default gcloud project เป็นตัวอื่น)
 - INFORMATION_SCHEMA ระดับ region ถูก deny — ใช้ระดับ dataset
-- `workflow_settings.yaml` เป็นค่าเฉพาะ environment — `BACKFILL_DAYS` ตั้งเองในแต่ละ
-  workspace ไม่ได้ติดมากับ commit
+- การตั้ง `BACKFILL_DAYS` และผลต่อ workspace / schedule:
+  [backfill procedure](../project_wiki/operations/running-and-troubleshooting.md#backfilling-more-than-one-day-backfill_days)
 - **git ฝั่ง WSL กับฝั่ง Windows เห็น working tree ไม่ตรงกัน (CRLF)**: ฝั่ง Windows
   สะอาด แต่ `wsl git status` เห็นไฟล์เป็น modified นับสิบ เพราะ config line-ending
   คนละแบบ → Stop hook `doc-sync-check.sh` (อ่าน `git status` จาก WSL) จะเตือน
@@ -556,9 +556,8 @@
   - `view/fact_view/view_fact_transcation.sqlx` — เป็นขอบบนของช่วง 4 ปี
 
   **ข้อควรรู้**:
-  - `BACKFILL_DAYS` **ตั้งเองรายเครื่อง ไม่ได้ติดมากับ commit ของ repo**
-    `databuffet.js` จึงใส่ `|| "1"` ไว้ (เป็นตัวเดียวในไฟล์ที่มี fallback)
-    ไม่งั้น workspace ที่ยังไม่มี var จะ interpolate เป็น `undefined` ใส่ SQL 74 จุด
+  - สถานะ config และ fallback ปัจจุบัน: ดู
+    [databuffet.js — Key facts](../project_wiki/includes/databuffet-js.md#key-facts)
   - รูปแบบนี้ nest `${databuffet.BACKFILL_DAYS}` ไว้ข้างใน
     `${when(incremental(), ...)}` ซึ่งไม่เคยมีในโปรเจกต์มาก่อน —
     **ยืนยันแล้วว่า compile ผ่าน** (ดู Compiled queries ของ `mih` 2026-08-10
@@ -567,6 +566,24 @@
     asatdate DESC` คัดเหลือ 1 แถวต่อ PK อยู่แล้ว
 
 ## หนี้ทางเทคนิค / งานค้าง
+
+- **`dim_product_series` hard-code ไว้ในไฟล์ (เพิ่ม 2026-10-02, `e57d635`) — งานค้าง**:
+  2 แถว (`100001` TITAN, `999999` OTHERS) พิมพ์ไว้ใน `UNNEST([...])` จากไฟล์ Excel ของ BI
+  ไม่ได้อ่าน `mds_dataset` · comment ในไฟล์บอกว่าให้ย้ายไป mds เมื่อ BI โหลดเข้าไปแล้ว ·
+  จนกว่าจะย้าย series ใหม่ = ต้องแก้ `.sqlx` เอง ถ้าไม่แก้ เป้าของ series ใหม่ใน
+  `dim_target_series_mdt` จะตกไปที่ `OTHERS` เงียบ ๆ · consumer: `dim_target_series_mdt`,
+  view `onetime.Product_Attribute` · ดู [special-cases](../project_wiki/dimension/special-cases.md)
+- **ของใน BigQuery ที่ repo ไม่ได้สร้าง** (สแกน `databuffet-nonprd` 2026-10-18 เทียบกับ
+  `dataform compile --json` — ตรวจซ้ำก่อนลบทุกครั้ง) แบ่งเป็น 3 กลุ่ม:
+
+  | กลุ่ม | ของ | ทำอะไรได้ |
+  |---|---|---|
+  | **โค้ดใน repo อ่านอยู่ — ห้ามลบ** (Dataform สร้างกลับให้ไม่ได้) | `dimension_table.dim_aging_history` (`dim_aging`, `view_dim_aging_history`) · `dimension_table.dim_districts` / `dim_provinces` / `dim_sub_districts` / `dim_geographies` (view ที่อยู่ลูกค้า) · `onetime.cfsinvclose2024` (`dim_aging`) · `onetime.mapping_invoice` (`fact_transcation`, `view_fact_transcation`) · `onetime.saleout_lastyear_monthly` (`curated_saleout_monthly_mdt` แหล่ง BI) · `process_dataset.mih_address_data` (`view_mih_address_data`) | เก็บไว้ · ต้องติดไปตอน deploy prod ด้วย ([deploy-to-prod Step 9](deploy-to-prod.md)) |
+  | **ไม่มีโค้ดใน repo อ่าน (orphan / ของเก่า)** | `dimension_table.dim_zone_manager_mdt` (ถูกแทนด้วย `dim_zone_ta_mdt` ใน `b198e24` ตารางยังค้าง) · `dimension_table.dim_target_channel`, `dim_target_sale` · `fact_table.dim_mir` · `onetime.saleout_monthly_mdt` (แทนด้วย `curated_saleout_monthly_mdt` 2026-10-05) · `onetime.saleout_monthly_aug2026` · `onetime.mapping_invoice_backup20260818` · view `onetime.PowerBI_Data_Buffet_Transaction` (ไฟล์ย้ายไป `backup/` แล้ว) · `onetime.Table_Model_Invoice_Transaction` / `Table_Model_Target_DayOfWork` (เจ้าของคือ scheduled query `table_for_ai_chatwith_data` ไม่ใช่ repo) · `validated_allkons_commission.*` (7 ตาราง ข้อมูลเก่า) | ถามฝั่ง BI ก่อน — Power BI อาจยังต่ออยู่ · ลบได้เมื่อยืนยันว่าไม่มีใครใช้ |
+  | **backup / dataset ชั่วคราว** | `validated_mac5`: `cpp_backup20260901`, `cps_backup20260901`, `cps_dummy_backup20260901`, `cql/cst/mie/mih2/mih_dummy_backup_20261012`, `mie_backup_20261012b` · dataset `mds_dataset_bak_20261003`, `onetime_backup20260821`, `raw_mac5_backup`, `temp_dim`, `peem_using` | เจ้าของ backup ตัดสินใจ · ไม่ต้องยกไป prod |
+
+  `raw_d365` / `validated_d365` เคยอยู่ในกลุ่มนี้ (สร้างมือ 2026-10-16) — ตั้งแต่ `7819bef`
+  repo สร้างเองแล้ว
 
 - **2026-08-26 — ล้าง literal `"mds_dataset"` ออกหมดแล้ว** เดิม 36 ไฟล์ใน
   `definitions/dimension/` เขียน `schema: "mds_dataset"` ตรง ๆ (ผิด hard rule ข้อ 3)
@@ -599,8 +616,9 @@
   `databuffet-nonprd` เขียนผลลง `monitor_dataset.dataform_run_action`
   วันละครั้งเวลา 07:00 น. ไทย · partition `run_date` เก็บ 90 วัน ·
   ค่า `status` มีแค่ `SUCCESS`/`FAILED` — ใช้ skill `check-runs` ดูสรุป
-- Tag ที่ประกาศแต่ไม่ใช้: `dimension_monthly`, `fact_monthly`, `fact_yearly`,
-  `curated_full`, `curated_incremental`, `onetime`
+- Tag ที่ประกาศแต่ไม่ใช้: `dimension_monthly`, `fact_monthly`, `fact_yearly`
+  (`curated_full` / `curated_incremental` ใช้แล้วกับ curated ชุด SALEOUT_MDT ·
+  `onetime` เป็นชื่อ dataset ไม่ใช่ tag)
 - **`cps` เคยกอง snapshot ทุกวันโดยไม่ dedup — แก้แล้ว 2026-09-01** (`105870e add pk key`):
   เดิม `cps.sqlx` ประกาศ `uniqueKey: []` ทำให้ตารางมี **164,093,041 แถว** (ag01)
   กระจายบน 238 `asatdate` ทั้งที่ข้อมูลจริงวันละ ~482K แถว · แก้โดยใส่

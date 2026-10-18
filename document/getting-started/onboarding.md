@@ -14,20 +14,16 @@ Data warehouse บน **Google BigQuery** (project `databuffet-nonprd`, region `
 ข้อมูลไหลตามชั้น (medallion → star schema):
 
 ```
-GCS AVRO (gs://file-raw-data)
-  → initial   (external table + schema + UDF 7 ตัว — 17 ไฟล์)
-  → validated (ทำความสะอาด cast dedup — 136 ไฟล์ = 132 transformation + 4 schema)
-  → curated   (business logic, join — 15 ไฟล์ = 10 transformation + 5 schema)
-  → dimension (69 ไฟล์) + fact (15 ไฟล์)
+GCS AVRO/CSV (gs://file-raw-data)
+  → initial   (external table + UDF 7 ตัว + ไฟล์ drop — ⚠️ อย่ารัน tag `initial` ทั้ง tag)
+  → validated (ทำความสะอาด cast dedup — 1 ไฟล์ต่อตารางต้นทาง + schema 1 ไฟล์ต่อ source)
+  → curated   (business logic, join)
+  → dimension + fact
   → view      (ชั้น BI/report)
-  ท่อเสริม: cdc (จับ change) + process (แกะที่อยู่ไทยด้วย AI)
+  ท่อเสริม: cdc (จับ change) + process (แกะที่อยู่ไทยด้วย AI + RLS)
 ```
 
-จำนวน view ปัจจุบันดู [lineage ที่สร้างจากโค้ด](../diagrams/pipeline_lineage.md#1-layer-overview)
-
-> จำนวนไฟล์ในเอกสารนี้นับ **ไฟล์ `.sqlx` ทั้งหมด** ส่วน `README.md` บางตารางนับเฉพาะ
-> **transformation** (ไม่รวมไฟล์ `*_schema_*.sqlx` ที่ใช้ bootstrap dataset) ตัวเลข
-> ต่างกันด้วยเหตุนี้ ไม่ใช่เอกสารขัดกัน
+จำนวนไฟล์ทุกชั้นดู [lineage ที่สร้างจากโค้ด](../diagrams/pipeline_lineage.md#1-layer-overview)
 
 อ่านคำศัพท์ก่อน: [glossary.md](glossary.md)
 
@@ -42,7 +38,7 @@ includes/
     function-data.js SQL helper (cleanString, castInt64, ...)
     cdc-config.json  ตารางที่เปิด CDC
 workflow_settings.yaml  ตั้งค่า project (track ใน git — แก้แล้วติด commit)
-.claude/             ชุดทำงานของ Claude Code (track ใน git — ดู §4)
+.claude/             ชุดทำงานของ Claude Code (git-ignored รับจากทีมโดย copy — ดู §4)
 backup/              สำเนาไฟล์เวอร์ชันเก่า (อย่าแก้)
 document/            เอกสาร (โฟลเดอร์นี้)
 ```
@@ -192,15 +188,58 @@ chmod +x .claude/hooks/*.sh .claude/hooks/pre-commit .claude/skills/verify-setup
 3. ตรวจว่าใช้ `databuffet.*` ไม่ hardcode ชื่อ dataset
 4. ตรวจ compile ในเครื่องตาม [README — Common Commands](../../README.md#common-commands); SQL dry run เลือก committed changes ตาม [ข้อจำกัดผลตรวจ](../how-to/run-and-debug.md#compile-กับ-sql-dry-run)
 5. อัปเดต `document/` ถ้าการแก้กระทบ pattern/inventory
-6. commit → push `dev` → merge เข้า `nonprod` เมื่อพร้อมทดสอบ
+6. ส่งงานเข้า `dev` แล้วเข้า `nonprod` ตาม [Release flow](#release-flow) ด้านล่าง
    (ขึ้น prod: [../operations/deploy-to-prod.md](../operations/deploy-to-prod.md))
+
+### Release flow
+
+`nonprod` คือ branch ที่รอบอัตโนมัติใช้ — release config `production` compile `nonprod`
+ทุกวัน 05:45 แล้วรัน 06:00 / 08:55 (ดู
+[running-and-troubleshooting § Schedule](../project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd))
+อะไรที่ไม่อยู่บน `nonprod` ก่อน 05:45 จะไม่ถูกรันในรอบเช้านั้น
+
+งานเข้า `nonprod` ได้ **2 ทาง** (ตรวจจาก git history 2026-10-18):
+
+| ทาง | ขั้นตอน | ด่านตรวจที่ผ่าน |
+|---|---|---|
+| **(i) ผ่าน PR** | branch `fm/*` → pipeline no-mistakes (review, test/lint ตาม `.no-mistakes.yaml`, docs) → PR เข้า `dev` → merge → fast-forward `nonprod` ให้เท่า `dev` | review ของ no-mistakes + review ใน PR · ต้อง regenerate lineage และอัปเดต `document/` ใน PR เอง |
+| **(ii) แก้ตรงบนหน้า Dataform** | เพื่อนร่วมทีม commit บน `nonprod` ผ่าน workspace ของ Dataform (repo default branch) → ภายหลัง merge กลับเข้า `dev` ด้วย commit `Merge branch 'nonprod' into dev` | **ไม่ผ่าน** pre-commit lineage gate และ doc-sync hook (ไม่ได้ commit จากเครื่องที่มี `.claude/hooks`) |
+
+นอกจากนี้ยังมี commit ตรงบน `dev` โดยไม่ผ่าน PR ด้วย (เช่น `7819bef` "add journal to raw,
+validated" แล้ว merge เป็น `Merge branch 'dev' into dev`) — ด่านตรวจเหมือนทาง (ii) คือไม่มี
+gate ใดรัน ถ้าทำจากเครื่องที่ไม่ได้ตั้ง `core.hooksPath`
+
+ผลที่ต้องรู้:
+
+- หลังมีงานทาง (ii) หรือ commit ตรง แผนผัง lineage และเอกสารอาจตามโค้ดไม่ทัน —
+  PR ถัดไปที่แตะเรื่องนั้นควร regenerate `document/diagrams/` และอัปเดต `document/` ด้วย
+- skill `ship` (commit → push `dev` → `git merge dev --ff-only` เข้า `nonprod`) ใช้ได้เฉพาะตอน
+  `nonprod` ไม่มี commit ของตัวเอง ถ้า `--ff-only` ไม่ผ่าน skill จะหยุด — ต้อง merge `nonprod`
+  กลับเข้า `dev` ก่อน (ให้เจ้าของงานตัดสินใจ ห้าม force push / rebase)
+- ก่อนแก้ไฟล์ใด ให้ `git fetch` แล้วดูว่า `nonprod` มี commit ที่ยังไม่อยู่ใน `dev` หรือไม่
+
+### การรีวิวงานของทีม
+
+ก่อน commit หรือ deploy งานที่แตะ `definitions/` / `includes/` มีตัวช่วยรีวิว 2 ชั้น:
+
+1. **workflow `review-dataform-change`** (`.claude/workflows/review-dataform-change.js` — มากับชุด
+   copy `.claude/` ไม่ได้อยู่ใน git): รีวิวแบบอ่านอย่างเดียวบน diff ที่ยังไม่ commit
+   ขั้นตอน Scope (อ่าน `git diff` + `dataform compile --json` เลือก lens ตามสิ่งที่ diff แตะ) →
+   Review (logic, standard, compile, downstream, data-impact, doc-sync) → Verify (มีคนค้านทุก
+   finding) → Sweep (หาค่าเก่าที่ซ้ำอยู่ที่อื่นใน repo) · สั่งใน Claude Code ว่า "run workflow
+   review-dataform-change" · ค่า `scratch` เริ่มต้นเป็น path temp ของ Windows ถ้ารันใน WSL
+   ให้ส่ง `scratch` เป็น path ของ Linux
+2. **pipeline no-mistakes** (ทาง (i)): review โค้ด + test/lint + docs ก่อนเปิด PR เข้า `dev`
+
+งานทาง (ii) ไม่ผ่านทั้งสองชั้น — ถ้าแก้บนหน้า Dataform ให้รัน workflow รีวิวจากเครื่องตัวเอง
+บน branch ที่ดึงงานนั้นมาก่อน merge กลับ `dev`
 
 ## 6. กติกาที่ห้ามพลาด
 
 1. **Timezone Bangkok เสมอ** — `CURRENT_DATE('Asia/Bangkok')`
 2. **การทำความสะอาด string และข้อยกเว้นสำหรับ incremental key** — ดู [coding-standard §4](../coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล)
 3. **SK มี 2 ระบบ** — dim แบบ MERGE (`dim_company`, `dim_aging_rang`, lake dims):
-   SK คงที่ตลอดชีพ ห้าม regenerate / dim mds แบบ full rebuild (43 ตัว): SK ออกเลขใหม่
+   SK คงที่ตลอดชีพ ห้าม regenerate / dim mds แบบ full rebuild: SK ออกเลขใหม่
    ทุกวัน **ห้ามเก็บข้ามวัน**
 4. **ตาราง `type: "operations"` Dataform ไม่สร้างให้** — dim แบบ MERGE และ
    `fact_transcation` ต้องมีตารางอยู่ก่อน

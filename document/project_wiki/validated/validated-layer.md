@@ -1,8 +1,9 @@
 # Validated Layer — `definitions/validated/`
 
-> **LLM context**: 158 files (mac5 87 · cis360 25 · master_sku 17 · mastersku 12 · saleout_mdt +
-> allkons_commission 17; each source has 1 `validated_schema_*` bootstrap; `master_sku` = 16
-> incremental tables + schema file). Pure mechanical
+> **LLM context**: one file per source table across mac5, cis360, mastersku, master_sku,
+> saleout_mdt and d365; each source has 1 `validated_schema_*` bootstrap. Per-source lists:
+> [source-inventory.md](source-inventory.md); layer total:
+> [generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview). Pure mechanical
 > cleaning: read raw, trim/cast every column with `functionData` helpers, standardize
 > `asatdate`, dedup on PK, write to `validated_<source>`. No business logic (rare
 > exceptions in mac5).
@@ -76,10 +77,26 @@ Differences from incremental: `type: "table"` (full rebuild each run), tag
 identical. Since `incremental()` is always false for `type: "table"`, the PK post-op
 runs **every** run.
 
-- Used **only in mac5** (73 of 86 non-schema files) — all master/reference codes and
-  the `tmp_*`, `tbook_*`, `tdis_*`, `match_*`, `pro_*` families.
+- Used mostly in mac5 (73 of 86 non-schema files — all master/reference codes and
+  the `tmp_*`, `tbook_*`, `tdis_*`, `match_*`, `pro_*` families), plus 9 saleout_mdt
+  files and 1 d365 file (`inventory_item_price`). Authoritative list:
+  `grep -rl 'TAG_VALIDATED_FULL' definitions/validated/`.
 - Exceptions to note: `mir.sqlx` is `type: "incremental"` but tagged FULL (operator
   grouping); `mih_billing`/`mil_billing` are full-rebuild snapshots.
+
+### Full-load variants: which rows survive
+
+A plain full load reads **every** raw partition and dedups on the PK (newest
+`asatdate` wins). Two variants read less, so rows that disappear at source also
+disappear here:
+
+| Variant | Filter | Files | Use when |
+|---|---|---|---|
+| **Latest partition only** | `WHERE ASATDATE = (SELECT MAX(ASATDATE) FROM <raw>)` | `d365/inventory_item_price` | the source sends a full snapshot every day |
+| **Latest delivery per period** | `QUALIFY <file time or ASATDATE> = MAX(...) OVER (PARTITION BY <period>)` | `saleout_mdt/DH/saleout_dh` (per source folder + month), `saleout_mdt/EOM/eom_{bt,gb,hp,tw}` (per month) | the source resends a whole period; the newest delivery replaces the older one |
+
+Same idea in the fact layer: `fact_backlog_store` uses `WHERE asatdate = MAX(asatdate)`
+on `cps` (see known-issues: never dedup `cps` per key).
 
 ## Document-grain purge via TEMP table (`mih`, `mil`, `mir` — 2026-09-10)
 
@@ -196,14 +213,9 @@ status and deliberately deferred tables are owned by
 
 ## Per-source summary
 
-| Aspect | mac5 | cis360 | master_sku | mastersku | saleout_mdt |
-|---|---|---|---|---|---|
-| Raw datasets | `raw_mac5_ag01` + 4 companies | `raw_cis360` | `raw_master_sku` | `raw_mastersku` | `raw_saleout_mdt` |
-| Default type | mostly `table` (full) | all incremental | all incremental (16) | all incremental | all incremental |
-| Sub-tag | FULL / INCREMENTAL | INCREMENTAL | INCREMENTAL | INCREMENTAL | **none** (only `validated`) |
-| PK | table-specific composites | `id` | `id`, `<parent>_id` + `language_id`, or `group_id` + `attribute_id` (`specifications`); string keys wrapped `IFNULL(..., '')` | `prd_id` / `*_id` | wide business composites |
-| Partition | `asatdate` when incremental | `asatdate` | `asatdate` (cluster by key) | `asatdate` | usually none |
-| Quirks | multi-company UNION, sign flips, Thai-text cleanup | heavy `castBool` | raw column names kept; `parseFlexibleUtcDatetime` for `created_at`/`updated_at`; dedup `ORDER BY asatdate DESC, updated_at DESC` | `prd_*` prefix | vendor subfolders BT/GB/HP/TW, `PARSE_DATE('%Y/%m/%d', ...)` |
+Per-source tables, load modes, tags and keys are owned by
+[source-inventory.md](source-inventory.md). Source timezone handling is documented in
+[function-data.md](../includes/function-data.md#important-behaviors).
 
 ### MAC5 multi-company UNION (14 files)
 

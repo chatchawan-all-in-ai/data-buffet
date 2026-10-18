@@ -1,21 +1,23 @@
-# Dimension Inventory — ทั้งหมด 69 ไฟล์
+# Dimension Inventory
 
 > **LLM context**: SK = surrogate key column; NK = natural/business key · dim ส่วนใหญ่
-> ถือ FK `CompanySK` จาก `dim_company` · ตรวจกับโค้ดจริง 2026-09-15
+> ถือ FK `CompanySK` จาก `dim_company` · ตรวจกับโค้ดจริง 2026-10-18 (71 ไฟล์) ·
+> ยอดไฟล์ล่าสุดดูที่ [generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview)
 >
 > | กลุ่ม | จำนวน | ลักษณะ |
 > |---|---:|---|
-> | (a) mds **full daily rebuild** | **43** | SK ออกใหม่ทุกวัน — ห้ามเก็บข้ามวัน |
+> | (a) mds **full daily rebuild** | **44** | SK ออกใหม่ทุกวัน — ห้ามเก็บข้ามวัน (43 ในตาราง (a) + `dim_change_district` ที่อยู่ในตาราง (c)) |
 > | (a2) mds MERGE legacy | 2 | `dim_company`, `dim_aging_rang` — SK เสถียรตลอดกาล |
 > | (b) lake MERGE (validated/curated) | 10 | SK เสถียร ไม่มี mds tombstone |
-> | (c) full rebuild อื่น | 11 | `_last` snapshots, target, store, pump |
+> | (c) full rebuild อื่น | 12 | `_last` snapshots, target, store, pump, `dim_product_series` (hard-code) |
 > | (e) operations อื่น | 3 | `dim_calendar`, `dim_aging`, `update_sk_sale_rep_group` |
 >
 > วิธีนับที่เชื่อถือได้: จับ `mds_data_\w+` **ทั้งไฟล์** ไม่ใช่แค่ `name: "..."` — dim ชุด
 > MDT อ้าง mds ผ่าน const ใน `js {}` (`${databuffet.MDS_DATASET}.mds_data_...`)
-> ถ้าจับแค่ `name:` จะนับขาดไป 6 ตัว
+> ถ้าจับแค่ `name:` จะนับขาดไป 7 ตัว · `dim_product_series` มีคำว่า `mds_dataset` แค่ใน comment
+> (ไม่ได้อ่าน mds) อย่านับเป็น mds dim
 
-## Group (a) — mds dims (45 รวม: 43 full rebuild + 2 MERGE legacy)
+## Group (a) — mds dims (45 แถวในตาราง: 43 full rebuild + 2 MERGE legacy)
 
 > ตั้งแต่ 2026-07-20 ทุก dim ในตารางนี้เป็น **full rebuild รายวัน**
 > ([full-rebuild-pattern.md](full-rebuild-pattern.md)) — natural key เป็นตัวกำหนดลำดับ
@@ -62,14 +64,15 @@
 | dim_customer_report_info | CustomerReportInfoSK | ดูสัญญาแถวร้านและแถวสงวน → | [Customer Report Info: sources, grain, segment/TA rules and relationships](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01) |
 | dim_customer_segment | CustomerSegmentSK | CompanyID, Segment3 (MDS rows) | mds_data_customer_segment_master · [Member and fallback rules](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01) |
 | dim_weight_score | WeightSK | CompanyID, Typeeng, Typethai, StartDate, EndDate | mds_data_custgrade_weight_score_master |
+| dim_zone_mdt | ZoneMdtSK | zone_id | mds_data_mdt_sales_zone_master |
+| dim_zone_ta_mdt | ZoneTaMdtSK | zone_id, ZoneTAEmployeeID (+ แถว Unknown) · deps `dim_zone_mdt` · แทน `dim_zone_manager_mdt` ที่ถูกลบ (`b198e24`; ตารางเก่ายังค้างใน BigQuery) | mds_data_mdt_sales_zone_ta_master |
+| dim_sales_branch_mdt | BranchMdtSK | store_code, branch_code · deps `dim_zone_mdt`, `dim_zone_ta_mdt`, `dim_region_last`, `dim_section_last` | mds_data_mdt_sales_branch_master |
+| dim_product_mdt | ProductMdtSK | product_mdt_code (CAST INT64) | mds_data_mdt_product_master |
+| dim_pc | PcSK | รหัส PC ประจำสาขา | mds_data_mdt_sales_pc_master |
+| dim_target_saleout_mdt | TargetSaleoutMdtSK | เป้ารายเดือน กระจายเป็นรายวัน · partition `TargetDate` | mds_data_mdt_sales_target_by_product_master |
+| dim_target_series_mdt | TargetSeriesMdtSK | TargetDate, BranchCodeMdt, SeriesCode · เป้ารายเดือนตาม series กระจายเป็นรายวัน · partition `TargetDate` · deps `dim_sales_branch_mdt`, `dim_product_series` (รหัสที่ไม่มีลง `OTHERS`) | mds_data_mdt_sales_target_by_series |
 
 Build dependency rules: [full-rebuild properties](full-rebuild-pattern.md#properties).
-| dim_zone_mdt | ZoneMdtSK | zone_id | mds_data_sales_zone_master |
-| dim_zone_manager_mdt | ZoneManagerMdtSK | ZoneCode (+ แถว Unknown) | mds_data_sales_zone_manager_master |
-| dim_sales_branch_mdt | BranchMdtSK | รหัสสาขาของห้าง | mds_data_sales_branch_master |
-| dim_product_mdt | ProductMdtSK | product_mdt_code (CAST INT64) | mds_data_product_master_mdt |
-| dim_pc | PcSK | รหัส PC ประจำสาขา | mds_data_sales_pc_master |
-| dim_target_saleout_mdt | TargetSaleoutMdtSK | เป้ารายเดือน กระจายเป็นรายวัน · partition `TargetDate` | mds_data_sales_target_by_mdt_master |
 
 ## Group (b) — MERGE from lake tables (10)
 
@@ -90,11 +93,12 @@ Build dependency rules: [full-rebuild properties](full-rebuild-pattern.md#proper
 | dim_group_customer | GroupCustomerSK | dim_customer | dim_customer |
 | dim_group_customer_grade | GroupCustomerGradeSK | deb, chq, cql, mie, mir, mih, curated_mih | dim_calendar, dim_customer, dim_group_customer + score dims |
 
-## Group (c) — full rebuild `type: "table"` ที่ไม่ได้อ่าน mds (11)
+## Group (c) — full rebuild `type: "table"` ที่ไม่ได้อ่าน mds (12) + `dim_change_district`
 
 | File | SK | Notes |
 |---|---|---|
-| dim_change_district | *(none; CompanySK FK)* | Plain SELECT from mds_data_change_section_master, `WHERE is_active = true` |
+| dim_change_district | *(none; CompanySK FK)* | **อ่าน mds** (นับใน (a)): Plain SELECT from mds_data_change_section_master, `WHERE is_active = true` |
+| dim_product_series | SeriesSK · NK = SeriesCode | **hard-code 2 แถว** ด้วย `UNNEST` (`100001` TITAN, `999999` OTHERS) จากไฟล์ Excel ของ BI (2026-10-02) — รอย้ายไป `mds_dataset` เมื่อ BI โหลดเข้า · ไม่มีแถว `-1` · consumer: `dim_target_series_mdt`, view `onetime.Product_Attribute` · ดู [special-cases](special-cases.md) |
 | dim_department_last / dim_director_last / dim_region_last / dim_region_manager_last / dim_section_last / dim_section_manager_last / dim_sale_representative_last | `<X>SK` via ROW_NUMBER | Latest SCD row per entity; NULL FK SKs backfilled by `update_sk_sale_rep_group` |
 | dim_target_product_group_by_sale | TargetBySaleSK | Multi-CTE join of target/rate/report/product-mkt dims + `_last` family |
 | dim_target_product_group_by_sale_dayofwork | TargetBySaleDayofworkSK | joins dim_calendar (working-day expansion); daily full rebuild, self-heals |

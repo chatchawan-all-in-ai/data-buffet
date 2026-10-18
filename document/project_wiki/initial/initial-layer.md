@@ -1,11 +1,19 @@
 # Initial Layer — `definitions/initial/`
 
-> **LLM context**: **19 files** that bootstrap everything: datasets, external tables over
-> GCS AVRO, and UDFs. All `type: "operations"`. Tags: `initial` (create) and
-> `re-initial` (drop for rebuild). Verified against the repo and
-> `function_dataset.INFORMATION_SCHEMA.ROUTINES` on 2026-09-15.
+> **LLM context**: the files that bootstrap everything: datasets, external tables over
+> GCS (AVRO, plus one CSV), and UDFs. All `type: "operations"`. Tags: `initial`
+> (raw create **and** the non-MAC5 validated drops) and `re-initial` (MAC5 drops).
+> `create_all_schema` and `create_all_function` have no tag. File count: see the
+> [generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview).
+> UDFs verified against `function_dataset.INFORMATION_SCHEMA.ROUTINES` on 2026-09-15.
 
-## File map (19)
+> ⚠️ **tag `initial` is destructive.** It runs every `drop_all_tables_validated_<source>`
+> file of cis360, mastersku, master_sku, saleout_mdt, allkons_commission and d365, so the
+> validated tables of those sources are gone until they are rebuilt. To add or refresh a
+> raw table, run only the single `create_all_table_raw_<source>` action, **without**
+> "include dependencies". See [การผูก dependency](#การผูก-dependency).
+
+## File map
 
 | File | Tag | หน้าที่ |
 |---|---|---|
@@ -24,10 +32,12 @@
 | `mastersku/drop_all_tables_validated_mastersku.sqlx` | initial | DROP 11 validated tables |
 | `master_sku/create_all_table_raw_master_sku.sqlx` | initial | 16 hive-partitioned external tables in `raw_master_sku`; depends on the validated_master_sku drop file by design |
 | `master_sku/drop_all_tables_validated_master_sku.sqlx` | initial | DROP the 16 validated_master_sku tables |
-| `saleout_mdt/create_all_table_raw_saleout_mdt.sqlx` | initial | 11 hive-partitioned external tables แยกตามร้าน (bt/gb/hp/tw) |
-| `saleout_mdt/drop_all_tables_validated_saleout_mdt.sqlx` | initial | DROP 10 validated tables |
+| `saleout_mdt/create_all_table_raw_saleout_mdt.sqlx` | initial | 17 external tables แยกตามร้าน: 16 AVRO hive-partitioned (bt/dh/gb/hp/tw + `so_mdt_eom/` ยอดปิดเดือน) + **`saleout_lastyear` เป็น CSV** (`lastyear/*`) |
+| `saleout_mdt/drop_all_tables_validated_saleout_mdt.sqlx` | initial | DROP 11 validated tables (bt 7, gb, hp, tw, dh) — ไม่รวม `eom_*` และ `saleout_lastyear` |
 | `allkons_commission/create_all_table_raw_allkons_commission.sqlx` | initial | 7 hive-partitioned external tables |
 | `allkons_commission/drop_all_tables_validated_allkons_commission.sqlx` | initial | DROP 7 validated tables |
+| `d365/create_all_table_raw_d365.sqlx` | initial | สร้าง schema `raw_d365` + 3 AVRO hive-partitioned external tables จาก `gs://file-raw-data/derp_temp/` (journal headers, journal entries, item price) |
+| `d365/drop_all_tables_validated_d365.sqlx` | initial | DROP 3 validated_d365 tables |
 
 > ⚠️ **ALLKONS_COMMISSION หยุดอยู่แค่ชั้นนี้** — ไฟล์ `definitions/validated/allkons_commission/`
 > ถูกลบไปแล้วใน commit `74a10e0 "pause process data layer of commission"` · raw external
@@ -114,13 +124,30 @@ OPTIONS(format='AVRO', uris=['gs://file-raw-data/<gcs_prefix>/<table>/*.avro'])
   (`ap_s, ar_s, chq, deb, dep, per, stg, stk, cfs`)
 - **SALEOUT_MDT** มีการเปลี่ยนชื่อระหว่างโฟลเดอร์กับตาราง: โฟลเดอร์
   `reportsalesubscription` → ตาราง `report_sale_subscription`, `gb/*` → `saleout_gb`
+  · ตาราง raw `eom_bt_*` (โฟลเดอร์ `so_mdt_eom/bt/`) → validated `eom_bt`
+  · `saleout_lastyear` เป็น **CSV** ตารางเดียวในชั้นนี้ (ประกาศ schema ในไฟล์เอง)
+- **D365** โฟลเดอร์ GCS ชื่อ `derp_temp` (constant `GCS_D365`) — ชื่อฟังดูชั่วคราว อาจเปลี่ยน
+  · journal headers/entries: 20260914–16 เป็น full load (20260915 มีไฟล์ซ้ำ `*_NNN_1.avro`)
+  ตั้งแต่ 20260917 เป็น incremental รายวัน → validated ต้อง dedup ข้ามทุก partition
+  · `inventory_item_price` เป็น snapshot เต็มทุกวัน (~175k แถว) · ไฟล์ AVRO ช่วง 2026-10
+  มีค่า default ผิดกฎใน 3 ฟิลด์ (หมายเหตุในไฟล์)
 
 ## การผูก dependency
 
 `create_all_table_raw_<source>` ขึ้นกับ `drop_all_tables_*` ของ source นั้น ส่วนไฟล์
-`validated_schema_*` ขึ้นกับ create action อีกที · เลือก tag `initial` ตาม
-[คู่มือรันงาน](../../how-to/run-and-debug.md#รันด้วย-tag) เพื่อสร้าง raw external table ใหม่ได้สะอาด
+`validated_schema_*` ขึ้นกับ create action อีกที
+
+⚠️ **tag `initial` ไม่ใช่การสร้าง raw ใหม่แบบสะอาด** — ไฟล์ drop ของ cis360, mastersku,
+master_sku, saleout_mdt, allkons_commission และ d365 ติด tag `initial` เอง การรันทั้ง tag จึง
+**DROP ตาราง validated ของทุก source เหล่านั้น** ข้อมูลหายจนกว่าจะรัน validated ใหม่
+(ตาราง incremental ต้องโหลดย้อนหลังใหม่ทั้งหมด)
+
+วิธีที่ถูก: รัน **เฉพาะ action `create_all_table_raw_<source>` ตัวเดียว โดยไม่ติ๊ก
+"include dependencies"** ([คู่มือรันงาน](../../how-to/run-and-debug.md#รันด้วย-tag))
+ถ้าติ๊ก "include dependencies" จะดึงไฟล์ drop ของ source นั้นมาด้วย — ของ MAC5 คือไฟล์ใน
+tag `re-initial` ซึ่งลบทั้ง validated และ curated ของ MAC5 · ส่วน `create_all_schema` /
+`create_all_function` ไม่มี tag ต้องเลือกรันตามชื่อ action
 
 ⚠️ tag `re-initial` **DROP ตาราง validated/curated ของ MAC5** — ใช้เฉพาะตอน rebuild
 ทั้งก้อน ข้อมูลใน incremental table จะหายจนกว่าจะรันใหม่ (PreToolUse hook บล็อกคำสั่งนี้
-ไว้ ต้องให้เจ้าของงานรันเอง)
+ไว้ ต้องให้เจ้าของงานรันเอง) · hook **ไม่ได้** บล็อก tag `initial`

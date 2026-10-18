@@ -68,11 +68,8 @@ project_wiki/
 ดู [diagrams/README.md](diagrams/README.md) เป็น index ของโฟลเดอร์นี้
 
 - [diagrams/pipeline_lineage.md](diagrams/pipeline_lineage.md) — **graph lineage**
-  (Mermaid, render บน GitHub/VSCode) แบ่งเป็น 5 view ที่อ่านได้: (1) layer overview
-  (2) execution/run order — tag-driven orchestration (bootstrap/nightly/yearly) พร้อม
-  นับ object ต่อ tag (3) star schema fact←dim (4) dimension backbone (5) source→model
-  — edge = source → consumer, node ที่ pause เป็นเส้นประจาง (scaffolding
-  initial/*_schema_* ตัดออกจาก view รายละเอียดเพื่อไม่ให้เกิน 500-edge cap ของ GitHub)
+  (Mermaid, render บน GitHub/VSCode) — รายการ view และวิธีอ่านอยู่ที่
+  [diagrams/README.md](diagrams/README.md#the-views-in-pipeline_lineagemd)
 - [diagrams/topic_flows.md](diagrams/topic_flows.md) — **subject-area views** แยกตาม
   เรื่องธุรกิจ 14 เรื่อง (sale-org, target, customer, ar-aging, product, sales-txn,
   delivery, quotation, channel, cost, calendar, store, modern-trade, reference)

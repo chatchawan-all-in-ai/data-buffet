@@ -16,8 +16,9 @@ the code** — never hand-edit the output.
 1. **Layer overview** — the medallion → star-schema map (raw → initial → validated →
    curated → dimension → fact, plus cdc/process) with live per-layer counts.
 2. **Execution / run order** — the tag-driven orchestration: what runs, in what
-   order, on what cadence (bootstrap / nightly / yearly), with live object-per-tag
-   counts. Start here to understand *how the system operates*.
+   order, on what cadence (manual / daily / yearly), with live object-per-tag
+   counts. The full schedule, including the target-based `saleout_morning` run,
+   is owned by [running and troubleshooting — Schedule](../project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd).
 3. **Star schema** — every `fact_*` table and the dimensions / curated tables that
    feed it.
 4. **Dimension backbone** — `dimension → dimension` build order (`dim_company` is the

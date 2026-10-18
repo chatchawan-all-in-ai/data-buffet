@@ -9,18 +9,67 @@
 
 | Tag | What runs |
 |---|---|
-| `initial` | Recreate raw external tables + schemas |
+| `initial` | ⚠️ **Destructive.** Recreates the raw external tables **and** drops validated tables of cis360, mastersku, master_sku, saleout_mdt, allkons_commission and d365. Exact drop scope: [initial file map](../initial/initial-layer.md#file-map). See the warning below |
 | `re-initial` | ⚠️ DROP validated/curated MAC5 tables (destructive, mac5 only) |
 | `validated` / `validated_full` / `validated_incremental` | Validated layer |
-| `curated` | Curated layer (no sub-tags in use) |
-| `dimension_daily` | 68 of 69 dims (all but `dim_calendar`) |
+| `curated` / `curated_full` / `curated_incremental` | Curated layer (the sub-tags are used by the SALEOUT_MDT curated files) |
+| `dimension_daily` | Every dim except `dim_calendar` |
 | `dimension_yearly` | `dim_calendar` only |
-| `fact_daily` | All 15 facts |
+| `fact_daily` | Every fact |
 | `cdc` / `cdc_incremental` | CDC change log |
-| `process` | AI address parsing |
+| `process` | AI address parsing (`deb_address_data`) + RLS access map (`rls_customer360`) |
 
-Unused-but-defined: `dimension_monthly`, `fact_monthly`, `fact_yearly`,
-`curated_full`, `curated_incremental`. There is **no** `assertions` tag.
+Unused-but-defined: `dimension_monthly`, `fact_monthly`, `fact_yearly`.
+There is **no** `assertions` tag. Per-tag file counts: see the
+[generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview).
+
+> ⚠️ **Never run the whole `initial` tag to add or refresh one raw table.**
+> Every `create_all_table_raw_<source>` depends on that source's drop file, and the
+> non-MAC5 drop files carry tag `initial` themselves. Run only the single
+> `create_all_table_raw_<source>` action, **without** "include dependencies".
+> With "include dependencies", the MAC5 create files also pull in the `re-initial`
+> drops (validated **and** curated MAC5). The schema and UDF files
+> (`create_all_schema`, `create_all_function`) have no tag; run them by action name.
+
+## Schedule (Dataform service, `databuffet-nonprd`)
+
+Read from the Dataform API (`releaseConfigs` / `workflowConfigs`) on 2026-10-18.
+Nothing in git records this; the config lives in the Dataform UI.
+
+| Item | When (cron, timezone) | What it does |
+|---|---|---|
+| Release config `production` | 05:45 daily (`45 5 * * *`, Asia/Bangkok) | Compiles the **`nonprod`** branch. No vars override, so `workflow_settings.yaml` on `nonprod` is what runs |
+| Workflow `daily_process` | 06:00 daily (`0 6 * * *`, Asia/Bangkok) | Tags `validated`, `curated`, `dimension_daily`, `fact_daily`, `cdc_incremental`, `process`. No transitive dependencies |
+| Workflow `saleout_morning` | 08:55 daily (`55 8 * * *`, Asia/Bangkok) | 31 explicitly listed SALEOUT_MDT targets (list below). No tags, no transitive dependencies. Purpose not recorded |
+| Workflow `yearly_process` | Dec 15, 12:00 (`0 12 15 12 *`, **Asia/Jakarta**) | Tag `dimension_yearly` (`dim_calendar`). Runs as a personal user account, not a service account |
+| Cloud Run `alert-dataform` | 07:00 daily | Writes the run result to `monitor_dataset.dataform_run_action` (skill `check-runs`) |
+
+Consequences:
+
+- `view`, `initial`, `re-initial` and `cdc` are **not scheduled on purpose**. Views
+  are deployed by hand ([deploy-view guide](../../how-to/deploy-view.md)).
+- A var change (e.g. `BACKFILL_DAYS`) only reaches the nightly if it is committed on
+  **`nonprod` before 05:45**. A change in a workspace or on `dev` alone does nothing.
+- `saleout_morning` re-runs the SALEOUT_MDT chain after `daily_process`. Its targets:
+  - schemas: `validated_schema_saleout`, `curated_schema_saleout`;
+  - validated (13 of 16 tables): `eom_bt`, `eom_gb`, `eom_hp`, `eom_tw`,
+    `report_sale_subscription`, `sale_by_branch_detail`, `sale_by_branch_mch3`,
+    `saleout_dh`, `saleout_gb`, `saleout_hp`, `saleout_lastyear`, `stock_aging`,
+    `stock_by_branch` (not in the list: `sales_by_branch`, `turnover`, `turnover_brand`);
+  - curated: `curated_saleout_mdt`, `curated_stock_mdt`, `curated_saleout_monthly_mdt`;
+  - dims: `dim_pc`, `dim_product_mdt`, `dim_sales_branch_mdt`, `dim_target_saleout_mdt`,
+    `dim_target_series_mdt`, `dim_zone_mdt`, `dim_zone_ta_mdt`;
+  - facts: `fact_saleout_mdt`, `fact_saleout_monthly_mdt`, `fact_stock_mdt`,
+    `fact_stock_mdt_monthly`, `fact_target_saleout_mdt`, `fact_target_series_mdt`.
+
+  The list is explicit, so **a new SALEOUT_MDT table must be added to it by hand** in
+  the Dataform UI, or it runs only at 06:00.
+- D365 (`validated_d365`) runs in `daily_process` (tag `validated`) from 2026-10-18.
+  Its GCS files for `ASATDATE=D` land at about 01:02 Bangkok on D+1. It is not in
+  `saleout_morning`.
+- When a source is first built by hand and then wired into the schedule, check the
+  first window: with `BACKFILL_DAYS = 1` the nightly reads only from yesterday, so a
+  partition that landed after the hand build and before yesterday is skipped for good.
 
 For local commands see [README — Common Commands](../../../README.md#common-commands);
 for executing tags/actions see the [run guide](../../how-to/run-and-debug.md#รันด้วย-tag).
@@ -87,19 +136,22 @@ Things that cost time the first round:
 
 Every validated and curated incremental window reads
 `DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY)`
-(86 statements across 64 files). The var lives in `workflow_settings.yaml`, is
-**added by hand per workspace** (this repo's commits do not carry it), and
-falls back to `"1"` — yesterday only — when absent.
+The var is committed in `workflow_settings.yaml` (`BACKFILL_DAYS: "1"`).
+`databuffet.js` falls back to `"1"` — yesterday only — when it is absent.
 
 When a source has been failing for several days — say `mih` has been broken for
 three — widen the window instead of doing a full refresh:
 
-1. Edit `workflow_settings.yaml` in the Dataform workspace:
+1. Edit `workflow_settings.yaml` in a Dataform workspace:
    `BACKFILL_DAYS: "3"`
 2. Compile and check **Compiled queries** — the window should read `INTERVAL 3 DAY`.
-3. Run the affected actions (or the `validated` / `curated` tags).
-4. **Set it back to `"1"`** and re-run nothing; the next scheduled run picks up
-   the normal window.
+3. Run the affected actions (or the `validated` / `curated` tags) from that workspace.
+4. **Set it back to `"1"`** and re-run nothing.
+
+The schedule does not use workspaces. It compiles the `nonprod` branch at 05:45
+(see [Schedule](#schedule-dataform-service-databuffet-nonprd)). To widen the
+nightly window instead, commit the change on `nonprod` before 05:45 and revert it
+after the run.
 
 Notes:
 
@@ -118,7 +170,10 @@ Notes:
 
 ## Git / environments
 
-- Branches: `dev` (default working) → merge → `nonprod` → `prod`; `hotfix` exists.
+- Branches: `dev` (working) and `nonprod` (what the schedule compiles), then `prod`;
+  `hotfix` exists. Work reaches `nonprod` in two lanes, and commits can also land on
+  `dev` directly: see the [release flow](../../getting-started/onboarding.md#release-flow).
 - `workflow_settings.yaml` is per-environment (project id differs).
-- A Cloud-Run based Slack run-monitor lives in a separate scaffold
-  (`cloud-run-monitor/`, BQ `monitor_dataset`) — deployment pending as of 2026-07.
+- The run monitor is live: Cloud Run `alert-dataform` writes
+  `monitor_dataset.dataform_run_action` daily at 07:00 Bangkok (skill `check-runs`,
+  details in [known-issues](../../operations/known-issues.md)).

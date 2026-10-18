@@ -1,6 +1,11 @@
 # How-to: Setup Pub/Sub สำหรับส่งออกข้อมูลจาก BigQuery
 
-> สถานะ: **ใช้งานจริง** (ไม่ใช่ POC ทิ้ง) — scope แรก = query commission ของคุณแป้ง
+> สถานะ (ตรวจ 2026-10-18): **ยังไม่พบของจริงใน `databuffet-nonprd`** — ไม่มี export topic
+> (มีแค่ topic `container-analysis-*`), ไม่มี Scheduler job export 07:00 (มีแค่
+> `alert-monitor-dataform` และ `trigger-daily-master-report`) และ Cloud Functions API ยังไม่เปิด
+> ถ้าระบบนี้อยู่ใน project อื่น ให้ระบุชื่อ project ไว้ที่นี่ ไม่งั้นถือว่าเอกสารนี้เป็น **แบบที่ยังไม่ได้สร้าง**
+>
+> เจตนาเดิม: ใช้งานจริง (ไม่ใช่ POC ทิ้ง) — scope แรก = query commission ของคุณแป้ง
 > (8 ไฟล์ T-SQL → **14 ชุดข้อมูล**) ส่งให้ **ทีม TF** รายละเอียดแต่ละส่วนจะถูกปรับเพิ่ม
 > ทีหลังตามที่ผู้ใช้เห็นเหมาะสม
 > เอกสารนี้อยู่นอก pipeline หลักของ Dataform (ไม่แก้ `definitions/`, `includes/`,

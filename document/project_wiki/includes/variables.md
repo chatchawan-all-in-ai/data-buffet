@@ -9,18 +9,17 @@
 
 | Constant | Value | Runs |
 |---|---|---|
-| `TAG_INITIAL` | `initial` | External-table / bootstrap actions |
-| `TAG_REINITIAL` | `re-initial` | Re-create external tables |
+| `TAG_INITIAL` | `initial` | ⚠️ External tables **and drops of validated tables** of `cis360`, `mastersku`, `master_sku`, `saleout_mdt`, `allkons_commission` and `d365`. To add or refresh raw tables, run only the single `create_all_table_raw_<source>` action without "include dependencies" (dependencies can also pull in MAC5 drops). Schema/UDF bootstrap actions are untagged; see [initial-layer.md](../initial/initial-layer.md) |
+| `TAG_REINITIAL` | `re-initial` | ⚠️ Drops validated/curated MAC5 tables; does not recreate external tables |
 | `TAG_VALIDATED` | `validated` | All validated tables |
 | `TAG_VALIDATED_FULL` | `validated_full` | Full-load reference tables |
 | `TAG_VALIDATED_INCREMENTAL` | `validated_incremental` | Partitioned transactional tables |
 | `TAG_CURATED` / `TAG_CURATED_FULL` / `TAG_CURATED_INCREMENTAL` | `curated`, `curated_full`, `curated_incremental` | Curated layer |
 | `TAG_DIM_DAILY` / `TAG_DIM_MONTHLY` / `TAG_DIM_YEARLY` | `dimension_daily`, `dimension_monthly`, `dimension_yearly` | Dimension refresh cadence |
 | `TAG_FACT_DAILY` / `TAG_FACT_MONTHLY` / `TAG_FACT_YEARLY` | `fact_daily`, `fact_monthly`, `fact_yearly` | Fact refresh cadence |
-| `TAG_PROCESS` | `process` | Process layer (address parsing) |
+| `TAG_PROCESS` | `process` | Process layer (address parsing + `rls_customer360`) |
 | `TAG_CDC` / `TAG_CDC_INCREMENTAL` | `cdc`, `cdc_incremental` | CDC pipeline |
 | `TAG_VIEW` | `view` | View layer (`definitions/view/`) — presentation views over dim/fact/curated · [Deployment procedure](../../how-to/deploy-view.md) |
-| `ONETIME` | `onetime` | One-off actions |
 
 ## Dataset (BigQuery schema) names
 
@@ -31,6 +30,8 @@
 | MAC5 | `raw_mac5_ag01`, `raw_mac5_aa05`, `raw_mac5_ab01`, `raw_mac5_ac02`, `raw_mac5_ak02` (one per company) | `validated_mac5` | `curated_mac5` |
 | CIS360 | `raw_cis360` | `validated_cis360` | `curated_cis360` |
 | MASTERSKU | `raw_mastersku` | `validated_mastersku` | `curated_mastersku` |
+| MASTER_SKU (`master_sku` 3.0) | `raw_master_sku` (`RAW_MASTER_SKU`) | `validated_master_sku` (`VALIDATED_MASTER_SKU`) | `curated_master_sku` (`CURATED_MASTER_SKU`) |
+| D365 | `raw_d365` (`RAW_D365`) | `validated_d365` (`VALIDATED_D365`) | — (no constant) |
 | SALEOUT_MDT | `raw_saleout_mdt` | `validated_saleout_mdt` | **`curated_saleout_mdt`** (`CURATED_SALEOUT_MDT`, เพิ่ม 2026-09) |
 | ALLKONS_COMMISSION | `raw_allkons_commission` | `validated_allkons_commission` ⚠️ **ไม่มีไฟล์ validated แล้ว** (pause ใน `74a10e0`) dataset ยังค้างข้อมูลเก่า | — |
 
@@ -56,7 +57,8 @@
 
 Map source system → folder under `gs://file-raw-data`:
 `mac5_ag01`, `mac5_aa05`, `mac5_ab01`, `mac5_ac02`, `mac5_ak02`, `mac5_report`,
-`mac5_gps`, `mastersku`, `cis360`, `saleout_mdt`, `allkons_commission`.
+`mac5_gps`, `mastersku`, `master_sku` (`GCS_MASTER_SKU`), `cis360`, `saleout_mdt`,
+`allkons_commission`, `derp_temp` (`GCS_D365` — D365; a temp-sounding name that may change).
 
 ## MAC5 multi-company note
 
@@ -66,7 +68,7 @@ dataset and GCS folder. The validated layer consolidates them into the single
 
 ## จำนวน key
 
-`variables.json` มี **57 key** (นับ 2026-09-15) — หน้านี้อธิบายด้วย **ค่า**
+`variables.json` มี **64 key** (นับ 2026-10-18) — หน้านี้อธิบายด้วย **ค่า**
 (เช่น `raw_mac5_ag01`) ไม่ใช่ชื่อ constant ทุกตัว เพราะ key กลุ่ม `RAW_*` / `GCS_*` /
 `VALIDATED_*` / `CURATED_*` เดาได้จากค่าตรง ๆ · ถ้าต้องการรายชื่อครบ ให้อ่านจาก
 `includes/controller/variables.json` ตรง ๆ — **อย่าเชื่อหน้านี้เป็นรายการครบ**

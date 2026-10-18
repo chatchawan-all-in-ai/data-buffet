@@ -402,15 +402,15 @@ def main():
     # ---- View 1: layer overview (architecture map with live counts) ----
     overview = f"""```mermaid
 flowchart LR
-  raw["Raw AVRO<br/>gs://file-raw-data"]
-  I["initial ({counts['initial']})<br/>ext tables + UDFs"]
+  raw["Raw AVRO/CSV<br/>gs://file-raw-data"]
+  I["initial ({counts['initial']})<br/>ext tables + UDFs + DROPs"]
   V["validated ({counts['validated']})<br/>clean · cast · dedup"]
   C["curated ({counts['curated']})<br/>business joins"]
   D["dimension ({counts['dimension']})<br/>SK + SCD"]
   F["fact ({counts['fact']})<br/>star-schema"]
   VW["view ({counts['view']})<br/>BI/reporting views"]
   CDC["cdc ({counts['cdc']})"]
-  P["process ({counts['process']})<br/>AI address parse"]
+  P["process ({counts['process']})<br/>AI address parse + RLS map"]
   raw --> I --> V --> C
   C --> D
   C --> F
@@ -447,20 +447,20 @@ flowchart LR
 
     execution = f"""```mermaid
 flowchart TB
-  subgraph boot["Bootstrap - run once / on schema change"]
-    I["initial | {tc('TAG_INITIAL')} objects<br/>external tables + UDFs<br/>tag: initial"]
+  subgraph boot["Manual setup / view deployment"]
+    I["initial | {tc('TAG_INITIAL')} objects<br/>external tables + validated DROPs<br/>tag: initial - destructive"]
+    Vw["view | {tc('TAG_VIEW')}<br/>BI/reporting views<br/>tag: view - manual deployment"]
   end
 
-  subgraph nightly["Nightly run - Asia/Bangkok (top to bottom = run order)"]
+  subgraph nightly["daily_process - daily 06:00 Asia/Bangkok (top to bottom = run order)"]
     direction TB
-    V["validated | {tc('TAG_VALIDATED')}<br/>clean - cast - dedup<br/>tags: validated_incremental ({tc('TAG_VALIDATED_INCREMENTAL')}) / validated_full ({tc('TAG_VALIDATED_FULL')})"]
+    V["validated | {tc('TAG_VALIDATED')}<br/>clean - cast - dedup<br/>tag: validated"]
     C["curated | {tc('TAG_CURATED')}<br/>business joins<br/>tag: curated"]
     D["dimension_daily | {tc('TAG_DIM_DAILY')}<br/>SK + SCD rebuild<br/>tag: dimension_daily"]
     Fd["fact_daily | {tc('TAG_FACT_DAILY')}<br/>star-schema load<br/>tag: fact_daily"]
-    Vw["view | {tc('TAG_VIEW')}<br/>BI/reporting views<br/>tag: view"]
-    CDC["cdc | {tc('TAG_CDC')}<br/>change log<br/>tag: cdc"]
-    P["process | {tc('TAG_PROCESS')}<br/>AI.GENERATE - gated on today's CDC changes<br/>tag: process"]
-    V --> C --> D --> Fd --> Vw
+    CDC["cdc_incremental | {tc('TAG_CDC_INCREMENTAL')}<br/>change log<br/>tag: cdc_incremental"]
+    P["process | {tc('TAG_PROCESS')}<br/>AI address parse - CDC gated + RLS map<br/>tag: process"]
+    V --> C --> D --> Fd
     V --> CDC --> P
   end
 
@@ -468,7 +468,8 @@ flowchart TB
     Dy["dimension_yearly | {tc('TAG_DIM_YEARLY')}<br/>dim_calendar date spine<br/>tag: dimension_yearly"]
   end
 
-  I -.->|first build| V
+  I -.->|raw tables prepared manually| V
+  Fd -.->|manual view deployment| Vw
   Dy -.->|date spine| D
 
   classDef boot fill:#e0e0e0,stroke:#9e9e9e,color:#111;
@@ -523,6 +524,15 @@ The medallion → star-schema map. Counts are live.
 The tag-driven orchestration: what runs, in what order, on what cadence. Counts are
 the number of (non-paused) objects carrying each tag. Solid arrows = run order;
 dashed = a prerequisite from another cadence.
+
+> ⚠️ Tag `initial` also drops validated tables of `cis360`, `mastersku`, `master_sku`,
+> `saleout_mdt`, `allkons_commission` and `d365` (exact scope: [initial file map](../project_wiki/initial/initial-layer.md#file-map)).
+> To add or refresh raw tables, run only the single `create_all_table_raw_<source>`
+> action without "include dependencies". Including dependencies can also pull in
+> MAC5 drops; tag `re-initial` drops validated/curated MAC5 tables and does not
+> recreate external tables. Tags `initial` and `view` are manual; `daily_process`
+> selects `validated`, `curated`, `dimension_daily`, `fact_daily`, `cdc_incremental`
+> and `process`.
 
 {execution}
 

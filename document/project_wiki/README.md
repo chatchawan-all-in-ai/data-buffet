@@ -10,7 +10,7 @@
 | Task | Read |
 |---|---|
 | Any task (start here) | [overview/architecture.md](overview/architecture.md) |
-| Understand a source system / raw data | [overview/source-systems.md](overview/source-systems.md), [initial/initial-layer.md](initial/initial-layer.md) |
+| Understand a source system / raw data (incl. SALEOUT_MDT end-to-end, D365) | [overview/source-systems.md](overview/source-systems.md), [initial/initial-layer.md](initial/initial-layer.md) |
 | Add/edit a validated table | [validated/validated-layer.md](validated/validated-layer.md), [validated/source-inventory.md](validated/source-inventory.md) |
 | Add/edit a curated table | [curated/curated-layer.md](curated/curated-layer.md) |
 | Add/edit a dimension | [dimension/dimension-layer.md](dimension/dimension-layer.md) → [dimension/full-rebuild-pattern.md](dimension/full-rebuild-pattern.md) (default) / [dimension/merge-sk-pattern.md](dimension/merge-sk-pattern.md) (stable-SK legacy) → [dimension/special-cases.md](dimension/special-cases.md) |
@@ -23,7 +23,8 @@
 | CDC / change tracking | [cdc-process/cdc.md](cdc-process/cdc.md) |
 | AI address parsing | [cdc-process/process.md](cdc-process/process.md) |
 | Config, tags, helpers | [includes/databuffet-js.md](includes/databuffet-js.md), [includes/variables.md](includes/variables.md), [includes/function-data.md](includes/function-data.md), [includes/cdc-config.md](includes/cdc-config.md) |
-| Run / debug / env facts | [operations/running-and-troubleshooting.md](operations/running-and-troubleshooting.md) |
+| Run / debug / env facts / what runs on schedule | [operations/running-and-troubleshooting.md](operations/running-and-troubleshooting.md) |
+| How work reaches `nonprod` (release flow) | `document/getting-started/onboarding.md` § Release flow |
 
 ## Hard rules (apply to every change)
 
@@ -31,7 +32,7 @@
 2. Follow the [data-cleaning rules, including incremental string keys](../coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล).
 3. Never hardcode dataset names/tags — use `databuffet.*` constants.
 4. SK stability is per-pattern: MERGE dims (`dim_company`, `dim_aging_rang`, lake dims)
-   have SKs that are stable forever — never regenerate them. The 43 full-rebuild mds
+   have SKs that are stable forever — never regenerate them. The full-rebuild mds
    dims regenerate SKs daily — never persist those SKs across days.
 5. `type: "operations"` targets (MERGE dims, `fact_transcation`) pre-exist in
    BigQuery — Dataform does not create them.

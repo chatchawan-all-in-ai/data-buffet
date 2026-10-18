@@ -29,7 +29,7 @@
 | **MAC5** | ระบบ POS/บัญชี มี 5 บริษัท (ag01, aa05, ab01, ac02, ak02) แต่ละบริษัทมี raw dataset แยก รวมเป็น `validated_mac5` ด้วยคอลัมน์ `company_id` |
 | **MASTERSKU** | Product master (สี ขนาด มิติสินค้า — มี JSON ซ้อน) |
 | **CIS360** | ข้อมูลอ้างอิงลูกค้า |
-| **SALEOUT_MDT** | ข้อมูล sell-out จากห้าง modern trade (BT บุญถาวร, GB โกลบอลเฮ้าส์, HP โฮมโปร, TW ไทวัสดุ) · ตั้งแต่ 2026-09 มีครบสาย validated → curated → dim 6 → fact 3 |
+| **SALEOUT_MDT** | ข้อมูล sell-out จากห้าง modern trade — ขอบเขตและสายข้อมูลปัจจุบันดู [Source Systems — SALEOUT_MDT](../project_wiki/overview/source-systems.md#saleout_mdt--sell-out-modern-trade) |
 | **mds_dataset** | ตาราง master-data-service ที่โหลดเข้ามาจากภายนอก (ไม่ได้สร้างโดย repo นี้) — เป็นต้นทางของ dimension ส่วนใหญ่ ทุกตารางมี `id`, `is_active`, `updated_at` |
 | **ASATDATE / asatdate** | วันที่ของ snapshot ข้อมูล (string `YYYYMMDD` ใน raw → `DATE` ใน validated) เป็น partition column หลักของตาราง incremental |
 | **AVRO / external table** | ไฟล์ raw บน GCS (`gs://file-raw-data`) อ่านผ่าน BigQuery external table — ข้อมูลจริงอยู่บน GCS |
@@ -42,7 +42,7 @@
 | **Incremental** | โหลดเฉพาะ partition ช่วงหลัง (`asatdate >= CURRENT_DATE('Asia/Bangkok') - N`) (tag `validated_incremental`) |
 | **QUALIFY dedup** | `QUALIFY ROW_NUMBER() OVER(PARTITION BY <pk> ORDER BY file_load_datetime DESC) = 1` — เก็บ row ล่าสุดต่อคีย์ |
 | **MERGE upsert** | `MERGE ... WHEN MATCHED UPDATE / WHEN NOT MATCHED INSERT` — ใช้ใน dimension ที่ต้องรักษา SK เดิม (dim_company, dim_aging_rang, lake dims) |
-| **Full rebuild dim** | pattern หลักของ mds dims 43 ตัว (ตั้งแต่ 2026-07-20): `type: "table"` ปั้นใหม่ทุกวันจาก `is_active = TRUE` — SK ออกเลขใหม่ทุกวัน ห้ามเก็บข้ามวัน |
+| **Full rebuild dim** | pattern หลักของ mds dims (ตั้งแต่ 2026-07-20): `type: "table"` ปั้นใหม่ทุกวันจาก `is_active = TRUE` — SK ออกเลขใหม่ทุกวัน ห้ามเก็บข้ามวัน |
 | **mds inactive DELETE (tombstone)** | ท้าย dimension MERGE (เหลือ 2 ตัว): `DELETE FROM dim WHERE MdsID IN (SELECT id FROM mds WHERE is_active = FALSE)` — ลบ row ที่ต้นทาง soft-delete |
 | **Overwrite import** | โหมด import ของ mds ที่ล้างตารางแล้วลงใหม่ (id เปลี่ยนหมด) — full rebuild รองรับเองอัตโนมัติ |
 | **MDS_BACKFILL_DAYS** | ตัวแปรโปรเจกต์ (ปัจจุบัน `1`) จำกัดหน้าต่าง `updated_at` ของ dim แบบ MERGE (full rebuild ไม่ใช้) |

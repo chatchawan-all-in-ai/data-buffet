@@ -7,7 +7,7 @@
 > inline `ref(...)` + `tags: [...]`), so the views — and `topic_flows.md` — always
 > match the repo.
 
-**Objects: 324** — initial 19 · validated 158 · curated 14 · dimension 71 · fact 18 · view 40 · cdc 2 · process 2
+**Objects: 331** — initial 21 · validated 162 · curated 15 · dimension 71 · fact 18 · view 40 · cdc 2 · process 2
 
 **Paused (config commented out):** —
 
@@ -23,15 +23,15 @@ The medallion → star-schema map. Counts are live.
 
 ```mermaid
 flowchart LR
-  raw["Raw AVRO<br/>gs://file-raw-data"]
-  I["initial (19)<br/>ext tables + UDFs"]
-  V["validated (158)<br/>clean · cast · dedup"]
-  C["curated (14)<br/>business joins"]
+  raw["Raw AVRO/CSV<br/>gs://file-raw-data"]
+  I["initial (21)<br/>ext tables + UDFs + DROPs"]
+  V["validated (162)<br/>clean · cast · dedup"]
+  C["curated (15)<br/>business joins"]
   D["dimension (71)<br/>SK + SCD"]
   F["fact (18)<br/>star-schema"]
   VW["view (40)<br/>BI/reporting views"]
   CDC["cdc (2)"]
-  P["process (2)<br/>AI address parse"]
+  P["process (2)<br/>AI address parse + RLS map"]
   raw --> I --> V --> C
   C --> D
   C --> F
@@ -70,22 +70,31 @@ The tag-driven orchestration: what runs, in what order, on what cadence. Counts 
 the number of (non-paused) objects carrying each tag. Solid arrows = run order;
 dashed = a prerequisite from another cadence.
 
+> ⚠️ Tag `initial` also drops validated tables of `cis360`, `mastersku`, `master_sku`,
+> `saleout_mdt`, `allkons_commission` and `d365` (exact scope: [initial file map](../project_wiki/initial/initial-layer.md#file-map)).
+> To add or refresh raw tables, run only the single `create_all_table_raw_<source>`
+> action without "include dependencies". Including dependencies can also pull in
+> MAC5 drops; tag `re-initial` drops validated/curated MAC5 tables and does not
+> recreate external tables. Tags `initial` and `view` are manual; `daily_process`
+> selects `validated`, `curated`, `dimension_daily`, `fact_daily`, `cdc_incremental`
+> and `process`.
+
 ```mermaid
 flowchart TB
-  subgraph boot["Bootstrap - run once / on schema change"]
-    I["initial | 15 objects<br/>external tables + UDFs<br/>tag: initial"]
+  subgraph boot["Manual setup / view deployment"]
+    I["initial | 17 objects<br/>external tables + validated DROPs<br/>tag: initial - destructive"]
+    Vw["view | 40<br/>BI/reporting views<br/>tag: view - manual deployment"]
   end
 
-  subgraph nightly["Nightly run - Asia/Bangkok (top to bottom = run order)"]
+  subgraph nightly["daily_process - daily 06:00 Asia/Bangkok (top to bottom = run order)"]
     direction TB
-    V["validated | 158<br/>clean - cast - dedup<br/>tags: validated_incremental (66) / validated_full (82)"]
-    C["curated | 14<br/>business joins<br/>tag: curated"]
+    V["validated | 162<br/>clean - cast - dedup<br/>tag: validated"]
+    C["curated | 15<br/>business joins<br/>tag: curated"]
     D["dimension_daily | 70<br/>SK + SCD rebuild<br/>tag: dimension_daily"]
     Fd["fact_daily | 18<br/>star-schema load<br/>tag: fact_daily"]
-    Vw["view | 40<br/>BI/reporting views<br/>tag: view"]
-    CDC["cdc | 2<br/>change log<br/>tag: cdc"]
-    P["process | 2<br/>AI.GENERATE - gated on today's CDC changes<br/>tag: process"]
-    V --> C --> D --> Fd --> Vw
+    CDC["cdc_incremental | 1<br/>change log<br/>tag: cdc_incremental"]
+    P["process | 2<br/>AI address parse - CDC gated + RLS map<br/>tag: process"]
+    V --> C --> D --> Fd
     V --> CDC --> P
   end
 
@@ -93,7 +102,8 @@ flowchart TB
     Dy["dimension_yearly | 1<br/>dim_calendar date spine<br/>tag: dimension_yearly"]
   end
 
-  I -.->|first build| V
+  I -.->|raw tables prepared manually| V
+  Fd -.->|manual view deployment| Vw
   Dy -.->|date spine| D
 
   classDef boot fill:#e0e0e0,stroke:#9e9e9e,color:#111;
@@ -626,10 +636,11 @@ flowchart LR
     vendor["vendor"]
     vendors["vendors"]
   end
-  subgraph curated["curated (9)"]
+  subgraph curated["curated (10)"]
     curated_mih["curated_mih"]
     curated_mil["curated_mil"]
     curated_product["curated_product"]
+    curated_products["curated_products"]
     curated_saleout_mdt["curated_saleout_mdt"]
     curated_saleout_monthly_mdt["curated_saleout_monthly_mdt"]
     curated_stock_mdt["curated_stock_mdt"]
@@ -637,7 +648,7 @@ flowchart LR
     product_for_aisearch["product_for_aisearch"]
     product_for_aisearch_v3["product_for_aisearch_v3"]
   end
-  subgraph dimension["dimension (16)"]
+  subgraph dimension["dimension (17)"]
     dim_aging["dim_aging"]
     dim_customer["dim_customer"]
     dim_customer_grade["dim_customer_grade"]
@@ -647,6 +658,7 @@ flowchart LR
     dim_invoice["dim_invoice"]
     dim_order["dim_order"]
     dim_product_master["dim_product_master"]
+    dim_product_mdt["dim_product_mdt"]
     dim_project["dim_project"]
     dim_quotation["dim_quotation"]
     dim_sale_representative["dim_sale_representative"]
@@ -679,6 +691,7 @@ flowchart LR
   ar_s --> dim_invoice
   ar_s --> dim_order
   brand --> product_for_aisearch
+  brand_vendors --> curated_products
   brand_vendors --> product_for_aisearch_v3
   brands --> product_for_aisearch_v3
   categories --> product_for_aisearch_v3
@@ -688,6 +701,7 @@ flowchart LR
   chq --> dim_customer_grade
   chq --> dim_group_customer_grade
   chq --> fact_chq
+  common_codes --> curated_products
   common_codes --> product_for_aisearch_v3
   cps --> fact_backlog_store
   cql --> dim_aging
@@ -721,10 +735,13 @@ flowchart LR
   curated_mil --> fact_transaction_delivery
   curated_product --> product_for_aisearch
   curated_saleout_mdt --> curated_saleout_monthly_mdt
+  curated_saleout_mdt --> dim_product_mdt
   curated_saleout_mdt --> dim_sales_branch_mdt
   curated_saleout_mdt --> fact_saleout_mdt
+  curated_saleout_monthly_mdt --> dim_product_mdt
   curated_saleout_monthly_mdt --> dim_sales_branch_mdt
   curated_saleout_monthly_mdt --> fact_saleout_monthly_mdt
+  curated_stock_mdt --> dim_product_mdt
   curated_stock_mdt --> dim_sales_branch_mdt
   curated_stock_mdt --> fact_stock_mdt
   curated_tbook_quotation --> dim_quotation
@@ -773,6 +790,7 @@ flowchart LR
   product_detail --> curated_product
   product_detail --> dim_product_master
   product_detail --> product_for_aisearch
+  products --> curated_products
   products --> product_for_aisearch_v3
   report_sale_subscription --> curated_saleout_mdt
   report_sale_subscription --> curated_stock_mdt
@@ -808,8 +826,8 @@ flowchart LR
   classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
   class ap_s,ar_s,brand,brand_vendors,brands,categories,category__mastersku,cfs,chq,common_codes,cps,cql,customer_profile,customer_profile_nature_business,customer_status,customer_type,deb,eom_bt,eom_gb,eom_hp,eom_tw,match_customer,mec,mie,mih,mih2,mil,mir,nature_business,per,product,product_detail,products,report_sale_subscription,sale_by_branch_detail,saleout_dh,saleout_gb,saleout_hp,saleout_lastyear,stg,stg_report,stgacc,stk,sto,stock_by_branch,tbook_profilecomp,tbook_quodetail,tbook_quotation,tdelivery,ttrip,ttrip_document,unit,vendor,vendors validated;
-  class curated_mih,curated_mil,curated_product,curated_saleout_mdt,curated_saleout_monthly_mdt,curated_stock_mdt,curated_tbook_quotation,product_for_aisearch,product_for_aisearch_v3 curated;
-  class dim_aging,dim_customer,dim_customer_grade,dim_customer_report_info,dim_delivery,dim_group_customer_grade,dim_invoice,dim_order,dim_product_master,dim_project,dim_quotation,dim_sale_representative,dim_sale_representative_last,dim_sales_branch_mdt,dim_stk_mkt,dim_store dimension;
+  class curated_mih,curated_mil,curated_product,curated_products,curated_saleout_mdt,curated_saleout_monthly_mdt,curated_stock_mdt,curated_tbook_quotation,product_for_aisearch,product_for_aisearch_v3 curated;
+  class dim_aging,dim_customer,dim_customer_grade,dim_customer_report_info,dim_delivery,dim_group_customer_grade,dim_invoice,dim_order,dim_product_master,dim_product_mdt,dim_project,dim_quotation,dim_sale_representative,dim_sale_representative_last,dim_sales_branch_mdt,dim_stk_mkt,dim_store dimension;
   class fact_backlog_store,fact_chq,fact_delivery,fact_invoice,fact_invoice_store,fact_mir_rs,fact_mir_vs,fact_order,fact_order_store,fact_quotation,fact_saleout_mdt,fact_saleout_monthly_mdt,fact_stock_mdt,fact_transaction_delivery,fact_transcation fact;
 ```
 

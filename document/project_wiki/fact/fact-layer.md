@@ -1,13 +1,14 @@
 # Fact Layer — `definitions/fact/`
 
-> **LLM context**: **15 ไฟล์** ทั้งหมดอยู่ใน dataset `fact_table` (`databuffet.FACT_TABLE`)
+> **LLM context**: fact ทุกไฟล์อยู่ใน dataset `fact_table` (`databuffet.FACT_TABLE`)
 > และ tag `fact_daily` ทุกตัว · มี 3 แบบการ materialize — **ไม่มี MERGE** ในชั้นนี้เลย
 > ตาราง dimension อ้างด้วย string interpolation (`${...TableRef}`) + `dependencies[]`
 > ส่วนต้นทาง curated/validated อ้างด้วย `${ref()}`
 > **Load-bearing typo**: ไฟล์/ตารางคือ `fact_transcation` (ไม่ใช่ "transaction") ห้ามแก้
-> ตรวจกับโค้ดจริง 2026-09-15
+> ตรวจกับโค้ดจริง 2026-10-18 · จำนวนไฟล์ล่าสุดดูที่
+> [generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview)
 
-## Inventory (15)
+## Inventory (18 ไฟล์ ณ 2026-10-18)
 
 ### กลุ่ม MAC5 — ขาย/วางบิล/รับชำระ (9)
 
@@ -36,15 +37,29 @@
 > `5e70f83` แก้เป็น `mix_date` / `sDate` · **ถอดคอลัมน์เมื่อไร ต้องเช็ค `partitionBy`
 > ใน config ทุกครั้ง** (ดู known-issues.md 2026-09-03)
 
-### กลุ่ม SALEOUT_MDT — sell-out / สต็อก modern trade (3, เพิ่ม 2026-09)
+### กลุ่ม SALEOUT_MDT — sell-out / สต็อก / เป้า modern trade (6, เพิ่ม 2026-09/10)
 
 | File | Type | uniqueKey | Partition / Cluster | ต้นทาง |
 |---|---|---|---|---|
 | `fact_saleout_mdt.sqlx` | table | `sale_date, store_code, branch_code, product_code, doc_type` | `sale_date` / `store_code, branch_sk, product_mdt_sk` | `curated_saleout_mdt` |
+| `fact_saleout_monthly_mdt.sqlx` | table | `month_date, store_code, branch_code, sales_channel, product_code` | `month_date` / `store_code, branch_sk, product_mdt_sk` | `curated_saleout_monthly_mdt` — ส่งต่อ `month_date` ตามเดิม: เดือนปัจจุบันรายวัน / เดือนที่ปิดแล้ววันสิ้นเดือน (เลิกอ่าน `onetime.saleout_monthly_mdt` 2026-10-05) |
 | `fact_stock_mdt.sqlx` | table | `stock_date, store_code, branch_code, product_code` | `stock_date` / `store_code, branch_sk, product_mdt_sk` | `curated_stock_mdt` |
 | `fact_stock_mdt_monthly.sqlx` | table | `month_end, store_code, branch_code, product_code` | `month_end` / `store_code, branch_sk, product_mdt_sk` | **`fact_stock_mdt`** (ไม่แตะ curated) |
+| `fact_target_saleout_mdt.sqlx` | table | `target_date, branch_code, marketing_group_id, sub_marketing_id, segment_id` | `target_date` / `store_code, branch_sk, marketing_group_id` | `dim_target_saleout_mdt` — เป้ารายวันระดับกลุ่มการตลาด (ไม่ใช่รายสินค้า) |
+| `fact_target_series_mdt.sqlx` | table | `target_date, branch_code, series_code` | `target_date` / `store_code, branch_sk, series_sk` | `dim_target_series_mdt` — เป้ารายวันราย series (ต้นทาง Value = 0 ทุกแถว วัด 2026-10-02 มีแค่จำนวน) |
 
-- ทั้งสามเก็บ `store_code` / `branch_code` / `product_code` เป็น **degenerate dimension**
+- ทั้งหมดอยู่ในรอบ `daily_process` 06:00 และรันซ้ำใน workflow `saleout_morning` 08:55
+  (ดู [running-and-troubleshooting § Schedule](../operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd))
+- `fact_saleout_monthly_mdt` มีเกรนผสมตาม curated: เดือนปัจจุบันเก็บวันขายรายวัน
+  ส่วนเดือนที่ปิดแล้วใช้วันสิ้นเดือน · รวมยอดรายเดือนด้วย `SUM(sale_qty)` /
+  `SUM(sale_amount)` และ `GROUP BY DATE_TRUNC(month_date, MONTH)` พร้อม key ที่ต้องการ
+  · กรองเดือนด้วย `DATE_TRUNC(month_date, MONTH) = DATE '2026-10-01'`
+  แทน `month_date = DATE '2026-10-31'` ซึ่งตกหล่นยอดรายวันของเดือนปัจจุบัน
+- fact ยอดขาย/เป้าทั้งสี่ตัว (`fact_saleout_mdt`, `fact_saleout_monthly_mdt`, `fact_target_*`)
+  ผูก "Region Transaction" ผ่าน `dim_report` / `dim_region` / `dim_region_manager` /
+  `dim_director` ค่า ณ วันที่ของแถว ไม่ใช่ค่าปัจจุบัน
+- fact ยอดขายและสต็อก (`fact_saleout_mdt`, `fact_saleout_monthly_mdt`, `fact_stock_mdt`,
+  `fact_stock_mdt_monthly`) เก็บ `store_code` / `branch_code` / `product_code` เป็น **degenerate dimension**
   ไว้สืบกลับถึงแถวต้นทางที่ห้างส่งมา คู่กับ `branch_sk` / `product_mdt_sk` ที่ใช้ join จริง
 - `fact_stock_mdt_monthly` เลือก **วันสุดท้ายที่แต่ละห้างมีข้อมูลในเดือนนั้น** แยกรายห้าง
   เพราะ BT กับ TW ส่งไฟล์คนละจังหวะ วันขาดคนละวัน · ตัดวันที่ไฟล์ไม่สมบูรณ์ทิ้งก่อนเลือก
@@ -66,7 +81,10 @@
 | `fact_order_store` | dim_order, dim_company, dim_customer, dim_product_master, dim_store — source `curated_mih` + `curated_mil` (`mihType='PS'`) · **ตัวกรองบรรทัด (2026-09-15)**: `milstype not in (3)` + `LEFT(milstk,1) not in ('บ')` — ตัดค่าบริการ/ค่าขนส่ง ให้ตรงกับ `fact_invoice_store` · **+ `milstk NOT LIKE 'TEST%'` (2026-09-23)** ตัดสินค้าทดสอบ — ใส่ทั้ง 3 ตาราง store (`LIKE` แยกตัวพิมพ์ วัดแล้วไม่มีรหัส `test` ตัวพิมพ์อื่น) · ใบสั่งขายที่มีแต่บรรทัดพวกนี้หรือสินค้า Sourcing จะ**หายทั้งใบ** ดู `known-issues.md` · ชื่อพนักงานขาย (`pernamet`) ย้ายไปอยู่ `dim_order` แล้ว 2026-09-03 fact เก็บแค่ `mihPer` · `FlagFree` (เพิ่ม 2026-09-03, แก้นิยาม 048f746) = `'Yes'` เมื่อ `milSum = 0` **OR** `dim_product_master.ProductGroupMAC5 = '5000'` — เงื่อนไข `milDesc LIKE '%ของแถม%'` ถูก comment ออกแล้ว · **`fact_backlog_store` ใช้นิยามคนละแบบ** (`cpssumreq = 0`) ดู `known-issues.md` · `partitionBy` = `mix_date` (เดิม `asatdate` ถอดออก 2026-09-03) |
 | `fact_invoice_store` | dim_invoice, dim_order, dim_company, dim_customer, dim_product_master, dim_store — เหมือน `fact_order_store` แต่ `mihType='IS'`; `InvoiceSK` = ตัวใบกำกับเอง (join `dim_invoice` บน `(CompanySK, mihVnos)` + QUALIFY dedup, แมตช์ 100% วัด 2026-09-03); `OrderSK` มาจาก `milLinkVcno` เมื่อ `milLinkVcType='PS'`; สไลซ์สาขาใช้ `StoreSK` → `dim_store` (`is_store_*` 6 คอลัมน์ของ query ต้นฉบับถอดออกแล้ว 2026-09-03) · **grain รวม `milPer`** เพราะ `curated_mil` ฝั่ง IS แตกบรรทัดตามสัดส่วนพนักงานขาย · `FlagFree` (เพิ่ม 2026-09-03, แก้นิยาม 048f746) = `'Yes'` เมื่อ `milSum = 0` **OR** `dim_product_master.ProductGroupMAC5 = '5000'` — เงื่อนไข `milDesc LIKE '%ของแถม%'` ถูก comment ออกแล้ว · **`fact_backlog_store` ใช้นิยามคนละแบบ** (`cpssumreq = 0`) ดู `known-issues.md` · `partitionBy` = `mix_date` (เดิม `asatdate` ถอดออก 2026-09-03) |
 | `fact_backlog_store` | dim_order, dim_company, dim_customer, dim_product_master, dim_store — source `curated_mih` + `validated_mac5.cps` (snapshot ล่าสุด) + `curated_mil` (CTE `mil_line_scope`); `SUM` ต่อ (cpsVnosID, cpsCusID, cpsStkID) · **ตัวกรองบรรทัด (2026-09-23)**: `INNER JOIN mil_line_scope` บน (company_id, cpsVnosID, cpsStkID) — ลอก `milstype not in (3)` + `LEFT(milstk,1) not in ('บ')` + `milstk NOT LIKE 'TEST%'` มาจาก `fact_order_store` เพื่อให้ 3 ตาราง store เทียบกันได้ระดับบรรทัด (ตัด 18,030 แถว / qty 4,419 = 3.3% วัด 2026-09-23; 18,029 แถวเป็นบรรทัดที่ `milstype = 3` ล้วน อีก 1 แถวไม่มีบรรทัดใน `mil` เลย) · เงื่อนไข `LEFT(cps.cpsStkID,1) not in ('บ')` ที่อยู่ใน `WHERE` เป็น **no-op** (ไม่มีแถวขึ้นต้น `บ` ใน cps เลย) เก็บไว้ประกาศเจตนา · `FlagFree` = `'Yes'` เมื่อ `cps.cpssumreq = 0` OR `ProductGroupMAC5 = '5000'` (อยู่ใน `GROUP BY`) · `partitionBy` = `sDate` (เดิม `asatdate` ถอดออก 2026-09-03) |
-| `fact_saleout_mdt` | dim_sales_branch_mdt, dim_product_mdt — source `curated_saleout_mdt` · ไม่ join dim ของ MAC5 เลย (คนละจักรวาลสินค้า) |
+| `fact_saleout_mdt` | dim_sales_branch_mdt, dim_product_mdt, dim_product_mkt, dim_report, dim_region, dim_region_manager, dim_director — source `curated_saleout_mdt` · ไม่ join dim สินค้า/ลูกค้าของ MAC5 (คนละจักรวาลสินค้า) |
+| `fact_saleout_monthly_mdt` | dims เดียวกับ `fact_saleout_mdt` — source `curated_saleout_monthly_mdt` |
+| `fact_target_saleout_mdt` | dim_target_saleout_mdt, dim_sales_branch_mdt, dim_region, dim_region_manager, dim_director |
+| `fact_target_series_mdt` | dim_target_series_mdt, dim_sales_branch_mdt, dim_region, dim_region_manager, dim_director |
 | `fact_stock_mdt` | dim_sales_branch_mdt, dim_product_mdt — source `curated_stock_mdt` |
 | `fact_stock_mdt_monthly` | dim เดียวกับ `fact_stock_mdt` — อ่านจาก `fact_stock_mdt` ไม่ใช่ curated |
 

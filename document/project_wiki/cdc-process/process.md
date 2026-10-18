@@ -18,7 +18,7 @@
 
 1. Reads `validated_mac5.deb`, concatenates `debadd1at + debadd2at + debadd3at`
    into `raw_address`.
-2. Calls BigQuery **`AI.GENERATE(...)`** with model endpoint `gemini-2.5-flash`
+2. Calls BigQuery **`AI.GENERATE(...)`** with model endpoint `gemini-3.5-flash-lite`
    (temperature 0.1) and a Thai "Expert Thai Geographic Data Extractor" prompt.
 3. Output struct `info`: `SubDistrictTH, SubDistrictEN, DistrictTH, DistrictEN,
    ProvinceTH, ProvinceEN`.

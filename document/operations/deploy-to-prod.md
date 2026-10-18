@@ -7,7 +7,8 @@
 ให้เหมือนกัน แล้ว prd เดินเอง
 
 - **Step 1–12** ทำล่วงหน้าได้ ไม่กระทบใคร
-- **Step 13–26** คืน cutover เริ่มประมาณ 20:00 น. (nonprd รันรอบเดียว 06:00 ข้อมูลนิ่งแล้ว)
+- **Step 13–26** คืน cutover เริ่มประมาณ 20:00 น. หลังตรวจว่ารอบ nonprd จบแล้ว
+  (รอบจริงดู [Schedule](../project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd))
 - **Step 27–30** เช้าถัดไป
 
 > **ทบทวนตัวเลขเมื่อ 2026-09-15** — เนื้อหา step ปฏิบัติไม่เปลี่ยน แต่ขอบเขตข้อมูลโตขึ้น:
@@ -15,8 +16,17 @@
 > **ALLKONS_COMMISSION หยุดที่ชั้น initial แล้ว** (commit `74a10e0` ลบ
 > `definitions/validated/allkons_commission/` ทิ้ง) — dataset `validated_allkons_commission`
 > ยังค้างข้อมูลเก่าใน nonprd และ **ไม่มีอะไร downstream ใช้** ตัดสินใจก่อน cutover ว่าจะ
-> ยกไป prd ด้วยหรือไม่ · ชุด SALEOUT_MDT ตอนนี้มีครบสาย (validated 12 · curated 2 ·
-> dim 6 · fact 3 · view 1) ต่างจากตอนเขียน runbook ที่มีแค่ validated
+> ยกไป prd ด้วยหรือไม่ · ขอบเขต SALEOUT_MDT ปัจจุบันดู
+> [source-systems — SALEOUT_MDT](../project_wiki/overview/source-systems.md#saleout_mdt--sell-out-modern-trade)
+
+> **ทบทวนเพิ่ม 2026-10-18** — ของที่เพิ่มหลัง 2026-09-15 และใส่ไว้ใน step ด้านล่างแล้ว:
+> - **MASTER_SKU (`master_sku` 3.0)**: dataset `raw_master_sku`, `validated_master_sku`,
+>   `curated_master_sku` · โฟลเดอร์ GCS `master_sku` (Step 5, 8, 9, 16, 17, 22)
+> - **D365**: dataset `raw_d365`, `validated_d365` · โฟลเดอร์ GCS `derp_temp` (Step 5, 8, 9, 16, 17, 22)
+> - **workflow `saleout_morning`** (08:55) มีใน nonprd แต่ Step 25 เดิมไม่ได้สร้าง — เพิ่มเป็น Step 25 (ค)
+> - **`yearly_process` ใน nonprd รันด้วยบัญชีผู้ใช้ส่วนตัว** (end-user auth) และตั้ง timezone
+>   `Asia/Jakarta` — ที่ prd ให้ใช้ service account ตาม Step 25 (ข)
+> - ตารางเวลาของ nonprd ทั้งหมด: [running-and-troubleshooting § Schedule](../project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd)
 
 > ⚠️ ทุกหน้าของ Console มี **ตัวเลือก project มุมบนซ้าย** และบางหน้ามี **ตัวเลือก region**
 > ผิด project หรือผิด region = ทำผิดที่ทั้ง step เช็กทุกครั้งก่อนกด
@@ -38,16 +48,14 @@
 
 ---
 
-## Step 1 — merge `dev` → `nonprod` (GitHub)
+## Step 1 — เตรียม `dev` / `nonprod` ตาม release flow
 
-**ไปที่**: https://github.com/ALL-IN-AI-ASIA/data-buffet
+**ไปที่**: [Release flow](../getting-started/onboarding.md#release-flow)
 
-**ทำ**:
-1. กด **Pull requests** → **New pull request**
-2. base = `nonprod` · compare = `dev`
-3. **Create pull request** → **Merge pull request**
+**ทำ**: ทำตาม flow นั้นให้ `nonprod` รับงานที่อนุมัติแล้วจาก `dev` โดย fast-forward
+หากมีงานที่ commit ผ่าน Dataform บน `nonprod` ให้รวมกลับเข้า `dev` ก่อนตาม flow เดียวกัน
 
-**ต้องเห็น**: merge ผ่าน ไม่มี conflict
+**ต้องเห็น**: `nonprod` มีงานที่อนุมัติครบ รวมงานจาก Dataform ที่ merge กลับแล้ว ไม่มี conflict ค้าง
 
 ---
 
@@ -134,14 +142,19 @@ dataset ที่ยังไม่มี (ตรวจเมื่อ 2026-08-1
 | `raw_mac5_ak02` | external table ของ ak02 |
 | `raw_saleout_mdt` | external table ของ saleout |
 | `validated_saleout_mdt` | validated ของ saleout |
-| `curated_saleout_mdt` | curated ของ saleout (`curated_saleout_mdt`, `curated_stock_mdt` — เพิ่ม 2026-09) |
+| `curated_saleout_mdt` | curated ของ saleout — รายชื่อตารางดู [curated inventory](../project_wiki/curated/curated-layer.md#inventory) |
 | `raw_allkons_commission` | external table ของ allkons commission (เพิ่ม 2026-08-18) |
 | `validated_allkons_commission` | ⚠️ allkons **หยุดที่ชั้น initial แล้ว** (commit `74a10e0`) dataset นี้มีแต่ข้อมูลเก่า — สร้างไว้ก็ได้ถ้าจะ copy ของเก่าตามไป ไม่สร้างก็ได้ถ้าตัดทิ้ง |
+| `raw_master_sku` | external table ของ master_sku 3.0 (เพิ่ม 2026-10) |
+| `validated_master_sku` | validated ของ master_sku 3.0 (เพิ่ม 2026-10) |
+| `curated_master_sku` | curated ของ master_sku 3.0 (`curated_products`, `product_for_aisearch_v3`) |
+| `raw_d365` | external table ของ D365 (เพิ่ม 2026-10) |
+| `validated_d365` | validated ของ D365 (เพิ่ม 2026-10 · ยังไม่มีใคร downstream อ่าน) |
 | `bridge_dataset` | view `GroupCustomerSK_CustomerSK` |
 | `monitor_dataset` | ตาราง run telemetry |
 
-**ต้องเห็น**: ในแถบซ้ายมี dataset ครบ **28 ตัว** (ถ้าตัด `validated_allkons_commission`
-ทิ้งก็เป็น 27)
+**ต้องเห็น**: ในแถบซ้ายมี dataset ครบ **33 ตัว** (28 ตัวตามการตรวจ 2026-08-13 + 5 ตัวของ
+master_sku/d365 · ถ้าตัด `validated_allkons_commission` ทิ้งก็เป็น 32)
 
 **ถ้าไม่ตรง**: กดที่ dataset แล้วดู **Data location** ต้องเป็น `asia-southeast1`
 ถ้าเผลอสร้างเป็น `us-central1` ต้องลบแล้วสร้างใหม่ (ย้าย location ไม่ได้)
@@ -201,9 +214,9 @@ https://console.cloud.google.com/transfer/jobs?project=databuffet-nonprd
 **ไปที่**: https://console.cloud.google.com/storage/browser?project=databuffet-prd
 → เปิด `file-raw-data-prd`
 
-**ต้องเห็น**: โฟลเดอร์ครบ 11 ตัว — `mac5_ag01`, `mac5_aa05`, `mac5_ab01`, `mac5_ac02`,
+**ต้องเห็น**: โฟลเดอร์ครบ 13 ตัว — `mac5_ag01`, `mac5_aa05`, `mac5_ab01`, `mac5_ac02`,
 `mac5_ak02`, `mac5_report`, `mac5_gps`, `mastersku`, `cis360`, **`saleout_mdt`**,
-**`allkons_commission`**
+**`allkons_commission`**, **`master_sku`**, **`derp_temp`** (D365)
 (เดิม prd **ไม่มี** `saleout_mdt` เลย ต้องโผล่มาหลัง Step 7)
 
 เปิด `mac5_ag01/mih/` แล้วเลื่อนลงล่างสุด
@@ -224,7 +237,7 @@ https://console.cloud.google.com/bigquery/transfers?project=databuffet-prd
 `dimension_table_from_nonprd`, `fact_table`, `process_dataset`, `mds_dataset_from_nonprd`
 (ของเก่าจาก 17 มี.ค. ใช้ซ้ำได้ ไม่ต้องสร้างใหม่)
 
-**ทำ**: กด **CREATE TRANSFER** เพิ่มอีก **11 ตัว** ตามตารางนี้ ทุกตัวตั้งเหมือนกันหมด:
+**ทำ**: กด **CREATE TRANSFER** เพิ่มอีก **14 ตัว** ตามตารางนี้ ทุกตัวตั้งเหมือนกันหมด:
 
 - **Source** = `Dataset Copy`
 - **Repeat frequency** = `On-demand`  ← สำคัญ ห้ามตั้งเป็น Daily
@@ -242,12 +255,15 @@ https://console.cloud.google.com/bigquery/transfers?project=databuffet-prd
 | `curated_mac5_from_nonprd` | `curated_mac5` |
 | `curated_mastersku_from_nonprd` | `curated_mastersku` |
 | `curated_saleout_mdt_from_nonprd` | `curated_saleout_mdt` |
+| `validated_master_sku_from_nonprd` | `validated_master_sku` |
+| `curated_master_sku_from_nonprd` | `curated_master_sku` |
+| `validated_d365_from_nonprd` | `validated_d365` |
 | `onetime_from_nonprd` | `onetime` |
 | `cdc_dataset_from_nonprd` | `cdc_dataset` |
 | `monitor_dataset_from_nonprd` | `monitor_dataset` |
 
-**ต้องเห็น**: หน้า Data transfers มีทั้งหมด **15 รายการ** สถานะยังไม่เคยรัน
-(14 ถ้าข้าม allkons)
+**ต้องเห็น**: หน้า Data transfers มีทั้งหมด **18 รายการ** สถานะยังไม่เคยรัน
+(17 ถ้าข้าม allkons)
 
 **ที่ไม่ต้องสร้างและเหตุผล**:
 
@@ -261,40 +277,21 @@ https://console.cloud.google.com/bigquery/transfers?project=databuffet-prd
 
 ### ⚠️ ตารางที่ Dataform **ไม่ได้สร้าง** แต่ pipeline ใช้งาน — ต้องมากับ dataset copy เท่านั้น
 
-(สำรวจครบทุก dataset เมื่อ **2026-08-17**: เทียบ 104 ตารางบน BigQuery กับโค้ดใน
-`definitions/` ทีละตัว)
+รายชื่อและ consumer ปัจจุบันอยู่ที่ [known-issues — ของใน BigQuery ที่ repo ไม่ได้สร้าง](known-issues.md)
+แถว **โค้ดใน repo อ่านอยู่ — ห้ามลบ** — ใช้รายการนั้นเป็น checklist แทนรายการเก่าใน runbook
+ถ้าไม่ติดมากับ Data Transfer ใน Step 17 ตารางที่อ่านมันจะพังเมื่อรัน Dataform
 
-ตารางกลุ่มนี้ **ไม่มีไฟล์ `.sqlx` ที่สร้างมัน** — ถ้าไม่ติดมากับ Data Transfer ใน Step 17
-prd จะไม่มีทางสร้างเองได้เลย และ view/dim ที่อ่านมันจะพังตั้งแต่ Step 19
-
-| ตาราง | dataset | โค้ดที่อ่านมัน | พังตรงไหนถ้าไม่มี |
-|---|---|---|---|
-| `dim_geographies` | `dimension_table` | `view_dim_customer` | Step 19 |
-| `dim_provinces` | `dimension_table` | `view_dim_customer`, `view_deb_address_data`, `view_mih_address_data` | Step 19 |
-| `dim_districts` | `dimension_table` | `view_dim_customer`, `view_deb_address_data`, `view_mih_address_data` | Step 19 |
-| `dim_sub_districts` | `dimension_table` | `view_dim_customer`, `view_deb_address_data`, `view_mih_address_data` | Step 19 |
-| `cfsinvclose2024` | `onetime` | `dim_aging.sqlx` | Step 20 (dimension) |
-| `mapping_invoice` | `onetime` | `view_fact_transcation` | Step 19 |
-| `mih_address_data` | `process_dataset` | `view_mih_address_data` | Step 19 |
-
-ทั้ง 7 ตัวอยู่ใน dataset ที่มี transfer ครอบอยู่แล้ว (`dimension_table_from_nonprd`,
+dataset ของรายการนี้มี transfer ครอบอยู่แล้ว (`dimension_table_from_nonprd`,
 `onetime_from_nonprd`, `process_dataset`) — **ไม่ต้องสร้าง transfer เพิ่ม** แต่ต้อง
-**ยืนยันด้วยตาว่ามันมาถึง prd จริง** (ดู checklist ท้าย Step 17) เพราะเป็นข้อมูล
-reference ที่โหลดมือครั้งเดียวตั้งแต่ ก.พ. 2026 ไม่มีใครสร้างซ้ำให้
+**ยืนยันว่าทุกตารางในรายการมาถึง prd จริง** (ดู checklist ท้าย Step 17)
+เพราะมีข้อมูลที่โหลดจากภายนอกและสร้างใหม่จาก repo ไม่ได้
 
 **ห้ามลบทิ้งที่ prd ตลอดไป** — Dataform จะไม่สร้างกลับให้
 
-### ตารางที่ไม่มีโค้ดสร้างและไม่มีโค้ดอ่าน (19 ตัว) — ตัดสินใจก่อน cutover
+### ตารางที่ไม่มีโค้ดสร้างและไม่มีโค้ดอ่าน — ตัดสินใจก่อน cutover
 
-`dimension_table`: `dim_target_channel`, `dim_target_sale` ·
-`fact_table`: `dim_mir` ·
-`onetime`: `Channel_Master_Finance`, `MasterProductRebate`, `MasterPublicHoliday`,
-`Master_Channel`, `Master_Channel_Cost`, `Master_Channel_Sales`, `Master_Cost_Group`,
-`Master_Cost_STK`, `Master_Target_Channel`, `Master_Target_Sales`, `ProductMasterFC`,
-`ProductMasterFC3`, `aging_hm_nu`, `cfsinvclose2024_backup`,
-`Table_Model_Invoice_Transaction`, `Table_Model_Target_DayOfWork`
-
-repo ไม่แตะเลยสักตัว แต่ **Power BI อาจต่ออยู่** — default คือปล่อยให้ copy ไปด้วย
+ดูรายการกลุ่ม **ไม่มีโค้ดใน repo อ่าน** ใน [known-issues](known-issues.md)
+แม้ repo ไม่อ่าน แต่ **Power BI หรืองานนอก Dataform อาจใช้อยู่** — default คือปล่อยให้ copy ไปด้วย
 (อยู่ใน dataset ที่ copy ทั้งก้อนอยู่แล้ว) แล้วค่อยเก็บกวาดที่ Step 30
 อย่าเพิ่งลบก่อนถามฝั่ง BI
 
@@ -305,7 +302,7 @@ runbook นี้มาก่อน ถ้าไม่สร้างที่ p
 
 | ชื่อ | เวลา | ทำอะไร |
 |---|---|---|
-| `table_for_ai_chatwith_data` | ทุกวัน 01:00 | TRUNCATE + INSERT `onetime.Table_Model_Invoice_Transaction` (และ `Table_Model_Target_DayOfWork`) — คือเจ้าของตาราง 2 ตัวในลิสต์ 19 ตัวด้านบนที่อัปเดตทุกวัน |
+| `table_for_ai_chatwith_data` | ทุกวัน 01:00 | TRUNCATE + INSERT `onetime.Table_Model_Invoice_Transaction` (และ `Table_Model_Target_DayOfWork`) — ต้องสร้างงานนี้ซ้ำเพื่อให้ตารางที่ copy ไปอัปเดตต่อ |
 | `data-retention` | ทุกวัน 05:00 | สคริปต์ retention ที่ไล่ dataset ทั้งโปรเจกต์ (รันก่อนรอบ Dataform 06:00) |
 
 ดูของจริงได้ที่: BigQuery → Scheduled queries (project `databuffet-nonprd`,
@@ -413,9 +410,10 @@ region `us-central1`) แล้ว copy SQL ไปสร้างใหม่ท
 ## Step 16 — รัน tag `initial` ใน Dataform
 
 ⚠️ **step นี้ต้องมาก่อน Step 17 เสมอ** เพราะไฟล์
-`drop_all_tables_validated_cis360` / `_mastersku` / `_saleout_mdt` / `_allkons_commission`
-ติด tag `initial` เอง
-= มันจะ **ลบตาราง validated 45 ตาราง** ถ้าไปรันหลัง copy ข้อมูลจะหายทันที
+`drop_all_tables_validated_cis360` / `_mastersku` / `_master_sku` / `_saleout_mdt` /
+`_allkons_commission` / `_d365` ติด tag `initial` เอง
+= มันจะ **ลบตาราง validated** ตาม [initial file map](../project_wiki/initial/initial-layer.md#file-map)
+ถ้าไปรันหลัง copy ข้อมูลจะหายทันที
 
 **ไปที่**: Dataform → repository `data-buffet` (region `asia-southeast1`)
 
@@ -465,13 +463,13 @@ FROM `databuffet-prd.raw_mac5_ag01.mih`;
 
 ---
 
-## Step 17 — สั่งรัน Data Transfer ทั้ง 15 ตัว
+## Step 17 — สั่งรัน Data Transfer ทั้ง 18 ตัว
 
 **ไปที่**: https://console.cloud.google.com/bigquery/transfers?project=databuffet-prd
 (region `asia-southeast1`)
 
 **ทำ**: เปิดทีละ transfer → **RUN TRANSFER NOW** (หรือ **SCHEDULE BACKFILL → Run one time
-transfer → now**) ทำให้ครบทั้ง 15 ตัว
+transfer → now**) ทำให้ครบทั้ง 18 ตัว (17 ถ้าข้าม allkons)
 
 **ต้องเห็น**: ทุกตัวจบเป็น **Succeeded** (ดูที่คอลัมน์ Run history)
 
@@ -488,7 +486,10 @@ UNION ALL SELECT 'validated_cis360', COUNT(*) FROM `databuffet-nonprd.validated_
 UNION ALL SELECT 'validated_mastersku', COUNT(*) FROM `databuffet-nonprd.validated_mastersku.__TABLES__`
 UNION ALL SELECT 'validated_saleout_mdt', COUNT(*) FROM `databuffet-nonprd.validated_saleout_mdt.__TABLES__`
 UNION ALL SELECT 'validated_allkons_commission', COUNT(*) FROM `databuffet-nonprd.validated_allkons_commission.__TABLES__`
+UNION ALL SELECT 'validated_master_sku', COUNT(*) FROM `databuffet-nonprd.validated_master_sku.__TABLES__`
+UNION ALL SELECT 'validated_d365', COUNT(*) FROM `databuffet-nonprd.validated_d365.__TABLES__`
 UNION ALL SELECT 'curated_mac5', COUNT(*) FROM `databuffet-nonprd.curated_mac5.__TABLES__`
+UNION ALL SELECT 'curated_master_sku', COUNT(*) FROM `databuffet-nonprd.curated_master_sku.__TABLES__`
 UNION ALL SELECT 'curated_mastersku', COUNT(*) FROM `databuffet-nonprd.curated_mastersku.__TABLES__`
 UNION ALL SELECT 'curated_saleout_mdt', COUNT(*) FROM `databuffet-nonprd.curated_saleout_mdt.__TABLES__`
 UNION ALL SELECT 'dimension_table', COUNT(*) FROM `databuffet-nonprd.dimension_table.__TABLES__`
@@ -503,26 +504,22 @@ ORDER BY ds;
 **ต้องเห็น**: ตัวเลขเท่ากันทุกบรรทัด (prd อาจมากกว่าได้ใน `onetime` ถ้ามี view ค้าง —
 Step 18 จะจัดการ)
 
-### ✅ checklist: 7 ตารางที่ Dataform สร้างเองไม่ได้ (ดูรายละเอียดที่ Step 9)
+### ✅ checklist: ตารางที่ Dataform สร้างเองไม่ได้ (ดูรายละเอียดที่ Step 9)
 
-รันที่ **prd** — ทุกบรรทัดต้องได้ `row_count` มากกว่า 0 ถ้าตัวไหนเป็น 0 หรือ error
-แปลว่า transfer ไม่ครบ **ให้กลับไปรัน transfer ตัวนั้นซ้ำก่อนไป Step 18**
+ใช้รายการ **โค้ดใน repo อ่านอยู่ — ห้ามลบ** ใน [known-issues](known-issues.md) เป็น checklist
+query นี้แสดงทุกตารางใน dataset ที่เกี่ยวข้อง เพื่อไม่ต้องดูแลรายชื่อซ้ำใน SQL ตัวอย่าง
+รันแยกที่ **nonprd** (เปลี่ยน project เป็น `databuffet-nonprd`) และ **prd** —
+ทุกตารางใน checklist ต้องมีแถวผลลัพธ์, `row_count` มากกว่า 0 และตรงกับ nonprd
+ถ้าขาดแถว เป็น 0 หรือจำนวนไม่ตรง **ให้กลับไปรัน transfer ตัวนั้นซ้ำก่อนไป Step 18**
 
 ```sql
-SELECT table_id, row_count FROM `databuffet-prd.dimension_table.__TABLES__`
-WHERE table_id IN ('dim_geographies','dim_provinces','dim_districts','dim_sub_districts')
+SELECT 'dimension_table' AS ds, table_id, row_count FROM `databuffet-prd.dimension_table.__TABLES__`
 UNION ALL
-SELECT table_id, row_count FROM `databuffet-prd.onetime.__TABLES__`
-WHERE table_id IN ('cfsinvclose2024','mapping_invoice')
+SELECT 'onetime', table_id, row_count FROM `databuffet-prd.onetime.__TABLES__`
 UNION ALL
-SELECT table_id, row_count FROM `databuffet-prd.process_dataset.__TABLES__`
-WHERE table_id = 'mih_address_data'
-ORDER BY table_id;
+SELECT 'process_dataset', table_id, row_count FROM `databuffet-prd.process_dataset.__TABLES__`
+ORDER BY ds, table_id;
 ```
-
-**ค่าอ้างอิงจาก nonprd (2026-08-17)**: `dim_geographies` 6 · `dim_provinces` 77 ·
-`dim_districts` 930 · `dim_sub_districts` 7,451 · `cfsinvclose2024` 43,864 ·
-`mapping_invoice` 399,051 · `mih_address_data` 14,822
 
 > ทำไมต้องรัน 2 รอบ: nonprd อยู่ US, prd อยู่ asia-southeast1 — BigQuery **query ข้าม region
 > ไม่ได้** จึงเทียบด้วยตาเท่านั้น
@@ -616,9 +613,14 @@ WITH t AS (
   UNION ALL SELECT 'validated_mac5', table_id, row_count FROM `databuffet-nonprd.validated_mac5.__TABLES__`
   UNION ALL SELECT 'validated_cis360', table_id, row_count FROM `databuffet-nonprd.validated_cis360.__TABLES__`
   UNION ALL SELECT 'validated_mastersku', table_id, row_count FROM `databuffet-nonprd.validated_mastersku.__TABLES__`
+  UNION ALL SELECT 'validated_saleout_mdt', table_id, row_count FROM `databuffet-nonprd.validated_saleout_mdt.__TABLES__`
+  UNION ALL SELECT 'validated_master_sku', table_id, row_count FROM `databuffet-nonprd.validated_master_sku.__TABLES__`
+  UNION ALL SELECT 'validated_d365', table_id, row_count FROM `databuffet-nonprd.validated_d365.__TABLES__`
   UNION ALL SELECT 'validated_allkons_commission', table_id, row_count FROM `databuffet-nonprd.validated_allkons_commission.__TABLES__`
   UNION ALL SELECT 'curated_mac5', table_id, row_count FROM `databuffet-nonprd.curated_mac5.__TABLES__`
   UNION ALL SELECT 'curated_mastersku', table_id, row_count FROM `databuffet-nonprd.curated_mastersku.__TABLES__`
+  UNION ALL SELECT 'curated_master_sku', table_id, row_count FROM `databuffet-nonprd.curated_master_sku.__TABLES__`
+  UNION ALL SELECT 'curated_saleout_mdt', table_id, row_count FROM `databuffet-nonprd.curated_saleout_mdt.__TABLES__`
 )
 SELECT ds, table_id, row_count FROM t ORDER BY ds, table_id;
 ```
@@ -721,8 +723,20 @@ WORKFLOW CONFIGURATIONS**
 → **SAVE**
 
 **ทำ (ข)** คลิก **`yearly_process`** → **EDIT** → ใส่ **Service account** ตัวเดียวกัน → SAVE
+(ใน nonprd ตัวนี้รันด้วยบัญชีผู้ใช้ส่วนตัวและตั้ง timezone `Asia/Jakarta` — ที่ prd อย่าลอกแบบนั้น
+ใช้ service account, timezone `Asia/Bangkok` และ cron `0 12 15 12 *`)
 
-**ต้องเห็น**: ในตาราง workflow configurations ทั้งสองแถวมี Schedule และ Service account
+**ทำ (ค)** สร้าง workflow configuration **`saleout_morning`** (มีใน nonprd แต่ prd ยังไม่มี):
+
+| ช่อง | ค่าที่ต้องตั้ง |
+|---|---|
+| Release configuration | `production` |
+| Frequency / Repeats | **Custom → `55 8 * * *`** |
+| Timezone | **`Asia/Bangkok`** |
+| Service account | **`dbuffet-dataform-prd@databuffet-prd.iam.gserviceaccount.com`** |
+| Actions | เลือก target ทีละตัวให้ตรงกับ nonprd (31 ตัว) — รายชื่ออยู่ที่ [running-and-troubleshooting § Schedule](../project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd) · ไม่ใช้ tag · ไม่ติ๊ก dependencies |
+
+**ต้องเห็น**: ในตาราง workflow configurations ทั้งสามแถวมี Schedule และ Service account
 ครบ ไม่มีช่องว่าง
 
 > tag `view` และ `initial` **ไม่ใส่** ใน schedule โดยตั้งใจ — รันมือตอน deploy เหมือน nonprd
@@ -761,7 +775,7 @@ WORKFLOW CONFIGURATIONS**
 - Step 23 (SK ของ 12 MERGE dim) ต้อง **ยังตรงเป๊ะ**
 - Step 22 ชื่อตารางครบ ไม่มีตัวไหนหาย
 
-> SK ของ dim อีก 43 ตัว (ที่เป็น full rebuild ไม่ใช่ 12 ตัวใน Step 23) **จะออกเลขใหม่
+> SK ของ dim ที่เหลือ (ที่เป็น full rebuild ไม่ใช่ 12 ตัวใน Step 23) **จะออกเลขใหม่
 > ไม่ตรงกับ nonprd** — เป็นพฤติกรรมที่ตั้งใจตั้งแต่ 2026-07-20 เพราะ fact ปั้นใหม่ในรอบเดียวกัน
 > ดู [known-issues.md](known-issues.md) และ
 > [full-rebuild-pattern](../project_wiki/dimension/full-rebuild-pattern.md)
@@ -787,10 +801,11 @@ dataset **`raw_mac5`** เก่า (85 external table ของโครงเ�
 
 `nonprd` ไม่ถูกแตะเลยตลอดกระบวนการ (Data Transfer อ่านทางเดียว) ดังนั้น:
 
-1. Dataform (prd) → `daily_process` → **EDIT** → ลบ schedule ออก / **PAUSE**
+1. Dataform (prd) → ทำกับ workflow ทั้งสามตัว: `daily_process`, `saleout_morning`,
+   `yearly_process` → **EDIT** → ลบ schedule ออก / **PAUSE** ทุกตัว เพื่อหยุด scheduled writes
 2. ชี้ Power BI กลับ `databuffet-nonprd`
 
-จุดที่ย้อนยากคือ **Step 16** — tag `initial` ลบ validated ของ cis360/mastersku/saleout ไปแล้ว
+จุดที่ย้อนยากคือ **Step 16** — tag `initial` ลบ validated ของ cis360/mastersku/master_sku/saleout/allkons/d365 ไปแล้ว
 ถ้าหยุดกลางทางระหว่าง Step 16–17 ต้องรัน Data Transfer ให้จบ หรือรัน tag `validated`
 เพื่อปั้นใหม่จาก raw
 

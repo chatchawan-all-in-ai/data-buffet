@@ -1,29 +1,30 @@
 # สถาปัตยกรรม Data-Buffet
 
-> ตัวเลขทุกตัวในหน้านี้นับจาก `definitions/` จริงเมื่อ 2026-09-15
+> จำนวนไฟล์ต่อชั้นไม่เขียนซ้ำในหน้านี้ — ดูตัวเลขล่าสุดที่ generate จากโค้ดใน
+> [diagrams/pipeline_lineage.md](../diagrams/pipeline_lineage.md#1-layer-overview)
+> · โครงสร้างในหน้านี้ตรวจกับ `definitions/` เมื่อ 2026-10-18
 
 ## ภาพรวม
 
 ```
-GCS AVRO files  gs://file-raw-data  (Hive partition: ASATDATE=YYYYMMDD)
+GCS files  gs://file-raw-data  (AVRO, Hive partition: ASATDATE=YYYYMMDD · มี CSV 1 ตาราง)
       │
       ▼
-┌────────────┐  definitions/initial/ (17 ไฟล์)
-│  INITIAL   │  external table + CREATE SCHEMA + UDF 7 ตัว (function_dataset)
-└────────────┘
+┌────────────┐  definitions/initial/
+│  INITIAL   │  external table + UDF 7 ตัว (function_dataset) + ไฟล์ drop
+└────────────┘  ⚠️ tag `initial` ลบตาราง validated ของ source ที่ไม่ใช่ MAC5 ด้วย
       ▼
-┌────────────┐  definitions/validated/ (136 ไฟล์ = 132 ตาราง + 4 schema bootstrap)
+┌────────────┐  definitions/validated/ (ตาราง + schema bootstrap 1 ไฟล์ต่อ source)
 │ VALIDATED  │  cast + TRIM + NULL + dedup (QUALIFY) — 1 ไฟล์ต่อ 1 ตารางต้นทาง
-└────────────┘  mac5 87 · cis360 25 · mastersku 12 · saleout_mdt 12
+└────────────┘  mac5 · cis360 · mastersku · master_sku · saleout_mdt · d365
       ▼
-┌────────────┐  definitions/curated/ (11 ไฟล์ = 7 ตาราง + 4 schema bootstrap)
+┌────────────┐  definitions/curated/ (ตาราง + schema bootstrap 1 ไฟล์ต่อ source)
 │  CURATED   │  business logic: status lookup, split-sale, JSON parsing, รวม sell-out
 └────────────┘
       ├───────────────────────────────┐
       ▼                               ▼
 ┌────────────┐                 ┌────────────┐
 │ DIMENSION  │ ◄──── SK ────── │    FACT    │
-│ (69 ไฟล์)  │                 │ (15 ไฟล์)  │
 └────────────┘                 └────────────┘
  dimension_table                 fact_table
       └───────────────┬───────────────┘
@@ -40,37 +41,39 @@ GCS AVRO files  gs://file-raw-data  (Hive partition: ASATDATE=YYYYMMDD)
 
 ## หน้าที่ของแต่ละชั้น
 
-| ชั้น | ไฟล์ | Dataset | Materialization | หน้าที่ |
-|---|---:|---|---|---|
-| Initial | 17 | `raw_*`, `function_dataset` | operations | external table ชี้ GCS, สร้าง schema/UDF |
-| Validated | 136 | `validated_*` | incremental / table | cast type, ลบ string ว่าง, dedup ตาม PK |
-| Curated | 11 | `curated_*` | incremental / table | join ข้าม validated, JSON parsing, split-sale (ag01), รวม sell-out ทุกห้าง |
-| Dimension | 69 | `dimension_table` | table rebuild / operations MERGE | ออก surrogate key, SCD |
-| Fact | 15 | `fact_table` | table / operations | join SK ทุก dimension, retention 4 ปี |
-| View | [จำนวนจากโค้ด](../diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | view | BI/reporting อ่านจาก dim/fact/curated (`type: "view"`, tag `view`) |
-| CDC | 2 | `cdc_dataset` | operations | จับ NEW/CHANGED จาก config |
-| Process | 2 | `process_dataset` | table / operations | AI แกะที่อยู่ไทย (row ที่ CDC เปลี่ยน) + RLS (`rls_customer360`) |
+| ชั้น | Dataset | Materialization | หน้าที่ |
+|---|---|---|---|
+| Initial | `raw_*`, `function_dataset` | operations | external table ชี้ GCS, สร้าง schema/UDF, ไฟล์ drop สำหรับ (re-)initial |
+| Validated | `validated_*` | incremental / table | cast type, ลบ string ว่าง, dedup ตาม PK |
+| Curated | `curated_*` | incremental / table | join ข้าม validated, JSON parsing, split-sale (ag01), รวม sell-out ทุกห้าง |
+| Dimension | `dimension_table` | table rebuild / operations MERGE | ออก surrogate key, SCD |
+| Fact | `fact_table` | table / operations | join SK ทุก dimension, retention 4 ปี |
+| View | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | view | BI/reporting อ่านจาก dim/fact/curated (`type: "view"`, tag `view`) |
+| CDC | `cdc_dataset` | operations | จับ NEW/CHANGED จาก config |
+| Process | `process_dataset` | incremental / table | AI แกะที่อยู่ไทย (row ที่ CDC เปลี่ยน) + RLS (`rls_customer360`) |
 
-### แยกย่อย dimension 69 ไฟล์
+### แยกย่อย dimension
 
-| กลุ่ม | จำนวน | ลักษณะ |
-|---|---:|---|
-| mds full daily rebuild | **43** | `type: "table"` · SK ออกใหม่ทุกวัน |
-| mds MERGE legacy | 2 | `dim_company`, `dim_aging_rang` · SK เสถียร |
-| lake MERGE (validated/curated) | 10 | SK เสถียร ไม่มี tombstone |
-| full rebuild อื่น | 11 | `_last` 7 ตัว, target 2 ตัว, `dim_store`, `dim_pump_information` |
-| operations อื่น | 3 | `dim_calendar`, `dim_aging`, `update_sk_sale_rep_group` |
+| กลุ่ม | ลักษณะ |
+|---|---|
+| mds full daily rebuild (ค่าเริ่มต้น) | `type: "table"` · SK ออกใหม่ทุกวัน |
+| mds MERGE legacy (2) | `dim_company`, `dim_aging_rang` · SK เสถียร |
+| lake MERGE (validated/curated) (10) | SK เสถียร ไม่มี tombstone |
+| full rebuild อื่น | `_last` 7 ตัว, target 2 ตัว, `dim_store`, `dim_pump_information`, `dim_product_series` (hard-code) |
+| operations อื่น (3) | `dim_calendar`, `dim_aging`, `update_sk_sale_rep_group` |
+
+จำนวนต่อกลุ่มและรายชื่อทุกไฟล์: [project_wiki/dimension/inventory.md](../project_wiki/dimension/inventory.md)
 
 > วิธีนับที่เชื่อถือได้: จับ `mds_data_\w+` **ทั้งไฟล์** ไม่ใช่แค่ `name: "..."` —
-> dim ชุด MDT อ้าง mds ผ่าน const ใน `js {}` ถ้าจับแค่ `name:` จะนับขาด 6 ตัว
+> dim ชุด MDT อ้าง mds ผ่าน const ใน `js {}` ถ้าจับแค่ `name:` จะนับขาด
 
-### แยกย่อย fact 15 ไฟล์
+### แยกย่อย fact
 
-| กลุ่ม | จำนวน | ไฟล์ |
-|---|---:|---|
-| MAC5 ขาย/วางบิล/รับชำระ | 9 | `fact_order`, `fact_invoice`, `fact_quotation`, `fact_transaction_delivery`, `fact_delivery`, `fact_transcation`, `fact_chq`, `fact_mir_vs`, `fact_mir_rs` |
-| store (แยกตามคลัง) | 3 | `fact_order_store`, `fact_invoice_store`, `fact_backlog_store` |
-| SALEOUT_MDT | 3 | `fact_saleout_mdt`, `fact_stock_mdt`, `fact_stock_mdt_monthly` |
+| กลุ่ม | ไฟล์ |
+|---|---|
+| MAC5 ขาย/วางบิล/รับชำระ | `fact_order`, `fact_invoice`, `fact_quotation`, `fact_transaction_delivery`, `fact_delivery`, `fact_transcation`, `fact_chq`, `fact_mir_vs`, `fact_mir_rs` |
+| store (แยกตามคลัง) | `fact_order_store`, `fact_invoice_store`, `fact_backlog_store` |
+| SALEOUT_MDT | `fact_saleout_mdt`, `fact_saleout_monthly_mdt`, `fact_stock_mdt`, `fact_stock_mdt_monthly`, `fact_target_saleout_mdt`, `fact_target_series_mdt` |
 
 ## จุดสำคัญเชิงออกแบบ
 
@@ -80,7 +83,7 @@ GCS AVRO files  gs://file-raw-data  (Hive partition: ASATDATE=YYYYMMDD)
   ออกด้วย `max_sk + ROW_NUMBER()` + dual self-join รักษา SK เดิมตลอดชีพ —
   ห้าม regenerate เด็ดขาด ดู
   [project_wiki/dimension/merge-sk-pattern.md](../project_wiki/dimension/merge-sk-pattern.md)
-- **SK รายวัน** (mds dims **43 ตัว** — ปั้น full ใหม่ทุกวัน): `ROW_NUMBER()` ออกเลขใหม่
+- **SK รายวัน** (mds dims แบบ full rebuild — ปั้น full ใหม่ทุกวัน): `ROW_NUMBER()` ออกเลขใหม่
   ทุกคืน — consumer ทุกตัว re-derive รายวัน (ตรวจครบแล้ว) **ห้าม persist SK
   พวกนี้ข้ามวัน** ดู
   [project_wiki/dimension/full-rebuild-pattern.md](../project_wiki/dimension/full-rebuild-pattern.md)
@@ -90,7 +93,7 @@ GCS AVRO files  gs://file-raw-data  (Hive partition: ASATDATE=YYYYMMDD)
 ตาราง `mds_data_*_master` ทุกตัวมี `id`, `is_active`, `updated_at`
 และรองรับ **overwrite import** (ล้างแล้วลงใหม่ = id ใหม่หมด)
 
-- **dims 43 ตัว (full rebuild)**: อ่านเฉพาะ `is_active = TRUE` ทั้งตารางทุกคืน —
+- **dims แบบ full rebuild**: อ่านเฉพาะ `is_active = TRUE` ทั้งตารางทุกคืน —
   soft delete และ overwrite import หายเองอัตโนมัติ (ตัดสินใจ 2026-07-20)
 - **dims 2 ตัว (MERGE)**: window `MDS_BACKFILL_DAYS` (1 วัน) + tombstone DELETE
   ลบ row ที่ต้นทาง `is_active = FALSE` (hard delete, ตัดสินใจ 2026-07-10)
@@ -124,13 +127,16 @@ dim_company (root)
   └─ dim_*_last (7 ตัว) ─ update_sk_sale_rep_group
         └─ dim_target_product_group_by_sale ─ ..._dayofwork (join dim_calendar)
 
-dim_zone_mdt → dim_zone_manager_mdt → dim_sales_branch_mdt → dim_pc
-                                                           → dim_target_saleout_mdt
+dim_zone_mdt → dim_zone_ta_mdt → dim_sales_branch_mdt → dim_pc
+                                                     → dim_target_saleout_mdt
+                                                     → dim_target_series_mdt (+ dim_product_series)
+dim_region_last, dim_section_last → dim_sales_branch_mdt
 
 fact_quotation → fact_order → fact_invoice          (SK ต่อเป็นทอด)
 fact_transaction_delivery → fact_delivery
 fact_chq → fact_mir_vs → fact_mir_rs                (dim_aging อ่าน fact_mir_vs)
 fact_stock_mdt → fact_stock_mdt_monthly
+curated_saleout_monthly_mdt → fact_saleout_monthly_mdt
 fact_transcation (join ~20 dims + onetime.Transaction_Data_Mart)
    └─ dim_pump_information อ่านกลับจาก fact_transcation
 ```

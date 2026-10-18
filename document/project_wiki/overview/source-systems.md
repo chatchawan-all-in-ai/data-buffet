@@ -1,17 +1,21 @@
 # Source Systems
 
-> **LLM context**: **5 raw sources** ลงเป็น AVRO ที่ `gs://file-raw-data/<gcs_folder>/<table>/`
+> **LLM context**: **7 raw sources** ลงที่ `gs://file-raw-data/<gcs_folder>/<table>/`
+> (AVRO ทั้งหมด ยกเว้น `saleout_lastyear` ที่เป็น CSV)
 > บวกกับ BigQuery dataset ที่ถูกโหลดจากภายนอกอีกตัว (`mds_dataset`)
-> ตรวจกับโค้ดจริง 2026-09-15
+> ตรวจกับโค้ดจริง 2026-10-18 · จำนวนไฟล์ต่อ source ดูที่
+> [validated/source-inventory.md](../validated/source-inventory.md)
 
-| Source | Raw dataset | Validated | Curated | สถานะ |
-|---|---|---|---|---|
-| MAC5 (5 บริษัท) | `raw_mac5_{ag01,aa05,ab01,ac02,ak02}` | `validated_mac5` — **87 ไฟล์** | `curated_mac5` — 3 ตาราง | ใช้งานเต็ม |
-| MASTERSKU | `raw_mastersku` | `validated_mastersku` — 12 ไฟล์ | `curated_mastersku` — 2 ตาราง | ใช้งานเต็ม |
-| CIS360 | `raw_cis360` | `validated_cis360` — 25 ไฟล์ | `curated_cis360` — **schema เปล่า** | ใช้งาน (ยังไม่มี curated) |
-| SALEOUT_MDT | `raw_saleout_mdt` | `validated_saleout_mdt` — 12 ไฟล์ | `curated_saleout_mdt` — 2 ตาราง | ใช้งานเต็ม (ชุดใหม่ 2026-09) |
-| ALLKONS_COMMISSION | `raw_allkons_commission` | **ไม่มีแล้ว** | — | ⚠️ **หยุดอยู่ชั้น initial** |
-| mds_dataset | — (โหลดจากภายนอก) | — | — | เป็น master ของ 45 dims |
+| Source | GCS folder | Raw dataset | Validated | Curated | สถานะ |
+|---|---|---|---|---|---|
+| MAC5 (5 บริษัท) | `mac5_*` | `raw_mac5_{ag01,aa05,ab01,ac02,ak02}` | `validated_mac5` | `curated_mac5` — 3 ตาราง | ใช้งานเต็ม |
+| MASTERSKU | `mastersku` | `raw_mastersku` | `validated_mastersku` | `curated_mastersku` — 2 ตาราง | ใช้งานเต็ม |
+| MASTER_SKU (3.0) | `master_sku` | `raw_master_sku` | `validated_master_sku` | `curated_master_sku` — 2 ตาราง | ใหม่ 2026-10-12 — ยังไม่มี dim/view อ่าน |
+| CIS360 | `cis360` | `raw_cis360` | `validated_cis360` | `curated_cis360` — **schema เปล่า** | ใช้งาน (ยังไม่มี curated) |
+| SALEOUT_MDT | `saleout_mdt` | `raw_saleout_mdt` | `validated_saleout_mdt` | `curated_saleout_mdt` — 3 ตาราง | ใช้งานเต็ม มีรอบรันของตัวเอง 08:55 |
+| D365 | `derp_temp` | `raw_d365` | `validated_d365` | — | ใหม่ 2026-10-17 — ยังไม่มีใครอ่านต่อ |
+| ALLKONS_COMMISSION | `allkons_commission` | `raw_allkons_commission` | **ไม่มีแล้ว** | — | ⚠️ **หยุดอยู่ชั้น initial** |
+| mds_dataset | — | — (โหลดจากภายนอก) | — | — | เป็น master ของ dims ส่วนใหญ่ |
 
 ## MAC5 — POS / ERP / Ledger (แหล่งหลัก)
 
@@ -50,22 +54,79 @@
 
 ## SALEOUT_MDT — sell-out modern trade
 
-**ชุดนี้โตขึ้นมากใน 2026-09** — จากเดิมที่มีแค่ validated ตอนนี้มีครบทั้งสาย
+**ชุดนี้โตขึ้นมากใน 2026-09/10** — จากเดิมที่มีแค่ validated ตอนนี้มีครบทั้งสาย
+หน้านี้คือภาพรวมตั้งแต่ต้นจนจบ รายละเอียดแต่ละชั้นอยู่ในหน้าที่ลิงก์ไว้
 
-- **Validated (12 ไฟล์)** แยกโฟลเดอร์ตามห้าง: `BT` (บุญถาวร — 7 ตาราง:
-  sales_by_branch, stock_by_branch, stock_aging, turnover, ...), `GB` (`saleout_gb`),
-  `HP` (`saleout_hp`), `TW` (`report_sale_subscription`), `LASTYEAR`
-  (`saleout_lastyear` — ไฟล์ Excel ย้อนหลังก่อนมี feed) + `validated_schema_saleout`
-- **Curated (2)**: `curated_saleout_mdt` (รวม 5 แหล่งเป็น grain เดียว) และ
-  `curated_stock_mdt` — ดู [curated-layer.md](../curated/curated-layer.md)
-- **Dimension (6)**: `dim_zone_mdt`, `dim_zone_manager_mdt`, `dim_sales_branch_mdt`,
-  `dim_product_mdt`, `dim_pc`, `dim_target_saleout_mdt` — ทั้ง 6 อ่าน `mds_dataset`
-  ผ่าน const ใน `js {}` ไม่ใช่ `name:` (สำคัญตอนนับ mds dims)
-- **Fact (3)**: `fact_saleout_mdt`, `fact_stock_mdt`, `fact_stock_mdt_monthly`
-- **View (1)**: `view_fact_salein_mdt`
+```
+GCS saleout_mdt/{bt,dh,gb,hp,tw,so_mdt_eom,lastyear}
+  → raw_saleout_mdt (16 AVRO + saleout_lastyear CSV)
+  → validated_saleout_mdt (BT, DH, EOM, GB, HP, LASTYEAR, TW)
+  → curated_saleout_mdt ─┬→ fact_saleout_mdt ───────────┐
+    curated_stock_mdt ───┼→ fact_stock_mdt → fact_stock_mdt_monthly
+    curated_saleout_monthly_mdt → fact_saleout_monthly_mdt
+  mds_dataset.mds_data_mdt_* → dim_zone_mdt → dim_zone_ta_mdt → dim_sales_branch_mdt
+                               → dim_pc, dim_product_mdt, dim_target_saleout_mdt,
+                                 dim_target_series_mdt (+ dim_product_series)
+  dims → fact_target_saleout_mdt, fact_target_series_mdt
+  facts/dims → views view_fact_*_mdt (fact_view)
+```
+
+- **Validated** แยกโฟลเดอร์ตามห้าง: `BT` (บุญถาวร — 7 ตาราง: sales_by_branch,
+  stock_by_branch, stock_aging, turnover, ...), `DH` (`saleout_dh`), `EOM` (`eom_bt/gb/hp/tw`
+  — ยอดปิดเดือนที่ห้างส่งมาเอง), `GB` (`saleout_gb`), `HP` (`saleout_hp`),
+  `TW` (`report_sale_subscription`), `LASTYEAR` (`saleout_lastyear` — ไฟล์ Excel ย้อนหลัง
+  ก่อนมี feed, raw เป็น CSV) + `validated_schema_saleout` · มีทั้ง incremental และ full
+  (`DH`/`EOM` เก็บเฉพาะไฟล์ล่าสุดของแต่ละงวด) — ตารางต่อไฟล์ดู
+  [source-inventory § SALEOUT_MDT](../validated/source-inventory.md#saleout_mdt-17--7-incremental--9-full--1-schema--by-retailer-subfolder)
+- **Curated (3)**: `curated_saleout_mdt` (รวมทุกห้างเป็น grain เดียว, incremental),
+  `curated_stock_mdt` (table) และ `curated_saleout_monthly_mdt` (table — เลือกจาก
+  `eom_*`, `onetime.saleout_lastyear_monthly` หรือ `curated_saleout_mdt`
+  แทน `onetime.saleout_monthly_mdt` ที่ปั้นมือ) · **เกรนผสม**: เดือนปัจจุบันเก็บวันที่ขายรายวัน
+  เดือนที่ปิดแล้วใช้วันสิ้นเดือน · `fact_saleout_monthly_mdt` ส่งต่อ `month_date` ตามเดิม
+  · รวมยอดรายเดือนด้วย `SUM` และ `GROUP BY DATE_TRUNC(month_date, MONTH)` พร้อม key ที่ต้องการ
+  และกรองเดือนด้วย `DATE_TRUNC(month_date, MONTH)` ไม่ใช้ `month_date` เท่ากับวันสิ้นเดือน
+  — tag `curated_full` / `curated_incremental` · ดู [curated-layer.md](../curated/curated-layer.md)
+- **Dimension (7 + 1)**: `dim_zone_mdt`, `dim_zone_ta_mdt`, `dim_sales_branch_mdt`,
+  `dim_product_mdt`, `dim_pc`, `dim_target_saleout_mdt`, `dim_target_series_mdt` — ทั้ง 7
+  อ่าน `mds_dataset.mds_data_mdt_*` ผ่าน const ใน `js {}` ไม่ใช่ `name:` (สำคัญตอนนับ mds dims)
+  · `dim_target_series_mdt` ใช้ `dim_product_series` ซึ่ง **hard-code 2 แถว** (ดู
+  [known-issues](../../operations/known-issues.md)) · `dim_zone_manager_mdt` ถูกลบจาก repo แล้ว
+  (ตารางยังค้างใน BigQuery) · รายละเอียดดู [dimension/inventory.md](../dimension/inventory.md)
+- **Fact (6)**: `fact_saleout_mdt`, `fact_saleout_monthly_mdt`, `fact_stock_mdt`,
+  `fact_stock_mdt_monthly`, `fact_target_saleout_mdt`, `fact_target_series_mdt`
+  — ดู [fact/fact-layer.md](../fact/fact-layer.md)
+- **View**: `view_fact_salein_mdt`, `view_fact_salein_director_mdt`, `view_fact_saleout_pc_mdt`,
+  `view_fact_stock_nonmove_mdt`, `view_fact_target_pc_mdt`, `view_fact_target_section_mdt`,
+  `view_fact_target_product_group_mdt` (ชื่อลงท้าย `_mdt` แต่บางตัวอ่าน fact ฝั่ง MAC5 —
+  ดู [generated lineage](../../diagrams/pipeline_lineage.md))
+- **รอบรัน**: อยู่ใน `daily_process` 06:00 และรันซ้ำใน workflow `saleout_morning` 08:55
+  (31 target ระบุชื่อทีละตัว ไม่ใช้ tag — **ตารางใหม่ต้องเพิ่มเข้ารายชื่อเองในหน้า Dataform**
+  · จุดประสงค์ของรอบ 08:55 ไม่ได้บันทึกไว้ที่ไหน) — ดู
+  [running-and-troubleshooting § Schedule](../operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd)
 - ข้อควรรู้: แต่ละห้างส่งข้อมูลคนละรูปแบบ — BT ส่งเป็นช่วงวันต้องเฉลี่ยเอง
   (`date_is_estimated`), GB ใช้บาร์โค้ด 13 หลักเป็นรหัสสินค้า, TW ส่ง `branch_code`
   เป็นสตริงเต็ม `60001-CRC Thai Watsadu ...`
+
+## D365 — Dynamics 365 inventory
+
+- เข้า repo ใน `7819bef` (2026-10-17) · dataset `raw_d365` / `validated_d365` ถูกสร้างด้วยมือ
+  ไว้ก่อนแล้วเมื่อ 2026-10-16
+- GCS folder **`derp_temp/`** (constant `GCS_D365`) — ชื่อฟังดูชั่วคราว อาจเปลี่ยน
+- 3 ตาราง:
+  - `inventory_movement_journal_headers`, `inventory_movement_journal_entries` — journal
+    การเคลื่อนไหวสินค้า เป็น incremental feed (20260914–16 เป็น full load, ตั้งแต่ 20260917
+    รายวัน) · เวลาใน raw เป็น UTC · ขอบเขตการ dedup ตอนเริ่มสร้างและรอบ incremental ดู
+    [source-inventory § D365](../validated/source-inventory.md#d365-4--2-incremental--1-full--1-schema)
+  - `inventory_item_price` — snapshot ราคาเต็มทุกวัน (~175k แถว) · validated อ่านเฉพาะ
+    partition ล่าสุด
+- ไฟล์ของวัน `ASATDATE=D` ลงประมาณ **01:02 น. (เวลาไทย) ของวัน D+1** · รันใน `daily_process`
+  06:00 (tag `validated`) ตั้งแต่ 2026-10-18 · ไม่อยู่ใน `saleout_morning`
+- **ยังไม่มีใครอ่านต่อ** (ไม่มี curated/dim/fact/view/CDC) · join key ที่น่าจะใช้ในอนาคตคือ
+  คอลัมน์ `d365_*` ใน `validated_master_sku.products`
+- เรื่องที่ยังเปิดอยู่: timezone ของ `inventory_item_price` ยังไม่ยืนยัน (จึงใช้
+  `parseFlexibleDatetime`) · ไฟล์ AVRO ช่วง 2026-10 มีค่า default ผิดกฎใน 3 ฟิลด์ · ชื่อโฟลเดอร์
+  `derp_temp` อาจเปลี่ยน
+- ตารางต่อไฟล์: [source-inventory § D365](../validated/source-inventory.md#d365-4--2-incremental--1-full--1-schema)
 
 ## ALLKONS_COMMISSION — ค่าคอมมิชชั่น (⚠️ หยุดไว้)
 
@@ -87,7 +148,8 @@
 - **ไม่ได้สร้างโดย repo นี้** ตารางชื่อ `mds_data_<entity>_master`
 - คอลัมน์มาตรฐานทุกตาราง: `id` (row id → เก็บใน dim เป็น `MdsID`),
   `is_active` (soft-delete flag), `updated_at`
-- เป็นต้นทางของ **45 dims** (43 full rebuild + 2 MERGE legacy)
+- เป็นต้นทางของ dims ส่วนใหญ่ (full rebuild + 2 MERGE legacy) — รายชื่อดู
+  [dimension/inventory.md](../dimension/inventory.md)
 - dim แบบ full rebuild อ่านเฉพาะ `is_active = TRUE` ทั้งตารางทุกคืน soft delete และ
   overwrite import จึงหายเองอัตโนมัติ · dim แบบ MERGE (2 ตัว) ต้องมี tombstone DELETE
   ปิดท้าย ดู [dimension/mds-delete-pattern.md](../dimension/mds-delete-pattern.md)

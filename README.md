@@ -11,8 +11,8 @@ with built-in Change Data Capture (CDC) and an AI address-processing pipeline.
 | **Framework** | Dataform `3.0.0` |
 | **Location** | `us-central1` |
 | **Language** | SQLX (SQL + JavaScript) |
-| **Raw Data** | `gs://file-raw-data` (AVRO, Hive-partitioned by `ASATDATE`) |
-| **Sources** | MAC5 (×5 companies), MASTERSKU, CIS360, SALEOUT_MDT, ALLKONS_COMMISSION + external `mds_dataset` |
+| **Raw Data** | `gs://file-raw-data` (AVRO, Hive-partitioned by `ASATDATE`; one CSV table, `saleout_lastyear`) |
+| **Sources** | MAC5 (×5 companies), MASTERSKU, MASTER_SKU (`master_sku` 3.0), CIS360, SALEOUT_MDT, D365, ALLKONS_COMMISSION + external `mds_dataset` |
 | **Docs** | [`document/`](document/README.md) — developer guides (TH) + [LLM wiki (EN)](document/project_wiki/README.md) |
 | **New here?** | [`document/getting-started/onboarding.md`](document/getting-started/onboarding.md) — access to request, tooling, then `bash .claude/skills/verify-setup/scripts/verify.sh` |
 
@@ -21,20 +21,20 @@ with built-in Change Data Capture (CDC) and an AI address-processing pipeline.
 ## Architecture
 
 ```
-GCS AVRO files (gs://file-raw-data)
+GCS AVRO/CSV files (gs://file-raw-data)
         │
         ▼
-┌─────────────────┐   definitions/initial/      (17 files)
+┌─────────────────┐   definitions/initial/
 │ INITIAL         │   External tables over GCS + schema/UDF bootstrap
 └─────────────────┘
         │
         ▼
-┌─────────────────┐   definitions/validated/    (138 transformations)
+┌─────────────────┐   definitions/validated/
 │ VALIDATED       │   Type casting, NULL/empty handling, dedup, schema enforcement
 └─────────────────┘
         │
         ▼
-┌─────────────────┐   definitions/curated/      (5 transformations)
+┌─────────────────┐   definitions/curated/
 │ CURATED         │   Business logic, joins, JSON/text enrichment, split-sale
 └─────────────────┘
         │
@@ -42,7 +42,7 @@ GCS AVRO files (gs://file-raw-data)
         ▼                              ▼
 ┌─────────────────┐            ┌─────────────────┐
 │ DIMENSION       │            │ FACT            │
-│ (69 files, SCD) │◄───────────│ (15 fact tables)│
+│ (SK + SCD)      │◄───────────│ (fact tables)   │
 └─────────────────┘            └─────────────────┘
    definitions/dimension/         definitions/fact/
         ▲          │                    │
@@ -60,30 +60,32 @@ Supporting pipelines:
 
 ### Layers
 
-Counts below are **transformations**; the `*_schema_*.sqlx` bootstrap files are
-excluded (4 in validated, 3 in curated). `CLAUDE.md` and the Thai onboarding guide
-count **files**, so they read 143 / 8 for the same two layers — same code, different
-unit.
+File counts per layer are generated from the code: see the
+[generated lineage](document/diagrams/pipeline_lineage.md#1-layer-overview).
+Counts there are **files**, including the `*_schema_*.sqlx` bootstrap files.
 
-| Layer | Path | Count | Purpose |
-|-------|------|------:|---------|
-| **Initial** | `definitions/initial/` | 17 | Create raw external tables over GCS AVRO; bootstrap schemas & UDFs |
-| **Validated** | `definitions/validated/` | 132 | Clean, cast, dedup; one table per source object (136 files incl. 4 schema-bootstrap) |
-| **Curated** | `definitions/curated/` | 7 | Business-ready joins, enrichment, JSON parsing (11 files incl. 4 schema-bootstrap) |
-| **Dimension** | `definitions/dimension/` | 69 | Conformed dimensions with surrogate keys (MERGE + SCD intervals) |
-| **Fact** | `definitions/fact/` | 15 | Star-schema fact tables joined to dimensions (4-year retention) |
-| **View** | `definitions/view/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` |
-| **CDC** | `definitions/cdc/` | 2 | Config-driven change log over validated tables |
-| **Process** | `definitions/process/` | 2 | AI address parsing + row-level security (`rls_customer360`) |
+| Layer | Path | Purpose |
+|-------|------|---------|
+| **Initial** | `definitions/initial/` | Create raw external tables over GCS; bootstrap schemas & UDFs; drop files for (re-)initialising validated |
+| **Validated** | `definitions/validated/` | Clean, cast, dedup; one table per source object, plus one `validated_schema_<source>` bootstrap per source |
+| **Curated** | `definitions/curated/` | Business-ready joins, enrichment, JSON parsing, plus one `curated_schema_<source>` bootstrap per source |
+| **Dimension** | `definitions/dimension/` | Conformed dimensions with surrogate keys (full daily rebuild by default; MERGE where SKs must stay stable) |
+| **Fact** | `definitions/fact/` | Star-schema fact tables joined to dimensions (4-year retention) |
+| **View** | `definitions/view/` | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` |
+| **CDC** | `definitions/cdc/` | Config-driven change log over validated tables |
+| **Process** | `definitions/process/` | AI address parsing + row-level security (`rls_customer360`) |
 
-**Validated breakdown:** MAC5 `87` · CIS360 `25` · MASTERSKU `12` · SALEOUT_MDT `12`
-(+1 schema-bootstrap file per source — 4 sources) · ALLKONS_COMMISSION มีเฉพาะชั้น initial ยังไม่มี validated
+**Validated by source:** MAC5, CIS360, MASTERSKU, MASTER_SKU (3.0),
+SALEOUT_MDT and D365, each with its own schema-bootstrap file. ALLKONS_COMMISSION
+has only an initial layer (its validated files were removed). Per-source file lists:
+[source inventory](document/project_wiki/validated/source-inventory.md).
 
-**Dimension breakdown:** `43` full-daily-rebuild dims from `mds_dataset` (default
-since 2026-07-20) · `2` legacy MERGE mds dims with stable SKs (`dim_company`,
-`dim_aging_rang`) · `10` MERGE dims from validated/curated · `11` full-rebuild tables
-(`*_last` snapshots, target aggregates) · `3` other (`dim_calendar`, `dim_aging`,
-`update_sk_sale_rep_group`)
+**Dimension patterns:** full-daily-rebuild dims from `mds_dataset` (default since
+2026-07-20) · 2 legacy MERGE mds dims with stable SKs (`dim_company`,
+`dim_aging_rang`) · 10 MERGE dims from validated/curated · other full-rebuild tables
+(`*_last` snapshots, target aggregates, `dim_store`, `dim_pump_information`) · 3 other
+operations (`dim_calendar`, `dim_aging`, `update_sk_sale_rep_group`). Per-dim list:
+[dimension inventory](document/project_wiki/dimension/inventory.md).
 
 ---
 
@@ -91,24 +93,28 @@ since 2026-07-20) · `2` legacy MERGE mds dims with stable SKs (`dim_company`,
 
 ```
 definitions/
-├── initial/          # External tables (GCS AVRO) + create_all_schema / create_all_function
+├── initial/          # External tables (GCS AVRO/CSV) + create_all_schema / create_all_function
 │   ├── mac5/         # raw_mac5_ag01, _aa05, _ab01, _ac02, _ak02
-│   ├── cis360/
-│   ├── mastersku/
-│   └── saleout_mdt/
+│   ├── cis360/  mastersku/  master_sku/  saleout_mdt/  d365/
+│   └── allkons_commission/
 ├── validated/        # Raw → clean, one file per table, per source
-│   ├── mac5/  cis360/  mastersku/  saleout_mdt/{BT,GB,HP,TW}/
+│   ├── mac5/  cis360/  mastersku/  master_sku/  d365/
+│   └── saleout_mdt/{BT,DH,EOM,GB,HP,LASTYEAR,TW}/
 ├── curated/          # Clean → business-ready
 │   ├── mac5/         # curated_mih, curated_mil, curated_tbook_quotation
 │   ├── mastersku/    # curated_product, product_for_aisearch
+│   ├── master_sku/   # curated_products, product_for_aisearch_v3
+│   ├── saleout_mdt/  # curated_saleout_mdt, curated_stock_mdt, curated_saleout_monthly_mdt
 │   └── cis360/       # (schema only)
-├── dimension/        # dim_company (DAG root), 35 more mds dims, dim_customer,
+├── dimension/        # dim_company, other mds dims, dim_customer,
 │                     # dim_invoice, dim_order, *_last snapshots, dim_calendar, ...
 ├── fact/             # fact_invoice, fact_order, fact_delivery, fact_quotation,
 │                     # fact_transaction_delivery, fact_transcation (sic — real name),
-│                     # fact_chq, fact_mir_vs, fact_mir_rs (AR billing/receive chain)
+│                     # fact_chq, fact_mir_vs, fact_mir_rs (AR billing/receive chain),
+│                     # fact_*_store, fact_*_mdt (SALEOUT_MDT)
+├── view/             # BI/reporting views (dimension_view, fact_view, ...)
 ├── cdc/              # cdc_schema, cdc_change_log
-└── process/          # deb_address_data (AI.GENERATE address parsing)
+└── process/          # deb_address_data (AI.GENERATE address parsing), rls_customer360
 
 includes/
 ├── databuffet.js                 # Central config hub (imported by every SQLX file)
@@ -121,20 +127,18 @@ document/
 ├── getting-started/  architecture/  coding-standards/  how-to/  operations/   (Thai)
 └── project_wiki/     # LLM-oriented wiki (English) — per-layer patterns & inventories
 
+CLAUDE.md                         # project context loaded every session (tracked in git)
+
 .claude/                          # Claude Code working set — NOT in git, ask the team for it
-├── CLAUDE.md                     # project context loaded every session
-├── skills/  (15)                 # /add-validated-table, /ship, /verify-setup, ...
+├── skills/                       # /add-validated-table, /ship, /verify-setup, ...
 ├── agents/  (5)                  # dataform-expert, data-architect, ...
 ├── hooks/                        # guard-dangerous, doc-sync-check, pre-commit
 └── settings.json                 # shared read-only allowlist (personal → settings.local.json)
 ```
 
 `.claude/` is deliberately git-ignored and handed over by copy. After you place it
-in the repo root, wire the git hooks once:
-
-```bash
-git config core.hooksPath .claude/hooks
-```
+in the repo root, the `SessionStart` hook sets `git config core.hooksPath .claude/hooks`
+on the first Claude Code session (no manual step).
 
 Packaging and permission steps:
 [document/getting-started/onboarding.md §4](document/getting-started/onboarding.md).
@@ -191,6 +195,7 @@ databuffet.cdcConfig                        // CDC source/table config
 | `cleanString(col)` | `NULLIF(CAST(TRIM(col) AS STRING), '')` |
 | `cleanCode(col, pattern?)` | strips `\n\r\t` (or custom regex), trims, nullifies empty |
 | `parseFlexibleDatetime(col)` | parses `%b %d %Y %I:%M%p` **or** `%Y-%m-%d %H:%M:%S` (SAFE) |
+| `parseFlexibleUtcDatetime(col)` | parses a UTC `%Y-%m-%d %H:%M:%E*S`, with or without a `+00:00` offset, and returns Bangkok `DATETIME` (SAFE; master_sku, d365 journals) |
 | `parseAsatDate()` | `PARSE_DATE('%Y%m%d', ASATDATE)` |
 | `castInt64(col)` / `castFloat64(col)` / `castBool(col)` | type casts (not SAFE — fail fast) |
 
@@ -203,8 +208,10 @@ databuffet.cdcConfig                        // CDC source/table config
 | MAC5 | `raw_mac5_ag01`, `raw_mac5_aa05`, `raw_mac5_ab01`, `raw_mac5_ac02`, `raw_mac5_ak02` | `validated_mac5` | `curated_mac5` |
 | CIS360 | `raw_cis360` | `validated_cis360` | `curated_cis360` |
 | MASTERSKU | `raw_mastersku` | `validated_mastersku` | `curated_mastersku` |
-| SALEOUT_MDT | `raw_saleout_mdt` | `validated_saleout_mdt` | — |
-| ALLKONS_COMMISSION | `raw_allkons_commission` | `validated_allkons_commission` | — |
+| MASTER_SKU (3.0) | `raw_master_sku` | `validated_master_sku` | `curated_master_sku` |
+| SALEOUT_MDT | `raw_saleout_mdt` | `validated_saleout_mdt` | `curated_saleout_mdt` |
+| D365 | `raw_d365` | `validated_d365` | — |
+| ALLKONS_COMMISSION | `raw_allkons_commission` | `validated_allkons_commission` (left in BigQuery, no repo files) | — |
 
 Shared datasets: `dimension_table` / `dimension_view`, `fact_table` / `fact_view`,
 `process_dataset`, `cdc_dataset`, `function_dataset`, `onetime`, and the externally
@@ -220,16 +227,22 @@ Select tags for an execution in the Dataform service (see the
 
 | Group | Tags in use |
 |-------|-------------|
-| Initial | `initial`, `re-initial` (⚠️ drops validated/curated MAC5 tables) |
+| Initial | `initial` (⚠️ drops the validated tables of cis360, mastersku, master_sku, saleout_mdt, allkons_commission and d365), `re-initial` (⚠️ drops validated/curated MAC5 tables) |
 | Validated | `validated`, `validated_full`, `validated_incremental` |
-| Curated | `curated` |
-| Dimension | `dimension_daily` (68 files), `dimension_yearly` (`dim_calendar` only) |
+| Curated | `curated`, `curated_full`, `curated_incremental` (SALEOUT_MDT curated) |
+| Dimension | `dimension_daily` (every dim except `dim_calendar`), `dimension_yearly` (`dim_calendar` only) |
 | Fact | `fact_daily` |
 | Support | `process`, `cdc`, `cdc_incremental` |
 
+> ⚠️ To add or refresh raw tables, never run the whole `initial` tag. Run only the
+> single `create_all_table_raw_<source>` action, **without** "include dependencies"
+> (with it, the MAC5 create files also pull in the `re-initial` drops).
+
 Declared in `variables.json` but currently unused: `dimension_monthly`,
-`fact_monthly`, `fact_yearly`, `curated_full`, `curated_incremental`, `onetime`.
-There is no `assertions` tag — the project has no Dataform assertions.
+`fact_monthly`, `fact_yearly`. There is no `assertions` tag — the project has no
+Dataform assertions. What runs on a schedule (05:45 release from `nonprod`,
+`daily_process` 06:00, `saleout_morning` 08:55, `yearly_process`):
+[running-and-troubleshooting § Schedule](document/project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd).
 
 ---
 
@@ -290,7 +303,7 @@ Complex reallocation (e.g. the `ag01` split-sale expansion in `curated_mil`) liv
 `post_operations { BEGIN ... END }` as a TEMP → DELETE → INSERT on `self()`.
 
 ### Dimension — full daily rebuild (default) + legacy MERGE for stable SKs
-Since 2026-07-20 the 34 mds-sourced dims are **full daily rebuilds**
+Since 2026-07-20 the mds-sourced dims are **full daily rebuilds** by default
 (`type: "table"`): SK = `ROW_NUMBER()` over the natural key, source filtered only
 `is_active = TRUE`. SKs regenerate every run — all consumers re-derive them daily
 (verified), so **never persist these SKs across days**. This natively absorbs mds
@@ -326,7 +339,7 @@ interpolation + `dependencies[]`; curated/validated sources use `ref()`.
 `check_fields` between raw and validated, and records NEW/CHANGED rows as JSON
 (7-day partition expiration). Downstream, `process/deb_address_data` re-parses
 **only today's changed addresses** through BigQuery `AI.GENERATE`
-(gemini-2.5-flash) — the CDC gate is the cost control.
+(`gemini-3.5-flash-lite`) — the CDC gate is the cost control.
 
 ---
 
@@ -338,7 +351,7 @@ Step-by-step guides with checklists live in [`document/how-to/`](document/how-to
 |------|-------|
 | New validated table | [add-validated-table.md](document/how-to/add-validated-table.md) |
 | New curated table | [add-curated-table.md](document/how-to/add-curated-table.md) |
-| New dimension (mds MERGE) | [add-dimension.md](document/how-to/add-dimension.md) |
+| New dimension (full daily rebuild by default) | [add-dimension.md](document/how-to/add-dimension.md) |
 | New fact table | [add-fact-table.md](document/how-to/add-fact-table.md) |
 | Run & debug | [run-and-debug.md](document/how-to/run-and-debug.md) |
 
@@ -352,7 +365,7 @@ Step-by-step guides with checklists live in [`document/how-to/`](document/how-to
   targets (all MERGE dimensions, `fact_transcation`) pre-exist in BigQuery.
 - **Primary keys:** declared `NOT ENFORCED` for query optimization, not constraints.
 - **Surrogate keys:** MERGE dims (`dim_company`, `dim_aging_rang`, lake dims) have
-  SKs that are stable forever — never regenerate them. Full-rebuild mds dims (34)
+  SKs that are stable forever — never regenerate them. Full-rebuild mds dims
   regenerate SKs daily — never persist those SKs across days.
 - **Partitioning/clustering:** partition incremental tables by `asatdate`; cluster on up to 4 frequently-filtered columns.
 - **Load-bearing typos (keep verbatim):** `fact_transcation` (table/file name),

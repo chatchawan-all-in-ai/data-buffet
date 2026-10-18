@@ -14,9 +14,9 @@ plus CDC and an AI address-parsing pipeline.
 
 - **Platform**: Google Cloud BigQuery (`databuffet-nonprd`), region `us-central1`
 - **Language**: SQLX (SQL + JavaScript)
-- **Raw data**: GCS `gs://file-raw-data` (AVRO, Hive-partitioned by `ASATDATE=YYYYMMDD`)
-- **Sources**: MAC5 (5 companies: ag01/aa05/ab01/ac02/ak02), MASTERSKU, CIS360,
-  SALEOUT_MDT, ALLKONS_COMMISSION + externally-loaded `mds_dataset` (master data — not built by this repo)
+- **Raw data**: GCS `gs://file-raw-data` (AVRO, Hive-partitioned by `ASATDATE=YYYYMMDD`; one CSV table, `saleout_lastyear`)
+- **Sources**: MAC5 (5 companies: ag01/aa05/ab01/ac02/ak02), MASTERSKU, MASTER_SKU (`master_sku` 3.0), CIS360,
+  SALEOUT_MDT, D365, ALLKONS_COMMISSION + externally-loaded `mds_dataset` (master data — not built by this repo)
 - **Branches**: `dev` (working/default) → `nonprod` → `prod` (+ `hotfix`)
 
 ## Documentation — read these first
@@ -40,7 +40,7 @@ Skills (`.claude/skills/*/SKILL.md`): `add-initial-table`, `add-validated-table`
 `enable-cdc`, `backfill-dimension`, `fk-integrity-scan`, `data-quality-check`,
 `bq-drift-scan` (view/UDF ที่แก้บน BigQuery console แต่ไม่ได้เข้า git — scan, จัดกลุ่ม,
 pull กลับ; มีสคริปต์ `scripts/{dump.sql,scan.py,pull.py}`),
-`update-docs`, `ship` (commit → push dev → ff nonprod), `check-runs` (monitor-table
+`update-docs`, `ship` (commit → push dev → ff nonprod; stops if nonprod has its own commits), `check-runs` (monitor-table
 run health), `verify-setup` (day-1 machine check: CLIs, GCP auth, BigQuery/GCS
 access, hooks — script `scripts/verify.sh`, read-only), `show-me` (สรุปที่คุยกันเป็น
 ภาพเดียว) — **16 skills**. Each points at its
@@ -83,11 +83,11 @@ work on Opus, pattern-following work on Sonnet):
 
 | Layer | Path | Files | Dataset | Materialization |
 |---|---|---:|---|---|
-| Initial | `definitions/initial/` | 17 | `raw_*`, `function_dataset` | operations (external tables, UDFs) |
-| Validated | `definitions/validated/` | 136 | `validated_<source>` | incremental / table + QUALIFY dedup |
+| Initial | `definitions/initial/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `raw_*`, `function_dataset` | operations (external tables, UDFs) |
+| Validated | `definitions/validated/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `validated_<source>` | incremental / table + QUALIFY dedup |
 | Curated | `definitions/curated/` | 15 | `curated_<source>` | incremental (+ post_operations) |
-| Dimension | `definitions/dimension/` | 69 | `dimension_table` | **table rebuild** (43 mds + 11 other) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
-| Fact | `definitions/fact/` | 15 | `fact_table` | table rebuild / operations upsert — **no MERGE** |
+| Dimension | `definitions/dimension/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_table` | **table rebuild** (mds + other; per-group counts in `document/project_wiki/dimension/inventory.md`) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
+| Fact | `definitions/fact/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `fact_table` | table rebuild / operations upsert — **no MERGE** |
 | View | `definitions/view/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |
 | CDC | `definitions/cdc/` | 2 | `cdc_dataset` | operations, generated from `cdc-config.json` |
 | Process | `definitions/process/` | 2 | `process_dataset` | `deb_address_data` (`AI.GENERATE` gated on CDC) + `rls_customer360` (RLS access map, `type: "table"`) |
@@ -105,7 +105,8 @@ work on Opus, pattern-following work on Sonnet):
   here; never inline string literals — the last holdout (`"mds_dataset"` in 36 dim
   files) was converted to `databuffet.MDS_DATASET` on 2026-08-26.
 - `includes/controller/function-data.js` — SQL helpers: `cleanString`, `cleanCode`,
-  `parseFlexibleDatetime` (SAFE), `parseAsatDate`, `castInt64/castFloat64/castBool`
+  `parseFlexibleDatetime` (SAFE), `parseFlexibleUtcDatetime` (SAFE; UTC raw → Bangkok,
+  used by master_sku and the D365 journals), `parseAsatDate`, `castInt64/castFloat64/castBool`
   (not SAFE — fail fast).
 - **There is NO `primary-keys.json` / `databuffet.primaryKeys`.** Validated PKs are
   defined per file, twice: `uniqueKey` in config + `pk_key` in the js block (keep in sync).
@@ -122,7 +123,7 @@ work on Opus, pattern-following work on Sonnet):
 `${when(incremental(), \`WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))\`)}`
 (string compare, window = `BACKFILL_DAYS` วัน ปกติ 1) → `QUALIFY ROW_NUMBER() OVER(PARTITION BY pk ORDER BY asatdate DESC) = 1`
 → post_op retry-loop `ADD PRIMARY KEY ... NOT ENFORCED` guarded by `when(!incremental())`.
-Full-load variant: `type: "table"` + `TAG_VALIDATED_FULL` (mac5 only, 73 files).
+Full-load variant: `type: "table"` + `TAG_VALIDATED_FULL` (mostly mac5; also saleout_mdt and d365 — `grep -rl TAG_VALIDATED_FULL definitions/validated`).
 14 MAC5 tables UNION ALL 5 companies with literal `company_id`.
 Reference: `validated/cis360/customer_profile.sqlx`, `validated/mac5/mie.sqlx`.
 
@@ -144,7 +145,7 @@ ag01 rebuild now DELETEs at doc grain. `curated_mih` needs nothing — its `uniq
 already **is** the document key (0 stale rows).
 
 ### Dimension (patterns split 2026-07-20)
-**Default for mds dims (43 files) — full daily rebuild**
+**Default for mds dims — full daily rebuild**
 (`document/project_wiki/dimension/full-rebuild-pattern.md`): `type: "table"`,
 SK = `ROW_NUMBER() OVER(ORDER BY <natural key>)`, `WHERE is_active = TRUE` only,
 `MdsID` kept as trace column. **SKs regenerate every run — never persist them across
@@ -181,7 +182,7 @@ interpolation + `dependencies[]`; curated/validated = `ref()`.
 ### CDC / Process
 `cdc_change_log` is compile-time generated from `includes/controller/cdc-config.json`
 (currently only `mac5.deb` enabled) — to track a new table, edit the JSON only.
-`process/deb_address_data` calls `AI.GENERATE` (gemini-2.5-flash) to parse Thai
+`process/deb_address_data` calls `AI.GENERATE` (gemini-3.5-flash-lite) to parse Thai
 addresses, gated on today's CDC changes (cost control — don't remove the gate).
 
 ## Hard rules
@@ -193,7 +194,7 @@ addresses, gated on today's CDC changes (cost control — don't remove the gate)
    NULL key is re-inserted every run (`mie.miecus`, 98,474 duplicate rows, fixed 2026-10-12).
 3. No hardcoded dataset names/tags — use `databuffet.*`.
 4. SK stability is per-pattern: MERGE dims (`dim_company`, `dim_aging_rang`, 10 lake
-   dims) have SKs that are stable forever — never regenerate or update them. The 43
+   dims) have SKs that are stable forever — never regenerate or update them. The
    full-rebuild mds dims regenerate SKs daily — never persist those SKs across days,
    and any new consumer that stores them must itself rebuild daily after `dimension_daily`.
 5. MERGE-pattern mds dims must end with the tombstone DELETE before `END;`
@@ -211,12 +212,15 @@ addresses, gated on today's CDC changes (cost control — don't remove the gate)
 
 ## Tags (in use)
 
-`initial`, `re-initial` (⚠️ drops validated/curated MAC5 tables), `validated`,
-`validated_full`, `validated_incremental`, `curated`, `dimension_daily`,
+`initial` (⚠️ also drops the validated tables of cis360, mastersku, master_sku,
+saleout_mdt, allkons_commission and d365 — to add/refresh raw tables run only the single
+`create_all_table_raw_<source>` action, without "include dependencies"),
+`re-initial` (⚠️ drops validated/curated MAC5 tables), `validated`,
+`validated_full`, `validated_incremental`, `curated`, `curated_full`,
+`curated_incremental` (SALEOUT_MDT curated), `dimension_daily`,
 `dimension_yearly` (dim_calendar only), `fact_daily`, `view`, `cdc`, `cdc_incremental`,
-`process`. Declared but unused: `dimension_monthly`, `fact_monthly`, `fact_yearly`,
-`curated_full`, `curated_incremental`. **No `assertions` tag — no Dataform assertions
-exist.**
+`process`. Declared but unused: `dimension_monthly`, `fact_monthly`, `fact_yearly`.
+**No `assertions` tag — no Dataform assertions exist.**
 
 ## Environment facts
 
@@ -252,7 +256,9 @@ exist.**
   `monitor_dataset.dataform_run_action.total_bytes` double-counts parent + child jobs and
   reports **2x** the billed bytes — see `document/operations/known-issues.md` 2026-09-10.
 - `backup/` holds old file copies — never edit.
-- Commit style: short imperative subject; push `dev`, then fast-forward `nonprod`.
+- Commit style: short imperative subject. Work reaches `nonprod` in two lanes: (i) `fm/*` branch →
+  no-mistakes → PR into `dev` → fast-forward `nonprod`; (ii) direct Dataform-UI commits on `nonprod`,
+  merged back into `dev` (commits also land on `dev` directly).
 
 ## Common tasks
 
