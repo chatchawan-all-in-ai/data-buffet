@@ -31,7 +31,9 @@ config {
 */
 
 js {
-    const LastYearMonthlyRef = `${databuffet.DATABASE}.${databuffet.ONETIME}.saleout_lastyear_monthly`;
+    // ตารางนี้ Dataform ไม่ได้สร้าง จึงใช้ ref() ไม่ได้ — เป็นประวัติชุดเดียวจบ
+    // สร้างจาก saved query ชื่อ saleout_lastyear_monthly ใน Shared queries
+    const LastYearMonthlyRef = `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.saleout_lastyear_monthly`;
 }
 
 WITH eom AS (
