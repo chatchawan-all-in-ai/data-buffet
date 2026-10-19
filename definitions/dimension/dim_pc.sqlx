@@ -10,7 +10,12 @@ config {
 }
 
 js {
-    const PcSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_mdt_sales_pc_master`;
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_sales_pc_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 
     const DimBranchTable = {
         database: databuffet.DATABASE,
@@ -39,7 +44,9 @@ WITH pc_source AS (
       OR IFNULL(TRIM(t1.employee_name),'') IN ('ไม่มี PC', 'Not PC')
     ) AS IsPlaceholder,
 
-  FROM `${PcSourceRef}` AS t1
+    t1.id AS MdsID,
+
+  FROM `${MdsSourceTableRef}` AS t1
   WHERE t1.is_active = TRUE
   -- ยุบซ้ำที่ระดับการมอบหมาย ไม่ใช่ระดับคน — ถ้า mds มีแถวซ้ำ เก็บแถวที่แก้ล่าสุด
   QUALIFY ROW_NUMBER() OVER(
@@ -75,6 +82,7 @@ WITH pc_source AS (
     CAST(NULL AS DATE)      AS EndDate,
 
     CAST(NULL AS BOOL)      AS IsPlaceholder,
+    CAST(NULL AS STRING)    AS MdsID,
 
 )
 

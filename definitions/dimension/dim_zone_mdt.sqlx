@@ -10,7 +10,12 @@ config {
 }
 
 js {
-    const ZoneSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_mdt_sales_zone_master`;
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_sales_zone_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
     const DimZoneMdtTable = {
       database: databuffet.DATABASE,
       schema: databuffet.DIMENSION_TABLE,
@@ -28,9 +33,15 @@ WITH zone_master AS (
     ${databuffet.functionData.cleanString("t1.zone_name")} AS ZoneName,
     t1.start_date AS StartDate,
     t1.end_date   AS EndDate,
+    t1.id         AS MdsID,
 
-  FROM `${ZoneSourceRef}` AS t1
+  FROM `${MdsSourceTableRef}` AS t1
   WHERE t1.is_active = TRUE
+  -- กันโซนซ้ำ ถ้าซ้ำแล้วสาขาใน dim_sales_branch_mdt จะคูณตาม — เก็บช่วงวันที่ใหม่สุด
+  QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY TRIM(t1.zone_id)
+    ORDER BY t1.start_date DESC, t1.id
+  ) = 1
 
 ), unknown_zone AS (
   SELECT
@@ -40,6 +51,7 @@ WITH zone_master AS (
     'ไม่ระบุโซน'               AS ZoneName,
     CAST(NULL AS DATE)      AS StartDate,
     CAST(NULL AS DATE)      AS EndDate,
+    CAST(NULL AS STRING)    AS MdsID,
 
 )
 

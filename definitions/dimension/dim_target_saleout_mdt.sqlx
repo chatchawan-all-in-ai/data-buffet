@@ -11,7 +11,12 @@ config {
 }
 
 js {
-    const TargetSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_mdt_sales_target_by_product_master`;
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_sales_target_by_product_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 
     const DimBranchTable = {
         database: databuffet.DATABASE,
@@ -42,11 +47,18 @@ WITH monthly AS (
     ${databuffet.functionData.cleanString("t1.segment")}          AS SegmentName,
     t1.value AS MonthAmt,
     t1.Quantity AS MonthQty,
-    ${databuffet.functionData.cleanString("t1.id")} AS MdsID
-  FROM `${TargetSourceRef}` AS t1
+    t1.id AS MdsID
+  FROM `${MdsSourceTableRef}` AS t1
   WHERE t1.is_active = TRUE
     AND t1.year IS NOT NULL
     AND t1.month IS NOT NULL
+  -- กันเป้าซ้ำต่อ (สาขา, กลุ่ม, ชั้นย่อย, เซกเมนต์, ปี, เดือน) — เก็บแถวที่แก้ล่าสุด
+  QUALIFY ROW_NUMBER() OVER(
+    PARTITION BY TRIM(t1.branch_code), TRIM(t1.marketinggroupid),
+                 TRIM(t1.submarketingid), TRIM(t1.segmentid),
+                 CAST(t1.year AS INT64), CAST(t1.month AS INT64)
+    ORDER BY t1.updated_at DESC, t1.id
+  ) = 1
 
 ), daily AS (
   SELECT

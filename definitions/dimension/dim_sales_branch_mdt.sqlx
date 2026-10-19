@@ -10,7 +10,12 @@ config {
 }
 
 js {
-    const BranchSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_mdt_sales_branch_master`;
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_sales_branch_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 
     const DimZoneMdtTable = {
         database: databuffet.DATABASE,
@@ -83,7 +88,17 @@ WITH section_lookup AS (
     ${databuffet.functionData.cleanString("t1.warehouse")}   AS Warehouse,
     t1.start_date AS StartDate,
     t1.end_date   AS EndDate,
-  FROM `${BranchSourceRef}` AS t1
+    t1.id         AS MdsID,
+  -- ยุบซ้ำที่ต้นทางก่อน join — ถ้าไปทำหลัง join แถวที่บวมเพราะ join จะถูกกลบไปด้วยเงียบ ๆ
+  FROM (
+    SELECT *
+    FROM `${MdsSourceTableRef}`
+    WHERE is_active = TRUE
+    QUALIFY ROW_NUMBER() OVER(
+      PARTITION BY TRIM(region_id), TRIM(store_id)
+      ORDER BY start_date DESC, id
+    ) = 1
+  ) AS t1
   LEFT JOIN `${DimZoneMdtTableRef}` AS dim_zone
     ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone.ZoneCode
   -- ผู้จัดการโซน join ด้วย zone_id แบบเดียวกับ dim_zone_mdt
@@ -107,7 +122,6 @@ WITH section_lookup AS (
   LEFT JOIN `${DimRegionLastTableRef}` AS dim_region
     ON ${databuffet.functionData.cleanString("t1.region_id")} = dim_region.RegionID
    AND dim_region.companyID = 'ag01'
-  WHERE t1.is_active = TRUE
 ), feed_branch AS (
 
   -- สาขาที่โผล่ในฟีดขายจริงแล้ว — ใช้เป็นตัวตรวจว่า master ตามทันหรือยัง
@@ -159,6 +173,7 @@ WITH section_lookup AS (
     -- วันขายแรกที่เจอในฟีด ไม่ใช่วันเปิดสาขาจริง — ไว้ให้ลูกค้าไล่ย้อนได้ว่าตกหล่นมาตั้งแต่เมื่อไร
     f.first_sale           AS StartDate,
     CAST(NULL AS DATE)     AS EndDate,
+    CAST(NULL AS STRING)   AS MdsID,
 
   FROM feed_branch AS f
   -- store_code ของฟีดตรงกับ RegionID ของ dim_region_last ทั้ง 6 ห้าง (ตรวจ 2026-10-05)
@@ -193,6 +208,7 @@ WITH section_lookup AS (
     'NotWarehouse'       AS Warehouse,
     CAST(NULL AS DATE)   AS StartDate,
     CAST(NULL AS DATE)   AS EndDate,
+    CAST(NULL AS STRING) AS MdsID,
 )
 
 SELECT * FROM branch_master

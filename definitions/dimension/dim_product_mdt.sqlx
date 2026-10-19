@@ -10,7 +10,12 @@ config {
 }
 
 js {
-    const ProductSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_mdt_product_master`;
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_product_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 
     const DimProductMasterTable = {
         database: databuffet.DATABASE,
@@ -44,7 +49,7 @@ WITH mac5_dedup AS (
   
 ), product_src AS (
   SELECT *
-  FROM `${ProductSourceRef}`
+  FROM `${MdsSourceTableRef}`
   WHERE is_active = TRUE
     AND product_mdt_code IS NOT NULL
   QUALIFY ROW_NUMBER() OVER(
@@ -66,7 +71,7 @@ WITH mac5_dedup AS (
        ${databuffet.functionData.cleanString("t1.product_mac5_code")}) AS ProductMac5Code,
     ${databuffet.functionData.cleanString("t1.region_id")}         AS StoreCode,
     ${databuffet.functionData.cleanString("t1.commpy")}            AS CompanyID,
-    ${databuffet.functionData.cleanString("t1.id")}                AS MdsID
+    t1.id                                                         AS MdsID
   FROM product_src AS t1
   LEFT JOIN mac5_dedup AS mac5
     ON  ${databuffet.functionData.cleanString("t1.product_mac5_code")} = mac5.ProductCode

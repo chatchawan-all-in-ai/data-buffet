@@ -10,7 +10,12 @@ config {
 }
 
 js {
-    const ZoneTaSourceRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_mdt_sales_zone_ta_master`;
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_sales_zone_ta_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
     
     const DimZoneMdtTable = {
         database: databuffet.DATABASE,
@@ -39,8 +44,9 @@ WITH zone_ta_master AS (
     ${databuffet.functionData.cleanString("t1.zonetaemployeesurname")}  AS EmployeeSurname,
     ${databuffet.functionData.cleanString("t1.zonetaemployeenickname")} AS EmployeeNickname,
     t1.start_date AS StartDate,
-    t1.end_date   AS EndDate
-  FROM `${ZoneTaSourceRef}` AS t1
+    t1.end_date   AS EndDate,
+    t1.id         AS MdsID
+  FROM `${MdsSourceTableRef}` AS t1
   LEFT JOIN `${DimZoneMdtTableRef}` AS dim_zone
     ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone.ZoneCode
   WHERE t1.is_active = TRUE
@@ -57,7 +63,8 @@ WITH zone_ta_master AS (
     CAST(NULL AS STRING)    AS EmployeeSurname,
     CAST(NULL AS STRING)    AS EmployeeNickname,
     CAST(NULL AS DATE)      AS StartDate,
-    CAST(NULL AS DATE)      AS EndDate
+    CAST(NULL AS DATE)      AS EndDate,
+    CAST(NULL AS STRING)    AS MdsID
 )
 
 SELECT * FROM zone_ta_master

@@ -43,8 +43,10 @@ WITH branch_lookup AS (
 
 ), mkt_group AS (
 
-  SELECT ProductMktSK, ANY_VALUE(MarketingGroupID) AS MarketingGroupID
-  FROM `${DimProductMktRef}` WHERE CompanyID = 'ag01' GROUP BY 1
+  SELECT ProductMktSK, MarketingGroupID
+  FROM `${DimProductMktRef}`
+  WHERE CompanyID = 'ag01'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY ProductMktSK ORDER BY MarketingGroupID) = 1
 ), waiting_mkt AS (
 
   -- แถว dummy สำหรับสินค้าที่ยังไม่รู้กลุ่มการตลาด (999 / Waiting Master)
