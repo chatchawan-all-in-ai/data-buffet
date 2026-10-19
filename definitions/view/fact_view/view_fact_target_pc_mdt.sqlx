@@ -32,7 +32,7 @@ WITH pc_per_month AS (
     DATE_TRUNC(d, MONTH) AS month_date,
     BranchMdtSK, MarketingGroupID, PcSK
   FROM `${DimPcRef}`,
-  UNNEST(GENERATE_DATE_ARRAY(StartDate, LEAST(EndDate, DATE '2099-12-31'), INTERVAL 1 MONTH)) AS d
+  UNNEST(GENERATE_DATE_ARRAY(StartDate, IFNULL(EndDate, DATE '2099-12-31'), INTERVAL 1 MONTH)) AS d
   WHERE PcSK <> -1 AND IsPlaceholder = FALSE
 
 ), pc_share AS (

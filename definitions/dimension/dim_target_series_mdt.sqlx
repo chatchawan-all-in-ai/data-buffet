@@ -59,8 +59,11 @@ WITH monthly AS (
       ORDER BY d.TargetDate, d.BranchCodeMdt, d.SeriesCode
     ) AS TargetSeriesMdtSK,
     IFNULL(dim_br.BranchMdtSK, -1) AS BranchMdtSK,
-      -- รหัสที่ไม่มีใน dim ลง OTHERS (999999) — dim_product_series ไม่มีแถว -1
-    COALESCE(dim_series.SeriesSK, dim_series_others.SeriesSK) AS SeriesSK,
+    -- รหัสที่ไม่มีใน dim ลง OTHERS (999999) · ไม่มีแถว OTHERS ก็ได้ -1 ไม่ใช่ตารางว่าง
+    COALESCE(
+      dim_series.SeriesSK,
+      (SELECT MIN(SeriesSK) FROM `${DimSeriesTableRef}` WHERE SeriesCode = '999999'),
+      -1) AS SeriesSK,
     dim_br.StoreCode,
     d.BranchCodeMdt,
     d.SeriesCode,
@@ -79,7 +82,6 @@ WITH monthly AS (
           d.BranchCodeMdt) = dim_br.BranchCodeMdt
   LEFT JOIN `${DimSeriesTableRef}` AS dim_series
     ON d.SeriesCode = dim_series.SeriesCode
-  CROSS JOIN (SELECT SeriesSK FROM `${DimSeriesTableRef}` WHERE SeriesCode = '999999') AS dim_series_others
 
 ), unknown_target AS (
   SELECT

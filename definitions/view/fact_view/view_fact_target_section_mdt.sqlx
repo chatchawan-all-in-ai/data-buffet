@@ -5,6 +5,15 @@ config {
   tags: [databuffet.TAG_VIEW],
 }
 
+js {
+    const FactTargetSaleoutMdtTable = {
+        database: databuffet.DATABASE,
+        schema:   databuffet.FACT_TABLE,
+        name:     "fact_target_saleout_mdt",
+    };
+    const FactTargetSaleoutMdtTableRef = `${FactTargetSaleoutMdtTable.database}.${FactTargetSaleoutMdtTable.schema}.${FactTargetSaleoutMdtTable.name}`;
+}
+
 SELECT
   f.target_date,
   f.store_code,
@@ -17,6 +26,6 @@ SELECT
   SUM(f.target_amt)             AS target_amt,
   COUNT(DISTINCT f.branch_code) AS branch_count
 
-FROM `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_target_saleout_mdt` AS f
+FROM `${FactTargetSaleoutMdtTableRef}` AS f
 GROUP BY
   target_date, store_code,  marketing_group_id
