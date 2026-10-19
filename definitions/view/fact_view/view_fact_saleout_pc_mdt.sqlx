@@ -30,7 +30,6 @@ WITH mkt_group AS (
 
 ), pc_per_month AS (
 
-  
   -- 1 แถว = 1 PC ที่รับผิดชอบช่องนั้นในเดือนนั้น
   -- เดิมยุบเป็นสตริงคั่นจุลภาค ("46,177") ซึ่ง Power BI สร้าง relationship ไป dim_pc ไม่ได้
   -- จึงแตกเป็นรายคนแทน แล้วหารยอดขายเท่า ๆ กันด้วย pc_in_slot (2026-10-06)
@@ -49,35 +48,41 @@ WITH mkt_group AS (
   FROM pc_per_month
 
 ), exploded AS (
-SELECT
-  s.month_date,
-  s.store_code,
-  s.branch_code,
-  s.branch_sk,
-  s.zone_sk,
-  s.sales_channel,
 
-  s.product_code,
-  s.product_name,
-  s.product_mdt_sk,
-  s.product_sk,
-  s.product_mkt_sk,
-  s.MarketingGroupID,
-  s.report_sk,
-  s.region_sk,
-  s.region_manager_sk,
-  s.director_sk,
-  p.PcSK AS pc_sk_list,
-  s.sale_qty    / IFNULL(p.pc_in_slot, 1) AS sale_qty,
-  s.sale_amount / IFNULL(p.pc_in_slot, 1) AS sale_amount,
-  s.asatdate,
+  SELECT
+    s.month_date,
+    s.store_code,
+    s.branch_code,
+    s.branch_sk,
+    s.zone_sk,
+    s.sales_channel,
 
-  ROW_NUMBER() OVER(
-    PARTITION BY p.PcSK, DATE_TRUNC(s.month_date, MONTH)
-    ORDER BY s.branch_code, s.product_code, s.month_date
-  ) AS pc_row_in_month
-FROM sale AS s
-LEFT JOIN pc_share AS p
+    s.product_code,
+    s.product_name,
+    s.product_mdt_sk,
+    s.product_sk,
+    s.product_mkt_sk,
+    s.MarketingGroupID,
+    s.report_sk,
+    s.region_sk,
+    s.region_manager_sk,
+    s.director_sk,
+
+    p.PcSK AS pc_sk_list,
+
+    -- หารเท่า ๆ กันตามจำนวน PC ของช่องนั้น · ไม่มี PC ก็คงยอดเต็มไว้ ไม่ให้ยอดขายหาย
+    s.sale_qty    / IFNULL(p.pc_in_slot, 1) AS sale_qty,
+    s.sale_amount / IFNULL(p.pc_in_slot, 1) AS sale_amount,
+    s.asatdate,
+
+    -- ติดธง "นับหัว" ให้บรรทัดเดียวต่อคนต่อ "เดือน" (ไม่ใช่ต่อวัน — เดือนที่ยังไม่จบ
+    -- fact เก็บ month_date เป็นรายวัน ถ้า partition ด้วย month_date ตรง ๆ จะนับคนซ้ำทุกวัน)
+    ROW_NUMBER() OVER(
+      PARTITION BY p.PcSK, DATE_TRUNC(s.month_date, MONTH)
+      ORDER BY s.branch_code, s.product_code, s.month_date
+    ) AS pc_row_in_month
+  FROM sale AS s
+  LEFT JOIN pc_share AS p
     -- ⚠️ fact เก็บ month_date เป็น LAST_DAY (2026-08-31) แต่ pc_per_month ได้วันแรกของเดือน
     -- จาก DATE_TRUNC ต้องปรับให้ตรงกันก่อน join ไม่งั้นไม่แมตช์สักแถวเดียวและเงียบสนิท
     -- เพราะเป็น LEFT JOIN — ค่า PC ออกมาเป็น NULL ทั้งตารางโดยไม่มี error (แก้ 2026-10-05)
@@ -95,6 +100,3 @@ SELECT
   -- หมายเหตุ: นับเฉพาะ PC ที่มียอดขาย · คนที่ขายไม่ออกทั้งเดือนจะไม่ถูกนับ (ส.ค. 69 = 37 คน)
   IF(pc_sk_list IS NULL OR pc_row_in_month > 1, 'Yes', 'No') AS fact_pc_not_count
 FROM exploded
-  
-
-

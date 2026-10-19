@@ -73,6 +73,11 @@ SELECT
     ANY_VALUE(product_name)                   AS product_name,
     CAST(ROUND(SUM(SALES_QTY)) AS INT64)      AS sale_qty,
     SUM(SALES_AMOUNT)                         AS sale_amount,
+
+    -- ⚠️ is_return มาจาก GROUP BY ห้ามคำนวณจากผลรวม
+    -- curated เก็บ doc_type (SALE/RETURN) ไว้ในคีย์ ขายกับคืนของสินค้าเดียวกันวันเดียวกัน
+    -- ต้องอยู่คนละแถว ไม่งั้นหักกันเหลือ 0 แล้วตัวกรอง qty<>0 OR value<>0 ของ curated ตัดทิ้งทั้งคู่
+    -- วัด 2026-10-02: คีย์ที่มีทั้งขายและคืน 10 ชุด ในนั้นหักกันเหลือศูนย์ 5 ชุด
     is_return,
     ANY_VALUE(source_folder)                  AS source_folder,
     MAX(file_modified)                        AS file_modified,

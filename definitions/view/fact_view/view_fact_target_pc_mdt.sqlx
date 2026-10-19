@@ -70,7 +70,9 @@ SELECT
 
   t.target_year,
   t.target_month,
-  t.days_in_month
+  t.days_in_month,
+  -- เก็บไว้ให้คอลัมน์ครบเท่า fact เดิม จะได้สลับเข้าแทนในโมเดล BI ได้โดยไม่พัง
+  t.mds_id
 FROM `${FactTargetRef}` AS t
 LEFT JOIN pc_share AS p
   -- เป้าเป็นรายวัน แต่การมอบหมาย PC เป็นรายเดือน ต้องยุบเป็นเดือนก่อน join
