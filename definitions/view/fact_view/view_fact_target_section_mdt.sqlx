@@ -18,8 +18,6 @@ SELECT
   f.target_date,
   f.store_code,
 
-  
-
   f.marketing_group_id,
   ANY_VALUE(f.marketing_group_name) AS marketing_group_name,
 

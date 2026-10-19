@@ -18,12 +18,12 @@ js {
     };
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 
-    const DimBranchTable = {
+    const DimSalesBranchMdtTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_sales_branch_mdt",
     };
-    const DimBranchTableRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
+    const DimBranchTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
 
     const DimProductMktTable = {
         database: databuffet.DATABASE,
@@ -65,13 +65,11 @@ WITH monthly AS (
     m.*,
     d AS TargetDate,
     DATE_DIFF(DATE_ADD(m.MonthStart, INTERVAL 1 MONTH), m.MonthStart, DAY) AS DaysInMonth
-  FROM monthly AS m,
-  UNNEST(GENERATE_DATE_ARRAY(m.MonthStart, LAST_DAY(m.MonthStart))) AS d
+  FROM monthly AS m
+  CROSS JOIN UNNEST(GENERATE_DATE_ARRAY(m.MonthStart, LAST_DAY(m.MonthStart))) AS d
 
   ), product_mkt_lookup AS (
-  -- ต้องกรอง CompanyID ด้วย ไม่งั้น 1 ชุด (กลุ่ม/ชั้นย่อย/เซกเมนต์) ชี้ 2 SK เพราะมี 2 บริษัท
-  -- MDT ทั้งช่องทางเป็นของ ag01 แบบเดียวกับที่ dim_sales_branch_mdt กรอง
-  -- วัด 2026-09-16: (CompanyID, กลุ่ม, ชั้นย่อย, เซกเมนต์) แยกได้ 230/230 แถว = ไม่ซ้ำ
+  -- ต้องกรอง CompanyID ไม่งั้น 1 ชุดชี้ 2 SK เพราะมี 2 บริษัท · MDT เป็นของ ag01 ทั้งช่องทาง
   SELECT ProductMktSK, MarketingGroupID, SubMarketingID, SegmentID
   FROM `${DimProductMktTableRef}`
   WHERE CompanyID = 'ag01'

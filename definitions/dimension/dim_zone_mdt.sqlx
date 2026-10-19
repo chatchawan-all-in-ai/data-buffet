@@ -16,19 +16,13 @@ js {
         name: "mds_data_mdt_sales_zone_master",
     };
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
-    const DimZoneMdtTable = {
-      database: databuffet.DATABASE,
-      schema: databuffet.DIMENSION_TABLE,
-      name: "dim_zone_mdt",
-    };
-    
+
 }
 
 WITH zone_master AS (
   SELECT
     ROW_NUMBER() OVER(ORDER BY ${databuffet.functionData.cleanString("t1.zone_id")}) AS ZoneMdtSK,
 
-    -- คอลัมน์ธุรกิจ
     ${databuffet.functionData.cleanString("t1.zone_id")}   AS ZoneCode,
     ${databuffet.functionData.cleanString("t1.zone_name")} AS ZoneName,
     t1.start_date AS StartDate,

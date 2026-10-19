@@ -17,17 +17,16 @@ js {
     };
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 
-    const DimBranchTable = {
+    const DimSalesBranchMdtTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_sales_branch_mdt",
     };
-    const DimBranchTableRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
+    const DimBranchTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
 }
 
 WITH pc_source AS (
   SELECT
-    -- คอลัมน์ธุรกิจ
     ${databuffet.functionData.cleanString("t1.branch_code")}      AS BranchCodeMdt,
     ${databuffet.functionData.cleanString("t1.employee_id")}      AS EmployeeID,
     ${databuffet.functionData.cleanString("t1.employee_name")}    AS EmployeeName,

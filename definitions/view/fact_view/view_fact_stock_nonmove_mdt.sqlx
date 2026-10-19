@@ -5,12 +5,19 @@ config {
   tags: [databuffet.TAG_VIEW],
 }
 
-
 js {
-    const FactStockRef =
-        `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_stock_mdt`;
-    const FactSaleoutRef =
-        `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_saleout_mdt`;
+    const FactStockMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FACT_TABLE,
+        name: "fact_stock_mdt",
+    };
+    const FactStockMdtTableRef = `${FactStockMdtTable.database}.${FactStockMdtTable.schema}.${FactStockMdtTable.name}`;
+    const FactSaleoutMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FACT_TABLE,
+        name: "fact_saleout_mdt",
+    };
+    const FactSaleoutMdtTableRef = `${FactSaleoutMdtTable.database}.${FactSaleoutMdtTable.schema}.${FactSaleoutMdtTable.name}`;
 }
 
 WITH last_sale AS (
@@ -24,7 +31,7 @@ WITH last_sale AS (
     MAX(sale_date)   AS last_sold_date,
     SUM(sale_qty)    AS lifetime_sold_qty,
     SUM(sale_amount) AS lifetime_sold_amount
-  FROM `${FactSaleoutRef}`
+  FROM `${FactSaleoutMdtTableRef}`
   WHERE sale_qty > 0
   GROUP BY 1, 2, 3
 
@@ -33,11 +40,9 @@ WITH last_sale AS (
   -- สต็อกวันล่าสุดของแต่ละ (ห้าง สาขา สินค้า)
   -- แต่ละห้างส่งไฟล์คนละรอบ วันล่าสุดจึงไม่จำเป็นต้องเท่ากันทุกแถว
   -- ใช้ stock_date ของแถวตัวเองเป็นฐานนับวัน ไม่ใช่วันนี้ จะได้ไม่เพี้ยนตอนฟีดค้าง
-  -- ⚠️ ต้องเลือกวันล่าสุดก่อน แล้วค่อยกรองของคงเหลือทีหลัง
-  --    ถ้ากรอง onhand_qty > 0 ก่อน จะไปหยิบวันเก่าที่ยังมีของ
-  --    ของที่ขายหมดไปแล้วจะโผล่มาเป็น "ของค้าง" ทั้งที่ตอนนี้เหลือศูนย์
+  -- ⚠️ เลือกวันล่าสุดก่อนแล้วค่อยกรองของคงเหลือ สลับลำดับแล้วของที่ขายหมดจะโผล่เป็นของค้าง
   SELECT *
-  FROM `${FactStockRef}`
+  FROM `${FactStockMdtTableRef}`
   QUALIFY ROW_NUMBER() OVER(
     PARTITION BY store_code, branch_code, product_code ORDER BY stock_date DESC
   ) = 1

@@ -23,13 +23,48 @@ js {
     // ต้นทางอยู่ใน Dataform แล้วตั้งแต่ 2026-10-05 — เลิกใช้ onetime.saleout_monthly_mdt
     // ที่ปั้นด้วยมือและสร้างใหม่จากโค้ดไม่ได้ · ตัวใหม่เลือกแหล่งเองต่อ (เดือน, ห้าง):
     // ไฟล์ปิดงวดจากห้าง > ไฟล์ BI > ยุบจากฟีดรายวัน — ดู curated_saleout_monthly_mdt.sqlx
-    const DimBranchRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_sales_branch_mdt`;
-    const DimProductRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_product_mdt`;
-    const DimProductMktRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_product_mkt`;
-    const DimReportRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_report`;
-    const DimRegionRef        = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_region`;
-    const DimRegionManagerRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_region_manager`;
-    const DimDirectorRef      = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_director`;
+    const DimSalesBranchMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimSalesBranchMdtTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
+    const DimProductMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mdt",
+    };
+    const DimProductMdtTableRef = `${DimProductMdtTable.database}.${DimProductMdtTable.schema}.${DimProductMdtTable.name}`;
+    const DimProductMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mkt",
+    };
+    const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
+    const DimReportTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_report",
+    };
+    const DimReportTableRef = `${DimReportTable.database}.${DimReportTable.schema}.${DimReportTable.name}`;
+    const DimRegionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region",
+    };
+    const DimRegionTableRef = `${DimRegionTable.database}.${DimRegionTable.schema}.${DimRegionTable.name}`;
+    const DimRegionManagerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region_manager",
+    };
+    const DimRegionManagerTableRef = `${DimRegionManagerTable.database}.${DimRegionManagerTable.schema}.${DimRegionManagerTable.name}`;
+    const DimDirectorTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_director",
+    };
+    const DimDirectorTableRef = `${DimDirectorTable.database}.${DimDirectorTable.schema}.${DimDirectorTable.name}`;
 
 }
 
@@ -38,40 +73,34 @@ WITH branch_lookup AS (
   -- TRIM เพราะไฟล์ TW ส่งชื่อสาขามาพร้อมช่องว่างท้าย — ไม่ TRIM จับได้ 0%
   SELECT TRIM(StoreCode) AS store_code, TRIM(BranchCode) AS branch_code,
          ANY_VALUE(BranchMdtSK) AS BranchMdtSK, ANY_VALUE(ZoneMdtSK) AS ZoneMdtSK
-  FROM `${DimBranchRef}`
+  FROM `${DimSalesBranchMdtTableRef}`
   GROUP BY 1, 2
 
 ), mkt_group AS (
 
   SELECT ProductMktSK, MarketingGroupID
-  FROM `${DimProductMktRef}`
+  FROM `${DimProductMktTableRef}`
   WHERE CompanyID = 'ag01'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY ProductMktSK ORDER BY MarketingGroupID) = 1
 ), waiting_mkt AS (
 
-  -- แถว dummy สำหรับสินค้าที่ยังไม่รู้กลุ่มการตลาด (999 / Waiting Master)
-  -- มีอยู่ใน dim_product_mkt อยู่แล้วแต่เดิมไม่มีใครถูกส่งมาที่นี่เลย — สินค้าที่จับไม่ได้
-  -- ตกไปที่ SK -1 ซึ่ง BI โชว์เป็นช่องว่าง ลูกค้าดูไม่ออกว่ามีอะไรรอเติมอยู่ (แก้ 2026-10-05)
-  --
-  -- ⚠️ หาด้วย MarketingGroupID ไม่ใช่ฮาร์ดโค้ด SK — dim_product_mkt rebuild ทุกวัน SK เปลี่ยนได้
-  -- ถ้าวันไหนแถวนี้หายไป IFNULL ชั้นนอกจะคืน -1 เหมือนเดิม ไม่พังเงียบ
+  -- แถว 999 Waiting Master · หาด้วย MarketingGroupID ไม่ใช่ฮาร์ดโค้ด SK เพราะ SK เปลี่ยนทุกวัน
   SELECT ANY_VALUE(ProductMktSK) AS WaitingMktSK
-  FROM `${DimProductMktRef}`
+  FROM `${DimProductMktTableRef}`
   WHERE CompanyID = 'ag01' AND MarketingGroupID = '999'
-
 
 ), report_exact AS (
 
   -- dim_report.RegionID ฝั่ง MDT คือรหัสห้าง ไม่ใช่ภูมิภาค (เหมือน fact_saleout_mdt)
   SELECT RegionID AS store_code, MarketingGroupID, ReportSK
-  FROM `${DimReportRef}` WHERE companyID = 'ag01' AND MarketingGroupID IS NOT NULL
+  FROM `${DimReportTableRef}` WHERE companyID = 'ag01' AND MarketingGroupID IS NOT NULL
   QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, MarketingGroupID ORDER BY ReportSK) = 1
 
 ), report_fallback AS (
 
   -- แถว Other ของแต่ละห้าง — แยก CTE เพราะ join ด้วย NULL = NULL ไม่เป็นจริง
   SELECT RegionID AS store_code, ReportSK
-  FROM `${DimReportRef}` WHERE companyID = 'ag01' AND MarketingGroupID IS NULL
+  FROM `${DimReportTableRef}` WHERE companyID = 'ag01' AND MarketingGroupID IS NULL
   QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID ORDER BY ReportSK) = 1
 
 ), product_lookup AS (
@@ -80,40 +109,34 @@ WITH branch_lookup AS (
          ANY_VALUE(ProductMdtSK) AS ProductMdtSK,
          ANY_VALUE(ProductSK)    AS ProductSK,
          ANY_VALUE(ProductMktSK) AS ProductMktSK
-  FROM `${DimProductRef}`
+  FROM `${DimProductMdtTableRef}`
   GROUP BY 1
 
 ), region_at_month AS (
-  -- ภาคขาย ณ เดือนนั้น — ลอกแพตเทิร์นจาก fact_saleout_mdt (region_at_sale) ทุกประการ
-  -- ตรวจ 2026-10-02: dim ทั้ง 3 ตัวเปลี่ยนค่าเฉพาะวันที่ 1 ของเดือน ไม่เคยเปลี่ยนกลางเดือนเลย
-  -- จึง lookup ด้วยวันไหนในเดือนก็ได้ผลเท่ากัน ใช้ LAST_DAY(month_date) ให้ตรงกับคอลัมน์ผลลัพธ์
+  -- ภาค ณ เดือนนั้น · dim เปลี่ยนค่าเฉพาะวันที่ 1 ของเดือน จึง lookup ด้วย s.month_date ได้เลย
   SELECT RegionID, SubRegionID, RegionSK, DirectorID, StartDate, EndDate
-  FROM `${DimRegionRef}`
+  FROM `${DimRegionTableRef}`
   WHERE companyID = 'ag01'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionSK) = 1
 
 ), region_manager_at_month AS (
 
   SELECT RegionID, RegionManagerSK, StartDate, EndDate
-  FROM `${DimRegionManagerRef}`
+  FROM `${DimRegionManagerTableRef}`
   WHERE companyID = 'ag01'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionManagerSK) = 1
 
 ), director_at_month AS (
   -- ต้องผ่าน dim_region ก่อนเพราะ DirectorID อยู่ที่นั่น ไม่ได้อยู่กับ store_code
   SELECT DirectorID, DirectorSK, StartDate, EndDate
-  FROM `${DimDirectorRef}`
+  FROM `${DimDirectorTableRef}`
   WHERE companyID = 'ag01'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY DirectorID, StartDate ORDER BY DirectorSK) = 1
-
 
 )
 
 SELECT
-  -- ⚠️ เกรนผสม — เดือนที่กำลังเดินอยู่เป็น **รายวัน** (1 แถวต่อวันขาย)
-  -- ส่วนเดือนที่ปิดแล้วเป็นก้อนเดียวติดป้ายวันสิ้นเดือน
-  -- ต้นทาง curated_saleout_monthly_mdt ตัดสินให้แล้ว ชั้นนี้ส่งต่อตรง ๆ ห้ามครอบ LAST_DAY ทับ
-  -- เวลา query ให้ group ด้วย DATE_TRUNC(month_date, MONTH) เสมอ อย่า filter ด้วย = ตรง ๆ
+  -- ⚠️ เกรนผสม เดือนเดินอยู่=รายวัน เดือนปิดแล้ว=ก้อนเดียว · query ต้อง group ด้วย DATE_TRUNC
   s.month_date,
   s.store_code,
   s.branch_code,
@@ -131,7 +154,6 @@ SELECT
   IFNULL(rg.RegionSK,         -1) AS region_sk,
   IFNULL(rgm.RegionManagerSK, -1) AS region_manager_sk,
   IFNULL(dr.DirectorSK,       -1) AS director_sk,
-
 
   s.sale_qty,
   s.sale_amount,
@@ -151,7 +173,6 @@ LEFT JOIN report_exact AS rep
 LEFT JOIN report_fallback AS rep_fb
   ON rep_fb.store_code = s.store_code
 
--- ⚠️ ต้องใช้ LAST_DAY(s.month_date) ไม่ใช่ alias month_date — JOIN อ้าง alias ของ SELECT ไม่ได้
 LEFT JOIN region_at_month AS rg
   ON  rg.RegionID = s.store_code
   AND s.month_date BETWEEN rg.StartDate AND rg.EndDate
@@ -161,6 +182,4 @@ LEFT JOIN region_manager_at_month AS rgm
 LEFT JOIN director_at_month AS dr
   ON  dr.DirectorID = rg.DirectorID
   AND s.month_date BETWEEN dr.StartDate AND dr.EndDate
-
-
 

@@ -11,22 +11,37 @@ config {
 }
 
 js {
-    const DimTargetTable = {
+    const DimTargetSeriesMdtTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_target_series_mdt",
     };
-    const DimTargetTableRef = `${DimTargetTable.database}.${DimTargetTable.schema}.${DimTargetTable.name}`;
+    const DimTargetTableRef = `${DimTargetSeriesMdtTable.database}.${DimTargetSeriesMdtTable.schema}.${DimTargetSeriesMdtTable.name}`;
 
-    const DimBranchTable = {
+    const DimSalesBranchMdtTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_sales_branch_mdt",
     };
-    const DimBranchTableRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
-    const DimRegionRef        = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_region`;
-    const DimRegionManagerRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_region_manager`;
-    const DimDirectorRef      = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_director`;
+    const DimBranchTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
+    const DimRegionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region",
+    };
+    const DimRegionTableRef = `${DimRegionTable.database}.${DimRegionTable.schema}.${DimRegionTable.name}`;
+    const DimRegionManagerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region_manager",
+    };
+    const DimRegionManagerTableRef = `${DimRegionManagerTable.database}.${DimRegionManagerTable.schema}.${DimRegionManagerTable.name}`;
+    const DimDirectorTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_director",
+    };
+    const DimDirectorTableRef = `${DimDirectorTable.database}.${DimDirectorTable.schema}.${DimDirectorTable.name}`;
 
 }
 
@@ -35,69 +50,65 @@ js {
 WITH region_at_date AS (
   -- ชุด Region Transaction เหมือน fact_saleout_mdt — ค่า ณ วันที่ของเป้า ไม่ใช่ค่าปัจจุบัน
   SELECT RegionID, RegionSK, DirectorID, StartDate, EndDate
-  FROM `${DimRegionRef}`
+  FROM `${DimRegionTableRef}`
   WHERE companyID = 'ag01'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionSK) = 1
 
 ), region_manager_at_date AS (
   SELECT RegionID, RegionManagerSK, StartDate, EndDate
-  FROM `${DimRegionManagerRef}`
+  FROM `${DimRegionManagerTableRef}`
   WHERE companyID = 'ag01'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionManagerSK) = 1
 
 ), director_at_date AS (
   -- ต้องผ่าน dim_region ก่อนเพราะ DirectorID อยู่ที่นั่น
   SELECT DirectorID, DirectorSK, StartDate, EndDate
-  FROM `${DimDirectorRef}`
+  FROM `${DimDirectorTableRef}`
   WHERE companyID = 'ag01'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY DirectorID, StartDate ORDER BY DirectorSK) = 1
 
-), source_data AS (
-  SELECT
-    t.TargetDate AS target_date,
-    t.StoreCode  AS store_code,
-
-    IFNULL(t.BranchMdtSK,    -1) AS branch_sk,
-    IFNULL(dim_br.ZoneMdtSK, -1) AS zone_sk,
-    IFNULL(t.SeriesSK,       -1) AS series_sk,
-    IFNULL(rg.RegionSK,         -1) AS region_sk,
-    IFNULL(rgm.RegionManagerSK, -1) AS region_manager_sk,
-    IFNULL(dr.DirectorSK,       -1) AS director_sk,
-
-    t.SeriesCode AS series_code,
-    t.SeriesName AS series_name,
-
-    -- ต้นทาง Value = 0 ทุกแถว (วัด 2026-10-02) — ตอนนี้เป้ามีแค่จำนวน
-    t.Amt AS target_amt,
-    t.Qty AS target_qty,
-
-    t.TargetYear  AS target_year,
-    t.TargetMonth AS target_month,
-    -- เป้าเดือนถูกหารเท่า ๆ กันทุกวันในเดือน คูณกลับด้วย days_in_month = ยอดเป้าเดือนเดิม
-    t.DaysInMonth AS days_in_month,
-
-    -- degenerate: รหัสสาขาจาก MDS ใช้สืบกลับตอน branch_sk = -1
-    t.BranchCodeMdt AS branch_code,
-    t.MdsID         AS mds_id
-  FROM `${DimTargetTableRef}` AS t
-  LEFT JOIN `${DimBranchTableRef}` AS dim_br
-    ON t.BranchMdtSK = dim_br.BranchMdtSK
-    LEFT JOIN region_at_date AS rg
-    ON  t.StoreCode = rg.RegionID
-    AND t.TargetDate BETWEEN rg.StartDate AND rg.EndDate
-  LEFT JOIN region_manager_at_date AS rgm
-    ON  t.StoreCode = rgm.RegionID
-    AND t.TargetDate BETWEEN rgm.StartDate AND rgm.EndDate
-  LEFT JOIN director_at_date AS dr
-    ON  rg.DirectorID = dr.DirectorID
-    AND t.TargetDate BETWEEN dr.StartDate AND dr.EndDate
-  -- ตัดแถว unknown (SK = -1) ของ dim ทิ้ง — fact ไม่ควรมีแถวที่ไม่มีวันที่
-  WHERE t.TargetDate IS NOT NULL
 )
 
 SELECT
-  source_data.*
-FROM source_data
+  t.TargetDate AS target_date,
+  t.StoreCode  AS store_code,
+
+  IFNULL(t.BranchMdtSK,    -1) AS branch_sk,
+  IFNULL(dim_br.ZoneMdtSK, -1) AS zone_sk,
+  IFNULL(t.SeriesSK,       -1) AS series_sk,
+  IFNULL(rg.RegionSK,         -1) AS region_sk,
+  IFNULL(rgm.RegionManagerSK, -1) AS region_manager_sk,
+  IFNULL(dr.DirectorSK,       -1) AS director_sk,
+
+  t.SeriesCode AS series_code,
+  t.SeriesName AS series_name,
+
+  -- ต้นทาง Value = 0 ทุกแถว (วัด 2026-10-02) — ตอนนี้เป้ามีแค่จำนวน
+  t.Amt AS target_amt,
+  t.Qty AS target_qty,
+
+  t.TargetYear  AS target_year,
+  t.TargetMonth AS target_month,
+  -- เป้าเดือนถูกหารเท่า ๆ กันทุกวันในเดือน คูณกลับด้วย days_in_month = ยอดเป้าเดือนเดิม
+  t.DaysInMonth AS days_in_month,
+
+  -- degenerate: รหัสสาขาจาก MDS ใช้สืบกลับตอน branch_sk = -1
+  t.BranchCodeMdt AS branch_code,
+  t.MdsID         AS mds_id
+FROM `${DimTargetTableRef}` AS t
+LEFT JOIN `${DimBranchTableRef}` AS dim_br
+  ON t.BranchMdtSK = dim_br.BranchMdtSK
+  LEFT JOIN region_at_date AS rg
+  ON  t.StoreCode = rg.RegionID
+  AND t.TargetDate BETWEEN rg.StartDate AND rg.EndDate
+LEFT JOIN region_manager_at_date AS rgm
+  ON  t.StoreCode = rgm.RegionID
+  AND t.TargetDate BETWEEN rgm.StartDate AND rgm.EndDate
+LEFT JOIN director_at_date AS dr
+  ON  rg.DirectorID = dr.DirectorID
+  AND t.TargetDate BETWEEN dr.StartDate AND dr.EndDate
+-- ตัดแถว unknown (SK = -1) ของ dim ทิ้ง — fact ไม่ควรมีแถวที่ไม่มีวันที่
+WHERE t.TargetDate IS NOT NULL
 
 pre_operations {}
 

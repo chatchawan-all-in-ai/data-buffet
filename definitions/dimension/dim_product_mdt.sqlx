@@ -24,10 +24,19 @@ js {
     };
     const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
 
-    const DimStkMktTableRef     = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_stk_mkt`;
-    const DimProductMktTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_product_mkt`;
-   
-    
+    const DimStkMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_stk_mkt",
+    };
+    const DimStkMktTableRef = `${DimStkMktTable.database}.${DimStkMktTable.schema}.${DimStkMktTable.name}`;
+    const DimProductMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mkt",
+    };
+    const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
+
 }
 
 WITH mac5_dedup AS (
@@ -46,7 +55,6 @@ WITH mac5_dedup AS (
     AND k.companyID        = m.companyID
   QUALIFY ROW_NUMBER() OVER(PARTITION BY k.companyID, k.StkCode ORDER BY m.ProductMktSK) = 1
 
-  
 ), product_src AS (
   SELECT *
   FROM `${MdsSourceTableRef}`
@@ -56,7 +64,6 @@ WITH mac5_dedup AS (
     PARTITION BY CAST(product_mdt_code AS INT64)
     ORDER BY product_mac5_code IS NULL, region_id, id
   ) = 1
-
 
 ), product_master AS (
     SELECT
@@ -93,7 +100,7 @@ WITH mac5_dedup AS (
   SELECT
     LTRIM(product_code, '0') AS product_code,
     ANY_VALUE(product_name) AS product_name,
-    MIN(store_code)         AS store_code     
+    MIN(store_code)         AS store_code
   FROM (
     SELECT product_code, product_name, store_code
     FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_mdt")}
@@ -130,8 +137,6 @@ WITH mac5_dedup AS (
   WHERE NOT EXISTS (
     SELECT 1 FROM product_master AS p WHERE p.ProductCode = f.product_code
   )
-
-
 
 ), unknown_product AS (
   SELECT

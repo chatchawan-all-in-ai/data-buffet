@@ -5,39 +5,51 @@ config {
   tags: [databuffet.TAG_VIEW],
 }
 
-
-
 js {
-    const FactMonthlyRef = `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_saleout_monthly_mdt`;
-    const DimPcRef       = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_pc`;
-    const DimProductMktRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_product_mkt`;
-}
+    const DimProductMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mkt",
+    };
+    const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
 
+    const FactSaleoutMonthlyMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FACT_TABLE,
+        name: "fact_saleout_monthly_mdt",
+    };
+    const FactSaleoutMonthlyMdtTableRef = `${FactSaleoutMonthlyMdtTable.database}.${FactSaleoutMonthlyMdtTable.schema}.${FactSaleoutMonthlyMdtTable.name}`;
+
+    const DimPcTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_pc",
+    };
+    const DimPcTableRef = `${DimPcTable.database}.${DimPcTable.schema}.${DimPcTable.name}`;
+}
 
 WITH mkt_group AS (
 
   -- ProductMktSK -> MarketingGroupID เพราะ dim_pc มอบหมายที่ระดับกลุ่ม ไม่ใช่ SK
   SELECT ProductMktSK, ANY_VALUE(MarketingGroupID) AS MarketingGroupID
-  FROM `${DimProductMktRef}`
+  FROM `${DimProductMktTableRef}`
   WHERE CompanyID = 'ag01'
   GROUP BY 1
 
 ), sale AS (
 
   SELECT f.*, m.MarketingGroupID
-  FROM `${FactMonthlyRef}` AS f
+  FROM `${FactSaleoutMonthlyMdtTableRef}` AS f
   LEFT JOIN mkt_group AS m ON f.product_mkt_sk = m.ProductMktSK
 
 ), pc_per_month AS (
 
-  -- 1 แถว = 1 PC ที่รับผิดชอบช่องนั้นในเดือนนั้น
-  -- เดิมยุบเป็นสตริงคั่นจุลภาค ("46,177") ซึ่ง Power BI สร้าง relationship ไป dim_pc ไม่ได้
-  -- จึงแตกเป็นรายคนแทน แล้วหารยอดขายเท่า ๆ กันด้วย pc_in_slot (2026-10-06)
+  -- 1 แถว = 1 PC ที่รับผิดชอบช่องนั้นในเดือนนั้น (ช่อง = สาขา + กลุ่มการตลาด)
   SELECT DISTINCT
     DATE_TRUNC(d, MONTH) AS month_date,
     BranchMdtSK, MarketingGroupID, PcSK
-  FROM `${DimPcRef}`,
-  UNNEST(GENERATE_DATE_ARRAY(StartDate, IFNULL(EndDate, DATE '2099-12-31'), INTERVAL 1 MONTH)) AS d
+  FROM `${DimPcTableRef}`
+  CROSS JOIN UNNEST(GENERATE_DATE_ARRAY(StartDate, IFNULL(EndDate, DATE '2099-12-31'), INTERVAL 1 MONTH)) AS d
   WHERE PcSK <> -1 AND IsPlaceholder = FALSE
 
 ), pc_share AS (
@@ -75,17 +87,14 @@ WITH mkt_group AS (
     s.sale_amount / IFNULL(p.pc_in_slot, 1) AS sale_amount,
     s.asatdate,
 
-    -- ติดธง "นับหัว" ให้บรรทัดเดียวต่อคนต่อ "เดือน" (ไม่ใช่ต่อวัน — เดือนที่ยังไม่จบ
-    -- fact เก็บ month_date เป็นรายวัน ถ้า partition ด้วย month_date ตรง ๆ จะนับคนซ้ำทุกวัน)
+    -- ธงนับหัว 1 บรรทัดต่อคนต่อเดือน · ต้อง DATE_TRUNC ไม่งั้นเดือนที่ยังไม่จบนับคนซ้ำทุกวัน
     ROW_NUMBER() OVER(
       PARTITION BY p.PcSK, DATE_TRUNC(s.month_date, MONTH)
       ORDER BY s.branch_code, s.product_code, s.month_date
     ) AS pc_row_in_month
   FROM sale AS s
   LEFT JOIN pc_share AS p
-    -- ⚠️ fact เก็บ month_date เป็น LAST_DAY (2026-08-31) แต่ pc_per_month ได้วันแรกของเดือน
-    -- จาก DATE_TRUNC ต้องปรับให้ตรงกันก่อน join ไม่งั้นไม่แมตช์สักแถวเดียวและเงียบสนิท
-    -- เพราะเป็น LEFT JOIN — ค่า PC ออกมาเป็น NULL ทั้งตารางโดยไม่มี error (แก้ 2026-10-05)
+    -- ⚠️ สองฝั่งคนละวันในเดือน ต้องปรับให้ตรงก่อน join ไม่งั้น LEFT JOIN คืน NULL ทั้งตารางเงียบ ๆ
     ON  p.month_date       = DATE_TRUNC(s.month_date, MONTH)
     AND p.BranchMdtSK      = s.branch_sk
     AND p.MarketingGroupID = s.MarketingGroupID
@@ -95,8 +104,6 @@ WITH mkt_group AS (
 SELECT
   * EXCEPT(pc_row_in_month),
 
-  -- Yes = ไม่เอาไปนับหัว · No = นับ (SUM ธงนี้ที่ระดับไหนก็ได้จำนวนคนถูก
-  -- เพราะ PC หนึ่งคนในหนึ่งเดือนอยู่สาขาเดียวกลุ่มเดียวเสมอ — วัดแล้ว 286,740 แถว ไม่มีซ้อน)
-  -- หมายเหตุ: นับเฉพาะ PC ที่มียอดขาย · คนที่ขายไม่ออกทั้งเดือนจะไม่ถูกนับ (ส.ค. 69 = 37 คน)
+  -- Yes = ไม่นับหัว · No = นับ · นับเฉพาะ PC ที่มียอดขาย คนที่ขายไม่ออกทั้งเดือนไม่ถูกนับ
   IF(pc_sk_list IS NULL OR pc_row_in_month > 1, 'Yes', 'No') AS fact_pc_not_count
 FROM exploded

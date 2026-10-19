@@ -10,15 +10,13 @@ config {
     },
 }
 
-
-
 js {
-    const FactStockTable = {
+    const FactStockMdtTable = {
         database: databuffet.DATABASE,
         schema: databuffet.FACT_TABLE,
         name: "fact_stock_mdt",
     };
-    const FactStockTableRef = `${FactStockTable.database}.${FactStockTable.schema}.${FactStockTable.name}`;
+    const FactStockTableRef = `${FactStockMdtTable.database}.${FactStockMdtTable.schema}.${FactStockMdtTable.name}`;
 }
 
 WITH month_last_day AS (
@@ -49,10 +47,8 @@ WITH month_last_day AS (
 )
 
 SELECT
-  -- เดือนที่ปิดแล้วใช้วันสิ้นเดือน · เดือนที่ยังเดินอยู่ใช้วันที่ข้อมูลมีถึงจริง
-  -- กติกาเดียวกับ curated_saleout_monthly_mdt (ตั้งไว้ 2026-10-05 · commit c8ac0cd)
-  -- ใช้วันล่าสุดข้ามทุกห้างเป็นป้ายเดียว ไม่แยกรายห้าง เพื่อให้รายงานยังเป็น 1 แถวต่อเดือน
-  -- ⚠️ ห้างที่ส่งไฟล์ช้ากว่าจะถูกติดป้ายวันใหม่กว่าความจริง — วันจริงของห้างนั้นอยู่ที่ snapshot_date
+  -- เดือนปิดแล้วใช้วันสิ้นเดือน เดือนเดินอยู่ใช้วันล่าสุดข้ามทุกห้าง (กติกาเดียวกับ curated รายเดือน)
+  -- ⚠️ ห้างที่ส่งช้าจะถูกติดป้ายวันใหม่กว่าจริง — วันจริงของห้างนั้นดูที่ snapshot_date
   IF(m.month_start < DATE_TRUNC(CURRENT_DATE('Asia/Bangkok'), MONTH),
      LAST_DAY(m.month_start, MONTH),
      m.month_snapshot) AS month_end,

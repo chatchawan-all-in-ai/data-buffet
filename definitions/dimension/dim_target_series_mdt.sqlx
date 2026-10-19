@@ -18,19 +18,19 @@ js {
     };
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 
-    const DimBranchTable = {
+    const DimSalesBranchMdtTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_sales_branch_mdt",
     };
-    const DimBranchTableRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
+    const DimBranchTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
 
-    const DimSeriesTable = {
+    const DimProductSeriesTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_product_series",
     };
-    const DimSeriesTableRef = `${DimSeriesTable.database}.${DimSeriesTable.schema}.${DimSeriesTable.name}`;
+    const DimSeriesTableRef = `${DimProductSeriesTable.database}.${DimProductSeriesTable.schema}.${DimProductSeriesTable.name}`;
 }
 
 -- เป้ารายเดือนราย series (ตอนนี้มีแค่ TITAN) — pattern เดียวกับ dim_target_saleout_mdt
@@ -61,8 +61,8 @@ WITH monthly AS (
     m.*,
     d AS TargetDate,
     DATE_DIFF(DATE_ADD(m.MonthStart, INTERVAL 1 MONTH), m.MonthStart, DAY) AS DaysInMonth
-  FROM monthly AS m,
-  UNNEST(GENERATE_DATE_ARRAY(m.MonthStart, LAST_DAY(m.MonthStart))) AS d
+  FROM monthly AS m
+  CROSS JOIN UNNEST(GENERATE_DATE_ARRAY(m.MonthStart, LAST_DAY(m.MonthStart))) AS d
 
 ), target_master AS (
   SELECT

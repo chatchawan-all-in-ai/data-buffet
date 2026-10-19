@@ -5,25 +5,23 @@ config {
   tags: [databuffet.TAG_VIEW],
 }
 
-
-
 js {
-    const FactTargetRef = `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_target_saleout_mdt`;
-    const DimPcRef      = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_pc`;
+    const FactTargetSaleoutMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FACT_TABLE,
+        name: "fact_target_saleout_mdt",
+    };
+    const FactTargetSaleoutMdtTableRef = `${FactTargetSaleoutMdtTable.database}.${FactTargetSaleoutMdtTable.schema}.${FactTargetSaleoutMdtTable.name}`;
+    const DimPcTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_pc",
+    };
+    const DimPcTableRef = `${DimPcTable.database}.${DimPcTable.schema}.${DimPcTable.name}`;
 }
 
-
-/*
-  เป้ายอดขายแตกเป็นรายคน PC — คู่ขนานกับ view_fact_saleout_pc_mdt ฝั่งยอดขาย
-  ไว้ให้รายงานคำนวณ %Achieve รายคนได้ (เดิมมีแต่ยอดขายรายคน ไม่มีเป้ามาเทียบ)
-
-  ⚠️ หารเท่า ๆ กันตามจำนวน PC ของช่องนั้น (ตัดสินใจ 2026-10-08)
-  เป็นข้อตกลง ไม่ใช่ข้อเท็จจริง — เราไม่รู้ว่าใครควรได้เป้าเท่าไร
-  ใช้วิธีเดียวกับที่ยอดขายใช้ เพื่อให้ %Achieve = ยอด/เป้า ออกมาสมเหตุสมผล
-  ถ้าวันหน้า master ใส่เป้ารายคนมาเอง ให้เลิกใช้ view นี้
-
-  ⚠️ เป้าที่ไม่มี PC ดูแลช่องนั้น คงยอดเต็มไว้ ไม่ให้เป้าหาย
-*/
+-- เป้ารายคน PC (หารเท่ากันตามจำนวน PC ในช่อง เป็นข้อตกลง ไม่ใช่ข้อเท็จจริง)
+-- ที่มาและเงื่อนไข: document/project_wiki/view/view-layer.md
 
 WITH pc_per_month AS (
 
@@ -31,8 +29,8 @@ WITH pc_per_month AS (
   SELECT DISTINCT
     DATE_TRUNC(d, MONTH) AS month_date,
     BranchMdtSK, MarketingGroupID, PcSK
-  FROM `${DimPcRef}`,
-  UNNEST(GENERATE_DATE_ARRAY(StartDate, IFNULL(EndDate, DATE '2099-12-31'), INTERVAL 1 MONTH)) AS d
+  FROM `${DimPcTableRef}`
+  CROSS JOIN UNNEST(GENERATE_DATE_ARRAY(StartDate, IFNULL(EndDate, DATE '2099-12-31'), INTERVAL 1 MONTH)) AS d
   WHERE PcSK <> -1 AND IsPlaceholder = FALSE
 
 ), pc_share AS (
@@ -73,7 +71,7 @@ SELECT
   t.days_in_month,
   -- เก็บไว้ให้คอลัมน์ครบเท่า fact เดิม จะได้สลับเข้าแทนในโมเดล BI ได้โดยไม่พัง
   t.mds_id
-FROM `${FactTargetRef}` AS t
+FROM `${FactTargetSaleoutMdtTableRef}` AS t
 LEFT JOIN pc_share AS p
   -- เป้าเป็นรายวัน แต่การมอบหมาย PC เป็นรายเดือน ต้องยุบเป็นเดือนก่อน join
   ON  p.month_date       = DATE_TRUNC(t.target_date, MONTH)

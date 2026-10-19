@@ -16,7 +16,7 @@ js {
         name: "mds_data_mdt_sales_zone_ta_master",
     };
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
-    
+
     const DimZoneMdtTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -35,10 +35,7 @@ WITH zone_ta_master AS (
 
     ${databuffet.functionData.cleanString("t1.zone_id")}                     AS ZoneCode,
     ${databuffet.functionData.cleanString("t1.zone_name")}                   AS ZoneName,
-    -- ⚠️ ต้นทางส่ง ZoneTAEmployeeID มาเป็น FLOAT64 (1059109.0) ไม่ใช่ STRING เหมือนตารางเก่า
-    -- ใช้ cleanString ตรง ๆ ไม่ได้เพราะ TRIM() รับ FLOAT64 ไม่ได้ · CAST ตรง ๆ ก็ได้ ".0" ติดมา
-    -- จึงลง INT64 ก่อนแล้วค่อยเป็น STRING ให้ได้ค่าเดียวกับที่เคยเก็บ
-    -- วัด 2026-09-17: 15 แถว ไม่มี NULL ไม่มีทศนิยมจริง
+    -- ต้นทางเป็น FLOAT64 → INT64 ก่อน STRING กัน ".0" ติดมา
     CAST(${databuffet.functionData.castInt64("t1.zonetaemployeeid")} AS STRING) AS EmployeeID,
     ${databuffet.functionData.cleanString("t1.zonetaemployeename")}     AS EmployeeName,
     ${databuffet.functionData.cleanString("t1.zonetaemployeesurname")}  AS EmployeeSurname,

@@ -10,6 +10,20 @@ config {
 }
 
 js {
+    const DimSectionLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_section_last",
+    };
+    const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
+
+    const DimZoneTaMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_zone_ta_mdt",
+    };
+    const DimZoneTaMdtTableRef = `${DimZoneTaMdtTable.database}.${DimZoneTaMdtTable.schema}.${DimZoneTaMdtTable.name}`;
+
     const MdsSourceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
@@ -24,30 +38,13 @@ js {
     };
     const DimZoneMdtTableRef = `${DimZoneMdtTable.database}.${DimZoneMdtTable.schema}.${DimZoneMdtTable.name}`;
 
-    const DimZoneTaMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_zone_ta_mdt",
-    };
-    const DimZoneTaMdtTableRef = `${DimZoneTaMdtTable.database}.${DimZoneTaMdtTable.schema}.${DimZoneTaMdtTable.name}`;
-
-
-        const DimSectionLastTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_section_last",
-    };
-    const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
-
     const DimRegionLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_region_last",
     };
     const DimRegionLastTableRef = `${DimRegionLastTable.database}.${DimRegionLastTable.schema}.${DimRegionLastTable.name}`;
-
 }
-
 
 WITH section_lookup AS (
   -- 1 แถวต่อ SectionID — กัน fan-out เผื่อ dim มีรหัสซ้ำ
@@ -57,7 +54,7 @@ WITH section_lookup AS (
   QUALIFY ROW_NUMBER() OVER(PARTITION BY SectionID ORDER BY SectionSK) = 1
 
 ), zone_ta_current AS (
- 
+
   SELECT ZoneTaMdtSK, ZoneCode
   FROM `${DimZoneTaMdtTableRef}`
   WHERE ZoneTaMdtSK <> -1
@@ -89,8 +86,8 @@ WITH section_lookup AS (
     t1.start_date AS StartDate,
     t1.end_date   AS EndDate,
     t1.id         AS MdsID,
-  -- ยุบซ้ำที่ต้นทางก่อน join — ถ้าไปทำหลัง join แถวที่บวมเพราะ join จะถูกกลบไปด้วยเงียบ ๆ
   FROM (
+    -- ยุบซ้ำที่ต้นทางก่อน join — ถ้าไปทำหลัง join แถวที่บวมเพราะ join จะถูกกลบไปด้วยเงียบ ๆ
     SELECT *
     FROM `${MdsSourceTableRef}`
     WHERE is_active = TRUE
@@ -104,9 +101,7 @@ WITH section_lookup AS (
   -- ผู้จัดการโซน join ด้วย zone_id แบบเดียวกับ dim_zone_mdt
   LEFT JOIN zone_ta_current AS dim_zone_ta
     ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone_ta.ZoneCode
-  -- dim_region_last มีแถวเดียวต่อรหัส จึง join ตรงได้ ไม่ต้องมี CTE กรองช่วงเวลา
-    -- Section แกะจาก BranchCodeMdt ที่เราตั้งเอง (<ห้าง>_<Section>_<ลำดับ>)
-  -- ต้องขัด 2 อย่างถึงจะตรงกับ dim_section_last: เติมศูนย์ และแปลง CEN
+  -- Section แกะจาก BranchCodeMdt (<ห้าง>_<Section>_<ลำดับ>) ต้องเติมศูนย์และแปลง CEN ให้ตรง dim
   LEFT JOIN section_lookup AS dim_section
     ON CONCAT(
          ${databuffet.functionData.cleanString("t1.region_id")}, '_',
@@ -119,6 +114,7 @@ WITH section_lookup AS (
            ELSE REGEXP_EXTRACT(${databuffet.functionData.cleanString("t1.branch_code")}, r'^[A-Z]+_([A-Z0-9]+)_')
          END
        ) = dim_section.SectionID
+  -- dim_region_last มีแถวเดียวต่อรหัส จึง join ตรงได้ ไม่ต้องมี CTE กรองช่วงเวลา
   LEFT JOIN `${DimRegionLastTableRef}` AS dim_region
     ON ${databuffet.functionData.cleanString("t1.region_id")} = dim_region.RegionID
    AND dim_region.companyID = 'ag01'
@@ -180,7 +176,7 @@ WITH section_lookup AS (
   LEFT JOIN `${DimRegionLastTableRef}` AS dim_region
     ON f.store_code = dim_region.RegionID
    AND dim_region.companyID = 'ag01'
-  -- BranchCode ไม่ซ้ำข้ามห้าง (494 แถว = 494 รหัส) จึงเทียบรหัสเดียวพอ
+  -- สาขาในฟีดที่ master ยังไม่มี (เทียบห้าง + สาขา)
   WHERE NOT EXISTS (
     SELECT 1 FROM branch_master AS b
     WHERE b.BranchCode = f.branch_code
