@@ -469,7 +469,8 @@ SELECT * FROM (
 -- ตัดทีเดียวหลัง union เพราะรหัสนี้มาได้ทั้งจากฟีด DH และจากไฟล์ประวัติ lastyear
 WHERE NOT (store_code = 'DH' AND LTRIM(product_code, '0') IN (${DH_NOT_OURS}))
 -- UNION ALL
--- SELECT * FROM lastyear_topup;
+-- SELECT * FROM lastyear_topup
+;
 
     ${ when(incremental(), `
     DELETE FROM ${self()} AS t
