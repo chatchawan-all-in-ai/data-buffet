@@ -75,10 +75,10 @@ WITH src AS (
 
 ), dup_guard AS (
 
-    SELECT IF(COUNT(*) = 0, 0, ERROR(FORMAT(
-        'curated_eom_tw: ต้นทางมีแถวซ้ำ %d ชุด — เช็คไฟล์ค้างใน SaleOut_MDT/SO_MDT_EOM/TW', COUNT(*)
+    SELECT IF(MIN(c) < 2, 0, ERROR(FORMAT(
+        'curated_eom_tw: ทุกแถวซ้ำอย่างน้อย %d ชุด — เช็คไฟล์ค้างใน SaleOut_MDT/SO_MDT_EOM/TW', MIN(c)
     ))) AS ok
-    FROM (SELECT 1 FROM latest AS t GROUP BY TO_JSON_STRING(t) HAVING COUNT(*) > 1)
+    FROM (SELECT COUNT(*) AS c FROM latest AS t GROUP BY TO_JSON_STRING(t))
 
 )
 
