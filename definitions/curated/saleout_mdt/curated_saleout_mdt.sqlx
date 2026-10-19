@@ -18,6 +18,11 @@ js {
     // 10176841 ลูกลอย+ก้าน 1"
     const DH_NOT_OURS = `'10176841'`;
 
+    // ปั๊มน้ำ Hitachi — พี่กุ้งสั่งตัดออกจากยอด GB (2026-10-05)
+    // ชุดเดียวกับที่ตัดใน curated_eom_gb ฝั่งปิดงวด ต้องแก้ทั้งสองที่เสมอ
+    // ไม่ตัด 8859738138040 'DOS ถังเก็บน้ำคู่ปั๊ม +ปั๊มhitachi' เพราะเป็นสินค้าของเรา
+    const HITACHI_PUMPS = `'8850207702816', '8850207702830', '8850207700430'`;
+
     const LastYearRef = `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.saleout_lastyear`;
 }
 
@@ -137,7 +142,6 @@ WITH hp AS (
     SELECT * FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_gb")}
     WHERE sale_date IS NOT NULL
       AND (product_code IS NULL OR REGEXP_CONTAINS(product_code, r'^[0-9]+$'))
-      AND product_code NOT IN ('8850207702816', '8850207702830', '8850207700430')
     QUALIFY DENSE_RANK() OVER (PARTITION BY sale_no, sale_date, branch_code ORDER BY asatdate DESC) = 1
 
 ), gb AS (
@@ -468,6 +472,7 @@ SELECT * FROM (
 )
 -- ตัดทีเดียวหลัง union เพราะรหัสนี้มาได้ทั้งจากฟีด DH และจากไฟล์ประวัติ lastyear
 WHERE NOT (store_code = 'DH' AND LTRIM(product_code, '0') IN (${DH_NOT_OURS}))
+  AND NOT (store_code = 'GB' AND product_code IN (${HITACHI_PUMPS}))
 -- UNION ALL
 -- SELECT * FROM lastyear_topup
 ;

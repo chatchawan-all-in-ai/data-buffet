@@ -72,28 +72,28 @@ WITH mac5_dedup AS (
     IFNULL(NULLIF(mac5.ProductMktSK, -1),
            IFNULL(fb.ProductMktSK, IFNULL(wait.ProductMktSK, -1))) AS ProductMktSK,
     CAST(CAST(t1.product_mdt_code AS INT64) AS STRING)          AS ProductCode,
-    ${databuffet.functionData.cleanString("t1.product_mdt_name")}  AS ProductName,
+    NULLIF(CAST(TRIM(t1.product_mdt_name) AS STRING), '')  AS ProductName,
     IF(mac5.ProductSK IS NULL AND fb.ProductMktSK IS NULL,
        'WAITING999',
-       ${databuffet.functionData.cleanString("t1.product_mac5_code")}) AS ProductMac5Code,
-    ${databuffet.functionData.cleanString("t1.region_id")}         AS StoreCode,
-    ${databuffet.functionData.cleanString("t1.commpy")}            AS CompanyID,
+       NULLIF(CAST(TRIM(t1.product_mac5_code) AS STRING), '')) AS ProductMac5Code,
+    NULLIF(CAST(TRIM(t1.region_id) AS STRING), '')         AS StoreCode,
+    NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')            AS CompanyID,
     t1.id                                                         AS MdsID
   FROM product_src AS t1
   LEFT JOIN mac5_dedup AS mac5
-    ON  ${databuffet.functionData.cleanString("t1.product_mac5_code")} = mac5.ProductCode
-    AND ${databuffet.functionData.cleanString("t1.commpy")}            = mac5.companyID
+    ON  NULLIF(CAST(TRIM(t1.product_mac5_code) AS STRING), '') = mac5.ProductCode
+    AND NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')            = mac5.companyID
    LEFT JOIN mkt_fallback AS fb
-    ON  ${databuffet.functionData.cleanString("t1.product_mac5_code")} = fb.StkCode
-    AND ${databuffet.functionData.cleanString("t1.commpy")}            = fb.companyID
+    ON  NULLIF(CAST(TRIM(t1.product_mac5_code) AS STRING), '') = fb.StkCode
+    AND NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')            = fb.companyID
 
   LEFT JOIN mkt_fallback AS wait
     ON  wait.StkCode  = 'WAITING999'
-    AND wait.companyID = ${databuffet.functionData.cleanString("t1.commpy")}
+    AND wait.companyID = NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')
 
   LEFT JOIN mac5_dedup AS wait5
     ON  wait5.ProductCode = 'WAITING999'
-    AND wait5.companyID   = ${databuffet.functionData.cleanString("t1.commpy")}
+    AND wait5.companyID   = NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')
 
     ), feed_product AS (
 

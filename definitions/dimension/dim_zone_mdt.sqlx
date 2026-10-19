@@ -21,10 +21,10 @@ js {
 
 WITH zone_master AS (
   SELECT
-    ROW_NUMBER() OVER(ORDER BY ${databuffet.functionData.cleanString("t1.zone_id")}) AS ZoneMdtSK,
+    ROW_NUMBER() OVER(ORDER BY NULLIF(CAST(TRIM(t1.zone_id) AS STRING), '')) AS ZoneMdtSK,
 
-    ${databuffet.functionData.cleanString("t1.zone_id")}   AS ZoneCode,
-    ${databuffet.functionData.cleanString("t1.zone_name")} AS ZoneName,
+    NULLIF(CAST(TRIM(t1.zone_id) AS STRING), '')   AS ZoneCode,
+    NULLIF(CAST(TRIM(t1.zone_name) AS STRING), '') AS ZoneName,
     t1.start_date AS StartDate,
     t1.end_date   AS EndDate,
     t1.id         AS MdsID,

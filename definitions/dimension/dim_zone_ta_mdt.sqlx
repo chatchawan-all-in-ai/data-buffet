@@ -28,24 +28,24 @@ js {
 WITH zone_ta_master AS (
   SELECT
     ROW_NUMBER() OVER(
-      ORDER BY ${databuffet.functionData.cleanString("t1.zone_id")},
-               ${databuffet.functionData.castInt64("t1.zonetaemployeeid")}
+      ORDER BY NULLIF(CAST(TRIM(t1.zone_id) AS STRING), ''),
+               CAST(t1.zonetaemployeeid AS INT64)
     ) AS ZoneTaMdtSK,
     IFNULL(dim_zone.ZoneMdtSK, -1) AS ZoneMdtSK,
 
-    ${databuffet.functionData.cleanString("t1.zone_id")}                     AS ZoneCode,
-    ${databuffet.functionData.cleanString("t1.zone_name")}                   AS ZoneName,
+    NULLIF(CAST(TRIM(t1.zone_id) AS STRING), '')                     AS ZoneCode,
+    NULLIF(CAST(TRIM(t1.zone_name) AS STRING), '')                   AS ZoneName,
     -- ต้นทางเป็น FLOAT64 → INT64 ก่อน STRING กัน ".0" ติดมา
-    CAST(${databuffet.functionData.castInt64("t1.zonetaemployeeid")} AS STRING) AS EmployeeID,
-    ${databuffet.functionData.cleanString("t1.zonetaemployeename")}     AS EmployeeName,
-    ${databuffet.functionData.cleanString("t1.zonetaemployeesurname")}  AS EmployeeSurname,
-    ${databuffet.functionData.cleanString("t1.zonetaemployeenickname")} AS EmployeeNickname,
+    CAST(CAST(t1.zonetaemployeeid AS INT64) AS STRING) AS EmployeeID,
+    NULLIF(CAST(TRIM(t1.zonetaemployeename) AS STRING), '')     AS EmployeeName,
+    NULLIF(CAST(TRIM(t1.zonetaemployeesurname) AS STRING), '')  AS EmployeeSurname,
+    NULLIF(CAST(TRIM(t1.zonetaemployeenickname) AS STRING), '') AS EmployeeNickname,
     t1.start_date AS StartDate,
     t1.end_date   AS EndDate,
     t1.id         AS MdsID
   FROM `${MdsSourceTableRef}` AS t1
   LEFT JOIN `${DimZoneMdtTableRef}` AS dim_zone
-    ON ${databuffet.functionData.cleanString("t1.zone_id")} = dim_zone.ZoneCode
+    ON NULLIF(CAST(TRIM(t1.zone_id) AS STRING), '') = dim_zone.ZoneCode
   WHERE t1.is_active = TRUE
 
 ), unknown_zone_ta AS  (

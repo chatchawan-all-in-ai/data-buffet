@@ -157,7 +157,7 @@ LEFT JOIN region_manager_at_sale AS rgm
   ON  c.store_code = rgm.RegionID
   AND c.sale_date BETWEEN rgm.StartDate AND rgm.EndDate
 LEFT JOIN director_at_sale AS dr
-ON  rg.DirectorID = dr.DirectorID
+  ON  rg.DirectorID = dr.DirectorID
   AND c.sale_date BETWEEN dr.StartDate AND dr.EndDate
 -- ทดลองตัด Segment ที่ไฟล์ BI ของ GB ไม่นับ (2026-09-23)
 --   00221 = HITACHI (HOME PUMP) 3 รุ่น 16.47M · 00222 ยังไม่มีแถวของ GB

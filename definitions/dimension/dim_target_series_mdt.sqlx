@@ -39,9 +39,9 @@ WITH monthly AS (
     CAST(t1.Year  AS INT64) AS TargetYear,
     CAST(t1.Month AS INT64) AS TargetMonth,
     DATE(CAST(t1.Year AS INT64), CAST(t1.Month AS INT64), 1) AS MonthStart,
-    ${databuffet.functionData.cleanString("t1.BranchCode")} AS BranchCodeMdt,
-    ${databuffet.functionData.cleanString("t1.SeriesCode")} AS SeriesCode,
-    ${databuffet.functionData.cleanString("t1.SeriesName")} AS SeriesName,
+    NULLIF(CAST(TRIM(t1.BranchCode) AS STRING), '') AS BranchCodeMdt,
+    NULLIF(CAST(TRIM(t1.SeriesCode) AS STRING), '') AS SeriesCode,
+    NULLIF(CAST(TRIM(t1.SeriesName) AS STRING), '') AS SeriesName,
     t1.Value    AS MonthAmt,
     t1.Quantity AS MonthQty,
     t1.id AS MdsID

@@ -27,19 +27,19 @@ js {
 
 WITH pc_source AS (
   SELECT
-    ${databuffet.functionData.cleanString("t1.branch_code")}      AS BranchCodeMdt,
-    ${databuffet.functionData.cleanString("t1.employee_id")}      AS EmployeeID,
-    ${databuffet.functionData.cleanString("t1.employee_name")}    AS EmployeeName,
-    ${databuffet.functionData.cleanString("t1.employee_surname")} AS EmployeeSurname,
-    ${databuffet.functionData.cleanString("t1.employee_type")}    AS EmployeeType,
-    ${databuffet.functionData.cleanString("t1.marketinggroupid")} AS MarketingGroupID,
-    ${databuffet.functionData.cleanString("t1.marketinggroup")}   AS MarketingGroupName,
+    NULLIF(CAST(TRIM(t1.branch_code) AS STRING), '')      AS BranchCodeMdt,
+    NULLIF(CAST(TRIM(t1.employee_id) AS STRING), '')      AS EmployeeID,
+    NULLIF(CAST(TRIM(t1.employee_name) AS STRING), '')    AS EmployeeName,
+    NULLIF(CAST(TRIM(t1.employee_surname) AS STRING), '') AS EmployeeSurname,
+    NULLIF(CAST(TRIM(t1.employee_type) AS STRING), '')    AS EmployeeType,
+    NULLIF(CAST(TRIM(t1.marketinggroupid) AS STRING), '') AS MarketingGroupID,
+    NULLIF(CAST(TRIM(t1.marketinggroup) AS STRING), '')   AS MarketingGroupName,
     t1.start_date AS StartDate,
     t1.end_date   AS EndDate,
 
     (
-      ${databuffet.functionData.cleanString("t1.employee_id")} IS NULL
-      OR ${databuffet.functionData.cleanString("t1.employee_id")} = 'Dummy_NotPC'
+      NULLIF(CAST(TRIM(t1.employee_id) AS STRING), '') IS NULL
+      OR NULLIF(CAST(TRIM(t1.employee_id) AS STRING), '') = 'Dummy_NotPC'
       OR IFNULL(TRIM(t1.employee_name),'') IN ('ไม่มี PC', 'Not PC')
     ) AS IsPlaceholder,
 
