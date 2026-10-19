@@ -28,7 +28,7 @@ layer (validated/curated/dimension/fact/…) as in
 13. Modern trade (MDT) — sell-out/สต็อกห้างค้าปลีก
 14. Reference / misc — ตารางอ้างอิงอื่นๆ
 
-**Uncovered dim/fact/curated objects (not in any topic):** `curated_products`, `curated_saleout_monthly_mdt`, `dim_customer_report_info`, `dim_customer_segment`, `dim_product_series`, `dim_target_series_mdt`, `dim_zone_ta_mdt`, `fact_saleout_monthly_mdt`, `fact_target_saleout_mdt`, `fact_target_series_mdt`, `product_for_aisearch_v3`
+**Uncovered dim/fact/curated objects (not in any topic):** `curated_products`, `curated_saleout_monthly_mdt`, `dim_customer_report_info`, `dim_customer_segment`, `dim_product_series`, `dim_target_series_mdt`, `dim_zone_ta_mdt`, `eom_bt`, `eom_gb`, `eom_hp`, `eom_tw`, `fact_saleout_monthly_mdt`, `fact_target_saleout_mdt`, `fact_target_series_mdt`, `product_for_aisearch_v3`
 
 ---
 

@@ -41,20 +41,20 @@ WITH eom AS (
     SELECT * FROM (
         SELECT LAST_DAY(month_date) AS month_date, store_code, branch_code, branch_name,
                product_code, product_name, sale_qty, sale_amount
-        FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "eom_gb")}
+        FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "eom_gb")}
         UNION ALL
         SELECT LAST_DAY(month_date), store_code, branch_code, branch_name,
                product_code, product_name, sale_qty, sale_amount
-        FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "eom_hp")}
+        FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "eom_hp")}
         UNION ALL
         -- TW กับ BT ไม่ส่งชื่อสาขาแยกมา ปล่อย NULL ให้ตรงกับที่ onetime เคยเป็น
         SELECT LAST_DAY(month_date), store_code, branch_code, CAST(NULL AS STRING),
                product_code, product_name, sale_qty, sale_amount
-        FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "eom_tw")}
+        FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "eom_tw")}
         UNION ALL
         SELECT LAST_DAY(month_date), store_code, branch_code, CAST(NULL AS STRING),
                product_code, product_name, sale_qty, sale_amount
-        FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "eom_bt")}
+        FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "eom_bt")}
     )
     WHERE DATE_TRUNC(month_date, MONTH) < DATE_TRUNC(CURRENT_DATE('Asia/Bangkok'), MONTH)
 

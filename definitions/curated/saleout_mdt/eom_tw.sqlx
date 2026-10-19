@@ -1,8 +1,8 @@
 config {
     type: "table",
-    schema: databuffet.VALIDATED_SALEOUT_MDT,
-    dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
-    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_FULL],
+    schema: databuffet.CURATED_SALEOUT_MDT,
+    dependencies: ["curated_schema_saleout", "create_all_table_raw_saleout_mdt"],
+    tags: [databuffet.TAG_CURATED, databuffet.TAG_CURATED_FULL],
     uniqueKey: ["month_date", "branch_code", "product_code"],
     bigquery: {
         partitionBy: "month_date",
