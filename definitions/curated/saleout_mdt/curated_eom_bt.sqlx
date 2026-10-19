@@ -56,20 +56,39 @@ WITH src AS (
       AND BRANCH IS NOT NULL AND TRIM(BRANCH) <> ''
       AND ARTICLE_ID IS NOT NULL AND TRIM(ARTICLE_ID) <> ''
 
+), file_version AS (
+
+    -- แต่ละ (งวด, เวอร์ชันไฟล์) ซ้ำทั้งยวงหรือเปล่า · min_dup >= 2 = ทุกแถวซ้ำ คือไฟล์ค้างในโฟลเดอร์
+    -- ต้องดูเป็นรายงวด ไม่ใช่รวมทั้งตาราง — งวดหนึ่งเบิ้ลแต่อีกงวดปกติ เป็นเรื่องที่เกิดจริง
+    SELECT month_date, asat_raw, MIN(c) AS min_dup
+    FROM (SELECT month_date, asat_raw, COUNT(*) AS c FROM src AS t GROUP BY 1, 2, TO_JSON_STRING(t))
+    GROUP BY 1, 2
+
+), chosen AS (
+
+    -- เวอร์ชันใหม่สุดที่ไม่ซ้ำทั้งยวง — ข้ามไฟล์ค้างไปใช้ของก่อนหน้าแทน ยอดจะได้ไม่เบิ้ล
+    SELECT month_date, MAX(asat_raw) AS asat_raw
+    FROM file_version
+    WHERE min_dup < 2
+    GROUP BY 1
+
 ), latest AS (
 
     -- งวดเดียวกันถูกส่งซ้ำได้แล้วไปอยู่คนละพาร์ทิชัน ASATDATE
     -- BT ไม่มีคอลัมน์เวลาสร้างไฟล์แบบ CRDATE ของ HP จึงใช้ ASATDATE เป็นตัวตัด
     -- ตัดข้ามพาร์ทิชันโดยตั้งใจ (PARTITION BY month_date อย่างเดียว) ไม่งั้นงวดเดิมจะได้ 2 ชุด
-    SELECT * FROM src
-    QUALIFY asat_raw = MAX(asat_raw) OVER (PARTITION BY month_date)
+    SELECT s.* FROM src AS s
+    INNER JOIN chosen USING (month_date, asat_raw)
 
 ), dup_guard AS (
 
-    SELECT IF(MIN(c) < 2, 0, ERROR(FORMAT(
-        'curated_eom_bt: ทุกแถวซ้ำอย่างน้อย %d ชุด — เช็คไฟล์ค้างใน SaleOut_MDT/SO_MDT_EOM/BT', MIN(c)
+    -- เหลืองวดที่ไม่มีเวอร์ชันดีเลย = ทุกไฟล์ของงวดนั้นค้างซ้ำหมด เลือกให้ไม่ได้ ต้องหยุด
+    SELECT IF(COUNT(*) = 0, 0, ERROR(FORMAT(
+        'curated_eom_bt: งวด %t ซ้ำทุกเวอร์ชัน ไม่มีไฟล์ดีให้ใช้ — เช็คไฟล์ค้างใน SaleOut_MDT/SO_MDT_EOM/BT', ANY_VALUE(month_date)
     ))) AS ok
-    FROM (SELECT COUNT(*) AS c FROM latest AS t GROUP BY TO_JSON_STRING(t))
+    FROM (SELECT month_date FROM src GROUP BY 1
+          EXCEPT DISTINCT
+          SELECT month_date FROM chosen)
 
 )
 

@@ -67,6 +67,22 @@ WITH src AS (
     FROM `${sourceTableRef}`
     WHERE PERIODDATE IS NOT NULL AND SITENO IS NOT NULL
 
+), file_version AS (
+
+    -- แต่ละ (งวด, เวอร์ชันไฟล์) ซ้ำทั้งยวงหรือเปล่า · min_dup >= 2 = ทุกแถวซ้ำ คือไฟล์ค้างในโฟลเดอร์
+    -- ต้องดูเป็นรายงวด ไม่ใช่รวมทั้งตาราง — งวดหนึ่งเบิ้ลแต่อีกงวดปกติ เป็นเรื่องที่เกิดจริง
+    SELECT month_date, crdate, MIN(c) AS min_dup
+    FROM (SELECT month_date, crdate, COUNT(*) AS c FROM src AS t GROUP BY 1, 2, TO_JSON_STRING(t))
+    GROUP BY 1, 2
+
+), chosen AS (
+
+    -- เวอร์ชันใหม่สุดที่ไม่ซ้ำทั้งยวง — ข้ามไฟล์ค้างไปใช้ของก่อนหน้าแทน ยอดจะได้ไม่เบิ้ล
+    SELECT month_date, MAX(crdate) AS crdate
+    FROM file_version
+    WHERE min_dup < 2
+    GROUP BY 1
+
 ), latest AS (
 
     -- ⚠️ หนึ่งพาร์ทิชันมีหลายงวด และงวดเดียวกันมีหลายเวอร์ชัน
@@ -76,15 +92,18 @@ WITH src AS (
     -- เลือกเวอร์ชันล่าสุดต่องวดด้วย CRDATE ซึ่งห้างประทับมาในทุกแถว — เชื่อถือได้กว่าชื่อไฟล์
     -- ตัดข้ามพาร์ทิชันโดยตั้งใจ (ไม่ใส่ ASATDATE ใน PARTITION BY) เพราะงวดเดิมถูกส่งซ้ำวันหลังได้
     -- ไม่ตัดซ้ำยอดเดือน 9 จะเบิ้ลเป็น 75M
-    SELECT * FROM src
-    QUALIFY crdate = MAX(crdate) OVER (PARTITION BY month_date)
+    SELECT s.* FROM src AS s
+    INNER JOIN chosen USING (month_date, crdate)
 
 ), dup_guard AS (
 
-    SELECT IF(MIN(c) < 2, 0, ERROR(FORMAT(
-        'curated_eom_hp: ทุกแถวซ้ำอย่างน้อย %d ชุด — เช็คไฟล์ค้างใน SaleOut_MDT/SO_MDT_EOM/HP', MIN(c)
+    -- เหลืองวดที่ไม่มีเวอร์ชันดีเลย = ทุกไฟล์ของงวดนั้นค้างซ้ำหมด เลือกให้ไม่ได้ ต้องหยุด
+    SELECT IF(COUNT(*) = 0, 0, ERROR(FORMAT(
+        'curated_eom_hp: งวด %t ซ้ำทุกเวอร์ชัน ไม่มีไฟล์ดีให้ใช้ — เช็คไฟล์ค้างใน SaleOut_MDT/SO_MDT_EOM/HP', ANY_VALUE(month_date)
     ))) AS ok
-    FROM (SELECT COUNT(*) AS c FROM latest AS t GROUP BY TO_JSON_STRING(t))
+    FROM (SELECT month_date FROM src GROUP BY 1
+          EXCEPT DISTINCT
+          SELECT month_date FROM chosen)
 
 )
 
