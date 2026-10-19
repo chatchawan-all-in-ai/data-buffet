@@ -13,6 +13,11 @@ config {
 js {
     // saleout_lastyear ไม่ได้ถูกสร้างโดย Dataform แล้ว จึงใช้ ref() ไม่ได้
     // เป็นข้อมูลประวัติชุดเดียวจบ สร้างจาก saved query ชื่อ saleout_lastyear ใน Shared queries
+    // สินค้าที่ไม่ใช่ของ DOS แต่หลุดมาในฟีด DH — ผู้ใช้แจ้ง 2026-10-20 ว่าลบยอดออกแล้ว
+    // ชุดเดียวกับที่ตัดใน curated_saleout_monthly_mdt ต้องแก้ทั้งสองที่เสมอ
+    // 10176841 ลูกลอย+ก้าน 1"
+    const DH_NOT_OURS = `'10176841'`;
+
     const LastYearRef = `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.saleout_lastyear`;
 }
 
@@ -435,17 +440,21 @@ WITH hp AS (
       AND (fs.feed_from IS NULL OR ly.sale_date < fs.feed_from)
     GROUP BY sale_date, store_code, branch_code, product_code, doc_type
 )
-SELECT * FROM hp
-UNION ALL
-SELECT * FROM bt
-UNION ALL
-SELECT * FROM gb
-UNION ALL
-SELECT * FROM tw
-UNION ALL
-SELECT * FROM dh
-UNION ALL
-SELECT * FROM lastyear
+SELECT * FROM (
+    SELECT * FROM hp
+    UNION ALL
+    SELECT * FROM bt
+    UNION ALL
+    SELECT * FROM gb
+    UNION ALL
+    SELECT * FROM tw
+    UNION ALL
+    SELECT * FROM dh
+    UNION ALL
+    SELECT * FROM lastyear
+)
+-- ตัดทีเดียวหลัง union เพราะรหัสนี้มาได้ทั้งจากฟีด DH และจากไฟล์ประวัติ lastyear
+WHERE NOT (store_code = 'DH' AND LTRIM(product_code, '0') IN (${DH_NOT_OURS}))
 -- UNION ALL
 -- SELECT * FROM lastyear_topup
 pre_operations {

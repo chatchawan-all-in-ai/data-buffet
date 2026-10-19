@@ -33,6 +33,11 @@ config {
 js {
     // ตารางนี้ Dataform ไม่ได้สร้าง จึงใช้ ref() ไม่ได้ — เป็นประวัติชุดเดียวจบ
     // สร้างจาก saved query ชื่อ saleout_lastyear_monthly ใน Shared queries
+    // สินค้าที่ไม่ใช่ของ DOS แต่หลุดมาในฟีด DH — ผู้ใช้แจ้ง 2026-10-20 ว่าลบยอดออกแล้ว
+    // ชุดเดียวกับที่ตัดใน curated_saleout_mdt ฝั่งรายวัน ต้องแก้ทั้งสองที่เสมอ
+    // 10176841 ลูกลอย+ก้าน 1"
+    const DH_NOT_OURS = `'10176841'`;
+
     const LastYearMonthlyRef = `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.saleout_lastyear_monthly`;
 }
 
@@ -134,3 +139,4 @@ INNER JOIN winner AS w
   ON  s.period     = w.period
   AND s.store_code = w.store_code
   AND s.prio       = w.prio
+WHERE NOT (s.store_code = 'DH' AND LTRIM(s.product_code, '0') IN (${DH_NOT_OURS}))
