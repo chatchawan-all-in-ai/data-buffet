@@ -45,6 +45,23 @@ function parseAsatDate() {
 }
 
 /**
+ * @param {string} col - column name or expression holding a 'YYYY/MM/DD' date string (BT + eom_bt feeds)
+ * @returns {string} GoogleSQL expression parsing col to DATE — NOT safe on purpose: a format change
+ *                   must fail the run rather than turn every date into NULL (same stance as castInt64)
+**/
+function parseDateSlash(col) {
+    return `PARSE_DATE('%Y/%m/%d', ${col})`
+}
+
+/**
+ * @param {string} col - column name or expression holding a 'YYYY-MM-DD' date string (DH, TW, eom_tw, lastyear feeds)
+ * @returns {string} GoogleSQL expression parsing col to DATE — NOT safe, same reasoning as parseDateSlash
+**/
+function parseDateDash(col) {
+    return `PARSE_DATE('%Y-%m-%d', ${col})`
+}
+
+/**
  * @param {string} col - column name or expression
  * @returns {string} GoogleSQL expression to cast column to INT64
 **/
@@ -74,6 +91,8 @@ module.exports = {
     parseFlexibleDatetime,
     parseFlexibleUtcDatetime,
     parseAsatDate,
+    parseDateSlash,
+    parseDateDash,
     castInt64,
     castFloat64,
     castBool,

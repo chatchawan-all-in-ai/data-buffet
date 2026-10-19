@@ -31,7 +31,7 @@ WITH src AS (
 
     SELECT
         -- START_DATE เป็นวันแรกของงวดอยู่แล้ว (2026/08/01) DATE_TRUNC ไว้กันห้างส่งงวดคร่อมเดือน
-        DATE_TRUNC(PARSE_DATE('%Y/%m/%d', TRIM(START_DATE)), MONTH) AS month_date,
+        DATE_TRUNC(${databuffet.functionData.parseDateSlash('TRIM(START_DATE)')}, MONTH) AS month_date,
 
         -- BT ใช้ชื่อสาขาภาษาไทยเป็นรหัสสาขา เหมือนฟีดรายวัน (จับคู่ dim ได้ 16/16)
         ${databuffet.functionData.cleanString('BRANCH')}          AS branch_code,

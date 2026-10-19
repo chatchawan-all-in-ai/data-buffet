@@ -34,7 +34,7 @@ END;`;
 WITH src AS (
 
     SELECT
-        PARSE_DATE('%Y-%m-%d', SALES_DATE)                      AS sale_date,
+        ${databuffet.functionData.parseDateDash('SALES_DATE')}                      AS sale_date,
         ${databuffet.functionData.cleanCode('BRANCH_CODE')}     AS branch_code,
         ${databuffet.functionData.cleanCode('PRODUCT_CODE')}    AS product_code,
         ${databuffet.functionData.cleanString('PRODUCT_NAME')}  AS product_name,

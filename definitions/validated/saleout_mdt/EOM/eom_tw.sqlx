@@ -28,7 +28,7 @@ WITH src AS (
         -- งวดมาจากคอลัมน์ PERIOD ที่ DAG อ่านจากหัวไฟล์ (`Period : 2026-08`) แล้วแปะทุกแถว
         -- ⚠️ ห้ามใช้ ASATDATE เป็นงวด และห้ามใช้ Last_Sold_Date ด้วย — ไฟล์เป็นสต็อก+ยอดขาย
         --    Last_Sold_Date คือวันขายล่าสุดของ SKU นั้น ซึ่งย้อนไปไกลกว่างวดได้ (เจอ 13/07 ในงวด 08)
-        PARSE_DATE('%Y-%m-%d', CONCAT(TRIM(PERIOD), '-01')) AS month_date,
+        ${databuffet.functionData.parseDateDash("CONCAT(TRIM(PERIOD), '-01')")} AS month_date,
 
         -- TW ใช้สตริงเต็ม `60001-CRC Thai Watsadu ...` เป็นรหัสสาขา เหมือนฟีดรายวัน
         ${databuffet.functionData.cleanString('Store')} AS branch_code,

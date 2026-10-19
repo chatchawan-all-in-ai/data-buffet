@@ -23,8 +23,8 @@ SELECT
     CAST(Sales_Qty as INT64) as Sales_Qty,
     CAST(Stock_On_Hand as FLOAT64) as Stock_On_Hand,
     CAST(Stock_On_Order as INT64) as Stock_On_Order,
-    PARSE_DATE('%Y-%m-%d', TRIM(Last_Sold_Date)) as Last_Sold_Date,
-    PARSE_DATE('%Y-%m-%d', TRIM(Last_Receive_Date)) as Last_Receive_Date,
+    ${databuffet.functionData.parseDateDash('TRIM(Last_Sold_Date)')} as Last_Sold_Date,
+    ${databuffet.functionData.parseDateDash('TRIM(Last_Receive_Date)')} as Last_Receive_Date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
 FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.report_sale_subscription`
 
