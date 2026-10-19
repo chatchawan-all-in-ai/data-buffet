@@ -22,6 +22,19 @@ js {
 }
 
 
+SELECT * FROM new_data_curated_saleout_mdt
+
+pre_operations {
+    -- ยุบทั้ง query ลง temp ก่อน แล้วล้างของเดิมทั้งวันก่อน MERGE
+    -- เหตุผล: MERGE บน uniqueKey เอาแถวที่หายจากต้นทางออกไม่ได้ · doc_type อยู่ในคีย์ด้วย
+    -- พอ TW แก้รายการเดิมจาก SALE เป็น RETURN มันกลายเป็นคีย์ใหม่ แถว SALE เก่าเลยค้างตลอดไป
+    -- วัด 2026-10-20: ค้าง 10 แถว +339,586 บาท ทั้งหมดเป็น TW ตั้งแต่ 27 ก.ย.
+    -- แพตเทิร์นเดียวกับ validated mil/mir ต่างแค่เกรน ที่นี่ใช้ (ห้าง, วันขาย)
+    --
+    -- ⚠️ แตะเฉพาะ (ห้าง, วัน) ที่มีใน temp วันที่ไม่ได้อยู่ในรอบนี้ไม่ถูกแตะ
+    -- ปลอดภัยเพราะต้นทางส่งครบทั้งวันเสมอ — ตรวจ 2026-10-20: saleout_hp ซึ่งเป็นตัวเดียว
+    -- ที่กรอง asatdate แบบ incremental มี 1 sale_date ต่อ 1 asatdate ครบทั้ง 218 วัน
+    CREATE OR REPLACE TEMP TABLE new_data_curated_saleout_mdt AS
 WITH hp AS (
 
     SELECT
@@ -456,9 +469,18 @@ SELECT * FROM (
 -- ตัดทีเดียวหลัง union เพราะรหัสนี้มาได้ทั้งจากฟีด DH และจากไฟล์ประวัติ lastyear
 WHERE NOT (store_code = 'DH' AND LTRIM(product_code, '0') IN (${DH_NOT_OURS}))
 -- UNION ALL
--- SELECT * FROM lastyear_topup
-pre_operations {
+-- SELECT * FROM lastyear_topup;
+
+    ${ when(incremental(), `
+    DELETE FROM ${self()} AS t
+    WHERE EXISTS (
+        SELECT 1
+        FROM new_data_curated_saleout_mdt AS n
+        WHERE n.store_code = t.store_code
+          AND n.sale_date  = t.sale_date
+    )` ) }
 }
+
 
 post_operations {
 }
