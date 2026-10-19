@@ -79,6 +79,13 @@ WITH src AS (
     SELECT * FROM src
     QUALIFY crdate = MAX(crdate) OVER (PARTITION BY month_date)
 
+), dup_guard AS (
+
+    SELECT IF(COUNT(*) = 0, 0, ERROR(FORMAT(
+        'curated_eom_hp: ต้นทางมีแถวซ้ำ %d ชุด — เช็คไฟล์ค้างใน SaleOut_MDT/SO_MDT_EOM/HP', COUNT(*)
+    ))) AS ok
+    FROM (SELECT 1 FROM latest AS t GROUP BY TO_JSON_STRING(t) HAVING COUNT(*) > 1)
+
 )
 
 -- ยุบเป็นเกรนรายเดือน · วัด 2026-10-05 คีย์ไม่ซ้ำอยู่แล้ว (2,232 แถว = 2,232 คีย์)
@@ -96,4 +103,6 @@ SELECT
     MAX(crdate)             AS crdate,
     MAX(asatdate)           AS asatdate
 FROM latest
+CROSS JOIN dup_guard
+WHERE dup_guard.ok = 0
 GROUP BY month_date, store_code, branch_code, product_code

@@ -633,6 +633,10 @@ flowchart LR
     vendors["vendors"]
   end
   subgraph curated["curated (14)"]
+    curated_eom_bt["curated_eom_bt"]
+    curated_eom_gb["curated_eom_gb"]
+    curated_eom_hp["curated_eom_hp"]
+    curated_eom_tw["curated_eom_tw"]
     curated_mih["curated_mih"]
     curated_mil["curated_mil"]
     curated_product["curated_product"]
@@ -641,10 +645,6 @@ flowchart LR
     curated_saleout_monthly_mdt["curated_saleout_monthly_mdt"]
     curated_stock_mdt["curated_stock_mdt"]
     curated_tbook_quotation["curated_tbook_quotation"]
-    eom_bt["eom_bt"]
-    eom_gb["eom_gb"]
-    eom_hp["eom_hp"]
-    eom_tw["eom_tw"]
     product_for_aisearch["product_for_aisearch"]
     product_for_aisearch_v3["product_for_aisearch_v3"]
   end
@@ -708,6 +708,10 @@ flowchart LR
   cql --> dim_customer_grade
   cql --> dim_group_customer_grade
   cql --> fact_chq
+  curated_eom_bt --> curated_saleout_monthly_mdt
+  curated_eom_gb --> curated_saleout_monthly_mdt
+  curated_eom_hp --> curated_saleout_monthly_mdt
+  curated_eom_tw --> curated_saleout_monthly_mdt
   curated_mih --> dim_aging
   curated_mih --> dim_customer_grade
   curated_mih --> dim_delivery
@@ -756,10 +760,6 @@ flowchart LR
   deb --> dim_group_customer_grade
   deb --> fact_delivery
   deb --> fact_transcation
-  eom_bt --> curated_saleout_monthly_mdt
-  eom_gb --> curated_saleout_monthly_mdt
-  eom_hp --> curated_saleout_monthly_mdt
-  eom_tw --> curated_saleout_monthly_mdt
   match_customer --> dim_customer
   mec --> dim_customer_report_info
   mie --> dim_aging
@@ -826,7 +826,7 @@ flowchart LR
   classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
   class ap_s,ar_s,brand,brand_vendors,brands,categories,category__mastersku,cfs,chq,common_codes,cps,cql,customer_profile,customer_profile_nature_business,customer_status,customer_type,deb,match_customer,mec,mie,mih,mih2,mil,mir,nature_business,per,product,product_detail,products,report_sale_subscription,sale_by_branch_detail,saleout_dh,saleout_gb,saleout_hp,saleout_lastyear,stg,stg_report,stgacc,stk,sto,stock_by_branch,tbook_profilecomp,tbook_quodetail,tbook_quotation,tdelivery,ttrip,ttrip_document,unit,vendor,vendors validated;
-  class curated_mih,curated_mil,curated_product,curated_products,curated_saleout_mdt,curated_saleout_monthly_mdt,curated_stock_mdt,curated_tbook_quotation,eom_bt,eom_gb,eom_hp,eom_tw,product_for_aisearch,product_for_aisearch_v3 curated;
+  class curated_eom_bt,curated_eom_gb,curated_eom_hp,curated_eom_tw,curated_mih,curated_mil,curated_product,curated_products,curated_saleout_mdt,curated_saleout_monthly_mdt,curated_stock_mdt,curated_tbook_quotation,product_for_aisearch,product_for_aisearch_v3 curated;
   class dim_aging,dim_customer,dim_customer_grade,dim_customer_report_info,dim_delivery,dim_group_customer_grade,dim_invoice,dim_order,dim_product_master,dim_product_mdt,dim_project,dim_quotation,dim_sale_representative,dim_sale_representative_last,dim_sales_branch_mdt,dim_stk_mkt,dim_store dimension;
   class fact_backlog_store,fact_chq,fact_delivery,fact_invoice,fact_invoice_store,fact_mir_rs,fact_mir_vs,fact_order,fact_order_store,fact_quotation,fact_saleout_mdt,fact_saleout_monthly_mdt,fact_stock_mdt,fact_transaction_delivery,fact_transcation fact;
 ```

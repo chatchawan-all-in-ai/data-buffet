@@ -86,6 +86,13 @@ WITH src AS (
     SELECT * FROM src
     QUALIFY asat_raw = MAX(asat_raw) OVER (PARTITION BY month_date)
 
+), dup_guard AS (
+
+    SELECT IF(COUNT(*) = 0, 0, ERROR(FORMAT(
+        'curated_eom_gb: ต้นทางมีแถวซ้ำ %d ชุด — เช็คไฟล์ค้างใน SaleOut_MDT/SO_MDT_EOM/GB', COUNT(*)
+    ))) AS ok
+    FROM (SELECT 1 FROM latest AS t GROUP BY TO_JSON_STRING(t) HAVING COUNT(*) > 1)
+
 )
 
 -- รวมเป็นเกรนรายเดือน · ห้างส่งมาเป็นรายบรรทัดบิล ต้องยุบ
@@ -101,4 +108,6 @@ SELECT
     SUM(sale_amount)          AS sale_amount,
     MAX(asatdate)             AS asatdate
 FROM latest
+CROSS JOIN dup_guard
+WHERE dup_guard.ok = 0
 GROUP BY month_date, branch_code, product_code, doc_type
