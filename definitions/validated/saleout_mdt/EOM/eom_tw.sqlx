@@ -19,7 +19,12 @@ config {
 */
 
 js {
-    const sourceTableRef = `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_tw`;
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema:   databuffet.RAW_SALEOUT_MDT,
+        name:     "eom_tw",
+    };
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
 }
 
 WITH src AS (

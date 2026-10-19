@@ -11,7 +11,12 @@ config {
 }
 
 js {
-    const sourceTableRef = `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.sale_by_branch_detail`;
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema:   databuffet.RAW_SALEOUT_MDT,
+        name:     "sale_by_branch_detail",
+    };
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
 
     const pk_key = ["branch", "article_id", "distribution_channel", "end_date"]
 

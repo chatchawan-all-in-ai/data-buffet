@@ -11,7 +11,12 @@ config {
 }
 
 js {
-    const sourceTableRef = `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_hp`;
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema:   databuffet.RAW_SALEOUT_MDT,
+        name:     "saleout_hp",
+    };
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
 
     // ห้างส่งค่าครอบด้วย ="..." และย้ายคอลัมน์ที่ครอบได้ (เกิดจริง 2-4 ส.ค. 2026)
     // จึงแกะทุกคอลัมน์ข้อความ ไม่เลือกคอลัมน์

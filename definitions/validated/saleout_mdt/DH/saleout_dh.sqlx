@@ -11,7 +11,12 @@ config {
 }
 
 js {
-    const sourceTableRef = `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_dh`;
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema:   databuffet.RAW_SALEOUT_MDT,
+        name:     "saleout_dh",
+    };
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
     const pk_key = ["sale_date", "branch_code", "product_code", "is_return"]
     const post_operations_statement = `
 BEGIN

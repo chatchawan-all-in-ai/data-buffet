@@ -11,6 +11,12 @@ config {
 }
 
 js {
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema:   databuffet.RAW_SALEOUT_MDT,
+        name:     "sales_by_branch",
+    };
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
     const pk_key = ["vendor_id", "branch"]
 
     let partition_statement, post_operations_statement;
@@ -65,7 +71,7 @@ SELECT
     ${databuffet.functionData.parseDateSlash('TRIM(START_DATE)')} AS start_date,
     ${databuffet.functionData.parseDateSlash('TRIM(END_DATE)')} AS end_date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
-FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.sales_by_branch`
+FROM `${sourceTableRef}`
 ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 ${partition_statement}
 

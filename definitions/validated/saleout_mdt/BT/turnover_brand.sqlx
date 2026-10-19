@@ -11,6 +11,12 @@ config {
 }
 
 js {
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema:   databuffet.RAW_SALEOUT_MDT,
+        name:     "turnover_brand",
+    };
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
     const pk_key = ["vendor_id", "mch3", "brand", "class_stock"]
 
     let partition_statement, post_operations_statement;
@@ -51,7 +57,7 @@ SELECT
     ${databuffet.functionData.parseDateSlash('TRIM(START_DATE)')} AS start_date,
     ${databuffet.functionData.parseDateSlash('TRIM(END_DATE)')} AS end_date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
-FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.turnover_brand`
+FROM `${sourceTableRef}`
 ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 ${partition_statement}
 

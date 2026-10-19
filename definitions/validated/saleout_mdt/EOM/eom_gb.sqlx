@@ -19,7 +19,12 @@ config {
 */
 
 js {
-    const sourceTableRef = `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_gb`;
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema:   databuffet.RAW_SALEOUT_MDT,
+        name:     "eom_gb",
+    };
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
 
     // ปั๊มน้ำ Hitachi — พี่กุ้งสั่งตัดออกจากยอด GB (2026-10-05)
     // ชุดเดียวกับที่ตัดใน curated_saleout_mdt ฝั่งรายวัน ต้องแก้ทั้งสองที่เสมอ

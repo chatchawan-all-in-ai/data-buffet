@@ -9,6 +9,15 @@ config {
     },
 }
 
+js {
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema:   databuffet.RAW_SALEOUT_MDT,
+        name:     "stock_aging",
+    };
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+}
+
 
 SELECT
     ${databuffet.functionData.cleanString('VENDOR_ID')} AS vendor_id,
@@ -33,7 +42,7 @@ SELECT
     ${databuffet.functionData.parseDateSlash('TRIM(START_DATE)')} AS start_date,
     ${databuffet.functionData.parseDateSlash('TRIM(END_DATE)')} AS end_date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
-FROM `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.stock_aging`
+FROM `${sourceTableRef}`
 QUALIFY ROW_NUMBER() OVER(
     PARTITION BY vendor_id, branch, article_id, aging_tier, brand, mch3, mch2, end_date, asatdate
     ORDER BY asatdate

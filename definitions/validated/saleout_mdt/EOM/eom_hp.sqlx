@@ -20,7 +20,12 @@ config {
 */
 
 js {
-    const sourceTableRef = `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_hp`;
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema:   databuffet.RAW_SALEOUT_MDT,
+        name:     "eom_hp",
+    };
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
 
     // ห้างส่งค่าครอบด้วย ="..." กันเลขศูนย์นำหาย — แกะทุกคอลัมน์ข้อความเหมือนฟีดรายวัน
     const UNQUOTE = String.raw`r'^="|"$'`;
