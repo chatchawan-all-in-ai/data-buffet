@@ -10,6 +10,12 @@ config {
     },
 }
 
+js {
+    // saleout_lastyear ไม่ได้ถูกสร้างโดย Dataform แล้ว จึงใช้ ref() ไม่ได้
+    // เป็นข้อมูลประวัติชุดเดียวจบ สร้างจาก saved query ชื่อ saleout_lastyear ใน Shared queries
+    const LastYearRef = `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.saleout_lastyear`;
+}
+
 
 WITH hp AS (
 
@@ -243,7 +249,7 @@ WITH hp AS (
 ), bi_end AS (
 
     SELECT MAX(sale_date) AS d
-    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_lastyear")}
+    FROM `${LastYearRef}`
 
 ), month_cov AS (
 
@@ -317,7 +323,7 @@ WITH hp AS (
            ANY_VALUE(ly.product_name) AS product_name,
            SUM(ly.sale_qty) AS q, SUM(ly.sale_amount) AS a,
            MAX(ly.asatdate) AS asatdate
-    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_lastyear")} AS ly
+    FROM `${LastYearRef}` AS ly
     INNER JOIN partial_months AS p
       ON  p.store_code = ly.store_code
       AND p.m = DATE_TRUNC(ly.sale_date, MONTH)
@@ -409,7 +415,7 @@ WITH hp AS (
         MAX(asatdate)           AS asatdate
 
         
-    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_lastyear")} AS ly
+    FROM `${LastYearRef}` AS ly
     -- เอาเฉพาะ (ห้าง, วัน) ที่ฟีดรายวัน **ไม่มี** ข้อมูล — anti-join
     -- ⚠️ ห้ามใช้ NOT EXISTS ที่อ้าง CTE ข้ามกัน — Dataform ห่อ incremental เป็น script
     --    แล้ว BigQuery มองไม่เห็น CTE ในนั้น ฟ้อง "feed_days must be qualified with a dataset"
