@@ -2,7 +2,7 @@ config {
   type: "table",
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_product_master", "dim_stk_mkt", "dim_product_mkt"],
-  tags: [databuffet.TAG_DIM_DAILY],
+  tags: [databuffet.TAG_DIM_DAILY, databuffet.TAG_SALEOUT_DAILY],
   uniqueKey: ["ProductMdtSK"],
   bigquery: {
     clusterBy: ["ProductMdtSK"],

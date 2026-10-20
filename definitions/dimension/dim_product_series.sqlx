@@ -1,7 +1,7 @@
 config {
   type: "table",
   schema: databuffet.DIMENSION_TABLE,
-  tags: [databuffet.TAG_DIM_DAILY],
+  tags: [databuffet.TAG_DIM_DAILY, databuffet.TAG_SALEOUT_DAILY],
   uniqueKey: ["SeriesSK"],
   bigquery: {
     clusterBy: ["SeriesSK"],

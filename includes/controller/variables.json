@@ -22,6 +22,8 @@
     "TAG_CDC": "cdc",
     "TAG_CDC_INCREMENTAL": "cdc_incremental",
 
+    "TAG_SALEOUT_DAILY": "saleout_daily",
+
     "RAW_MAC5_AG01": "raw_mac5_ag01",
     "RAW_MAC5_AA05": "raw_mac5_aa05",
     "RAW_MAC5_AB01": "raw_mac5_ab01",

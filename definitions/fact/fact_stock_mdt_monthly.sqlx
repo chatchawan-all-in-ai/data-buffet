@@ -2,7 +2,7 @@ config {
     type: "table",
     schema: databuffet.FACT_TABLE,
     dependencies: ["fact_stock_mdt"],
-    tags: [databuffet.TAG_FACT_DAILY],
+    tags: [databuffet.TAG_FACT_DAILY, databuffet.TAG_SALEOUT_DAILY],
     uniqueKey: ["month_end", "store_code", "branch_code", "product_code"],
     bigquery: {
         partitionBy: "month_end",

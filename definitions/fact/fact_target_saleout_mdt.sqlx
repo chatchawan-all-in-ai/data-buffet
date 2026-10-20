@@ -2,7 +2,7 @@ config {
     type: "table",
     schema: databuffet.FACT_TABLE,
     dependencies: ["dim_target_saleout_mdt", "dim_sales_branch_mdt", "dim_region", "dim_region_manager", "dim_director"],
-    tags: [databuffet.TAG_FACT_DAILY],
+    tags: [databuffet.TAG_FACT_DAILY, databuffet.TAG_SALEOUT_DAILY],
     uniqueKey: ["target_date", "branch_code", "marketing_group_id", "sub_marketing_id", "segment_id"],
     bigquery: {
         partitionBy: "target_date",

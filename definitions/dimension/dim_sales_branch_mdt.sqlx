@@ -2,7 +2,7 @@ config {
   type: "table",
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_zone_mdt", "dim_zone_ta_mdt", "dim_region_last", "dim_section_last"],
-  tags: [databuffet.TAG_DIM_DAILY],
+  tags: [databuffet.TAG_DIM_DAILY, databuffet.TAG_SALEOUT_DAILY],
   uniqueKey: ["BranchMdtSK"],
   bigquery: {
     clusterBy: ["BranchMdtSK"],

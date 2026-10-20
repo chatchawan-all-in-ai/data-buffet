@@ -5,7 +5,7 @@ config {
     // fact_daily ไม่ใช่ fact_monthly — ตารางนี้สร้างใหม่ทุกวันเพราะต้นทาง
     // curated_saleout_monthly_mdt เปลี่ยนทุกวัน · แท็ก fact_monthly ไม่มีใครเรียกเลย
     // ทำให้ตารางค้างขณะที่ต้นทางเดินหน้าไปแล้ว (เจอ 2026-10-06 รอบอัตโนมัติรอบแรก)
-    tags: [databuffet.TAG_FACT_DAILY],
+    tags: [databuffet.TAG_FACT_DAILY, databuffet.TAG_SALEOUT_DAILY],
     uniqueKey: ["month_date", "store_code", "branch_code", "sales_channel", "product_code"],
     bigquery: {
         partitionBy: "month_date",

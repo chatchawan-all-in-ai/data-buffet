@@ -2,7 +2,7 @@ config {
     type: "incremental",
     schema: databuffet.CURATED_SALEOUT_MDT,
     dependencies: ["curated_schema_saleout"],
-    tags: [databuffet.TAG_CURATED, databuffet.TAG_CURATED_INCREMENTAL],
+    tags: [databuffet.TAG_CURATED, databuffet.TAG_CURATED_INCREMENTAL, databuffet.TAG_SALEOUT_DAILY],
     uniqueKey: ["sale_date", "store_code", "branch_code", "product_code", "doc_type"],
     bigquery: {
         partitionBy: "sale_date",
