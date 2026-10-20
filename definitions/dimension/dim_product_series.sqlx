@@ -8,16 +8,28 @@ config {
   },
 }
 
--- ponytail: rows hardcoded from BI's dim_product_series.xlsx (2026-10-02) — move to mds_dataset once BI loads it there
-SELECT
-  ROW_NUMBER() OVER(ORDER BY t1.SeriesCode) AS SeriesSK,
-  t1.SeriesCode,
-  t1.SeriesName
-FROM UNNEST([
-  STRUCT('100001' AS SeriesCode, 'TITAN' AS SeriesName),
-  ('999999', 'OTHERS')
-]) AS t1
+js {
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_product_series_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
+}
 
+SELECT
+  ROW_NUMBER() OVER(ORDER BY NULLIF(CAST(TRIM(t1.SeriesCode) AS STRING), '')) AS SeriesSK,
+
+  NULLIF(CAST(TRIM(t1.SeriesCode) AS STRING), '') AS SeriesCode,
+  NULLIF(CAST(TRIM(t1.SeriesName) AS STRING), '') AS SeriesName,
+  t1.id                                           AS MdsID,
+FROM `${MdsSourceTableRef}` AS t1
+WHERE t1.is_active = TRUE
+-- กัน series ซ้ำที่รหัส ถ้าซ้ำแล้วเป้าใน dim_target_series_mdt จะคูณตาม — เก็บแถวที่แก้ล่าสุด
+QUALIFY ROW_NUMBER() OVER(
+  PARTITION BY TRIM(t1.SeriesCode)
+  ORDER BY t1.updated_at DESC, t1.id
+) = 1
 
 pre_operations {}
 
