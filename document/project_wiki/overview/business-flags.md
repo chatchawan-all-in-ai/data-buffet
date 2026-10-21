@@ -27,7 +27,7 @@
 | ไฟล์ | บรรทัด | เงื่อนไข `Yes` |
 |---|---:|---|
 | `fact_order_store.sqlx` | 112–118 | `mil.milsum = 0.0` **or** `ProductGroupMAC5 = '5000'` **or** `IFNULL(milDesc,'') LIKE 'โปรโมชั่น%'` |
-| `fact_invoice_store.sqlx` | 130–136 | `mil.milsum = 0.0` **or** `ProductGroupMAC5 = '5000'` *(เงื่อนไข `milDesc like '%ของแถม%'` ถูก comment ไว้)* |
+| `fact_invoice_store.sqlx` | 109–115 | `mil.milsum = 0.0` **or** `ProductGroupMAC5 = '5000'` *(เงื่อนไข `milDesc like '%ของแถม%'` ถูก comment ไว้)* |
 | `fact_backlog_store.sqlx` | 113–118 | `cps.cpssumreq = 0.0` **or** `ProductGroupMAC5 = '5000'` |
 
 ความต่างที่ต้องรู้:

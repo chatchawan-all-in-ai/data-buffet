@@ -143,7 +143,6 @@ flowchart LR
   fact_chq --> fact_mir_rs
   fact_mir_vs --> fact_mir_rs
   fact_order --> fact_invoice
-  fact_order_store --> fact_invoice_store
   fact_quotation --> fact_order
   fact_transaction_delivery --> fact_delivery
   per --> dim_sale_representative
@@ -417,7 +416,6 @@ flowchart LR
   fact_mir_vs --> dim_aging
   fact_mir_vs --> fact_mir_rs
   fact_order --> fact_invoice
-  fact_order_store --> fact_invoice_store
   fact_quotation --> fact_order
   match_customer --> dim_customer
   mie --> dim_aging
@@ -620,7 +618,6 @@ flowchart LR
   dim_region --> fact_transcation
   dim_stk_mkt --> dim_product_master
   dim_stk_mkt --> fact_transcation
-  fact_order_store --> fact_invoice_store
   fact_quotation --> fact_order
   fact_transcation --> dim_pump_information
   product --> curated_product
@@ -817,7 +814,6 @@ flowchart LR
   dim_target_product_group_by_sale_dayofwork --> fact_transcation
   fact_mir_vs --> fact_mir_rs
   fact_order --> fact_invoice
-  fact_order_store --> fact_invoice_store
   fact_quotation --> fact_order
   fact_transaction_delivery --> fact_delivery
   mih --> curated_mih
@@ -1116,7 +1112,6 @@ flowchart LR
   dim_store --> fact_backlog_store
   dim_store --> fact_invoice_store
   dim_store --> fact_order_store
-  fact_order_store --> fact_invoice_store
   sto --> dim_store
   classDef validated fill:#cfe8ff,stroke:#4a90d9,color:#111;
   classDef curated fill:#a8d5ff,stroke:#2f6fb0,color:#111;

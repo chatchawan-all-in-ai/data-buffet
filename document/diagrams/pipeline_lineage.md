@@ -318,7 +318,6 @@ flowchart LR
   fact_chq --> fact_mir_rs
   fact_mir_vs --> fact_mir_rs
   fact_order --> fact_invoice
-  fact_order_store --> fact_invoice_store
   fact_quotation --> fact_order
   fact_stock_mdt --> fact_stock_mdt_monthly
   fact_transaction_delivery --> fact_delivery

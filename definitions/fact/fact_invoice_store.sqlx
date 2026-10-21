@@ -59,34 +59,13 @@ js {
         name: "dim_store",
     };
     const DimStoreTableRef = `${DimStoreTable.database}.${DimStoreTable.schema}.${DimStoreTable.name}`;
-
-    const MDSStatusTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_status_control_master",
-    };
-    const MDSStatusTableRef = `${MDSStatusTable.database}.${MDSStatusTable.schema}.${MDSStatusTable.name}`;
 }
 
 
 WITH dim_order_dedup AS (
   SELECT ord.OrderSK, ord.CompanySK, ord.mihVnos
   FROM `${DimOrderTableRef}` as ord
-  INNER JOIN `${MDSStatusTableRef}` as mds
-    on mds.is_active = true
-    and mds.flagwarehouse = true
-    and ord.CompanyID = mds.CompanyID
-    and ord.mihStatus = mds.StatusID
-  WHERE IFNULL(ord.mihDesc,'') NOT LIKE '%PO.วางบิล%'
-    AND ord.mix_date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
   QUALIFY ROW_NUMBER() OVER(PARTITION BY ord.CompanySK, ord.mihVnos ORDER BY ord.OrderSK DESC) = 1
-
-), order_gate AS (
-  -- ออร์เดอร์ที่ "มีบรรทัดรอด" ใน fact_order_store จริง ๆ (2026-09-15)
-  -- กันใบกำกับกำพร้า: ใบสั่งขายที่ทุกบรรทัดตกตัวกรอง (Sourcing / milstype=3 / ขึ้นต้น 'บ')
-  -- จะหายทั้งใบจาก fact_order_store แต่ใบกำกับที่อ้างถึงยังรอด → Order Qty ว่าง
-  SELECT DISTINCT OrderSK
-  FROM ${ref('fact_order_store')}
 
 ), dim_product_dedup AS (
   SELECT m.ProductSK, m.CompanySK, m.ProductCode, m.ProductGroupMAC5
@@ -113,7 +92,7 @@ WITH dim_order_dedup AS (
     mih.mihDay,
     mih.mihVnos,
     dim_inv.InvoiceSK,
-    dim_ord.OrderSK,
+    IFNULL(dim_ord.OrderSK, -1) AS OrderSK,
     dim_cust.CustomerSK,
     dim_prod.ProductSK,
     IFNULL(dim_sto.StoreSK, -1) AS StoreSK,
@@ -144,11 +123,9 @@ WITH dim_order_dedup AS (
   LEFT JOIN dim_invoice_dedup AS dim_inv
     ON  dim_inv.CompanySK = dim_com.CompanySK
     AND dim_inv.mihVnos   = mih.mihVnos
-  INNER JOIN dim_order_dedup AS dim_ord
+  LEFT JOIN dim_order_dedup AS dim_ord
     ON  dim_ord.CompanySK = dim_com.CompanySK
     AND dim_ord.mihVnos   = mil.milLinkVcno
-  INNER JOIN order_gate AS ord_gate
-    ON  ord_gate.OrderSK = dim_ord.OrderSK
   LEFT JOIN `${DimCustomerTableRef}` AS dim_cust
     ON  dim_cust.CompanySK = dim_com.CompanySK
     AND dim_cust.debcode   = mih.mihCus
