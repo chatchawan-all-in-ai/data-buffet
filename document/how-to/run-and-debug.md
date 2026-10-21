@@ -85,10 +85,8 @@ dataform compile --json | jq '.tables[] | {name: .target.name, deps: .dependency
 
 ### Tag ทั้งหมด
 
-**ใช้งานจริง**: `initial` (⚠️ DROP ตาราง validated ของ cis360, mastersku,
-master_sku, saleout_mdt, allkons_commission และ d365 — ห้ามรันทั้ง tag ให้รันเฉพาะ action
-`create_all_table_raw_<source>` ตัวเดียวโดยไม่ติ๊ก "include dependencies"),
-`re-initial` (⚠️ DROP ตาราง validated/curated ของ MAC5),
+**ใช้งานจริง**: `initial`, `re-initial` (⚠️ มี action ลบตาราง — ขอบเขตและวิธีเลือก action
+ดู [initial layer](../project_wiki/initial/initial-layer.md#การผูก-dependency)),
 `validated`, `validated_full`, `validated_incremental`, `curated`,
 `curated_full`, `curated_incremental` (เริ่มใช้กับชุด SALEOUT_MDT),
 `dimension_daily`, `dimension_yearly` (`dim_calendar` ตัวเดียว), `fact_daily`,

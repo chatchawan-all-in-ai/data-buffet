@@ -13,13 +13,10 @@
 
 ตาราง raw ต้องมีใน `definitions/initial/<source>/create_all_table_raw_<source>.sqlx`
 ถ้ายังไม่มี ให้เพิ่ม (เลือก section INCREMENT = hive-partitioned หรือ FULL = glob ตรง)
-แล้วรัน **เฉพาะ action `create_all_table_raw_<source>` ตัวเดียว โดยไม่ติ๊ก "include dependencies"**
+แล้วรัน **เฉพาะ action `create_all_table_raw_<source>` ตัวเดียว**
 
-> ⚠️ **ห้ามรัน tag `initial` ทั้ง tag** — tag นี้รวมไฟล์ `drop_all_tables_validated_<source>`
-> ด้วย จึง **ลบตาราง validated** ของ cis360, mastersku, master_sku, saleout_mdt,
-> allkons_commission และ d365 (ขอบเขตดู [initial file map](../project_wiki/initial/initial-layer.md#file-map) · ข้อมูลหายจนกว่าจะรันสร้างใหม่)
-> และถ้าติ๊ก "include dependencies" ตอนรัน `create_all_table_raw_<source>` จะดึงไฟล์ drop
-> ของ source นั้นมารันด้วย (ของ mac5 คือ drop ใน tag `re-initial` ซึ่งลบทั้ง validated และ curated ของ MAC5)
+> ⚠️ **ห้ามรัน tag `initial` ทั้ง tag เพื่อเพิ่มตาราง raw** — มี action ลบตารางด้วย
+> ขอบเขตและวิธีเลือก action ดู [initial layer](../project_wiki/initial/initial-layer.md#การผูก-dependency)
 
 ### 2. สร้างไฟล์ `definitions/validated/<source>/<table>.sqlx`
 

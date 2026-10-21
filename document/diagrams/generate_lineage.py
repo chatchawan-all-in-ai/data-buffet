@@ -527,9 +527,10 @@ dashed = a prerequisite from another cadence.
 
 > ⚠️ Tag `initial` also drops validated tables of `cis360`, `mastersku`, `master_sku`,
 > `saleout_mdt`, `allkons_commission` and `d365` (exact scope: [initial file map](../project_wiki/initial/initial-layer.md#file-map)).
-> To add or refresh raw tables, run only the single `create_all_table_raw_<source>`
-> action without "include dependencies". Including dependencies can also pull in
-> MAC5 drops; tag `re-initial` drops validated/curated MAC5 tables and does not
+> Since 2026-10-21 no action depends on a `drop_all_tables_*` action, so "include
+> dependencies" can never run a drop; re-initial is a deliberate manual two-step —
+> run the drop actions on their own (or tag `re-initial` for MAC5), then run the
+> normal tags to rebuild. Tag `re-initial` drops validated/curated MAC5 tables and does not
 > recreate external tables. Tags `initial` and `view` are manual; `daily_process`
 > selects `validated`, `curated`, `dimension_daily`, `fact_daily`, `cdc_incremental`
 > and `process`.

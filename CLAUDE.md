@@ -214,7 +214,7 @@ addresses, gated on today's CDC changes (cost control — don't remove the gate)
 
 `initial` (⚠️ also drops the validated tables of cis360, mastersku, master_sku,
 saleout_mdt, allkons_commission and d365 — to add/refresh raw tables run only the single
-`create_all_table_raw_<source>` action, without "include dependencies"),
+`create_all_table_raw_<source>` action; see the [initial-layer guide](document/project_wiki/initial/initial-layer.md#การผูก-dependency)),
 `re-initial` (⚠️ drops validated/curated MAC5 tables), `validated`,
 `validated_full`, `validated_incremental`, `curated`, `curated_full`,
 `curated_incremental` (SALEOUT_MDT curated), `dimension_daily`,

@@ -9,7 +9,7 @@
 
 | Constant | Value | Runs |
 |---|---|---|
-| `TAG_INITIAL` | `initial` | ⚠️ External tables **and drops of validated tables** of `cis360`, `mastersku`, `master_sku`, `saleout_mdt`, `allkons_commission` and `d365`. To add or refresh raw tables, run only the single `create_all_table_raw_<source>` action without "include dependencies" (dependencies can also pull in MAC5 drops). Schema/UDF bootstrap actions are untagged; see [initial-layer.md](../initial/initial-layer.md) |
+| `TAG_INITIAL` | `initial` | ⚠️ External-table setup and destructive validated drops; see [scope and manual execution](../initial/initial-layer.md#การผูก-dependency). Schema/UDF bootstrap actions are untagged |
 | `TAG_REINITIAL` | `re-initial` | ⚠️ Drops validated/curated MAC5 tables; does not recreate external tables |
 | `TAG_VALIDATED` | `validated` | All validated tables |
 | `TAG_VALIDATED_FULL` | `validated_full` | Full-load reference tables |

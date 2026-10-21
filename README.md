@@ -235,8 +235,9 @@ Select tags for an execution in the Dataform service (see the
 | Support | `process`, `cdc`, `cdc_incremental` |
 
 > ⚠️ To add or refresh raw tables, never run the whole `initial` tag. Run only the
-> single `create_all_table_raw_<source>` action, **without** "include dependencies"
-> (with it, the MAC5 create files also pull in the `re-initial` drops).
+> single `create_all_table_raw_<source>` action. See the
+> [initial-layer guide](document/project_wiki/initial/initial-layer.md#การผูก-dependency)
+> for dependency safety and deliberate manual rebuilds.
 
 Declared in `variables.json` but currently unused: `dimension_monthly`,
 `fact_monthly`, `fact_yearly`. There is no `assertions` tag — the project has no

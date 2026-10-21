@@ -436,9 +436,8 @@ region `us-central1`) แล้ว copy SQL ไปสร้างใหม่ท
 - ถ้าเป็นสิทธิ์อ่าน GCS → กลับ Step 6
 - ถ้าเป็น dataset not found → กลับ Step 5
 
-> **ห้ามติ๊ก `Include dependencies` เด็ดขาด** — `create_all_table_raw_mac5*` มี dependency
-> เป็น `drop_all_tables_validated_mac5` + `drop_all_tables_curated_mac5` (tag `re-initial`)
-> ถ้าลากมาด้วยจะลบ `validated_mac5` 86 ตาราง + `curated_mac5` ทิ้งทั้งชุด
+> ขอบเขตของ tag `initial` และการแยก drop ออกจาก dependencies ดู
+> [initial layer](../project_wiki/initial/initial-layer.md#การผูก-dependency)
 >
 > **และห้ามรัน tag `re-initial`** ตลอดทั้งกระบวนการ
 

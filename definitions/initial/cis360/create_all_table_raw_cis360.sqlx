@@ -1,6 +1,6 @@
 config {
   type: "operations",
-  dependencies: ["drop_all_tables_validated_cis360"],
+  dependencies: [],
   tags: [databuffet.TAG_INITIAL],
 }
 

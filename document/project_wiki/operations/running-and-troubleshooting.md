@@ -24,11 +24,8 @@ There is **no** `assertions` tag. Per-tag file counts: see the
 [generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview).
 
 > ⚠️ **Never run the whole `initial` tag to add or refresh one raw table.**
-> Every `create_all_table_raw_<source>` depends on that source's drop file, and the
-> non-MAC5 drop files carry tag `initial` themselves. Run only the single
-> `create_all_table_raw_<source>` action, **without** "include dependencies".
-> With "include dependencies", the MAC5 create files also pull in the `re-initial`
-> drops (validated **and** curated MAC5). The schema and UDF files
+> For raw setup, dependency safety, and manual rebuilds, follow the
+> [initial-layer guide](../initial/initial-layer.md#การผูก-dependency). The schema and UDF files
 > (`create_all_schema`, `create_all_function`) have no tag; run them by action name.
 
 ## Schedule (Dataform service, `databuffet-nonprd`)

@@ -1,6 +1,6 @@
 config {
     type: "operations",
-    dependencies: ["drop_all_tables_validated_saleout_mdt", "create_all_table_raw_saleout_mdt", "cdc_change_log"],
+    dependencies: ["create_all_table_raw_saleout_mdt", "cdc_change_log"],
     tags: [databuffet.TAG_VALIDATED, databuffet.TAG_SALEOUT_DAILY],
 }
 
