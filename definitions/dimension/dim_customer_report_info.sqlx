@@ -3,8 +3,8 @@ config {
   schema: databuffet.DIMENSION_TABLE,
   // ชุดเล็กสุด: update_sk_sale_rep_group รันหลัง *_last ทั้งหมด (รวม dim_department_last, dim_sale_representative_last, dim_company)
   // ตารางหลัง view (กฎ Run order): view_dim_invoice อ่าน dim_aging (ครอบ dim_invoice, dim_customer), dim_order, mec ตรง ๆ
-  // · view_dim_customer อ่าน dim_group_customer
-  dependencies: ["update_sk_sale_rep_group", "dim_customer_segment", "dim_aging", "dim_order", "dim_group_customer", "mec"],
+  // · view_dim_customer อ่าน dim_group_customer · view_deb_address_data อ่าน deb_address_data
+  dependencies: ["update_sk_sale_rep_group", "dim_customer_segment", "dim_aging", "dim_order", "dim_group_customer", "mec", "deb_address_data"],
   tags: [databuffet.TAG_DIM_DAILY],
   uniqueKey: ["CustomerReportInfoSK"],
   bigquery: {
@@ -61,6 +61,13 @@ js {
         name: "view_dim_customer",
     };
     const ViewDimCustomerTableRef = `${ViewDimCustomerTable.database}.${ViewDimCustomerTable.schema}.${ViewDimCustomerTable.name}`;
+
+    const DebAddressTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.PROCESS_DATASET,
+        name: "view_deb_address_data",
+    };
+    const DebAddressTableRef = `${DebAddressTable.database}.${DebAddressTable.schema}.${DebAddressTable.name}`;
 
     const CleanCompanyPrefixTable = {
         database: databuffet.DATABASE,
@@ -311,6 +318,34 @@ with mds as (
   ) AS sr
     ON t.CompanySK = sr.CompanySK
     AND t.TAEmployeeID = sr.EmployeeID
+
+), deb_address as (
+  -- ที่อยู่ของรหัสลูกค้า (แบบเดียวกับ Invoice*SK ใน dim_customer) · view คืนได้หลายแถวต่อรหัส
+  -- (ชื่อตำบลซ้ำใน dim_sub_districts) เลือกแถวเดียว: sub_districts > districts > provinces แล้ว SK น้อยสุด
+  SELECT company_id, debcode, ProvinceSK, DistrictSK, SubDistrictSK
+  FROM `${DebAddressTableRef}`
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY company_id, debcode
+    ORDER BY (CASE condition WHEN 'sub_districts' THEN 1 WHEN 'districts' THEN 2 ELSE 3 END),
+      SubDistrictSK, DistrictSK, ProvinceSK) = 1
+
+), with_address as (
+  -- รหัสลูกค้าของร้าน = รหัสที่ใช้หา segment ถ้าไม่มีใช้รหัสที่ใช้หา TA · credit term จาก deb · ที่อยู่จาก deb_address
+  SELECT
+    t.*,
+    deb.DEBcreditTerm,
+    addr.ProvinceSK AS InvoiceProvinceSK,
+    addr.DistrictSK AS InvoiceDistrictSK,
+    addr.SubDistrictSK AS InvoiceSubDistrictSK
+  FROM (
+    SELECT *, COALESCE(SegmentDebcode, TADebcode) AS ReportDebcode
+    FROM with_ta
+  ) AS t
+  LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, "deb")} AS deb
+    ON t.CompanyID = deb.company_id
+    AND t.ReportDebcode = deb.debcode
+  LEFT JOIN deb_address AS addr
+    ON t.CompanyID = addr.company_id
+    AND t.ReportDebcode = addr.debcode
 )
 SELECT
   ROW_NUMBER() OVER(ORDER BY t.CompanyID, t.CustomerReportKey) AS CustomerReportInfoSK,
@@ -340,8 +375,14 @@ SELECT
   t.TASource,
   -- รหัสลูกค้าที่ใช้หา TA และพนักงาน (SK) · ชื่อ/รหัสพนักงานอยู่ใน view_dim_customer_report_info
   t.TADebcode,
-  t.SaleRepSK
-FROM with_ta AS t
+  t.SaleRepSK,
+  -- รหัสลูกค้าของร้าน + credit term + ที่อยู่ (SK) · ชื่อตำบล/อำเภอ/จังหวัดอยู่ใน view_dim_customer_report_info
+  t.ReportDebcode,
+  t.DEBcreditTerm,
+  t.InvoiceProvinceSK,
+  t.InvoiceDistrictSK,
+  t.InvoiceSubDistrictSK
+FROM with_address AS t
 LEFT JOIN `${DimDepartmentLastTableRef}` AS dep
   ON t.CompanySK = dep.CompanySK
   AND t.TADepartmentSK = dep.DepartmentSK
@@ -377,7 +418,12 @@ SELECT
   NULL AS DirectorSK,
   NULL AS TASource,
   NULL AS TADebcode,
-  NULL AS SaleRepSK
+  NULL AS SaleRepSK,
+  NULL AS ReportDebcode,
+  NULL AS DEBcreditTerm,
+  NULL AS InvoiceProvinceSK,
+  NULL AS InvoiceDistrictSK,
+  NULL AS InvoiceSubDistrictSK
 
 pre_operations {}
 

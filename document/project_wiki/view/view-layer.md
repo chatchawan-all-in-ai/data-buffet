@@ -166,7 +166,7 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 | `view_dim_channel` | dim_channel, dim_channel_cost, dim_channel_finance, dim_channel_sales | — |
 | `view_dim_company` | dim_company | — |
 | `view_dim_customer` | dim_customer, dim_group_customer | mds ×3, dim_districts/provinces/geographies/sub_districts |
-| `view_dim_customer_report_info` | See [SQLX definition](../../../definitions/view/dimension_view/view_dim_customer_report_info.sqlx) for active upstream sources | — · [Customer Report Info contract](#customer-report-info--customer-segment-2026-10-01) |
+| `view_dim_customer_report_info` | See [SQLX definition](../../../definitions/view/dimension_view/view_dim_customer_report_info.sqlx) for active upstream sources | dim_districts/provinces/sub_districts · [Customer Report Info contract](#customer-report-info--customer-segment-2026-10-01) |
 | `view_dim_customer_credit_management` | dim_customer, dim_customer_grade | — |
 | `view_dim_guarantee` | dim_customer, dim_guarantee | — |
 | `view_dim_invoice` | See [SQLX definition](../../../definitions/view/dimension_view/view_dim_invoice.sqlx) for active upstream sources | fn_flag_scg |
@@ -302,10 +302,17 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
   · ผลวัด 2026-10-07 ก่อนเปลี่ยนเปอร์เซ็นต์เป็นข้อความ: Yes 149 · No 41,228 (NULL ในตาราง 39,505) · `OnlinePercent` 22 แถว สูงสุด 0.8
   · ผลวัด 2026-10-09 (SELECT query ที่ compile แล้วบน live): `OnlinePercent` 22 แถว = `0%` 12 · `20%` 1 · `70%` 1 · `80%` 8
   · `TADebcode` เก็บเป็นคอลัมน์ธรรมดาในตาราง (ไม่ใช่ SK)
+  · **ที่อยู่ร้าน + credit term (2026-10-22)** — `ReportDebcode` = `COALESCE(SegmentDebcode, TADebcode)`;
+  `DEBcreditTerm` จาก validated_mac5 `deb` และ `InvoiceProvinceSK`/`InvoiceDistrictSK`/`InvoiceSubDistrictSK` จาก
+  `process_dataset.view_deb_address_data` (แบบเดียวกับ `dim_customer`) join ด้วย company + `ReportDebcode` · view คืนได้หลายแถวต่อรหัส
+  จึงเลือกแถวเดียว: `sub_districts` > `districts` > `provinces` แล้ว SK น้อยสุด · `view_dim_customer_report_info` เพิ่ม
+  `SubDistrict`/`District`/`Province` (`name_th` จาก `dim_sub_districts`/`dim_districts`/`dim_provinces` แบบ `view_dim_customer`)
+  · ผลวัด 2026-10-22 (SELECT query ที่ compile แล้ว): 41,536 แถวเท่าเดิม SK unique · ag01 40,995 ร้าน: credit term 40,971,
+  Province 6,653, District 4,146, SubDistrict 4,058 — ที่อยู่น้อยเพราะ `deb_address_data` parse ได้แค่ส่วนน้อยของ debtor
   · ภายใน dim ยัง join ด้วย SK · `dependencies[]` เป็นชุดเล็กสุด (2026-10-06): `update_sk_sale_rep_group` (รันหลัง `*_last`
   ทั้งหมดและเติม `DepartmentSK` ของ `dim_sale_representative_last` ที่ใช้หา TA), `dim_customer_segment`, และตารางหลัง view
   ตามกฎ Run order: `dim_aging`, `dim_order`, `mec` (`view_dim_invoice` อ่านตรง ๆ; `dim_aging` ครอบ
-  `dim_invoice`/`dim_customer` ด้วย) และ `dim_group_customer` (`view_dim_customer`)
+  `dim_invoice`/`dim_customer` ด้วย), `dim_group_customer` (`view_dim_customer`) และ `deb_address_data` (`view_deb_address_data`)
   · ใน repo/BigQuery ผู้อ่านตารางนี้คือ `view_fact_transcation` (อ่านแค่ `CustomerReportInfoSK`/`CompanySK`/`CustomerReportName`)
   และ `view_dim_customer_report_info`
   · **Deploy (2026-10-09)**: หลัง merge รัน `dim_customer_report_info` (`dimension_daily`) ให้มีแถว -1 **ก่อน**

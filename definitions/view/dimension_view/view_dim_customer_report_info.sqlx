@@ -62,6 +62,27 @@ js {
         name: "dim_sale_representative_last",
     };
     const DimSaleRepLastTableRef = `${DimSaleRepLastTable.database}.${DimSaleRepLastTable.schema}.${DimSaleRepLastTable.name}`;
+
+    const DimSubDistrictsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sub_districts",
+    };
+    const DimSubDistrictsTableRef = `${DimSubDistrictsTable.database}.${DimSubDistrictsTable.schema}.${DimSubDistrictsTable.name}`;
+
+    const DimDistrictsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_districts",
+    };
+    const DimDistrictsTableRef = `${DimDistrictsTable.database}.${DimDistrictsTable.schema}.${DimDistrictsTable.name}`;
+
+    const DimProvincesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_provinces",
+    };
+    const DimProvincesTableRef = `${DimProvincesTable.database}.${DimProvincesTable.schema}.${DimProvincesTable.name}`;
 }
 
 -- dim_customer_report_info เก็บแค่ SK ของ TA chain · view นี้ get รหัส/ชื่อตาม SK · CustomerSegmentSK ส่งผ่านเฉย ๆ (Power BI relate กับ Dimension Customer Segment เอง) (หนึ่งแถวต่อร้าน: SK ทุกตัว unique ในตารางปลายทาง)
@@ -94,7 +115,11 @@ SELECT
   NULLIF(CONCAT(
     TRIM(CONCAT(IFNULL(TRIM(rep.EmployeeName), ''), ' ', IFNULL(TRIM(rep.EmployeeSurname), ''))),
     IFNULL(CONCAT(' (', NULLIF(TRIM(rep.EmployeeNickname), ''), ')'), '')
-  ), '') AS TAEmployeeName
+  ), '') AS TAEmployeeName,
+  -- ที่อยู่ร้าน: ชื่อไทยตาม SK (แบบเดียวกับ view_dim_customer)
+  sub_district.name_th AS SubDistrict,
+  district.name_th AS District,
+  province.name_th AS Province
 FROM `${DimCustomerReportInfoTableRef}` AS cri
 LEFT JOIN `${DimDepartmentLastTableRef}` AS dep
   ON cri.DepartmentSK = dep.DepartmentSK
@@ -110,3 +135,9 @@ LEFT JOIN `${DimDirectorLastTableRef}` AS dir
   ON cri.DirectorSK = dir.DirectorSK
 LEFT JOIN `${DimSaleRepLastTableRef}` AS rep
   ON cri.SaleRepSK = rep.SaleRepSK
+LEFT JOIN `${DimSubDistrictsTableRef}` AS sub_district
+  ON cri.InvoiceSubDistrictSK = sub_district.SubDistrictSK
+LEFT JOIN `${DimDistrictsTableRef}` AS district
+  ON cri.InvoiceDistrictSK = district.DistrictSK
+LEFT JOIN `${DimProvincesTableRef}` AS province
+  ON cri.InvoiceProvinceSK = province.ProvinceSK
