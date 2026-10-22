@@ -108,8 +108,9 @@ with tab_main as (
   -- where mih2.mih2pos is not null
   qualify row_number() over(partition by InvoiceSK order by AgingSK) = 1
 
-)
-  select 
+),
+tab_name as (
+  select
     COALESCE(dim_order.OrderSK, main.OrderSK) as OrderSK,
     main.* except(CRCShopName, OrderSK),
     `${FnFlagScgTableRef}`(main.RefOrder, main.mihCus) as FlagSCG,
@@ -119,12 +120,13 @@ with tab_main as (
       WHEN `${FnFlagScgTableRef}`(main.RefOrder, main.mihCus) is not null
             and mecdesc is not null
         THEN `${CleanCompanyPrefixTableRef}`(mecdesc)
-      WHEN cust.FlagMDSNickName = True THEN cust.NicknameCustomer
       WHEN COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName) is not null
         THEN COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName)
       ELSE `${CleanCompanyPrefixTableRef}`(cust.debnamet)
     END) as CustomerReportName,
-    mec.mecdesc
+    mec.mecdesc,
+    cust.FlagMDSNickName,
+    cust.NicknameCustomer
     
   from tab_main as main
   left join `${ViewDimCustomerTableRef}` as cust
@@ -145,4 +147,16 @@ with tab_main as (
   left join `${MdsDataCrcShopNameRenameTableRef}` as mds_crc
     on main.CRCShopName = mds_crc.crc_shop_name
     and main.CRCShopName is not null
+    and mds_crc.is_active = true
+  )
+  -- MDS overrides run last and beat every rule-based name: nickname first, then CRC rename
+  select
+    nm.* except(CustomerReportName, FlagMDSNickName, NicknameCustomer),
+    (CASE
+      WHEN nm.FlagMDSNickName = True THEN nm.NicknameCustomer
+      ELSE COALESCE(mds_crc.crc_shop_name_change, nm.CustomerReportName)
+    END) as CustomerReportName
+  from tab_name as nm
+  left join `${MdsDataCrcShopNameRenameTableRef}` as mds_crc
+    on nm.CustomerReportName = mds_crc.crc_shop_name
     and mds_crc.is_active = true
