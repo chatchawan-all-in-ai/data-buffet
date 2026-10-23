@@ -143,8 +143,8 @@ pre_operations {
     ${databuffet.functionData.castInt64('MIHclearCUT')} AS mihclearcut,
     ${databuffet.functionData.castInt64('MIHsettleCUT')} AS mihsettlecut,
     ${databuffet.functionData.parseFlexibleDatetime('ModDate')} AS moddate,
-    NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'เธฟ[^เธฟ]*เธฟ', '')), '') AS mihmemo_new,
-    IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(เธฟ[^เธฟ]*เธฟ)')), 'เธฟ00เธฟ') AS memo_extract,
+    NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'฿[^฿]*฿', '')), '') AS mihmemo_new,
+    IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(฿[^฿]*฿)')), '฿00฿') AS memo_extract,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
   FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mih`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
@@ -234,8 +234,8 @@ pre_operations {
     ${databuffet.functionData.castInt64('MIHclearCUT')} AS mihclearcut,
     ${databuffet.functionData.castInt64('MIHsettleCUT')} AS mihsettlecut,
     CAST(NULL AS DATETIME) AS moddate,
-    NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'เธฟ[^เธฟ]*เธฟ', '')), '') AS mihmemo_new,
-    IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(เธฟ[^เธฟ]*เธฟ)')), 'เธฟ00เธฟ') AS memo_extract,
+    NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'฿[^฿]*฿', '')), '') AS mihmemo_new,
+    IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(฿[^฿]*฿)')), '฿00฿') AS memo_extract,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
   FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}.mih`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
@@ -325,8 +325,8 @@ pre_operations {
     ${databuffet.functionData.castInt64('MIHclearCUT')} AS mihclearcut,
     ${databuffet.functionData.castInt64('MIHsettleCUT')} AS mihsettlecut,
     CAST(NULL AS DATETIME) AS moddate,
-    NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'เธฟ[^เธฟ]*เธฟ', '')), '') AS mihmemo_new,
-    IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(เธฟ[^เธฟ]*เธฟ)')), 'เธฟ00เธฟ') AS memo_extract,
+    NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'฿[^฿]*฿', '')), '') AS mihmemo_new,
+    IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(฿[^฿]*฿)')), '฿00฿') AS memo_extract,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
   FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}.mih`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
@@ -416,8 +416,8 @@ pre_operations {
     ${databuffet.functionData.castInt64('MIHclearCUT')} AS mihclearcut,
     ${databuffet.functionData.castInt64('MIHsettleCUT')} AS mihsettlecut,
     CAST(NULL AS DATETIME) AS moddate,
-    NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'เธฟ[^เธฟ]*เธฟ', '')), '') AS mihmemo_new,
-    IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(เธฟ[^เธฟ]*เธฟ)')), 'เธฟ00เธฟ') AS memo_extract,
+    NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'฿[^฿]*฿', '')), '') AS mihmemo_new,
+    IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(฿[^฿]*฿)')), '฿00฿') AS memo_extract,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
   FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AC02}.mih`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
@@ -507,8 +507,8 @@ pre_operations {
     ${databuffet.functionData.castInt64('MIHclearCUT')} AS mihclearcut,
     ${databuffet.functionData.castInt64('MIHsettleCUT')} AS mihsettlecut,
     CAST(NULL AS DATETIME) AS moddate,
-    NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'เธฟ[^เธฟ]*เธฟ', '')), '') AS mihmemo_new,
-    IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(เธฟ[^เธฟ]*เธฟ)')), 'เธฟ00เธฟ') AS memo_extract,
+    NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'฿[^฿]*฿', '')), '') AS mihmemo_new,
+    IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(฿[^฿]*฿)')), '฿00฿') AS memo_extract,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
   FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.mih`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }

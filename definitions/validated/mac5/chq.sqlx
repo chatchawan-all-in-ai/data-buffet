@@ -246,18 +246,18 @@ all_sources AS (
 )
 
 -------------------------------------------------------------------------
--- โจ เน€เธฃเธตเธขเธเนเธเน UDF เธ—เธตเนเน€เธฃเธฒเธฃเธฑเธ Parameter เน€เธเนเธฒเนเธ เธชเธฑเนเธเธเธฃเธดเนเธ! โจ
+-- ✨ เรียกใช้ UDF ที่เรารับ Parameter เข้าไป สั้นกริ๊บ! ✨
 -------------------------------------------------------------------------
 SELECT 
   * EXCEPT(chqmemo, extracted_data),
-  chqmemo AS chqmemo_raw,               -- ๐‘ เธ”เธถเธเธเธญเธฅเธฑเธกเธเนเธ”เธดเธเธเธฅเธฑเธเธกเธฒ เนเธฅเนเธงเธ•เธฑเนเธเธเธทเนเธญเน€เธเนเธ _raw
-  extracted_data.chqmemo AS chqmemo,    -- ๐‘ เน€เธญเธฒเธเนเธญเธเธงเธฒเธกเธ—เธตเนเธ•เธฑเธ”เนเธฅเนเธง (clean) เธกเธฒเนเธเนเน€เธเนเธ chqmemo เนเธ—เธ
+  chqmemo AS chqmemo_raw,               -- 👈 ดึงคอลัมน์ดิบกลับมา แล้วตั้งชื่อเป็น _raw
+  extracted_data.chqmemo AS chqmemo,    -- 👈 เอาข้อความที่ตัดแล้ว (clean) มาใช้เป็น chqmemo แทน
   extracted_data.extract_text,
   extracted_data.extract_value
 FROM (
   SELECT 
     *,
-    -- เนเธขเธ 3 Parameters เนเธซเน UDF เธ•เธฒเธกเนเธเธฃเธเธชเธฃเนเธฒเธเธ—เธตเนเน€เธฃเธฒเธ•เธฑเนเธเนเธงเนเน€เธฅเธขเธเธฃเธฑเธ
+    -- โยน 3 Parameters ให้ UDF ตามโครงสร้างที่เราตั้งไว้เลยครับ
     `${databuffet.DATABASE}.${databuffet.FUNCTION_DATASET}.EXTRACT_CHQ_DATA`(chqmemo, chqdatec, chqtotal) AS extracted_data
   FROM all_sources
 )

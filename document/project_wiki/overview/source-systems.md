@@ -29,7 +29,8 @@
 - GCS prefix พิเศษ: `mac5_report` (stg_report, stgacc), `mac5_gps`
   (tdelivery, ttrip, ttrip_document)
 - ของเฉพาะ `ag01`: สัดส่วน split-sale (`mih2`), กลับเครื่องหมายเมื่อ `mihtype='BS'`
-  (คอลัมน์คู่ `*_raw`), แกะ memo ภาษาไทย
+  (คอลัมน์คู่ `*_raw`)
+- แกะ memo ภาษาไทยใน `mih` และ `chq` ทั้ง 5 บริษัท
 - **doc-grain purge** บน `mih`/`mil`/`mir` (2026-09-10) — PK ระดับบรรทัดลบแถวที่ต้นทาง
   ลบไม่ได้ ดู [validated-layer.md](../validated/validated-layer.md)
 
