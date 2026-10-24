@@ -85,12 +85,9 @@ dataform compile --json | jq '.tables[] | {name: .target.name, deps: .dependency
 
 ### Tag ทั้งหมด
 
-**ใช้งานจริง**: `initial`, `re-initial` (⚠️ มี action ลบตาราง — ขอบเขตและวิธีเลือก action
-ดู [initial layer](../project_wiki/initial/initial-layer.md#การผูก-dependency)),
-`validated`, `validated_full`, `validated_incremental`, `curated`,
-`curated_full`, `curated_incremental` (เริ่มใช้กับชุด SALEOUT_MDT),
-`dimension_daily`, `dimension_yearly` (`dim_calendar` ตัวเดียว), `fact_daily`,
-**`view`**, `cdc`, `cdc_incremental`, `process`
+รายการ tag และหน้าที่อยู่ที่ [registry reference](../project_wiki/includes/variables.md#tags)
+· ⚠️ `initial` / `re-initial` มี action ลบตาราง — ขอบเขตและวิธีเลือก action
+ดู [initial layer](../project_wiki/initial/initial-layer.md#การผูก-dependency)
 
 **ประกาศไว้แต่ยังไม่ถูกใช้**: `dimension_monthly`, `fact_monthly`, `fact_yearly`
 
@@ -110,7 +107,8 @@ cdc → process   (สายแยก — process gate อยู่บน CDC �
 `create_all_table_raw_<source>` ไม่ใช่ทั้ง tag (ดูคำเตือนด้านบน)
 
 `view` ต้องรัน **หลัง** `fact_daily` เสมอ เพราะ view อ่านจาก dim/fact
-`view` **ไม่อยู่ในตารางเวลาโดยตั้งใจ** — ต้อง deploy มือ ไม่งั้น view บน BigQuery จะไม่ตรงกับ repo
+`view` **ไม่อยู่ในตารางเวลาโดยตั้งใจ** — presentation views ใช้ [คู่มือ deploy](deploy-view.md)
+ส่วน Pub/Sub export views ใช้ [export contract](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
 ตารางเวลาจริง (05:45 / 06:00 / 08:55 / ปีละครั้ง) ดูที่
 [running-and-troubleshooting § Schedule](../project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd)
 

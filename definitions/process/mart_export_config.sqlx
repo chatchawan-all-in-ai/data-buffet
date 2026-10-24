@@ -1,0 +1,17 @@
+config {
+    type: "table",
+    schema: databuffet.PROCESS_DATASET,
+    tags: [databuffet.TAG_RUN_LOG_DAILY],
+    description: "One row per table exported to Pub/Sub, read by the publish workflow. Generated from includes/controller/mart-export-config.json — to export another table, add a row there and its export view",
+}
+
+js {
+    const cfg = databuffet.martExportConfig;
+}
+
+-- ref() records the view as a dependency, so a config row naming a missing view fails compile.
+SELECT *
+FROM UNNEST([
+  STRUCT<table_name STRING, process_name STRING, source_view STRING, topic STRING>
+  ${cfg.tables.map(t => `('${t.table_name}', '${cfg.process_name}', '${ref(databuffet.PUB_SUB, t.source_view).replace(/`/g, "")}', '${t.topic}')`).join(",\n  ")}
+])

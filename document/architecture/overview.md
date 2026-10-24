@@ -32,10 +32,10 @@ GCS files  gs://file-raw-data  (AVRO, Hive partition: ASATDATE=YYYYMMDD · ม�
               ┌────────────┐  definitions/view/
               │    VIEW    │  BI/reporting views (type: "view")
               └────────────┘  dimension_view · fact_view · bridge_dataset ·
-               view schemas    onetime · process_dataset
+               view schemas    onetime · process_dataset · pub_sub
 
-ท่อเสริม:  CDC (cdc_dataset, 2 ไฟล์)  →  PROCESS (process_dataset, 2 ไฟล์ —
-           AI.GENERATE แกะที่อยู่ไทย + RLS)
+ท่อเสริม:  CDC (cdc_dataset)  →  PROCESS (process_dataset —
+           AI.GENERATE แกะที่อยู่ไทย + RLS + นำร่องส่ง Pub/Sub)
 ต้นทางภายนอก:  mds_dataset (master data service — repo นี้ไม่ได้สร้าง)
 ```
 
@@ -48,9 +48,10 @@ GCS files  gs://file-raw-data  (AVRO, Hive partition: ASATDATE=YYYYMMDD · ม�
 | Curated | `curated_*` | incremental / table | join ข้าม validated, JSON parsing, split-sale (ag01), รวม sell-out ทุกห้าง |
 | Dimension | `dimension_table` | table rebuild / operations MERGE | ออก surrogate key, SCD |
 | Fact | `fact_table` | table / operations | join SK ทุก dimension, retention 4 ปี |
-| View | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | view | BI/reporting อ่านจาก dim/fact/curated (`type: "view"`, tag `view`) |
+| View | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset`, `pub_sub` | view | BI/reporting อ่านจาก dim/fact/curated (`type: "view"`, tag `view`) |
 | CDC | `cdc_dataset` | operations | จับ NEW/CHANGED จาก config |
-| Process | `process_dataset` | incremental / table | AI แกะที่อยู่ไทย (row ที่ CDC เปลี่ยน) + RLS (`rls_customer360`) |
+| Pub/Sub | `pub_sub` | operations | `pub_sub_schema` สร้าง dataset · ที่อยู่ของตารางเตรียมข้อมูลก่อนส่ง Pub/Sub ในอนาคต (view ส่งออกอยู่ที่ `definitions/view/pub_sub/`) |
+| Process | `process_dataset` | incremental / table / operations | AI แกะที่อยู่ไทย (row ที่ CDC เปลี่ยน) + RLS (`rls_customer360`) + [นำร่องส่ง Pub/Sub](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
 
 ### แยกย่อย dimension
 

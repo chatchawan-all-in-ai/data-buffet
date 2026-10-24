@@ -19,6 +19,7 @@
 | `TAG_FACT_DAILY` / `TAG_FACT_MONTHLY` / `TAG_FACT_YEARLY` | `fact_daily`, `fact_monthly`, `fact_yearly` | Fact refresh cadence |
 | `TAG_PROCESS` | `process` | Process layer (address parsing + `rls_customer360`) |
 | `TAG_CDC` / `TAG_CDC_INCREMENTAL` | `cdc`, `cdc_incremental` | CDC pipeline |
+| `TAG_RUN_LOG_DAILY` | `run_log_daily` | [Pub/Sub pilot actions](../cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24); activation is owned by the [schedule reference](../operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd) |
 | `TAG_VIEW` | `view` | View layer (`definitions/view/`) — presentation views over dim/fact/curated · [Deployment procedure](../../how-to/deploy-view.md) |
 
 ## Dataset (BigQuery schema) names
@@ -46,7 +47,8 @@
 | `ONETIME` | `onetime` | Data-mart / Power BI / model views + externally-loaded base tables |
 | `BRIDGE` | `bridge_dataset` | Bridge views (many-to-many SK maps) — `definitions/view/bridge_dataset/` |
 | `CDC_DATESET` (sic) | `cdc_dataset` | CDC change log |
-| `PROCESS_DATASET` | `process_dataset` | Derived datasets (address parsing) + RLS/address views |
+| `PROCESS_DATASET` | `process_dataset` | Derived datasets (address parsing) + RLS/address views + Pub/Sub export log, sent state and config |
+| `PUB_SUB` | `pub_sub` | Views read by the Pub/Sub publish workflow (`definitions/view/pub_sub/`), e.g. `export_dim_company` |
 | `FUNCTION_DATASET` | `function_dataset` | BigQuery UDFs (7 ตัว) |
 | `MDS_DATASET` | `mds_dataset` | Master-data-service tables (externally loaded, **not** created by this repo) |
 
@@ -66,9 +68,9 @@ MAC5 has **5 company instances** (ag01, aa05, ab01, ac02, ak02), each with its o
 dataset and GCS folder. The validated layer consolidates them into the single
 `validated_mac5` dataset with a `company_id` column.
 
-## จำนวน key
+## ขอบเขตของหน้านี้
 
-`variables.json` มี **64 key** (นับ 2026-10-18) — หน้านี้อธิบายด้วย **ค่า**
+หน้านี้อธิบายด้วย **ค่า**
 (เช่น `raw_mac5_ag01`) ไม่ใช่ชื่อ constant ทุกตัว เพราะ key กลุ่ม `RAW_*` / `GCS_*` /
 `VALIDATED_*` / `CURATED_*` เดาได้จากค่าตรง ๆ · ถ้าต้องการรายชื่อครบ ให้อ่านจาก
 `includes/controller/variables.json` ตรง ๆ — **อย่าเชื่อหน้านี้เป็นรายการครบ**

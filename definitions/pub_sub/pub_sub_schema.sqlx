@@ -1,0 +1,6 @@
+config {
+    type: "operations",
+    tags: [databuffet.TAG_RUN_LOG_DAILY, databuffet.TAG_VIEW],
+}
+
+CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.PUB_SUB}` OPTIONS(location="${databuffet.REGION}") ;

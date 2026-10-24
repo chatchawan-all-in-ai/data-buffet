@@ -1,0 +1,9 @@
+config {
+    type: "operations",
+    dependencies: ["mart_process_log"],
+    tags: [databuffet.TAG_RUN_LOG_DAILY],
+    description: "First action of the daily_process run: insert a STARTED row into mart_process_log",
+}
+
+INSERT INTO ${ref(databuffet.PROCESS_DATASET, "mart_process_log")} (run_id, process_name, status, started_at)
+VALUES (GENERATE_UUID(), '${databuffet.martExportConfig.process_name}', 'STARTED', CURRENT_TIMESTAMP())

@@ -3,6 +3,9 @@
 > ตรวจกับสภาพจริงเมื่อ 2026-09-15 · คู่กับ [add-view.md](add-view.md) และ
 > [project_wiki/view/view-layer.md](../project_wiki/view/view-layer.md)
 
+คู่มือนี้ใช้กับ BI/presentation views ที่ deploy มือ · สำหรับ Pub/Sub export views
+ให้ใช้ [export contract และวิธีเปิดใช้งาน](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
+
 ## ทำไมต้องทำมือ
 
 tag `view` **ยังไม่อยู่ในตารางเวลาของ Dataform** และเจ้าของงานเลือกแก้ view ตรง ๆ

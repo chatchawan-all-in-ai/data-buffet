@@ -7,6 +7,9 @@
 > [generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview).
 >
 > **Non-obvious constraints:**
+> - **Pub/Sub export views** follow the separate
+>   [export contract](../cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24),
+>   including their dataset, tags and scheduled deployment once enabled.
 > - **A view's folder is not its dataset.** Files live under `definitions/view/<dataset>/`
 >   purely for organization; the BigQuery target is set by `config.schema` and **must
 >   stay the original dataset** (`dimension_view`, `fact_view`, `onetime`,

@@ -3,6 +3,9 @@
 View คือชั้นนำเสนอสำหรับ Power BI / data mart / RLS — `type: "view"` ไม่เก็บข้อมูลจริง
 รายละเอียด pattern เต็ม: [project_wiki/view/view-layer.md](../project_wiki/view/view-layer.md)
 
+สำหรับ view ส่ง Pub/Sub ให้ใช้ [export contract](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
+ซึ่งกำหนด dataset, โฟลเดอร์, tag และวิธีเปิดใช้งานแยกจาก presentation views ด้านล่าง
+
 ## ขั้นตอน
 
 ### 1. เลือก dataset ปลายทาง (สำคัญที่สุด)
@@ -80,7 +83,7 @@ LEFT JOIN `${DimCompanyTableRef}` AS com ON ...
 
 ### 5. Deploy
 
-> ⚠️ **ในทางปฏิบัติ view ถูก deploy ด้วยมือ ไม่ได้รันผ่าน Dataform** — tag `view`
+> ⚠️ **presentation views ในคู่มือนี้ถูก deploy ด้วยมือ** — tag `view`
 > ยังไม่อยู่ในตารางเวลา และเจ้าของงานเลือกแก้ view ตรง ๆ บน BigQuery console
 > **commit ≠ deploy** · ขั้นตอนเต็ม: [deploy-view.md](deploy-view.md)
 

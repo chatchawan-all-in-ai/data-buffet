@@ -1,6 +1,27 @@
 # Known Issues & Gotchas
 
-รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-10-17
+รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-10-24
+
+## `mart_process_end` สร้าง dependency ตอน compile (2026-10-24)
+
+`definitions/process/mart_process_end.js` ต้องรอ "ทุกงานในรอบ `daily_process`" แต่ Dataform
+ไม่มีตัวเลือก "รันหลังทุกงาน" และรอบนี้เลือกงานด้วย tag แบบไม่มี transitive dependency
+และ Cloud Dataform รับ dependency ได้ไม่เกิน 50 ต่อ action จึงกระจายงานของรอบไปไว้ใน
+barrier แล้วให้ end รอแค่ barrier (ขนาด pool และ capacity ยึดค่าคงที่ใน
+[`mart_process_end.js`](../../definitions/process/mart_process_end.js))
+โดยสร้างรายชื่อ dependency ใน callback ของ `.queries()` ซึ่ง Dataform เรียกตอน
+`session.compile()` หลังทุกไฟล์ลงทะเบียน action แล้ว และก่อน resolve dependency
+โดยอ่าน `dataform.actions` และ `action.proto.tags` ซึ่งเป็นของภายในของ `@dataform/core` 3.0.0
+
+- **ถ้าอัปเกรด `dataformCoreVersion`** ให้ตรวจว่า barrier ยังมี dependency ครบ
+  (`dataform compile --json` → union ของ `dependencyTargets` ของ `mart_process_barrier_*`
+  ต้องเท่ากับเซต action ที่มี tag ใน `run_tags` โดยไม่นับ end และ barrier เอง;
+  ทุก action ต้องมี dependency ไม่เกิน 50 ตัว) ถ้าได้ 0 แปลว่าวิธีนี้
+  ใช้ไม่ได้แล้ว end จะรันตั้งแต่ต้นรอบและข้อมูลจะถูกส่งก่อนรอบจบ
+- งานเกิน capacity ของ pool จะ compile ไม่ผ่านพร้อมข้อความให้เพิ่ม `BARRIER_COUNT`;
+  end ต้องรอ barrier ไม่เกิน 50 ตัวด้วย
+- พฤติกรรมเมื่อรันล้มอยู่ที่ [process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24);
+  การตั้ง tag ใน UI อยู่ที่ [schedule reference](../project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd)
 
 ## CustomerFlag ใน mds sales representative (2026-09-15)
 

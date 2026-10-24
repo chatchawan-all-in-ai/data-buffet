@@ -1,0 +1,19 @@
+config {
+    type: "operations",
+    schema: databuffet.PROCESS_DATASET,
+    hasOutput: true,
+    tags: [databuffet.TAG_RUN_LOG_DAILY],
+    description: "Start/end log of each Dataform run (one row per run). mart_process_start inserts STARTED, mart_process_end sets FINISHED; the Pub/Sub publish workflow owns publish_claimed_at and published_at",
+}
+
+-- Created once, never rebuilt: the publish workflow keeps its state in this table.
+-- Times are UTC; convert to Asia/Bangkok when reading.
+CREATE TABLE IF NOT EXISTS ${self()} (
+  run_id STRING NOT NULL,
+  process_name STRING NOT NULL,
+  status STRING NOT NULL,
+  started_at TIMESTAMP NOT NULL,
+  finished_at TIMESTAMP,
+  publish_claimed_at TIMESTAMP,
+  published_at TIMESTAMP
+)

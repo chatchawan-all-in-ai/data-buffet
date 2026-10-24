@@ -1,0 +1,32 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "dim_company"],
+    // TAG_VIEW like every view; TAG_RUN_LOG_DAILY keeps it in daily_process so mart_process_end waits for it
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_RUN_LOG_DAILY],
+    description: "Pub/Sub export of dim_company: natural columns only (no SK, no MdsId), company_source_id first, plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const DimCompanyTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_company`;
+}
+
+-- Export view contract (one per exported table, listed in includes/controller/mart-export-config.json):
+--   * data columns first, company_source_id as the first column, no surrogate keys and nothing that
+--     moves by itself day to day, so an unchanged row keeps the same row_hash;
+--   * row_key = TO_JSON_STRING(STRUCT(<natural key>)), never NULL;
+--   * row_hash = FARM_FINGERPRINT of the JSON of every data column, i.e. of exactly the message `data`.
+-- Natural key = CompanyID + CompanyCode, the same pair dim_company's MERGE matches on.
+WITH company AS (
+  SELECT
+    ${databuffet.functionData.cleanString("CompanyID")} AS company_source_id,
+    ${databuffet.functionData.cleanString("CompanyCode")} AS CompanyCode,
+    ${databuffet.functionData.cleanString("CompanyNameTH")} AS CompanyNameTH,
+    ${databuffet.functionData.cleanString("CompanyNameEN")} AS CompanyNameEN
+  FROM `${DimCompanyTableRef}`
+)
+SELECT
+  c.*,
+  TO_JSON_STRING(STRUCT(c.company_source_id, c.CompanyCode)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(c)) AS row_hash
+FROM company AS c

@@ -6,6 +6,9 @@
 เป้าหมาย: `databuffet-nonprd` (us-central1) → `databuffet-prd` (asia-southeast1)
 ให้เหมือนกัน แล้ว prd เดินเอง
 
+Pub/Sub pilot ยังอยู่เฉพาะ nonprd ตาม [export contract](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
+จึงไม่สร้าง dataset `pub_sub` หรือเปิด tag `run_log_daily` ใน prd
+
 - **Step 1–12** ทำล่วงหน้าได้ ไม่กระทบใคร
 - **Step 13–26** คืน cutover เริ่มประมาณ 20:00 น. หลังตรวจว่ารอบ nonprd จบแล้ว
   (รอบจริงดู [Schedule](../project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd))
@@ -271,7 +274,7 @@ https://console.cloud.google.com/bigquery/transfers?project=databuffet-prd
 |---|---|
 | `raw_*` | เป็น external table — Step 15 (`initial`) สร้างใหม่ให้ชี้ bucket ของ prd |
 | `function_dataset` | เป็น routine/UDF — Data Transfer copy ไม่ได้ Step 15 สร้างให้ |
-| `dimension_view`, `fact_view`, `bridge_dataset` | เป็น view ล้วน — Step 18 (tag `view`) สร้างให้ |
+| `dimension_view`, `fact_view`, `bridge_dataset` | เป็น view ล้วน — เลือก actions ตาม Step 19 เพื่อสร้างใหม่ |
 | `curated_cis360` | ว่างเปล่าใน nonprd |
 | `peem_using`, `temp_dim` | ตกลงกันแล้วว่าไม่ยกไป |
 
@@ -551,13 +554,15 @@ DROP VIEW IF EXISTS `databuffet-prd.process_dataset.view_rls_special_data`;
 
 ---
 
-## Step 19 — รัน tag `view`
+## Step 19 — รัน presentation views
 
-**ไปที่**: Dataform workspace `cutover` → **START EXECUTION → Tags**
+**ไปที่**: Dataform workspace `cutover` → **START EXECUTION → Actions**
 
 **ก่อนรัน**: ตรวจ schema ตารางต้นทางตาม [Customer Report Info deployment contract](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01)
 
-**ทำ**: เลือก tag **`view`** · ไม่ติ๊ก dependencies/dependents/full refresh ·
+**ทำ**: เลือก view actions จาก `definitions/view/` ยกเว้น `definitions/view/pub_sub/`
+ตามขอบเขต nonprd ของ pilot · ไม่เลือก `pub_sub_schema` และไม่เลือก tag `view` ทั้งกลุ่ม
+(tag นี้รวม pilot actions แล้ว) · ไม่ติ๊ก dependencies/dependents/full refresh ·
 Service account = `dbuffet-dataform-prd@` · **START EXECUTION**
 
 **ต้องเห็น**: Succeeded ทุก action
@@ -566,7 +571,8 @@ Service account = `dbuffet-dataform-prd@` · **START EXECUTION**
 
 **ไปที่**: BigQuery Studio (prd) เปิดดูแต่ละ dataset
 
-**ต้องเห็น**: view ครบตาม [generated lineage](../diagrams/pipeline_lineage.md#6-view-layer--what-each-view-reads)
+**ต้องเห็น**: presentation views ครบตาม [generated lineage](../diagrams/pipeline_lineage.md#6-view-layer--what-each-view-reads)
+โดยไม่นับ Pub/Sub export views ตามข้อยกเว้นด้านบน
 ใน dataset ที่ `config.schema` ระบุ (ชื่อโฟลเดอร์ ≠ dataset ปลายทาง)
 
 **ถ้าไม่ตรง**: ใช้ skill `bq-drift-scan` เทียบ repo กับ BigQuery ทีละตัว —

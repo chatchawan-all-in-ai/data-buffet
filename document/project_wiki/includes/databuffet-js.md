@@ -9,6 +9,7 @@
 ```javascript
 const variables = require("./controller/variables.json")
 const cdcConfig = require("./controller/cdc-config.json")
+const martExportConfig = require("./controller/mart-export-config.json")
 const functionData = require("./controller/function-data")
 
 module.exports = {
@@ -19,6 +20,7 @@ module.exports = {
     BACKFILL_DAYS: dataform.projectConfig.vars.BACKFILL_DAYS || "1",   // "1", fallback
     ...variables,      // all keys from variables.json (tags, schema names)
     cdcConfig,         // parsed cdc-config.json
+    martExportConfig,  // parsed mart-export-config.json (Pub/Sub export)
     functionData,      // SQL-generating helpers
 }
 ```
@@ -30,6 +32,7 @@ module.exports = {
 | Project config | `workflow_settings.yaml` | `DATABASE`, `REGION`, `RAW_BUCKET`, `MDS_BACKFILL_DAYS` |
 | Schema names & tags | [`variables.json`](variables.md) | `VALIDATED_MAC5`, `DIMENSION_TABLE`, `TAG_DIM_DAILY` |
 | CDC config | [`cdc-config.json`](cdc-config.md) | `cdcConfig.cdc_enabled_sources.mac5.tables.deb` |
+| Pub/Sub export config | `mart-export-config.json` ([process page](../cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)) | `martExportConfig.tables[0].source_view` |
 | SQL helpers | [`function-data.js`](function-data.md) | `functionData.cleanString(col)` |
 
 ## Usage in SQLX

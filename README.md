@@ -55,14 +55,15 @@ GCS AVRO/CSV files (gs://file-raw-data)
 
 Supporting pipelines:
   • CDC      definitions/cdc/        Change tracking driven by includes/controller/cdc-config.json
-  • PROCESS  definitions/process/    AI Thai-address parsing (AI.GENERATE, gated on CDC) + RLS (rls_customer360)
+  • PROCESS  definitions/process/    AI Thai-address parsing (AI.GENERATE, gated on CDC) + RLS (rls_customer360) + Pub/Sub export pilot
 ```
 
 ### Layers
 
 File counts per layer are generated from the code: see the
 [generated lineage](document/diagrams/pipeline_lineage.md#1-layer-overview).
-Counts there are **files**, including the `*_schema_*.sqlx` bootstrap files.
+Counts there are **SQLX files**, including the `*_schema_*.sqlx` bootstrap files;
+JavaScript-generated actions are outside that diagram's scope.
 
 | Layer | Path | Purpose |
 |-------|------|---------|
@@ -71,9 +72,13 @@ Counts there are **files**, including the `*_schema_*.sqlx` bootstrap files.
 | **Curated** | `definitions/curated/` | Business-ready joins, enrichment, JSON parsing, plus one `curated_schema_<source>` bootstrap per source |
 | **Dimension** | `definitions/dimension/` | Conformed dimensions with surrogate keys (full daily rebuild by default; MERGE where SKs must stay stable) |
 | **Fact** | `definitions/fact/` | Star-schema fact tables joined to dimensions (4-year retention) |
-| **View** | `definitions/view/` | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` |
+| **View** | `definitions/view/` | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset`, `pub_sub` (Pub/Sub export views) |
 | **CDC** | `definitions/cdc/` | Config-driven change log over validated tables |
-| **Process** | `definitions/process/` | AI address parsing + row-level security (`rls_customer360`) |
+| **Pub/Sub** | `definitions/pub_sub/` | `pub_sub_schema` creates the `pub_sub` dataset; future shaping tables before Pub/Sub (export views live in `definitions/view/pub_sub/`) |
+| **Process** | `definitions/process/` | AI address parsing + row-level security (`rls_customer360`) + [Pub/Sub export pilot](document/project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
+
+The Pub/Sub pilot prepares Dataform objects for `dim_company`; GCP publishing will
+be set up after merge. See the [setup and message guide](document/how-to/setup-pubsub-export.md).
 
 **Validated by source:** MAC5, CIS360, MASTERSKU, MASTER_SKU (3.0),
 SALEOUT_MDT and D365, each with its own schema-bootstrap file. ALLKONS_COMMISSION
@@ -114,14 +119,16 @@ definitions/
 │                     # fact_*_store, fact_*_mdt (SALEOUT_MDT)
 ├── view/             # BI/reporting views (dimension_view, fact_view, ...)
 ├── cdc/              # cdc_schema, cdc_change_log
-└── process/          # deb_address_data (AI.GENERATE address parsing), rls_customer360
+├── process/          # deb_address_data (AI.GENERATE address parsing), rls_customer360, Pub/Sub export pilot
+└── pub_sub/          # pub_sub_schema (creates the pub_sub dataset)
 
 includes/
 ├── databuffet.js                 # Central config hub (imported by every SQLX file)
 └── controller/
     ├── variables.json            # Dataset names & tag constants
     ├── function-data.js          # Reusable SQL-generating helpers
-    └── cdc-config.json           # Which source tables participate in CDC
+    ├── cdc-config.json           # Which source tables participate in CDC
+    └── mart-export-config.json   # Pub/Sub export selection (see the process reference)
 
 document/
 ├── getting-started/  architecture/  coding-standards/  how-to/  operations/   (Thai)
@@ -213,10 +220,10 @@ databuffet.cdcConfig                        // CDC source/table config
 | D365 | `raw_d365` | `validated_d365` | — |
 | ALLKONS_COMMISSION | `raw_allkons_commission` | `validated_allkons_commission` (left in BigQuery, no repo files) | — |
 
-Shared datasets: `dimension_table` / `dimension_view`, `fact_table` / `fact_view`,
-`process_dataset`, `cdc_dataset`, `function_dataset`, `onetime`, and the externally
-loaded `mds_dataset` (master-data tables `mds_data_*_master` with `id` / `is_active` /
-`updated_at` — the source of most dimensions).
+Shared datasets and their purposes are listed in the
+[dataset registry reference](document/project_wiki/includes/variables.md#shared-datasets).
+The externally loaded `mds_dataset` supplies most dimensions through master-data
+tables `mds_data_*_master` with `id` / `is_active` / `updated_at`.
 
 ---
 
@@ -232,7 +239,7 @@ Select tags for an execution in the Dataform service (see the
 | Curated | `curated`, `curated_full`, `curated_incremental` (SALEOUT_MDT curated) |
 | Dimension | `dimension_daily` (every dim except `dim_calendar`), `dimension_yearly` (`dim_calendar` only) |
 | Fact | `fact_daily` |
-| Support | `process`, `cdc`, `cdc_incremental` |
+| Support | `process`, `cdc`, `cdc_incremental`, `run_log_daily` ([pilot activation](document/project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd)) |
 
 > ⚠️ To add or refresh raw tables, never run the whole `initial` tag. Run only the
 > single `create_all_table_raw_<source>` action. See the

@@ -1,5 +1,6 @@
 const variables = require("./controller/variables.json")
 const cdcConfig = require("./controller/cdc-config.json")
+const martExportConfig = require("./controller/mart-export-config.json")
 const functionData = require("./controller/function-data")
 
 
@@ -13,5 +14,6 @@ module.exports = {
     BACKFILL_DAYS: dataform.projectConfig.vars.BACKFILL_DAYS || "1",
     ...variables,
     cdcConfig,
+    martExportConfig,
     functionData,
 }

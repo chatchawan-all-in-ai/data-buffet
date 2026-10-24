@@ -88,9 +88,10 @@ work on Opus, pattern-following work on Sonnet):
 | Curated | `definitions/curated/` | 15 | `curated_<source>` | incremental (+ post_operations) |
 | Dimension | `definitions/dimension/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_table` | **table rebuild** (mds + other; per-group counts in `document/project_wiki/dimension/inventory.md`) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
 | Fact | `definitions/fact/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `fact_table` | table rebuild / operations upsert — **no MERGE** |
-| View | `definitions/view/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |
+| View | `definitions/view/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset`, `pub_sub` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |
 | CDC | `definitions/cdc/` | 2 | `cdc_dataset` | operations, generated from `cdc-config.json` |
-| Process | `definitions/process/` | 2 | `process_dataset` | `deb_address_data` (`AI.GENERATE` gated on CDC) + `rls_customer360` (RLS access map, `type: "table"`) |
+| Pub/Sub | `definitions/pub_sub/` | 1 | `pub_sub` | `pub_sub_schema` creates the dataset; export views live in `definitions/view/pub_sub/` |
+| Process | `definitions/process/` | 7 | `process_dataset` | `deb_address_data` (`AI.GENERATE` gated on CDC) + `rls_customer360` (RLS access map, `type: "table"`) + Pub/Sub export pilot (tag `run_log_daily`, see `document/project_wiki/cdc-process/process.md`) |
 
 ## Configuration
 
@@ -219,7 +220,7 @@ saleout_mdt, allkons_commission and d365 — to add/refresh raw tables run only 
 `validated_full`, `validated_incremental`, `curated`, `curated_full`,
 `curated_incremental` (SALEOUT_MDT curated), `dimension_daily`,
 `dimension_yearly` (dim_calendar only), `fact_daily`, `view`, `cdc`, `cdc_incremental`,
-`process`. Declared but unused: `dimension_monthly`, `fact_monthly`, `fact_yearly`.
+`process`, `run_log_daily` (Pub/Sub export pilot — must be added to `daily_process`). Declared but unused: `dimension_monthly`, `fact_monthly`, `fact_yearly`.
 **No `assertions` tag — no Dataform assertions exist.**
 
 ## Environment facts

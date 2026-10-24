@@ -24,6 +24,8 @@
 
     "TAG_SALEOUT_DAILY": "saleout_daily",
 
+    "TAG_RUN_LOG_DAILY": "run_log_daily",
+
     "RAW_MAC5_AG01": "raw_mac5_ag01",
     "RAW_MAC5_AA05": "raw_mac5_aa05",
     "RAW_MAC5_AB01": "raw_mac5_ab01",
@@ -63,6 +65,7 @@
     "BRIDGE": "bridge_dataset",
     "CDC_DATESET" : "cdc_dataset",
     "PROCESS_DATASET": "process_dataset",
+    "PUB_SUB": "pub_sub",
     "FUNCTION_DATASET": "function_dataset",
     "MDS_DATASET": "mds_dataset",
 

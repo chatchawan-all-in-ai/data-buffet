@@ -134,7 +134,7 @@ TOPICS = [
     ]),
 ]
 
-LAYER_ORDER = ["initial", "validated", "curated", "dimension", "fact", "view", "cdc", "process"]
+LAYER_ORDER = ["initial", "validated", "curated", "dimension", "fact", "view", "cdc", "process", "pub_sub"]
 LAYER_STYLE = {
     "initial":   ("#e0e0e0", "#9e9e9e"),
     "validated": ("#cfe8ff", "#4a90d9"),
@@ -144,6 +144,7 @@ LAYER_STYLE = {
     "view":      ("#cfeae6", "#3a9d94"),
     "cdc":       ("#f0d0f0", "#b060b0"),
     "process":   ("#f5c6c6", "#c04040"),
+    "pub_sub":   ("#fff3b0", "#b8a02f"),
 }
 
 DEP_ARRAY_RE = re.compile(r"dependencies\s*:\s*\[(.*?)\]", re.DOTALL)

@@ -17,8 +17,7 @@
 ## Dataset (BigQuery schema)
 
 `raw_<source>[_<company>]` → `validated_<source>` → `curated_<source>` +
-dataset กลาง: `dimension_table`, `dimension_view`, `fact_table`, `fact_view`,
-`cdc_dataset`, `process_dataset`, `function_dataset`, `mds_dataset`, `onetime`
+dataset กลางตาม [registry reference](../project_wiki/includes/variables.md#shared-datasets)
 — ทั้งหมดอ้างผ่านคีย์ใน `variables.json`
 
 ## คอลัมน์
