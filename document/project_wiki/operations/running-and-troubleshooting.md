@@ -18,7 +18,7 @@
 | `fact_daily` | Every fact |
 | `cdc` / `cdc_incremental` | CDC change log |
 | `process` | AI address parsing (`deb_address_data`) + RLS access map (`rls_customer360`) |
-| `run_log_daily` | Pub/Sub pilot logging and export actions; [process reference](../cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
+| `pub_sub` | Pub/Sub pilot objects (`pub_sub` dataset, export views, `mart_export_config`, `mart_sent_state`). No scheduler runs it — run by hand; [process reference](../cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
 
 Unused-but-defined: `dimension_monthly`, `fact_monthly`, `fact_yearly`.
 There is **no** `assertions` tag. Per-tag file counts: see the
@@ -46,7 +46,7 @@ Consequences:
 
 - `view`, `initial`, `re-initial` and `cdc` are **not scheduled on purpose**.
   Presentation views are deployed by hand ([deploy-view guide](../../how-to/deploy-view.md));
-  the Pub/Sub pilot uses a separate tag, described below.
+  the Pub/Sub pilot objects use tag `pub_sub`, also run by hand (below).
 - A var change (e.g. `BACKFILL_DAYS`) only reaches the nightly if it is committed on
   **`nonprod` before 05:45**. A change in a workspace or on `dev` alone does nothing.
 - `saleout_morning` re-runs the SALEOUT_MDT chain after `daily_process`. Its targets:
@@ -63,15 +63,11 @@ Consequences:
 
   The list is explicit, so **a new SALEOUT_MDT table must be added to it by hand** in
   the Dataform UI, or it runs only at 06:00.
-- After the pilot code reaches `nonprod`, **add `run_log_daily` to `daily_process`**
-  in the Dataform UI. The schedule table above records the pre-pilot configuration;
-  the intended tag set is that row's existing tags **plus `run_log_daily`**.
-  Keep `run_tags` in `includes/controller/mart-export-config.json` equal to that
-  complete set (the config uses constant names from `variables.json`). No automated
-  check compares it with the UI. Until enabled, the pilot logging is not scheduled;
-  the schema and export view can still run manually through `view`.
-  The [process reference](../cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
-  owns completion and publishing behavior.
+- The Pub/Sub pilot needs **no change to any workflow configuration**. Follow the
+  [pilot deployment steps](../cdc-process/process.md#deploy)
+  for the required live-compilation check and manual deployment. The
+  [process reference](../cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
+  owns the config lifecycle, tables, duplicate guard and publishing behavior.
 - D365 (`validated_d365`) runs in `daily_process` (tag `validated`) from 2026-10-18.
   Its GCS files for `ASATDATE=D` land at about 01:02 Bangkok on D+1. It is not in
   `saleout_morning`.

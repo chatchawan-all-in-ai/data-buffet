@@ -1,14 +1,4 @@
 {
-  "process_name": "daily_process",
-  "run_tags": [
-    "TAG_VALIDATED",
-    "TAG_CURATED",
-    "TAG_DIM_DAILY",
-    "TAG_FACT_DAILY",
-    "TAG_CDC_INCREMENTAL",
-    "TAG_PROCESS",
-    "TAG_RUN_LOG_DAILY"
-  ],
   "tables": [
     {
       "table_name": "dim_company",

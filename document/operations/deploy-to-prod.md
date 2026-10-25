@@ -7,7 +7,7 @@
 ให้เหมือนกัน แล้ว prd เดินเอง
 
 Pub/Sub pilot ยังอยู่เฉพาะ nonprd ตาม [export contract](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
-จึงไม่สร้าง dataset `pub_sub` หรือเปิด tag `run_log_daily` ใน prd
+จึงไม่รัน tag `pub_sub` ใน prd (ไม่สร้าง dataset `pub_sub`, export view, `mart_export_config` และ `mart_sent_state`)
 
 - **Step 1–12** ทำล่วงหน้าได้ ไม่กระทบใคร
 - **Step 13–26** คืน cutover เริ่มประมาณ 20:00 น. หลังตรวจว่ารอบ nonprd จบแล้ว

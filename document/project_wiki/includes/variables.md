@@ -19,7 +19,7 @@
 | `TAG_FACT_DAILY` / `TAG_FACT_MONTHLY` / `TAG_FACT_YEARLY` | `fact_daily`, `fact_monthly`, `fact_yearly` | Fact refresh cadence |
 | `TAG_PROCESS` | `process` | Process layer (address parsing + `rls_customer360`) |
 | `TAG_CDC` / `TAG_CDC_INCREMENTAL` | `cdc`, `cdc_incremental` | CDC pipeline |
-| `TAG_RUN_LOG_DAILY` | `run_log_daily` | [Pub/Sub pilot actions](../cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24); activation is owned by the [schedule reference](../operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd) |
+| `TAG_PUB_SUB` | `pub_sub` | [Pub/Sub pilot objects](../cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24); no scheduler runs it — run by hand per the [pilot deployment steps](../cdc-process/process.md#deploy) |
 | `TAG_VIEW` | `view` | View layer (`definitions/view/`) — presentation views over dim/fact/curated · [Deployment procedure](../../how-to/deploy-view.md) |
 
 ## Dataset (BigQuery schema) names
@@ -47,7 +47,7 @@
 | `ONETIME` | `onetime` | Data-mart / Power BI / model views + externally-loaded base tables |
 | `BRIDGE` | `bridge_dataset` | Bridge views (many-to-many SK maps) — `definitions/view/bridge_dataset/` |
 | `CDC_DATESET` (sic) | `cdc_dataset` | CDC change log |
-| `PROCESS_DATASET` | `process_dataset` | Derived datasets (address parsing) + RLS/address views + Pub/Sub export log, sent state and config |
+| `PROCESS_DATASET` | `process_dataset` | Derived datasets (address parsing) + RLS/address views + Pub/Sub export config + memory (`mart_export_config`) and sent state (`mart_sent_state`) |
 | `PUB_SUB` | `pub_sub` | Views read by the Pub/Sub publish workflow (`definitions/view/pub_sub/`), e.g. `export_dim_company` |
 | `FUNCTION_DATASET` | `function_dataset` | BigQuery UDFs (7 ตัว) |
 | `MDS_DATASET` | `mds_dataset` | Master-data-service tables (externally loaded, **not** created by this repo) |

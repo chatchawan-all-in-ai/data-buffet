@@ -239,7 +239,7 @@ Select tags for an execution in the Dataform service (see the
 | Curated | `curated`, `curated_full`, `curated_incremental` (SALEOUT_MDT curated) |
 | Dimension | `dimension_daily` (every dim except `dim_calendar`), `dimension_yearly` (`dim_calendar` only) |
 | Fact | `fact_daily` |
-| Support | `process`, `cdc`, `cdc_incremental`, `run_log_daily` ([pilot activation](document/project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd)) |
+| Support | `process`, `cdc`, `cdc_incremental`, `pub_sub` (Pub/Sub pilot objects, run by hand — [pilot deploy](document/project_wiki/cdc-process/process.md#deploy)) |
 
 > ⚠️ To add or refresh raw tables, never run the whole `initial` tag. Run only the
 > single `create_all_table_raw_<source>` action. See the

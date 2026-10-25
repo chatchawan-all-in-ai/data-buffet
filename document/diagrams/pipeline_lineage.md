@@ -7,7 +7,7 @@
 > inline `ref(...)` + `tags: [...]`), so the views — and `topic_flows.md` — always
 > match the repo.
 
-**Objects: 336** — initial 21 · validated 157 · curated 19 · dimension 71 · fact 18 · view 41 · cdc 2 · process 6 · pub_sub 1
+**Objects: 334** — initial 21 · validated 157 · curated 19 · dimension 71 · fact 18 · view 41 · cdc 2 · process 4 · pub_sub 1
 
 **Paused (config commented out):** —
 
@@ -31,7 +31,7 @@ flowchart LR
   F["fact (18)<br/>star-schema"]
   VW["view (41)<br/>BI/reporting views"]
   CDC["cdc (2)"]
-  P["process (6)<br/>AI address parse + RLS map"]
+  P["process (4)<br/>AI address parse + RLS map"]
   raw --> I --> V --> C
   C --> D
   C --> F

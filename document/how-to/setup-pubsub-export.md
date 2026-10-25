@@ -9,8 +9,10 @@
 ## ภาพรวม
 
 แบบที่จะสร้างฝั่ง GCP: Cloud Scheduler `datamart-publish-every-5m` เรียก Cloud
-Workflows `datamart-publish` ทุก 5 นาทีตลอดวัน (`*/5 * * * *`) เพื่อตรวจรอบที่จบแล้ว
-แล้วส่งเฉพาะแถวที่เปลี่ยน · ใช้ service accounts `datamart-publisher` และ
+Workflows `datamart-publish` ทุก 5 นาทีตลอดวัน (`*/5 * * * *`) เพื่อถาม **Dataform API**
+ว่ามีรอบ Dataform ใหม่ที่สำเร็จและรันตารางนั้นหรือไม่ — รองรับทุก scheduler และการรัน
+manual ตาม [สัญญา publisher](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
+· ถ้ามี จึงส่งเฉพาะแถวที่เปลี่ยน · ใช้ service accounts `datamart-publisher` และ
 `datamart-publish-trigger` แบบ keyless และแจ้งปัญหาไป Slack channel เดียวกับ Dataform
 ไม่มี Cloud Logging trigger
 
@@ -18,7 +20,7 @@ Workflows `datamart-publish` ทุก 5 นาทีตลอดวัน (`*/5
 [`mart-export-config.json`](../../includes/controller/mart-export-config.json)
 ชื่อ topic ใช้รูปแบบ `export-<sys>-<set>` · หนึ่งชุดข้อมูลต่อหนึ่ง topic
 เพื่อให้ replay/seek และให้สิทธิ์แยกต่อชุดได้ และชุดที่มีข้อความค้างไม่ถ่วงชุดอื่น
-การเลือก run, การ claim ก่อนส่ง, sent state และการปิดรอบหลังส่ง อยู่ใน
+ตาราง bookkeeping และการกันส่งซ้ำอยู่ใน
 [process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
 
 เมื่อ infra พร้อม ทีมที่จะรับข้อมูลสามารถใช้ push subscription ไปยัง HTTPS endpoint
@@ -269,7 +271,7 @@ message format นี้ไม่มีลำดับต่อแถว; วิ
 
 ## Checklist ก่อนเปิดใช้งานจริง (หลัง merge)
 
-- [ ] ทำขั้น Dataform UI ตาม [schedule reference](../project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd)
+- [ ] ทำตาม [ขั้น deploy ของ pilot](../project_wiki/cdc-process/process.md#deploy) รวมการตรวจ live compilation ก่อนรันด้วยมือ; การเพิ่ม เปลี่ยน หรือเอาตาราง export ออกให้ยึด lifecycle ใน process reference เดียวกัน
 - [ ] สร้างและทดสอบ infra ตามส่วน A พร้อมคู่มือ deploy และ backfill
 - [ ] ทดสอบ publish/pull ผ่าน test subscription และตรวจ alert ไป Slack
 - [ ] ต่อทีมใหม่: ได้ HTTPS endpoint และสร้าง `sa-push-<ทีม>` โดยไม่มี key (ขั้น 1–2)

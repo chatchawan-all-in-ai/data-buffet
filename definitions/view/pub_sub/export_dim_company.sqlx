@@ -2,8 +2,8 @@ config {
     type: "view",
     schema: databuffet.PUB_SUB,
     dependencies: ["pub_sub_schema", "dim_company"],
-    // TAG_VIEW like every view; TAG_RUN_LOG_DAILY keeps it in daily_process so mart_process_end waits for it
-    tags: [databuffet.TAG_VIEW, databuffet.TAG_RUN_LOG_DAILY],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
     description: "Pub/Sub export of dim_company: natural columns only (no SK, no MdsId), company_source_id first, plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
 }
 

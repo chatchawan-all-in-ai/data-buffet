@@ -2,17 +2,18 @@ config {
     type: "operations",
     schema: databuffet.PROCESS_DATASET,
     hasOutput: true,
-    tags: [databuffet.TAG_RUN_LOG_DAILY],
-    description: "What each Pub/Sub export table last sent: one row per row_key the receivers currently hold. The publish workflow compares an export view with this table to find NEW / UPDATE / DELETE rows, and writes it only after a publish succeeds",
+    tags: [databuffet.TAG_PUB_SUB],
+    description: "What each Pub/Sub export table last sent: one row per row_key the receivers currently hold, with the Dataform workflow invocation that sent it. The publish workflow compares an export view with this table to find NEW / UPDATE / DELETE rows, and writes it only after a publish succeeds",
 }
 
 -- Created once, never rebuilt: only the publish workflow writes it (MERGE on table_name + row_key,
 -- both never NULL — row_key is TO_JSON_STRING of the key columns, so a NULL key value is "null" text).
+-- Times are UTC.
 CREATE TABLE IF NOT EXISTS ${self()} (
   table_name STRING NOT NULL,
   row_key STRING NOT NULL,
   row_hash INT64 NOT NULL,
-  run_id STRING NOT NULL,
+  invocation_id STRING NOT NULL,
   sent_at TIMESTAMP NOT NULL
 )
 CLUSTER BY table_name, row_key

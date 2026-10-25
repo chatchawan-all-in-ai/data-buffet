@@ -1,17 +1,34 @@
 config {
-    type: "table",
+    type: "operations",
     schema: databuffet.PROCESS_DATASET,
-    tags: [databuffet.TAG_RUN_LOG_DAILY],
-    description: "One row per table exported to Pub/Sub, read by the publish workflow. Generated from includes/controller/mart-export-config.json — to export another table, add a row there and its export view",
+    hasOutput: true,
+    tags: [databuffet.TAG_PUB_SUB],
+    description: "One row per table exported to Pub/Sub: the config from includes/controller/mart-export-config.json plus the publish workflow's memory of the last Dataform workflow invocation it handled (last_invocation_id / last_invocation_end) and its being-processed marker (claimed_at)",
 }
 
 js {
     const cfg = databuffet.martExportConfig;
 }
 
+-- Created once, never rebuilt: the publish workflow keeps its memory in the last three columns.
+-- Times are UTC; convert to Asia/Bangkok when reading.
+CREATE TABLE IF NOT EXISTS ${self()} (
+  table_name STRING NOT NULL,
+  source_view STRING NOT NULL,
+  topic STRING NOT NULL,
+  last_invocation_id STRING,
+  last_invocation_end TIMESTAMP,
+  claimed_at TIMESTAMP
+);
+
 -- ref() records the view as a dependency, so a config row naming a missing view fails compile.
-SELECT *
-FROM UNNEST([
-  STRUCT<table_name STRING, process_name STRING, source_view STRING, topic STRING>
-  ${cfg.tables.map(t => `('${t.table_name}', '${cfg.process_name}', '${ref(databuffet.PUB_SUB, t.source_view).replace(/`/g, "")}', '${t.topic}')`).join(",\n  ")}
-])
+MERGE ${self()} AS t
+USING (
+  SELECT *
+  FROM UNNEST(ARRAY<STRUCT<table_name STRING, source_view STRING, topic STRING>>[
+    ${cfg.tables.map(t => `('${t.table_name}', '${ref(databuffet.PUB_SUB, t.source_view).replace(/`/g, "")}', '${t.topic}')`).join(",\n    ")}
+  ])
+) AS s
+ON t.table_name = s.table_name
+WHEN NOT MATCHED THEN
+  INSERT (table_name, source_view, topic) VALUES (s.table_name, s.source_view, s.topic)

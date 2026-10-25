@@ -1,8 +1,8 @@
 # Process Layer — `definitions/process/`
 
 > **LLM context**: 2 files with tag `process`, plus the Pub/Sub export pilot
-> (4 `.sqlx` + 1 `.js` here, plus the export view in `definitions/view/pub_sub/`;
-> tag `run_log_daily`, see the last section).
+> (2 `.sqlx` here, plus `definitions/pub_sub/pub_sub_schema.sqlx` and the export view
+> in `definitions/view/pub_sub/`; tag `pub_sub`, run by hand — see the last section).
 > 1. **`deb_address_data.sqlx`** — AI-powered Thai address parsing, gated on CDC so only
 >    *changed* addresses are re-parsed each day. Writes to `process_dataset.deb_address_data`;
 >    the companion view `process_dataset.view_deb_address_data` is what `fact_transcation`
@@ -83,43 +83,87 @@ Dataform materializes it from the `config` block. RLS is also referenced in
 
 ## Pub/Sub export pilot — `dim_company` (2026-10-24)
 
-The repository half of "Data Mart → Pub/Sub": Dataform logs the start and end of the
-`daily_process` run and keeps an export view per exported table. A Cloud Workflow
-(not in this repo; built after merge) will compare each export view with the sent
-state and publish changed rows. The planned GCP setup and message format are owned by
-[setup-pubsub-export.md](../../how-to/setup-pubsub-export.md).
-Only `dim_company` in `databuffet-nonprd` and only the `daily_process` run for now; start/end logging for
-`saleout_morning` and `yearly_process` comes later.
+The repository half of "Data Mart → Pub/Sub": Dataform keeps an export view per
+exported table plus two bookkeeping tables. A Cloud Workflow (not in this repo; built
+after merge) will read run status from the **Dataform API**, compare each export view with
+the sent state and publish changed rows. The planned GCP setup and message format are
+owned by [setup-pubsub-export.md](../../how-to/setup-pubsub-export.md).
+Only `dim_company` in `databuffet-nonprd` for now.
+
+**Run status comes from the Dataform API, not from Dataform actions** (redesigned
+2026-10-25). There are no start/end actions and no per-run log table. The publisher
+will discover scheduled and manual runs with `workflowInvocations.list`. Each
+[`WorkflowInvocation`](https://docs.cloud.google.com/dataform/reference/rest/v1/projects.locations.repositories.workflowInvocations)
+provides `workflowConfig` (a resource name ending in `workflowConfigs/<scheduler>`;
+unset = manual), `state`, and `invocationTiming.startTime` / `endTime`.
+Selected tags are in
+[`invocationConfig.includedTags`](https://docs.cloud.google.com/dataform/reference/rest/v1/InvocationConfig)
+when present; target-selected and whole-workflow runs need not have tags. Use
+[`workflowInvocations.query`](https://docs.cloud.google.com/dataform/reference/rest/v1/projects.locations.repositories.workflowInvocations/query)
+to check actual action targets and their states. Adding a scheduler or running by
+hand needs no change in Dataform or in the Dataform UI.
 
 Bookkeeping tables live in `process_dataset`; every view read by Pub/Sub lives in its
 own dataset `pub_sub` (`databuffet.PUB_SUB`, file under `definitions/view/pub_sub/`).
-Every action carries tag `run_log_daily` (`databuffet.TAG_RUN_LOG_DAILY`):
+Every action carries tag `pub_sub` (`databuffet.TAG_PUB_SUB`), which **no scheduler
+runs** — see "Deploy" below:
 
 | File | Builds | What |
 |---|---|---|
-| `mart_process_log.sqlx` | `process_dataset.mart_process_log` | `CREATE TABLE IF NOT EXISTS` — one row per run: `run_id`, `process_name`, `status` (`STARTED`/`FINISHED`), `started_at`, `finished_at`, `publish_claimed_at`, `published_at` (UTC). Never rebuilt |
-| `mart_process_start.sqlx` | operation | `INSERT` a `STARTED` row with a new `run_id` |
-| `mart_process_end.js` | operations `mart_process_end` + `mart_process_barrier_*` | End: `UPDATE` the latest `STARTED` row of its `process_name` to `FINISHED` + `finished_at`; never touches `publish_claimed_at` / `published_at` (the workflow owns them). Barriers: no-op `SELECT 1`, see below |
-| `mart_sent_state.sqlx` | `process_dataset.mart_sent_state` | `CREATE TABLE IF NOT EXISTS` — `table_name`, `row_key`, `row_hash`, `run_id`, `sent_at`, cluster `table_name, row_key`. Only the workflow writes it, after a publish succeeds |
-| `mart_export_config.sqlx` | `process_dataset.mart_export_config` (table) | One row per exported table — `table_name`, `process_name`, `source_view`, `topic` — generated from `includes/controller/mart-export-config.json` |
-| `pub_sub/pub_sub_schema.sqlx` | dataset `pub_sub` | `CREATE SCHEMA IF NOT EXISTS ... OPTIONS(location=REGION)`, the same bootstrap as `validated_schema_*` / `cdc_schema`. `definitions/pub_sub/` is the layer folder for future shaping tables before Pub/Sub |
-| `view/pub_sub/export_dim_company.sqlx` | `pub_sub.export_dim_company` (view, tags `view` + `run_log_daily`) | `company_source_id` (= `CompanyID`), `CompanyCode`, `CompanyNameTH`, `CompanyNameEN`, `row_key`, `row_hash` — no `CompanySK`, no `MdsId` |
+| `mart_export_config.sqlx` | `process_dataset.mart_export_config` | One row per exported table. `CREATE TABLE IF NOT EXISTS`, then an insert-only `MERGE` from `includes/controller/mart-export-config.json`. Columns below |
+| `mart_sent_state.sqlx` | `process_dataset.mart_sent_state` | One row per data row sent. `CREATE TABLE IF NOT EXISTS`, cluster `table_name, row_key`. Columns below. Only the workflow writes it, after a publish succeeds |
+| `pub_sub/pub_sub_schema.sqlx` | dataset `pub_sub` (tags `view` + `pub_sub`) | `CREATE SCHEMA IF NOT EXISTS ... OPTIONS(location=REGION)`, the same bootstrap as `validated_schema_*` / `cdc_schema`. `definitions/pub_sub/` is the layer folder for future shaping tables before Pub/Sub |
+| `view/pub_sub/export_dim_company.sqlx` | `pub_sub.export_dim_company` (view, tags `view` + `pub_sub`) | `company_source_id` (= `CompanyID`), `CompanyCode`, `CompanyNameTH`, `CompanyNameEN`, `row_key`, `row_hash` — no `CompanySK`, no `MdsId` |
 
-**"End waits for the whole run."** `mart_process_end` runs after every action that
-carries one of `run_tags` in `mart-export-config.json`, excluding itself and its
-barriers. Dependencies are selected at compile time and grouped behind no-op
-barriers, so new actions under those tags are covered automatically without
-exceeding the dependency limit. The compiler constraint and upgrade checks are in
-[known issues](../../operations/known-issues.md#mart_process_end-สร้าง-dependency-ตอน-compile-2026-10-24).
-Any failed action skips the end: the row stays `STARTED` and is ineligible for
-publishing. A repair run inserts a new row and its end closes that row.
+`mart_export_config` (times UTC):
 
-The future publisher selects `FINISHED` runs with no `published_at`, claims a run
-using `publish_claimed_at` before sending to prevent overlapping sends, and sets
-`published_at` only after every configured table has been sent. It compares each
-export view with `mart_sent_state`: absent key = `NEW`, different hash = `UPDATE`,
-key only in state = `DELETE`. State represents the rows receivers currently hold;
-only the publisher updates it after successful sends.
+| Column | Owner | Meaning |
+|---|---|---|
+| `table_name` | Dataform (JSON, on insert) | Exported table = the message `table`; also the Dataform action whose run triggers an export |
+| `source_view` | Dataform (JSON, on insert) | Full name of the export view (`databuffet-nonprd.pub_sub.export_<table>`) |
+| `topic` | Dataform (JSON, on insert) | Pub/Sub topic |
+| `last_invocation_id` | workflow | Memory: the last Dataform workflow invocation already handled for this table |
+| `last_invocation_end` | workflow | End time of that invocation; `NULL` before the first export, then only invocations that ended later are new |
+| `claimed_at` | workflow | Being-processed marker; `NULL` = free |
+
+The `MERGE` only inserts new export tables. Every existing row is preserved, including
+`source_view`, `topic`, `last_invocation_id`, `last_invocation_end` and `claimed_at`,
+even if its JSON entry changes or is removed. Changing an existing export table's
+view/topic or removing it is a deliberate manual change. `ref()` to each export view
+keeps a config row naming a missing view a compile error.
+
+`mart_sent_state`: `table_name`, `row_key` (the table's natural key), `row_hash`
+(fingerprint of the row data), `invocation_id` (the Dataform workflow invocation that
+sent it), `sent_at` (UTC). It holds the last successfully recorded state; a row matching
+its stored `row_key` + `row_hash` is skipped.
+
+**Duplicate guard** (contract for the future workflow, polled every 5 minutes). For
+each row of `mart_export_config` the workflow must:
+
+1. Ask the Dataform API for the newest `SUCCEEDED` invocation whose actions include
+   `table_name` with state `SUCCEEDED`, and whose end time is later than
+   `last_invocation_end` (or any end time when that checkpoint is `NULL`). None →
+   stop for this table **without reading `mart_sent_state`**. Log the scheduler id
+   from `workflowConfig` (unset = manual) with the invocation id.
+2. Claim the row atomically: `UPDATE mart_export_config SET claimed_at = CURRENT_TIMESTAMP()
+   WHERE table_name = ... AND (last_invocation_end IS NULL OR last_invocation_end < <end_time>) AND claimed_at IS NULL`
+   (plus a timeout for an abandoned claim, set with the workflow). 0 rows updated →
+   another run holds it or already handled this or a newer invocation → stop.
+3. Diff the export view with `mart_sent_state`, reading only `row_key`, `row_hash`
+   `WHERE table_name = ...`: absent key = `NEW`, different hash = `UPDATE`, key only in
+   state = `DELETE`; equal hash = not sent.
+4. Publish, then `MERGE` only the sent rows of that `table_name` into
+   `mart_sent_state` (`invocation_id` = the invocation) and delete the `DELETE`d keys.
+5. Set `last_invocation_id`, `last_invocation_end` and `claimed_at = NULL`. If it
+   fails before this step, the memory is unchanged and the next run retries; rows
+   already recorded in `mart_sent_state` are not sent again.
+
+Several new invocations since the last one are handled as one: the diff compares the
+current view, so only the newest matters.
+
+Publishing and recording sent state are separate operations: a failure between
+them can resend a row on retry. Receivers must follow the idempotency and delivery
+rules in the [message guide](../../how-to/setup-pubsub-export.md).
 
 **Export view contract** (every export view):
 
@@ -136,14 +180,28 @@ across the snapshots after the 2026-10-22, 10-23 and 10-24 runs.
 
 **Add a table to the export:** add an `export_<table>.sqlx` view in
 `definitions/view/pub_sub/` (schema `databuffet.PUB_SUB`, tags `TAG_VIEW` +
-`TAG_RUN_LOG_DAILY`, `dependencies` including `pub_sub_schema`) following the contract, then one entry under `tables` in `mart-export-config.json` (`table_name` =
-the message `table`, `source_view`, `topic`). The workflow reads
-`mart_export_config` and needs no change; the topic and subscriptions are created on
-the GCP side.
+`TAG_PUB_SUB`, `dependencies` including `pub_sub_schema`) following the contract, then
+one entry under `tables` in `mart-export-config.json` (`table_name` = the message
+`table` and the Dataform action that triggers it, `source_view`, `topic`), then run
+tag `pub_sub` once as below. The workflow needs no change; the topic and
+subscriptions are created on the GCP side. For existing exports, the insert-only
+config lifecycle above applies.
 
-**Enable in Dataform:** follow the
-[schedule reference](../operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd)
-for the UI tag change and keeping `run_tags` aligned. `pub_sub_schema` creates its
-dataset in `databuffet.REGION` on the first execution; the view depends on it.
-Running a single mart table or export view without the logging actions creates no
-publishable run. Publishing itself remains post-merge GCP work.
+### Deploy
+
+Run by hand, with no workflow configuration change. Once the code reaches `nonprod`,
+follow these steps for the first deployment and whenever an export table is added:
+
+1. In Dataform → Releases & Scheduling → release config `production`, select
+   **New compilation** and wait for success, or verify that its existing live
+   compilation's commit SHA includes the change on `nonprod`.
+2. Verify the successful result is live and its commit includes the change, then
+   run tag `pub_sub` from `production` with **include dependencies off**.
+
+Manual execution uses the release's live compilation result
+([Dataform compilation reference](https://docs.cloud.google.com/dataform/docs/configure-compilation#trigger-execution-release-configuration)).
+The run creates the `pub_sub` dataset (in `databuffet.REGION`), the export views and
+the two tables, and only adds missing export config rows. Re-running preserves every
+existing config row, the memory and the sent state. No workflow configuration carries
+`pub_sub`. Do not use tag `view` for this: it deploys every view and skips the two
+tables. Publishing itself remains post-merge GCP work.

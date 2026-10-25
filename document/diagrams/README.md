@@ -2,8 +2,7 @@
 
 Visual maps of the Data-Buffet pipeline. Everything here is **auto-generated from
 the SQLX code** — never hand-edit the output. Counts cover `.sqlx` files, not the
-compiled action graph. JavaScript definitions such as `mart_process_end.js` and
-its barriers are excluded; their completion contract is documented in the
+compiled action graph. JavaScript definitions are excluded; see the
 [process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24).
 
 ## Files

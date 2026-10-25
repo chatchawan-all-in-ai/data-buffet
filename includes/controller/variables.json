@@ -24,7 +24,7 @@
 
     "TAG_SALEOUT_DAILY": "saleout_daily",
 
-    "TAG_RUN_LOG_DAILY": "run_log_daily",
+    "TAG_PUB_SUB": "pub_sub",
 
     "RAW_MAC5_AG01": "raw_mac5_ag01",
     "RAW_MAC5_AA05": "raw_mac5_aa05",
@@ -84,4 +84,4 @@
     "GCS_D365": "derp_temp"
     
 
-}
+}
