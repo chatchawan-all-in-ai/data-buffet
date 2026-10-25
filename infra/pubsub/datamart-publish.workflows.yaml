@@ -147,7 +147,8 @@ export_table:
             - describe:
                 assign:
                   - inv_id: ${text.split(inv.name, "/")[len(text.split(inv.name, "/")) - 1]}
-                  - inv_end_text: ${map.get(default(map.get(inv, "invocationTiming"), {}), "endTime")}
+                  # A list of keys reads the nested field; null when invocationTiming is missing.
+                  - inv_end_text: ${map.get(inv, ["invocationTiming", "endTime"])}
                   - scheduler: manual
             - skip_running:
                 switch:
@@ -427,9 +428,15 @@ publish_and_record:
           steps:
             - add:
                 assign:
-                  - messages: '${list.concat(messages, {"data": base64.encode(text.encode(r.f[2].v))})}'
+                  # Map literals are not allowed inside ${}, so each entry is built first.
+                  - message:
+                      data: ${base64.encode(text.encode(r.f[2].v))}
                   # h = null marks a DELETE: the MERGE removes the key.
-                  - sent: '${list.concat(sent, {"k": r.f[0].v, "h": r.f[1].v})}'
+                  - sent_row:
+                      k: ${r.f[0].v}
+                      h: ${r.f[1].v}
+                  - messages: ${list.concat(messages, message)}
+                  - sent: ${list.concat(sent, sent_row)}
     - publish:
         call: googleapis.pubsub.v1.projects.topics.publish
         args:
@@ -480,7 +487,13 @@ bq_run:
           steps:
             - add:
                 assign:
-                  - query_parameters: '${list.concat(query_parameters, {"name": p[0], "parameterType": {"type": p[1]}, "parameterValue": {"value": p[2]}})}'
+                  - query_parameter:
+                      name: ${p[0]}
+                      parameterType:
+                        type: ${p[1]}
+                      parameterValue:
+                        value: ${p[2]}
+                  - query_parameters: ${list.concat(query_parameters, query_parameter)}
     - run:
         call: googleapis.bigquery.v2.jobs.query
         args:
