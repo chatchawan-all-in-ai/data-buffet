@@ -77,8 +77,9 @@ JavaScript-generated actions are outside that diagram's scope.
 | **Pub/Sub** | `definitions/pub_sub/` | `pub_sub_schema` creates the `pub_sub` dataset; future shaping tables before Pub/Sub (export views live in `definitions/view/pub_sub/`) |
 | **Process** | `definitions/process/` | AI address parsing + row-level security (`rls_customer360`) + [Pub/Sub export pilot](document/project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
 
-The Pub/Sub pilot prepares Dataform objects for `dim_company`; GCP publishing will
-be set up after merge. See the [setup and message guide](document/how-to/setup-pubsub-export.md).
+The Pub/Sub pilot covers `dim_company`: Dataform objects here, plus the publishing
+Cloud Workflow and its idempotent GCP setup script in `infra/pubsub/`, deployed by hand.
+See the [setup and message guide](document/how-to/setup-pubsub-export.md).
 
 **Validated by source:** MAC5, CIS360, MASTERSKU, MASTER_SKU (3.0),
 SALEOUT_MDT and D365, each with its own schema-bootstrap file. ALLKONS_COMMISSION
@@ -129,6 +130,9 @@ includes/
     ├── function-data.js          # Reusable SQL-generating helpers
     ├── cdc-config.json           # Which source tables participate in CDC
     └── mart-export-config.json   # Pub/Sub export selection (see the process reference)
+
+infra/
+└── pubsub/           # Cloud Workflow datamart-publish + setup.sh (Pub/Sub export, GCP side)
 
 document/
 ├── getting-started/  architecture/  coding-standards/  how-to/  operations/   (Thai)

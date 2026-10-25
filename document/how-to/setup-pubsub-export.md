@@ -1,19 +1,22 @@
 # How-to: Setup Pub/Sub สำหรับส่งออกข้อมูลจาก BigQuery
 
-> สถานะ 2026-10-24: change นี้เตรียมเฉพาะ Dataform สำหรับ pilot `dim_company` ใน
-> **`databuffet-nonprd` เท่านั้น** · topic, service accounts, Workflows, Scheduler,
-> test subscription และคู่มือ deploy ฝั่ง GCP จะทำ **หลัง PR merge**
+> สถานะ 2026-10-25: pilot `dim_company` ใน **`databuffet-nonprd` เท่านั้น** · repo มีครบทั้ง
+> Dataform (export view + ตาราง bookkeeping), Workflow
+> [`infra/pubsub/datamart-publish.workflows.yaml`](../../infra/pubsub/datamart-publish.workflows.yaml)
+> และสคริปต์สร้าง infra [`infra/pubsub/setup.sh`](../../infra/pubsub/setup.sh) · ยัง **ไม่ได้ deploy**
+> ฝั่ง GCP — ทำตาม [ส่วน A](#ส่วน-a--deploy-และทดสอบ-pilot) หลัง PR merge
 > รายละเอียด repo และวิธีเพิ่มตารางอยู่ที่
 > [process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
 
 ## ภาพรวม
 
-แบบที่จะสร้างฝั่ง GCP: Cloud Scheduler `datamart-publish-every-5m` เรียก Cloud
+ฝั่ง GCP (region `asia-southeast1`): Cloud Scheduler `datamart-publish-every-5m` เรียก Cloud
 Workflows `datamart-publish` ทุก 5 นาทีตลอดวัน (`*/5 * * * *`) เพื่อถาม **Dataform API**
 ว่ามีรอบ Dataform ใหม่ที่สำเร็จและรันตารางนั้นหรือไม่ — รองรับทุก scheduler และการรัน
 manual ตาม [สัญญา publisher](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
-· ถ้ามี จึงส่งเฉพาะแถวที่เปลี่ยน · ใช้ service accounts `datamart-publisher` และ
-`datamart-publish-trigger` แบบ keyless และแจ้งปัญหาไป Slack channel เดียวกับ Dataform
+· ถ้ามี จึงส่งเฉพาะแถวที่เปลี่ยน · ใช้ service accounts `datamart-publisher` (รัน workflow)
+และ `datamart-publish-trigger` (Scheduler → Workflows) แบบ keyless · เมื่อล้มเหลวแจ้ง Slack
+ผ่าน incoming webhook ที่เก็บใน Secret Manager ชื่อ `slack-datamart-dataform`
 ไม่มี Cloud Logging trigger
 
 รายการตาราง, source view และ topic ที่ต้องสร้างอ่านจาก
@@ -35,8 +38,8 @@ key ส่งให้ทีมปลายทาง** และทีมปล�
   "table": "dim_company",
   "run_date": "2026-10-24",
   "operation": "NEW",
-  "primary_key": { "company_source_id": "ag01", "CompanyCode": "EXAMPLE" },
-  "data": { "company_source_id": "ag01", "CompanyCode": "EXAMPLE", "CompanyNameTH": "บริษัทตัวอย่าง", "CompanyNameEN": "Example Company" }
+  "primary_key": { "CompanyID": "zz01" },
+  "data": { "CompanyID": "zz01", "CompanyCode": "EXAMPLE", "CompanyNameTH": "บริษัทตัวอย่าง", "CompanyNameEN": "Example Company" }
 }
 ```
 
@@ -45,29 +48,100 @@ key ส่งให้ทีมปลายทาง** และทีมปล�
 | `table` | ชื่อชุดข้อมูล | ตรงกับ `table_name` ใน export config — ให้ consumer ใช้ callback ตัวเดียวได้ |
 | `run_date` | วันที่ส่งตาม `Asia/Bangkok` | ใช้ debug/ตรวจสอบ ไม่ใช่ key |
 | `operation` | `NEW` \| `UPDATE` \| `DELETE` | ปลายทางใช้ตัดสินว่าจะ upsert หรือ delete |
-| `primary_key` | object ของ key column (field จริงใน `data` ไม่ใช่ hash) | key ของแต่ละชุดกำหนดใน export view — ค่าใน key เป็น `null` ได้ (เช่น ใบเสร็จเงินสดไม่มีเลขเช็ค) ฝั่งปลายทางต้องถือว่า `null` เท่ากัน |
-| `data` | ทุก data column ของ export view (ไม่รวม `row_key` / `row_hash`) | มีเฉพาะ `NEW`/`UPDATE`; `DELETE` = `null` (แถวไม่มีแล้วที่ต้นทาง) |
+| `primary_key` | object ของ natural key (field จริงใน `data` ไม่ใช่ hash) | key ของแต่ละชุดกำหนดใน export view — `dim_company` ใช้ `CompanyID` อย่างเดียว · ชุดอื่นในอนาคตอาจมีค่า `null` ใน key ได้ (เช่น ใบเสร็จเงินสดไม่มีเลขเช็ค) ฝั่งปลายทางต้องถือว่า `null` เท่ากัน |
+| `data` | ทุก data column ของ export view (ไม่รวม `row_key` / `row_hash`) ตามชื่อและลำดับคอลัมน์ของ view | มีเฉพาะ `NEW`/`UPDATE`; `DELETE` = `null` (แถวไม่มีแล้วที่ต้นทาง) |
 
 JSON ทั้งก้อน **สร้างโดย BigQuery** (`TO_JSON_STRING`) จึงมีรูปแบบตายตัว: ไม่มีช่องว่าง,
 DATETIME = `"2026-01-30T09:10:00"`, ตัวเลขไม่มี `.0` เกิน (`700`), ค่าว่าง = `null` —
-คอลัมน์แรกของทุกชุดคือ `company_source_id` (บริษัทเจ้าของข้อมูล เช่น `ag01`)
-สัญญาการเลือกคอลัมน์อยู่ที่ process reference ด้านล่าง
+ชื่อ field ใน `data` / `primary_key` คือชื่อคอลัมน์ของตารางต้นทาง (เช่น `CompanyID` ตาม
+`dim_company`) ไม่มีการเปลี่ยนชื่อ · สัญญาการเลือกคอลัมน์อยู่ที่ process reference ด้านล่าง
 
-ตัวอย่างนี้ใช้ค่าบริษัทสมมติ (`CompanyCode = EXAMPLE`) · JSON หลัง decode มีเฉพาะ 5 field ข้างบน
+ตัวอย่างนี้ใช้ค่าบริษัทสมมติ (`CompanyID = zz01`) · JSON หลัง decode มีเฉพาะ 5 field ข้างบน
 ส่งหนึ่งแถวต่อหนึ่งข้อความ และ publisher ไม่ใส่ message attributes เพิ่ม
 สัญญา export view และการหา `NEW` / `UPDATE` / `DELETE` อยู่ที่
 [process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
 
 ⚠️ **ทีมใหม่ที่ต่อครั้งแรก**: delta มีเฉพาะแถวที่เปลี่ยนหลังต่อ subscription จึงต้องรับ
-full snapshot ก่อนเข้าโหมด delta (ดูขั้น 4) · ขั้นตอน backfill ฝั่ง workflow จะจัดทำหลัง merge
+full snapshot ก่อนเข้าโหมด delta (ดูขั้น 4) · เครื่องมือ backfill ยังไม่อยู่ใน pilot นี้
 
-## ส่วน A — เตรียม infra หลัง merge
+## ส่วน A — deploy และทดสอบ pilot
 
-Data Mart จะสร้าง topic ตาม export config, service accounts และสิทธิ์แบบ keyless,
-Workflow, Scheduler และ pull subscription สำหรับทดสอบ พร้อมคู่มือ deploy และวิธี
-ทดสอบเส้นทางจริงตั้งแต่รอบ Dataform จบจนได้รับข้อความ ก่อนเปิดให้ทีมปลายทางใช้
+ทำครั้งเดียวหลัง PR merge และ code ถึง `nonprod` (คนทำต้องเป็น project owner ของ
+`databuffet-nonprd` และรันจาก WSL ที่มี `gcloud` / `bq`) · ทีมปลายทางดูแล HTTPS endpoint,
+การตรวจ token และตารางปลายทางตามส่วน B
 
-ทีมปลายทางดูแล HTTPS endpoint, การตรวจ token และตารางปลายทางตามส่วน B
+| ไฟล์ | หน้าที่ |
+|---|---|
+| [`infra/pubsub/datamart-publish.workflows.yaml`](../../infra/pubsub/datamart-publish.workflows.yaml) | Workflow 9 ขั้นตาม [สัญญา publisher](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) — generic ทุกแถวใน `mart_export_config` |
+| [`infra/pubsub/setup.sh`](../../infra/pubsub/setup.sh) | สร้าง/อัปเดต infra ทั้งหมด แบบ idempotent (รันซ้ำได้) |
+
+### A1. สร้างตาราง bookkeeping และ export view
+
+ทำตาม [ขั้น deploy ของ pilot](../project_wiki/cdc-process/process.md#deploy) — รัน tag
+`pub_sub` จาก release `production` แบบ include dependencies **ปิด** · `setup.sh` จะหยุด
+ถ้ายังไม่มี `process_dataset.mart_export_config`, `process_dataset.mart_sent_state` หรือ
+`pub_sub.export_dim_company`
+
+### A2. ตรวจ secret ของ Slack
+
+Webhook ของ Slack เก็บไว้แล้วใน Secret Manager ชื่อ **`slack-datamart-dataform`** (ไม่ต้องสร้างใหม่)
+· ห้ามพิมพ์หรือ log ค่าของ secret · workflow อ่านค่าเฉพาะตอนต้องแจ้งความล้มเหลว
+
+### A3. รัน `setup.sh`
+
+```bash
+bash infra/pubsub/setup.sh
+```
+
+สคริปต์ทำตามลำดับ (ทุกขั้นเช็คก่อนสร้าง หรือ apply ซ้ำได้ไม่เสียหาย):
+
+1. ตรวจ prerequisite ของ A1–A2
+2. เปิด API: Workflows, Workflow Executions, Cloud Scheduler, Pub/Sub, Secret Manager
+   (และ Dataform / BigQuery ที่เปิดอยู่แล้ว)
+3. สร้าง service accounts `datamart-publish-trigger` และ `datamart-publisher` — **ไม่สร้าง key**
+4. ต่อทุกตารางใน [`mart-export-config.json`](../../includes/controller/mart-export-config.json):
+   topic (`export-ta-dim_company`), dead-letter topic (`<topic>-dead-letter`) พร้อม sub ที่เก็บ
+   dead letter (`sub-test-<table>-dead-letter`), pull subscription ทดสอบ `sub-test-<table>`
+   (dead letter หลังส่งไม่สำเร็จ 5 ครั้ง) และสิทธิ์ของ Pub/Sub service agent ที่ใช้ส่ง dead letter
+5. ให้สิทธิ์แบบ least privilege กับ `datamart-publisher`:
+
+   | Role | ขอบเขต | ใช้ทำ |
+   |---|---|---|
+   | `roles/dataform.viewer` | project | list workflow invocations + query actions |
+   | `roles/bigquery.jobUser` | project | รัน query/DML |
+   | `roles/logging.logWriter` | project | `sys.log` ของ workflow |
+   | `roles/bigquery.dataEditor` | ตาราง `mart_export_config`, `mart_sent_state` เท่านั้น | อ่าน config (tabledata.list), claim, MERGE sent state |
+   | `roles/bigquery.dataViewer` | view `pub_sub.export_dim_company` + ตารางต้นทาง `dimension_table.dim_company` เท่านั้น | diff query (view ต้องอ่านตารางต้นทางได้ด้วย) |
+   | `roles/pubsub.publisher` | topic ของแต่ละชุดเท่านั้น | publish |
+   | `roles/secretmanager.secretAccessor` | secret `slack-datamart-dataform` เท่านั้น | อ่าน webhook |
+
+   `datamart-publish-trigger` ได้ `roles/workflows.invoker` อย่างเดียว (ระดับ project เพราะ
+   Workflows ไม่มี IAM รายตัว)
+6. deploy workflow `datamart-publish` (`asia-southeast1`) ให้รันเป็น `datamart-publisher`
+7. สร้าง/อัปเดต Scheduler job `datamart-publish-every-5m` (`*/5 * * * *`, Asia/Bangkok)
+   ที่ POST ไป Workflow Executions API ด้วย OAuth ของ `datamart-publish-trigger`
+
+### A4. ทดสอบด้วย pull subscription
+
+Workflow จะ export เมื่อมีรอบ Dataform ที่สำเร็จและรัน action `dim_company` สำเร็จ —
+`daily_process` รันทุกวันอยู่แล้ว · ครั้งแรก (`last_invocation_end` ยังเป็น `NULL`)
+มองย้อนหลัง 48 ชั่วโมง จึงไม่ต้องรอรอบใหม่
+
+1. รอ Scheduler รอบถัดไป (ไม่เกิน 5 นาที) หรือสั่งเองทันที:
+   `gcloud workflows run datamart-publish --location=asia-southeast1 --project=databuffet-nonprd`
+   ผลลัพธ์ต้องเป็น `["dim_company: sent 5 rows for <invocation id>"]`
+2. ดึงข้อความ: `gcloud pubsub subscriptions pull sub-test-dim_company --project=databuffet-nonprd --limit=10 --auto-ack`
+   ต้องได้ **5 ข้อความ `NEW`** (หนึ่งข้อความต่อบริษัท) ตาม Message format ด้านบน
+3. ตรวจ bookkeeping: `process_dataset.mart_sent_state` มี 5 แถวของ `dim_company` และ
+   `mart_export_config.last_invocation_id` = invocation นั้น, `claimed_at` = `NULL`
+4. สั่ง workflow อีกครั้ง → ผลลัพธ์ `no new invocation` (หรือ `advanced to ...` ถ้ามีรอบอื่น
+   จบระหว่างนั้น) และ pull อีกครั้งต้องได้ **0 ข้อความ** · หลังรอบ `daily_process` ถัดไปก็ยัง
+   0 ข้อความถ้า `dim_company` ไม่เปลี่ยน (ผลคือ `sent 0 rows for ...`)
+5. ทดสอบ Slack: ดู execution ที่ล้มเหลวใน **Workflows → datamart-publish → Executions**
+   ต้องมีข้อความใน channel ของ webhook · ถ้ายังไม่เคยล้มเหลว ไม่ต้องสร้างความล้มเหลวเอง
+
+ถ้า export ล้มเหลว `last_invocation_*` ไม่ขยับ และ `claimed_at` ค้างไว้จนครบ 30 นาที
+แล้ว Scheduler รอบถัดไปจะทำซ้ำเอง (ข้อความที่ publish ไปแล้วแต่ยังไม่บันทึกอาจถูกส่งซ้ำ)
 
 ---
 
@@ -141,7 +215,7 @@ endpoint เดียวรับได้ทุกชุด (แยกชุด
 ### 4. Backfill ให้ทีมใหม่ (ครั้งแรกที่ต่อเข้ามาเท่านั้น)
 
 **ทำ**: หลังสร้าง sub ครบแล้ว ประสาน Data Mart ให้ส่ง full snapshot ของ export view
-ก่อนรับ delta ตามปกติ วิธีสั่ง backfill จะจัดทำพร้อม workflow หลัง merge
+ก่อนรับ delta ตามปกติ เครื่องมือ backfill ยังไม่อยู่ใน pilot นี้ (จะทำแยก)
 ห้ามล้าง sent state ที่ใช้ร่วมกันเพื่อเริ่มต้นให้ทีมใหม่
 
 **ทำไม**: export ปกติเป็น delta อย่างเดียว ทีมใหม่ที่เพิ่งต่อจะไม่มีข้อมูลตั้งต้นถ้าไม่
@@ -272,8 +346,8 @@ message format นี้ไม่มีลำดับต่อแถว; วิ
 ## Checklist ก่อนเปิดใช้งานจริง (หลัง merge)
 
 - [ ] ทำตาม [ขั้น deploy ของ pilot](../project_wiki/cdc-process/process.md#deploy) รวมการตรวจ live compilation ก่อนรันด้วยมือ; การเพิ่ม เปลี่ยน หรือเอาตาราง export ออกให้ยึด lifecycle ใน process reference เดียวกัน
-- [ ] สร้างและทดสอบ infra ตามส่วน A พร้อมคู่มือ deploy และ backfill
-- [ ] ทดสอบ publish/pull ผ่าน test subscription และตรวจ alert ไป Slack
+- [ ] รัน `infra/pubsub/setup.sh` ตามส่วน A (A1–A3)
+- [ ] ทดสอบ publish/pull ผ่าน `sub-test-dim_company`: รอบแรก 5 `NEW`, รอบถัดไป 0 (A4)
 - [ ] ต่อทีมใหม่: ได้ HTTPS endpoint และสร้าง `sa-push-<ทีม>` โดยไม่มี key (ขั้น 1–2)
 - [ ] ต่อทีมใหม่ที่ใช้ Cloud Run: ให้ Invoker บน service ที่รับ push (ขั้น 2.3)
 - [ ] สร้าง push subscription เฉพาะชุดที่ได้รับ พร้อม authentication และ audience ตรงกับ handover (ขั้น 3)
