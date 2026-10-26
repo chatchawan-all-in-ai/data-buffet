@@ -32,3 +32,9 @@ cloud-run-monitor/
 # there but shows up as untracked in every other clone.
 # Deleting the folder is safe -- the plugin recreates it on the next session start.
 # ai_context/
+
+# --- Local-only tooling -------------------------------------------------------
+# no-mistakes config and everything in scripts/ run only on the developer's machine;
+# the repo holds production code only.
+/.no-mistakes.yaml
+/scripts/

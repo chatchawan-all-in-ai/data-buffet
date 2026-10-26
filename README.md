@@ -260,22 +260,11 @@ Dataform assertions. What runs on a schedule (05:45 release from `nonprod`,
 
 ## Common Commands
 
-```bash
-# Compile the project graph without querying BigQuery
-bash scripts/nm-test.sh
-
-# Check whitespace and dry-run SQL for committed changes
-bash scripts/nm-lint.sh
-
-# Request dry-run checks for all table/operation actions
-bash scripts/nm-lint.sh --all
-```
-
-These are the commands configured in [`.no-mistakes.yaml`](.no-mistakes.yaml).
-See the [local validation guide](document/how-to/run-and-debug.md#ตรวจงานในเครื่องด้วย-no-mistakes)
-for prerequisites, the reusable environment, action selection, credentials, and
-validation limits; see [running by tag](document/how-to/run-and-debug.md#รันด้วย-tag)
-for execution in GCP.
+Execution happens in GCP through the Dataform UI — see
+[running by tag](document/how-to/run-and-debug.md#รันด้วย-tag), which also covers
+`dataform compile` with the optional global CLI. To check SQL before running, use a
+free `bq --dry_run` — see
+[checking SQL without the Dataform CLI](document/how-to/run-and-debug.md#ตรวจ-sql-โดยไม่มี-dataform-cli).
 
 Ad-hoc queries: `bq --project_id=databuffet-nonprd query --use_legacy_sql=false '...'`
 (always pass `--project_id`).

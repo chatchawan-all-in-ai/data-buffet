@@ -56,7 +56,7 @@
 
 | คำ | ความหมาย |
 |---|---|
-| **Dataform compile** | สร้าง execution graph — วิธีตรวจและข้อจำกัดดู [run/debug guide](../how-to/run-and-debug.md#compile-กับ-sql-dry-run) |
+| **Dataform compile** | สร้าง execution graph — วิธีตรวจและข้อจำกัดดู [run/debug guide](../how-to/run-and-debug.md#รันด้วย-tag) |
 | **Dataform execution** | รัน action/tag ที่เลือก — วิธีรันดู [run/debug guide](../how-to/run-and-debug.md#รันด้วย-tag) |
 | **`bq` CLI** | Query BigQuery ตรง ๆ — ต้องระบุ `--project_id=databuffet-nonprd` เสมอ |
 

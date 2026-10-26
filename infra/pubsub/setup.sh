@@ -21,7 +21,6 @@ TRIGGER_SA_NAME=datamart-publish-trigger
 PUBLISHER_SA_NAME=datamart-publisher
 SLACK_SECRET=slack-datamart-dataform
 BQ_DATASET=process_dataset
-TEST_MAX_DELIVERY_ATTEMPTS=5
 
 # Base tables each export view reads: the publisher needs read on them as well as on the view.
 # Add a line when a new table is added to includes/controller/mart-export-config.json.
@@ -106,33 +105,19 @@ log "Service accounts (keyless - never create keys)"
 ensure_sa "$TRIGGER_SA_NAME" "Cloud Scheduler -> Workflows datamart-publish"
 ensure_sa "$PUBLISHER_SA_NAME" "Workflows datamart-publish runner"
 
-log "Topics and the test subscription (with dead-letter topic)"
-while IFS=$'\t' read -r table_name _source_view topic; do
+log "Topics and dead-letter topics"
+while IFS=$'\t' read -r _table_name _source_view topic; do
   dlq_topic="$topic-dead-letter"
-  test_sub="sub-test-$table_name"
   ensure_topic "$topic"
   ensure_topic "$dlq_topic"
-  # Holds dead letters so they can be read; a topic without a subscription drops them.
-  gcloud pubsub subscriptions describe "$test_sub-dead-letter" --project="$PROJECT" >/dev/null 2>&1 ||
-    gcloud pubsub subscriptions create "$test_sub-dead-letter" --project="$PROJECT" --topic="$dlq_topic" \
-      --message-retention-duration=7d
-  if gcloud pubsub subscriptions describe "$test_sub" --project="$PROJECT" >/dev/null 2>&1; then
-    gcloud pubsub subscriptions update "$test_sub" --project="$PROJECT" \
-      --dead-letter-topic="$dlq_topic" --max-delivery-attempts="$TEST_MAX_DELIVERY_ATTEMPTS"
-  else
-    gcloud pubsub subscriptions create "$test_sub" --project="$PROJECT" --topic="$topic" \
-      --ack-deadline=60 --message-retention-duration=7d \
-      --dead-letter-topic="$dlq_topic" --max-delivery-attempts="$TEST_MAX_DELIVERY_ATTEMPTS"
-  fi
-  # Pub/Sub service agent forwards undeliverable messages: publish on the DLQ, subscribe on the source sub.
+  # DLQ is reserved: no subscription uses it yet. Wire it when a consumer team is connected
+  # (push sub --dead-letter-topic, service agent subscriber on that sub, a sub that holds dead letters).
   gcloud pubsub topics add-iam-policy-binding "$dlq_topic" --project="$PROJECT" \
     --member="serviceAccount:$pubsub_agent" --role=roles/pubsub.publisher >/dev/null
-  gcloud pubsub subscriptions add-iam-policy-binding "$test_sub" --project="$PROJECT" \
-    --member="serviceAccount:$pubsub_agent" --role=roles/pubsub.subscriber >/dev/null
   # Publisher: publish to this topic only.
   gcloud pubsub topics add-iam-policy-binding "$topic" --project="$PROJECT" \
     --member="serviceAccount:$publisher_sa" --role=roles/pubsub.publisher >/dev/null
-  echo "  $topic (+ $dlq_topic), $test_sub"
+  echo "  $topic (+ $dlq_topic)"
 done <<< "$export_tables"
 
 log "Least-privilege roles for $publisher_sa"
@@ -177,4 +162,4 @@ else
   gcloud scheduler jobs create http "$SCHEDULER_JOB" "${scheduler_flags[@]}"
 fi
 
-log "Done. Test with the pull subscription: document/how-to/setup-pubsub-export.md"
+log "Done. Verify the first run: document/how-to/setup-pubsub-export.md (A4)"

@@ -100,9 +100,11 @@ bash infra/pubsub/setup.sh
    (และ Dataform / BigQuery ที่เปิดอยู่แล้ว)
 3. สร้าง service accounts `datamart-publish-trigger` และ `datamart-publisher` — **ไม่สร้าง key**
 4. ต่อทุกตารางใน [`mart-export-config.json`](../../includes/controller/mart-export-config.json):
-   topic (`export-ta-dim_company`), dead-letter topic (`<topic>-dead-letter`) พร้อม sub ที่เก็บ
-   dead letter (`sub-test-<table>-dead-letter`), pull subscription ทดสอบ `sub-test-<table>`
-   (dead letter หลังส่งไม่สำเร็จ 5 ครั้ง) และสิทธิ์ของ Pub/Sub service agent ที่ใช้ส่ง dead letter
+   topic (`export-ta-dim_company`), dead-letter topic (`<topic>-dead-letter`) และสิทธิ์ publisher
+   ของ Pub/Sub service agent บน dead-letter topic · ไม่สร้าง subscription ทดสอบ
+   - dead-letter topic **สำรองไว้ ยังไม่ผูกกับ subscription ใด** — ตอนนี้ไม่มี dead letter ถูกส่งไปเก็บที่ไหน
+     การผูก (ตั้ง `--dead-letter-topic` บน push subscription, ให้ Pub/Sub service agent มีสิทธิ์
+     subscriber บน subscription นั้น และสร้าง subscription ที่เก็บ dead letter) ทำตอนต่อทีมผู้รับ
 5. ให้สิทธิ์แบบ least privilege กับ `datamart-publisher`:
 
    | Role | ขอบเขต | ใช้ทำ |
@@ -121,7 +123,7 @@ bash infra/pubsub/setup.sh
 7. สร้าง/อัปเดต Scheduler job `datamart-publish-every-5m` (`*/5 * * * *`, Asia/Bangkok)
    ที่ POST ไป Workflow Executions API ด้วย OAuth ของ `datamart-publish-trigger`
 
-### A4. ทดสอบด้วย pull subscription
+### A4. ตรวจผลรอบแรก
 
 Workflow จะ export เมื่อมีรอบ Dataform ที่สำเร็จและรัน action `dim_company` สำเร็จ —
 `daily_process` รันทุกวันอยู่แล้ว · ครั้งแรก (`last_invocation_end` ยังเป็น `NULL`)
@@ -129,15 +131,14 @@ Workflow จะ export เมื่อมีรอบ Dataform ที่สำ�
 
 1. รอ Scheduler รอบถัดไป (ไม่เกิน 5 นาที) หรือสั่งเองทันที:
    `gcloud workflows run datamart-publish --location=asia-southeast1 --project=databuffet-nonprd`
-   ผลลัพธ์ต้องเป็น `["dim_company: sent 5 rows for <invocation id>"]`
-2. ดึงข้อความ: `gcloud pubsub subscriptions pull sub-test-dim_company --project=databuffet-nonprd --limit=10 --auto-ack`
-   ต้องได้ **5 ข้อความ `NEW`** (หนึ่งข้อความต่อบริษัท) ตาม Message format ด้านบน
-3. ตรวจ bookkeeping: `process_dataset.mart_sent_state` มี 5 แถวของ `dim_company` และ
+   ผลลัพธ์ execution (ดูได้ใน **Workflows → datamart-publish → Executions** ด้วย) ต้องเป็น
+   `["dim_company: sent 5 rows for <invocation id>"]` — 5 แถว `NEW` หนึ่งแถวต่อบริษัท
+2. ตรวจ bookkeeping: `process_dataset.mart_sent_state` มี 5 แถวของ `dim_company` และ
    `mart_export_config.last_invocation_id` = invocation นั้น, `claimed_at` = `NULL`
-4. สั่ง workflow อีกครั้ง → ผลลัพธ์ `no new invocation` (หรือ `advanced to ...` ถ้ามีรอบอื่น
-   จบระหว่างนั้น) และ pull อีกครั้งต้องได้ **0 ข้อความ** · หลังรอบ `daily_process` ถัดไปก็ยัง
-   0 ข้อความถ้า `dim_company` ไม่เปลี่ยน (ผลคือ `sent 0 rows for ...`)
-5. ทดสอบ Slack: ดู execution ที่ล้มเหลวใน **Workflows → datamart-publish → Executions**
+3. สั่ง workflow อีกครั้ง → ผลลัพธ์ `no new invocation` (หรือ `advanced to ...` ถ้ามีรอบอื่น
+   จบระหว่างนั้น) และ `mart_sent_state` ไม่เปลี่ยน · หลังรอบ `daily_process` ถัดไปผลคือ
+   `dim_company: sent 0 rows for <invocation id>` ถ้า `dim_company` ไม่เปลี่ยน
+4. ทดสอบ Slack: ดู execution ที่ล้มเหลวใน **Workflows → datamart-publish → Executions**
    ต้องมีข้อความใน channel ของ webhook · ถ้ายังไม่เคยล้มเหลว ไม่ต้องสร้างความล้มเหลวเอง
 
 ถ้า export ล้มเหลว `last_invocation_*` ไม่ขยับ และ `claimed_at` ค้างไว้จนครบ 30 นาที
@@ -347,7 +348,7 @@ message format นี้ไม่มีลำดับต่อแถว; วิ
 
 - [ ] ทำตาม [ขั้น deploy ของ pilot](../project_wiki/cdc-process/process.md#deploy) รวมการตรวจ live compilation ก่อนรันด้วยมือ; การเพิ่ม เปลี่ยน หรือเอาตาราง export ออกให้ยึด lifecycle ใน process reference เดียวกัน
 - [ ] รัน `infra/pubsub/setup.sh` ตามส่วน A (A1–A3)
-- [ ] ทดสอบ publish/pull ผ่าน `sub-test-dim_company`: รอบแรก 5 `NEW`, รอบถัดไป 0 (A4)
+- [ ] ตรวจผล execution ของ `datamart-publish` และ `mart_sent_state`: รอบแรก `sent 5 rows`, รอบถัดไป `sent 0 rows` (A4)
 - [ ] ต่อทีมใหม่: ได้ HTTPS endpoint และสร้าง `sa-push-<ทีม>` โดยไม่มี key (ขั้น 1–2)
 - [ ] ต่อทีมใหม่ที่ใช้ Cloud Run: ให้ Invoker บน service ที่รับ push (ขั้น 2.3)
 - [ ] สร้าง push subscription เฉพาะชุดที่ได้รับ พร้อม authentication และ audience ตรงกับ handover (ขั้น 3)

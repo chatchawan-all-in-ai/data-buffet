@@ -78,10 +78,10 @@ document/            เอกสาร (โฟลเดอร์นี้)
 | เครื่องมือ | หมายเหตุ |
 |---|---|
 | `gcloud` + `bq` + `gsutil` (Cloud SDK) | query ตรง: `bq --project_id=databuffet-nonprd query --use_legacy_sql=false '...'` — **ต้องใส่ `--project_id` เสมอ** เพราะ default project ของเครื่องมักไม่ใช่ตัวนี้ |
-| Python 3.x | hooks และ `document/diagrams/generate_lineage.py` ใช้; คำสั่ง no-mistakes ต้องมี `python3` ฝั่ง Linux/WSL ที่สร้าง venv และใช้ pip ได้ |
+| Python 3.x | hooks และ `document/diagrams/generate_lineage.py` ใช้ |
 | git | branch: `dev` (ทำงาน) → `nonprod` → `prod` |
-| Node.js 20+ (มี `npm`) | คำสั่ง no-mistakes ต้องใช้ Node/npm ฝั่ง Linux/WSL (`node --version`, `npm --version`) |
-| Dataform CLI global (ทางเลือก) | `npm install -g @dataform/cli@3.0.0` · เวอร์ชัน**ต้องตรง** `dataformCoreVersion` ใน `workflow_settings.yaml` · เช็ก: `dataform --version` · ไม่จำเป็นสำหรับคำสั่งใน [README — Common Commands](../../README.md#common-commands); ดู [คู่มือตรวจงานและข้อจำกัด CLI](../how-to/run-and-debug.md#ตรวจงานในเครื่องด้วย-no-mistakes) |
+| Node.js 20+ (มี `npm`) | ใช้ติดตั้ง Dataform CLI global (ทางเลือก) (`node --version`, `npm --version`) |
+| Dataform CLI global (ทางเลือก) | `npm install -g @dataform/cli@3.0.0` · เวอร์ชัน**ต้องตรง** `dataformCoreVersion` ใน `workflow_settings.yaml` · เช็ก: `dataform --version` · ใช้ `dataform compile` ในเครื่อง; ดู [คู่มือรันงาน](../how-to/run-and-debug.md#รันด้วย-tag) |
 
 **ถ้าใช้ Windows**: Cloud SDK ของทีมติดตั้งฝั่ง **WSL (Ubuntu)** ไม่ใช่ฝั่ง Windows
 เพราะฉะนั้นสั่ง `bq` / `gcloud` / `gsutil` จาก terminal WSL (repo อยู่ที่
@@ -116,7 +116,7 @@ hooks ของ Claude Code) แล้วบอก `PASS` `FAIL` `SKIP` พร�
 | Project context | `CLAUDE.md` (root ของ repo — **อยู่ใน git** ตั้งแต่ 2026-09-01, มากับ clone เลย ไม่ต้อง copy) | สรุปสถาปัตยกรรม + กติกา ให้ Claude อ่านอัตโนมัติทุก session |
 | Skills (16) | `.claude/skills/*/SKILL.md` | `add-*-table`, `dataform-run`, `check-runs`, `data-quality-check`, `fk-integrity-scan`, `bq-drift-scan`, `backfill-dimension`, `enable-cdc`, `update-docs`, `ship`, `verify-setup` — เรียกด้วย `/<ชื่อ skill>` |
 | Agents (5) | `.claude/agents/*.md` | `dataform-expert`, `data-architect`, `bigquery-optimizer`, `data-quality-auditor`, `bq-drift-auditor` |
-| Hooks | `.claude/hooks/` | `ensure-hookspath.sh` (SessionStart — ตั้ง `core.hooksPath` + `chmod +x` ให้เองครั้งแรก), `guard-dangerous.sh` (บล็อกคำสั่งทำลายข้อมูล), `doc-sync-check.sh` (กันลืมอัปเดตเอกสาร), `pre-commit.sh` (เตือน doc-sync + regenerate diagram — **block commit ถ้า regenerate ไม่ผ่าน**; ไม่มี CI สำรองแล้วตั้งแต่ 2026-08-27; ขั้น `dataform format`/`compile` ถูกถอดออก 2026-09-23 — การตรวจในเครื่องดู [run/debug guide](../how-to/run-and-debug.md#ตรวจงานในเครื่องด้วย-no-mistakes)) |
+| Hooks | `.claude/hooks/` | `ensure-hookspath.sh` (SessionStart — ตั้ง `core.hooksPath` + `chmod +x` ให้เองครั้งแรก), `guard-dangerous.sh` (บล็อกคำสั่งทำลายข้อมูล), `doc-sync-check.sh` (กันลืมอัปเดตเอกสาร), `pre-commit.sh` (เตือน doc-sync + regenerate diagram — **block commit ถ้า regenerate ไม่ผ่าน**; ไม่มี CI สำรองแล้วตั้งแต่ 2026-08-27; ขั้น `dataform format`/`compile` ถูกถอดออก 2026-09-23 — การตรวจในเครื่องดู [run/debug guide](../how-to/run-and-debug.md)) |
 | Permissions | `.claude/settings.json` | allowlist แบบอ่านอย่างเดียว — ของส่วนตัวใส่ `settings.local.json` (git ไม่เก็บ) |
 
 ### 4.1 การส่งมอบ `.claude/` (สำหรับคนที่ส่งให้)
@@ -186,7 +186,7 @@ chmod +x .claude/hooks/*.sh .claude/hooks/pre-commit .claude/skills/verify-setup
 1. แตกงานจาก branch `dev` (หรือแก้บน `dev` ตามธรรมเนียมทีม)
 2. แก้/เพิ่มไฟล์ `.sqlx` ตาม pattern ของ layer นั้น — ดู [how-to/](../how-to/)
 3. ตรวจว่าใช้ `databuffet.*` ไม่ hardcode ชื่อ dataset
-4. ตรวจ compile ในเครื่องตาม [README — Common Commands](../../README.md#common-commands); SQL dry run เลือก committed changes ตาม [ข้อจำกัดผลตรวจ](../how-to/run-and-debug.md#compile-กับ-sql-dry-run)
+4. ตรวจ compile/SQL ตาม [README — Common Commands](../../README.md#common-commands)
 5. อัปเดต `document/` ถ้าการแก้กระทบ pattern/inventory
 6. ส่งงานเข้า `dev` แล้วเข้า `nonprod` ตาม [Release flow](#release-flow) ด้านล่าง
    (ขึ้น prod: [../operations/deploy-to-prod.md](../operations/deploy-to-prod.md))
@@ -202,7 +202,7 @@ chmod +x .claude/hooks/*.sh .claude/hooks/pre-commit .claude/skills/verify-setup
 
 | ทาง | ขั้นตอน | ด่านตรวจที่ผ่าน |
 |---|---|---|
-| **(i) ผ่าน PR** | branch `fm/*` → pipeline no-mistakes (review, test/lint ตาม `.no-mistakes.yaml`, docs) → PR เข้า `dev` → merge → fast-forward `nonprod` ให้เท่า `dev` | review ของ no-mistakes + review ใน PR · ต้อง regenerate lineage และอัปเดต `document/` ใน PR เอง |
+| **(i) ผ่าน PR** | branch `fm/*` → pipeline no-mistakes (review, docs) → PR เข้า `dev` → merge → fast-forward `nonprod` ให้เท่า `dev` | review ของ no-mistakes + review ใน PR · ต้อง regenerate lineage และอัปเดต `document/` ใน PR เอง |
 | **(ii) แก้ตรงบนหน้า Dataform** | เพื่อนร่วมทีม commit บน `nonprod` ผ่าน workspace ของ Dataform (repo default branch) → ภายหลัง merge กลับเข้า `dev` ด้วย commit `Merge branch 'nonprod' into dev` | **ไม่ผ่าน** pre-commit lineage gate และ doc-sync hook (ไม่ได้ commit จากเครื่องที่มี `.claude/hooks`) |
 
 นอกจากนี้ยังมี commit ตรงบน `dev` โดยไม่ผ่าน PR ด้วย (เช่น `7819bef` "add journal to raw,
@@ -229,7 +229,7 @@ gate ใดรัน ถ้าทำจากเครื่องที่ไ�
    finding) → Sweep (หาค่าเก่าที่ซ้ำอยู่ที่อื่นใน repo) · สั่งใน Claude Code ว่า "run workflow
    review-dataform-change" · ค่า `scratch` เริ่มต้นเป็น path temp ของ Windows ถ้ารันใน WSL
    ให้ส่ง `scratch` เป็น path ของ Linux
-2. **pipeline no-mistakes** (ทาง (i)): review โค้ด + test/lint + docs ก่อนเปิด PR เข้า `dev`
+2. **pipeline no-mistakes** (ทาง (i)): review โค้ด + docs ก่อนเปิด PR เข้า `dev`
 
 งานทาง (ii) ไม่ผ่านทั้งสองชั้น — ถ้าแก้บนหน้า Dataform ให้รัน workflow รีวิวจากเครื่องตัวเอง
 บน branch ที่ดึงงานนั้นมาก่อน merge กลับ `dev`

@@ -123,7 +123,7 @@ DAG `pipline_saleout_mdt_eom` **รวมทุกไฟล์ในโฟลเ
     > `dim_rebate` ซึ่ง**มี** .sqlx) และ `RLS_Customer360` (ตอนนี้ repo สร้างเองแล้วที่
     > `definitions/process/rls_customer360.sqlx` และเป็นตัวพิมพ์เล็ก) ทั้งคู่อยู่ใน
     > `dependencies[]` ของผู้ใช้เรียบร้อยแล้ว
-  - ⚠️ ตอนบันทึกรายการนี้ยังไม่ได้ compile-verify — ตรวจในเครื่องได้ตาม [run/debug guide](../how-to/run-and-debug.md#ตรวจงานในเครื่องด้วย-no-mistakes) และต้องเช็คตอนขึ้น service:
+  - ⚠️ ตอนบันทึกรายการนี้ยังไม่ได้ compile-verify — ตรวจในเครื่องได้ตาม [run/debug guide](../how-to/run-and-debug.md#ตรวจ-sql-โดยไม่มี-dataform-cli) และต้องเช็คตอนขึ้น service:
     (1) view ที่อ้าง view อื่น (chain เช่น `view_dim_aging`→`view_dim_channel`,
     `Model_Invoice_Transaction`→`view_fact_transcation`) resolve เรียงลำดับถูก
     (2) `fact_transcation.sqlx` อ่าน `onetime.Transaction_Data_Mart` และ
