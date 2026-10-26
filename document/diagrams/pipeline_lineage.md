@@ -7,7 +7,7 @@
 > inline `ref(...)` + `tags: [...]`), so the views — and `topic_flows.md` — always
 > match the repo.
 
-**Objects: 334** — initial 21 · validated 157 · curated 19 · dimension 71 · fact 18 · view 41 · cdc 2 · process 4 · pub_sub 1
+**Objects: 335** — initial 21 · validated 158 · curated 19 · dimension 71 · fact 18 · view 41 · cdc 2 · process 4 · pub_sub 1
 
 **Paused (config commented out):** —
 
@@ -25,7 +25,7 @@ The medallion → star-schema map. Counts are live.
 flowchart LR
   raw["Raw AVRO/CSV<br/>gs://file-raw-data"]
   I["initial (21)<br/>ext tables + UDFs + DROPs"]
-  V["validated (157)<br/>clean · cast · dedup"]
+  V["validated (158)<br/>clean · cast · dedup"]
   C["curated (19)<br/>business joins"]
   D["dimension (71)<br/>SK + SCD"]
   F["fact (18)<br/>star-schema"]
@@ -89,7 +89,7 @@ flowchart TB
 
   subgraph nightly["daily_process - daily 06:00 Asia/Bangkok (top to bottom = run order)"]
     direction TB
-    V["validated | 157<br/>clean - cast - dedup<br/>tag: validated"]
+    V["validated | 158<br/>clean - cast - dedup<br/>tag: validated"]
     C["curated | 19<br/>business joins<br/>tag: curated"]
     D["dimension_daily | 70<br/>SK + SCD rebuild<br/>tag: dimension_daily"]
     Fd["fact_daily | 18<br/>star-schema load<br/>tag: fact_daily"]
@@ -580,7 +580,7 @@ excluded). This is the densest view — open it on GitHub or mermaid.live to zoo
 
 ```mermaid
 flowchart LR
-  subgraph validated["validated (49)"]
+  subgraph validated["validated (50)"]
     ap_s["ap_s"]
     ar_s["ar_s"]
     brand["brand"]
@@ -598,6 +598,7 @@ flowchart LR
     customer_status["customer_status"]
     customer_type["customer_type"]
     deb["deb"]
+    detail_sales_daily["detail_sales_daily"]
     match_customer["match_customer"]
     mec["mec"]
     mie["mie"]
@@ -759,6 +760,7 @@ flowchart LR
   deb --> dim_group_customer_grade
   deb --> fact_delivery
   deb --> fact_transcation
+  detail_sales_daily --> curated_saleout_mdt
   match_customer --> dim_customer
   mec --> dim_customer_report_info
   mie --> dim_aging
@@ -823,7 +825,7 @@ flowchart LR
   classDef dimension fill:#ffe0b3,stroke:#d98f2f,color:#111;
   classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
-  class ap_s,ar_s,brand,brand_vendors,brands,categories,category__mastersku,cfs,chq,common_codes,cps,cql,customer_profile,customer_profile_nature_business,customer_status,customer_type,deb,match_customer,mec,mie,mih,mih2,mil,mir,nature_business,per,product,product_detail,products,report_sale_subscription,sale_by_branch_detail,saleout_dh,saleout_gb,saleout_hp,stg,stg_report,stgacc,stk,sto,stock_by_branch,tbook_profilecomp,tbook_quodetail,tbook_quotation,tdelivery,ttrip,ttrip_document,unit,vendor,vendors validated;
+  class ap_s,ar_s,brand,brand_vendors,brands,categories,category__mastersku,cfs,chq,common_codes,cps,cql,customer_profile,customer_profile_nature_business,customer_status,customer_type,deb,detail_sales_daily,match_customer,mec,mie,mih,mih2,mil,mir,nature_business,per,product,product_detail,products,report_sale_subscription,sale_by_branch_detail,saleout_dh,saleout_gb,saleout_hp,stg,stg_report,stgacc,stk,sto,stock_by_branch,tbook_profilecomp,tbook_quodetail,tbook_quotation,tdelivery,ttrip,ttrip_document,unit,vendor,vendors validated;
   class curated_eom_bt,curated_eom_gb,curated_eom_hp,curated_eom_tw,curated_mih,curated_mil,curated_product,curated_products,curated_saleout_mdt,curated_saleout_monthly_mdt,curated_stock_mdt,curated_tbook_quotation,product_for_aisearch,product_for_aisearch_v3 curated;
   class dim_aging,dim_customer,dim_customer_grade,dim_customer_report_info,dim_delivery,dim_group_customer_grade,dim_invoice,dim_order,dim_product_master,dim_product_mdt,dim_project,dim_quotation,dim_sale_representative,dim_sale_representative_last,dim_sales_branch_mdt,dim_stk_mkt,dim_store dimension;
   class fact_backlog_store,fact_chq,fact_delivery,fact_invoice,fact_invoice_store,fact_mir_rs,fact_mir_vs,fact_order,fact_order_store,fact_quotation,fact_saleout_mdt,fact_saleout_monthly_mdt,fact_stock_mdt,fact_transaction_delivery,fact_transcation fact;

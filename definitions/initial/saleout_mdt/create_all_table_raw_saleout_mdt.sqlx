@@ -94,6 +94,20 @@ OPTIONS (
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/bt/turnover/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/bt/turnover/'
 );
+-- Table: detail_sales_daily   บุญถาวร — รูปแบบใหม่ตั้งแต่ 2026-10-08 ชีตเดียวจบ
+-- เกรนรายวันจริง (DATE_ID = วันขาย) ไม่ใช่ยอดสะสม MTD แบบ sale_by_branch_detail
+-- ตารางเก่ายังอยู่ เพราะเก็บประวัติถึง 7 ต.ค. ที่กู้จากที่อื่นไม่ได้
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.detail_sales_daily`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.detail_sales_daily`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING 
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/bt/detail_sales_daily/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/bt/detail_sales_daily/'
+);
+
 ------------------------------------- BT ----------------------------------------------
 
 ------------------------------------- DH ----------------------------------------------

@@ -84,7 +84,10 @@ WITH hp AS (
         -- MIN กัน fan-out: ถ้า end_date เดียวมี start_date หลายค่า การ JOIN จะคูณแถว
         SELECT end_date, MIN(start_date) AS month_start
         FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "sale_by_branch_detail")}
+        -- ฟีดเก่าหยุดที่ 7 ต.ค. 2026 — ตั้งแต่ 8 ต.ค. BT ส่งรูปแบบใหม่ (ดู CTE bt ข้างล่าง)
+        -- ตัดที่นี่จุดเดียวพอ เพราะ bt_daily INNER JOIN CTE นี้ด้วย end_date จึงถูกตัดตามไปเอง
         WHERE end_date IS NOT NULL
+          AND end_date <= DATE '2026-10-07'
         GROUP BY end_date
     )
 
@@ -135,6 +138,32 @@ WITH hp AS (
         MAX(asatdate)              AS asatdate
     FROM bt_daily
     WHERE sale_amount <> 0 OR sale_qty <> 0
+    GROUP BY sale_date, store_code, branch_code, branch_name, product_code, doc_type
+
+    UNION ALL
+
+    -- ตั้งแต่ 8 ต.ค. 2026 BT เปลี่ยนไฟล์ทั้งใบมาเป็นชีตเดียวเกรนรายวันจริง
+    -- ไม่ต้อง differencing และรู้วันขายแน่นอน days_covered จึงเป็น 1 เสมอ
+    SELECT
+        sale_date,
+        'BT'                       AS store_code,
+        branch                     AS branch_code,
+        branch                     AS branch_name,
+        article_id                 AS product_code,
+        ANY_VALUE(article_name_th) AS product_name,
+        CAST(NULL AS STRING)       AS barcode_match, -- ฟีดใหม่ก็ยังไม่ส่งบาร์โค้ด
+        SUM(sale_qty)              AS sale_qty,
+        SUM(net_inc_tax)           AS sale_amount,
+        -- ยังเดาชนิดเอกสารจากเครื่องหมายเหมือนเดิม ต้นทางไม่มีคอลัมน์นี้
+        IF(net_inc_tax < 0, 'RETURN', 'SALE') AS doc_type,
+        'DERIVED'                  AS doc_type_source,
+        1                          AS days_covered,
+        FALSE                      AS date_is_estimated,
+
+        MAX(asatdate)              AS asatdate
+    FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "detail_sales_daily")}
+    WHERE sale_date >= DATE '2026-10-08'
+      AND (net_inc_tax <> 0 OR sale_qty <> 0)
     GROUP BY sale_date, store_code, branch_code, branch_name, product_code, doc_type
 
 ), gb_lines AS (

@@ -1,0 +1,95 @@
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_SALEOUT_MDT,
+    dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL, databuffet.TAG_SALEOUT_DAILY],
+    uniqueKey: ["sale_date", "branch", "article_id", "distribution_channel"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["branch", "article_id", "sale_date"]
+    },
+}
+
+js {
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema:   databuffet.RAW_SALEOUT_MDT,
+        name:     "detail_sales_daily",
+    };
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    const pk_key = ["sale_date", "branch", "article_id", "distribution_channel"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY ASATDATE DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+-- BT เปลี่ยนรูปแบบไฟล์ทั้งใบ 2026-10-08 — ชีต Detail Sales Daily ชีตเดียวจบ
+-- ต่างจาก sale_by_branch_detail ตรงที่เป็น "ยอดของวันนั้น" ไม่ใช่ยอดสะสม MTD
+-- จึง SUM ข้ามวันได้ตรง ๆ ไม่ต้องทำ differencing ด้วย LAG ที่ชั้น curated
+SELECT
+    -- DATE_ID คือวันที่ขายจริง มาในรูป 'YYYY-MM-DD'
+    PARSE_DATE('%Y-%m-%d', ${databuffet.functionData.cleanString('DATE_ID')}) AS sale_date,
+
+    -- Sales_Office เป็นชื่อสาขาภาษาไทย เช่นเดียวกับคอลัมน์ branch ของตารางเก่า
+    -- 3 คอลัมน์นี้อยู่ใน uniqueKey จึงต้องห่อ IFNULL — MERGE จับคู่ด้วย = ถ้าเป็น NULL จะ insert ซ้ำทุกรอบ
+    IFNULL(${databuffet.functionData.cleanString('Sales_Office')}, '') AS branch,
+    IFNULL(${databuffet.functionData.cleanString('Article_Id')}, '') AS article_id,
+    IFNULL(${databuffet.functionData.cleanString('Sales_Channel')}, '') AS distribution_channel,
+
+    -- ยอดของวันนั้นล้วน ๆ ไม่ใช่ MTD — ชื่อคอลัมน์จึงไม่มี _mtd ต่อท้าย
+    ${databuffet.functionData.castFloat64('SALE_NET_INC')} AS net_inc_tax,
+    ${databuffet.functionData.castInt64('SALE_QTY')} AS sale_qty,
+    ${databuffet.functionData.castFloat64('SALE_SQM')} AS sale_sqm,
+
+    ${databuffet.functionData.cleanString('Article_Name_Th')} AS article_name_th,
+    ${databuffet.functionData.cleanString('Brand')} AS brand,
+    ${databuffet.functionData.cleanString('Item_Flag')} AS item_flag,
+    ${databuffet.functionData.cleanString('Flag_Project')} AS flag_project,
+
+    ${databuffet.functionData.cleanString('MCH3_Desc')} AS mch3,
+    ${databuffet.functionData.cleanString('MCH2_Desc')} AS mch2,
+    ${databuffet.functionData.cleanString('MCH1_Desc')} AS mch1,
+    ${databuffet.functionData.cleanString('MC_Desc')} AS mc,
+
+    ${databuffet.functionData.cleanString('Vendor_Id')} AS vendor_id,
+    ${databuffet.functionData.cleanString('Vendor_Name')} AS vendor_name,
+    -- รหัสสินค้าฝั่งเรา ว่างได้ จึงใช้เป็นคีย์ไม่ได้
+    ${databuffet.functionData.cleanString('Vendor_Article')} AS vendor_article,
+
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

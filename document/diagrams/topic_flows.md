@@ -1130,11 +1130,12 @@ flowchart LR
 
 **Objects in this topic (10):** `curated_saleout_mdt`, `curated_stock_mdt`, `dim_pc`, `dim_product_mdt`, `dim_sales_branch_mdt`, `dim_target_saleout_mdt`, `dim_zone_mdt`, `fact_saleout_mdt`, `fact_stock_mdt`, `fact_stock_mdt_monthly`
 
-**Fed by (17):** `curated_saleout_monthly_mdt`, `dim_director`, `dim_product_master`, `dim_product_mkt`, `dim_region`, `dim_region_last`, `dim_region_manager`, `dim_report`, `dim_section_last`, `dim_stk_mkt`, `dim_zone_ta_mdt`, `report_sale_subscription`, `sale_by_branch_detail`, `saleout_dh`, `saleout_gb`, `saleout_hp`, `stock_by_branch`
+**Fed by (18):** `curated_saleout_monthly_mdt`, `detail_sales_daily`, `dim_director`, `dim_product_master`, `dim_product_mkt`, `dim_region`, `dim_region_last`, `dim_region_manager`, `dim_report`, `dim_section_last`, `dim_stk_mkt`, `dim_zone_ta_mdt`, `report_sale_subscription`, `sale_by_branch_detail`, `saleout_dh`, `saleout_gb`, `saleout_hp`, `stock_by_branch`
 
 ```mermaid
 flowchart LR
-  subgraph validated["validated (6)"]
+  subgraph validated["validated (7)"]
+    detail_sales_daily["detail_sales_daily"]
     report_sale_subscription["report_sale_subscription"]
     sale_by_branch_detail["sale_by_branch_detail"]
     saleout_dh["saleout_dh"]
@@ -1182,6 +1183,7 @@ flowchart LR
   curated_stock_mdt --> dim_product_mdt
   curated_stock_mdt --> dim_sales_branch_mdt
   curated_stock_mdt --> fact_stock_mdt
+  detail_sales_daily --> curated_saleout_mdt
   dim_director --> fact_saleout_mdt
   dim_director --> fact_saleout_monthly_mdt
   dim_director --> fact_target_saleout_mdt
@@ -1234,7 +1236,7 @@ flowchart LR
   classDef dimension fill:#ffe0b3,stroke:#d98f2f,color:#111;
   classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
-  class report_sale_subscription,sale_by_branch_detail,saleout_dh,saleout_gb,saleout_hp,stock_by_branch validated;
+  class detail_sales_daily,report_sale_subscription,sale_by_branch_detail,saleout_dh,saleout_gb,saleout_hp,stock_by_branch validated;
   class curated_saleout_mdt,curated_saleout_monthly_mdt,curated_stock_mdt curated;
   class dim_director,dim_pc,dim_product_master,dim_product_mdt,dim_product_mkt,dim_region,dim_region_last,dim_region_manager,dim_report,dim_sales_branch_mdt,dim_section_last,dim_stk_mkt,dim_target_saleout_mdt,dim_zone_mdt,dim_zone_ta_mdt dimension;
   class fact_saleout_mdt,fact_saleout_monthly_mdt,fact_stock_mdt,fact_stock_mdt_monthly,fact_target_saleout_mdt,fact_target_series_mdt fact;
