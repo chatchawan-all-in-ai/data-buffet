@@ -29,8 +29,8 @@ manual ตาม [สัญญา publisher](../project_wiki/cdc-process/process
 
 ทีมที่รับข้อมูล **ดึงเอง (pull)** จาก subscription ของทีมใน `databuffet-nonprd` ด้วย JSON key
 ของ service account `sa-pull-<ทีม>` — backend ของทีมจะรันบน platform ไหนก็ได้ ไม่ต้องมี
-project GCP ของตัวเอง · SA ของทีมมีสิทธิ์แค่ pull จาก subscription ของทีมเองเท่านั้น (ไม่มี
-role ระดับ project) · สร้างด้วย [`infra/pubsub/add-consumer.sh`](../../infra/pubsub/add-consumer.sh)
+project GCP ของตัวเอง · SA ของทีมมีสิทธิ์แค่ pull จาก subscription ของทีมเอง และอ่านไฟล์
+โหลดครั้งแรกใน folder ของทีมเองเท่านั้น (ไม่มี role ระดับ project) · สร้างด้วย [`infra/pubsub/add-consumer.sh`](../../infra/pubsub/add-consumer.sh)
 ตาม [ส่วน B](#ส่วน-b--ต่อทีมที่มาใช้ข้อมูล-ทำซ้ำทุกครั้งที่มีทีมใหม่)
 
 ## Message format (มาตรฐานเดียว ทุก topic ทุกทีมใช้ร่วมกัน)
@@ -63,8 +63,9 @@ DATETIME = `"2026-01-30T09:10:00"`, ตัวเลขไม่มี `.0` เ�
 สัญญา export view และการหา `NEW` / `UPDATE` / `DELETE` อยู่ที่
 [process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
 
-⚠️ **ทีมใหม่ที่ต่อครั้งแรก**: delta มีเฉพาะแถวที่เปลี่ยนหลังต่อ subscription จึงต้องรับ
-full snapshot ก่อนเข้าโหมด delta (ดูขั้น 3 ของส่วน B) · เครื่องมือ backfill ยังไม่อยู่ใน pilot นี้
+⚠️ **ทีมใหม่ที่ต่อครั้งแรก**: Pub/Sub ส่งเฉพาะแถวที่เปลี่ยนหลังต่อ subscription · ข้อมูลตั้งต้น
+ทั้งตาราง **ไม่ส่งผ่าน Pub/Sub** แต่เป็นไฟล์ JSON ใน GCS ที่หนึ่งบรรทัดคือหนึ่งข้อความ `NEW`
+ตาม format ข้างบน (ดูขั้น 3 ของส่วน B)
 
 ## ส่วน A — deploy และทดสอบ pilot
 
@@ -77,6 +78,7 @@ key) อยู่ในส่วน B
 | [`infra/pubsub/datamart-publish.workflows.yaml`](../../infra/pubsub/datamart-publish.workflows.yaml) | Workflow 9 ขั้นตาม [สัญญา publisher](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) — generic ทุกแถวใน `mart_export_config` |
 | [`infra/pubsub/setup.sh`](../../infra/pubsub/setup.sh) | สร้าง/อัปเดต infra ทั้งหมด แบบ idempotent (รันซ้ำได้) |
 | [`infra/pubsub/add-consumer.sh`](../../infra/pubsub/add-consumer.sh) | ต่อทีมผู้รับแบบ pull (ส่วน B) แบบ idempotent |
+| [`infra/pubsub/export-snapshot.sh`](../../infra/pubsub/export-snapshot.sh) | export ไฟล์โหลดครั้งแรกของทีมใหม่ (ส่วน B ขั้น 3) |
 
 ### A1. สร้างตาราง bookkeeping และ export view
 
@@ -99,7 +101,7 @@ bash infra/pubsub/setup.sh
 สคริปต์ทำตามลำดับ (ทุกขั้นเช็คก่อนสร้าง หรือ apply ซ้ำได้ไม่เสียหาย):
 
 1. ตรวจ prerequisite ของ A1–A2
-2. เปิด API: Workflows, Workflow Executions, Cloud Scheduler, Pub/Sub, Secret Manager
+2. เปิด API: Workflows, Workflow Executions, Cloud Scheduler, Pub/Sub, Secret Manager, Cloud Storage
    (และ Dataform / BigQuery ที่เปิดอยู่แล้ว)
 3. สร้าง service accounts `datamart-publish-trigger` และ `datamart-publisher` — **ไม่สร้าง key**
 4. ต่อทุกตารางใน [`mart-export-config.json`](../../includes/controller/mart-export-config.json):
@@ -127,6 +129,13 @@ bash infra/pubsub/setup.sh
 6. deploy workflow `datamart-publish` (`asia-southeast1`) ให้รันเป็น `datamart-publisher`
 7. สร้าง/อัปเดต Scheduler job `datamart-publish-every-5m` (`*/5 * * * *`, Asia/Bangkok)
    ที่ POST ไป Workflow Executions API ด้วย OAuth ของ `datamart-publish-trigger`
+8. สร้าง bucket `databuffet-nonprd-datamart-snapshot` สำหรับไฟล์โหลดครั้งแรก (ส่วน B ขั้น 3)
+   ใน `us-central1` ที่เดียวกับ dataset `pub_sub` (สคริปต์หยุดถ้าไม่ตรง) · uniform bucket-level
+   access + public access prevention · ถอด convenience bindings ของ `projectViewer` และ
+   `projectEditor` บน bucket ทั้งหลังสร้างและเมื่อรันซ้ำ · คง `projectOwner` ไว้ให้ operator
+   export และจัดการไฟล์ได้ · สร้าง custom role `datamartSnapshotGet` (`storage.objects.get`)
+   ไว้ให้ `add-consumer.sh` ผูกกับ folder ของแต่ละทีม ดังนั้น policy บน bucket ให้ Owner
+   อ่านได้ทั้ง bucket ส่วน SA ผู้รับอ่านตามชื่อไฟล์ได้เฉพาะ folder ของทีม
 
 ### A4. ตรวจผลรอบแรก
 
@@ -178,6 +187,7 @@ topic ให้ทีมเดิม · พิมพ์ทุกอย่าง�
 | Service account (1 ต่อทีม) | `sa-pull-<ทีม>` | ไม่มี key, ไม่มี role ระดับ project | — |
 | Pull subscription (1 ต่อ topic) | `sub.<ทีม>.<topic>` เช่น `sub.ai-dev.export-ta-dim_company` | ack deadline 60 วินาที · เก็บข้อความ 7 วัน **รวมข้อความที่ ack แล้ว** · ไม่หมดอายุ · retry 10–600 วินาที · ส่งไม่สำเร็จครบ 5 ครั้ง → `<topic>-dead-letter` | `roles/pubsub.subscriber` ให้ `sa-pull-<ทีม>` และ Pub/Sub service agent บน subscription นี้เท่านั้น |
 | Dead-letter hold (1 ต่อ topic) | `dlq.<ทีม>.<topic>` บน `<topic>-dead-letter` | เก็บ 31 วัน · ไม่หมดอายุ · filter `attributes.CloudPubSubDeadLetterSourceSubscription = "sub.<ทีม>.<topic>"` | ไม่ให้ทีม — เราอ่านเองเท่านั้น |
+| สิทธิ์อ่านไฟล์โหลดครั้งแรก (1 ต่อทีม) | folder `gs://databuffet-nonprd-datamart-snapshot/<ทีม>/` | — | `datamartSnapshotGet` เมื่อชื่อ object ขึ้นต้นด้วย `<ทีม>/` (IAM Condition บน bucket) ให้ `sa-pull-<ทีม>` — ดาวน์โหลด manifest และไฟล์ตามชื่อที่ระบุเท่านั้น |
 
 Pub/Sub service agent มี `roles/pubsub.publisher` บน `<topic>-dead-letter` — `setup.sh` เป็นผู้ให้สิทธิ์นี้ (ส่วน A ขั้น 4) สคริปต์นี้ไม่ให้ซ้ำ
 
@@ -201,19 +211,92 @@ gcloud iam service-accounts keys create "$HOME/sa-pull-ai-dev.json" --iam-accoun
 
 **ทำไม**: backend ของทีมอาจรันบน platform ไหนก็ได้ จึงใช้ key แทน identity ของ GCP · key
 ไม่หมดอายุและไม่ rotate · การสร้างและส่ง key ทำด้วยมือเท่านั้น สคริปต์ไม่สร้างหรือพิมพ์ key ·
-key นี้ทำได้แค่ pull จาก `sub.<ทีม>.*` ของทีมเอง ถ้าหลุดก็ไม่ถึงข้อมูลอื่น · ถ้าต้องตัดทีม ลบ
-key (`gcloud iam service-accounts keys delete`) หรือลบ subscription ของทีม
+key นี้ทำได้แค่ pull จาก `sub.<ทีม>.*` และอ่านไฟล์ใน folder `<ทีม>/` ของทีมเอง ถ้าหลุดก็ไม่ถึง
+ข้อมูลอื่น · ถ้าต้องตัดทีม ลบ key (`gcloud iam service-accounts keys delete`) — ลบแค่
+subscription ของทีม ทีมยังอ่านไฟล์ใน folder ของทีมได้
 
-### 3. Backfill ให้ทีมใหม่ (ครั้งแรกที่ต่อเข้ามาเท่านั้น)
+### 3. โหลดครั้งแรกด้วยไฟล์ (ครั้งแรกที่ทีมต่อ topic นั้นเท่านั้น)
 
-**ทำ**: หลังสร้าง sub ครบแล้ว ประสาน Data Mart ให้ส่ง full snapshot ของ export view
-ก่อนรับ delta ตามปกติ เครื่องมือ backfill ยังไม่อยู่ใน pilot นี้ (จะทำแยก)
-ห้ามล้าง sent state ที่ใช้ร่วมกันเพื่อเริ่มต้นให้ทีมใหม่
+**ทำ**: หลังขั้น 1 (subscription ของทีมต้องมีอยู่แล้ว — สคริปต์ไม่ยอมรันถ้ายังไม่มี) export
+ทุกแถวปัจจุบันของ export view ของ topic นั้นลง folder ของทีม ทีละ topic:
 
-**ทำไม**: export ปกติเป็น delta อย่างเดียว ทีมใหม่ที่เพิ่งต่อจะไม่มีข้อมูลตั้งต้นถ้าไม่
-backfill ก่อน — ข้อความ publish เข้า topic จะไปถึง **ทุก sub บน topic นั้น** ไม่ใช่แค่
-ทีมใหม่ ทีมเดิมจึงได้ข้อมูลซ้ำด้วย ต้องประสานทุกทีมและตกลงวิธีรับมือ snapshot กับ delta
-ที่อาจมาสลับลำดับกันก่อนส่ง
+```bash
+bash infra/pubsub/export-snapshot.sh ai-dev export-ta-dim_company
+```
+
+สคริปต์พิมพ์ folder และ **export time** (UTC) แล้วส่งทั้งสองค่าให้ทีม · ใช้ path ของ folder
+ตามที่สคริปต์พิมพ์ ซึ่งลงท้ายด้วยเวลาแบบ `YYYYMMDDTHHMMSSffffffZ` (microseconds 6 หลัก)
+ส่วน `export_time` ใน manifest เป็น RFC3339 · ใน folder มี:
+
+- `data-<เลข>.json` (ตารางใหญ่แบ่งหลายไฟล์) — newline-delimited JSON หนึ่งบรรทัดต่อแถว
+  แต่ละบรรทัด **ตรงทุก byte** กับข้อความที่ workflow publish ให้แถวนั้นเป็น `NEW` (สร้างจาก diff
+  query ตัวเดียวกับใน workflow) ทีมจึงโหลดด้วยโค้ดเดียวกับ consumer
+- `manifest.json` — `table`, `topic`, `team`, `export_time`, `row_count`, `files` · เขียนเป็นไฟล์
+  สุดท้ายหลัง seek สำเร็จและรอ 90 วินาทีแล้ว folder ที่ไม่มี manifest คือ export ที่ไม่เสร็จ
+  ห้ามโหลดหรือเริ่ม pull
+
+สคริปต์ claim แถวของตารางนั้นใน `mart_export_config` เฉพาะเมื่อ `claimed_at` ว่างเท่านั้น
+ถ้ามี claim อยู่ แม้เกิน 30 นาทีแล้ว ให้รอ publisher รอบถัดไปคืน claim แล้วลองใหม่
+สคริปต์ไม่ยึด claim ที่หมดอายุ · จากนั้นอ่าน export view ลงตาราง
+ชั่วคราวและเทียบ `row_key`/`row_hash` กับ `mart_sent_state` ใน transaction เดียวกัน
+ต้องตรงกันทั้งหมด ไม่มีแถวขาด เกิน หรือ hash ต่างกัน มิฉะนั้นหยุด ให้รอ publisher รอบถัดไป
+แล้วลองใหม่ · **export time คือเวลาเริ่ม transaction นี้** (UTC) และไฟล์สร้างจากตารางชั่วคราว
+ชุดที่ตรวจแล้ว จึงไม่เปลี่ยนตาม Dataform ระหว่าง export
+
+หลังเขียนไฟล์ข้อมูลครบและตรวจจำนวนแถวแล้ว สคริปต์ seek `sub.<ทีม>.<topic>` ไปที่ export time
+ขณะยังถือ claim เพื่อ mark ข้อความที่ publish ก่อนจุดนี้เป็น acknowledged รวม key ที่ไม่มีในไฟล์
+เมื่อ seek สำเร็จ สคริปต์ยังถือ claim และรอ **90 วินาที** ก่อนเขียน manifest เป็นไฟล์สุดท้าย
+แล้วคืน claim เพราะ [seek อาจใช้เวลาถึงหนึ่งนาทีจึงมีผลต่อการส่งข้อความครบถ้วน](https://docs.cloud.google.com/pubsub/docs/replay-overview#eventual_consistency_of_seek_operations)
+· ถ้า seek หรือการรอล้มเหลว การ export ถือว่าล้มเหลว ไม่มี manifest และลบไฟล์ที่เขียนค้าง
+พร้อมคืน claim · ทีมต้องรอ manifest แล้วโหลดไฟล์ให้เสร็จก่อนเริ่ม pull
+
+ค่าใช้จ่าย BigQuery = อ่าน export view หนึ่งรอบ อ่าน sent state เพื่อตรวจ และอ่านตารางชั่วคราว
+เพื่อ export/นับแถว · ไฟล์ผ่านเครื่องที่รันสคริปต์หนึ่งรอบเพื่อแปลงจาก CSV เป็นบรรทัดข้อความ ·
+สคริปต์เขียนเฉพาะ `claimed_at` และพยายามคืน claim ด้วย token ของตัวเองเมื่อจบ รวมกรณีล้มเหลว
+โดยไม่เปลี่ยน `last_invocation_*` · `mart_sent_state` อ่านอย่างเดียว ไม่เปลี่ยน workflow
+และไม่ส่งอะไรเข้า Pub/Sub — ห้ามล้าง sent state ที่ใช้ร่วมกันเพื่อเริ่มต้นให้ทีมใหม่
+
+ถ้าเขียน manifest สำเร็จแล้วแต่คืน claim ไม่สำเร็จ สคริปต์แจ้งว่า export สำเร็จและจบด้วย exit 0
+ไฟล์พร้อมใช้งานตามเดิม ส่วน claim หมดอายุเองตาม timeout 30 นาทีของ publisher ·
+ไม่ต้องรัน export ซ้ำเพื่อคืน claim เพราะจะ seek subscription ไปที่ cut ใหม่
+
+ฝั่งทีม ตามลำดับนี้:
+
+1. รอให้ `manifest.json` มีอยู่ก่อน แล้วดาวน์โหลดทุกไฟล์ใน `files` ด้วย key เดียวกับที่ใช้ pull ส่งทุกบรรทัดเข้า
+   handler เดียวกับ consumer (`apply` ในตัวอย่างด้านล่าง) โดยบันทึก **`export_time` เป็น version ของทุกแถว**
+2. หลังมี manifest และโหลดไฟล์ครบแล้วจึงเริ่ม pull · สคริปต์ seek ให้ subscription เริ่มที่ export time
+   และรอ propagation แล้ว จึงไม่ต้องใช้
+   version ของแถวข้ามข้อความก่อน export · สำหรับข้อความหลัง cut ใช้ `apply` เดิมข้ามข้อความ
+   ที่ `publish_time` ไม่ใหม่กว่า version ของแถว รวม DELETE และข้อความซ้ำ ข้อความที่ใหม่กว่า
+   เขียนทับแล้วเก็บ `publish_time` เป็น version ใหม่ · ต้องเริ่ม pull ภายใน 7 วันหลัง export
+   (ข้อความที่ยังไม่ ack เก็บ 7 วัน) หากพลาดระยะเก็บข้อความ ให้ติดต่อทีม Data Mart
+
+```python
+# pip install google-cloud-storage — ใช้ credentials เดียวกับ consumer
+import json
+from google.cloud import storage
+
+client = storage.Client(project="databuffet-nonprd", credentials=credentials)
+bucket = client.bucket("databuffet-nonprd-datamart-snapshot")      # ไม่เรียก get_bucket: ไม่มีสิทธิ์บน bucket
+manifest = json.loads(bucket.blob(FOLDER + "manifest.json").download_as_bytes())   # FOLDER = path ที่สคริปต์พิมพ์ ตัด gs://<bucket>/ ออก
+for uri in manifest["files"]:
+    with bucket.blob(uri.split("/", 3)[3]).open("r", encoding="utf-8") as f:
+        for line in f:
+            env = json.loads(line)
+            apply(env, manifest["export_time"])
+```
+
+**ทำไม**: Pub/Sub ส่งเฉพาะการเปลี่ยนแปลง (forward-only) และข้อความที่ publish เข้า topic ไปถึง
+**ทุก sub บน topic นั้น** การส่งข้อมูลตั้งต้นผ่าน topic จะทำให้ทีมเดิมได้ข้อมูลซ้ำทั้งตาราง ·
+ไฟล์ใน GCS รองรับตารางทุกขนาด (เช่น `sales_daily` ~1.65 ล้านแถว) และใช้ key เดิม ·
+ลำดับ "subscription ก่อน → claim เฉพาะเมื่อว่าง → ตรวจว่า view ตรงกับ sent state → export
+ชุดที่ตรวจแล้ว → seek ไปที่ cut → ถือ claim รอ 90 วินาที → manifest → คืน claim" ทำให้ไฟล์ตรงกับสถานะที่ publisher
+ส่งสำเร็จ ณ export time และ subscription ตัดข้อความก่อน cut ออก รวมแถวที่ไม่มีในไฟล์ ·
+ข้อมูลที่เปลี่ยนหลังจุดนี้จะถูกเทียบกับ sent state เดิมในรอบถัดไป ข้อความมี `publish_time`
+หลัง export time และรอใน subscription ของทีม · `apply` จัดการการรับซ้ำหรือสลับลำดับของ
+ข้อความหลัง cut รวม DELETE ด้วย · ยังต้องให้ publisher รันสำเร็จและทีม pull ภายใน
+ระยะเก็บข้อความ การเปลี่ยนไปแล้วกลับมาก่อน publisher อ่านจะไม่เกิดข้อความ แต่ไม่ทำให้
+ไฟล์ค้างอยู่ที่ค่าระหว่างทาง เพราะ export ยอมผ่านเฉพาะชุดที่ตรงกับ sent state
 
 ### 4. ตั้ง alert เมื่อข้อความค้าง
 
@@ -254,10 +337,12 @@ backfill ก่อน — ข้อความ publish เข้า topic จ�
 ### Replay หลังเกิดเหตุ
 
 ข้อความที่ ack แล้วยังเก็บไว้ 7 วัน จึงย้อนส่งใหม่ได้ด้วยการ seek subscription ของทีมไปเวลา
-ก่อนเกิดเหตุ — ทุกข้อความหลังเวลานั้นจะถูกส่งอีกครั้ง (ทีมต้องรับซ้ำได้):
+ก่อนเกิดเหตุ — ทุกข้อความหลังเวลานั้นจะถูกส่งอีกครั้ง (ทีมต้องรับซ้ำได้) · เลือก `REPLAY_TIME`
+เป็นเวลา RFC3339 ที่ไม่ก่อน `export_time` ของ first load ใน manifest เพื่อไม่เปิดรับข้อความ
+ก่อน cut อีกครั้ง ถ้าต้องย้อนก่อนจุดนี้ ให้ติดต่อทีม Data Mart:
 
 ```bash
-gcloud pubsub subscriptions seek sub.ai-dev.export-ta-dim_company --time=2026-10-26T00:00:00+07:00 --project=databuffet-nonprd
+gcloud pubsub subscriptions seek sub.ai-dev.export-ta-dim_company --time="$REPLAY_TIME" --project=databuffet-nonprd
 ```
 
 ### ตัวอย่างโค้ด consumer (ฝั่งทีมที่มาใช้ — pull ทุกชุดด้วย callback เดียว)
@@ -265,6 +350,7 @@ gcloud pubsub subscriptions seek sub.ai-dev.export-ta-dim_company --time=2026-10
 ```python
 # pip install google-cloud-pubsub
 import json
+from datetime import datetime
 from google.cloud import pubsub_v1
 from google.oauth2 import service_account
 
@@ -274,20 +360,34 @@ SUBSCRIPTIONS = [
 ]
 
 
-def upsert_row(table, pk, data): ...   # ทีมปลายทางเขียนลงฐานข้อมูลของตัวเอง ตาม key
-def delete_row(table, pk): ...
+def row_transaction(table, pk): ...
+def read_version(tx): ...
+def upsert_row(tx, data): ...
+def delete_row(tx): ...
+def save_version(tx, version): ...
+
+
+def apply(env, version):
+    version = datetime.fromisoformat(version.replace("Z", "+00:00"))
+    with row_transaction(env["table"], env["primary_key"]) as tx:
+        stored = read_version(tx)
+        if stored is not None and version <= stored:
+            return
+        op = env["operation"]
+        if op == "DELETE":
+            delete_row(tx)
+        elif op in ("NEW", "UPDATE"):
+            upsert_row(tx, env["data"])
+        else:
+            raise ValueError(f"unknown operation: {op}")
+        save_version(tx, version)
 
 
 def callback(message):
-    env = json.loads(message.data)
-    table, op, pk = env["table"], env["operation"], env["primary_key"]
     try:
-        if op == "DELETE":
-            delete_row(table, pk)
-        else:                       # NEW กับ UPDATE ทำเหมือนกัน = upsert
-            upsert_row(table, pk, env["data"])
+        apply(json.loads(message.data), message.publish_time.isoformat())
     except Exception as e:
-        print(f"retry {table} {op} {pk}: {e}")
+        print(f"retry {message.message_id}: {e}")
         message.nack()              # ส่งใหม่ตาม retry; ครบ 5 ครั้งไป dead letter
         return
     message.ack()                   # ack หลังเขียนสำเร็จเท่านั้น
@@ -301,14 +401,22 @@ with subscriber:
         f.result()                  # รันจนกว่าจะหยุด process
 ```
 
-จุดที่พลาดบ่อย: **ack หลังเขียนสำเร็จเท่านั้น** (ack ก่อนแล้วเขียนพัง = ข้อความหายเพราะ Pub/Sub
+ทีมต้องเขียน 5 ฟังก์ชันเชื่อมฐานข้อมูลตามตัวอย่าง: `row_transaction` ต้องเป็น transaction ที่
+serialize ทุกการเขียนต่อ `(table, primary_key)` เดียวกัน รวม key ที่ยังไม่มีแถว และ commit/rollback
+ข้อมูลพร้อม version เป็นหน่วยเดียว · `read_version` คืน `None` ถ้ายังไม่เคยรับ key นั้น มิฉะนั้น
+คืน timezone-aware `datetime` UTC ที่ `save_version` เก็บไว้ · DELETE ลบข้อมูลแต่ต้องเก็บ version
+แยกไว้เป็น tombstone เพื่อกัน NEW/UPDATE เก่าทำให้แถวกลับมา · ใช้ `apply` เดียวกันกับโค้ด
+โหลดไฟล์ในขั้น 3 ให้รอ manifest และโหลดเสร็จก่อนเรียก `subscriber.subscribe` และใช้ storage เดียวกันหลัง restart
+
+จุดที่พลาดบ่อย: **ack หลังเขียนสำเร็จหรือข้าม version เก่าแล้วเท่านั้น** (ack ก่อนแล้วเขียนพัง = ข้อความหายเพราะ Pub/Sub
 ถือว่ารับแล้ว) · ถ้า JSON หรือ field ที่จำเป็นอ่านไม่ได้ ให้ nack (ครบ 5 ครั้งจะไป dead letter
 ให้ Data Mart ตรวจ) · เก็บ key ไว้นอก source code และไม่ log ค่าใน key
 
 ⚠️ Pub/Sub การันตีแค่ "ส่งอย่างน้อย 1 ครั้ง" (at-least-once) และไม่เรียงลำดับ —
-handler ต้อง idempotent (รับข้อความเดิมซ้ำแล้วผลไม่เปลี่ยน) และต้องมีวิธีรับมือข้อความ
-ต่างรอบที่มาสลับลำดับ เพราะ upsert/delete ตาม key อย่างเดียวกันข้อมูลเก่าทับข้อมูลใหม่ไม่ได้
-message format นี้ไม่มีลำดับต่อแถว; วิธี reconcile ต้องตกลงกับทีมผู้ส่งก่อนใช้งานจริง
+สคริปต์ bootstrap seek ข้ามข้อความก่อน cut ที่ subscription และรอ 90 วินาทีก่อนเขียน manifest
+ทีมเริ่ม pull หลังมี manifest และโหลดไฟล์ครบเท่านั้น ส่วน `apply` ใช้ `publish_time`
+เป็น version เพื่อจัดลำดับข้อความหลัง cut และข้ามข้อความซ้ำ รวม DELETE · `publish_time`
+คือลำดับการ publish ไม่ใช่ลำดับแก้ไขที่ต้นทาง
 
 ---
 
@@ -319,7 +427,7 @@ message format นี้ไม่มีลำดับต่อแถว; วิ
 - [ ] ตรวจผล execution ของ `datamart-publish` และ `mart_sent_state`: รอบแรก `sent 5 rows`, รอบถัดไป `sent 0 rows` (A4)
 - [ ] ต่อทีมใหม่: รัน `add-consumer.sh <ทีม> <topic>...` เฉพาะชุดที่ทีมได้รับ (ขั้น 1)
 - [ ] สร้าง JSON key ด้วยมือนอก repo แล้วส่งผ่านช่องทางที่ปลอดภัย (ขั้น 2)
-- [ ] ส่ง full snapshot ก่อนเข้าโหมด delta โดยคง sent state เดิมของผู้รับรายอื่น (ขั้น 3)
+- [ ] หลังมี subscription แล้ว รัน `export-snapshot.sh <ทีม> <topic>` ทีละ topic รอให้สคริปต์ seek และรอ 90 วินาทีก่อนเขียน manifest เสร็จ แล้วส่ง folder + export time ให้ทีม · ทีมรอ manifest และโหลดไฟล์ครบก่อนเริ่ม pull (ขั้น 3)
 - [ ] ตั้ง alert backlog + dead letter และส่ง handover package ครบ (ขั้น 4–5)
 
 ## งาน commission เดิม — นอก pilot นี้

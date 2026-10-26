@@ -8,6 +8,8 @@
 # dlq.<team>.<topic> on <topic>-dead-letter holding that subscription's dead letters (we read
 # it; the team gets no grant on it). The Pub/Sub service agent gets subscriber on the
 # subscription; its publisher grant on <topic>-dead-letter belongs to setup.sh.
+# First-load files (export-snapshot.sh): sa-pull-<team> may read objects under <team>/ of the
+# snapshot bucket by exact name, nothing else of the bucket.
 # The JSON key is made and handed over by hand (see the guide); this script never creates one.
 #
 # Prerequisites: setup.sh already run (topics + dead-letter topics exist); gcloud logged in as a
@@ -20,6 +22,8 @@ set -euo pipefail
 PROJECT=databuffet-nonprd
 SA_PREFIX=sa-pull-
 SA_ID_MAX=30                      # service account id limit
+SNAPSHOT_BUCKET=databuffet-nonprd-datamart-snapshot   # bucket + roles created by setup.sh
+SNAPSHOT_GET_ROLE_ID=datamartSnapshotGet
 
 log() { printf '\n== %s\n' "$*"; }
 die() { printf 'add-consumer.sh: %s\n' "$*" >&2; exit 1; }
@@ -45,6 +49,10 @@ for topic in "${topics[@]}"; do
   gcloud pubsub topics describe "$topic-dead-letter" --project="$PROJECT" >/dev/null 2>&1 ||
     die "dead-letter topic $topic-dead-letter not found - run setup.sh first"
 done
+gcloud storage buckets describe "gs://$SNAPSHOT_BUCKET" >/dev/null 2>&1 ||
+  die "bucket gs://$SNAPSHOT_BUCKET not found - run setup.sh first"
+gcloud iam roles describe "$SNAPSHOT_GET_ROLE_ID" --project="$PROJECT" >/dev/null 2>&1 ||
+  die "custom role $SNAPSHOT_GET_ROLE_ID not found - run setup.sh first"
 project_number="$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')"
 pubsub_agent="service-$project_number@gcp-sa-pubsub.iam.gserviceaccount.com"
 
@@ -57,20 +65,32 @@ else
   echo "  created"
 fi
 
-# A new service account can take a minute to be accepted in IAM policies, so the grant retries.
-grant_subscriber() { # <subscription> <member>
+# A new service account can take a minute to be accepted in IAM policies, so grants retry.
+retry_grant() { # <command>...
   local attempt
   for attempt in 1 2 3 4 5 6; do
-    if gcloud pubsub subscriptions add-iam-policy-binding "$1" --project="$PROJECT" \
-      --member="$2" --role=roles/pubsub.subscriber >/dev/null 2>&1; then
-      echo "  roles/pubsub.subscriber on $1 for $2"
-      return
-    fi
+    "$@" >/dev/null 2>&1 && return
     sleep $((attempt * 10))
   done
-  gcloud pubsub subscriptions add-iam-policy-binding "$1" --project="$PROJECT" \
-    --member="$2" --role=roles/pubsub.subscriber >/dev/null
+  "$@" >/dev/null
+}
+
+grant_subscriber() { # <subscription> <member>
+  retry_grant gcloud pubsub subscriptions add-iam-policy-binding "$1" --project="$PROJECT" \
+    --member="$2" --role=roles/pubsub.subscriber
   echo "  roles/pubsub.subscriber on $1 for $2"
+}
+
+# A conditional binding of a custom role on the snapshot bucket for the team SA.
+grant_snapshot() { # <role id> <condition title> <CEL expression>
+  local condition_file
+  condition_file="$(mktemp)"
+  printf 'title: "%s"\nexpression: "%s"\n' "$2" "$3" > "$condition_file"
+  retry_grant gcloud storage buckets add-iam-policy-binding "gs://$SNAPSHOT_BUCKET" \
+    --member="serviceAccount:$team_sa" --role="projects/$PROJECT/roles/$1" \
+    --condition-from-file="$condition_file"
+  rm -f "$condition_file"
+  echo "  $1 on gs://$SNAPSHOT_BUCKET when $3"
 }
 
 for topic in "${topics[@]}"; do
@@ -118,4 +138,8 @@ for topic in "${topics[@]}"; do
   grant_subscriber "$sub" "serviceAccount:$pubsub_agent"
 done
 
-log "Done. Make the key and hand it over by hand: document/how-to/setup-pubsub-export.md (ส่วน B)"
+log "First-load snapshot files: gs://$SNAPSHOT_BUCKET/$team/ only"
+grant_snapshot "$SNAPSHOT_GET_ROLE_ID" "snapshot-get-$team" \
+  "resource.name.startsWith('projects/_/buckets/$SNAPSHOT_BUCKET/objects/$team/')"
+
+log "Done. Make the key and hand it over by hand, then export the first load: document/how-to/setup-pubsub-export.md (ส่วน B)"

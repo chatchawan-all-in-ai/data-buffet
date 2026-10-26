@@ -93,7 +93,7 @@ run every 5 minutes by Cloud Scheduler `datamart-publish-every-5m`, both in
 with the sent state and publishes changed rows. GCP setup ([`infra/pubsub/setup.sh`](../../../infra/pubsub/setup.sh)),
 deploy/test steps and the message format are owned by
 [setup-pubsub-export.md](../../how-to/setup-pubsub-export.md).
-Only `dim_company` in `databuffet-nonprd` for now; nothing is deployed on GCP until that guide is followed.
+Only `dim_company` in `databuffet-nonprd` for now; deployment status is in that guide.
 
 **Run status comes from the Dataform API, not from Dataform actions** (redesigned
 2026-10-25). There are no start/end actions and no per-run log table. The publisher
@@ -134,7 +134,7 @@ runs** — see "Deploy" below:
 | `topic` | Dataform (JSON, on insert) | Pub/Sub topic |
 | `last_invocation_id` | workflow | Memory: the last Dataform workflow invocation already handled for this table (the id after `workflowInvocations/`) |
 | `last_invocation_end` | workflow | End time of that invocation; `NULL` before the first export, then only invocations that ended later are new |
-| `claimed_at` | workflow | Being-processed marker; `NULL` = free, older than 30 minutes = abandoned |
+| `claimed_at` | workflow and first-load exporter | Shared being-processed marker; `NULL` = free, older than 30 minutes = abandoned for the publisher. First-load claim rules are in the [onboarding guide, B3](../../how-to/setup-pubsub-export.md#3-โหลดครั้งแรกด้วยไฟล์-ครั้งแรกที่ทีมต่อ-topic-นั้นเท่านั้น) |
 
 The `MERGE` only inserts new export tables. Every existing row is preserved, including
 `source_view`, `topic`, `last_invocation_id`, `last_invocation_end` and `claimed_at`,

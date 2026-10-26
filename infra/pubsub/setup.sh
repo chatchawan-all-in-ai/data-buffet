@@ -31,6 +31,14 @@ DATAFORM_ROLE_ID=datamartPublishDataformReader
 DATAFORM_ROLE_PERMISSIONS=dataform.workflowInvocations.list,dataform.workflowInvocations.query
 TRIGGER_ROLE_ID=datamartPublishTrigger
 TRIGGER_ROLE_PERMISSIONS=workflows.executions.create
+# First-load files (export-snapshot.sh): one bucket in the location of the BigQuery dataset the
+# export views live in (EXPORT DATA writes only there); add-consumer.sh grants each team SA
+# this role on its own folder <team>/ only.
+SNAPSHOT_BUCKET=databuffet-nonprd-datamart-snapshot
+SNAPSHOT_LOCATION=us-central1
+EXPORT_DATASET=pub_sub
+SNAPSHOT_GET_ROLE_ID=datamartSnapshotGet
+SNAPSHOT_GET_ROLE_PERMISSIONS=storage.objects.get
 
 # Base tables each export view reads: their datasets authorize the view, so the publisher
 # reads only the view's columns and has no grant on the base tables.
@@ -192,13 +200,18 @@ while IFS=$'\t' read -r table_name source_view _topic; do
 done <<< "$export_tables"
 gcloud secrets describe "$SLACK_SECRET" --project="$PROJECT" >/dev/null 2>&1 ||
   die "secret $SLACK_SECRET not found - store the Slack webhook URL in it first"
+export_location="$(bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$EXPORT_DATASET" |
+  "$python_bin" -c 'import json, sys; print(json.load(sys.stdin)["location"].lower())')"
+[ "$export_location" = "$SNAPSHOT_LOCATION" ] ||
+  die "dataset $EXPORT_DATASET is in $export_location but SNAPSHOT_LOCATION is $SNAPSHOT_LOCATION; EXPORT DATA needs them to match"
 project_number="$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')"
 pubsub_agent="service-$project_number@gcp-sa-pubsub.iam.gserviceaccount.com"
 
 log "Enabling APIs"
 gcloud services enable --project="$PROJECT" \
   workflows.googleapis.com workflowexecutions.googleapis.com cloudscheduler.googleapis.com \
-  pubsub.googleapis.com secretmanager.googleapis.com dataform.googleapis.com bigquery.googleapis.com
+  pubsub.googleapis.com secretmanager.googleapis.com dataform.googleapis.com bigquery.googleapis.com \
+  storage.googleapis.com
 
 log "Service accounts (keyless - never create keys)"
 ensure_sa "$TRIGGER_SA_NAME" "Cloud Scheduler -> Workflows datamart-publish"
@@ -280,5 +293,34 @@ if gcloud scheduler jobs describe "$SCHEDULER_JOB" --project="$PROJECT" --locati
 else
   gcloud scheduler jobs create http "$SCHEDULER_JOB" "${scheduler_flags[@]}"
 fi
+
+log "Snapshot bucket gs://$SNAPSHOT_BUCKET ($SNAPSHOT_LOCATION)"
+if bucket_location="$(gcloud storage buckets describe "gs://$SNAPSHOT_BUCKET" --format='value(location)' 2>/dev/null)"; then
+  [ "${bucket_location,,}" = "$SNAPSHOT_LOCATION" ] ||
+    die "gs://$SNAPSHOT_BUCKET is in $bucket_location, expected $SNAPSHOT_LOCATION"
+  gcloud storage buckets update "gs://$SNAPSHOT_BUCKET" \
+    --uniform-bucket-level-access --public-access-prevention >/dev/null
+  echo "  exists, settings re-applied"
+else
+  gcloud storage buckets create "gs://$SNAPSHOT_BUCKET" --project="$PROJECT" --location="$SNAPSHOT_LOCATION" \
+    --uniform-bucket-level-access --public-access-prevention >/dev/null
+  echo "  created (uniform bucket-level access, public access prevention enforced)"
+fi
+snapshot_policy="$(gcloud storage buckets get-iam-policy "gs://$SNAPSHOT_BUCKET" --format=json)"
+snapshot_bindings="$("$python_bin" -c '
+import json, sys
+policy = json.load(sys.stdin)
+members = {"projectViewer:" + sys.argv[1], "projectEditor:" + sys.argv[1]}
+for role, member in sorted({(b["role"], m) for b in policy.get("bindings", [])
+                            for m in b.get("members", []) if m in members}):
+    print(role, member, sep="\t")
+' "$PROJECT" <<<"$snapshot_policy")"
+while IFS=$'\t' read -r role member; do
+  [ -n "$role" ] || continue
+  gcloud storage buckets remove-iam-policy-binding "gs://$SNAPSHOT_BUCKET" \
+    --member="$member" --role="$role" --all >/dev/null
+  echo "  removed $role on gs://$SNAPSHOT_BUCKET from $member"
+done <<< "$snapshot_bindings"
+ensure_custom_role "$SNAPSHOT_GET_ROLE_ID" "Data Mart snapshot: read files" "$SNAPSHOT_GET_ROLE_PERMISSIONS"
 
 log "Done. Verify the first run: document/how-to/setup-pubsub-export.md (A4)"
