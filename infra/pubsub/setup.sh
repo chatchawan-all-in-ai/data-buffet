@@ -2,12 +2,15 @@
 # GCP setup of the Pub/Sub export pilot (dim_company) in databuffet-nonprd.
 # Guide: document/how-to/setup-pubsub-export.md (ส่วน A). Idempotent: every step checks or
 # re-applies its resource, so re-running after a fix or after adding an export table is safe.
+# Every grant is the narrowest that works; a rerun also removes the wider grants older
+# versions of this script made, so only the narrow ones remain.
 #
 # Prerequisites (the script stops with a message when one is missing):
 #   * tag pub_sub already run from Dataform release `production` (creates
 #     process_dataset.mart_export_config / mart_sent_state and the pub_sub export views);
 #   * Secret Manager secret slack-datamart-dataform holds the Slack incoming webhook URL;
-#   * gcloud + bq logged in as a project owner (IAM, Workflows, Scheduler, Pub/Sub admin).
+#   * gcloud + bq logged in as a project owner (IAM, Workflows, Scheduler, Pub/Sub admin);
+#   * curl (the Dataform repository IAM policy goes through the REST API).
 #
 # Usage: bash infra/pubsub/setup.sh
 set -euo pipefail
@@ -21,8 +24,16 @@ TRIGGER_SA_NAME=datamart-publish-trigger
 PUBLISHER_SA_NAME=datamart-publisher
 SLACK_SECRET=slack-datamart-dataform
 BQ_DATASET=process_dataset
+DATAFORM_LOCATION=us-central1
+DATAFORM_REPO=data-buffet
+# Project custom roles holding only the permissions each identity uses.
+DATAFORM_ROLE_ID=datamartPublishDataformReader
+DATAFORM_ROLE_PERMISSIONS=dataform.workflowInvocations.list,dataform.workflowInvocations.query
+TRIGGER_ROLE_ID=datamartPublishTrigger
+TRIGGER_ROLE_PERMISSIONS=workflows.executions.create
 
-# Base tables each export view reads: the publisher needs read on them as well as on the view.
+# Base tables each export view reads: their datasets authorize the view, so the publisher
+# reads only the view's columns and has no grant on the base tables.
 # Add a line when a new table is added to includes/controller/mart-export-config.json.
 declare -A SOURCE_TABLES=(
   [dim_company]="dimension_table.dim_company"
@@ -67,6 +78,93 @@ grant_bq() { # <dataset.table> <role>
   echo "  $2 on $1"
 }
 
+# Succeeds when the IAM policy JSON on stdin binds <member> to <role>.
+policy_has() { # <member> <role>
+  "$python_bin" -c '
+import json, sys
+policy = json.load(sys.stdin)
+member, role = sys.argv[1], sys.argv[2]
+sys.exit(0 if any(b["role"] == role and member in b.get("members", []) for b in policy.get("bindings", [])) else 1)
+' "$1" "$2"
+}
+
+# Superseded grants: removed when present, no error when already gone.
+revoke_project() { # <member> <role>
+  local policy
+  policy="$(gcloud projects get-iam-policy "$PROJECT" --format=json)"
+  if policy_has "$1" "$2" <<<"$policy"; then
+    gcloud projects remove-iam-policy-binding "$PROJECT" --member="$1" --role="$2" --all >/dev/null
+    echo "  removed $2 on project from $1"
+  fi
+}
+
+revoke_bq() { # <dataset.table> <role>
+  local policy
+  policy="$(bq --project_id="$PROJECT" get-iam-policy --format=prettyjson "$PROJECT:$1")"
+  if policy_has "serviceAccount:$publisher_sa" "$2" <<<"$policy"; then
+    bq --project_id="$PROJECT" remove-iam-policy-binding \
+      --member="serviceAccount:$publisher_sa" --role="$2" "$PROJECT:$1" >/dev/null
+    echo "  removed $2 on $1"
+  fi
+}
+
+ensure_custom_role() { # <role id> <title> <comma-separated permissions>
+  local deleted
+  if deleted="$(gcloud iam roles describe "$1" --project="$PROJECT" --format='value(deleted)' 2>/dev/null)"; then
+    [ "$deleted" != True ] || gcloud iam roles undelete "$1" --project="$PROJECT" >/dev/null
+    gcloud iam roles update "$1" --project="$PROJECT" --title="$2" \
+      --permissions="$3" --stage=GA --quiet >/dev/null
+  else
+    gcloud iam roles create "$1" --project="$PROJECT" --title="$2" \
+      --permissions="$3" --stage=GA >/dev/null
+  fi
+  echo "  custom role $1 = $3"
+}
+
+# gcloud has no Dataform commands, so the repository policy goes through the Dataform REST API.
+grant_dataform_repo() { # <member> <role>
+  local url auth policy request
+  url="https://dataform.googleapis.com/v1/projects/$PROJECT/locations/$DATAFORM_LOCATION/repositories/$DATAFORM_REPO"
+  auth="Authorization: Bearer $(gcloud auth print-access-token)"
+  policy="$(curl -fsS -H "$auth" "$url:getIamPolicy")"
+  request="$("$python_bin" -c '
+import json, sys
+policy = json.load(sys.stdin)
+member, role = sys.argv[1], sys.argv[2]
+bindings = policy.setdefault("bindings", [])
+binding = next((b for b in bindings if b["role"] == role and "condition" not in b), None)
+if binding is None:
+    bindings.append({"role": role, "members": [member]})
+elif member not in binding["members"]:
+    binding["members"].append(member)
+print(json.dumps({"policy": policy}))
+' "$1" "$2" <<<"$policy")"
+  curl -fsS -X POST -H "$auth" -H 'Content-Type: application/json' --data-binary @- \
+    "$url:setIamPolicy" <<<"$request" >/dev/null
+  echo "  $2 on Dataform repository $DATAFORM_REPO ($DATAFORM_LOCATION)"
+}
+
+# Adds pub_sub.<view> to the access list of <dataset>, so the view reads that dataset for its readers.
+authorize_view() { # <dataset> <view>
+  local dataset_json
+  dataset_json="$(mktemp)"
+  bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$1" |
+    "$python_bin" -c '
+import json, sys
+dataset = json.load(sys.stdin)
+view = {"projectId": sys.argv[1], "datasetId": "pub_sub", "tableId": sys.argv[2]}
+access = dataset.setdefault("access", [])
+if all(a.get("view") != view for a in access):
+    access.append({"view": view})
+    print(json.dumps(dataset))
+' "$PROJECT" "$2" > "$dataset_json"
+  if [ -s "$dataset_json" ]; then
+    bq --project_id="$PROJECT" update --source="$dataset_json" "$PROJECT:$1" >/dev/null
+  fi
+  rm -f "$dataset_json"
+  echo "  pub_sub.$2 authorized on dataset $1"
+}
+
 ensure_topic() {
   gcloud pubsub topics describe "$1" --project="$PROJECT" >/dev/null 2>&1 ||
     gcloud pubsub topics create "$1" --project="$PROJECT"
@@ -80,6 +178,7 @@ ensure_sa() { # <name> <display name>
 log "Checking prerequisites"
 command -v gcloud >/dev/null || die "gcloud not found"
 command -v bq >/dev/null || die "bq not found"
+command -v curl >/dev/null || die "curl not found (needed for the Dataform repository policy)"
 [ -f "$workflow_yaml" ] || die "missing $workflow_yaml"
 python_bin="$(pick_python)"
 export_tables="$(read_export_tables "$python_bin")"
@@ -110,8 +209,8 @@ while IFS=$'\t' read -r _table_name _source_view topic; do
   dlq_topic="$topic-dead-letter"
   ensure_topic "$topic"
   ensure_topic "$dlq_topic"
-  # DLQ is reserved: no subscription uses it yet. Wire it when a consumer team is connected
-  # (push sub --dead-letter-topic, service agent subscriber on that sub, a sub that holds dead letters).
+  # Dead letters of every consumer subscription on $topic (add-consumer.sh); the Pub/Sub service
+  # agent forwards them, so it publishes here.
   gcloud pubsub topics add-iam-policy-binding "$dlq_topic" --project="$PROJECT" \
     --member="serviceAccount:$pubsub_agent" --role=roles/pubsub.publisher >/dev/null
   # Publisher: publish to this topic only.
@@ -121,17 +220,33 @@ while IFS=$'\t' read -r _table_name _source_view topic; do
 done <<< "$export_tables"
 
 log "Least-privilege roles for $publisher_sa"
-for role in roles/dataform.viewer roles/bigquery.jobUser roles/logging.logWriter; do
+# Project level only for roles that exist only there: run BigQuery jobs / write workflow logs.
+for role in roles/bigquery.jobUser roles/logging.logWriter; do
   gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$publisher_sa" \
     --role="$role" --condition=None >/dev/null
-  echo "  $role on project (read Dataform invocations / run BigQuery jobs / write workflow logs)"
+  echo "  $role on project"
 done
+# The workflow lists workflow invocations of the repository and queries their actions, nothing
+# else of Dataform: a custom role with those two permissions, granted on the repository only.
+ensure_custom_role "$DATAFORM_ROLE_ID" "Data Mart publish: read Dataform invocations" "$DATAFORM_ROLE_PERMISSIONS"
+grant_dataform_repo "serviceAccount:$publisher_sa" "projects/$PROJECT/roles/$DATAFORM_ROLE_ID"
+revoke_project "serviceAccount:$publisher_sa" roles/dataform.viewer
 grant_bq "$BQ_DATASET.mart_export_config" roles/bigquery.dataEditor
 grant_bq "$BQ_DATASET.mart_sent_state" roles/bigquery.dataEditor
+# Read on the export view only; the view is authorized on its base tables' datasets.
+declare -A view_datasets=()
 while IFS=$'\t' read -r table_name source_view _topic; do
   grant_bq "pub_sub.$source_view" roles/bigquery.dataViewer
   for base in ${SOURCE_TABLES[$table_name]}; do
-    grant_bq "$base" roles/bigquery.dataViewer
+    view_datasets["${base%%.*} $source_view"]=1
+  done
+done <<< "$export_tables"
+for dataset_view in "${!view_datasets[@]}"; do
+  authorize_view "${dataset_view% *}" "${dataset_view#* }"
+done
+while IFS=$'\t' read -r table_name _source_view _topic; do
+  for base in ${SOURCE_TABLES[$table_name]}; do
+    revoke_bq "$base" roles/bigquery.dataViewer
   done
 done <<< "$export_tables"
 gcloud secrets add-iam-policy-binding "$SLACK_SECRET" --project="$PROJECT" \
@@ -142,10 +257,14 @@ log "Workflow $WORKFLOW ($REGION)"
 gcloud workflows deploy "$WORKFLOW" --project="$PROJECT" --location="$REGION" \
   --source="$workflow_yaml" --service-account="$publisher_sa" \
   --description="Publish changed rows of Pub/Sub export tables (infra/pubsub in data-buffet)"
-# Workflows has no per-workflow IAM, so the invoker role is project-wide; it is the trigger SA's only role.
+# Workflows has no IAM on a single workflow and IAM Conditions do not support Workflows
+# resources, so the narrowest grant is project level: a custom role that can only start an
+# execution (no get/list/cancel). It is the trigger SA's only role.
+ensure_custom_role "$TRIGGER_ROLE_ID" "Data Mart publish: start workflow executions" "$TRIGGER_ROLE_PERMISSIONS"
 gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$trigger_sa" \
-  --role=roles/workflows.invoker --condition=None >/dev/null
-echo "  roles/workflows.invoker on project for $trigger_sa (its only role)"
+  --role="projects/$PROJECT/roles/$TRIGGER_ROLE_ID" --condition=None >/dev/null
+echo "  $TRIGGER_ROLE_ID on project for $trigger_sa (its only role)"
+revoke_project "serviceAccount:$trigger_sa" roles/workflows.invoker
 
 log "Scheduler job $SCHEDULER_JOB ($SCHEDULE)"
 scheduler_flags=(

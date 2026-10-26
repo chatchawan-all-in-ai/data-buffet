@@ -207,7 +207,8 @@ one entry under `tables` in `mart-export-config.json` (`table_name` = the messag
 `table` and the Dataform action that triggers it, `source_view`, `topic`), then run
 tag `pub_sub` once as below. The workflow needs no change. Add the view's base tables
 to `SOURCE_TABLES` in `infra/pubsub/setup.sh` and re-run it: it creates the topic and
-its reserved dead-letter topic and grants the publisher read on the view and its base tables.
+its dead-letter topic, grants the publisher read on the view only and authorizes the view on
+its base tables' datasets. Consumer teams get the new topic through `infra/pubsub/add-consumer.sh`.
 For existing exports, the insert-only config lifecycle above applies.
 
 ### Deploy

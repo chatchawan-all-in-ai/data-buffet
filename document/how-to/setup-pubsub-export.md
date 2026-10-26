@@ -1,10 +1,11 @@
 # How-to: Setup Pub/Sub สำหรับส่งออกข้อมูลจาก BigQuery
 
-> สถานะ 2026-10-25: pilot `dim_company` ใน **`databuffet-nonprd` เท่านั้น** · repo มีครบทั้ง
+> สถานะ 2026-10-26: pilot `dim_company` ใน **`databuffet-nonprd` เท่านั้น** · repo มีครบทั้ง
 > Dataform (export view + ตาราง bookkeeping), Workflow
 > [`infra/pubsub/datamart-publish.workflows.yaml`](../../infra/pubsub/datamart-publish.workflows.yaml)
-> และสคริปต์สร้าง infra [`infra/pubsub/setup.sh`](../../infra/pubsub/setup.sh) · ยัง **ไม่ได้ deploy**
-> ฝั่ง GCP — ทำตาม [ส่วน A](#ส่วน-a--deploy-และทดสอบ-pilot) หลัง PR merge
+> และสคริปต์สร้าง infra [`infra/pubsub/setup.sh`](../../infra/pubsub/setup.sh) · deploy ฝั่ง GCP
+> แล้ว — หลัง PR merge รัน `setup.sh` ซ้ำตาม [ส่วน A](#ส่วน-a--deploy-และทดสอบ-pilot) เพื่อลดสิทธิ์
+> ให้เหลือเท่าที่ใช้ แล้วต่อทีมผู้รับตาม [ส่วน B](#ส่วน-b--ต่อทีมที่มาใช้ข้อมูล-ทำซ้ำทุกครั้งที่มีทีมใหม่)
 > รายละเอียด repo และวิธีเพิ่มตารางอยู่ที่
 > [process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
 
@@ -26,10 +27,11 @@ manual ตาม [สัญญา publisher](../project_wiki/cdc-process/process
 ตาราง bookkeeping และการกันส่งซ้ำอยู่ใน
 [process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
 
-เมื่อ infra พร้อม ทีมที่จะรับข้อมูลสามารถใช้ push subscription ไปยัง HTTPS endpoint
-ของทีม พร้อม OIDC token จาก `sa-push-<ทีม>` ภายใน project เรา **ไม่มี service account
-key ส่งให้ทีมปลายทาง** และทีมปลายทางไม่ต้องมีบัญชีหรือสิทธิ์ใน `databuffet-nonprd`
-ส่วน B เป็นแนวทางฝั่งผู้รับสำหรับตอนนั้น ยังไม่ได้ยืนยันว่า deploy แล้ว
+ทีมที่รับข้อมูล **ดึงเอง (pull)** จาก subscription ของทีมใน `databuffet-nonprd` ด้วย JSON key
+ของ service account `sa-pull-<ทีม>` — backend ของทีมจะรันบน platform ไหนก็ได้ ไม่ต้องมี
+project GCP ของตัวเอง · SA ของทีมมีสิทธิ์แค่ pull จาก subscription ของทีมเองเท่านั้น (ไม่มี
+role ระดับ project) · สร้างด้วย [`infra/pubsub/add-consumer.sh`](../../infra/pubsub/add-consumer.sh)
+ตาม [ส่วน B](#ส่วน-b--ต่อทีมที่มาใช้ข้อมูล-ทำซ้ำทุกครั้งที่มีทีมใหม่)
 
 ## Message format (มาตรฐานเดียว ทุก topic ทุกทีมใช้ร่วมกัน)
 
@@ -62,18 +64,19 @@ DATETIME = `"2026-01-30T09:10:00"`, ตัวเลขไม่มี `.0` เ�
 [process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
 
 ⚠️ **ทีมใหม่ที่ต่อครั้งแรก**: delta มีเฉพาะแถวที่เปลี่ยนหลังต่อ subscription จึงต้องรับ
-full snapshot ก่อนเข้าโหมด delta (ดูขั้น 4) · เครื่องมือ backfill ยังไม่อยู่ใน pilot นี้
+full snapshot ก่อนเข้าโหมด delta (ดูขั้น 3 ของส่วน B) · เครื่องมือ backfill ยังไม่อยู่ใน pilot นี้
 
 ## ส่วน A — deploy และทดสอบ pilot
 
 ทำครั้งเดียวหลัง PR merge และ code ถึง `nonprod` (คนทำต้องเป็น project owner ของ
-`databuffet-nonprd` และรันจาก WSL ที่มี `gcloud` / `bq`) · ทีมปลายทางดูแล HTTPS endpoint,
-การตรวจ token และตารางปลายทางตามส่วน B
+`databuffet-nonprd` และรันจาก WSL ที่มี `gcloud` / `bq` / `curl`) · การต่อทีมผู้รับ (subscription,
+key) อยู่ในส่วน B
 
 | ไฟล์ | หน้าที่ |
 |---|---|
 | [`infra/pubsub/datamart-publish.workflows.yaml`](../../infra/pubsub/datamart-publish.workflows.yaml) | Workflow 9 ขั้นตาม [สัญญา publisher](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) — generic ทุกแถวใน `mart_export_config` |
 | [`infra/pubsub/setup.sh`](../../infra/pubsub/setup.sh) | สร้าง/อัปเดต infra ทั้งหมด แบบ idempotent (รันซ้ำได้) |
+| [`infra/pubsub/add-consumer.sh`](../../infra/pubsub/add-consumer.sh) | ต่อทีมผู้รับแบบ pull (ส่วน B) แบบ idempotent |
 
 ### A1. สร้างตาราง bookkeeping และ export view
 
@@ -102,23 +105,25 @@ bash infra/pubsub/setup.sh
 4. ต่อทุกตารางใน [`mart-export-config.json`](../../includes/controller/mart-export-config.json):
    topic (`export-ta-dim_company`), dead-letter topic (`<topic>-dead-letter`) และสิทธิ์ publisher
    ของ Pub/Sub service agent บน dead-letter topic · ไม่สร้าง subscription ทดสอบ
-   - dead-letter topic **สำรองไว้ ยังไม่ผูกกับ subscription ใด** — ตอนนี้ไม่มี dead letter ถูกส่งไปเก็บที่ไหน
-     การผูก (ตั้ง `--dead-letter-topic` บน push subscription, ให้ Pub/Sub service agent มีสิทธิ์
-     subscriber บน subscription นั้น และสร้าง subscription ที่เก็บ dead letter) ทำตอนต่อทีมผู้รับ
-5. ให้สิทธิ์แบบ least privilege กับ `datamart-publisher`:
+   - dead-letter topic รับ dead letter ของทุก subscription ของทีมบน topic นั้น — subscription
+     ของทีมและ `dlq.<ทีม>.<topic>` ที่เก็บ dead letter สร้างตอนต่อทีมด้วย `add-consumer.sh` (ส่วน B)
+5. ให้สิทธิ์แบบ least privilege กับ `datamart-publisher` (สิทธิ์เท่าที่ใช้จริงเท่านั้น):
 
    | Role | ขอบเขต | ใช้ทำ |
    |---|---|---|
-   | `roles/dataform.viewer` | project | list workflow invocations + query actions |
-   | `roles/bigquery.jobUser` | project | รัน query/DML |
-   | `roles/logging.logWriter` | project | `sys.log` ของ workflow |
+   | custom role `datamartPublishDataformReader` (`dataform.workflowInvocations.list`, `dataform.workflowInvocations.query`) | Dataform repository `data-buffet` (`us-central1`) เท่านั้น | list workflow invocations + query actions |
+   | `roles/bigquery.jobUser` | project (role นี้ให้ได้แค่ระดับ project) | รัน query/DML |
+   | `roles/logging.logWriter` | project (role นี้ให้ได้แค่ระดับ project) | `sys.log` ของ workflow |
    | `roles/bigquery.dataEditor` | ตาราง `mart_export_config`, `mart_sent_state` เท่านั้น | อ่าน config (tabledata.list), claim, MERGE sent state |
-   | `roles/bigquery.dataViewer` | view `pub_sub.export_dim_company` + ตารางต้นทาง `dimension_table.dim_company` เท่านั้น | diff query (view ต้องอ่านตารางต้นทางได้ด้วย) |
+   | `roles/bigquery.dataViewer` | view `pub_sub.export_dim_company` เท่านั้น | diff query — view เป็น **authorized view** บน dataset ของตารางต้นทาง (`dimension_table`) จึงอ่านได้เฉพาะคอลัมน์ที่ export โดยไม่มีสิทธิ์บนตารางต้นทาง |
    | `roles/pubsub.publisher` | topic ของแต่ละชุดเท่านั้น | publish |
    | `roles/secretmanager.secretAccessor` | secret `slack-datamart-dataform` เท่านั้น | อ่าน webhook |
 
-   `datamart-publish-trigger` ได้ `roles/workflows.invoker` อย่างเดียว (ระดับ project เพราะ
-   Workflows ไม่มี IAM รายตัว)
+   `datamart-publish-trigger` ได้ custom role `datamartPublishTrigger` (`workflows.executions.create`
+   อย่างเดียว) เป็น role เดียวของมัน — ระดับ project เพราะ Workflows ไม่มี IAM รายตัวและ IAM
+   Conditions ไม่รองรับ resource ของ Workflows
+   · สิทธิ์ที่กว้างกว่าซึ่งสคริปต์รุ่นก่อนให้ไว้ (`roles/dataform.viewer` และ `roles/workflows.invoker`
+   ระดับ project, `roles/bigquery.dataViewer` บนตารางต้นทาง) ถูกถอดออกทุกครั้งที่รัน ถ้ายังมีอยู่
 6. deploy workflow `datamart-publish` (`asia-southeast1`) ให้รันเป็น `datamart-publisher`
 7. สร้าง/อัปเดต Scheduler job `datamart-publish-every-5m` (`*/5 * * * *`, Asia/Bangkok)
    ที่ POST ไป Workflow Executions API ด้วย OAuth ของ `datamart-publish-trigger`
@@ -148,72 +153,58 @@ Workflow จะ export เมื่อมีรอบ Dataform ที่สำ�
 
 ## ส่วน B — ต่อทีมที่มาใช้ข้อมูล (ทำซ้ำทุกครั้งที่มีทีมใหม่)
 
-ทุกทีม — ในบริษัทหรือนอกบริษัท — ใช้ขั้นตอนเดียวกันนี้เสมอ (push ไปที่ endpoint ของทีม)
-ตัวอย่างด้านล่างใช้ทีม TF (`<ทีม>` = `tf`)
+ทุกทีม — ในบริษัทหรือนอกบริษัท — ใช้ขั้นตอนเดียวกันนี้เสมอ: ทีม **pull** จาก subscription
+ของตัวเองด้วย JSON key ของ `sa-pull-<ทีม>` · ทุกอย่างอยู่ใน `databuffet-nonprd` ไม่มี project
+แยก IAM เป็นตัวคุม · ตัวอย่างด้านล่างใช้ทีม AI ฝั่ง dev (`<ทีม>` = `ai-dev`)
 
-### 1. ขอ HTTPS endpoint จากทีมนั้น
+### 1. รัน `add-consumer.sh`
 
-**ทำ**: ขอ URL ของ endpoint ที่จะรับข้อมูลจากทีม (เช่น `https://<โดเมนของทีม>/pubsub`)
-endpoint เดียวรับได้ทุกชุด (แยกชุดด้วย field `table` ใน message) — เงื่อนไขของ endpoint:
+**ทำ**: ใส่ชื่อทีม (รวม environment ในชื่อ เช่น `ai-dev`) และ topic ทุกชุดที่ทีมได้รับจาก
+[export config](../../includes/controller/mart-export-config.json)
 
-- เป็น **HTTPS** ที่มี certificate ถูกต้อง และเปิดให้ Pub/Sub ของ Google เรียกจาก internet ได้
-  (ถ้าทีมใช้ GCP จะเป็น Cloud Run ก็ได้)
-- รับ `POST` ได้หลาย request พร้อมกัน และตอบภายในไม่กี่วินาที
-- ถ้าใช้ Cloud Run ให้ทีมส่ง **Service URL** จากหน้า service มาด้วย เช่น
-  `https://service.run.app` — ใช้เป็น audience ในขั้น 3 แม้ endpoint จะเป็น
-  `https://service.run.app/pubsub` หรือใช้โดเมนของทีมเอง
+```bash
+bash infra/pubsub/add-consumer.sh ai-dev export-ta-dim_company
+```
 
-**ทำไม**: แบบ push ทีมเป็นฝ่ายเปิดประตูรับ เราเป็นฝ่ายส่ง — ทีมจึงไม่ต้องมีบัญชีหรือ key
-ใดๆ ของ project เรา ไม่มี secret อายุยาวต้องส่งข้ามองค์กร ถ้าเลิกส่งให้ทีมนี้ก็แค่ลบ sub ของเขา
+ชื่อทีมใช้ได้เฉพาะตัวพิมพ์เล็ก ตัวเลข และ `-` (ขึ้นต้นและลงท้ายด้วยตัวอักษรหรือตัวเลข)
+ยาวไม่เกิน 22 ตัว เพราะ `sa-pull-<ทีม>` ต้องไม่เกิน 30 ตัว · สคริปต์หยุดถ้า topic หรือ
+`<topic>-dead-letter` ยังไม่มี (รัน `setup.sh` ก่อน) · รันซ้ำได้ — apply ค่าเดิมซ้ำ หรือเพิ่ม
+topic ให้ทีมเดิม · พิมพ์ทุกอย่างที่สร้าง และ **ไม่สร้าง key**
 
-### 2. สร้าง push service account ภายในให้ทีมนั้น (1 ทีม = 1 SA, ไม่สร้าง key)
+สิ่งที่สร้าง:
 
-**ทำ**:
+| Resource | ชื่อ | ค่าที่ตั้ง | สิทธิ์ |
+|---|---|---|---|
+| Service account (1 ต่อทีม) | `sa-pull-<ทีม>` | ไม่มี key, ไม่มี role ระดับ project | — |
+| Pull subscription (1 ต่อ topic) | `sub.<ทีม>.<topic>` เช่น `sub.ai-dev.export-ta-dim_company` | ack deadline 60 วินาที · เก็บข้อความ 7 วัน **รวมข้อความที่ ack แล้ว** · ไม่หมดอายุ · retry 10–600 วินาที · ส่งไม่สำเร็จครบ 5 ครั้ง → `<topic>-dead-letter` | `roles/pubsub.subscriber` ให้ `sa-pull-<ทีม>` และ Pub/Sub service agent บน subscription นี้เท่านั้น |
+| Dead-letter hold (1 ต่อ topic) | `dlq.<ทีม>.<topic>` บน `<topic>-dead-letter` | เก็บ 31 วัน · ไม่หมดอายุ · filter `attributes.CloudPubSubDeadLetterSourceSubscription = "sub.<ทีม>.<topic>"` | ไม่ให้ทีม — เราอ่านเองเท่านั้น |
 
-1. **IAM & Admin → Service Accounts → CREATE SERVICE ACCOUNT** → name: `sa-push-<ทีม>`
-   → **CREATE AND CONTINUE** → ไม่ต้องให้ role ใดๆ ระดับ project → **DONE**
-   **ห้ามกด Keys → ADD KEY** — SA นี้ใช้แค่ภายใน project
-2. เปิด `sa-push-<ทีม>` → tab **PERMISSIONS → GRANT ACCESS** → principal = Pub/Sub
-   service agent `service-<PROJECT_NUMBER>@gcp-sa-pubsub.iam.gserviceaccount.com`
-   → Role: **Service Account Token Creator** → **SAVE**
-3. ถ้า endpoint เป็น **Cloud Run** ให้ทีมเปิด **Cloud Run ใน project ของทีม** → service
-   ที่รับ push → **PERMISSIONS → ADD PRINCIPAL** → principal =
-   `sa-push-<ทีม>@databuffet-nonprd.iam.gserviceaccount.com` → Role: **Cloud Run Invoker**
-   → **SAVE** — ให้เฉพาะ service ที่รับ push
+Pub/Sub service agent มี `roles/pubsub.publisher` บน `<topic>-dead-letter` — `setup.sh` เป็นผู้ให้สิทธิ์นี้ (ส่วน A ขั้น 4) สคริปต์นี้ไม่ให้ซ้ำ
 
-**ทำไม**: Pub/Sub แนบ OIDC token ที่ออกในนาม SA นี้ไปกับทุก request ที่ยิงไป endpoint ของทีม
-— ทีมตรวจลายเซ็นของ Google + อีเมล SA + audience ก็รู้ว่าข้อความมาจากเราจริง โดยไม่ต้อง
-มีอะไรของเราอยู่ในมือ · Token Creator ให้ที่ **ระดับ SA นี้** (ไม่ใช่ project) เพื่อให้ Pub/Sub
-ออก token ในนาม SA นี้ได้ (project ที่สร้างก่อน 8 เม.ย. 2021 ขาดไม่ได้ ใหม่กว่านั้นใส่ไว้ก็ไม่เสียหาย)
-· แยก SA ต่อทีม เพื่อให้แต่ละทีมเช็คอีเมลของตัวเอง และปิดทีมใดทีมหนึ่งได้ไม่กระทบทีมอื่น
-· คนที่จะสร้าง sub ในขั้น 3 ต้องมีสิทธิ์ใช้ SA นี้ (Service Account User — Owner มีอยู่แล้ว)
-· Cloud Run ตรวจสิทธิ์ Invoker ก่อนส่ง request เข้า handler ถ้าข้ามข้อ 3 จะได้ 403
-แม้ token ถูกต้อง — ดู [การต่อ Pub/Sub กับ Cloud Run](https://docs.cloud.google.com/run/docs/tutorials/pubsub)
+**ทำไม**: SA แยกต่อทีม ปิดทีมใดทีมหนึ่งได้ไม่กระทบทีมอื่น · สิทธิ์ pull ให้ที่ **subscription
+ของทีมเท่านั้น** ไม่ให้ระดับ project เพราะ role Pub/Sub ระดับ project จะ pull subscription ของ
+ทีมอื่นได้ด้วย · subscription คือ "ตัวชี้ว่าส่งถึงไหน" ส่วนตัวของแต่ละทีม ทีมนี้ดึงช้าไม่กระทบ
+ทีมอื่นบน topic เดียวกัน · เก็บข้อความที่ ack แล้ว 7 วัน เพื่อ replay หลังเกิดเหตุได้ (ดู "Replay")
+· ข้อความที่ทีมรับไม่สำเร็จ 5 ครั้งไปพักที่ `dlq.<ทีม>.<topic>` แทนการวนส่งไม่จบ —
+`dlq` สร้างก่อน subscription เสมอ dead letter จึงไม่หายเพราะไม่มีที่รับ
 
-### 3. สร้าง push subscription ให้ทีมนั้น — 1 อันต่อ 1 topic ที่ทีมได้รับ
+### 2. สร้าง JSON key ด้วยมือ แล้วส่งให้ทีม
 
-**ทำ**: เลือก topic จาก [export config](../../includes/controller/mart-export-config.json)
-ใน **Pub/Sub → Topics → CREATE SUBSCRIPTION**
+**ทำ**: project owner สร้าง key หนึ่งครั้งต่อทีม เขียนไฟล์ไว้ **นอก repo**:
 
-- ID: `sub-<ทีม>-<ชุด>` (เช่น `sub-tf-dim_company`)
-- Delivery type: **Push** → Endpoint URL: URL จากขั้น 1
-- ติ๊ก **Enable authentication** → Service account: `sa-push-<ทีม>` (ขั้น 2) →
-  Audience: ถ้า endpoint เป็น **Cloud Run** ใส่ **Service URL** จากขั้น 1
-  (`https://service.run.app` ไม่รวม `/pubsub`); endpoint HTTPS อื่นใช้ endpoint URL
-  — ให้ทีมใช้ค่าเดียวกันตรวจ token
-- ปล่อย Acknowledgement deadline, Retry policy และ Message retention เป็น **default**
-  → **CREATE**
+```bash
+gcloud iam service-accounts keys create "$HOME/sa-pull-ai-dev.json" --iam-account=sa-pull-ai-dev@databuffet-nonprd.iam.gserviceaccount.com --project=databuffet-nonprd
+```
 
-สร้างเฉพาะ topic ที่ทีมนั้นได้รับตาม export config
+ส่งไฟล์ให้ทีมผ่านช่องทางที่ปลอดภัย (ไม่แปะในแชทหรืออีเมลแบบเปิด) แล้วลบไฟล์ในเครื่อง ·
+ห้าม commit key เข้า repo
 
-**ทำไม**: subscription คือ "ตัวชี้ว่าส่งถึงไหน" ส่วนตัวของแต่ละทีมบน topic นั้น — endpoint
-ทีมนี้ล่ม/ตอบช้า ไม่กระทบทีมอื่นที่ต่อ topic เดียวกัน 1 sub ผูกได้ 1 topic และชื่อห้ามซ้ำ
-ทั้ง project จึงต้องมีชื่อชุดต่อท้าย · ไม่ต้องให้สิทธิ์ Subscriber กับใครเลย เพราะทีมไม่ได้
-เข้ามาดึงเอง · Cloud Run ต้องใช้ Service URL เป็น audience แม้ POST จะส่งไปที่ path
-`/pubsub` — ดู [ข้อกำหนด audience ของ Cloud Run](https://docs.cloud.google.com/run/docs/authenticating/service-to-service)
-· ข้อความที่ส่งไม่สำเร็จเก็บไว้ได้ **7 วัน** ตาม default หลังจากนั้นหาย (เฝ้าด้วยขั้น 5)
+**ทำไม**: backend ของทีมอาจรันบน platform ไหนก็ได้ จึงใช้ key แทน identity ของ GCP · key
+ไม่หมดอายุและไม่ rotate · การสร้างและส่ง key ทำด้วยมือเท่านั้น สคริปต์ไม่สร้างหรือพิมพ์ key ·
+key นี้ทำได้แค่ pull จาก `sub.<ทีม>.*` ของทีมเอง ถ้าหลุดก็ไม่ถึงข้อมูลอื่น · ถ้าต้องตัดทีม ลบ
+key (`gcloud iam service-accounts keys delete`) หรือลบ subscription ของทีม
 
-### 4. Backfill ให้ทีมใหม่ (ครั้งแรกที่ต่อเข้ามาเท่านั้น)
+### 3. Backfill ให้ทีมใหม่ (ครั้งแรกที่ต่อเข้ามาเท่านั้น)
 
 **ทำ**: หลังสร้าง sub ครบแล้ว ประสาน Data Mart ให้ส่ง full snapshot ของ export view
 ก่อนรับ delta ตามปกติ เครื่องมือ backfill ยังไม่อยู่ใน pilot นี้ (จะทำแยก)
@@ -224,93 +215,72 @@ backfill ก่อน — ข้อความ publish เข้า topic จ�
 ทีมใหม่ ทีมเดิมจึงได้ข้อมูลซ้ำด้วย ต้องประสานทุกทีมและตกลงวิธีรับมือ snapshot กับ delta
 ที่อาจมาสลับลำดับกันก่อนส่ง
 
-### 5. ตั้ง alert เมื่อข้อความค้าง
+### 4. ตั้ง alert เมื่อข้อความค้าง
 
 **ทำ**: **Monitoring → Alerting → CREATE POLICY** → metric
 `Pub/Sub Subscription → Unacked messages` (`num_undelivered_messages`) → filter
-`subscription_id` starts with `sub-<ทีม>-` → Group by `subscription_id` → threshold
-ตามที่เหมาะสม → ส่งแจ้งเตือนไป Slack channel เดียวกับ Dataform
+`subscription_id` starts with `sub.<ทีม>.` → Group by `subscription_id` → threshold
+ตามที่เหมาะสม → ส่งแจ้งเตือนไป Slack channel เดียวกับ Dataform · ตั้งอีก policy สำหรับ
+`subscription_id` starts with `dlq.<ทีม>.` ที่ threshold `> 0`
 
-**ทำไม**: policy เดียวครอบ sub ของทีมนั้นทุกชุด ไม่ต้องตั้งทีละอัน — ข้อความค้าง =
-endpoint ของทีมล่มหรือรับข้อความไม่สำเร็จ ข้อความเก็บไว้ 7 วัน ถ้า endpoint ไม่กลับมารับนาน
-เกินนั้นข้อมูลจะหาย ต้องรู้ก่อน
+**ทำไม**: policy เดียวครอบ sub ของทีมนั้นทุกชุด ไม่ต้องตั้งทีละอัน — ข้อความค้าง = ทีมไม่ได้
+ดึงหรือดึงแล้วไม่ ack ข้อความที่ยังไม่ ack เก็บไว้ 7 วัน ถ้าทีมไม่กลับมาดึงนานเกินนั้นข้อมูลจะหาย
+ต้องรู้ก่อน · ข้อความใน `dlq.<ทีม>.` = ทีมรับไม่สำเร็จครบ 5 ครั้ง ต้องคุยกับทีม
 
-### 6. ส่ง handover package ให้ทีม
+### 5. ส่ง handover package ให้ทีม
 
-ส่งให้ครบ 5 อย่าง (ไม่มีอะไรเป็น secret — ส่งช่องทางปกติได้):
+ส่งให้ครบ 5 อย่าง:
 
-1. รายชื่อชุดข้อมูลที่จะถูก push ไป endpoint ของทีม (`sub-<ทีม>-<ชุด>` ทุกชุดที่ได้รับ)
-2. ค่าที่ endpoint ต้องใช้ตรวจ token: อีเมล `sa-push-<ทีม>@databuffet-nonprd.iam.gserviceaccount.com`
-   และ audience ที่ตั้งในขั้น 3 (Cloud Run = Service URL, HTTPS อื่น = endpoint URL)
-3. Message format (ตารางด้านบน) + รูปแบบ push body (ด้านล่าง)
+1. JSON key จากขั้น 2 — **เป็น secret** ส่งผ่านช่องทางที่ปลอดภัยเท่านั้น
+2. ชื่อเต็มของ subscription ทุกชุดที่ได้รับ เช่น
+   `projects/databuffet-nonprd/subscriptions/sub.ai-dev.export-ta-dim_company`
+3. Message format (ตารางด้านบน) + พฤติกรรมของ subscription (ด้านล่าง)
 4. รายชื่อชุดข้อมูล + primary key ของแต่ละชุด
-5. ตัวอย่างโค้ด endpoint (Data Mart เขียนให้ — ตัวอย่างด้านล่าง)
+5. ตัวอย่างโค้ด consumer (Data Mart เขียนให้ — ตัวอย่างด้านล่าง)
 
-**ทำไม**: เป็น handover package มาตรฐานเดียว ใช้ซ้ำได้กับทุกทีมที่มาใหม่ ไม่ต้อง
-คิดใหม่ทุกครั้ง — และไม่มี service account key หรือ credential ใดๆ ของเราออกไปนอก project
+**ทำไม**: เป็น handover package มาตรฐานเดียว ใช้ซ้ำได้กับทุกทีมที่มาใหม่ ไม่ต้องคิดใหม่ทุกครั้ง
 
-### รูปแบบ push body (สิ่งที่ endpoint ได้รับ)
+### พฤติกรรมของ subscription (สิ่งที่ทีมต้องรู้)
 
-Pub/Sub ยิง `POST` มาพร้อม header `Authorization: Bearer <OIDC token>` และ body JSON:
+- `message.data` = JSON ตาม Message format ด้านบน (client library ถอด base64 ให้แล้ว) ·
+  publisher ไม่ใส่ message attributes
+- ต้อง **ack ภายใน 60 วินาที** หลังเขียนสำเร็จ (client library ต่อเวลาให้อัตโนมัติระหว่างประมวลผล)
+  — nack หรือเกินเวลา = ส่งใหม่ โดยรอ 10 วินาทีเพิ่มขึ้นจนถึง 10 นาที
+- ส่งไม่สำเร็จครบ **5 ครั้ง** ข้อความย้ายไปที่ `dlq.<ทีม>.<topic>` ซึ่งทีมอ่านไม่ได้ — แจ้ง
+  Data Mart ให้ตรวจ (`gcloud pubsub subscriptions pull dlq.<ทีม>.<topic> --project=databuffet-nonprd --limit=10`
+  ไม่ ack จึงดูได้โดยข้อความไม่หาย) · เก็บไว้ 31 วัน
+- ข้อความที่ยังไม่ ack เก็บไว้ **7 วัน** หลังจากนั้นหาย
 
-```json
-{
-  "message": {
-    "data": "<base64 ของ JSON ตาม Message format ด้านบน>",
-    "messageId": "1234567890",
-    "publishTime": "2026-10-13T00:05:12.345Z"
-  },
-  "subscription": "projects/databuffet-nonprd/subscriptions/sub-tf-dim_company"
-}
+### Replay หลังเกิดเหตุ
+
+ข้อความที่ ack แล้วยังเก็บไว้ 7 วัน จึงย้อนส่งใหม่ได้ด้วยการ seek subscription ของทีมไปเวลา
+ก่อนเกิดเหตุ — ทุกข้อความหลังเวลานั้นจะถูกส่งอีกครั้ง (ทีมต้องรับซ้ำได้):
+
+```bash
+gcloud pubsub subscriptions seek sub.ai-dev.export-ta-dim_company --time=2026-10-26T00:00:00+07:00 --project=databuffet-nonprd
 ```
 
-- `message.data` = message format ด้านบน (JSON) ที่เข้ารหัส **base64** — ต้อง decode ก่อน
-  ค่าในตัวอย่างเป็น placeholder ต้องแทนด้วย base64 ของ JSON จริงก่อนใช้
-- Publisher ไม่ใส่ `message.attributes`; field นี้อาจไม่ปรากฏใน push body
-- รหัสตอบกลับที่ Pub/Sub ถือว่า **ack** คือ `102`, `200`, `201`, `202`, `204` —
-  ตัวอย่าง endpoint ใช้ **204 หลังเขียนสำเร็จ** รหัสอื่นหรือเกิน ack deadline = ส่งใหม่
-  ตามค่า default ของ subscription ดู [รหัสตอบกลับของ Pub/Sub push](https://docs.cloud.google.com/pubsub/docs/push#how_push_endpoints_receive_messages)
-
-### ตัวอย่างโค้ด endpoint (ฝั่งทีมที่มาใช้ — endpoint เดียว รับทุกชุด)
+### ตัวอย่างโค้ด consumer (ฝั่งทีมที่มาใช้ — pull ทุกชุดด้วย callback เดียว)
 
 ```python
-# pip install flask google-auth requests cachecontrol
-import base64
+# pip install google-cloud-pubsub
 import json
-import cachecontrol
-import requests
-from flask import Flask, request
-from google.auth.transport import requests as google_requests
-from google.oauth2 import id_token
+from google.cloud import pubsub_v1
+from google.oauth2 import service_account
 
-AUDIENCE = "https://service.run.app"   # ตรงกับ audience ที่ Data Mart ตั้งใน sub
-PUSH_SA = "sa-push-tf@databuffet-nonprd.iam.gserviceaccount.com"
-
-app = Flask(__name__)
-_google_request = google_requests.Request(
-    session=cachecontrol.CacheControl(requests.Session())
-)
+KEY_FILE = "/secure/path/sa-pull-ai-dev.json"   # key จาก handover — ห้าม commit
+SUBSCRIPTIONS = [
+    "projects/databuffet-nonprd/subscriptions/sub.ai-dev.export-ta-dim_company",
+]
 
 
-@app.post("/pubsub")
-def receive():
-    # 1) ตรวจว่า request มาจาก Pub/Sub ของ Data Mart จริง (ลายเซ็น Google + audience + อีเมล SA)
-    auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
-        return "", 401
-    try:
-        claims = id_token.verify_oauth2_token(auth[7:], _google_request, audience=AUDIENCE)
-    except ValueError:
-        return "", 401
-    if claims.get("email") != PUSH_SA or not claims.get("email_verified"):
-        return "", 403
+def upsert_row(table, pk, data): ...   # ทีมปลายทางเขียนลงฐานข้อมูลของตัวเอง ตาม key
+def delete_row(table, pk): ...
 
-    # 2) decode message
-    msg = request.get_json()["message"]
-    env = json.loads(base64.b64decode(msg["data"]))
+
+def callback(message):
+    env = json.loads(message.data)
     table, op, pk = env["table"], env["operation"], env["primary_key"]
-
-    # 3) เขียนลงปลายทางตาม primary key แล้วค่อย ack
     try:
         if op == "DELETE":
             delete_row(table, pk)
@@ -318,24 +288,22 @@ def receive():
             upsert_row(table, pk, env["data"])
     except Exception as e:
         print(f"retry {table} {op} {pk}: {e}")
-        return "", 500              # ไม่ ack → Pub/Sub ส่งมาใหม่ตาม backoff
-    return "", 204                  # ack หลังเขียนสำเร็จเท่านั้น
+        message.nack()              # ส่งใหม่ตาม retry; ครบ 5 ครั้งไป dead letter
+        return
+    message.ack()                   # ack หลังเขียนสำเร็จเท่านั้น
 
 
-def upsert_row(table, pk, data): ...   # ทีมปลายทางเขียนลงฐานข้อมูลของตัวเอง ตาม key
-def delete_row(table, pk): ...
+credentials = service_account.Credentials.from_service_account_file(KEY_FILE)
+subscriber = pubsub_v1.SubscriberClient(credentials=credentials)
+futures = [subscriber.subscribe(s, callback=callback) for s in SUBSCRIPTIONS]
+with subscriber:
+    for f in futures:
+        f.result()                  # รันจนกว่าจะหยุด process
 ```
 
-ตั้ง `AUDIENCE` ให้ตรงกับค่าที่ได้รับใน handover (ขั้น 6): ตัวอย่างใช้ Cloud Run
-Service URL; ถ้าเป็น HTTPS endpoint อื่น ให้เปลี่ยนเป็น endpoint URL ที่ตั้งในขั้น 3
-ตัวตรวจ token ใช้ CacheControl cache certificate ตาม HTTP expiry โดยยังตรวจลายเซ็น,
-audience และอีเมล SA ทุก request — ดู [คำแนะนำ cache ของ google-auth](https://google-auth.readthedocs.io/en/latest/reference/google.oauth2.id_token.html)
-
-จุดที่พลาดบ่อย: **ห้ามข้ามการตรวจ token** (endpoint เปิดบน internet ใครก็ยิงข้อมูลปลอมเข้ามาได้)
-และ **ack หลังเขียนสำเร็จเท่านั้น** (ตอบก่อนแล้วเขียนพัง = ข้อความหายเพราะ Pub/Sub ถือว่า ack แล้ว)
-ถ้า body/base64/JSON หรือ field ที่จำเป็นอ่านไม่ได้ ให้ตอบรหัสที่ไม่ ack (ดู "รูปแบบ push body")
-งานเขียนแต่ละข้อความควรเสร็จในไม่กี่วินาที — ถ้าช้ากว่า ack deadline Pub/Sub จะส่งซ้ำทั้งที่
-ข้อความแรกยังทำอยู่
+จุดที่พลาดบ่อย: **ack หลังเขียนสำเร็จเท่านั้น** (ack ก่อนแล้วเขียนพัง = ข้อความหายเพราะ Pub/Sub
+ถือว่ารับแล้ว) · ถ้า JSON หรือ field ที่จำเป็นอ่านไม่ได้ ให้ nack (ครบ 5 ครั้งจะไป dead letter
+ให้ Data Mart ตรวจ) · เก็บ key ไว้นอก source code และไม่ log ค่าใน key
 
 ⚠️ Pub/Sub การันตีแค่ "ส่งอย่างน้อย 1 ครั้ง" (at-least-once) และไม่เรียงลำดับ —
 handler ต้อง idempotent (รับข้อความเดิมซ้ำแล้วผลไม่เปลี่ยน) และต้องมีวิธีรับมือข้อความ
@@ -349,11 +317,10 @@ message format นี้ไม่มีลำดับต่อแถว; วิ
 - [ ] ทำตาม [ขั้น deploy ของ pilot](../project_wiki/cdc-process/process.md#deploy) รวมการตรวจ live compilation ก่อนรันด้วยมือ; การเพิ่ม เปลี่ยน หรือเอาตาราง export ออกให้ยึด lifecycle ใน process reference เดียวกัน
 - [ ] รัน `infra/pubsub/setup.sh` ตามส่วน A (A1–A3)
 - [ ] ตรวจผล execution ของ `datamart-publish` และ `mart_sent_state`: รอบแรก `sent 5 rows`, รอบถัดไป `sent 0 rows` (A4)
-- [ ] ต่อทีมใหม่: ได้ HTTPS endpoint และสร้าง `sa-push-<ทีม>` โดยไม่มี key (ขั้น 1–2)
-- [ ] ต่อทีมใหม่ที่ใช้ Cloud Run: ให้ Invoker บน service ที่รับ push (ขั้น 2.3)
-- [ ] สร้าง push subscription เฉพาะชุดที่ได้รับ พร้อม authentication และ audience ตรงกับ handover (ขั้น 3)
-- [ ] ส่ง full snapshot ก่อนเข้าโหมด delta โดยคง sent state เดิมของผู้รับรายอื่น (ขั้น 4)
-- [ ] ตั้ง alert backlog และส่ง handover package ครบ (ขั้น 5–6)
+- [ ] ต่อทีมใหม่: รัน `add-consumer.sh <ทีม> <topic>...` เฉพาะชุดที่ทีมได้รับ (ขั้น 1)
+- [ ] สร้าง JSON key ด้วยมือนอก repo แล้วส่งผ่านช่องทางที่ปลอดภัย (ขั้น 2)
+- [ ] ส่ง full snapshot ก่อนเข้าโหมด delta โดยคง sent state เดิมของผู้รับรายอื่น (ขั้น 3)
+- [ ] ตั้ง alert backlog + dead letter และส่ง handover package ครบ (ขั้น 4–5)
 
 ## งาน commission เดิม — นอก pilot นี้
 
