@@ -3,20 +3,25 @@
 # Guide: document/how-to/setup-pubsub-export.md (ส่วน B). Idempotent: rerun to re-apply the
 # settings or to add topics for the same team.
 #
-# Per team: service account sa-pull-<team> (no key, no project role).
-# Per topic: pull subscription sub.<team>.<topic> that only sa-pull-<team> may pull from, and
+# Two ways to name the identity that pulls (the "team SA"); every grant below is the same for both:
+# - default (team outside GCP): our service account sa-pull-<team> (no project role); its JSON key
+#   is made and handed over by hand (see the guide), this script never creates one.
+# - --team-sa <email> (team on GCP): the team's own runtime service account. We create no service
+#   account and no key. Domain-restricted sharing only admits accounts of our organization, so a
+#   service account of a project outside it is refused - use the default (key) way for those.
+# Per topic: pull subscription sub.<team>.<topic> that only the team SA may pull from, and
 # dlq.<team>.<topic> on <topic>-dead-letter holding that subscription's dead letters (we read
 # it; the team gets no grant on it). The Pub/Sub service agent gets subscriber on the
 # subscription; its publisher grant on <topic>-dead-letter belongs to setup.sh.
-# First-load files (export-snapshot.sh): sa-pull-<team> may read objects under <team>/ of the
+# First-load files (export-snapshot.sh): the team SA may read objects under <team>/ of the
 # snapshot bucket by exact name, nothing else of the bucket.
-# The JSON key is made and handed over by hand (see the guide); this script never creates one.
 #
 # Prerequisites: setup.sh already run (topics + dead-letter topics exist); gcloud logged in as a
 # project owner.
 #
-# Usage: bash infra/pubsub/add-consumer.sh <team> <topic>...
+# Usage: bash infra/pubsub/add-consumer.sh [--team-sa <email>] <team> <topic>...
 #   e.g. bash infra/pubsub/add-consumer.sh ai-dev export-ta-dim_company
+#        bash infra/pubsub/add-consumer.sh --team-sa consumer-run@ai-prod.iam.gserviceaccount.com ai-prod export-ta-dim_company
 set -euo pipefail
 
 PROJECT=databuffet-nonprd
@@ -28,7 +33,15 @@ SNAPSHOT_GET_ROLE_ID=datamartSnapshotGet
 log() { printf '\n== %s\n' "$*"; }
 die() { printf 'add-consumer.sh: %s\n' "$*" >&2; exit 1; }
 
-[ $# -ge 2 ] || die "usage: bash infra/pubsub/add-consumer.sh <team> <topic>..."
+usage="usage: bash infra/pubsub/add-consumer.sh [--team-sa <email>] <team> <topic>..."
+own_sa=""
+if [ "${1:-}" = --team-sa ]; then
+  [ $# -ge 2 ] || die "$usage"
+  own_sa="$2"
+  [ -n "$own_sa" ] || die "--team-sa requires a non-empty service account email"
+  shift 2
+fi
+[ $# -ge 2 ] || die "$usage"
 team="$1"
 shift
 topics=("$@")
@@ -39,7 +52,17 @@ topics=("$@")
 sa_id="$SA_PREFIX$team"
 [ "${#sa_id}" -le "$SA_ID_MAX" ] ||
   die "service account id $sa_id is ${#sa_id} characters; the limit is $SA_ID_MAX (team at most $((SA_ID_MAX - ${#SA_PREFIX})))"
-team_sa="$sa_id@$PROJECT.iam.gserviceaccount.com"
+if [ -n "$own_sa" ]; then
+  # A user-managed service account, or a project's default Compute Engine / App Engine one.
+  sa_name='[a-z][a-z0-9-]{4,28}[a-z0-9]'
+  [[ "$own_sa" =~ ^$sa_name@$sa_name\.iam\.gserviceaccount\.com$ ||
+    "$own_sa" =~ ^[0-9]+-compute@developer\.gserviceaccount\.com$ ||
+    "$own_sa" =~ ^$sa_name@appspot\.gserviceaccount\.com$ ]] ||
+    die "--team-sa '$own_sa' is not a service account email (<name>@<project>.iam.gserviceaccount.com, <number>-compute@developer.gserviceaccount.com or <project>@appspot.gserviceaccount.com)"
+  team_sa="$own_sa"
+else
+  team_sa="$sa_id@$PROJECT.iam.gserviceaccount.com"
+fi
 
 log "Checking prerequisites"
 command -v gcloud >/dev/null || die "gcloud not found"
@@ -56,23 +79,33 @@ gcloud iam roles describe "$SNAPSHOT_GET_ROLE_ID" --project="$PROJECT" >/dev/nul
 project_number="$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')"
 pubsub_agent="service-$project_number@gcp-sa-pubsub.iam.gserviceaccount.com"
 
-log "Service account $team_sa (no key, no project role)"
-if gcloud iam service-accounts describe "$team_sa" --project="$PROJECT" >/dev/null 2>&1; then
-  echo "  exists"
+if [ -n "$own_sa" ]; then
+  log "Team service account $team_sa (theirs: we create no service account and no key)"
 else
-  gcloud iam service-accounts create "$sa_id" --project="$PROJECT" \
-    --display-name="Pub/Sub pull consumer $team" >/dev/null
-  echo "  created"
+  log "Service account $team_sa (no key, no project role)"
+  if gcloud iam service-accounts describe "$team_sa" --project="$PROJECT" >/dev/null 2>&1; then
+    echo "  exists"
+  else
+    gcloud iam service-accounts create "$sa_id" --project="$PROJECT" \
+      --display-name="Pub/Sub pull consumer $team" >/dev/null
+    echo "  created"
+  fi
 fi
 
 # A new service account can take a minute to be accepted in IAM policies, so grants retry.
+# A refusal by domain-restricted sharing never clears with time, so it stops at once.
 retry_grant() { # <command>...
-  local attempt
-  for attempt in 1 2 3 4 5 6; do
-    "$@" >/dev/null 2>&1 && return
+  local attempt err
+  for attempt in 1 2 3 4 5 6 7; do
+    err="$("$@" 2>&1 >/dev/null)" && return
+    if grep -qiE 'permitted customer|allowedPolicyMemberDomains' <<<"$err"; then
+      die "IAM refused $team_sa: domain-restricted sharing (constraints/iam.allowedPolicyMemberDomains) only admits accounts of our organization, and this service account is outside it. Rerun without --team-sa to use our service account and a JSON key instead."
+    fi
+    [ "$attempt" -lt 7 ] || break
     sleep $((attempt * 10))
   done
-  "$@" >/dev/null
+  printf '%s\n' "$err" >&2
+  return 1
 }
 
 grant_subscriber() { # <subscription> <member>
@@ -83,8 +116,8 @@ grant_subscriber() { # <subscription> <member>
 
 # A conditional binding of a custom role on the snapshot bucket for the team SA.
 grant_snapshot() { # <role id> <condition title> <CEL expression>
-  local condition_file
   condition_file="$(mktemp)"
+  trap 'rm -f "$condition_file"' EXIT   # also when a refused grant stops the run
   printf 'title: "%s"\nexpression: "%s"\n' "$2" "$3" > "$condition_file"
   retry_grant gcloud storage buckets add-iam-policy-binding "gs://$SNAPSHOT_BUCKET" \
     --member="serviceAccount:$team_sa" --role="projects/$PROJECT/roles/$1" \
@@ -92,6 +125,11 @@ grant_snapshot() { # <role id> <condition title> <CEL expression>
   rm -f "$condition_file"
   echo "  $1 on gs://$SNAPSHOT_BUCKET when $3"
 }
+
+# Grant before creating subscriptions so an IAM refusal cannot leave new subscriptions behind.
+log "First-load snapshot files: gs://$SNAPSHOT_BUCKET/$team/ only"
+grant_snapshot "$SNAPSHOT_GET_ROLE_ID" "snapshot-get-$team" \
+  "resource.name.startsWith('projects/_/buckets/$SNAPSHOT_BUCKET/objects/$team/')"
 
 for topic in "${topics[@]}"; do
   sub="sub.$team.$topic"
@@ -138,8 +176,8 @@ for topic in "${topics[@]}"; do
   grant_subscriber "$sub" "serviceAccount:$pubsub_agent"
 done
 
-log "First-load snapshot files: gs://$SNAPSHOT_BUCKET/$team/ only"
-grant_snapshot "$SNAPSHOT_GET_ROLE_ID" "snapshot-get-$team" \
-  "resource.name.startsWith('projects/_/buckets/$SNAPSHOT_BUCKET/objects/$team/')"
-
-log "Done. Make the key and hand it over by hand, then export the first load: document/how-to/setup-pubsub-export.md (ส่วน B)"
+if [ -n "$own_sa" ]; then
+  log "Done. No key: the team pulls as $team_sa. Export the first load: document/how-to/setup-pubsub-export.md (ส่วน B)"
+else
+  log "Done. Make the key and hand it over by hand, then export the first load: document/how-to/setup-pubsub-export.md (ส่วน B)"
+fi

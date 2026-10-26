@@ -27,11 +27,9 @@ manual ตาม [สัญญา publisher](../project_wiki/cdc-process/process
 ตาราง bookkeeping และการกันส่งซ้ำอยู่ใน
 [process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
 
-ทีมที่รับข้อมูล **ดึงเอง (pull)** จาก subscription ของทีมใน `databuffet-nonprd` ด้วย JSON key
-ของ service account `sa-pull-<ทีม>` — backend ของทีมจะรันบน platform ไหนก็ได้ ไม่ต้องมี
-project GCP ของตัวเอง · SA ของทีมมีสิทธิ์แค่ pull จาก subscription ของทีมเอง และอ่านไฟล์
-โหลดครั้งแรกใน folder ของทีมเองเท่านั้น (ไม่มี role ระดับ project) · สร้างด้วย [`infra/pubsub/add-consumer.sh`](../../infra/pubsub/add-consumer.sh)
-ตาม [ส่วน B](#ส่วน-b--ต่อทีมที่มาใช้ข้อมูล-ทำซ้ำทุกครั้งที่มีทีมใหม่)
+ทีมที่รับข้อมูล **ดึงเอง (pull)** จาก subscription ของทีมใน `databuffet-nonprd` ·
+เลือกวิธีเชื่อมต่อและดูขอบเขตสิทธิ์ที่ให้ใน
+[ส่วน B](#ส่วน-b--ต่อทีมที่มาใช้ข้อมูล-ทำซ้ำทุกครั้งที่มีทีมใหม่)
 
 ## Message format (มาตรฐานเดียว ทุก topic ทุกทีมใช้ร่วมกัน)
 
@@ -70,8 +68,8 @@ DATETIME = `"2026-01-30T09:10:00"`, ตัวเลขไม่มี `.0` เ�
 ## ส่วน A — deploy และทดสอบ pilot
 
 ทำครั้งเดียวหลัง PR merge และ code ถึง `nonprod` (คนทำต้องเป็น project owner ของ
-`databuffet-nonprd` และรันจาก WSL ที่มี `gcloud` / `bq` / `curl`) · การต่อทีมผู้รับ (subscription,
-key) อยู่ในส่วน B
+`databuffet-nonprd` และรันจาก WSL ที่มี `gcloud` / `bq` / `curl`) · การต่อทีมผู้รับ (subscription
+และ identity) อยู่ในส่วน B
 
 | ไฟล์ | หน้าที่ |
 |---|---|
@@ -162,9 +160,19 @@ Workflow จะ export เมื่อมีรอบ Dataform ที่สำ�
 
 ## ส่วน B — ต่อทีมที่มาใช้ข้อมูล (ทำซ้ำทุกครั้งที่มีทีมใหม่)
 
-ทุกทีม — ในบริษัทหรือนอกบริษัท — ใช้ขั้นตอนเดียวกันนี้เสมอ: ทีม **pull** จาก subscription
-ของตัวเองด้วย JSON key ของ `sa-pull-<ทีม>` · ทุกอย่างอยู่ใน `databuffet-nonprd` ไม่มี project
-แยก IAM เป็นตัวคุม · ตัวอย่างด้านล่างใช้ทีม AI ฝั่ง dev (`<ทีม>` = `ai-dev`)
+ทุกทีม **pull** จาก subscription ของตัวเอง · subscription, dead letter และไฟล์โหลดครั้งแรก
+อยู่ใน `databuffet-nonprd` ใช้ IAM แยกสิทธิ์ของแต่ละทีม · มี 2 วิธี ต่างกันแค่
+**identity ที่ใช้ pull** (เรียกรวมว่า "SA ของทีม" ด้านล่าง) — subscription, dead letter, ไฟล์โหลดครั้งแรก
+และสิทธิ์ที่ให้ เหมือนกันทุกอย่าง:
+
+| วิธี | ใช้เมื่อ | SA ของทีม | Key |
+|---|---|---|---|
+| **Key** (ค่าเริ่มต้น) | backend ของทีมรัน **นอก GCP** หรือรันใน GCP project ที่ **ไม่อยู่ใน organization ของเรา** | `sa-pull-<ทีม>` ที่สคริปต์สร้างใน `databuffet-nonprd` | JSON key สร้างด้วยมือแล้วส่งให้ทีม (ขั้น 2) |
+| **SA ของทีมเอง** (`--team-sa <email>`) | backend ของทีมรันใน GCP project **ใน organization ของเรา** | runtime service account ของทีม (ทีมแจ้ง email มา) — เราไม่สร้าง SA | ไม่มี key — ข้ามขั้น 2 |
+
+project นี้บังคับ domain-restricted sharing (`constraints/iam.allowedPolicyMemberDomains` ยอมเฉพาะ
+customer ID ของ organization เรา) จึงให้สิทธิ์ SA ของ project นอก organization ไม่ได้ — ทีมแบบนั้น
+ใช้วิธี key
 
 ### 1. รัน `add-consumer.sh`
 
@@ -172,33 +180,47 @@ Workflow จะ export เมื่อมีรอบ Dataform ที่สำ�
 [export config](../../includes/controller/mart-export-config.json)
 
 ```bash
+# วิธี key
 bash infra/pubsub/add-consumer.sh ai-dev export-ta-dim_company
+# วิธี SA ของทีมเอง — ใส่ email ของ runtime service account ที่ทีมแจ้งมา
+bash infra/pubsub/add-consumer.sh --team-sa consumer-run@ai-prod.iam.gserviceaccount.com ai-prod export-ta-dim_company
 ```
+
+`--team-sa` รับเฉพาะ email ของ service account (`<ชื่อ>@<project>.iam.gserviceaccount.com`,
+`<เลข>-compute@developer.gserviceaccount.com` หรือ `<project>@appspot.gserviceaccount.com`) ·
+ให้สิทธิ์ per-team (folder ไฟล์โหลดครั้งแรก) ก่อนสร้าง subscription ใดๆ ถ้า IAM ปฏิเสธเพราะ
+domain-restricted sharing สคริปต์หยุดทันที บอกสาเหตุ และให้รันใหม่แบบไม่ใส่ `--team-sa`
+(วิธี key) · ทีมหนึ่งใช้วิธีเดียว — ถ้าเปลี่ยนวิธี ให้ถอนสิทธิ์ของ SA เดิมออกเอง
 
 ชื่อทีมใช้ได้เฉพาะตัวพิมพ์เล็ก ตัวเลข และ `-` (ขึ้นต้นและลงท้ายด้วยตัวอักษรหรือตัวเลข)
 ยาวไม่เกิน 22 ตัว เพราะ `sa-pull-<ทีม>` ต้องไม่เกิน 30 ตัว · สคริปต์หยุดถ้า topic หรือ
 `<topic>-dead-letter` ยังไม่มี (รัน `setup.sh` ก่อน) · รันซ้ำได้ — apply ค่าเดิมซ้ำ หรือเพิ่ม
-topic ให้ทีมเดิม · พิมพ์ทุกอย่างที่สร้าง และ **ไม่สร้าง key**
+topic ให้ทีมเดิม · พิมพ์ทุกอย่างที่สร้าง และ **ไม่สร้าง key** ทั้งสองวิธี
 
 สิ่งที่สร้าง:
 
 | Resource | ชื่อ | ค่าที่ตั้ง | สิทธิ์ |
 |---|---|---|---|
-| Service account (1 ต่อทีม) | `sa-pull-<ทีม>` | ไม่มี key, ไม่มี role ระดับ project | — |
-| Pull subscription (1 ต่อ topic) | `sub.<ทีม>.<topic>` เช่น `sub.ai-dev.export-ta-dim_company` | ack deadline 60 วินาที · เก็บข้อความ 7 วัน **รวมข้อความที่ ack แล้ว** · ไม่หมดอายุ · retry 10–600 วินาที · ส่งไม่สำเร็จครบ 5 ครั้ง → `<topic>-dead-letter` | `roles/pubsub.subscriber` ให้ `sa-pull-<ทีม>` และ Pub/Sub service agent บน subscription นี้เท่านั้น |
+| Service account (1 ต่อทีม, **วิธี key เท่านั้น**) | `sa-pull-<ทีม>` | ไม่มี key, ไม่มี role ระดับ project | — |
+| Pull subscription (1 ต่อ topic) | `sub.<ทีม>.<topic>` เช่น `sub.ai-dev.export-ta-dim_company` | ack deadline 60 วินาที · เก็บข้อความ 7 วัน **รวมข้อความที่ ack แล้ว** · ไม่หมดอายุ · retry 10–600 วินาที · ส่งไม่สำเร็จครบ 5 ครั้ง → `<topic>-dead-letter` | `roles/pubsub.subscriber` ให้ SA ของทีม และ Pub/Sub service agent บน subscription นี้เท่านั้น |
 | Dead-letter hold (1 ต่อ topic) | `dlq.<ทีม>.<topic>` บน `<topic>-dead-letter` | เก็บ 31 วัน · ไม่หมดอายุ · filter `attributes.CloudPubSubDeadLetterSourceSubscription = "sub.<ทีม>.<topic>"` | ไม่ให้ทีม — เราอ่านเองเท่านั้น |
-| สิทธิ์อ่านไฟล์โหลดครั้งแรก (1 ต่อทีม) | folder `gs://databuffet-nonprd-datamart-snapshot/<ทีม>/` | — | `datamartSnapshotGet` เมื่อชื่อ object ขึ้นต้นด้วย `<ทีม>/` (IAM Condition บน bucket) ให้ `sa-pull-<ทีม>` — ดาวน์โหลด manifest และไฟล์ตามชื่อที่ระบุเท่านั้น |
+| สิทธิ์อ่านไฟล์โหลดครั้งแรก (1 ต่อทีม) | folder `gs://databuffet-nonprd-datamart-snapshot/<ทีม>/` | — | `datamartSnapshotGet` เมื่อชื่อ object ขึ้นต้นด้วย `<ทีม>/` (IAM Condition บน bucket) ให้ SA ของทีม — ดาวน์โหลด manifest และไฟล์ตามชื่อที่ระบุเท่านั้น |
 
 Pub/Sub service agent มี `roles/pubsub.publisher` บน `<topic>-dead-letter` — `setup.sh` เป็นผู้ให้สิทธิ์นี้ (ส่วน A ขั้น 4) สคริปต์นี้ไม่ให้ซ้ำ
 
-**ทำไม**: SA แยกต่อทีม ปิดทีมใดทีมหนึ่งได้ไม่กระทบทีมอื่น · สิทธิ์ pull ให้ที่ **subscription
+**ทำไม**: SA แยกต่อทีม ปิดทีมใดทีมหนึ่งได้ไม่กระทบทีมอื่น · สคริปต์ให้สิทธิ์ SA ของทีมเองชุดเดียวกับ
+`sa-pull-<ทีม>` พอดี ไม่มากกว่า — ไม่ให้ role ระดับ project ใน `databuffet-nonprd` · วิธี SA ของทีมเอง
+ไม่มี key ให้หลุดหรือต้องส่ง · สิทธิ์ pull ให้ที่ **subscription
 ของทีมเท่านั้น** ไม่ให้ระดับ project เพราะ role Pub/Sub ระดับ project จะ pull subscription ของ
 ทีมอื่นได้ด้วย · subscription คือ "ตัวชี้ว่าส่งถึงไหน" ส่วนตัวของแต่ละทีม ทีมนี้ดึงช้าไม่กระทบ
 ทีมอื่นบน topic เดียวกัน · เก็บข้อความที่ ack แล้ว 7 วัน เพื่อ replay หลังเกิดเหตุได้ (ดู "Replay")
 · ข้อความที่ทีมรับไม่สำเร็จ 5 ครั้งไปพักที่ `dlq.<ทีม>.<topic>` แทนการวนส่งไม่จบ —
 `dlq` สร้างก่อน subscription เสมอ dead letter จึงไม่หายเพราะไม่มีที่รับ
 
-### 2. สร้าง JSON key ด้วยมือ แล้วส่งให้ทีม
+### 2. สร้าง JSON key ด้วยมือ แล้วส่งให้ทีม (วิธี key เท่านั้น)
+
+วิธี SA ของทีมเองข้ามขั้นนี้ — backend ของทีมใช้ credentials ของ runtime service account ของตัวเอง
+(Application Default Credentials) ในโค้ด consumer และโหลดไฟล์ได้เลย
 
 **ทำ**: project owner สร้าง key หนึ่งครั้งต่อทีม เขียนไฟล์ไว้ **นอก repo**:
 
@@ -262,7 +284,7 @@ bash infra/pubsub/export-snapshot.sh ai-dev export-ta-dim_company
 
 ฝั่งทีม ตามลำดับนี้:
 
-1. รอให้ `manifest.json` มีอยู่ก่อน แล้วดาวน์โหลดทุกไฟล์ใน `files` ด้วย key เดียวกับที่ใช้ pull ส่งทุกบรรทัดเข้า
+1. รอให้ `manifest.json` มีอยู่ก่อน แล้วดาวน์โหลดทุกไฟล์ใน `files` ด้วย identity เดียวกับที่ใช้ pull ส่งทุกบรรทัดเข้า
    handler เดียวกับ consumer (`apply` ในตัวอย่างด้านล่าง) โดยบันทึก **`export_time` เป็น version ของทุกแถว**
 2. หลังมี manifest และโหลดไฟล์ครบแล้วจึงเริ่ม pull · สคริปต์ seek ให้ subscription เริ่มที่ export time
    และรอ propagation แล้ว จึงไม่ต้องใช้
@@ -288,7 +310,7 @@ for uri in manifest["files"]:
 
 **ทำไม**: Pub/Sub ส่งเฉพาะการเปลี่ยนแปลง (forward-only) และข้อความที่ publish เข้า topic ไปถึง
 **ทุก sub บน topic นั้น** การส่งข้อมูลตั้งต้นผ่าน topic จะทำให้ทีมเดิมได้ข้อมูลซ้ำทั้งตาราง ·
-ไฟล์ใน GCS รองรับตารางทุกขนาด (เช่น `sales_daily` ~1.65 ล้านแถว) และใช้ key เดิม ·
+ไฟล์ใน GCS รองรับตารางทุกขนาด (เช่น `sales_daily` ~1.65 ล้านแถว) และใช้ identity เดิม ·
 ลำดับ "subscription ก่อน → claim เฉพาะเมื่อว่าง → ตรวจว่า view ตรงกับ sent state → export
 ชุดที่ตรวจแล้ว → seek ไปที่ cut → ถือ claim รอ 90 วินาที → manifest → คืน claim" ทำให้ไฟล์ตรงกับสถานะที่ publisher
 ส่งสำเร็จ ณ export time และ subscription ตัดข้อความก่อน cut ออก รวมแถวที่ไม่มีในไฟล์ ·
@@ -314,7 +336,8 @@ for uri in manifest["files"]:
 
 ส่งให้ครบ 5 อย่าง:
 
-1. JSON key จากขั้น 2 — **เป็น secret** ส่งผ่านช่องทางที่ปลอดภัยเท่านั้น
+1. วิธี key: JSON key จากขั้น 2 — **เป็น secret** ส่งผ่านช่องทางที่ปลอดภัยเท่านั้น ·
+   วิธี SA ของทีมเอง: ยืนยัน email ของ SA ที่ได้สิทธิ์ (ไม่มี secret ให้ส่ง)
 2. ชื่อเต็มของ subscription ทุกชุดที่ได้รับ เช่น
    `projects/databuffet-nonprd/subscriptions/sub.ai-dev.export-ta-dim_company`
 3. Message format (ตารางด้านบน) + พฤติกรรมของ subscription (ด้านล่าง)
@@ -354,7 +377,7 @@ from datetime import datetime
 from google.cloud import pubsub_v1
 from google.oauth2 import service_account
 
-KEY_FILE = "/secure/path/sa-pull-ai-dev.json"   # key จาก handover — ห้าม commit
+KEY_FILE = "/secure/path/sa-pull-ai-dev.json"   # วิธี key: key จาก handover — ห้าม commit
 SUBSCRIPTIONS = [
     "projects/databuffet-nonprd/subscriptions/sub.ai-dev.export-ta-dim_company",
 ]
@@ -394,6 +417,8 @@ def callback(message):
 
 
 credentials = service_account.Credentials.from_service_account_file(KEY_FILE)
+# วิธี SA ของทีมเอง: ไม่มี KEY_FILE — ใช้ credentials = None (Application Default Credentials
+# ของ runtime service account) ทั้งที่นี่และใน storage.Client ของขั้น 3
 subscriber = pubsub_v1.SubscriberClient(credentials=credentials)
 futures = [subscriber.subscribe(s, callback=callback) for s in SUBSCRIPTIONS]
 with subscriber:
@@ -425,8 +450,8 @@ serialize ทุกการเขียนต่อ `(table, primary_key)` เ�
 - [ ] ทำตาม [ขั้น deploy ของ pilot](../project_wiki/cdc-process/process.md#deploy) รวมการตรวจ live compilation ก่อนรันด้วยมือ; การเพิ่ม เปลี่ยน หรือเอาตาราง export ออกให้ยึด lifecycle ใน process reference เดียวกัน
 - [ ] รัน `infra/pubsub/setup.sh` ตามส่วน A (A1–A3)
 - [ ] ตรวจผล execution ของ `datamart-publish` และ `mart_sent_state`: รอบแรก `sent 5 rows`, รอบถัดไป `sent 0 rows` (A4)
-- [ ] ต่อทีมใหม่: รัน `add-consumer.sh <ทีม> <topic>...` เฉพาะชุดที่ทีมได้รับ (ขั้น 1)
-- [ ] สร้าง JSON key ด้วยมือนอก repo แล้วส่งผ่านช่องทางที่ปลอดภัย (ขั้น 2)
+- [ ] ต่อทีมใหม่: รัน `add-consumer.sh [--team-sa <email>] <ทีม> <topic>...` เฉพาะชุดที่ทีมได้รับ (ขั้น 1)
+- [ ] วิธี key เท่านั้น: สร้าง JSON key ด้วยมือนอก repo แล้วส่งผ่านช่องทางที่ปลอดภัย (ขั้น 2)
 - [ ] หลังมี subscription แล้ว รัน `export-snapshot.sh <ทีม> <topic>` ทีละ topic รอให้สคริปต์ seek และรอ 90 วินาทีก่อนเขียน manifest เสร็จ แล้วส่ง folder + export time ให้ทีม · ทีมรอ manifest และโหลดไฟล์ครบก่อนเริ่ม pull (ขั้น 3)
 - [ ] ตั้ง alert backlog + dead letter และส่ง handover package ครบ (ขั้น 4–5)
 
