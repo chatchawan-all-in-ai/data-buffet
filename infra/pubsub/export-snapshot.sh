@@ -142,19 +142,21 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 log "Claiming publisher state for $table_name"
+# A script prints one JSON entry per statement (a DML entry is its message string); the
+# final SELECT is the last entry.
 claimed="$(bq --project_id="$PROJECT" --location="$BQ_LOCATION" --format=json query --use_legacy_sql=false \
-  --max_statement_results=1 --parameter="table_name::$table_name" --parameter="claim::$claim" \
+  --parameter="table_name::$table_name" --parameter="claim::$claim" \
   "UPDATE \`$PROJECT.$BQ_DATASET.mart_export_config\`
    SET claimed_at = TIMESTAMP(@claim)
    WHERE table_name = @table_name
      AND claimed_at IS NULL;
    SELECT @@row_count AS claimed" |
-  "$python_bin" -c 'import json, sys; print(json.load(sys.stdin)[0]["claimed"])')"
+  "$python_bin" -c 'import json, sys; print(json.load(sys.stdin)[-1][0]["claimed"])')"
 [ "$claimed" -eq 1 ] || die "publisher claim unavailable for $table_name; retry after the next publisher run clears it"
 
 log "Checking publisher catch-up and exporting $EXPORT_DATASET.$source_view (BigQuery job $job_id)"
 job_facts="$(bq --project_id="$PROJECT" --location="$BQ_LOCATION" --format=json query --use_legacy_sql=false \
-  --max_statement_results=1 --job_id="$job_id" --parameter="table_name::$table_name" --parameter="claim::$claim" \
+  --job_id="$job_id" --parameter="table_name::$table_name" --parameter="claim::$claim" \
   "DECLARE export_time TIMESTAMP;
    BEGIN TRANSACTION;
    SET export_time = CURRENT_TIMESTAMP();
@@ -180,7 +182,7 @@ $query;
   "$python_bin" -c '
 import json, sys
 from datetime import datetime
-facts = json.load(sys.stdin)[0]
+facts = json.load(sys.stdin)[-1][0]
 cut = datetime.fromisoformat(facts["export_time"].replace("Z", "+00:00"))
 print(facts["export_time"], cut.strftime("%Y%m%dT%H%M%S%fZ"), facts["row_count"], sep="\t")
 ')"
