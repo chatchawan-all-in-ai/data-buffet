@@ -19,9 +19,16 @@ js {
     const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
     const pk_key = ["sale_no", "sale_date", "branch_code", "product_code"]
     const datePart = (i) => `CAST(SPLIT(TRIM(Sale_Date), '/')[SAFE_OFFSET(${i})] AS INT64)`;
-    const saleDateExpr = `IF(${datePart(2)} >= 2500,
-        SAFE.DATE(${datePart(2)} - 543, ${datePart(1)}, ${datePart(0)}),
-        SAFE.DATE(${datePart(2)},       ${datePart(0)}, ${datePart(1)}))`;
+    // GB เปลี่ยนรูปแบบไฟล์ตั้งแต่ใบวันที่ 2026-10-15 — หัวตารางเป็นไทยและวันเป็น DD/MM/YYYY
+    // ของเดิมเป็น MM/DD/YYYY · แยกด้วย ASATDATE (วันที่ไฟล์เข้าระบบ) ไม่ใช่ค่าในข้อมูลเอง
+    // เพราะ '05/10/2026' อ่านได้ทั้งสองแบบ ตัวเลขจึงบอกไม่ได้ว่าเป็นวันหรือเดือน
+    const saleDateExpr = `CASE
+        WHEN ${datePart(2)} >= 2500
+            THEN SAFE.DATE(${datePart(2)} - 543, ${datePart(1)}, ${datePart(0)})
+        WHEN ASATDATE >= '20261015'
+            THEN SAFE.DATE(${datePart(2)}, ${datePart(1)}, ${datePart(0)})
+        ELSE SAFE.DATE(${datePart(2)}, ${datePart(0)}, ${datePart(1)})
+    END`;
 
     let partition_statement, post_operations_statement;
 
@@ -61,7 +68,14 @@ SELECT
     ${databuffet.functionData.cleanString('Product_Name')} AS product_name,
     ${databuffet.functionData.castInt64('Sale_Quantity')} AS sale_quantity,
     CAST(REGEXP_REPLACE(TRIM(Sale_Amount), r"[,\']", '') AS FLOAT64) AS sale_amount,
-    ${databuffet.functionData.cleanString('Type')} AS type,
+    -- ไฟล์ใหม่ส่ง 'ขาย'/'รับคืน' ของเดิมส่ง 'SALE'/'RETURN'
+    -- ต้องแปลงที่นี่ เพราะ doc_type อยู่ใน uniqueKey ของ curated
+    -- ถ้าปล่อยค่าไทยไหลไป แถวเดียวกันจะกลายเป็นคนละคีย์แล้วยอดเบิ้ล
+    CASE ${databuffet.functionData.cleanString('Type')}
+        WHEN 'ขาย'    THEN 'SALE'
+        WHEN 'รับคืน' THEN 'RETURN'
+        ELSE ${databuffet.functionData.cleanString('Type')}
+    END AS type,
     ${databuffet.functionData.cleanString('Reference_No_')} AS reference_no,
     ${databuffet.functionData.cleanString('Deposit_No_')} AS deposit_no,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
