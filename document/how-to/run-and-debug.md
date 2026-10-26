@@ -2,77 +2,12 @@
 
 > ตรวจกับ `includes/controller/variables.json` และโค้ดจริงเมื่อ 2026-09-15
 
-## ตรวจงานในเครื่องด้วย no-mistakes
-
-คำสั่งประจำอยู่ใน [README — Common Commands](../../README.md#common-commands)
-และตั้งค่าไว้ใน [`.no-mistakes.yaml`](../../.no-mistakes.yaml) · ใช้ Linux/WSL
-และเตรียมเครื่องมือตาม [onboarding §3.2](../getting-started/onboarding.md#32-เครื่องมือ)
-
-### Environment ที่ใช้ซ้ำ
-
-ทั้งสองคำสั่งเรียก [`scripts/_nm-env.sh`](../../scripts/_nm-env.sh) เพื่อติดตั้ง
-`@dataform/cli` และ `@dataform/core` เวอร์ชันตรงกับ `dataformCoreVersion` ใน
-`workflow_settings.yaml` พร้อม Python venv ที่มี `google-cloud-bigquery`
-(เวอร์ชัน client pin ไว้ในสคริปต์) · รอบแรกต้องดาวน์โหลด dependencies;
-รอบถัดไปที่ cache พร้อมและ version stamp ตรงจะใช้ของเดิม ไม่รัน npm/pip install
-
-Cache สำหรับ **data-buffet เท่านั้น** อยู่ที่
-`${XDG_CACHE_HOME:-$HOME/.cache}/fm-envs/data-buffet`
-(ปกติ `~/.cache/fm-envs/data-buffet`) · เปลี่ยนได้ด้วย `NM_ENV_DIR` แต่ต้องคงแยก
-จากโปรเจกต์อื่น · สคริปต์ตัด Windows PATH `/mnt/<drive>/...` ออก จึงต้องมี
-Node/npm ฝั่ง Linux/WSL ไม่ใช้ CLI global ฝั่ง Windows และไม่เพิ่ม CLI ลง PATH global
-
-Compile ใช้สำเนา `definitions/`, `includes/` และ config ใน staging directory
-ชั่วคราว เชื่อมกับ dependencies ที่ cache ไว้ เพื่อไม่ให้ Dataform ติดตั้ง core ซ้ำ
-ใน checkout · แต่ละ invocation มี compile output และรายชื่อไฟล์เปลี่ยนใน directory
-ชั่วคราวของตัวเอง และลบเมื่อจบ ไม่แชร์ `compile.json`/`changed.txt` ระหว่าง worktree
-ดู regression coverage ใน [`test_nm_commands.py`](../../scripts/test_nm_commands.py)
-
-### Compile กับ SQL dry run
-
-`nm-test.sh` ตรวจ JS/config, `ref()`, `dependencies` และ dependency cycle
-พร้อมรายงานจำนวน action · ไม่ต้องมี credentials และไม่เรียก BigQuery
-แต่ **compile ไม่ตรวจ SQL** เช่น ชื่อคอลัมน์ผิดหรือ `FORM` แทน `FROM`
-
-`nm-lint.sh` ตรวจ whitespace โดยยอมรับ CRLF และ compile ก่อนตรวจ SQL:
-
-- ค่าเริ่มต้นเลือก table/operation actions ที่ source เปลี่ยนใน **commits** ระหว่าง
-  merge-base ของ `HEAD` กับ `origin/dev` ถึง `HEAD` ไม่รวมการแก้ที่ยังไม่ commit
-- ถ้า `includes/` หรือ `workflow_settings.yaml` เปลี่ยน จะขยายเป็นทุก
-  table/operation action · `--all` หรือไม่มี merge-base ก็เลือกทั้งหมด
-- ตรวจ query แบบ full-refresh และ incremental พร้อม pre/post-operations ของ
-  แต่ละ mode และตัด sequence ซ้ำเมื่อ SQL และ materialization context ตรงกัน
-- ใช้ BigQuery client จาก cached venv กับ Application Default Credentials (ADC;
-  ดู [onboarding §3.3](../getting-started/onboarding.md#33-ล็อกอิน)) · query jobs ใช้
-  `dry_run=True` และปิด query cache ใน project `databuffet-nonprd` · action ที่ target
-  project อื่นถูกปฏิเสธ · ไม่ execute SQL หรือเขียนข้อมูลใน BigQuery
-
-Whitespace ตรวจ diff ช่วง merge-base ถึง `HEAD` เมื่อมี base; ใน mode `--all`
-หรือไม่มี merge-base สคริปต์ลองตรวจเฉพาะ `HEAD~1` ถึง `HEAD` และไม่บล็อกเมื่อ
-whitespace check ล้มเหลว จึงไม่รับรองว่า whitespace ผ่านในสองกรณีนี้
-
-อ่านผลราย action และ summary เสมอ; exit code 0 อาจมี SQL ที่ยังไม่ได้ตรวจ:
-
-| ผล | ความหมาย / exit status |
-|---|---|
-| `ok` | BigQuery dry run ตรวจ SQL ที่ส่งได้ ไม่รับรองการ materialize หรือผลข้อมูลจริง |
-| `WARN` | Table/view ที่หาไม่พบต้องตรง project/dataset/name ของ target ใน compile graph (`tables`, `operations`, `assertions`) เท่านั้น จึงข้ามพร้อมเตือน; ไม่นับเป็น `ok` และไม่ทำให้ fail |
-| `UNVERIFIED` | ไม่ส่ง sequence ที่มี post-operations เพราะต้องใช้ schema ของ target ที่เพิ่ง materialize; ข้าม script/control flow, temp-table SQL หรือ DDL ที่มี statement ตามหลังซึ่ง dry run ตรวจไม่ครบ; ไม่นับเป็น `ok` และไม่ทำให้ fail |
-| `WARNING: SKIP` | ไม่พบ ADC เลย จึงข้าม SQL dry run ทั้งหมดพร้อมประกาศว่า SQL ยัง `UNVERIFIED`; compile ผ่านแล้ว และ exit 0 |
-| `FAIL` / `REFUSED` | SQL error, missing source/typo ที่ไม่ใช่ graph target, client library หาย, credentials ผิดหรือ client error อื่น และ target project ที่ไม่อนุญาต ทำให้ exit ไม่เป็น 0 |
-
-รายละเอียดขอบเขตอยู่ใน [`nm_dryrun.py`](../../scripts/nm_dryrun.py) และ
-regression coverage ใน [`test_nm_dryrun.py`](../../scripts/test_nm_dryrun.py)
-หากรายงานเตือนหรือยังไม่ได้ตรวจ ต้องตรวจ action นั้นเพิ่มเติมใน Dataform service
-ก่อนถือว่าพร้อมรันจริง
-
 ## รันด้วย tag
 
 **รันจริงผ่าน Dataform UI บน GCP** — โปรเจกต์ไม่ได้ตั้ง `.df-credentials.json`
 สำหรับ CLI execution · สร้าง execution แล้วเลือก tag เช่น `validated_incremental`,
 `dimension_daily`, `fact_daily`, `view` หรือเลือก action เดียว เช่น
-`validated_mac5.mih` และรวม dependencies เมื่อต้องการ · คำสั่ง no-mistakes ข้างบน
-ใช้ตรวจงานในเครื่องเท่านั้น
+`validated_mac5.mih` และรวม dependencies เมื่อต้องการ
 
 ถ้ามี CLI global เพิ่มเติมตาม [onboarding §3.2](../getting-started/onboarding.md#32-เครื่องมือ)
 ใช้ `dataform compile --json` ดู query/dependency graph ได้:
@@ -132,8 +67,7 @@ SELECT COUNT(*) FROM `databuffet-nonprd.dimension_table.dim_company`'
 
 ## ตรวจ SQL โดยไม่มี dataform CLI
 
-สำหรับการตรวจอัตโนมัติใช้ [no-mistakes ข้างบน](#ตรวจงานในเครื่องด้วย-no-mistakes)
-ถ้าต้องตรวจ query เองและมี CLI ใช้ SQL จาก `dataform compile --json`
+ถ้ามี CLI ใช้ SQL จาก `dataform compile --json`
 (`.tables[].query`) ได้; ถ้าไม่มี CLI ให้ขยาย references เองตามตัวอย่าง
 
 `--dry_run` ของ `bq` ตรวจ syntax + ชื่อคอลัมน์ได้ฟรี ไม่คิดเงิน:
@@ -152,7 +86,7 @@ wsl -e bash -lc "bq --project_id=databuffet-nonprd query --use_legacy_sql=false 
 
 ## ลำดับการไล่ปัญหา
 
-1. compile ผ่านไหม (JS/config / dependency ผิด) — ตรวจในเครื่องตาม [README](../../README.md#common-commands) หรือใน Dataform UI
+1. compile ผ่านไหม (JS/config / dependency ผิด) — ตรวจด้วย `dataform compile` ถ้ามี CLI ([รันด้วย tag](#รันด้วย-tag)) หรือใน Dataform UI
 2. ดู graph ว่า action ต่อกันถูกไหม
 3. dry-run action ที่สงสัย (หรือ `bq --dry_run` ตามข้างบน)
 4. ดู error ใน BigQuery Cloud Console (job history)

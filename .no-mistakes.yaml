@@ -1,4 +1,0 @@
-# Command behavior, environment, and limits: document/how-to/run-and-debug.md.
-commands:
-  test: bash scripts/nm-test.sh
-  lint: bash scripts/nm-lint.sh
