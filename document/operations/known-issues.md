@@ -328,9 +328,12 @@ DAG `pipline_saleout_mdt_eom` **รวมทุกไฟล์ในโฟลเ
   · โฟลเดอร์ GCS **ไม่เปลี่ยน** — `GCS_DERP` ยังเป็น `derp_temp` · ชื่อตาราง 3 ตัว (`inventory_*`) ไม่เปลี่ยน
   · คอลัมน์ `d365_*` ของ master_sku / mastersku / mds และคอลัมน์ที่ BI อ่าน (`prdD365Sku`,
   `ProductIDNewD365`) **ไม่ใช่ source นี้ — ห้ามเปลี่ยน**
-  · ฝั่ง BigQuery ทำหลัง merge: สร้าง `raw_derp` / `validated_derp` ใหม่ (รัน `create_all_table_raw_derp`
-  → `validated_schema_derp` → 3 ตาราง ทีละ action ห้ามรัน tag `initial`) ให้เสร็จก่อนรอบ 06:00
-  ถัดไป แล้วจึงลบ `raw_d365` / `validated_d365`
+  · ฝั่ง BigQuery ทำเสร็จแล้ว 2026-10-28: สร้าง `raw_derp` / `validated_derp` ใหม่ (รันทีละ action จาก
+  compilation ของ nonprod `9f4fb18`: `create_all_table_raw_derp` → `validated_schema_derp` →
+  `inventory_item_price`, `inventory_movement_journal_headers`, `inventory_movement_journal_entries`
+  ไม่ได้รัน tag `initial`) · ตรวจเทียบกับตารางเดิมแล้ว: จำนวนแถวเท่ากัน (174,967 / 276,913 / 1,298,436),
+  key ไม่ซ้ำ, แถวที่มีข้างเดียว 0, 43 partition ถึง 2026-10-27 · เจ้าของโปรเจกต์ลบ `raw_d365` /
+  `validated_d365` แล้วในวันเดียวกัน · `daily_process` ตั้งแต่ 2026-10-29 เขียนลง `validated_derp`
 
 - **2026-10-09 — Customer Report Info: สัญญาและลำดับ deploy**
 
