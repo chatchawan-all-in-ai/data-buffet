@@ -28,6 +28,8 @@
 - กฎ `dependencies[]`: [ลำดับ build ของ CompanySK](../project_wiki/dimension/full-rebuild-pattern.md#properties)
 - ไม่ต้องมี MERGE, max_sk, tombstone DELETE, `MDS_BACKFILL_DAYS` — pattern นี้ไม่ใช้
 - Dataform สร้าง/แทนที่ตารางให้เอง — **ไม่ต้องสร้างตารางใน BigQuery ก่อน**
+  (เฉพาะ `type: "table"` · ถ้าภายหลังเปลี่ยนเป็น MERGE แบบ `type: "operations"` ตารางต้องมีอยู่ก่อนเสมอ
+  และคอลัมน์ใหม่ต้อง `ALTER TABLE ... ADD COLUMN` เอง — ตัวอย่าง `dim_customer_report_info` 2026-10-28)
 - ไม่ต้อง backfill — รันครั้งแรกได้ข้อมูลเต็มทันที
 
 ### 3. กรณีพิเศษ

@@ -81,6 +81,13 @@ that backfill or the MDT join matches nothing.
 
 ## `dim_customer_report_info` — mds + every invoice name (2026-10-01)
 
+**Stable SK since 2026-10-28**: `type: "operations"` MERGE ON `CompanyID` + `CustomerReportKey`
+(new stored column = name with all whitespace removed). Existing names keep their
+`CustomerReportInfoSK` and get every other column updated; new names get `max_sk + ROW_NUMBER()`
+ordered by `CompanyID, CustomerReportKey`; names gone from the source are kept (no delete); the
+`-1` row is inserted only if missing. The target must pre-exist — **never rebuild it from scratch**
+(a rebuild would renumber SKs). See [inventory (b2)](inventory.md#group-b2--mds--invoice-merge-1).
+
 Sources, deduplication, output columns, hierarchy dependencies, segment rules, TA rules
 and Power BI relationships are owned by the
 [Customer Report Info section](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01).

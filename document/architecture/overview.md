@@ -60,6 +60,7 @@ GCS files  gs://file-raw-data  (AVRO, Hive partition: ASATDATE=YYYYMMDD · ม�
 | mds full daily rebuild (ค่าเริ่มต้น) | `type: "table"` · SK ออกใหม่ทุกวัน |
 | mds MERGE legacy (2) | `dim_company`, `dim_aging_rang` · SK เสถียร |
 | lake MERGE (validated/curated) (10) | SK เสถียร ไม่มี tombstone |
+| mds + invoice MERGE (1) | `dim_customer_report_info` (2026-10-28) · SK เสถียร ไม่มี delete |
 | full rebuild อื่น | `_last` 7 ตัว, target 2 ตัว, `dim_store`, `dim_pump_information`, `dim_product_series` (hard-code) |
 | operations อื่น (3) | `dim_calendar`, `dim_aging`, `update_sk_sale_rep_group` |
 
@@ -80,7 +81,7 @@ GCS files  gs://file-raw-data  (AVRO, Hive partition: ASATDATE=YYYYMMDD · ม�
 
 ### Surrogate key (SK) — 2 ระบบ (ตั้งแต่ 2026-07-20)
 
-- **SK เสถียร** (MERGE dims: `dim_company`, `dim_aging_rang` + lake dims 10 ตัว):
+- **SK เสถียร** (MERGE dims: `dim_company`, `dim_aging_rang` + lake dims 10 ตัว + `dim_customer_report_info`):
   ออกด้วย `max_sk + ROW_NUMBER()` + dual self-join รักษา SK เดิมตลอดชีพ —
   ห้าม regenerate เด็ดขาด ดู
   [project_wiki/dimension/merge-sk-pattern.md](../project_wiki/dimension/merge-sk-pattern.md)

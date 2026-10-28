@@ -49,7 +49,7 @@ Per-source context (what each system is, who reads it):
 | Initial | `raw_*`, `function_dataset` | operations (external tables, UDFs) | [initial/initial-layer.md](../initial/initial-layer.md) |
 | Validated | `validated_*` | incremental / table + QUALIFY dedup | [validated/validated-layer.md](../validated/validated-layer.md) |
 | Curated | `curated_*` | incremental / table / operations | [curated/curated-layer.md](../curated/curated-layer.md) |
-| Dimension | `dimension_table`, `dimension_view` | table rebuild (mds full rebuild + other tables) / operations MERGE (2 mds + 10 lake) / 3 other operations | [dimension/dimension-layer.md](../dimension/dimension-layer.md) |
+| Dimension | `dimension_table`, `dimension_view` | table rebuild (mds full rebuild + other tables) / operations MERGE (2 mds + 10 lake + `dim_customer_report_info`) / 3 other operations | [dimension/dimension-layer.md](../dimension/dimension-layer.md) |
 | Fact | `fact_table`, `fact_view` | table rebuild / operations upsert | [fact/fact-layer.md](../fact/fact-layer.md) |
 | CDC | `cdc_dataset` | operations (config-generated) | [cdc-process/cdc.md](../cdc-process/cdc.md) |
 | Process | `process_dataset` | incremental (`deb_address_data`, AI.GENERATE) + table (`rls_customer360`) + Pub/Sub export pilot (operations, tag `pub_sub`) | [cdc-process/process.md](../cdc-process/process.md) |

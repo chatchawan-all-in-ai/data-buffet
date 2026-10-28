@@ -90,8 +90,8 @@ Verified 2026-07-20 (repo scan + live BQ + 90-day query history):
 - `dim_rate_target` — extra deps `dim_department_last`/`dim_director_last` + a real
   `post_operations` block that reallocates `Percent` for MDT departments after the
   rebuild (see [special-cases.md](special-cases.md)).
-- `dim_customer_report_info` — sources, grain, reserved-member and Segment/TA contracts are owned by the
-  [Customer Report Info section](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
+- `dim_customer_report_info` — **no longer a full rebuild** (2026-10-28): moved to a stable-SK
+  MERGE ([inventory (b2)](inventory.md#group-b2--mds--invoice-merge-1)); never rebuild it from scratch.
 - `dim_customer_segment` — member and fallback contracts are owned by the
   [Customer Report Info section](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
 

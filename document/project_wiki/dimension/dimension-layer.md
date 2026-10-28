@@ -11,9 +11,10 @@
 
 | Group | Count | Files | Detail |
 |---|---|---|---|
-| (a) **Full daily rebuild from `mds_dataset`** — the default | **44** | all mds dims except dim_company/dim_aging_rang (incl. the 7 SALEOUT_MDT `*_mdt`/`dim_pc` dims and `dim_change_district`); specials: `dim_sale_representative`, `dim_stk_mkt` (UNION blocks), `dim_doctype`/`dim_holiday` (no SK) | [full-rebuild-pattern.md](full-rebuild-pattern.md) — **SKs regenerate daily, not stable across days** |
+| (a) **Full daily rebuild from `mds_dataset`** — the default | **43** | all mds dims except dim_company/dim_aging_rang/dim_customer_report_info (incl. the 7 SALEOUT_MDT `*_mdt`/`dim_pc` dims and `dim_change_district`); specials: `dim_sale_representative`, `dim_stk_mkt` (UNION blocks), `dim_doctype`/`dim_holiday` (no SK) | [full-rebuild-pattern.md](full-rebuild-pattern.md) — **SKs regenerate daily, not stable across days** |
 | (a2) MERGE from `mds_dataset` (legacy) | 2 | `dim_company` (SK persisted everywhere), `dim_aging_rang` (SK frozen in dim_aging_history) | [merge-sk-pattern.md](merge-sk-pattern.md), [mds-delete-pattern.md](mds-delete-pattern.md) |
 | (b) MERGE from lake (validated/curated) | 10 | `dim_customer, dim_invoice, dim_order, dim_delivery, dim_project, dim_quotation, dim_product_master, dim_customer_grade, dim_group_customer, dim_group_customer_grade` | Same MERGE skeleton, `ref()` sources, **no mds DELETE** |
+| (b2) MERGE from mds + invoice names (2026-10-28) | 1 | `dim_customer_report_info` — MERGE ON `CompanyID` + `CustomerReportKey`, no window, **no delete**, never full-rebuild | [inventory.md](inventory.md#group-b2--mds--invoice-merge-1) |
 | (c) Other full-rebuild `type: "table"` (ไม่อ่าน mds) | 12 | 7× `*_last` snapshots, `dim_target_product_group_by_sale`, `..._dayofwork`, `dim_store`, `dim_pump_information`, `dim_product_series` (hard-coded rows) | Inline `ROW_NUMBER()` SK, self-heals daily |
 | (e) Other operations | 3 | `dim_calendar` (date spine, yearly), `dim_aging` (~500-line AR aging engine), `update_sk_sale_rep_group` (UPDATE-only SK backfill) | |
 

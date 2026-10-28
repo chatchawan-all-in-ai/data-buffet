@@ -1,18 +1,23 @@
 config {
-  type: "table",
-  schema: databuffet.DIMENSION_TABLE,
+  // SK เสถียร (2026-10-28): MERGE + max_sk แบบ dim_customer — ตารางต้องมีอยู่แล้วใน BigQuery ห้าม rebuild ใหม่
+  // (clusterBy CustomerReportInfoSK ติดมากับตารางเดิม)
+  type: "operations",
   // ชุดเล็กสุด: update_sk_sale_rep_group รันหลัง *_last ทั้งหมด (รวม dim_department_last, dim_sale_representative_last, dim_company)
   // ตารางหลัง view (กฎ Run order): view_dim_invoice อ่าน dim_aging (ครอบ dim_invoice, dim_customer), dim_order, mec ตรง ๆ
   // · view_dim_customer อ่าน dim_group_customer · view_deb_address_data อ่าน deb_address_data
   dependencies: ["update_sk_sale_rep_group", "dim_customer_segment", "dim_aging", "dim_order", "dim_group_customer", "mec", "deb_address_data"],
   tags: [databuffet.TAG_DIM_DAILY],
-  uniqueKey: ["CustomerReportInfoSK"],
-  bigquery: {
-    clusterBy: ["CustomerReportInfoSK"],
-  },
+  hasOutput: true
 }
 
 js {
+    const DimCustomerReportInfoTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimCustomerReportInfoTableRef = `${DimCustomerReportInfoTable.database}.${DimCustomerReportInfoTable.schema}.${DimCustomerReportInfoTable.name}`;
+
     const MdsSourceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
@@ -79,6 +84,15 @@ js {
     const CodeNameExpr = `IF(IFNULL(cust.FlagMDSNickName, FALSE), cust.NicknameCustomer, \`${CleanCompanyPrefixTableRef}\`(cust.debnamet))`;
 }
 
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+  -- ไม่นับแถวสงวน -1
+  SET max_sk = (SELECT IFNULL(MAX(CustomerReportInfoSK), 0) FROM `${DimCustomerReportInfoTableRef}` WHERE CustomerReportInfoSK <> -1);
+
+  -- ชื่อเดิม (CompanyID + CustomerReportKey) คง SK และอัปเดตคอลัมน์อื่น · ชื่อใหม่ได้ max_sk + ROW_NUMBER
+  -- ชื่อที่หายจาก source (MDS inactive และไม่มี invoice) ไม่ลบ — แถวเดิมคงอยู่
+  MERGE `${DimCustomerReportInfoTableRef}` AS T
+  USING (
 with mds as (
   SELECT
     ${databuffet.functionData.cleanString("t1.companyID")} AS CompanyID,
@@ -346,14 +360,15 @@ with mds as (
   LEFT JOIN deb_address AS addr
     ON t.CompanyID = addr.company_id
     AND t.ReportDebcode = addr.debcode
-)
+), source_data as (
 SELECT
-  ROW_NUMBER() OVER(ORDER BY t.CompanyID, t.CustomerReportKey) AS CustomerReportInfoSK,
   t.CompanySK,
   -- คง DC fallback เดิม; ใช้ Non-Segment เฉพาะเมื่อ join ไม่เจอทั้ง segment และ DC
   COALESCE(seg.CustomerSegmentSK, seg_dc.CustomerSegmentSK, -1) AS CustomerSegmentSK,
   t.CompanyID,
   t.CustomerReportName,
+  -- key ที่ใช้ match ชื่อเดิม (ชื่อตัด whitespace ทั้งหมด)
+  t.CustomerReportKey,
   t.FlagPC,
   t.ShopOnline,
   t.OnlinePercent,
@@ -392,39 +407,66 @@ LEFT JOIN `${DimCustomerSegmentTableRef}` AS seg
 LEFT JOIN `${DimCustomerSegmentTableRef}` AS seg_dc
   ON t.CompanySK = seg_dc.CompanySK
   AND seg_dc.Segment3 = 'DC'
-
-UNION ALL
-
--- แถวสงวน SK -1: view_fact_transcation ใส่ -1 ให้บิลจริงที่ชื่อร้าน join ไม่เจอ (ชื่อว่าง/รหัสลูกค้าไม่อยู่ใน deb)
--- ชื่อว่าง · Non-Segment (-1 ของ dim_customer_segment) · ไม่มี TA/ข้อมูล MDS · ไม่นับใน ROW_NUMBER จึงไม่ทำให้ SK อื่นขยับ
+)
 SELECT
-  -1 AS CustomerReportInfoSK,
-  NULL AS CompanySK,
-  -1 AS CustomerSegmentSK,
-  NULL AS CompanyID,
-  NULL AS CustomerReportName,
-  NULL AS FlagPC,
-  NULL AS ShopOnline,
-  NULL AS OnlinePercent,
-  'DEFAULT' AS SegmentSource,
-  NULL AS SegmentDebcode,
-  NULL AS SegmentChannel,
-  NULL AS MdsID,
-  NULL AS DepartmentSK,
-  NULL AS SectionSK,
-  NULL AS RegionSK,
-  NULL AS SectionManagerSK,
-  NULL AS RegionManagerSK,
-  NULL AS DirectorSK,
-  NULL AS TASource,
-  NULL AS TADebcode,
-  NULL AS SaleRepSK,
-  NULL AS ReportDebcode,
-  NULL AS DEBcreditTerm,
-  NULL AS InvoiceProvinceSK,
-  NULL AS InvoiceDistrictSK,
-  NULL AS InvoiceSubDistrictSK
+  (CASE
+    WHEN t2.CustomerReportInfoSK IS NOT NULL THEN t2.CustomerReportInfoSK
+    ELSE max_sk + ROW_NUMBER() OVER(
+      PARTITION BY (CASE WHEN t2.CustomerReportInfoSK IS NULL THEN 1 ELSE 0 END)
+      ORDER BY t1.CompanyID, t1.CustomerReportKey)
+  END) AS CustomerReportInfoSK,
+  t1.*
+FROM source_data AS t1
+LEFT JOIN `${DimCustomerReportInfoTableRef}` AS t2
+  ON t1.CompanyID = t2.CompanyID
+  AND t1.CustomerReportKey = t2.CustomerReportKey
 
-pre_operations {}
+  ) AS S
+  ON T.CompanyID = S.CompanyID
+  AND T.CustomerReportKey = S.CustomerReportKey
 
-post_operations {}
+  WHEN MATCHED THEN
+    -- ทุกคอลัมน์ยกเว้น SK และ key
+    UPDATE SET
+      CompanySK = S.CompanySK,
+      CustomerSegmentSK = S.CustomerSegmentSK,
+      CustomerReportName = S.CustomerReportName,
+      FlagPC = S.FlagPC,
+      ShopOnline = S.ShopOnline,
+      OnlinePercent = S.OnlinePercent,
+      SegmentSource = S.SegmentSource,
+      SegmentDebcode = S.SegmentDebcode,
+      SegmentChannel = S.SegmentChannel,
+      MdsID = S.MdsID,
+      DepartmentSK = S.DepartmentSK,
+      SectionSK = S.SectionSK,
+      RegionSK = S.RegionSK,
+      SectionManagerSK = S.SectionManagerSK,
+      RegionManagerSK = S.RegionManagerSK,
+      DirectorSK = S.DirectorSK,
+      TASource = S.TASource,
+      TADebcode = S.TADebcode,
+      SaleRepSK = S.SaleRepSK,
+      ReportDebcode = S.ReportDebcode,
+      DEBcreditTerm = S.DEBcreditTerm,
+      InvoiceProvinceSK = S.InvoiceProvinceSK,
+      InvoiceDistrictSK = S.InvoiceDistrictSK,
+      InvoiceSubDistrictSK = S.InvoiceSubDistrictSK
+
+  WHEN NOT MATCHED THEN
+    INSERT (
+      CustomerReportInfoSK, CompanySK, CustomerSegmentSK, CompanyID, CustomerReportName, CustomerReportKey, FlagPC, ShopOnline, OnlinePercent, SegmentSource, SegmentDebcode, SegmentChannel, MdsID, DepartmentSK, SectionSK, RegionSK, SectionManagerSK, RegionManagerSK, DirectorSK, TASource, TADebcode, SaleRepSK, ReportDebcode, DEBcreditTerm, InvoiceProvinceSK, InvoiceDistrictSK, InvoiceSubDistrictSK
+    )
+    VALUES (
+      S.CustomerReportInfoSK, S.CompanySK, S.CustomerSegmentSK, S.CompanyID, S.CustomerReportName, S.CustomerReportKey, S.FlagPC, S.ShopOnline, S.OnlinePercent, S.SegmentSource, S.SegmentDebcode, S.SegmentChannel, S.MdsID, S.DepartmentSK, S.SectionSK, S.RegionSK, S.SectionManagerSK, S.RegionManagerSK, S.DirectorSK, S.TASource, S.TADebcode, S.SaleRepSK, S.ReportDebcode, S.DEBcreditTerm, S.InvoiceProvinceSK, S.InvoiceDistrictSK, S.InvoiceSubDistrictSK
+    );
+
+  -- แถวสงวน SK -1: view_fact_transcation ใส่ -1 ให้บิลจริงที่ชื่อร้าน join ไม่เจอ (ชื่อว่าง/รหัสลูกค้าไม่อยู่ใน deb)
+  -- ชื่อว่าง · Non-Segment (-1 ของ dim_customer_segment) · ไม่มี TA/ข้อมูล MDS · อยู่นอก MERGE (CompanyID NULL ไม่ match) จึงไม่ซ้ำ ไม่ขยับ max_sk
+  INSERT INTO `${DimCustomerReportInfoTableRef}` (CustomerReportInfoSK, CustomerSegmentSK, SegmentSource)
+  SELECT -1, -1, 'DEFAULT'
+  FROM (SELECT 1)
+  WHERE NOT EXISTS (
+    SELECT 1 FROM `${DimCustomerReportInfoTableRef}` WHERE CustomerReportInfoSK = -1
+  );
+END;

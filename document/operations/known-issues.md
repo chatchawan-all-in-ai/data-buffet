@@ -2,6 +2,21 @@
 
 รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-10-28
 
+## `dim_customer_report_info` SK เสถียรแล้ว — ห้าม full rebuild (2026-10-28)
+
+เดิมเป็น `type: "table"` ที่ rebuild ทุกวันด้วย `ROW_NUMBER() OVER(ORDER BY CompanyID, CustomerReportKey)`
+ชื่อใหม่ที่เรียงอยู่กลางทำให้ SK ของทุกชื่อหลังจากนั้นขยับ (41,593 แถว ณ วันเปลี่ยน) — เปลี่ยนเป็น
+`type: "operations"` MERGE + `max_sk` แบบ `dim_customer`
+([inventory (b2)](../project_wiki/dimension/inventory.md#group-b2--mds--invoice-merge-1))
+
+- **ห้าม rebuild ตารางใหม่ตั้งแต่ต้น** (`CREATE OR REPLACE`, drop แล้วรันใหม่, กลับไปใช้ `type: "table"`) — SK จะเรียงใหม่ทั้งหมด
+- ตารางต้องมีอยู่แล้วใน BigQuery พร้อมคอลัมน์ `CustomerReportKey` (เพิ่มครั้งเดียวด้วย `ALTER TABLE ... ADD COLUMN` แล้ว
+  `UPDATE ... SET CustomerReportKey = REGEXP_REPLACE(CustomerReportName, r'\s', '')` ทุกแถวยกเว้น -1 ก่อนรันคืนแรก)
+  · วัด 2026-10-28 (read-only): key จากชื่อในตารางตรงกับ key ที่ไฟล์ใหม่คำนวณ **41,592/41,592 แถว ต่าง 0** → คืนแรกไม่มีแถวใหม่ SK เท่าเดิมทุกแถว
+- ชื่อที่หายจาก source (MDS inactive และไม่มี invoice ใน `view_dim_invoice`) **ค้างอยู่ในตารางพร้อม SK เดิม** — ตั้งใจ
+  (ข้อมูลของแถวนั้นหยุดอัปเดต) · ถ้าชื่อกลับมาจะได้ SK เดิม
+- คอลัมน์ใหม่ในอนาคตต้อง `ALTER TABLE ... ADD COLUMN` เองก่อน merge เหมือน dim MERGE ตัวอื่น
+
 ## CustomerFlag ใน mds sales representative (2026-09-15)
 
 สมมติฐาน 3 ข้อที่กฎ CustomerFlag ตั้งอยู่ ถ้าข้อไหนพังต้องกลับมาแก้โค้ด

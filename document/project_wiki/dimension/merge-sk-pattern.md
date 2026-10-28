@@ -8,6 +8,14 @@
 > mds dims. Target tables of MERGE dims pre-exist in BigQuery (`type: "operations"`;
 > Dataform does not create them). Reference implementation:
 > `definitions/dimension/dim_company.sqlx`.
+>
+> **Variant without tombstone (2026-10-28)**: `dim_customer_report_info` uses the same
+> `max_sk + ROW_NUMBER()` idea but MERGEs **ON the natural key** (`CompanyID` +
+> `CustomerReportKey`), reads its whole source (mds + every `view_dim_invoice` name; no
+> `MDS_BACKFILL_DAYS` window), updates every non-key column, and **never deletes** — names
+> that leave the source keep their row and SK. The reserved `-1` row sits outside the MERGE
+> (`INSERT ... WHERE NOT EXISTS`) and `max_sk` excludes it. See
+> [inventory.md](inventory.md#group-b2--mds--invoice-merge-1).
 
 ## Skeleton
 

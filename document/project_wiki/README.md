@@ -31,7 +31,7 @@
 1. Timezone is always `Asia/Bangkok`.
 2. Follow the [data-cleaning rules, including incremental string keys](../coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล).
 3. Never hardcode dataset names/tags — use `databuffet.*` constants.
-4. SK stability is per-pattern: MERGE dims (`dim_company`, `dim_aging_rang`, lake dims)
+4. SK stability is per-pattern: MERGE dims (`dim_company`, `dim_aging_rang`, lake dims, `dim_customer_report_info`)
    have SKs that are stable forever — never regenerate them. The full-rebuild mds
    dims regenerate SKs daily — never persist those SKs across days.
 5. `type: "operations"` targets (MERGE dims, `fact_transcation`) pre-exist in

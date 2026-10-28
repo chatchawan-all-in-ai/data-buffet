@@ -269,7 +269,7 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 ## Customer Report Info + Customer Segment (2026-10-01)
 
 ข้อมูลร้านค้าตาม `CustomerReportName` (MDS `Customer_Report_Master`) และ Segment ลูกค้า
-(MDS `Customer_Segment_Master`) — dim full rebuild รายวัน 2 ตัว · ใน Power BI ผูกเป็นทอด:
+(MDS `Customer_Segment_Master`) — dim 2 ตัว (`dim_customer_segment` full rebuild รายวัน · `dim_customer_report_info` MERGE SK เสถียรตั้งแต่ 2026-10-28) · ใน Power BI ผูกเป็นทอด:
 `view_fact_transcation` → `view_dim_customer_report_info` (`CustomerReportInfoSK`) → `dim_customer_segment` (`CustomerSegmentSK`)
 · ตั้งแต่ 2026-10-07 ตาราง Power BI `Dimension Customer Report Info` ควรอ่านจาก **`view_dim_customer_report_info`**
 (`SELECT` ธรรมดา ไม่ต้อง left join เอง) — สลับ source เป็นขั้นตอนแยกหลัง merge + deploy view
@@ -277,16 +277,17 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 - **`dim_customer_report_info` มีทุกชื่อร้านใน `view_dim_invoice`**
   ไม่ใช่แค่ชื่อใน MDS — ไม่งั้น relationship ใน Power BI กรองแถวที่ชื่อไม่อยู่ใน MDS หายหมด · dim อ่าน
   `view_dim_invoice` จึง**ห้าม**ให้ `view_dim_invoice` join dim นี้กลับ (วนกัน) — join อยู่ที่ `view_fact_transcation`
-- แถวร้านมีหนึ่งแถวต่อ `CompanyID` + ชื่อที่ตัด whitespace ทั้งหมด (`CustomerReportKey` ใช้ภายใน dim ไม่ออกเป็นคอลัมน์): MDS เลือก `updated_at DESC, id`
+- แถวร้านมีหนึ่งแถวต่อ `CompanyID` + ชื่อที่ตัด whitespace ทั้งหมด (`CustomerReportKey` — ตั้งแต่ 2026-10-28 เก็บเป็นคอลัมน์ท้ายตาราง ใช้เป็น key ของ MERGE: ชื่อเดิมคง `CustomerReportInfoSK`, ชื่อใหม่ได้ `max_sk + ROW_NUMBER()`, ชื่อที่หายจาก source ไม่ลบ): MDS เลือก `updated_at DESC, id`
   ส่วน invoice เลือกตัวสะกดที่มีจำนวน invoice มากสุด แล้วเรียงชื่อตัดสินกรณีเสมอ; ชื่อว่างใน invoice ไม่ถูกนำเข้า dim
-- **แถวสงวน `CustomerReportInfoSK = -1` (2026-10-09)** — `UNION ALL` ท้าย dim หนึ่งแถวร่วมทุกบริษัท: `CustomerReportName`/`CompanyID`/
+- **แถวสงวน `CustomerReportInfoSK = -1` (2026-10-09)** — หนึ่งแถวร่วมทุกบริษัท (ตั้งแต่ 2026-10-28 `INSERT ... WHERE NOT EXISTS` นอก MERGE แทน `UNION ALL`): `CustomerReportName`/`CompanyID`/
   `CompanySK` เป็น NULL, `CustomerSegmentSK = -1` (Non-Segment), `SegmentSource = 'DEFAULT'`, ไม่มีข้อมูล MDS/TA ·
-  อยู่นอก `ROW_NUMBER` จึง**ไม่ทำให้ SK ของร้านขยับ** · มีเสมอแม้วันนั้นไม่มีบิลที่ join ไม่เจอ · ใช้กับบิลที่ join ไม่พบร้าน
+  ไม่นับใน `max_sk` จึง**ไม่ทำให้ SK ของร้านขยับ** · มีเสมอแม้วันนั้นไม่มีบิลที่ join ไม่เจอ · ใช้กับบิลที่ join ไม่พบร้าน
   (ดู `view_fact_transcation.CustomerReportInfoSK`) · `view_dim_invoice` ไม่แก้ (ชื่อยังเป็น NULL ตามเดิม)
 - คอลัมน์ SK อยู่หน้าสุด: `CustomerReportInfoSK`, `CompanySK`, `CustomerSegmentSK`.
   ชื่อนอก MDS มี `MdsID` และข้อมูล MDS เป็น NULL. ในตาราง `FlagPC` ยังเป็น BOOL, `OnlinePercent` cast เป็น FLOAT64
-- ไม่มีคอลัมน์ `CustomerReportKey`, `FlagMDS`, `DepartmentName`, `SectionID`, `RegionID`, `CustomerTier`
+- ไม่มีคอลัมน์ `FlagMDS`, `DepartmentName`, `SectionID`, `RegionID`, `CustomerTier`
   ในผลลัพธ์ของตาราง (ตัดออก 2026-10-02 ตอนเปลี่ยนผลลัพธ์เป็น SK ของสายงาน) — `CustomerTier` ยังใช้ภายในเลือก Segment
+  · `CustomerReportKey` กลับมาเป็นคอลัมน์ 2026-10-28 (key ของ MERGE) — `view_dim_customer_report_info` ทำ `cri.*` จึงเห็นคอลัมน์นี้ด้วย
 - **TA chain เก็บเป็น SK เท่านั้น (2026-10-07)** — ตารางเก็บ `DepartmentSK`, `SectionSK`, `RegionSK`,
   `SectionManagerSK`, `RegionManagerSK`, `DirectorSK` ของแถว `dim_department_last` ที่เป็น TA ที่เลือก
   (ค่าที่ `update_sk_sale_rep_group` ตั้งไว้) และ `SaleRepSK` ของพนักงาน; **ไม่มี** `DepartmentID`/`TAEmployeeID`/

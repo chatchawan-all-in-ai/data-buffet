@@ -6,9 +6,10 @@
 >
 > | กลุ่ม | จำนวน | ลักษณะ |
 > |---|---:|---|
-> | (a) mds **full daily rebuild** | **44** | SK ออกใหม่ทุกวัน — ห้ามเก็บข้ามวัน (43 ในตาราง (a) + `dim_change_district` ที่อยู่ในตาราง (c)) |
+> | (a) mds **full daily rebuild** | **43** | SK ออกใหม่ทุกวัน — ห้ามเก็บข้ามวัน (42 ในตาราง (a) + `dim_change_district` ที่อยู่ในตาราง (c)) |
 > | (a2) mds MERGE legacy | 2 | `dim_company`, `dim_aging_rang` — SK เสถียรตลอดกาล |
 > | (b) lake MERGE (validated/curated) | 10 | SK เสถียร ไม่มี mds tombstone |
+> | (b2) mds + invoice MERGE | 1 | `dim_customer_report_info` (2026-10-28) — SK เสถียร ไม่มี delete ห้าม full rebuild |
 > | (c) full rebuild อื่น | 12 | `_last` snapshots, target, store, pump, `dim_product_series` (hard-code) |
 > | (e) operations อื่น | 3 | `dim_calendar`, `dim_aging`, `update_sk_sale_rep_group` |
 >
@@ -17,12 +18,12 @@
 > ถ้าจับแค่ `name:` จะนับขาดไป 7 ตัว · `dim_product_series` มีคำว่า `mds_dataset` แค่ใน comment
 > (ไม่ได้อ่าน mds) อย่านับเป็น mds dim
 
-## Group (a) — mds dims (45 แถวในตาราง: 43 full rebuild + 2 MERGE legacy)
+## Group (a) — mds dims (44 แถวในตาราง: 42 full rebuild + 2 MERGE legacy)
 
 > ตั้งแต่ 2026-07-20 ทุก dim ในตารางนี้เป็น **full rebuild รายวัน**
 > ([full-rebuild-pattern.md](full-rebuild-pattern.md)) — natural key เป็นตัวกำหนดลำดับ
 > `ROW_NUMBER()` — **ยกเว้น `dim_company` กับ `dim_aging_rang`** ที่ยังใช้ MERGE +
-> tombstone และ SK เสถียร
+> tombstone และ SK เสถียร · `dim_customer_report_info` อ่าน mds ด้วยแต่ย้ายไป [Group (b2)](#group-b2--mds--invoice-merge-1) แล้ว (2026-10-28)
 
 | File | SK | Natural key | mds source table |
 |---|---|---|---|
@@ -61,7 +62,6 @@
 | dim_stk_mkt | StkMktSK | companyID, StkCode | mds_data_product_market_group_by_product_id_master + validated_mac5.stk (placeholders) |
 | dim_target_product_group | TargetProductGroupSK | companyID, Year, Month, MarketingGroupID, SubMarketingID, SegmentID, ChannelTargetGroup, TargetID | mds_data_sales_target_by_product_group_master |
 | dim_waterpac | WaterPacSK | CompanyID, WaterPacCode | mds_data_waterpac_master |
-| dim_customer_report_info | CustomerReportInfoSK | ดูสัญญาแถวร้านและแถวสงวน → | [Customer Report Info: sources, grain, segment/TA rules and relationships](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01) |
 | dim_customer_segment | CustomerSegmentSK | CompanyID, Segment3 (MDS rows) | mds_data_customer_segment_master · [Member and fallback rules](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01) |
 | dim_weight_score | WeightSK | CompanyID, Typeeng, Typethai, StartDate, EndDate | mds_data_custgrade_weight_score_master |
 | dim_zone_mdt | ZoneMdtSK | zone_id | mds_data_mdt_sales_zone_master |
@@ -92,6 +92,16 @@ Build dependency rules: [full-rebuild properties](full-rebuild-pattern.md#proper
 | dim_customer_grade | CustomerGradeSK | chq, cql, mie, mir, deb, mih, curated_mih | dim_customer, dim_aging, dim_calendar, dim_status_not_receive + 5 score dims |
 | dim_group_customer | GroupCustomerSK | dim_customer | dim_customer |
 | dim_group_customer_grade | GroupCustomerGradeSK | deb, chq, cql, mie, mir, mih, curated_mih | dim_calendar, dim_customer, dim_group_customer + score dims |
+
+## Group (b2) — mds + invoice MERGE (1)
+
+| File | SK | Natural key | Sources |
+|---|---|---|---|
+| dim_customer_report_info | CustomerReportInfoSK (MERGE ON `CompanyID` + `CustomerReportKey`, ใหม่ = `max_sk + ROW_NUMBER()`) | CompanyID, CustomerReportKey (ชื่อร้านตัด whitespace ทั้งหมด — เก็บเป็นคอลัมน์ตั้งแต่ 2026-10-28) | mds_data_customer_report_master + ทุกชื่อใน view_dim_invoice · [Customer Report Info: sources, grain, segment/TA rules and relationships](../view/view-layer.md#customer-report-info--customer-segment-2026-10-01) |
+
+`type: "operations"` (ตารางต้องมีอยู่แล้ว) · ชื่อเดิมคง SK และอัปเดตทุกคอลัมน์อื่นทุกคืน · ชื่อที่หายจาก source (MDS inactive
+และไม่มี invoice) **ไม่ลบ** · แถวสงวน -1 อยู่นอก MERGE (`INSERT ... WHERE NOT EXISTS`) · **ห้าม full rebuild** — SK จะเปลี่ยน
+([known-issues 2026-10-28](../../operations/known-issues.md))
 
 ## Group (c) — full rebuild `type: "table"` ที่ไม่ได้อ่าน mds (12) + `dim_change_district`
 

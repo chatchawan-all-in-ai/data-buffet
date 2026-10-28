@@ -86,7 +86,7 @@ work on Opus, pattern-following work on Sonnet):
 | Initial | `definitions/initial/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `raw_*`, `function_dataset` | operations (external tables, UDFs) |
 | Validated | `definitions/validated/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `validated_<source>` | incremental / table + QUALIFY dedup |
 | Curated | `definitions/curated/` | 15 | `curated_<source>` | incremental (+ post_operations) |
-| Dimension | `definitions/dimension/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_table` | **table rebuild** (mds + other; per-group counts in `document/project_wiki/dimension/inventory.md`) / operations MERGE (2 mds legacy + 10 lake) / other (3) |
+| Dimension | `definitions/dimension/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_table` | **table rebuild** (mds + other; per-group counts in `document/project_wiki/dimension/inventory.md`) / operations MERGE (2 mds legacy + 10 lake + `dim_customer_report_info`) / other (3) |
 | Fact | `definitions/fact/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `fact_table` | table rebuild / operations upsert — **no MERGE** |
 | View | `definitions/view/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset`, `pub_sub` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |
 | CDC | `definitions/cdc/` | 2 | `cdc_dataset` | operations, generated from `cdc-config.json` |
@@ -162,7 +162,9 @@ pre-exists in BigQuery; `max_sk` → MERGE with CASE t3 (MdsID) → t2 (natural 
 `max_sk + ROW_NUMBER()`; source window `MDS_BACKFILL_DAYS`; mandatory tombstone
 `DELETE ... WHERE MdsID IN (SELECT id FROM mds WHERE is_active = FALSE)` before `END;`.
 Their SKs are stable forever — never regenerate. The 10 lake-sourced dims
-(dim_customer, dim_invoice, ...) also use MERGE with stable SKs.
+(dim_customer, dim_invoice, ...) also use MERGE with stable SKs, and so does
+`dim_customer_report_info` (since 2026-10-28: mds + invoice names, MERGE ON
+`CompanyID` + `CustomerReportKey`, no window, no delete — never full-rebuild it).
 
 Dimension build dependencies: [full-rebuild properties](document/project_wiki/dimension/full-rebuild-pattern.md#properties).
 Special cases (UNION-block dim_sale_representative / dim_stk_mkt,
@@ -195,11 +197,12 @@ addresses, gated on today's CDC changes (cost control — don't remove the gate)
    NULL key is re-inserted every run (`mie.miecus`, 98,474 duplicate rows, fixed 2026-10-12).
 3. No hardcoded dataset names/tags — use `databuffet.*`.
 4. SK stability is per-pattern: MERGE dims (`dim_company`, `dim_aging_rang`, 10 lake
-   dims) have SKs that are stable forever — never regenerate or update them. The
+   dims, `dim_customer_report_info`) have SKs that are stable forever — never regenerate or update them. The
    full-rebuild mds dims regenerate SKs daily — never persist those SKs across days,
    and any new consumer that stores them must itself rebuild daily after `dimension_daily`.
 5. MERGE-pattern mds dims must end with the tombstone DELETE before `END;`
-   (full-rebuild dims need no tombstone).
+   (full-rebuild dims need no tombstone; `dim_customer_report_info` keeps names that
+   leave its source, so it has no delete).
 6. **Load-bearing typos — keep verbatim**: `fact_transcation` (file + table),
    `CDC_DATESET` (variables.json key), `prdDiminsionData` (MASTERSKU JSON field).
 7. `dataform format` before committing when available.
