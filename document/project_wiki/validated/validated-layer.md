@@ -79,7 +79,7 @@ runs **every** run.
 
 - Used mostly in mac5 (73 of 86 non-schema files — all master/reference codes and
   the `tmp_*`, `tbook_*`, `tdis_*`, `match_*`, `pro_*` families), plus 9 saleout_mdt
-  files and 1 derp file (`inventory_item_price`). Authoritative list:
+  files. Authoritative list:
   `grep -rl 'TAG_VALIDATED_FULL' definitions/validated/`.
 - Exceptions to note: `mir.sqlx` is `type: "incremental"` but tagged FULL (operator
   grouping); `mih_billing`/`mil_billing` are full-rebuild snapshots.
@@ -92,7 +92,6 @@ disappear here:
 
 | Variant | Filter | Files | Use when |
 |---|---|---|---|
-| **Latest partition only** | `WHERE ASATDATE = (SELECT MAX(ASATDATE) FROM <raw>)` | `derp/inventory_item_price` | the source sends a full snapshot every day |
 | **Latest delivery per period** | `QUALIFY <file time or ASATDATE> = MAX(...) OVER (PARTITION BY <period>)` | `saleout_mdt/DH/saleout_dh` (per source folder + month), `saleout_mdt/EOM/eom_{bt,gb,hp,tw}` (per month) | the source resends a whole period; the newest delivery replaces the older one |
 
 Same idea in the fact layer: `fact_backlog_store` uses `WHERE asatdate = MAX(asatdate)`

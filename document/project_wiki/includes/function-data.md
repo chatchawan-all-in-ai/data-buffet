@@ -42,6 +42,8 @@ SELECT
   as-is (MAC5, CIS360, MASTERSKU…); `parseFlexibleUtcDatetime` shifts UTC to Bangkok
   (+7 h). When a source's timezone is unconfirmed the code keeps `parseFlexibleDatetime`
   and says so in a comment (e.g. `validated/derp/inventory_item_price.sqlx`).
+- `parseFlexibleDatetime` needs a time part: a bare `'YYYY-MM-DD'` becomes NULL. Use
+  `parseDateDash` for those columns (e.g. DERP `crm_nd_sd_price.effective_from`).
 - `castInt64` / `castFloat64` are **not** SAFE casts — bad data fails the job.
   That is intentional at the validated layer (fail fast on schema drift).
 

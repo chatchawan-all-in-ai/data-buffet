@@ -1,0 +1,105 @@
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_DERP,
+    dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["quotation_delivery_id"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["quotation_delivery_id"]
+    },
+}
+
+js {
+    // Define table references
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: name(),
+    };
+
+    // Build source table reference
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    // Keep existing logic
+    const pk_key = ["quotation_delivery_id"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_at DESC, asatdate DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+-- วันเวลาใน raw เป็นเวลาไทยอยู่แล้ว (ไม่ใช่ UTC) → parseFlexibleDatetime
+-- quotation_date ส่งมาเป็น 'YYYY-MM-DD 00:00:00' เสมอ → เก็บเป็น DATE
+SELECT
+    IFNULL(${databuffet.functionData.cleanString('quotation_delivery_id')}, '') AS quotation_delivery_id,
+    ${databuffet.functionData.cleanString('quotation_id')} AS quotation_id,
+    ${databuffet.functionData.cleanString('quotation_no')} AS quotation_no,
+    DATE(${databuffet.functionData.parseFlexibleDatetime('quotation_date')}) AS quotation_date,
+    ${databuffet.functionData.castInt64('round_no')} AS round_no,
+    ${databuffet.functionData.parseFlexibleDatetime('ship_date')} AS ship_date,
+    ${databuffet.functionData.cleanString('time_start')} AS time_start,
+    ${databuffet.functionData.cleanString('time_end')} AS time_end,
+    ${databuffet.functionData.cleanString('receiver_name')} AS receiver_name,
+    ${databuffet.functionData.cleanString('phone')} AS phone,
+    ${databuffet.functionData.cleanString('ship_type')} AS ship_type,
+    ${databuffet.functionData.cleanString('address_full')} AS address_full,
+    ${databuffet.functionData.cleanString('address_detail')} AS address_detail,
+    ${databuffet.functionData.cleanString('sub_district_code')} AS sub_district_code,
+    ${databuffet.functionData.cleanString('sub_district')} AS sub_district,
+    ${databuffet.functionData.cleanString('district_code')} AS district_code,
+    ${databuffet.functionData.cleanString('district')} AS district,
+    ${databuffet.functionData.cleanString('province_code')} AS province_code,
+    ${databuffet.functionData.cleanString('province')} AS province,
+    ${databuffet.functionData.cleanString('postal_code')} AS postal_code,
+    ${databuffet.functionData.cleanString('country_code')} AS country_code,
+    ${databuffet.functionData.cleanString('phase')} AS phase,
+    ${databuffet.functionData.cleanString('house_no')} AS house_no,
+    ${databuffet.functionData.cleanString('plot')} AS plot,
+    ${databuffet.functionData.cleanString('remark_logistic')} AS remark_logistic,
+    ${databuffet.functionData.castFloat64('latitude')} AS latitude,
+    ${databuffet.functionData.castFloat64('longitude')} AS longitude,
+    ${databuffet.functionData.cleanString('customer_address_id')} AS customer_address_id,
+    ${databuffet.functionData.cleanString('created_by')} AS created_by,
+    ${databuffet.functionData.cleanString('created_by_name')} AS created_by_name,
+    ${databuffet.functionData.parseFlexibleDatetime('created_at')} AS created_at,
+    ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+    ${databuffet.functionData.cleanString('updated_by_name')} AS updated_by_name,
+    ${databuffet.functionData.parseFlexibleDatetime('updated_at')} AS updated_at,
+    ${databuffet.functionData.cleanString('map_url')} AS map_url,
+    ${databuffet.functionData.cleanString('nearby_landmark')} AS nearby_landmark,
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

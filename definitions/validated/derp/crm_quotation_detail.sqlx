@@ -1,0 +1,155 @@
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_DERP,
+    dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["quotation_detail_id"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["quotation_detail_id"]
+    },
+}
+
+js {
+    // Define table references
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: name(),
+    };
+
+    // Build source table reference
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    // Keep existing logic
+    const pk_key = ["quotation_detail_id"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_at DESC, asatdate DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+-- วันเวลาใน raw เป็นเวลาไทยอยู่แล้ว (ไม่ใช่ UTC) → parseFlexibleDatetime
+-- quotation_date ส่งมาเป็น 'YYYY-MM-DD 00:00:00' เสมอ → เก็บเป็น DATE
+SELECT
+    IFNULL(${databuffet.functionData.cleanString('quotation_detail_id')}, '') AS quotation_detail_id,
+    ${databuffet.functionData.cleanString('quotation_id')} AS quotation_id,
+    DATE(${databuffet.functionData.parseFlexibleDatetime('quotation_date')}) AS quotation_date,
+    ${databuffet.functionData.cleanString('quotation_no')} AS quotation_no,
+    ${databuffet.functionData.cleanString('product_id')} AS product_id,
+    ${databuffet.functionData.cleanString('product_code')} AS product_code,
+    ${databuffet.functionData.castFloat64('promo_price')} AS promo_price,
+    ${databuffet.functionData.castFloat64('unit_price')} AS unit_price,
+    ${databuffet.functionData.cleanString('unit')} AS unit,
+    ${databuffet.functionData.castFloat64('offer_unit_price')} AS offer_unit_price,
+    ${databuffet.functionData.castFloat64('offer_promo_price')} AS offer_promo_price,
+    ${databuffet.functionData.castFloat64('distribution_percent')} AS distribution_percent,
+    free_type AS free_type,
+    ${databuffet.functionData.castFloat64('list_price')} AS list_price,
+    ${databuffet.functionData.castFloat64('normal_disc')} AS normal_disc,
+    ${databuffet.functionData.castFloat64('special_disc_1')} AS special_disc_1,
+    ${databuffet.functionData.castFloat64('special_disc_2')} AS special_disc_2,
+    ${databuffet.functionData.castFloat64('special_disc_3')} AS special_disc_3,
+    ${databuffet.functionData.castFloat64('percent_disc')} AS percent_disc,
+    ${databuffet.functionData.castInt64('qty_total')} AS qty_total,
+    ${databuffet.functionData.castFloat64('total_amount')} AS total_amount,
+    ${databuffet.functionData.castFloat64('distribution_amount')} AS distribution_amount,
+    ${databuffet.functionData.cleanString('sale_type')} AS sale_type,
+    ${databuffet.functionData.castInt64('order_sort')} AS order_sort,
+    ${databuffet.functionData.cleanString('project_product_id')} AS project_product_id,
+    ${databuffet.functionData.cleanString('project_product_code')} AS project_product_code,
+    ${databuffet.functionData.castFloat64('project_promo_price')} AS project_promo_price,
+    ${databuffet.functionData.castFloat64('project_unit_price')} AS project_unit_price,
+    ${databuffet.functionData.cleanString('project_unit')} AS project_unit,
+    ${databuffet.functionData.castFloat64('project_offer_unit_price')} AS project_offer_unit_price,
+    ${databuffet.functionData.castFloat64('project_offer_promo_price')} AS project_offer_promo_price,
+    ${databuffet.functionData.castFloat64('project_distribution_percent')} AS project_distribution_percent,
+    project_free_type AS project_free_type,
+    ${databuffet.functionData.castFloat64('project_list_price')} AS project_list_price,
+    ${databuffet.functionData.castFloat64('project_normal_disc')} AS project_normal_disc,
+    ${databuffet.functionData.castFloat64('project_special_disc_1')} AS project_special_disc_1,
+    ${databuffet.functionData.castFloat64('project_special_disc_2')} AS project_special_disc_2,
+    ${databuffet.functionData.castFloat64('project_special_disc_3')} AS project_special_disc_3,
+    ${databuffet.functionData.castFloat64('project_percent_disc')} AS project_percent_disc,
+    ${databuffet.functionData.castInt64('project_qty_total')} AS project_qty_total,
+    ${databuffet.functionData.castFloat64('project_total_amount')} AS project_total_amount,
+    ${databuffet.functionData.castFloat64('project_distribution_amount')} AS project_distribution_amount,
+    ${databuffet.functionData.cleanString('project_sale_type')} AS project_sale_type,
+    ${databuffet.functionData.castInt64('project_order_sort')} AS project_order_sort,
+    ${databuffet.functionData.castInt64('mac5_id')} AS mac5_id,
+    ${databuffet.functionData.castInt64('mac5_detail_id')} AS mac5_detail_id,
+    ${databuffet.functionData.cleanString('mac5_code')} AS mac5_code,
+    ${databuffet.functionData.castInt64('revamp_id')} AS revamp_id,
+    ${databuffet.functionData.castInt64('revamp_detail_id')} AS revamp_detail_id,
+    ${databuffet.functionData.cleanString('revamp_code')} AS revamp_code,
+    ${databuffet.functionData.castInt64('d365_id')} AS d365_id,
+    ${databuffet.functionData.castInt64('d365_detail_id')} AS d365_detail_id,
+    ${databuffet.functionData.cleanString('d365_code')} AS d365_code,
+    ${databuffet.functionData.castInt64('ref_1_id')} AS ref_1_id,
+    ${databuffet.functionData.castInt64('ref_1_detail_id')} AS ref_1_detail_id,
+    ${databuffet.functionData.cleanString('ref_1_code')} AS ref_1_code,
+    ${databuffet.functionData.castInt64('ref_2_id')} AS ref_2_id,
+    ${databuffet.functionData.castInt64('ref_2_detail_id')} AS ref_2_detail_id,
+    ${databuffet.functionData.cleanString('ref_2_code')} AS ref_2_code,
+    ${databuffet.functionData.parseFlexibleDatetime('created_at')} AS created_at,
+    ${databuffet.functionData.cleanString('created_by')} AS created_by,
+    ${databuffet.functionData.parseFlexibleDatetime('updated_at')} AS updated_at,
+    ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+    ${databuffet.functionData.cleanString('created_by_name')} AS created_by_name,
+    ${databuffet.functionData.cleanString('updated_by_name')} AS updated_by_name,
+    ${databuffet.functionData.cleanString('combo_set_id')} AS combo_set_id,
+    ${databuffet.functionData.cleanString('combo_set_code')} AS combo_set_code,
+    ${databuffet.functionData.cleanString('project_combo_set_id')} AS project_combo_set_id,
+    ${databuffet.functionData.cleanString('project_combo_set_code')} AS project_combo_set_code,
+    ${databuffet.functionData.cleanString('bu_code')} AS bu_code,
+    ${databuffet.functionData.cleanString('bu_name')} AS bu_name,
+    ${databuffet.functionData.cleanString('project_bu_code')} AS project_bu_code,
+    ${databuffet.functionData.cleanString('project_bu_name')} AS project_bu_name,
+    ${databuffet.functionData.cleanString('bu_id')} AS bu_id,
+    ${databuffet.functionData.cleanString('project_bu_id')} AS project_bu_id,
+    ${databuffet.functionData.cleanString('sales_id')} AS sales_id,
+    ${databuffet.functionData.cleanString('sales_code')} AS sales_code,
+    ${databuffet.functionData.cleanString('sales_name')} AS sales_name,
+    ${databuffet.functionData.cleanString('parent_quotation_detail_id')} AS parent_quotation_detail_id,
+    ${databuffet.functionData.castInt64('lv')} AS lv,
+    ${databuffet.functionData.cleanString('project_mac5_code')} AS project_mac5_code,
+    ${databuffet.functionData.castFloat64('distribution_amount_per_unit')} AS distribution_amount_per_unit,
+    ${databuffet.functionData.castInt64('qty_remaining')} AS qty_remaining,
+    ${databuffet.functionData.castInt64('qty_used')} AS qty_used,
+    ${databuffet.functionData.cleanString('product_description')} AS product_description,
+    ${databuffet.functionData.cleanString('freebie_main_detail_id')} AS freebie_main_detail_id,
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

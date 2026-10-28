@@ -36,11 +36,8 @@ OPTIONS (
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/inventory_movement_journal_entries/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/inventory_movement_journal_entries/'
 );
------------------------------------ INCREMENTAL ---------------------------------------
 
-
-------------------------------------- SNAPSHOT ----------------------------------------
--- snapshot เต็มทุกวัน (~175k แถว/วัน) · ไฟล์ AVRO ช่วง 2026-10 มี default ผิดกฎใน 3 ฟิลด์ → BigQuery อาจสร้าง/อ่านไม่ได้จนกว่าต้นทางแก้
+-- inventory_item_price: snapshot เต็มทุกวัน (~175k แถว/วัน) · ไฟล์ AVRO ช่วง 2026-10 มี default ผิดกฎใน 3 ฟิลด์ → BigQuery อาจสร้าง/อ่านไม่ได้จนกว่าต้นทางแก้
 
 -- Table: inventory_item_price
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_item_price`;
@@ -53,4 +50,342 @@ OPTIONS (
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/inventory_item_price/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/inventory_item_price/'
 );
-------------------------------------- SNAPSHOT ----------------------------------------
+
+-- crm_* / sales_*: เริ่มส่ง 2026-10-21/22/26 (1 partition ต่อโฟลเดอร์ ณ 2026-10-28)
+
+-- Table: crm_nd_sd_price
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_nd_sd_price`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_nd_sd_price`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_nd_sd_price/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_nd_sd_price/'
+);
+
+-- Table: crm_nd_sd_price_territory_group
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_nd_sd_price_territory_group`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_nd_sd_price_territory_group`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_nd_sd_price_territory_group/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_nd_sd_price_territory_group/'
+);
+
+-- Table: crm_nd_sd_price_zone
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_nd_sd_price_zone`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_nd_sd_price_zone`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_nd_sd_price_zone/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_nd_sd_price_zone/'
+);
+
+-- Table: crm_quotation
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation/'
+);
+
+-- Table: crm_quotation_delivery
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_delivery`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_delivery`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_delivery/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_delivery/'
+);
+
+-- Table: crm_quotation_delivery_detail
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_delivery_detail`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_delivery_detail`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_delivery_detail/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_delivery_detail/'
+);
+
+-- Table: crm_quotation_detail
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_detail`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_detail`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_detail/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_detail/'
+);
+
+-- Table: crm_quotation_history
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_history`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_history`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_history/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_history/'
+);
+
+-- Table: crm_quotation_sale
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_sale`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_sale`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_sale/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_sale/'
+);
+
+-- Table: crm_sale_order
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order/'
+);
+
+-- Table: crm_sale_order_approval_log
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_approval_log`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_approval_log`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_approval_log/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_approval_log/'
+);
+
+-- Table: crm_sale_order_approver
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_approver`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_approver`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_approver/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_approver/'
+);
+
+-- Table: crm_sale_order_attachment
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_attachment`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_attachment`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_attachment/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_attachment/'
+);
+
+-- Table: crm_sale_order_delivery
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_delivery`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_delivery`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_delivery/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_delivery/'
+);
+
+-- Table: crm_sale_order_delivery_line
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_delivery_line`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_delivery_line`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_delivery_line/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_delivery_line/'
+);
+
+-- Table: crm_sale_order_deposit
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_deposit`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_deposit`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_deposit/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_deposit/'
+);
+
+-- Table: crm_sale_order_line
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_line`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_line`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_line/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_line/'
+);
+
+-- Table: crm_sale_order_payment
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_payment`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_payment`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_payment/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_payment/'
+);
+
+-- Table: crm_sale_order_payment_allocation
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_payment_allocation`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_payment_allocation`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_payment_allocation/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_payment_allocation/'
+);
+
+-- Table: crm_sale_order_payment_receipt
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_payment_receipt`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_payment_receipt`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_payment_receipt/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_payment_receipt/'
+);
+
+-- Table: crm_sale_order_revision
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_revision`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_revision`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_revision/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_revision/'
+);
+
+-- Table: crm_sale_order_sales_person
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_sales_person`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_sales_person`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_sales_person/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_sales_person/'
+);
+
+-- Table: crm_sale_order_status_history
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_status_history`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_status_history`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_status_history/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_status_history/'
+);
+
+-- Table: sales_channel_master_sales_channel
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_channel_master_sales_channel`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_channel_master_sales_channel`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_channel_master_sales_channel/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_channel_master_sales_channel/'
+);
+
+-- Table: sales_customer_sales_territory
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_customer_sales_territory`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_customer_sales_territory`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_customer_sales_territory/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_customer_sales_territory/'
+);
+
+-- Table: sales_employee
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_employee`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_employee`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_employee/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_employee/'
+);
+
+-- Table: sales_employee_sale_territory
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_employee_sale_territory`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_employee_sale_territory`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_employee_sale_territory/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_employee_sale_territory/'
+);
+
+-- Table: sales_sales_territory
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_sales_territory`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_sales_territory`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_sales_territory/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_sales_territory/'
+);
+----------------------------------- INCREMENTAL ---------------------------------------

@@ -128,19 +128,50 @@ Readers: `curated_master_sku.curated_products` and `product_for_aisearch_v3` onl
 (`curated_products.prdD365Sku` = `d365_code`) — the likely join key to DERP
 `item_number`.
 
-## DERP (4 = 2 incremental + 1 full + 1 schema)
+## DERP (32 = 31 incremental + 1 schema)
 
-DERP inventory (`raw_derp` → `validated_derp`), GCS folder `derp_temp/`.
+DERP inventory, CRM and sales tables (`raw_derp` → `validated_derp`), GCS folder `derp_temp/`.
 In the repo since `7819bef` (2026-10-17); the datasets were built by hand on 2026-10-16
-as `raw_d365` / `validated_d365` (now `raw_derp` / `validated_derp`).
+as `raw_d365` / `validated_d365` (now `raw_derp` / `validated_derp`). The 23 `crm_*` and
+5 `sales_*` tables were added 2026-10-28. Every table name equals its GCS folder name.
 
 | Table | Load | PK | Notes |
 |---|---|---|---|
 | `inventory_movement_journal_headers` | incremental (`validated_incremental`) | `inventory_movement_journal_headers_id` | datetimes via `parseFlexibleUtcDatetime`; `is_active = 'Y'` |
 | `inventory_movement_journal_entries` | incremental (`validated_incremental`) | `inventory_movement_journal_entries_id` | same as headers |
-| `inventory_item_price` | full (`validated_full`), **latest partition only** (`WHERE ASATDATE = MAX(ASATDATE)`) | `inventory_item_price_id` (post-op PK) | rows deleted at source disappear; datetimes via `parseFlexibleDatetime` because the source timezone is **unconfirmed**; `is_active = 'Yes'` |
+| `inventory_item_price` | incremental (`validated_incremental`) since 2026-10-28 (was full, latest partition only) | `inventory_item_price_id` | dedup `updated_datetime DESC, asatdate DESC`; rows deleted at source **stay** (no purge); datetimes via `parseFlexibleDatetime` because the source timezone is **unconfirmed**; `is_active = 'Yes'` |
 
-The journals' first build dedups by ID across all raw partitions, including the
+**CRM / sales tables (28, all incremental, added 2026-10-28)** — one file per GCS folder,
+columns taken from the real AVRO files (not the older schema workbook). PK = the first
+column, the folder's `<name>_id` without the `crm_` / `sales_` prefix (e.g. `crm_quotation` →
+`quotation_id`, `sales_employee` → `employee_id`); exceptions:
+`sales_channel_master_sales_channel` → `master_sales_channel_id`, `sales_sales_territory` →
+`sale_territory_id`. All keys were unique and non-null in the first files.
+
+| Group | Tables |
+|---|---|
+| price | `crm_nd_sd_price`, `crm_nd_sd_price_territory_group`, `crm_nd_sd_price_zone` |
+| quotation | `crm_quotation`, `crm_quotation_delivery`, `crm_quotation_delivery_detail`, `crm_quotation_detail`, `crm_quotation_history`, `crm_quotation_sale` |
+| sale order | `crm_sale_order`, `crm_sale_order_approval_log`, `crm_sale_order_approver`, `crm_sale_order_attachment`, `crm_sale_order_delivery`, `crm_sale_order_delivery_line`, `crm_sale_order_deposit`, `crm_sale_order_line`, `crm_sale_order_payment`, `crm_sale_order_payment_allocation`, `crm_sale_order_payment_receipt`, `crm_sale_order_revision`, `crm_sale_order_sales_person`, `crm_sale_order_status_history` |
+| sales master | `sales_channel_master_sales_channel`, `sales_customer_sales_territory`, `sales_employee`, `sales_employee_sale_territory`, `sales_sales_territory` |
+
+Column rules shared by the 28:
+
+- Timestamps are already Bangkok local time → `parseFlexibleDatetime` (not the UTC variant).
+- Date-only columns that are always `'YYYY-MM-DD 00:00:00'` → `DATE(parseFlexibleDatetime(col))`:
+  `quotation_date` in the 6 `crm_quotation*` tables, `crm_sale_order.po_expire_date`,
+  `crm_sale_order_attachment.expiry_date`, `crm_sale_order_deposit.due_date`,
+  `sales_customer_sales_territory.start_date` / `end_date`, `sales_employee_sale_territory.end_date`.
+- Columns sent as bare `'YYYY-MM-DD'` → `parseDateDash` (DATE; `parseFlexibleDatetime` would
+  return NULL): `crm_nd_sd_price.effective_from` / `expiry_to`, `crm_sale_order.next_due_date` /
+  `po_date`, `sales_sales_territory.valid_from` / `valid_to`.
+- `time_start` / `time_end` (`'HH:MM:SS'`, delivery tables) stay strings. AVRO `boolean`
+  columns are kept as is; `double` → `castFloat64`, `int` → `castInt64`.
+- Dedup `ORDER BY updated_at DESC, asatdate DESC`; tables with no `updated_at`
+  (`crm_sale_order_approval_log`, `crm_sale_order_approver`, `crm_sale_order_payment_allocation`,
+  `crm_sale_order_status_history`) order by `created_at`. Rows deleted at source are not purged.
+
+The first build of every DERP table dedups by ID across all raw partitions, including the
 initial 3-day full load. Incremental runs read only the `BACKFILL_DAYS` window,
 dedup that input, then MERGE by ID; they do not rescan all historical partitions.
 
@@ -212,6 +243,6 @@ Nothing downstream reads `validated_allkons_commission` yet.
 
 ไม่มี `validated_schema_allkons_commission.sqlx` แล้ว — ดูหัวข้อ ALLKONS ข้างบน
 
-**รวมทั้งชั้น**: MAC5 87 + CIS360 25 + MASTERSKU 12 + MASTER_SKU 17 + SALEOUT_MDT 17 + DERP 4
-(นับรวม schema-bootstrap ของแต่ละ source แล้ว) · ตรวจ 2026-10-18 · ยอดรวมล่าสุดดูที่
+**รวมทั้งชั้น**: MAC5 87 + CIS360 25 + MASTERSKU 12 + MASTER_SKU 17 + SALEOUT_MDT 17 + DERP 32
+(นับรวม schema-bootstrap ของแต่ละ source แล้ว) · ตรวจ 2026-10-28 · ยอดรวมล่าสุดดูที่
 [generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview)

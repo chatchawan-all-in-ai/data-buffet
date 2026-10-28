@@ -1,0 +1,79 @@
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_DERP,
+    dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["sale_order_payment_allocation_id"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["sale_order_payment_allocation_id"]
+    },
+}
+
+js {
+    // Define table references
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: name(),
+    };
+
+    // Build source table reference
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    // Keep existing logic
+    const pk_key = ["sale_order_payment_allocation_id"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY created_at DESC, asatdate DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+-- วันเวลาใน raw เป็นเวลาไทยอยู่แล้ว (ไม่ใช่ UTC) → parseFlexibleDatetime
+-- ไม่มีคอลัมน์ updated_at → เลือกแถวล่าสุดด้วย created_at
+SELECT
+    IFNULL(${databuffet.functionData.cleanString('sale_order_payment_allocation_id')}, '') AS sale_order_payment_allocation_id,
+    ${databuffet.functionData.cleanString('receipt_id')} AS receipt_id,
+    ${databuffet.functionData.cleanString('sale_order_id')} AS sale_order_id,
+    ${databuffet.functionData.castInt64('installment_seq')} AS installment_seq,
+    ${databuffet.functionData.cleanString('sale_order_deposit_id')} AS sale_order_deposit_id,
+    ${databuffet.functionData.castFloat64('amount')} AS amount,
+    ${databuffet.functionData.cleanString('note')} AS note,
+    ${databuffet.functionData.parseFlexibleDatetime('created_at')} AS created_at,
+    ${databuffet.functionData.cleanString('created_by')} AS created_by,
+    ${databuffet.functionData.cleanString('created_by_name')} AS created_by_name,
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

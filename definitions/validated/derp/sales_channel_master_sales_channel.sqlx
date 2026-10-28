@@ -1,0 +1,101 @@
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_DERP,
+    dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["master_sales_channel_id"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["master_sales_channel_id"]
+    },
+}
+
+js {
+    // Define table references
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: name(),
+    };
+
+    // Build source table reference
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    // Keep existing logic
+    const pk_key = ["master_sales_channel_id"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_at DESC, asatdate DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+-- วันเวลาใน raw เป็นเวลาไทยอยู่แล้ว (ไม่ใช่ UTC) → parseFlexibleDatetime
+SELECT
+    IFNULL(${databuffet.functionData.cleanString('master_sales_channel_id')}, '') AS master_sales_channel_id,
+    ${databuffet.functionData.cleanString('sales_channel_code')} AS sales_channel_code,
+    ${databuffet.functionData.cleanString('sales_channel_name')} AS sales_channel_name,
+    ${databuffet.functionData.cleanString('description')} AS description,
+    ${databuffet.functionData.castInt64('order_sort')} AS order_sort,
+    ${databuffet.functionData.castInt64('level')} AS level,
+    ${databuffet.functionData.cleanString('parent_id')} AS parent_id,
+    ${databuffet.functionData.cleanString('path_id')} AS path_id,
+    ${databuffet.functionData.cleanString('path_code')} AS path_code,
+    ${databuffet.functionData.cleanString('path_name')} AS path_name,
+    ${databuffet.functionData.cleanString('company_code')} AS company_code,
+    ${databuffet.functionData.cleanString('organization_code')} AS organization_code,
+    ${databuffet.functionData.cleanString('status')} AS status,
+    ${databuffet.functionData.cleanString('created_by')} AS created_by,
+    ${databuffet.functionData.parseFlexibleDatetime('created_at')} AS created_at,
+    ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+    ${databuffet.functionData.parseFlexibleDatetime('updated_at')} AS updated_at,
+    ${databuffet.functionData.cleanString('created_by_name')} AS created_by_name,
+    ${databuffet.functionData.cleanString('updated_by_name')} AS updated_by_name,
+    ${databuffet.functionData.cleanString('prefix')} AS prefix,
+    ${databuffet.functionData.cleanString('billing_statement_prefix')} AS billing_statement_prefix,
+    ${databuffet.functionData.cleanString('channel_group')} AS channel_group,
+    qt_mgr_approval AS qt_mgr_approval,
+    qt_bu_approval AS qt_bu_approval,
+    ${databuffet.functionData.cleanString('so_approver_type')} AS so_approver_type,
+    ${databuffet.functionData.cleanString('po_rule')} AS po_rule,
+    ${databuffet.functionData.cleanString('default_order_delivery_type')} AS default_order_delivery_type,
+    whole_bill_enforce AS whole_bill_enforce,
+    project_required AS project_required,
+    ${databuffet.functionData.cleanString('vendor_code_group_type')} AS vendor_code_group_type,
+    print_mac5_code AS print_mac5_code,
+    require_export_declaration AS require_export_declaration,
+    allow_so_without_qt AS allow_so_without_qt,
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

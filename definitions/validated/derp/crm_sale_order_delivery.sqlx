@@ -1,0 +1,108 @@
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_DERP,
+    dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["sale_order_delivery_id"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["sale_order_delivery_id"]
+    },
+}
+
+js {
+    // Define table references
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: name(),
+    };
+
+    // Build source table reference
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    // Keep existing logic
+    const pk_key = ["sale_order_delivery_id"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_at DESC, asatdate DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+-- วันเวลาใน raw เป็นเวลาไทยอยู่แล้ว (ไม่ใช่ UTC) → parseFlexibleDatetime
+SELECT
+    IFNULL(${databuffet.functionData.cleanString('sale_order_delivery_id')}, '') AS sale_order_delivery_id,
+    ${databuffet.functionData.cleanString('sale_order_id')} AS sale_order_id,
+    ${databuffet.functionData.cleanString('so_no')} AS so_no,
+    ${databuffet.functionData.parseFlexibleDatetime('so_date')} AS so_date,
+    ${databuffet.functionData.castInt64('round_no')} AS round_no,
+    ${databuffet.functionData.parseFlexibleDatetime('delivery_date')} AS delivery_date,
+    ${databuffet.functionData.cleanString('delivery_address_id')} AS delivery_address_id,
+    ${databuffet.functionData.cleanString('delivery_address_code')} AS delivery_address_code,
+    ${databuffet.functionData.cleanString('delivery_address_text')} AS delivery_address_text,
+    ${databuffet.functionData.cleanString('receiver_name')} AS receiver_name,
+    ${databuffet.functionData.cleanString('receiver_phone')} AS receiver_phone,
+    ${databuffet.functionData.cleanString('remark_logistic')} AS remark_logistic,
+    ${databuffet.functionData.castInt64('order_sort')} AS order_sort,
+    ${databuffet.functionData.parseFlexibleDatetime('created_at')} AS created_at,
+    ${databuffet.functionData.cleanString('created_by')} AS created_by,
+    ${databuffet.functionData.parseFlexibleDatetime('updated_at')} AS updated_at,
+    ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+    ${databuffet.functionData.cleanString('created_by_name')} AS created_by_name,
+    ${databuffet.functionData.cleanString('updated_by_name')} AS updated_by_name,
+    ${databuffet.functionData.cleanString('time_start')} AS time_start,
+    ${databuffet.functionData.cleanString('time_end')} AS time_end,
+    ${databuffet.functionData.cleanString('ship_type')} AS ship_type,
+    ${databuffet.functionData.cleanString('phase')} AS phase,
+    ${databuffet.functionData.cleanString('house_no')} AS house_no,
+    ${databuffet.functionData.cleanString('plot')} AS plot,
+    ${databuffet.functionData.castFloat64('latitude')} AS latitude,
+    ${databuffet.functionData.castFloat64('longitude')} AS longitude,
+    ${databuffet.functionData.cleanString('site_id')} AS site_id,
+    ${databuffet.functionData.cleanString('site_code')} AS site_code,
+    ${databuffet.functionData.cleanString('delivery_address_full')} AS delivery_address_full,
+    ${databuffet.functionData.cleanString('delivery_sub_district')} AS delivery_sub_district,
+    ${databuffet.functionData.cleanString('delivery_sub_district_code')} AS delivery_sub_district_code,
+    ${databuffet.functionData.cleanString('delivery_district')} AS delivery_district,
+    ${databuffet.functionData.cleanString('delivery_district_code')} AS delivery_district_code,
+    ${databuffet.functionData.cleanString('delivery_province')} AS delivery_province,
+    ${databuffet.functionData.cleanString('delivery_province_code')} AS delivery_province_code,
+    ${databuffet.functionData.cleanString('delivery_postal_code')} AS delivery_postal_code,
+    ${databuffet.functionData.cleanString('delivery_country_code')} AS delivery_country_code,
+    ${databuffet.functionData.cleanString('delivery_map_url')} AS delivery_map_url,
+    ${databuffet.functionData.cleanString('nearby_landmark')} AS nearby_landmark,
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

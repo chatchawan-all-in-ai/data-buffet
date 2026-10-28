@@ -1,0 +1,214 @@
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_DERP,
+    dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["quotation_id"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["quotation_id"]
+    },
+}
+
+js {
+    // Define table references
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: name(),
+    };
+
+    // Build source table reference
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    // Keep existing logic
+    const pk_key = ["quotation_id"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_at DESC, asatdate DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+-- วันเวลาใน raw เป็นเวลาไทยอยู่แล้ว (ไม่ใช่ UTC) → parseFlexibleDatetime
+-- quotation_date ส่งมาเป็น 'YYYY-MM-DD 00:00:00' เสมอ → เก็บเป็น DATE
+SELECT
+    IFNULL(${databuffet.functionData.cleanString('quotation_id')}, '') AS quotation_id,
+    ${databuffet.functionData.castInt64('revision_no')} AS revision_no,
+    ${databuffet.functionData.cleanString('status')} AS status,
+    ${databuffet.functionData.cleanString('quotation_no')} AS quotation_no,
+    DATE(${databuffet.functionData.parseFlexibleDatetime('quotation_date')}) AS quotation_date,
+    ${databuffet.functionData.parseFlexibleDatetime('valid_from')} AS valid_from,
+    ${databuffet.functionData.parseFlexibleDatetime('valid_to')} AS valid_to,
+    ${databuffet.functionData.castInt64('pricing_mode')} AS pricing_mode,
+    ${databuffet.functionData.cleanString('sale_channel_1_id')} AS sale_channel_1_id,
+    ${databuffet.functionData.cleanString('sale_channel_1_code')} AS sale_channel_1_code,
+    ${databuffet.functionData.cleanString('sale_channel_2_id')} AS sale_channel_2_id,
+    ${databuffet.functionData.cleanString('sale_channel_2_code')} AS sale_channel_2_code,
+    ${databuffet.functionData.cleanString('sale_channel_3_id')} AS sale_channel_3_id,
+    ${databuffet.functionData.cleanString('sale_channel_3_code')} AS sale_channel_3_code,
+    ${databuffet.functionData.cleanString('sale_channel_path_id')} AS sale_channel_path_id,
+    ${databuffet.functionData.cleanString('sale_channel_path_code')} AS sale_channel_path_code,
+    ${databuffet.functionData.cleanString('sale_channel_path_name')} AS sale_channel_path_name,
+    ${databuffet.functionData.cleanString('customer_master_id')} AS customer_master_id,
+    ${databuffet.functionData.cleanString('customer_code')} AS customer_code,
+    ${databuffet.functionData.cleanString('customer_address_id')} AS customer_address_id,
+    ${databuffet.functionData.cleanString('customer_address_code')} AS customer_address_code,
+    ${databuffet.functionData.cleanString('invoice_account_id')} AS invoice_account_id,
+    ${databuffet.functionData.cleanString('invoice_account_code')} AS invoice_account_code,
+    ${databuffet.functionData.cleanString('order_account_id')} AS order_account_id,
+    ${databuffet.functionData.cleanString('order_account_code')} AS order_account_code,
+    ${databuffet.functionData.cleanString('delivery_account_id')} AS delivery_account_id,
+    ${databuffet.functionData.cleanString('delivery_account_code')} AS delivery_account_code,
+    ${databuffet.functionData.cleanString('customer_group_id')} AS customer_group_id,
+    ${databuffet.functionData.cleanString('customer_group_code')} AS customer_group_code,
+    ${databuffet.functionData.cleanString('project_id')} AS project_id,
+    ${databuffet.functionData.cleanString('project_code')} AS project_code,
+    ${databuffet.functionData.cleanString('target_group_id')} AS target_group_id,
+    ${databuffet.functionData.cleanString('target_group_code')} AS target_group_code,
+    ${databuffet.functionData.castInt64('price_mode')} AS price_mode,
+    ${databuffet.functionData.cleanString('payment_method_id')} AS payment_method_id,
+    ${databuffet.functionData.cleanString('payment_method_code')} AS payment_method_code,
+    ${databuffet.functionData.cleanString('payment_method_name')} AS payment_method_name,
+    ${databuffet.functionData.cleanString('payment_term_id')} AS payment_term_id,
+    ${databuffet.functionData.cleanString('payment_term_code')} AS payment_term_code,
+    ${databuffet.functionData.cleanString('payment_term_name')} AS payment_term_name,
+    ${databuffet.functionData.cleanString('payment_term_other')} AS payment_term_other,
+    ${databuffet.functionData.cleanString('payment_condition_id')} AS payment_condition_id,
+    ${databuffet.functionData.cleanString('payment_condition_code')} AS payment_condition_code,
+    ${databuffet.functionData.cleanString('payment_condition_name')} AS payment_condition_name,
+    ${databuffet.functionData.cleanString('payment_condition_other')} AS payment_condition_other,
+    ${databuffet.functionData.cleanString('note_doc')} AS note_doc,
+    ${databuffet.functionData.cleanString('note_consider')} AS note_consider,
+    ${databuffet.functionData.cleanString('qt_type')} AS qt_type,
+    ${databuffet.functionData.cleanString('po_ref')} AS po_ref,
+    ${databuffet.functionData.cleanString('parent_quotation_no')} AS parent_quotation_no,
+    ${databuffet.functionData.castInt64('is_vat')} AS is_vat,
+    ${databuffet.functionData.cleanString('vat_code')} AS vat_code,
+    ${databuffet.functionData.cleanString('vat_name')} AS vat_name,
+    ${databuffet.functionData.castFloat64('vat_rate')} AS vat_rate,
+    ${databuffet.functionData.castFloat64('dis_price')} AS dis_price,
+    ${databuffet.functionData.cleanString('dis_price_unit')} AS dis_price_unit,
+    ${databuffet.functionData.castFloat64('total_amount')} AS total_amount,
+    ${databuffet.functionData.castFloat64('trade_discount_amount')} AS trade_discount_amount,
+    ${databuffet.functionData.castFloat64('subtotal_before_vat')} AS subtotal_before_vat,
+    ${databuffet.functionData.castFloat64('vat_amount')} AS vat_amount,
+    ${databuffet.functionData.castFloat64('grand_total_amount')} AS grand_total_amount,
+    is_show_project AS is_show_project,
+    ${databuffet.functionData.castInt64('project_is_vat')} AS project_is_vat,
+    ${databuffet.functionData.cleanString('project_vat_code')} AS project_vat_code,
+    ${databuffet.functionData.cleanString('project_vat_name')} AS project_vat_name,
+    ${databuffet.functionData.castFloat64('project_vat_rate')} AS project_vat_rate,
+    ${databuffet.functionData.castFloat64('project_dis_price')} AS project_dis_price,
+    ${databuffet.functionData.cleanString('project_dis_price_unit')} AS project_dis_price_unit,
+    ${databuffet.functionData.castFloat64('project_total_amount')} AS project_total_amount,
+    ${databuffet.functionData.castFloat64('project_trade_discount_amount')} AS project_trade_discount_amount,
+    ${databuffet.functionData.castFloat64('project_subtotal_before_vat')} AS project_subtotal_before_vat,
+    ${databuffet.functionData.castFloat64('project_vat_amount')} AS project_vat_amount,
+    ${databuffet.functionData.castFloat64('project_grand_total_amount')} AS project_grand_total_amount,
+    ${databuffet.functionData.cleanString('full_text_search')} AS full_text_search,
+    ${databuffet.functionData.parseFlexibleDatetime('ship_range_start')} AS ship_range_start,
+    ${databuffet.functionData.parseFlexibleDatetime('ship_range_end')} AS ship_range_end,
+    ${databuffet.functionData.cleanString('ship_mode')} AS ship_mode,
+    ${databuffet.functionData.cleanString('delivery_doc_id')} AS delivery_doc_id,
+    ${databuffet.functionData.cleanString('delivery_doc_code')} AS delivery_doc_code,
+    ${databuffet.functionData.cleanString('delivery_doc_name')} AS delivery_doc_name,
+    doc_with_tax_invoice AS doc_with_tax_invoice,
+    doc_with_po AS doc_with_po,
+    doc_with_customer_do AS doc_with_customer_do,
+    doc_with_etax AS doc_with_etax,
+    ${databuffet.functionData.cleanString('address_full')} AS address_full,
+    ${databuffet.functionData.cleanString('address_detail')} AS address_detail,
+    ${databuffet.functionData.cleanString('sub_district_code')} AS sub_district_code,
+    ${databuffet.functionData.cleanString('sub_district')} AS sub_district,
+    ${databuffet.functionData.cleanString('district_code')} AS district_code,
+    ${databuffet.functionData.cleanString('district')} AS district,
+    ${databuffet.functionData.cleanString('province_code')} AS province_code,
+    ${databuffet.functionData.cleanString('province')} AS province,
+    ${databuffet.functionData.cleanString('postal_code')} AS postal_code,
+    ${databuffet.functionData.cleanString('country_code')} AS country_code,
+    ${databuffet.functionData.castFloat64('latitude')} AS latitude,
+    ${databuffet.functionData.castFloat64('longitude')} AS longitude,
+    ${databuffet.functionData.cleanString('map_url')} AS map_url,
+    ${databuffet.functionData.castInt64('mac5_id')} AS mac5_id,
+    ${databuffet.functionData.cleanString('mac5_code')} AS mac5_code,
+    ${databuffet.functionData.castInt64('revamp_id')} AS revamp_id,
+    ${databuffet.functionData.cleanString('revamp_code')} AS revamp_code,
+    ${databuffet.functionData.castInt64('d365_id')} AS d365_id,
+    ${databuffet.functionData.cleanString('d365_code')} AS d365_code,
+    ${databuffet.functionData.castInt64('ref_1_id')} AS ref_1_id,
+    ${databuffet.functionData.cleanString('ref_1_code')} AS ref_1_code,
+    ${databuffet.functionData.castInt64('ref_2_id')} AS ref_2_id,
+    ${databuffet.functionData.cleanString('ref_2_code')} AS ref_2_code,
+    is_active AS is_active,
+    ${databuffet.functionData.cleanString('created_by')} AS created_by,
+    ${databuffet.functionData.cleanString('created_by_name')} AS created_by_name,
+    ${databuffet.functionData.parseFlexibleDatetime('created_at')} AS created_at,
+    ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+    ${databuffet.functionData.cleanString('updated_by_name')} AS updated_by_name,
+    ${databuffet.functionData.parseFlexibleDatetime('updated_at')} AS updated_at,
+    ${databuffet.functionData.cleanString('primary_sales_id')} AS primary_sales_id,
+    ${databuffet.functionData.cleanString('primary_sales_code')} AS primary_sales_code,
+    ${databuffet.functionData.cleanString('primary_sales_name')} AS primary_sales_name,
+    ${databuffet.functionData.cleanString('order_type_id')} AS order_type_id,
+    ${databuffet.functionData.cleanString('order_type_code')} AS order_type_code,
+    ${databuffet.functionData.cleanString('order_type_name')} AS order_type_name,
+    ${databuffet.functionData.cleanString('job_code')} AS job_code,
+    ${databuffet.functionData.cleanString('referrer_code')} AS referrer_code,
+    ${databuffet.functionData.cleanString('referrer_name')} AS referrer_name,
+    ${databuffet.functionData.cleanString('ref_doc_no_1')} AS ref_doc_no_1,
+    ${databuffet.functionData.cleanString('ref_doc_no_2')} AS ref_doc_no_2,
+    ${databuffet.functionData.cleanString('bu_list')} AS bu_list,
+    ${databuffet.functionData.cleanString('project_bu_list')} AS project_bu_list,
+    ${databuffet.functionData.cleanString('so_status')} AS so_status,
+    ${databuffet.functionData.cleanString('ref_so_no')} AS ref_so_no,
+    ${databuffet.functionData.cleanString('ref_so_list')} AS ref_so_list,
+    ${databuffet.functionData.parseFlexibleDatetime('submitted_at')} AS submitted_at,
+    ${databuffet.functionData.cleanString('ref_qt_no')} AS ref_qt_no,
+    ${databuffet.functionData.cleanString('customer_invoice_account_id')} AS customer_invoice_account_id,
+    ${databuffet.functionData.cleanString('customer_invoice_account_code')} AS customer_invoice_account_code,
+    ${databuffet.functionData.cleanString('customer_invoice_address_id')} AS customer_invoice_address_id,
+    ${databuffet.functionData.cleanString('customer_order_account_id')} AS customer_order_account_id,
+    ${databuffet.functionData.cleanString('customer_order_account_code')} AS customer_order_account_code,
+    ${databuffet.functionData.cleanString('customer_order_address_id')} AS customer_order_address_id,
+    ${databuffet.functionData.cleanString('customer_delivery_address_id')} AS customer_delivery_address_id,
+    ${databuffet.functionData.cleanString('payment_type')} AS payment_type,
+    ${databuffet.functionData.cleanString('vat_source')} AS vat_source,
+    ${databuffet.functionData.cleanString('vat_change_reason')} AS vat_change_reason,
+    ${databuffet.functionData.cleanString('vat_changed_by')} AS vat_changed_by,
+    ${databuffet.functionData.cleanString('vat_changed_by_name')} AS vat_changed_by_name,
+    ${databuffet.functionData.parseFlexibleDatetime('vat_changed_at')} AS vat_changed_at,
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

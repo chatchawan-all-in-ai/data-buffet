@@ -1,9 +1,13 @@
 config {
-    type: "table",
+    type: "incremental",
     schema: databuffet.VALIDATED_DERP,
     dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
-    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_FULL],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
     uniqueKey: ["inventory_item_price_id"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["inventory_item_price_id"]
+    },
 }
 
 js {
@@ -23,7 +27,7 @@ js {
     let partition_statement, post_operations_statement;
 
     if (pk_key && pk_key.length > 0) {
-        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY asatdate DESC) = 1`;
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_datetime DESC, asatdate DESC) = 1`;
         post_operations_statement = `
 BEGIN
     DECLARE retry_count INT64 DEFAULT 0;
@@ -47,10 +51,10 @@ END;`;
     }
 }
 
--- raw เป็น snapshot เต็มทุกวัน → อ่านเฉพาะ partition ล่าสุด (แถวที่หายจากต้นทางจะหายจากตารางนี้ด้วย)
+-- raw เป็น snapshot เต็มทุกวัน แต่โหลดแบบ incremental ตาม BACKFILL_DAYS · แถวที่ถูกลบที่ต้นทางยังค้างอยู่ในตารางนี้ (ยังไม่ purge)
 -- วันเวลาใน raw ไม่มี timezone ติดมา จึงเก็บตามที่ส่งมา (ยังไม่ยืนยันว่าเป็น UTC หรือเวลาไทย)
 SELECT
-    ${databuffet.functionData.cleanString('inventory_item_price_id')} AS inventory_item_price_id,
+    IFNULL(${databuffet.functionData.cleanString('inventory_item_price_id')}, '') AS inventory_item_price_id,
     ${databuffet.functionData.castInt64('record_id')} AS record_id,
     ${databuffet.functionData.cleanString('item_number')} AS item_number,
     ${databuffet.functionData.cleanString('costing_version_id')} AS costing_version_id,
@@ -79,7 +83,7 @@ SELECT
 
 FROM
   `${sourceTableRef}`
-WHERE ASATDATE = (SELECT MAX(ASATDATE) FROM `${sourceTableRef}`)
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 ${partition_statement}
 
 pre_operations {

@@ -1,0 +1,110 @@
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_DERP,
+    dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["nd_sd_price_id"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["nd_sd_price_id"]
+    },
+}
+
+js {
+    // Define table references
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: name(),
+    };
+
+    // Build source table reference
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    // Keep existing logic
+    const pk_key = ["nd_sd_price_id"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_at DESC, asatdate DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+-- วันเวลาใน raw เป็นเวลาไทยอยู่แล้ว (ไม่ใช่ UTC) → parseFlexibleDatetime
+-- effective_from, expiry_to ส่งมาเป็น 'YYYY-MM-DD' ไม่มีเวลา → parseDateDash (parseFlexibleDatetime จะได้ NULL)
+SELECT
+    IFNULL(${databuffet.functionData.cleanString('nd_sd_price_id')}, '') AS nd_sd_price_id,
+    ${databuffet.functionData.cleanString('product_id')} AS product_id,
+    ${databuffet.functionData.cleanString('product_code')} AS product_code,
+    ${databuffet.functionData.cleanString('product_barcode')} AS product_barcode,
+    ${databuffet.functionData.parseDateDash(databuffet.functionData.cleanString('effective_from'))} AS effective_from,
+    ${databuffet.functionData.parseDateDash(databuffet.functionData.cleanString('expiry_to'))} AS expiry_to,
+    ${databuffet.functionData.cleanString('status')} AS status,
+    ${databuffet.functionData.castFloat64('list_price_incl_vat')} AS list_price_incl_vat,
+    ${databuffet.functionData.castFloat64('list_price_excl_vat')} AS list_price_excl_vat,
+    ${databuffet.functionData.castFloat64('list_price_vat_rate')} AS list_price_vat_rate,
+    ${databuffet.functionData.castFloat64('floor_pct')} AS floor_pct,
+    ${databuffet.functionData.castFloat64('floor_price_incl_vat')} AS floor_price_incl_vat,
+    ${databuffet.functionData.castInt64('nd_min_qty')} AS nd_min_qty,
+    ${databuffet.functionData.castInt64('nd_max_qty')} AS nd_max_qty,
+    ${databuffet.functionData.castFloat64('sd1_rate')} AS sd1_rate,
+    ${databuffet.functionData.cleanString('sd1_rate_type')} AS sd1_rate_type,
+    ${databuffet.functionData.castFloat64('sd1_price_excl_vat')} AS sd1_price_excl_vat,
+    ${databuffet.functionData.castInt64('sd1_min_qty')} AS sd1_min_qty,
+    ${databuffet.functionData.castInt64('sd1_max_qty')} AS sd1_max_qty,
+    ${databuffet.functionData.castFloat64('sd2_rate')} AS sd2_rate,
+    ${databuffet.functionData.cleanString('sd2_rate_type')} AS sd2_rate_type,
+    ${databuffet.functionData.castFloat64('sd2_price_excl_vat')} AS sd2_price_excl_vat,
+    ${databuffet.functionData.castInt64('sd2_min_qty')} AS sd2_min_qty,
+    ${databuffet.functionData.castInt64('sd2_max_qty')} AS sd2_max_qty,
+    ${databuffet.functionData.castFloat64('sd3_rate')} AS sd3_rate,
+    ${databuffet.functionData.cleanString('sd3_rate_type')} AS sd3_rate_type,
+    ${databuffet.functionData.castFloat64('sd3_price_excl_vat')} AS sd3_price_excl_vat,
+    ${databuffet.functionData.castInt64('sd3_min_qty')} AS sd3_min_qty,
+    ${databuffet.functionData.castInt64('sd3_max_qty')} AS sd3_max_qty,
+    ${databuffet.functionData.castFloat64('bigpro_rate')} AS bigpro_rate,
+    ${databuffet.functionData.cleanString('bigpro_rate_type')} AS bigpro_rate_type,
+    ${databuffet.functionData.castFloat64('bigpro_price_excl_vat')} AS bigpro_price_excl_vat,
+    ${databuffet.functionData.cleanString('remark')} AS remark,
+    ${databuffet.functionData.cleanString('created_by')} AS created_by,
+    ${databuffet.functionData.cleanString('created_by_name')} AS created_by_name,
+    ${databuffet.functionData.parseFlexibleDatetime('created_at')} AS created_at,
+    ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+    ${databuffet.functionData.cleanString('updated_by_name')} AS updated_by_name,
+    ${databuffet.functionData.parseFlexibleDatetime('updated_at')} AS updated_at,
+    ${databuffet.functionData.parseFlexibleDatetime('deleted_at')} AS deleted_at,
+    ${databuffet.functionData.cleanString('floor_rate_type')} AS floor_rate_type,
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

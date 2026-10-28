@@ -124,7 +124,7 @@ work on Opus, pattern-following work on Sonnet):
 `${when(incremental(), \`WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))\`)}`
 (string compare, window = `BACKFILL_DAYS` วัน ปกติ 1) → `QUALIFY ROW_NUMBER() OVER(PARTITION BY pk ORDER BY asatdate DESC) = 1`
 → post_op retry-loop `ADD PRIMARY KEY ... NOT ENFORCED` guarded by `when(!incremental())`.
-Full-load variant: `type: "table"` + `TAG_VALIDATED_FULL` (mostly mac5; also saleout_mdt and derp — `grep -rl TAG_VALIDATED_FULL definitions/validated`).
+Full-load variant: `type: "table"` + `TAG_VALIDATED_FULL` (mostly mac5; also saleout_mdt — `grep -rl TAG_VALIDATED_FULL definitions/validated`).
 14 MAC5 tables UNION ALL 5 companies with literal `company_id`.
 Reference: `validated/cis360/customer_profile.sqlx`, `validated/mac5/mie.sqlx`.
 

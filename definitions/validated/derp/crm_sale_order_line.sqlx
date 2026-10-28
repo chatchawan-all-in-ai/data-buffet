@@ -1,0 +1,131 @@
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_DERP,
+    dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["sale_order_line_id"],
+    bigquery: {
+        partitionBy: "asatdate",
+        clusterBy: ["sale_order_line_id"]
+    },
+}
+
+js {
+    // Define table references
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: name(),
+    };
+
+    // Build source table reference
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+    // Keep existing logic
+    const pk_key = ["sale_order_line_id"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_at DESC, asatdate DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+-- วันเวลาใน raw เป็นเวลาไทยอยู่แล้ว (ไม่ใช่ UTC) → parseFlexibleDatetime
+SELECT
+    IFNULL(${databuffet.functionData.cleanString('sale_order_line_id')}, '') AS sale_order_line_id,
+    ${databuffet.functionData.cleanString('sale_order_id')} AS sale_order_id,
+    ${databuffet.functionData.cleanString('so_no')} AS so_no,
+    ${databuffet.functionData.parseFlexibleDatetime('so_date')} AS so_date,
+    ${databuffet.functionData.cleanString('quotation_detail_id')} AS quotation_detail_id,
+    ${databuffet.functionData.cleanString('product_id')} AS product_id,
+    ${databuffet.functionData.cleanString('product_code')} AS product_code,
+    ${databuffet.functionData.cleanString('unit')} AS unit,
+    ${databuffet.functionData.castFloat64('list_price')} AS list_price,
+    ${databuffet.functionData.castFloat64('unit_price')} AS unit_price,
+    ${databuffet.functionData.castFloat64('promo_price')} AS promo_price,
+    ${databuffet.functionData.castFloat64('offer_unit_price')} AS offer_unit_price,
+    ${databuffet.functionData.castFloat64('offer_promo_price')} AS offer_promo_price,
+    ${databuffet.functionData.castFloat64('normal_disc')} AS normal_disc,
+    ${databuffet.functionData.castFloat64('special_disc_1')} AS special_disc_1,
+    ${databuffet.functionData.castFloat64('special_disc_2')} AS special_disc_2,
+    ${databuffet.functionData.castFloat64('special_disc_3')} AS special_disc_3,
+    ${databuffet.functionData.castFloat64('percent_disc')} AS percent_disc,
+    ${databuffet.functionData.castFloat64('distribution_percent')} AS distribution_percent,
+    ${databuffet.functionData.castFloat64('distribution_amount')} AS distribution_amount,
+    free_type AS free_type,
+    ${databuffet.functionData.castInt64('qty_total')} AS qty_total,
+    ${databuffet.functionData.castFloat64('total_amount')} AS total_amount,
+    ${databuffet.functionData.castFloat64('vat_rate')} AS vat_rate,
+    ${databuffet.functionData.cleanString('sale_type')} AS sale_type,
+    ${databuffet.functionData.castInt64('order_sort')} AS order_sort,
+    ${databuffet.functionData.castInt64('mac5_id')} AS mac5_id,
+    ${databuffet.functionData.castInt64('mac5_detail_id')} AS mac5_detail_id,
+    ${databuffet.functionData.cleanString('mac5_code')} AS mac5_code,
+    ${databuffet.functionData.parseFlexibleDatetime('created_at')} AS created_at,
+    ${databuffet.functionData.cleanString('created_by')} AS created_by,
+    ${databuffet.functionData.parseFlexibleDatetime('updated_at')} AS updated_at,
+    ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+    ${databuffet.functionData.cleanString('created_by_name')} AS created_by_name,
+    ${databuffet.functionData.cleanString('updated_by_name')} AS updated_by_name,
+    ${databuffet.functionData.cleanString('site_id')} AS site_id,
+    ${databuffet.functionData.cleanString('site_code')} AS site_code,
+    ${databuffet.functionData.castFloat64('vat_amount')} AS vat_amount,
+    ${databuffet.functionData.castFloat64('grand_total_amount')} AS grand_total_amount,
+    ${databuffet.functionData.cleanString('bu_id')} AS bu_id,
+    ${databuffet.functionData.cleanString('bu_code')} AS bu_code,
+    ${databuffet.functionData.cleanString('sales_id')} AS sales_id,
+    ${databuffet.functionData.cleanString('sales_code')} AS sales_code,
+    ${databuffet.functionData.cleanString('sales_name')} AS sales_name,
+    ${databuffet.functionData.castFloat64('delivered_qty')} AS delivered_qty,
+    ${databuffet.functionData.castFloat64('remaining_qty')} AS remaining_qty,
+    ${databuffet.functionData.cleanString('combo_set_id')} AS combo_set_id,
+    ${databuffet.functionData.cleanString('combo_set_code')} AS combo_set_code,
+    ${databuffet.functionData.castFloat64('distribution_amount_per_unit')} AS distribution_amount_per_unit,
+    ${databuffet.functionData.castFloat64('promotion_qty_per_set')} AS promotion_qty_per_set,
+    ${databuffet.functionData.cleanString('product_description')} AS product_description,
+    ${databuffet.functionData.cleanString('product_name')} AS product_name,
+    ${databuffet.functionData.castFloat64('master_unit_price')} AS master_unit_price,
+    ${databuffet.functionData.cleanString('price_override_reason')} AS price_override_reason,
+    ${databuffet.functionData.cleanString('asset_id')} AS asset_id,
+    ${databuffet.functionData.cleanString('line_item_type')} AS line_item_type,
+    requires_delivery AS requires_delivery,
+    ${databuffet.functionData.cleanString('cost_group_id')} AS cost_group_id,
+    ${databuffet.functionData.castFloat64('line_discount_amount')} AS line_discount_amount,
+    ${databuffet.functionData.castFloat64('trade_discount_amount')} AS trade_discount_amount,
+    ${databuffet.functionData.castFloat64('net_amount')} AS net_amount,
+    ${databuffet.functionData.castFloat64('base_amount')} AS base_amount,
+    ${databuffet.functionData.cleanString('stock_grade')} AS stock_grade,
+    ${databuffet.functionData.parseAsatDate()} AS asatdate,
+
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}
