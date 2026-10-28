@@ -1,5 +1,29 @@
 # Fact Layer — `definitions/fact/`
 
+## Sale-rep order-window matching (2026-10-28)
+
+Both `fact_transcation` and `view_fact_transcation` derive an internal `OrderDate`
+using LEFT JOINs from the bill's
+`CompanySK, milType, milVnos` to `view_dim_invoice`, grouped by
+`CompanySK, mihType, mihVnos` with `MAX(OrderSK)`, then to `dim_order.OrderSK` and
+its `mix_date`. The invoice view already resolves IS to its own order and BS/AS
+to the original IS order; no bill-type branch is needed. Grouping the invoice keys
+and joining the unique `dim_order.OrderSK` preserve the bill-line grain.
+
+The first branch inside each sale-rep join's existing CASE is
+`WHEN OrderStartDate IS NOT NULL THEN OrderDate BETWEEN OrderStartDate AND OrderEndDate`.
+The range is inclusive. When OrderStartDate is present, an out-of-range or missing
+OrderDate, or a missing OrderEndDate, rejects that row; other rows still compete
+under the existing normal rules. Rows without OrderStartDate retain those rules.
+Selection priority is owned by the
+[`seq_condition` reference](../overview/business-flags.md#seq_condition--fact_transcation).
+
+In `fact_transcation`, `saleRepMatchOn` applies this to part1, part2, and addon;
+existing bill StartDate/EndDate checks remain. The last-side date policy is owned by
+the [view reference](../view/view-layer.md#sale-rep-order-windows-2026-10-28).
+`OrderDate` is excluded from the final temp-table SELECT:
+the positional DELETE/INSERT flow and fact-table column schema remain unchanged.
+
 > **LLM context**: fact ทุกไฟล์อยู่ใน dataset `fact_table` (`databuffet.FACT_TABLE`)
 > และ tag `fact_daily` ทุกตัว · มี 3 แบบการ materialize — **ไม่มี MERGE** ในชั้นนี้เลย
 > ตาราง dimension อ้างด้วย string interpolation (`${...TableRef}`) + `dependencies[]`
@@ -103,12 +127,10 @@
 > โครงถูกจัดใหม่ 2026-08-20 (ผลลัพธ์ไม่เปลี่ยน — ยืนยันด้วย checksum) เหตุผลและตัวเลขที่วัดได้
 > อยู่ใน [known-issues.md](../../operations/known-issues.md) หัวข้อการตัดสินใจเชิงออกแบบ 2026-08-20
 
-`dependencies[]` อ้าง **view ที่อ่านตรง** (view เหล่านั้นประกาศ dependency ของตารางเบื้องหลังเอง):
-`Transaction_Data_Mart`, `view_dim_channel`, `view_deb_address_data`
-\+ dimension ที่อ่านตรง: dim_product_master, dim_payment, dim_customer, dim_cost_stk,
-dim_cost_group, dim_channel_cost, dim_change_district, dim_stk_mkt, dim_product_mkt,
-dim_target_product_group_by_sale_dayofwork, dim_sale_representative, dim_department,
-dim_director, dim_region, dim_region_manager, dim_section, dim_section_manager.
+`dependencies[]` อ้าง **view และ dimension ที่อ่านตรง** (view เหล่านั้นประกาศ dependency
+ของตารางเบื้องหลังเอง) — รายการจริงอยู่ใน
+[generated lineage](../../diagrams/pipeline_lineage.md#3-star-schema--what-feeds-each-fact)
+ซึ่งสร้างจาก SQLX
 `validated_mac5.deb` อ้างด้วย `${ref()}` จึง**ไม่**อยู่ใน `dependencies[]` (§3.1);
 `onetime.mapping_invoice` เป็น BASE TABLE ที่ไม่มี `.sqlx` จึงอ้างด้วย js-block Ref แต่ไม่ list เป็น dep.
 CompanySK ติดมากับ `Transaction_Data_Mart` แล้ว ไฟล์นี้จึงไม่ join `dim_company` เอง.
@@ -123,10 +145,11 @@ BEGIN
      ├─ mds_change_mktgroup: `mds_data_change_marketinggroup_master` (is_active) +
      │                     dim_product_mkt -> NewProductMktSK (ย้ายมาจาก view 2026-08-26)
      ├─ department_change: DISTINCT CompanyID/RegionID/SectionID/StartDate/EndDate
-     ├─ sale_rep         : dim_sale_representative + seq_condition (1, 2, 2.5, 3, 4, 5, else 9)
+     ├─ sale_rep         : dim_sale_representative + seq_condition
      │                     TRIM ฝั่ง dim ครั้งเดียวโดยคงชื่อคอลัมน์เดิม (* EXCEPT + ประกาศทับ)
      ├─ pre_raw_transction: Transaction_Data_Mart + Product/Payment/Channel SKs
-     │                     + deb.debgroup; mix_date from milYear/Month/Day;
+     │                     + deb.debgroup + order-date lookup described above;
+     │                     mix_date from milYear/Month/Day;
      │                     window = PARSE_DATE(milYear||Month||Day)
      │                              >= DATE_TRUNC(CURRENT_DATE - 4 YEAR, YEAR)
      ├─ raw_transction   : + onetime.mapping_invoice -> FlagMappingInvoice, SectionMappingID
@@ -184,7 +207,8 @@ equality `TRIM(IFNULL(trans.DummyChannel, trans.milPer)) = <rep>.EmployeeID` ถ
 
 ### CustomerFlag ชนก่อน DepCode (2026-09-15)
 
-CustomerFlag เก็บ list รหัสลูกค้าคั่นด้วย `|` และอยู่บนแถวเดียวกับ DepCode เสมอ
+สำหรับแถวที่ไม่มี OrderStartDate: CustomerFlag เก็บ list รหัสลูกค้าคั่นด้วย `|`
+และอยู่บนแถวเดียวกับ DepCode
 (`dim_sale_representative` ยุบแถว flag ที่ user กรอกแยกเข้ามาให้ — ดู
 [dimension/special-cases.md](../dimension/special-cases.md)) กฎที่ใช้จริงคือ
 
@@ -195,16 +219,14 @@ CustomerFlag เก็บ list รหัสลูกค้าคั่นด้�
 `SPLIT(REPLACE(<rep>.CustomerFlag, ' ', ''), '|')` กันช่องว่างรอบตัวคั่น
 **กิ่ง CustomerFlag เดี่ยว ๆ ถูกลบไปแล้ว** พร้อมกับ `seq_condition = 6`
 
-`seq_condition` แทรก **2.5** (EmployeeID + DepCode + CustomerFlag) ไว้ก่อน 3
-เพื่อให้แถวที่มี flag ชนะแถว DepCode ล้วนของพนักงานคนเดียวกัน แต่ยังแพ้กฎที่มี
-CostChannelID (1, 2) ค่าเป็น FLOAT64 ทั้ง CASE — logic 3.1–3.7 ใน
-`view_fact_transcation` ที่เทียบ `= 3` ยังทำงานเหมือนเดิม **ห้าม renumber 1–5**
+ลำดับความสำคัญของ CustomerFlag และข้อจำกัดเรื่อง renumber อยู่ที่
+[`seq_condition` reference](../overview/business-flags.md#seq_condition--fact_transcation)
 
-กิ่งแรกของ CASE เป็น **guard**: แถวที่มี CustomerFlag แต่ไม่มี DepCode / CostChannelID /
+หลัง OrderStartDate branch เป็น **guard**: แถวที่มี CustomerFlag แต่ไม่มี DepCode / CostChannelID /
 ProvinceID ให้ `FALSE` — ปกติแถวแบบนี้ถูกยุบไปแล้วตั้งแต่ dim ถ้าหลุดมาได้จะไม่กลายเป็น
 catch-all ผ่าน `ELSE TRUE`
 
-`view_fact_transcation` (~645 seq_condition, ~661 CASE match) ถือ **สำเนา** ของกฎนี้
+`view_fact_transcation` (ส่วน SaleRepSK join) ถือ **สำเนา** ของกฎนี้
 สำหรับคอลัมน์ `*Last` ที่ join กับ `dim_sale_representative_last` — แก้ที่ไหนต้องแก้อีกที่เสมอ
 
 วัดเมื่อ 2026-09-15 (ag01 ทั้งตาราง เทียบกฎเดิมกับกฎใหม่บน dim ปัจจุบัน): เปลี่ยน **33 แถว**

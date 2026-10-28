@@ -6,6 +6,7 @@
 ## `dim_sale_representative` — UNION of two sources (rebuilt daily since 2026-07-20)
 
 Full-rebuild file with two CTE sources UNION ALL'd, single `ROW_NUMBER()` over the union:
+
 - **`mds_rep`**: reps from `mds_data_sales_representative_master` (full org structure,
   StartDate/EndDate intervals, MdsID populated), built through three CTEs —
   see **CustomerFlag roll-up** below.
@@ -15,14 +16,33 @@ Full-rebuild file with two CTE sources UNION ALL'd, single `ROW_NUMBER()` over t
   sentinel dates `1900-01-01` → `2499-12-31`; `MdsID = NULL`.
 SK ordering puts mds rows first (`CASE WHEN MdsID IS NULL THEN 1 ELSE 0 END`).
 
+### Order windows (2026-10-28)
+
+`OrderStartDate` / `OrderEndDate` are DATE fields carried from MDS through
+`mds_base`, `mds_rep`, and the final dimension. Ledger rows carry typed DATE NULLs;
+the existing SaleRepSK ordering is unchanged. Classification of CustomerFlag-only
+rows is defined in the CTE table below; order-window rows stay as standalone rules.
+
+`dim_sale_representative_last` includes both fields in its raw latest-row partition
+alongside the existing company / department / employee / rule keys. `agg_normal`
+only considers rows without OrderStartDate, with both window fields added to its
+company / employee partition. `final` retains window rows even when a normal
+fallback exists, so distinct windows and the fallback survive together. Its ledger
+INSERT leaves both window fields NULL. `update_sk_sale_rep_group` still backfills
+the hierarchy after the snapshot rebuild.
+
+The shared bill-matching contract is owned by
+[fact-layer.md](../fact/fact-layer.md#sale-rep-order-window-matching-2026-10-28).
+
 ### CustomerFlag roll-up (2026-09-15)
 
 Users enter a customer-list rule as its **own mds row** — same companyID / EmployeeID /
 DepartmentID as the real rule row, `CustomerFlag` filled (`A|B|C`), and DepCode /
-CostChannelID / ProvinceID empty. Those rows must **not** reach the dim as standalone
-rows: they have no rule columns, so `dim_sale_representative_last` would treat them as
-the employee's "normal" row (its `agg_normal` CTE ignores CustomerFlag) and collapse
-every other row of that employee away. Measured before the fix: both test employees
+CostChannelID / ProvinceID empty and no OrderStartDate. Those rows must **not** reach
+the dim as standalone rows: they have no rule columns, so `dim_sale_representative_last`
+would treat them as the employee's "normal" row (its `agg_normal` CTE ignores
+CustomerFlag) and collapse the employee's other non-window rules away.
+Measured before the fix: both test employees
 dropped from 3 rows to 1 in `_last`, moving 371 and 243 fact rows in the `*Last` columns.
 
 So `mds_rep` is now built in three steps:
@@ -30,7 +50,7 @@ So `mds_rep` is now built in three steps:
 | CTE | What it holds |
 |---|---|
 | `mds_base` | the old `mds_rep` body — cleaned mds rows, `is_active = TRUE` |
-| `flag_only` | rows with CustomerFlag and no DepCode / CostChannelID / ProvinceID |
+| `flag_only` | rows with CustomerFlag and no DepCode / CostChannelID / ProvinceID / OrderStartDate |
 | `rule_rows` | everything else (the real rules) |
 | `mds_rep` | `rule_rows` + CustomerFlag pulled in from `flag_only` |
 

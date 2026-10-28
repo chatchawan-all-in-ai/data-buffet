@@ -63,9 +63,8 @@ END;
 
 ตัวอย่างเต็มที่ควรอ่าน: `definitions/fact/fact_transcation.sqlx`
 (sales-org hierarchy matching ด้วย seq_condition + กรณี COST99999)
-`seq_condition` ปัจจุบันคือ 1, 2, 2.5, 3, 4, 5, else 9 — **ห้าม renumber**
-เพราะ `view_fact_transcation` เทียบ `= 3` ตรง ๆ ดู
-[fact-layer.md](../project_wiki/fact/fact-layer.md) หัวข้อ CustomerFlag ชนก่อน DepCode
+ลำดับ `seq_condition` และข้อจำกัดเรื่อง renumber ดู
+[business-flags.md](../project_wiki/overview/business-flags.md#seq_condition--fact_transcation)
 
 ## Checklist
 

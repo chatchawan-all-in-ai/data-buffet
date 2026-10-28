@@ -59,12 +59,14 @@ with raw as (
         t1.CustomerFlag,
         t1.StartDate,
         t1.EndDate,
+        t1.OrderStartDate,
+        t1.OrderEndDate,
     FROM (
         SELECT *
         FROM `${DimSaleRepTableRef}`
         -- WHERE CURRENT_DATE('Asia/Bangkok') between StartDate and EndDate
         WHERE DepartmentID is not null
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID ORDER BY EndDate DESC, StartDate DESC) = 1
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID, OrderStartDate, OrderEndDate ORDER BY EndDate DESC, StartDate DESC) = 1
     ) as t1
     LEFT JOIN `${DimCompanyTableRef}` as dim_com
         on t1.CompanyID = dim_com.CompanyID
@@ -76,12 +78,14 @@ with raw as (
     and CostChannelID is null
     and ProvinceID is null
     and ChangeSectionFlag is null
-  QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, EmployeeID ORDER BY EndDate DESC, StartDate DESC) = 1
+    and OrderStartDate is null
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, EmployeeID, OrderStartDate, OrderEndDate ORDER BY EndDate DESC, StartDate DESC) = 1
 
 ), final as (
   SELECT *
   FROM raw
-  WHERE NOT EXISTS (select 1 from agg_normal as ag where raw.CompanyID = ag.CompanyID and raw.EmployeeID = ag.EmployeeID)
+  WHERE OrderStartDate is not null
+    OR NOT EXISTS (select 1 from agg_normal as ag where raw.CompanyID = ag.CompanyID and raw.EmployeeID = ag.EmployeeID)
   UNION ALL
   SELECT *
   FROM agg_normal
@@ -166,13 +170,13 @@ BEGIN
       SaleRepSK, DepartmentSK, SectionSK, SectionManagerSK, RegionSK,
       RegionManagerSK, DirectorSK, CompanySK, companyID, DepartmentID, EmployeeID, EmployeeName,
       EmployeeSurname, EmployeeNickname, DepCode, CostChannelID,
-      ProvinceID, ChangeSectionFlag, StartDate, EndDate
+      ProvinceID, ChangeSectionFlag, StartDate, EndDate, OrderStartDate, OrderEndDate
     )
     VALUES (
       S.SaleRepSK, NULL, NULL, NULL, NULL,
       NULL, NULL, S.CompanySK, S.companyID, S.DepartmentID, S.EmployeeID, S.EmployeeName,
       S.EmployeeSurname, S.EmployeeNickname, S.DepCode, S.CostChannelID,
-      S.ProvinceID, S.ChangeSectionFlag, NULL, NULL
+      S.ProvinceID, S.ChangeSectionFlag, NULL, NULL, NULL, NULL
     );
 END;
 

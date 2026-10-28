@@ -36,14 +36,13 @@ config { type: "table", schema: databuffet.DIMENSION_TABLE,
          uniqueKey: ["<X>SK"], bigquery: { clusterBy: ["<X>SK"] } }
 ```
 Single top-level SELECT, SK = `ROW_NUMBER() OVER (ORDER BY ...)` — **SKs are NOT stable
-across runs** for this group. The `*_last` tables select the current SCD row per
-entity: filter `WHERE CURRENT_DATE('Asia/Bangkok') BETWEEN StartDate AND EndDate`
-(enabled 2026-07-22 — only versions effective today) then
-`QUALIFY ... ORDER BY StartDate DESC, EndDate DESC = 1`; they pre-declare
+across runs** for this group. The `*_last` tables select the latest SCD row per
+entity with `QUALIFY ROW_NUMBER() OVER (... ORDER BY EndDate DESC, StartDate DESC) = 1`;
+the current-date filters are commented out. Sale-rep partition and fallback rules
+are owned by [special cases](special-cases.md#order-windows-2026-10-28). They pre-declare
 downstream SK FK columns as NULL, which `update_sk_sale_rep_group` backfills with
 UPDATE statements afterward, and carry `StartDate`/`EndDate` through as output
-columns (also inserted by the `dim_sale_representative_last` MERGE). (Ledger-rep
-sentinel rows 1900-01-01→2499-12-31 always pass the filter.)
+columns (the `dim_sale_representative_last` ledger MERGE inserts NULL for these dates).
 
 `dim_target_product_group_by_sale_dayofwork` is a large daily full-rebuild joining
 `dim_calendar` (working-day expansion) — it **self-heals** after upstream deletes.

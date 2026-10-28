@@ -16,7 +16,7 @@
 | `FlagExc` | UDF `fn_flag_exc` (ประกาศไว้ ยังไม่มีคนเรียกในชั้น view) | flag | ตัดรายการที่ cancel/status ผิดออก |
 | `FlagSalesKPI` | UDF `fn_flag_sales_kpi` — เรียกใน `Transaction_Data_Mart` แต่ **ถูก comment ไว้** | `Yes`/`No` | นับเข้า KPI ขายไหม |
 | `item_status` | `dim_order`, `dim_quotation` | `On Order`/`In Process`/`Complete` | เทียบบรรทัดใบสั่ง (PS) กับบรรทัดใบกำกับ (IS) |
-| `seq_condition` | `fact_transcation:300–315` | `1,2,2.5,3,4,5,9` | ลำดับความแม่นของกฎจับคู่พนักงานขาย |
+| `seq_condition` | `fact_transcation.sale_rep`, `view_fact_transcation` | [ลำดับกฎ](#seq_condition--fact_transcation) | ลำดับความแม่นของกฎจับคู่พนักงานขาย |
 
 ---
 
@@ -121,6 +121,7 @@ end
 
 | ค่า | เงื่อนไขที่ครบ (นอกจาก `EmployeeID`) |
 |---:|---|
+| 0 | `OrderStartDate IS NOT NULL` — แถว order window ชนะกฎอื่นเมื่อจับคู่บิลได้ |
 | 1 | `DepCode` + `CostChannelID` |
 | 2 | `CostChannelID` |
 | 2.5 | `DepCode` + `CustomerFlag` — ชนะ `DepCode` ล้วน แต่ยังแพ้กฎที่มี `CostChannelID` |
@@ -131,6 +132,11 @@ end
 
 `2.5` เป็นค่าที่แทรกทีหลัง (งาน CustomerFlag) จึงเป็นทศนิยม — คอลัมน์นี้จึงเป็น
 `FLOAT64` ไม่ใช่ `INT64` ระวังตอนเทียบ
+
+ลำดับนี้ใช้ทั้งฝั่ง fact และฝั่ง `*Last` ใน `view_fact_transcation` — **ห้าม renumber
+1–5** เพราะ view ยังเทียบ `seq_condition = 3` เพื่อแยกย่อยเป็น 3.1–3.7
+เงื่อนไขจับคู่ order window อยู่ที่
+[fact-layer.md](../fact/fact-layer.md#sale-rep-order-window-matching-2026-10-28)
 
 ## UDF ที่เป็นธง
 

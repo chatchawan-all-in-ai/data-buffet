@@ -2,9 +2,9 @@ config {
   type: "operations",
   dependencies: [
                   // view ที่ไฟล์นี้อ่านตรง (view เหล่านี้ประกาศ dependency ของตารางเบื้องหลังเองแล้ว)
-                  "Transaction_Data_Mart", "view_dim_channel", "view_deb_address_data",
+                  "Transaction_Data_Mart", "view_dim_channel", "view_deb_address_data", "view_dim_invoice",
                   // dimension ที่ไฟล์นี้อ่านตรง
-                  "dim_product_master", "dim_payment", "dim_customer",
+                  "dim_product_master", "dim_payment", "dim_customer", "dim_order",
                   "dim_cost_stk", "dim_cost_group", "dim_channel_cost",
                   "dim_change_district", "dim_stk_mkt", "dim_product_mkt",
                   "dim_target_product_group_by_sale_dayofwork",
@@ -101,6 +101,20 @@ js {
     };
     const TransactionDataMartTableRef = `${TransactionDataMartTable.database}.${TransactionDataMartTable.schema}.${TransactionDataMartTable.name}`;
 
+    const ViewDimInvoiceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_VIEW,
+        name: "view_dim_invoice",
+    };
+    const ViewDimInvoiceTableRef = `${ViewDimInvoiceTable.database}.${ViewDimInvoiceTable.schema}.${ViewDimInvoiceTable.name}`;
+
+    const DimOrderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_order",
+    };
+    const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
+
     const DimProductMasterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -189,6 +203,8 @@ js {
     AND trans.CompanySK = ${r}.CompanySK
     AND TRIM(IFNULL(trans.DummyChannel, trans.milPer)) = ${r}.EmployeeID
     AND (CASE
+          WHEN ${r}.OrderStartDate IS NOT NULL
+            THEN trans.OrderDate BETWEEN ${r}.OrderStartDate AND ${r}.OrderEndDate
           WHEN IFNULL(${r}.CustomerFlag, '') != ''
             AND IFNULL(${r}.DepCode, '') = ''
             AND IFNULL(${r}.CostChannelID, '') = ''
@@ -299,6 +315,7 @@ BEGIN
       TRIM(CustomerFlag)                 AS CustomerFlag,
       TRIM(CAST(DepartmentID AS STRING)) AS DepartmentID,
       (CASE
+        WHEN OrderStartDate IS NOT NULL THEN 0
         WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL
           AND NULLIF(TRIM(CAST(DepCode AS STRING)), '') IS NOT NULL
           AND NULLIF(TRIM(CAST(CostChannelID AS STRING)), '') IS NOT NULL
@@ -317,6 +334,7 @@ BEGIN
 
   ), pre_raw_transction AS (
     SELECT
+      order_date.mix_date AS OrderDate,
       channel_sk.ChannelSK,
       channel_sk.ChannelCostID,
       channel_sk.ChannelFinanceSK,
@@ -342,6 +360,17 @@ BEGIN
       END) AS DummyChannel,
       trans.* EXCEPT(OrderProvinceSK, OrderDistrictSK, OrderSubDistrictSK)
     FROM `${TransactionDataMartTableRef}` AS trans
+
+    LEFT JOIN (
+      SELECT CompanySK, mihType, mihVnos, MAX(OrderSK) AS OrderSK
+      FROM `${ViewDimInvoiceTableRef}`
+      GROUP BY CompanySK, mihType, mihVnos
+    ) AS order_invoice
+      ON trans.CompanySK = order_invoice.CompanySK
+      AND trans.milType = order_invoice.mihType
+      AND trans.milVnos = order_invoice.mihVnos
+    LEFT JOIN `${DimOrderTableRef}` AS order_date
+      ON order_invoice.OrderSK = order_date.OrderSK
 
     -- Product Master
     LEFT JOIN `${DimProductMasterTableRef}` AS productmaster
@@ -772,7 +801,7 @@ BEGIN
     END) AS DirectorSK,
 
     -- DATA
-    trans.* EXCEPT(ProductGroupMac5Description, FlagMappingInvoice, SectionMappingID,
+    trans.* EXCEPT(OrderDate, ProductGroupMac5Description, FlagMappingInvoice, SectionMappingID,
       RegionID, mihnotes, DepartmentID, CompanySK, companyID,
       SaleRepSK, DepartmentSK, RegionSK, RegionManagerSK, SectionSK, SectionManagerSK, DirectorSK
     )

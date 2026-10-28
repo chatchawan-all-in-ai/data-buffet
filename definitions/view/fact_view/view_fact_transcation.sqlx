@@ -10,7 +10,7 @@ config {
                   "fact_invoice", "view_dim_aging", "fact_order", "view_dim_invoice", 
                   "dim_region", "dim_company", "dim_director", "dim_region_manager", 
                   "dim_section_manager", "dim_pump_information",
-                  "dim_customer_report_info"],
+                  "dim_customer_report_info", "dim_order"],
   tags: [databuffet.TAG_VIEW],
 }
 
@@ -183,6 +183,14 @@ js {
     };
     const ViewDimInvoiceTableRef = `${ViewDimInvoiceTable.database}.${ViewDimInvoiceTable.schema}.${ViewDimInvoiceTable.name}`;
 
+    const DimOrderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_order",
+    };
+    const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
+
+
     const FactInvoiceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.FACT_TABLE,
@@ -285,8 +293,20 @@ with dim_calendar as (
     
     -- gur.GuaranteeSK,
     pump.PumpSK,
+    order_date.mix_date AS OrderDate,
     trans.*
   from `${FactTranscationTableRef}` as trans
+
+    LEFT JOIN (
+      SELECT CompanySK, mihType, mihVnos, MAX(OrderSK) AS OrderSK
+      FROM `${ViewDimInvoiceTableRef}`
+      GROUP BY CompanySK, mihType, mihVnos
+    ) AS order_invoice
+      ON trans.CompanySK = order_invoice.CompanySK
+      AND trans.milType = order_invoice.mihType
+      AND trans.milVnos = order_invoice.mihVnos
+    LEFT JOIN `${DimOrderTableRef}` AS order_date
+      ON order_invoice.OrderSK = order_date.OrderSK
 
   -- deb
   left join ${ref(databuffet.VALIDATED_MAC5, "deb")} as deb
@@ -651,6 +671,7 @@ with dim_calendar as (
   left join (
     select *,
        (CASE
+        WHEN OrderStartDate IS NOT NULL THEN 0
         WHEN NULLIF(TRIM(CAST(EmployeeID AS STRING)), '') IS NOT NULL
           AND NULLIF(TRIM(CAST(DepCode AS STRING)), '') IS NOT NULL
           AND NULLIF(TRIM(CAST(CostChannelID AS STRING)), '') IS NOT NULL
@@ -670,6 +691,8 @@ with dim_calendar as (
     on trans.CompanySK = sale_sk.CompanySK
     and TRIM(IFNULL(trans.DummyChannel, trans.milPer)) = TRIM(CAST(sale_sk.EmployeeID as STRING))
     and (CASE
+            WHEN sale_sk.OrderStartDate IS NOT NULL
+              THEN trans.OrderDate BETWEEN sale_sk.OrderStartDate AND sale_sk.OrderEndDate
             -- guard: แถว flag ล้วนต้องไม่กลายเป็น catch-all (ตรงกับ fact_transcation)
             WHEN IFNULL(TRIM(sale_sk.CustomerFlag), '') != ''
               and IFNULL(TRIM(sale_sk.DepCode), '') = ''
@@ -908,7 +931,7 @@ with dim_calendar as (
     ) as FlagAccExc,
     
     -- DATA
-    t1.* except(mihCancel, mihStatus, seq_condition)
+    t1.* except(mihCancel, mihStatus, seq_condition, OrderDate)
   from raw_table as t1
   left join `${DimProductMasterTableRef}` as t4
     ON LOWER(t1.milstk) = LOWER(t4.ProductCode)

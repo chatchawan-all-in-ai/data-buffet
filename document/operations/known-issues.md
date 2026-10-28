@@ -1,5 +1,29 @@
 # Known Issues & Gotchas
 
+## 2026-10-28 — Sale-rep order windows
+
+Implementation contracts: [dimension fields and snapshot rules](../project_wiki/dimension/special-cases.md#order-windows-2026-10-28),
+[shared bill matching](../project_wiki/fact/fact-layer.md#sale-rep-order-window-matching-2026-10-28),
+and [last-side date policy](../project_wiki/view/view-layer.md#sale-rep-order-windows-2026-10-28).
+
+The measured affected employees are 1067176 and 1068048: PS1-5_OTHER is effective
+from 2026-10-01 with order window 2026-07-01 through 2026-09-30. The expected October
+split is respectively 1 / 28 lines retained on PS1-5_OTHER and 1 / 51 moved to
+Dummy999992_04_TA01 / _TA02. These are baseline expectations, not a deployment result.
+Other employees and pre-October fact bills remain unchanged in read-only validation.
+Under the last-side date policy linked above, the historical changes are intentional.
+Previously `_last` retained only one normal row per employee, with ties chosen arbitrarily.
+The resulting pre-October last-side moves are expected: 206 lines for 1067176
+(Dummy → PS1-5_OTHER) and 1,118 for 1068048 (PS1-5_OTHER → Dummy).
+
+Read-only fact validation returned 2,718,290 rows on both sides with identical
+positional schema. The observed October splits are 1 retained / 1 moved for 1067176
+and 26 retained / 50 moved for 1068048. The earlier 28 / 51 baseline included three
+`ac02` ledger lines (two orders inside the window, one outside), which stay unchanged;
+an additional `ag01` DummyChannel override also stays unchanged. Store TA selection
+can still yield PS1-5_OTHER under the unchanged
+[customer-report TA policy](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
+
 รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-10-28
 
 ## `dim_customer_report_info` SK เสถียรแล้ว — ห้าม full rebuild (2026-10-28)
@@ -19,15 +43,18 @@
 
 ## CustomerFlag ใน mds sales representative (2026-09-15)
 
-สมมติฐาน 3 ข้อที่กฎ CustomerFlag ตั้งอยู่ ถ้าข้อไหนพังต้องกลับมาแก้โค้ด
+สมมติฐาน 3 ข้อที่กฎ CustomerFlag ตั้งอยู่สำหรับแถวที่ไม่มี OrderStartDate
+ถ้าข้อไหนพังต้องกลับมาแก้โค้ด
 
-1. **แถว flag ต้องมีแถว DepCode ให้เกาะ** — user กรอกแถว CustomerFlag แยก โดยใช้
+1. **แถว flag-only ต้องมีแถว DepCode ให้เกาะ** — นิยามแถว flag-only อยู่ที่
+   [CustomerFlag roll-up](../project_wiki/dimension/special-cases.md#customerflag-roll-up-2026-09-15)
+   · user กรอกแถว CustomerFlag แยก โดยใช้
    companyID + EmployeeID + DepartmentID เดียวกับแถวกฎจริง และช่วงวันที่ซ้อนกัน
    `dim_sale_representative` จะยุบ flag เข้าไปในแถวที่มี DepCode
    **ถ้าหาแถวเกาะไม่ได้ แถว flag จะหายไปเงียบ ๆ ไม่มี error** เลือกทางนี้เพราะถ้าปล่อยให้
-   แถว flag ล้วนเข้า dim มันจะไปยุบ `dim_sale_representative_last` ทั้งพนักงาน
+   แถว flag ล้วนเข้า dim มันจะไปยุบแถวกฎปกติอื่น ๆ ของพนักงานใน `dim_sale_representative_last`
    (`agg_normal` ไม่เช็ค CustomerFlag) ซึ่งวัดแล้วว่าย้าย fact `*Last` หลายร้อยแถว
-   วิธีตรวจ: `SELECT` แถว mds ที่มี CustomerFlag แล้ว DepCode/Cost/Province ว่าง
+   วิธีตรวจ: `SELECT` แถว mds ตามเงื่อนไข `flag_only` ใน owner ข้างต้น
    แล้วเทียบกับแถวที่โผล่ใน dim
 2. **พนักงานคนเดียวในบริษัทเดียวกันห้ามมี 2 แถวที่รหัสภายใน DepCode ซ้อนกันแต่ต่าง DepartmentID และช่วงวันซ้อนกัน**
    (รวมกรณี `A|B` กับ `B` — ดูหัวข้อ DepCode หลายค่าด้านล่าง)

@@ -1,5 +1,17 @@
 # View Layer (`definitions/view/`)
 
+### Sale-rep order windows (2026-10-28)
+
+`view_fact_transcation.fact_transaction` derives internal `OrderDate` before the
+`raw_table` join to `dim_sale_representative_last`, following the shared
+[order-date lookup and matching contract](../fact/fact-layer.md#sale-rep-order-window-matching-2026-10-28).
+The last-side join has no bill-date restriction: historical bills are reassigned
+using the latest snapshot. Expected historical moves are recorded in
+[known issues](../../operations/known-issues.md#2026-10-28--sale-rep-order-windows).
+The existing t5/t6 invoice joins remain intact; `OrderDate` is removed before the
+public view output. Other `_last` consumers keep their existing rules, including
+the [customer-report TA policy](#customer-report-info--customer-segment-2026-10-01).
+
 > **LLM context**: The presentation layer — BigQuery **views** that sit on top of the
 > physical dim/fact/curated/validated tables (and a few external sources). Migrated
 > into Dataform on **2026-07-24** from views that previously lived only in BigQuery
@@ -186,7 +198,7 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 
 | View | Key upstream | External refs |
 |---|---|---|
-| `view_fact_transcation` | fact_invoice, fact_order, fact_transcation, curated_mih, deb, ~20 dims, dim_pump_information, dim_customer_report_info, view_dim_aging, view_dim_invoice | onetime.mapping_invoice, fn_flag_scg/exc |
+| `view_fact_transcation` | See [SQLX definition](../../../definitions/view/fact_view/view_fact_transcation.sqlx) for active upstream sources | onetime.mapping_invoice, fn_flag_scg/exc |
 | `view_aging_ri` | fact_mir_vs, dim_aging_rang, dim_invoice, dim_status_not_receive, curated_mih, ar_s/chq/cql/mir, view_dim_aging | — |
 | `view_fact_mir_rs` | fact_mir_rs, dim_aging, curated_mih, ar_s | — |
 | `view_fact_mir_vs` | fact_mir_vs, dim_aging | — |
