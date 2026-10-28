@@ -222,19 +222,31 @@ Pub/Sub service agent มี `roles/pubsub.publisher` บน `<topic>-dead-lette
 วิธี SA ของทีมเองข้ามขั้นนี้ — backend ของทีมใช้ credentials ของ runtime service account ของตัวเอง
 (Application Default Credentials) ในโค้ด consumer และโหลดไฟล์ได้เลย
 
-**ทำ**: project owner สร้าง key หนึ่งครั้งต่อทีม เขียนไฟล์ไว้ **นอก repo**:
+**ทำ**: project owner สร้าง key ใช้งานทีละหนึ่งอันต่อทีม และ rotate ทุก 90 วัน (ดูด้านล่าง) เขียนไฟล์ไว้ **นอก repo**:
 
 ```bash
 gcloud iam service-accounts keys create "$HOME/sa-pull-ai-dev.json" --iam-account=sa-pull-ai-dev@databuffet-nonprd.iam.gserviceaccount.com --project=databuffet-nonprd
 ```
 
-ส่งไฟล์ให้ทีมผ่านช่องทางที่ปลอดภัย (ไม่แปะในแชทหรืออีเมลแบบเปิด) แล้วลบไฟล์ในเครื่อง ·
+ส่งไฟล์ให้ทีมเป็น zip ใส่รหัสผ่าน ผ่านช่องทางที่ปลอดภัย (ไม่แปะในแชทหรืออีเมลแบบเปิด) แล้วลบไฟล์ในเครื่อง ·
 ห้าม commit key เข้า repo
 
+**Rotate ทุก 90 วัน** (ทำด้วยมือ): สร้าง key ใหม่นอก repo ด้วยคำสั่งเดิม (ตั้งชื่อไฟล์ใหม่ เช่น
+`$HOME/sa-pull-ai-dev-<YYYYMMDD>.json`) แล้วส่งให้ทีมทางเดิม (zip ใส่รหัสผ่าน) และลบไฟล์ในเครื่อง ·
+key เก่ายังใช้ได้อีก 14 วัน ทีมต้องเปลี่ยนไฟล์ key และ restart consumer ภายใน 14 วันนั้น ·
+ครบ 14 วันแล้ว หา id ของ key เก่าแล้วลบ โดยแทน `OLD_KEY_ID` ด้วย id ของ key เก่าจากผล `keys list`:
+
+```bash
+gcloud iam service-accounts keys list --iam-account=sa-pull-ai-dev@databuffet-nonprd.iam.gserviceaccount.com --managed-by=user --project=databuffet-nonprd
+gcloud iam service-accounts keys delete OLD_KEY_ID --iam-account=sa-pull-ai-dev@databuffet-nonprd.iam.gserviceaccount.com --project=databuffet-nonprd
+```
+
+ถ้าลูกค้าตกลงขอไม่ rotate ก็ข้ามได้ — ลูกค้าดูแลและรับผิดชอบ key เอง
+
 **ทำไม**: backend ของทีมอาจรันบน platform ไหนก็ได้ จึงใช้ key แทน identity ของ GCP · key
-ไม่หมดอายุและไม่ rotate · การสร้างและส่ง key ทำด้วยมือเท่านั้น สคริปต์ไม่สร้างหรือพิมพ์ key ·
+ไม่หมดอายุเอง เราจึง rotate ทุก 90 วัน (เหลื่อม 14 วันให้ทีมสลับ key ได้โดยไม่สะดุด) เพื่อจำกัดอายุของ key ที่อาจหลุด · การสร้างและส่ง key ทำด้วยมือเท่านั้น สคริปต์ไม่สร้างหรือพิมพ์ key ·
 key นี้ทำได้แค่ pull จาก `sub.<ทีม>.*` และอ่านไฟล์ใน folder `<ทีม>/` ของทีมเอง ถ้าหลุดก็ไม่ถึง
-ข้อมูลอื่น · ถ้าต้องตัดทีม ลบ key (`gcloud iam service-accounts keys delete`) — ลบแค่
+ข้อมูลอื่น · ถ้าต้องตัดทีม ลบ **ทุก** key ที่ `keys list --managed-by=user` แสดง (ช่วงเหลื่อม 14 วันมี key สองอัน) ด้วย `keys delete` — ลบแค่
 subscription ของทีม ทีมยังอ่านไฟล์ใน folder ของทีมได้
 
 ### 3. โหลดครั้งแรกด้วยไฟล์ (ครั้งแรกที่ทีมต่อ topic นั้นเท่านั้น)
@@ -451,7 +463,7 @@ serialize ทุกการเขียนต่อ `(table, primary_key)` เ�
 - [ ] รัน `infra/pubsub/setup.sh` ตามส่วน A (A1–A3)
 - [ ] ตรวจผล execution ของ `datamart-publish` และ `mart_sent_state`: รอบแรก `sent 5 rows`, รอบถัดไป `sent 0 rows` (A4)
 - [ ] ต่อทีมใหม่: รัน `add-consumer.sh [--team-sa <email>] <ทีม> <topic>...` เฉพาะชุดที่ทีมได้รับ (ขั้น 1)
-- [ ] วิธี key เท่านั้น: สร้าง JSON key ด้วยมือนอก repo แล้วส่งผ่านช่องทางที่ปลอดภัย (ขั้น 2)
+- [ ] วิธี key เท่านั้น: สร้าง JSON key ด้วยมือนอก repo แล้วส่งเป็น zip ใส่รหัสผ่านผ่านช่องทางที่ปลอดภัย และนัดรอบ rotate ทุก 90 วัน (ขั้น 2)
 - [ ] หลังมี subscription แล้ว รัน `export-snapshot.sh <ทีม> <topic>` ทีละ topic รอให้สคริปต์ seek และรอ 90 วินาทีก่อนเขียน manifest เสร็จ แล้วส่ง folder + export time ให้ทีม · ทีมรอ manifest และโหลดไฟล์ครบก่อนเริ่ม pull (ขั้น 3)
 - [ ] ตั้ง alert backlog + dead letter และส่ง handover package ครบ (ขั้น 4–5)
 
