@@ -3,10 +3,10 @@ config {
     schema: databuffet.VALIDATED_D365,
     dependencies: ["validated_schema_d365", "create_all_table_raw_d365"],
     tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
-    uniqueKey: ["inventory_movement_journal_entries_id"],
+    uniqueKey: ["journal_number", "line_number"],
     bigquery: {
         partitionBy: "asatdate",
-        clusterBy: ["inventory_movement_journal_entries_id"]
+        clusterBy: ["journal_number", "line_number"]
     },
 }
 
@@ -22,12 +22,12 @@ js {
     const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
 
     // Keep existing logic
-    const pk_key = ["inventory_movement_journal_entries_id"]
+    const pk_key = ["journal_number", "line_number"]
 
     let partition_statement, post_operations_statement;
 
     if (pk_key && pk_key.length > 0) {
-        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY asatdate DESC) = 1`;
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_datetime DESC, created_datetime DESC, asatdate DESC) = 1`;
         post_operations_statement = `
 BEGIN
     DECLARE retry_count INT64 DEFAULT 0;
@@ -51,13 +51,15 @@ END;`;
     }
 }
 
--- raw: 20260914–16 full load (20260915 มีไฟล์ซ้ำ _NNN_1.avro) แล้ว incremental รายวัน → QUALIFY ข้าม partition ตัดซ้ำ
+-- key จริง = journal_number + line_number ไม่ใช่ uuid (*_id): ต้นทางลบ-สร้างบรรทัดใหม่ด้วย uuid ใหม่เมื่อ record เปลี่ยน version
+-- (~50k บรรทัด / ~87 ล้านบาท ณ 2026-10-16) → เก็บ version ล่าสุดตาม updated_datetime
+-- raw: 20260914–16 full load (มีไฟล์ซ้ำ _1) แล้ว incremental รายวัน
 SELECT
     ${databuffet.functionData.cleanString('inventory_movement_journal_entries_id')} AS inventory_movement_journal_entries_id,
     ${databuffet.functionData.cleanString('movement_entries_id')} AS movement_entries_id,
-    ${databuffet.functionData.cleanString('journal_number')} AS journal_number,
+    IFNULL(${databuffet.functionData.cleanString('journal_number')}, '') AS journal_number,
     ${databuffet.functionData.cleanString('journal_name_id')} AS journal_name_id,
-    ${databuffet.functionData.castFloat64('line_number')} AS line_number,
+    CAST(${databuffet.functionData.castFloat64('line_number')} AS BIGNUMERIC) AS line_number,  -- FLOAT ใช้เป็น key/cluster ไม่ได้ · ทศนิยมลึกถึง 17 หลัก (0.99997711181640647 = แทรกบรรทัดแบบแบ่งครึ่ง) NUMERIC ปัดแล้วชนกัน
     DATE(${databuffet.functionData.parseFlexibleUtcDatetime('transaction_date')}) AS transaction_date,
     ${databuffet.functionData.cleanString('item_number')} AS item_number,
     ${databuffet.functionData.cleanString('product_configuration_id')} AS product_configuration_id,

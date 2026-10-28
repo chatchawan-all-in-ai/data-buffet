@@ -3,10 +3,10 @@ config {
     schema: databuffet.VALIDATED_D365,
     dependencies: ["validated_schema_d365", "create_all_table_raw_d365"],
     tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
-    uniqueKey: ["inventory_movement_journal_headers_id"],
+    uniqueKey: ["journal_number"],
     bigquery: {
         partitionBy: "asatdate",
-        clusterBy: ["inventory_movement_journal_headers_id"]
+        clusterBy: ["journal_number"]
     },
 }
 
@@ -22,12 +22,12 @@ js {
     const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
 
     // Keep existing logic
-    const pk_key = ["inventory_movement_journal_headers_id"]
+    const pk_key = ["journal_number"]
 
     let partition_statement, post_operations_statement;
 
     if (pk_key && pk_key.length > 0) {
-        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY asatdate DESC) = 1`;
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_datetime DESC, created_datetime DESC, asatdate DESC) = 1`;
         post_operations_statement = `
 BEGIN
     DECLARE retry_count INT64 DEFAULT 0;
@@ -51,11 +51,12 @@ END;`;
     }
 }
 
--- raw: 20260914–16 full load (มีแถวซ้ำ) แล้ว incremental รายวัน → QUALIFY ข้าม partition ตัดซ้ำ
+-- key จริง = journal_number ไม่ใช่ uuid (*_id): ต้นทางสร้างหัวใบใหม่ด้วย uuid ใหม่เมื่อ record เปลี่ยน version
+-- → เก็บ version ล่าสุดตาม updated_datetime · raw: 20260914–16 full load (มีแถวซ้ำ) แล้ว incremental รายวัน
 SELECT
     ${databuffet.functionData.cleanString('inventory_movement_journal_headers_id')} AS inventory_movement_journal_headers_id,
     ${databuffet.functionData.cleanString('movement_id')} AS movement_id,
-    ${databuffet.functionData.cleanString('journal_number')} AS journal_number,
+    IFNULL(${databuffet.functionData.cleanString('journal_number')}, '') AS journal_number,
     ${databuffet.functionData.cleanString('journal_name_id')} AS journal_name_id,
     ${databuffet.functionData.cleanString('description')} AS description,
     ${databuffet.functionData.cleanString('is_posted')} = 'Yes' AS is_posted,
