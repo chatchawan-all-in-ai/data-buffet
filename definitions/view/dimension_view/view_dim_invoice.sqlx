@@ -68,6 +68,10 @@ js {
     };
     const MecTableRef = `${MecTable.database}.${MecTable.schema}.${MecTable.name}`;
 
+    // สยามโกลบอลเฮ้าส์ (GB) ใช้รหัสเดียวทุกสาขา — แยกสาขาจากส่วนขยาย / #D/S แบบเดียวกับบิล SCG
+    const GbCustomerId = "154500002";
+    // HomePro แยกรหัสตามสาขา (~300 รหัส) จึงจับจากชื่อลูกค้า — ต้องมี "เซ็นเตอร์" ไม่งั้นติดร้านชื่อคล้าย (ปทุมวัน/สินสิริ โฮมโปร)
+    const HomeProNamePattern = "r'โฮม\\s*โปรดักส์\\s*เซ็น'";
 
 }
 
@@ -82,7 +86,11 @@ with tab_main as (
     END) as RefOrder,
 
     (CASE
-      WHEN inv.mihCus in UNNEST(`${FnGetScgCustomerIdsTableRef}`())
+      WHEN inv.mihCus in UNNEST(`${FnGetScgCustomerIdsTableRef}`()) or inv.mihCus = '${GbCustomerId}'
+        or exists(
+          select 1 from `${ViewDimCustomerTableRef}` as hp
+          where hp.companyID = inv.companyID and hp.debcode = inv.mihCus
+            and regexp_contains(hp.debnamet, ${HomeProNamePattern}))
         THEN `${CleanCompanyPrefixTableRef}`(
           (SELECT IF(CHAR_LENGTH(REGEXP_REPLACE(TRIM(v), r'\s', '')) >= 3, TRIM(v), NULL)
            FROM UNNEST([COALESCE(
@@ -116,14 +124,19 @@ tab_name as (
     `${FnFlagScgTableRef}`(main.RefOrder, main.mihCus) as FlagSCG,
 
     COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName) as CRCShopName, 
-    (CASE
-      WHEN `${FnFlagScgTableRef}`(main.RefOrder, main.mihCus) is not null
+    -- GB: ตัด " จ.<จังหวัด>" ท้ายชื่อ + ขีด/วรรคหลังชื่อห้าง → "สยามโกลบอลเฮ้าส์ สาขา…" ให้สาขาเดียวกันได้ชื่อเดียว
+    (SELECT IF(main.mihCus = '${GbCustomerId}',
+              TRIM(REGEXP_REPLACE(REGEXP_REPLACE(v, r'\s*จ\.\s*\S*$', ''), r'^(?:บมจ\.?\s*)?(สยามโกลบอลเฮ้าส์)\s*-?\s*', r'\1 ')),
+              v)
+     FROM UNNEST([CASE
+      WHEN (`${FnFlagScgTableRef}`(main.RefOrder, main.mihCus) is not null or main.mihCus = '${GbCustomerId}'
+            or regexp_contains(cust.debnamet, ${HomeProNamePattern}))
             and mecdesc is not null
         THEN `${CleanCompanyPrefixTableRef}`(mecdesc)
       WHEN COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName) is not null
         THEN COALESCE(mds_crc.crc_shop_name_change, main.CRCShopName)
       ELSE `${CleanCompanyPrefixTableRef}`(cust.debnamet)
-    END) as CustomerReportName,
+    END]) AS v) as CustomerReportName,
     mec.mecdesc,
     cust.FlagMDSNickName,
     cust.NicknameCustomer

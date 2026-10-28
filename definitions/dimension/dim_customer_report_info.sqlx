@@ -261,7 +261,8 @@ with mds as (
   SELECT
     COALESCE(mds.CompanyID, inv.CompanyID) AS CompanyID,
     COALESCE(mds.CustomerReportKey, inv.CustomerReportKey) AS CustomerReportKey,
-    COALESCE(mds.CustomerReportName, inv.CustomerReportName) AS CustomerReportName,
+    -- ตัวสะกดจาก invoice ก่อน (ผ่าน MDS rename แล้ว) ให้ตรงกับ view_dim_invoice · ร้านที่ไม่มีบิลใช้ชื่อ MDS
+    COALESCE(inv.CustomerReportName, mds.CustomerReportName) AS CustomerReportName,
     mds.CustomerTier,
     mds.FlagPC,
     mds.ShopOnline,
