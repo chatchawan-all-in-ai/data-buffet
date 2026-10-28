@@ -56,8 +56,8 @@ SELECT
     ${databuffet.functionData.castFloat64('UR_COST_AMT_DEAD')} AS ur_cost_amt_dead,
     ${databuffet.functionData.cleanString('__Dead')} AS dead,
     ${databuffet.functionData.castFloat64('T_O_VENDOR')} AS t_o_vendor,
-    ${databuffet.functionData.parseDateSlash('TRIM(START_DATE)')} AS start_date,
-    ${databuffet.functionData.parseDateSlash('TRIM(END_DATE)')} AS end_date,
+    ${databuffet.functionData.parseFlexibleDate('TRIM(START_DATE)')} AS start_date,
+    ${databuffet.functionData.parseFlexibleDate('TRIM(END_DATE)')} AS end_date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
 FROM `${sourceTableRef}`
 ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }

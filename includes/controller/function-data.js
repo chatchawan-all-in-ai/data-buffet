@@ -45,20 +45,13 @@ function parseAsatDate() {
 }
 
 /**
- * @param {string} col - column name or expression holding a 'YYYY/MM/DD' date string (BT + eom_bt feeds)
- * @returns {string} GoogleSQL expression parsing col to DATE — NOT safe on purpose: a format change
- *                   must fail the run rather than turn every date into NULL (same stance as castInt64)
+ * @param {string} col - column name or expression holding a 'YYYY-MM-DD' or 'YYYY/MM/DD' date string (saleout_mdt feeds)
+ * @returns {string} GoogleSQL expression parsing col to DATE — NULL stays NULL; any other value that
+ *                   neither format parses fails the run via ERROR() rather than turning into NULL
+ *                   (same stance as castInt64)
 **/
-function parseDateSlash(col) {
-    return `PARSE_DATE('%Y/%m/%d', ${col})`
-}
-
-/**
- * @param {string} col - column name or expression holding a 'YYYY-MM-DD' date string (DH, TW, eom_tw, lastyear feeds)
- * @returns {string} GoogleSQL expression parsing col to DATE — NOT safe, same reasoning as parseDateSlash
-**/
-function parseDateDash(col) {
-    return `PARSE_DATE('%Y-%m-%d', ${col})`
+function parseFlexibleDate(col) {
+    return `CASE WHEN ${col} IS NULL THEN NULL ELSE COALESCE(SAFE.PARSE_DATE('%Y-%m-%d', ${col}), SAFE.PARSE_DATE('%Y/%m/%d', ${col}), ERROR(CONCAT('parseFlexibleDate: unknown date format: ', ${col}))) END`
 }
 
 /**
@@ -91,8 +84,7 @@ module.exports = {
     parseFlexibleDatetime,
     parseFlexibleUtcDatetime,
     parseAsatDate,
-    parseDateSlash,
-    parseDateDash,
+    parseFlexibleDate,
     castInt64,
     castFloat64,
     castBool,

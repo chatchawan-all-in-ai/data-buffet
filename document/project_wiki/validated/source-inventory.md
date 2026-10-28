@@ -162,7 +162,7 @@ Column rules shared by the 28:
   `quotation_date` in the 6 `crm_quotation*` tables, `crm_sale_order.po_expire_date`,
   `crm_sale_order_attachment.expiry_date`, `crm_sale_order_deposit.due_date`,
   `sales_customer_sales_territory.start_date` / `end_date`, `sales_employee_sale_territory.end_date`.
-- Columns sent as bare `'YYYY-MM-DD'` → `parseDateDash` (DATE; `parseFlexibleDatetime` would
+- Columns sent as bare `'YYYY-MM-DD'` → `parseFlexibleDate` (DATE; `parseFlexibleDatetime` would
   return NULL): `crm_nd_sd_price.effective_from` / `expiry_to`, `crm_sale_order.next_due_date` /
   `po_date`, `sales_sales_territory.valid_from` / `valid_to`.
 - `time_start` / `time_end` (`'HH:MM:SS'`, delivery tables) stay strings. AVRO `boolean`

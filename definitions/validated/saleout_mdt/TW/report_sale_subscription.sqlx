@@ -32,8 +32,8 @@ SELECT
     CAST(Sales_Qty as INT64) as Sales_Qty,
     CAST(Stock_On_Hand as FLOAT64) as Stock_On_Hand,
     CAST(Stock_On_Order as INT64) as Stock_On_Order,
-    ${databuffet.functionData.parseDateDash('TRIM(Last_Sold_Date)')} as Last_Sold_Date,
-    ${databuffet.functionData.parseDateDash('TRIM(Last_Receive_Date)')} as Last_Receive_Date,
+    ${databuffet.functionData.parseFlexibleDate('TRIM(Last_Sold_Date)')} as Last_Sold_Date,
+    ${databuffet.functionData.parseFlexibleDate('TRIM(Last_Receive_Date)')} as Last_Receive_Date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
 FROM `${sourceTableRef}`
 

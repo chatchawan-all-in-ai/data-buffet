@@ -29,8 +29,8 @@ SELECT
     ${databuffet.functionData.cleanString('ITEM_FLAG')} AS item_flag,
     ${databuffet.functionData.castInt64('UR_QTY')} AS ur_qty,
     ${databuffet.functionData.castFloat64('UR_COST_AMT')} AS ur_cost_amt,
-    ${databuffet.functionData.parseDateSlash('TRIM(START_DATE)')} AS start_date,
-    ${databuffet.functionData.parseDateSlash('TRIM(END_DATE)')} AS end_date,
+    ${databuffet.functionData.parseFlexibleDate('TRIM(START_DATE)')} AS start_date,
+    ${databuffet.functionData.parseFlexibleDate('TRIM(END_DATE)')} AS end_date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
 FROM `${sourceTableRef}`
 QUALIFY ROW_NUMBER() OVER(

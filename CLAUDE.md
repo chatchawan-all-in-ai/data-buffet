@@ -107,7 +107,8 @@ work on Opus, pattern-following work on Sonnet):
   files) was converted to `databuffet.MDS_DATASET` on 2026-08-26.
 - `includes/controller/function-data.js` — SQL helpers: `cleanString`, `cleanCode`,
   `parseFlexibleDatetime` (SAFE), `parseFlexibleUtcDatetime` (SAFE; UTC raw → Bangkok,
-  used by master_sku and the DERP journals), `parseAsatDate`, `castInt64/castFloat64/castBool`
+  used by master_sku and the DERP journals), `parseFlexibleDate` (`YYYY-MM-DD` or `YYYY/MM/DD`;
+  NULL → NULL, any other format fails the run), `parseAsatDate`, `castInt64/castFloat64/castBool`
   (not SAFE — fail fast).
 - **There is NO `primary-keys.json` / `databuffet.primaryKeys`.** Validated PKs are
   defined per file, twice: `uniqueKey` in config + `pk_key` in the js block (keep in sync).

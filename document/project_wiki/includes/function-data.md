@@ -14,6 +14,7 @@
 | `parseFlexibleDatetime(col)` | `COALESCE(SAFE.PARSE_DATETIME('%b %d %Y %I:%M%p', SUBSTR(col,1,19)), SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR(col,1,19)))` | Datetime strings in either `Jan 05 2026 1:30PM` or ISO format |
 | `parseFlexibleUtcDatetime(col)` | `DATETIME(COALESCE(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%E*S%Ez', col), SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%E*S', col)), 'Asia/Bangkok')` | Raw datetimes stored in **UTC**, with or without a `+00:00` offset (no offset = read as UTC); returns Bangkok `DATETIME`. Used by `validated/master_sku/*` and the two DERP journal tables |
 | `parseAsatDate()` | `PARSE_DATE('%Y%m%d', ASATDATE)` | The hive-partition column `ASATDATE` (YYYYMMDD string) |
+| `parseFlexibleDate(col)` | `CASE WHEN col IS NULL THEN NULL ELSE COALESCE(SAFE.PARSE_DATE('%Y-%m-%d', col), SAFE.PARSE_DATE('%Y/%m/%d', col), ERROR(...)) END` | Date strings in `YYYY-MM-DD` or `YYYY/MM/DD` (saleout_mdt BT/DH/TW/eom feeds). NULL stays NULL; any other unparseable value **fails the run** on purpose. Replaced `parseDateDash`/`parseDateSlash` (removed 2026-10-28) |
 | `castInt64(col)` | `CAST(col AS INT64)` | Integer casts |
 | `castFloat64(col)` | `CAST(col AS FLOAT64)` | Numeric casts |
 | `castBool(col)` | `CAST(col AS BOOL)` | Boolean casts |
@@ -43,7 +44,7 @@ SELECT
   (+7 h). When a source's timezone is unconfirmed the code keeps `parseFlexibleDatetime`
   and says so in a comment (e.g. `validated/derp/inventory_item_price.sqlx`).
 - `parseFlexibleDatetime` needs a time part: a bare `'YYYY-MM-DD'` becomes NULL. Use
-  `parseDateDash` for those columns (e.g. DERP `crm_nd_sd_price.effective_from`).
+  `parseFlexibleDate` for those columns (e.g. DERP `crm_nd_sd_price.effective_from`).
 - `castInt64` / `castFloat64` are **not** SAFE casts — bad data fails the job.
   That is intentional at the validated layer (fail fast on schema drift).
 

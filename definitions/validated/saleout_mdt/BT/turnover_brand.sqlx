@@ -54,8 +54,8 @@ SELECT
     ${databuffet.functionData.cleanString('CLASS_STOCK')} AS class_stock,
     ${databuffet.functionData.castFloat64('UR_COST_AMT')} AS ur_cost_amt,
     ${databuffet.functionData.castFloat64('T_O')} AS t_o,
-    ${databuffet.functionData.parseDateSlash('TRIM(START_DATE)')} AS start_date,
-    ${databuffet.functionData.parseDateSlash('TRIM(END_DATE)')} AS end_date,
+    ${databuffet.functionData.parseFlexibleDate('TRIM(START_DATE)')} AS start_date,
+    ${databuffet.functionData.parseFlexibleDate('TRIM(END_DATE)')} AS end_date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
 FROM `${sourceTableRef}`
 ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }

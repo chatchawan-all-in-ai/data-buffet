@@ -52,14 +52,14 @@ END;`;
 }
 
 -- วันเวลาใน raw เป็นเวลาไทยอยู่แล้ว (ไม่ใช่ UTC) → parseFlexibleDatetime
--- effective_from, expiry_to ส่งมาเป็น 'YYYY-MM-DD' ไม่มีเวลา → parseDateDash (parseFlexibleDatetime จะได้ NULL)
+-- effective_from, expiry_to ส่งมาเป็น 'YYYY-MM-DD' ไม่มีเวลา → parseFlexibleDate (parseFlexibleDatetime จะได้ NULL)
 SELECT
     IFNULL(${databuffet.functionData.cleanString('nd_sd_price_id')}, '') AS nd_sd_price_id,
     ${databuffet.functionData.cleanString('product_id')} AS product_id,
     ${databuffet.functionData.cleanString('product_code')} AS product_code,
     ${databuffet.functionData.cleanString('product_barcode')} AS product_barcode,
-    ${databuffet.functionData.parseDateDash(databuffet.functionData.cleanString('effective_from'))} AS effective_from,
-    ${databuffet.functionData.parseDateDash(databuffet.functionData.cleanString('expiry_to'))} AS expiry_to,
+    ${databuffet.functionData.parseFlexibleDate(databuffet.functionData.cleanString('effective_from'))} AS effective_from,
+    ${databuffet.functionData.parseFlexibleDate(databuffet.functionData.cleanString('expiry_to'))} AS expiry_to,
     ${databuffet.functionData.cleanString('status')} AS status,
     ${databuffet.functionData.castFloat64('list_price_incl_vat')} AS list_price_incl_vat,
     ${databuffet.functionData.castFloat64('list_price_excl_vat')} AS list_price_excl_vat,

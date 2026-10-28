@@ -39,8 +39,8 @@ SELECT
     ${databuffet.functionData.castInt64('RESERVE_QTY')} AS reserve_qty,
     ${databuffet.functionData.castFloat64('REMAIN_AMT')} AS remain_amt,
     ${databuffet.functionData.castInt64('REMAIN_QTY')} AS remain_qty,
-    ${databuffet.functionData.parseDateSlash('TRIM(START_DATE)')} AS start_date,
-    ${databuffet.functionData.parseDateSlash('TRIM(END_DATE)')} AS end_date,
+    ${databuffet.functionData.parseFlexibleDate('TRIM(START_DATE)')} AS start_date,
+    ${databuffet.functionData.parseFlexibleDate('TRIM(END_DATE)')} AS end_date,
     ${databuffet.functionData.parseAsatDate()} as ASATDATE,
 FROM `${sourceTableRef}`
 QUALIFY ROW_NUMBER() OVER(

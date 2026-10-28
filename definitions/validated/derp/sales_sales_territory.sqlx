@@ -52,7 +52,7 @@ END;`;
 }
 
 -- วันเวลาใน raw เป็นเวลาไทยอยู่แล้ว (ไม่ใช่ UTC) → parseFlexibleDatetime
--- valid_from, valid_to ส่งมาเป็น 'YYYY-MM-DD' ไม่มีเวลา → parseDateDash (parseFlexibleDatetime จะได้ NULL)
+-- valid_from, valid_to ส่งมาเป็น 'YYYY-MM-DD' ไม่มีเวลา → parseFlexibleDate (parseFlexibleDatetime จะได้ NULL)
 SELECT
     IFNULL(${databuffet.functionData.cleanString('sale_territory_id')}, '') AS sale_territory_id,
     ${databuffet.functionData.cleanString('code')} AS code,
@@ -63,8 +63,8 @@ SELECT
     ${databuffet.functionData.cleanString('path_id')} AS path_id,
     ${databuffet.functionData.cleanString('path_code')} AS path_code,
     ${databuffet.functionData.cleanString('path_name')} AS path_name,
-    ${databuffet.functionData.parseDateDash(databuffet.functionData.cleanString('valid_from'))} AS valid_from,
-    ${databuffet.functionData.parseDateDash(databuffet.functionData.cleanString('valid_to'))} AS valid_to,
+    ${databuffet.functionData.parseFlexibleDate(databuffet.functionData.cleanString('valid_from'))} AS valid_from,
+    ${databuffet.functionData.parseFlexibleDate(databuffet.functionData.cleanString('valid_to'))} AS valid_to,
     ${databuffet.functionData.cleanString('company_id')} AS company_id,
     ${databuffet.functionData.cleanString('company_code')} AS company_code,
     ${databuffet.functionData.cleanString('organization_id')} AS organization_id,

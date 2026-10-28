@@ -53,7 +53,7 @@ END;`;
 
 -- วันเวลาใน raw เป็นเวลาไทยอยู่แล้ว (ไม่ใช่ UTC) → parseFlexibleDatetime
 -- po_expire_date ส่งมาเป็น 'YYYY-MM-DD 00:00:00' เสมอ → เก็บเป็น DATE
--- next_due_date, po_date ส่งมาเป็น 'YYYY-MM-DD' ไม่มีเวลา → parseDateDash (parseFlexibleDatetime จะได้ NULL)
+-- next_due_date, po_date ส่งมาเป็น 'YYYY-MM-DD' ไม่มีเวลา → parseFlexibleDate (parseFlexibleDatetime จะได้ NULL)
 SELECT
     IFNULL(${databuffet.functionData.cleanString('sale_order_id')}, '') AS sale_order_id,
     ${databuffet.functionData.cleanString('so_no')} AS so_no,
@@ -187,7 +187,7 @@ SELECT
     ${databuffet.functionData.castFloat64('outstanding_amount')} AS outstanding_amount,
     ${databuffet.functionData.castFloat64('deposit_outstanding_amount')} AS deposit_outstanding_amount,
     ${databuffet.functionData.cleanString('payment_status')} AS payment_status,
-    ${databuffet.functionData.parseDateDash(databuffet.functionData.cleanString('next_due_date'))} AS next_due_date,
+    ${databuffet.functionData.parseFlexibleDate(databuffet.functionData.cleanString('next_due_date'))} AS next_due_date,
     ${databuffet.functionData.cleanString('customer_invoice_account_id')} AS customer_invoice_account_id,
     ${databuffet.functionData.cleanString('customer_invoice_account_code')} AS customer_invoice_account_code,
     ${databuffet.functionData.cleanString('customer_invoice_address_id')} AS customer_invoice_address_id,
@@ -210,7 +210,7 @@ SELECT
     ${databuffet.functionData.cleanString('po_doc_status')} AS po_doc_status,
     ${databuffet.functionData.parseFlexibleDatetime('po_doc_status_at')} AS po_doc_status_at,
     ${databuffet.functionData.cleanString('billing_type')} AS billing_type,
-    ${databuffet.functionData.parseDateDash(databuffet.functionData.cleanString('po_date'))} AS po_date,
+    ${databuffet.functionData.parseFlexibleDate(databuffet.functionData.cleanString('po_date'))} AS po_date,
     ${databuffet.functionData.cleanString('vat_source')} AS vat_source,
     ${databuffet.functionData.cleanString('vat_change_reason')} AS vat_change_reason,
     ${databuffet.functionData.cleanString('vat_changed_by')} AS vat_changed_by,

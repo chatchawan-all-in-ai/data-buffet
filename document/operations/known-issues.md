@@ -341,7 +341,7 @@ DAG `pipline_saleout_mdt_eom` **รวมทุกไฟล์ในโฟลเ
   (`crm_*` 23 + `sales_*` 5) เป็น incremental, key = `<table>_id` · คอลัมน์ยึดตามไฟล์ AVRO จริง
   ไม่ใช่ schema workbook (workbook เก่ากว่าไฟล์) · เวลาเป็นเวลาไทยอยู่แล้ว → `parseFlexibleDatetime`
   · คอลัมน์ `'YYYY-MM-DD 00:00:00'` 12 ตัวเก็บเป็น DATE · คอลัมน์ `'YYYY-MM-DD'` ล้วน 6 ตัวใช้
-  `parseDateDash` เพราะ `parseFlexibleDatetime` คืน NULL
+  `parseFlexibleDate` (เดิม `parseDateDash`) เพราะ `parseFlexibleDatetime` คืน NULL
   · `inventory_item_price` เปลี่ยนจาก `type: "table"` อ่าน partition ล่าสุด เป็น incremental
   (key `inventory_item_price_id`) · **trade-off**: ยังไม่ purge แถวที่ถูกลบที่ต้นทาง (ทั้ง 29 ตาราง)
   แถวพวกนี้จะค้างใน validated · ตาราง `validated_derp.inventory_item_price` เดิมไม่มี partition —
