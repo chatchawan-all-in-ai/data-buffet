@@ -1,7 +1,7 @@
 # Validated Layer — `definitions/validated/`
 
 > **LLM context**: one file per source table across mac5, cis360, mastersku, master_sku,
-> saleout_mdt and d365; each source has 1 `validated_schema_*` bootstrap. Per-source lists:
+> saleout_mdt and derp; each source has 1 `validated_schema_*` bootstrap. Per-source lists:
 > [source-inventory.md](source-inventory.md); layer total:
 > [generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview). Pure mechanical
 > cleaning: read raw, trim/cast every column with `functionData` helpers, standardize
@@ -79,7 +79,7 @@ runs **every** run.
 
 - Used mostly in mac5 (73 of 86 non-schema files — all master/reference codes and
   the `tmp_*`, `tbook_*`, `tdis_*`, `match_*`, `pro_*` families), plus 9 saleout_mdt
-  files and 1 d365 file (`inventory_item_price`). Authoritative list:
+  files and 1 derp file (`inventory_item_price`). Authoritative list:
   `grep -rl 'TAG_VALIDATED_FULL' definitions/validated/`.
 - Exceptions to note: `mir.sqlx` is `type: "incremental"` but tagged FULL (operator
   grouping); `mih_billing`/`mil_billing` are full-rebuild snapshots.
@@ -92,7 +92,7 @@ disappear here:
 
 | Variant | Filter | Files | Use when |
 |---|---|---|---|
-| **Latest partition only** | `WHERE ASATDATE = (SELECT MAX(ASATDATE) FROM <raw>)` | `d365/inventory_item_price` | the source sends a full snapshot every day |
+| **Latest partition only** | `WHERE ASATDATE = (SELECT MAX(ASATDATE) FROM <raw>)` | `derp/inventory_item_price` | the source sends a full snapshot every day |
 | **Latest delivery per period** | `QUALIFY <file time or ASATDATE> = MAX(...) OVER (PARTITION BY <period>)` | `saleout_mdt/DH/saleout_dh` (per source folder + month), `saleout_mdt/EOM/eom_{bt,gb,hp,tw}` (per month) | the source resends a whole period; the newest delivery replaces the older one |
 
 Same idea in the fact layer: `fact_backlog_store` uses `WHERE asatdate = MAX(asatdate)`

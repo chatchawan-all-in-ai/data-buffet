@@ -38,9 +38,9 @@ CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEO
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}` OPTIONS(location="${databuffet.REGION}");
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_ALLKONS_COMMISSION}` OPTIONS(location="${databuffet.REGION}");
 
--- D365
-CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_D365}` OPTIONS(location="${databuffet.REGION}");
-CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_D365}` OPTIONS(location="${databuffet.REGION}");
+-- DERP
+CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}` OPTIONS(location="${databuffet.REGION}");
+CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}` OPTIONS(location="${databuffet.REGION}");
 
 
 -- DIMENSION

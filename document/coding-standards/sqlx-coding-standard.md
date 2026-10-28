@@ -180,7 +180,7 @@ ${databuffet.functionData.parseAsatDate()}             AS asatdate,
   แถวนั้นจะถูก INSERT ซ้ำทุกรอบ (เคส `mie.miecus` 2026-10-12)
 - ใน JOIN condition ก็ต้องใช้ `cleanString` ฝั่งต้นทางให้ตรงกับค่าที่เก็บ
 - datetime จาก raw → `parseFlexibleDatetime` (SAFE, พังเป็น NULL)
-- datetime จาก raw ที่เป็น UTC (`master_sku`, D365 journal headers/entries) → `parseFlexibleUtcDatetime` (SAFE; รับทั้งมีและไม่มี offset `+00:00` แล้วแปลงเป็น DATETIME เวลา `Asia/Bangkok`)
+- datetime จาก raw ที่เป็น UTC (`master_sku`, DERP journal headers/entries) → `parseFlexibleUtcDatetime` (SAFE; รับทั้งมีและไม่มี offset `+00:00` แล้วแปลงเป็น DATETIME เวลา `Asia/Bangkok`)
 - `castInt64/castFloat64` ไม่ SAFE — ตั้งใจให้ fail เมื่อ schema เพี้ยน
 
 ## 5. วันที่และ timezone

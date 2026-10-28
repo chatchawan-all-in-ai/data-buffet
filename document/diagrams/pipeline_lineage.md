@@ -71,7 +71,7 @@ the number of (non-paused) objects carrying each tag. Solid arrows = run order;
 dashed = a prerequisite from another cadence.
 
 > ⚠️ Tag `initial` also drops validated tables of `cis360`, `mastersku`, `master_sku`,
-> `saleout_mdt`, `allkons_commission` and `d365` (exact scope: [initial file map](../project_wiki/initial/initial-layer.md#file-map)).
+> `saleout_mdt`, `allkons_commission` and `derp` (exact scope: [initial file map](../project_wiki/initial/initial-layer.md#file-map)).
 > Since 2026-10-21 no action depends on a `drop_all_tables_*` action, so "include
 > dependencies" can never run a drop; re-initial is a deliberate manual two-step —
 > run the drop actions on their own (or tag `re-initial` for MAC5), then run the

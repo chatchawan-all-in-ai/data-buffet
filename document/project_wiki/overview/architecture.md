@@ -15,7 +15,7 @@ INITIAL      definitions/initial/     External tables + UDFs + drop files (⚠�
       │
       ▼
 VALIDATED    definitions/validated/   Clean, cast, dedup — 1 file per source table
-      │                               sources: mac5 · cis360 · mastersku · master_sku · saleout_mdt · d365
+      │                               sources: mac5 · cis360 · mastersku · master_sku · saleout_mdt · derp
       ▼
 CURATED      definitions/curated/     Business joins, JSON parsing, split-sale
       │

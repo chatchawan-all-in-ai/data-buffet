@@ -1,7 +1,7 @@
 config {
     type: "incremental",
-    schema: databuffet.VALIDATED_D365,
-    dependencies: ["validated_schema_d365", "create_all_table_raw_d365"],
+    schema: databuffet.VALIDATED_DERP,
+    dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
     tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
     uniqueKey: ["journal_number"],
     bigquery: {
@@ -14,7 +14,7 @@ js {
     // Define table references
     const sourceTable = {
         database: databuffet.DATABASE,
-        schema: databuffet.RAW_D365,
+        schema: databuffet.RAW_DERP,
         name: name(),
     };
 

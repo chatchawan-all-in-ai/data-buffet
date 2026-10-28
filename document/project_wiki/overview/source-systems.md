@@ -13,7 +13,7 @@
 | MASTER_SKU (3.0) | `master_sku` | `raw_master_sku` | `validated_master_sku` | `curated_master_sku` — 2 ตาราง | ใหม่ 2026-10-12 — ยังไม่มี dim/view อ่าน |
 | CIS360 | `cis360` | `raw_cis360` | `validated_cis360` | `curated_cis360` — **schema เปล่า** | ใช้งาน (ยังไม่มี curated) |
 | SALEOUT_MDT | `saleout_mdt` | `raw_saleout_mdt` | `validated_saleout_mdt` | `curated_saleout_mdt` — 3 ตาราง | ใช้งานเต็ม มีรอบรันของตัวเอง 08:55 |
-| D365 | `derp_temp` | `raw_d365` | `validated_d365` | — | ใหม่ 2026-10-17 — ยังไม่มีใครอ่านต่อ |
+| DERP | `derp_temp` | `raw_derp` | `validated_derp` | — | ใหม่ 2026-10-17 — ยังไม่มีใครอ่านต่อ |
 | ALLKONS_COMMISSION | `allkons_commission` | `raw_allkons_commission` | **ไม่มีแล้ว** | — | ⚠️ **หยุดอยู่ชั้น initial** |
 | mds_dataset | — | — (โหลดจากภายนอก) | — | — | เป็น master ของ dims ส่วนใหญ่ |
 
@@ -108,16 +108,18 @@ GCS saleout_mdt/{bt,dh,gb,hp,tw,so_mdt_eom,lastyear}
   (`date_is_estimated`), GB ใช้บาร์โค้ด 13 หลักเป็นรหัสสินค้า, TW ส่ง `branch_code`
   เป็นสตริงเต็ม `60001-CRC Thai Watsadu ...`
 
-## D365 — Dynamics 365 inventory
+## DERP — inventory
 
+- เดิมเรียก D365 / Dynamics 365 · เปลี่ยนชื่อใน repo เป็น DERP เมื่อ 2026-10-28 (โฟลเดอร์, ไฟล์,
+  constant, dataset)
 - เข้า repo ใน `7819bef` (2026-10-17) · dataset `raw_d365` / `validated_d365` ถูกสร้างด้วยมือ
-  ไว้ก่อนแล้วเมื่อ 2026-10-16
-- GCS folder **`derp_temp/`** (constant `GCS_D365`) — ชื่อฟังดูชั่วคราว อาจเปลี่ยน
+  ไว้ก่อนแล้วเมื่อ 2026-10-16 (ปัจจุบันคือ `raw_derp` / `validated_derp`)
+- GCS folder **`derp_temp/`** (constant `GCS_DERP`) — ชื่อฟังดูชั่วคราว อาจเปลี่ยน
 - 3 ตาราง:
   - `inventory_movement_journal_headers`, `inventory_movement_journal_entries` — journal
     การเคลื่อนไหวสินค้า เป็น incremental feed (20260914–16 เป็น full load, ตั้งแต่ 20260917
     รายวัน) · เวลาใน raw เป็น UTC · ขอบเขตการ dedup ตอนเริ่มสร้างและรอบ incremental ดู
-    [source-inventory § D365](../validated/source-inventory.md#d365-4--2-incremental--1-full--1-schema)
+    [source-inventory § DERP](../validated/source-inventory.md#derp-4--2-incremental--1-full--1-schema)
   - `inventory_item_price` — snapshot ราคาเต็มทุกวัน (~175k แถว) · validated อ่านเฉพาะ
     partition ล่าสุด
 - ไฟล์ของวัน `ASATDATE=D` ลงประมาณ **01:02 น. (เวลาไทย) ของวัน D+1** · รันใน `daily_process`
@@ -127,7 +129,7 @@ GCS saleout_mdt/{bt,dh,gb,hp,tw,so_mdt_eom,lastyear}
 - เรื่องที่ยังเปิดอยู่: timezone ของ `inventory_item_price` ยังไม่ยืนยัน (จึงใช้
   `parseFlexibleDatetime`) · ไฟล์ AVRO ช่วง 2026-10 มีค่า default ผิดกฎใน 3 ฟิลด์ · ชื่อโฟลเดอร์
   `derp_temp` อาจเปลี่ยน
-- ตารางต่อไฟล์: [source-inventory § D365](../validated/source-inventory.md#d365-4--2-incremental--1-full--1-schema)
+- ตารางต่อไฟล์: [source-inventory § DERP](../validated/source-inventory.md#derp-4--2-incremental--1-full--1-schema)
 
 ## ALLKONS_COMMISSION — ค่าคอมมิชชั่น (⚠️ หยุดไว้)
 

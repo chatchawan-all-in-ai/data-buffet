@@ -5,7 +5,7 @@ config {
 }
 
 ------------------------------------- SCHEMA --------------------------------------
-CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_D365}` OPTIONS(location="${databuffet.REGION}");
+CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}` OPTIONS(location="${databuffet.REGION}");
 ------------------------------------- SCHEMA --------------------------------------
 
 
@@ -14,27 +14,27 @@ CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_D365}` OPTI
 -- validated ต้อง dedup ด้วย id ข้ามทุก partition
 
 -- Table: inventory_movement_journal_headers
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_D365}.inventory_movement_journal_headers`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_D365}.inventory_movement_journal_headers`
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_movement_journal_headers`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_movement_journal_headers`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
-  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_D365}/inventory_movement_journal_headers/*'],
-  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_D365}/inventory_movement_journal_headers/'
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/inventory_movement_journal_headers/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/inventory_movement_journal_headers/'
 );
 
 -- Table: inventory_movement_journal_entries
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_D365}.inventory_movement_journal_entries`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_D365}.inventory_movement_journal_entries`
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_movement_journal_entries`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_movement_journal_entries`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
-  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_D365}/inventory_movement_journal_entries/*'],
-  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_D365}/inventory_movement_journal_entries/'
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/inventory_movement_journal_entries/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/inventory_movement_journal_entries/'
 );
 ----------------------------------- INCREMENTAL ---------------------------------------
 
@@ -43,14 +43,14 @@ OPTIONS (
 -- snapshot เต็มทุกวัน (~175k แถว/วัน) · ไฟล์ AVRO ช่วง 2026-10 มี default ผิดกฎใน 3 ฟิลด์ → BigQuery อาจสร้าง/อ่านไม่ได้จนกว่าต้นทางแก้
 
 -- Table: inventory_item_price
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_D365}.inventory_item_price`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_D365}.inventory_item_price`
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_item_price`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_item_price`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
-  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_D365}/inventory_item_price/*'],
-  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_D365}/inventory_item_price/'
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/inventory_item_price/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/inventory_item_price/'
 );
 ------------------------------------- SNAPSHOT ----------------------------------------

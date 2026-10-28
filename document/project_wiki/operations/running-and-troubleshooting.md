@@ -9,7 +9,7 @@
 
 | Tag | What runs |
 |---|---|
-| `initial` | ⚠️ **Destructive.** Recreates the raw external tables **and** drops validated tables of cis360, mastersku, master_sku, saleout_mdt, allkons_commission and d365. Exact drop scope: [initial file map](../initial/initial-layer.md#file-map). See the warning below |
+| `initial` | ⚠️ **Destructive.** Recreates the raw external tables **and** drops validated tables of cis360, mastersku, master_sku, saleout_mdt, allkons_commission and derp. Exact drop scope: [initial file map](../initial/initial-layer.md#file-map). See the warning below |
 | `re-initial` | ⚠️ DROP validated/curated MAC5 tables (destructive, mac5 only) |
 | `validated` / `validated_full` / `validated_incremental` | Validated layer |
 | `curated` / `curated_full` / `curated_incremental` | Curated layer (the sub-tags are used by the SALEOUT_MDT curated files) |
@@ -68,7 +68,7 @@ Consequences:
   for the required live-compilation check and manual deployment. The
   [process reference](../cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
   owns the config lifecycle, tables, duplicate guard and publishing behavior.
-- D365 (`validated_d365`) runs in `daily_process` (tag `validated`) from 2026-10-18.
+- DERP (`validated_derp`) runs in `daily_process` (tag `validated`) from 2026-10-18.
   Its GCS files for `ASATDATE=D` land at about 01:02 Bangkok on D+1. It is not in
   `saleout_morning`.
 - When a source is first built by hand and then wired into the schedule, check the

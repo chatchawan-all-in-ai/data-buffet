@@ -1,6 +1,6 @@
 # Known Issues & Gotchas
 
-รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-10-24
+รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-10-28
 
 ## CustomerFlag ใน mds sales representative (2026-09-15)
 
@@ -320,6 +320,18 @@ DAG `pipline_saleout_mdt_eom` **รวมทุกไฟล์ในโฟลเ
 
 ## การตัดสินใจเชิงออกแบบ
 
+- **2026-10-28 — เปลี่ยนชื่อ D365 → DERP**
+
+  source เดิมชื่อ D365 เปลี่ยนเป็น DERP ทั้งหมดใน repo: โฟลเดอร์ `definitions/initial/derp/`,
+  `definitions/validated/derp/`, ชื่อไฟล์/action (`create_all_table_raw_derp`, `validated_schema_derp`),
+  constant `RAW_DERP` / `VALIDATED_DERP` / `GCS_DERP` และ dataset `raw_derp` / `validated_derp`
+  · โฟลเดอร์ GCS **ไม่เปลี่ยน** — `GCS_DERP` ยังเป็น `derp_temp` · ชื่อตาราง 3 ตัว (`inventory_*`) ไม่เปลี่ยน
+  · คอลัมน์ `d365_*` ของ master_sku / mastersku / mds และคอลัมน์ที่ BI อ่าน (`prdD365Sku`,
+  `ProductIDNewD365`) **ไม่ใช่ source นี้ — ห้ามเปลี่ยน**
+  · ฝั่ง BigQuery ทำหลัง merge: สร้าง `raw_derp` / `validated_derp` ใหม่ (รัน `create_all_table_raw_derp`
+  → `validated_schema_derp` → 3 ตาราง ทีละ action ห้ามรัน tag `initial`) ให้เสร็จก่อนรอบ 06:00
+  ถัดไป แล้วจึงลบ `raw_d365` / `validated_d365`
+
 - **2026-10-09 — Customer Report Info: สัญญาและลำดับ deploy**
 
   สัญญาข้อมูลและลำดับ deploy/Power BI refresh อยู่ที่
@@ -612,7 +624,7 @@ DAG `pipline_saleout_mdt_eom` **รวมทุกไฟล์ในโฟลเ
   | **ไม่มีโค้ดใน repo อ่าน (orphan / ของเก่า)** | `dimension_table.dim_zone_manager_mdt` (ถูกแทนด้วย `dim_zone_ta_mdt` ใน `b198e24` ตารางยังค้าง) · `dimension_table.dim_target_channel`, `dim_target_sale` · `fact_table.dim_mir` · `onetime.saleout_monthly_mdt` (แทนด้วย `curated_saleout_monthly_mdt` 2026-10-05) · `onetime.saleout_monthly_aug2026` · `onetime.mapping_invoice_backup20260818` · view `onetime.PowerBI_Data_Buffet_Transaction` (ไฟล์ย้ายไป `backup/` แล้ว) · `onetime.Table_Model_Invoice_Transaction` / `Table_Model_Target_DayOfWork` (เจ้าของคือ scheduled query `table_for_ai_chatwith_data` ไม่ใช่ repo) · `validated_allkons_commission.*` (7 ตาราง ข้อมูลเก่า) | ถามฝั่ง BI ก่อน — Power BI อาจยังต่ออยู่ · ลบได้เมื่อยืนยันว่าไม่มีใครใช้ |
   | **backup / dataset ชั่วคราว** | `validated_mac5`: `cpp_backup20260901`, `cps_backup20260901`, `cps_dummy_backup20260901`, `cql/cst/mie/mih2/mih_dummy_backup_20261012`, `mie_backup_20261012b` · dataset `mds_dataset_bak_20261003`, `onetime_backup20260821`, `raw_mac5_backup`, `temp_dim`, `peem_using` | เจ้าของ backup ตัดสินใจ · ไม่ต้องยกไป prod |
 
-  `raw_d365` / `validated_d365` เคยอยู่ในกลุ่มนี้ (สร้างมือ 2026-10-16) — ตั้งแต่ `7819bef`
+  `raw_d365` / `validated_d365` (ปัจจุบันคือ `raw_derp` / `validated_derp`) เคยอยู่ในกลุ่มนี้ (สร้างมือ 2026-10-16) — ตั้งแต่ `7819bef`
   repo สร้างเองแล้ว
 
 - **2026-08-26 — ล้าง literal `"mds_dataset"` ออกหมดแล้ว** เดิม 36 ไฟล์ใน

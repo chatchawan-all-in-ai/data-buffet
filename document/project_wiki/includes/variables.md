@@ -32,7 +32,7 @@
 | CIS360 | `raw_cis360` | `validated_cis360` | `curated_cis360` |
 | MASTERSKU | `raw_mastersku` | `validated_mastersku` | `curated_mastersku` |
 | MASTER_SKU (`master_sku` 3.0) | `raw_master_sku` (`RAW_MASTER_SKU`) | `validated_master_sku` (`VALIDATED_MASTER_SKU`) | `curated_master_sku` (`CURATED_MASTER_SKU`) |
-| D365 | `raw_d365` (`RAW_D365`) | `validated_d365` (`VALIDATED_D365`) | — (no constant) |
+| DERP | `raw_derp` (`RAW_DERP`) | `validated_derp` (`VALIDATED_DERP`) | — (no constant) |
 | SALEOUT_MDT | `raw_saleout_mdt` | `validated_saleout_mdt` | **`curated_saleout_mdt`** (`CURATED_SALEOUT_MDT`, เพิ่ม 2026-09) |
 | ALLKONS_COMMISSION | `raw_allkons_commission` | `validated_allkons_commission` ⚠️ **ไม่มีไฟล์ validated แล้ว** (pause ใน `74a10e0`) dataset ยังค้างข้อมูลเก่า | — |
 
@@ -60,7 +60,7 @@
 Map source system → folder under `gs://file-raw-data`:
 `mac5_ag01`, `mac5_aa05`, `mac5_ab01`, `mac5_ac02`, `mac5_ak02`, `mac5_report`,
 `mac5_gps`, `mastersku`, `master_sku` (`GCS_MASTER_SKU`), `cis360`, `saleout_mdt`,
-`allkons_commission`, `derp_temp` (`GCS_D365` — D365; a temp-sounding name that may change).
+`allkons_commission`, `derp_temp` (`GCS_DERP` — DERP; a temp-sounding name that may change).
 
 ## MAC5 multi-company note
 

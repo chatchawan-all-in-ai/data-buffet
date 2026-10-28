@@ -10,7 +10,7 @@
 | Task | Read |
 |---|---|
 | Any task (start here) | [overview/architecture.md](overview/architecture.md) |
-| Understand a source system / raw data (incl. SALEOUT_MDT end-to-end, D365) | [overview/source-systems.md](overview/source-systems.md), [initial/initial-layer.md](initial/initial-layer.md) |
+| Understand a source system / raw data (incl. SALEOUT_MDT end-to-end, DERP) | [overview/source-systems.md](overview/source-systems.md), [initial/initial-layer.md](initial/initial-layer.md) |
 | Add/edit a validated table | [validated/validated-layer.md](validated/validated-layer.md), [validated/source-inventory.md](validated/source-inventory.md) |
 | Add/edit a curated table | [curated/curated-layer.md](curated/curated-layer.md) |
 | Add/edit a dimension | [dimension/dimension-layer.md](dimension/dimension-layer.md) → [dimension/full-rebuild-pattern.md](dimension/full-rebuild-pattern.md) (default) / [dimension/merge-sk-pattern.md](dimension/merge-sk-pattern.md) (stable-SK legacy) → [dimension/special-cases.md](dimension/special-cases.md) |

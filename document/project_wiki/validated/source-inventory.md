@@ -125,13 +125,14 @@ Readers: `curated_master_sku.curated_products` and `product_for_aisearch_v3` onl
 (see [curated-layer](../curated/curated-layer.md)).
 `products` carries the D365 cross-reference columns `d365_code`, `d365_size`,
 `d365_style`, `d365_color`, `d365_configuration`, `d365_variant`
-(`curated_products.prdD365Sku` = `d365_code`) — the likely join key to D365
+(`curated_products.prdD365Sku` = `d365_code`) — the likely join key to DERP
 `item_number`.
 
-## D365 (4 = 2 incremental + 1 full + 1 schema)
+## DERP (4 = 2 incremental + 1 full + 1 schema)
 
-Dynamics 365 inventory (`raw_d365` → `validated_d365`), GCS folder `derp_temp/`.
-In the repo since `7819bef` (2026-10-17); the datasets were built by hand on 2026-10-16.
+DERP inventory (`raw_derp` → `validated_derp`), GCS folder `derp_temp/`.
+In the repo since `7819bef` (2026-10-17); the datasets were built by hand on 2026-10-16
+as `raw_d365` / `validated_d365` (now `raw_derp` / `validated_derp`).
 
 | Table | Load | PK | Notes |
 |---|---|---|---|
@@ -143,8 +144,8 @@ The journals' first build dedups by ID across all raw partitions, including the
 initial 3-day full load. Incremental runs read only the `BACKFILL_DAYS` window,
 dedup that input, then MERGE by ID; they do not rescan all historical partitions.
 
-Nothing downstream reads `validated_d365` yet (no curated, dim, fact, view or CDC).
-Source context: [source-systems § D365](../overview/source-systems.md#d365--dynamics-365-inventory).
+Nothing downstream reads `validated_derp` yet (no curated, dim, fact, view or CDC).
+Source context: [source-systems § DERP](../overview/source-systems.md#derp--inventory).
 
 ## ALLKONS_COMMISSION — ⚠️ **ถูก pause แล้ว ไม่มีไฟล์ validated เหลือเลย**
 
@@ -207,10 +208,10 @@ Nothing downstream reads `validated_allkons_commission` yet.
 | `validated_schema_mastersku.sqlx` | MASTERSKU |
 | `validated_schema_master_sku.sqlx` | MASTER_SKU |
 | `validated_schema_saleout.sqlx` | SALEOUT_MDT |
-| `validated_schema_d365.sqlx` | D365 |
+| `validated_schema_derp.sqlx` | DERP |
 
 ไม่มี `validated_schema_allkons_commission.sqlx` แล้ว — ดูหัวข้อ ALLKONS ข้างบน
 
-**รวมทั้งชั้น**: MAC5 87 + CIS360 25 + MASTERSKU 12 + MASTER_SKU 17 + SALEOUT_MDT 17 + D365 4
+**รวมทั้งชั้น**: MAC5 87 + CIS360 25 + MASTERSKU 12 + MASTER_SKU 17 + SALEOUT_MDT 17 + DERP 4
 (นับรวม schema-bootstrap ของแต่ละ source แล้ว) · ตรวจ 2026-10-18 · ยอดรวมล่าสุดดูที่
 [generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview)

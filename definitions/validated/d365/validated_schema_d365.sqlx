@@ -1,7 +1,0 @@
-config {
-    type: "operations",
-    dependencies: ["create_all_table_raw_d365"],
-    tags: [databuffet.TAG_VALIDATED],
-}
-
-CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_D365}` OPTIONS(location="${databuffet.REGION}") ;

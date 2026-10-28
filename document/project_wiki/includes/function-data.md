@@ -12,7 +12,7 @@
 | `cleanString(col)` | `NULLIF(CAST(TRIM(col) AS STRING), '')` | Any string column — trims and converts empty string to NULL |
 | `cleanCode(col, pattern?)` | `NULLIF(CAST(TRIM(REGEXP_REPLACE(col, r'[\n\r\t]', '')) AS STRING), '')` | Code fields that may contain control characters; `pattern` overrides the default regex |
 | `parseFlexibleDatetime(col)` | `COALESCE(SAFE.PARSE_DATETIME('%b %d %Y %I:%M%p', SUBSTR(col,1,19)), SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR(col,1,19)))` | Datetime strings in either `Jan 05 2026 1:30PM` or ISO format |
-| `parseFlexibleUtcDatetime(col)` | `DATETIME(COALESCE(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%E*S%Ez', col), SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%E*S', col)), 'Asia/Bangkok')` | Raw datetimes stored in **UTC**, with or without a `+00:00` offset (no offset = read as UTC); returns Bangkok `DATETIME`. Used by `validated/master_sku/*` and the two D365 journal tables |
+| `parseFlexibleUtcDatetime(col)` | `DATETIME(COALESCE(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%E*S%Ez', col), SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%E*S', col)), 'Asia/Bangkok')` | Raw datetimes stored in **UTC**, with or without a `+00:00` offset (no offset = read as UTC); returns Bangkok `DATETIME`. Used by `validated/master_sku/*` and the two DERP journal tables |
 | `parseAsatDate()` | `PARSE_DATE('%Y%m%d', ASATDATE)` | The hive-partition column `ASATDATE` (YYYYMMDD string) |
 | `castInt64(col)` | `CAST(col AS INT64)` | Integer casts |
 | `castFloat64(col)` | `CAST(col AS FLOAT64)` | Numeric casts |
@@ -41,7 +41,7 @@ SELECT
 - Pick by the source's timezone: `parseFlexibleDatetime` keeps the wall-clock value
   as-is (MAC5, CIS360, MASTERSKU…); `parseFlexibleUtcDatetime` shifts UTC to Bangkok
   (+7 h). When a source's timezone is unconfirmed the code keeps `parseFlexibleDatetime`
-  and says so in a comment (e.g. `validated/d365/inventory_item_price.sqlx`).
+  and says so in a comment (e.g. `validated/derp/inventory_item_price.sqlx`).
 - `castInt64` / `castFloat64` are **not** SAFE casts — bad data fails the job.
   That is intentional at the validated layer (fail fast on schema drift).
 

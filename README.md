@@ -12,7 +12,7 @@ with built-in Change Data Capture (CDC) and an AI address-processing pipeline.
 | **Location** | `us-central1` |
 | **Language** | SQLX (SQL + JavaScript) |
 | **Raw Data** | `gs://file-raw-data` (AVRO, Hive-partitioned by `ASATDATE`; one CSV table, `saleout_lastyear`) |
-| **Sources** | MAC5 (×5 companies), MASTERSKU, MASTER_SKU (`master_sku` 3.0), CIS360, SALEOUT_MDT, D365, ALLKONS_COMMISSION + external `mds_dataset` |
+| **Sources** | MAC5 (×5 companies), MASTERSKU, MASTER_SKU (`master_sku` 3.0), CIS360, SALEOUT_MDT, DERP, ALLKONS_COMMISSION + external `mds_dataset` |
 | **Docs** | [`document/`](document/README.md) — developer guides (TH) + [LLM wiki (EN)](document/project_wiki/README.md) |
 | **New here?** | [`document/getting-started/onboarding.md`](document/getting-started/onboarding.md) — access to request, tooling, then `bash .claude/skills/verify-setup/scripts/verify.sh` |
 
@@ -82,7 +82,7 @@ Cloud Workflow and its idempotent GCP setup script in `infra/pubsub/`, deployed 
 See the [setup and message guide](document/how-to/setup-pubsub-export.md).
 
 **Validated by source:** MAC5, CIS360, MASTERSKU, MASTER_SKU (3.0),
-SALEOUT_MDT and D365, each with its own schema-bootstrap file. ALLKONS_COMMISSION
+SALEOUT_MDT and DERP, each with its own schema-bootstrap file. ALLKONS_COMMISSION
 has only an initial layer (its validated files were removed). Per-source file lists:
 [source inventory](document/project_wiki/validated/source-inventory.md).
 
@@ -101,10 +101,10 @@ operations (`dim_calendar`, `dim_aging`, `update_sk_sale_rep_group`). Per-dim li
 definitions/
 ├── initial/          # External tables (GCS AVRO/CSV) + create_all_schema / create_all_function
 │   ├── mac5/         # raw_mac5_ag01, _aa05, _ab01, _ac02, _ak02
-│   ├── cis360/  mastersku/  master_sku/  saleout_mdt/  d365/
+│   ├── cis360/  mastersku/  master_sku/  saleout_mdt/  derp/
 │   └── allkons_commission/
 ├── validated/        # Raw → clean, one file per table, per source
-│   ├── mac5/  cis360/  mastersku/  master_sku/  d365/
+│   ├── mac5/  cis360/  mastersku/  master_sku/  derp/
 │   └── saleout_mdt/{BT,DH,EOM,GB,HP,LASTYEAR,TW}/
 ├── curated/          # Clean → business-ready
 │   ├── mac5/         # curated_mih, curated_mil, curated_tbook_quotation
@@ -206,7 +206,7 @@ databuffet.cdcConfig                        // CDC source/table config
 | `cleanString(col)` | `NULLIF(CAST(TRIM(col) AS STRING), '')` |
 | `cleanCode(col, pattern?)` | strips `\n\r\t` (or custom regex), trims, nullifies empty |
 | `parseFlexibleDatetime(col)` | parses `%b %d %Y %I:%M%p` **or** `%Y-%m-%d %H:%M:%S` (SAFE) |
-| `parseFlexibleUtcDatetime(col)` | parses a UTC `%Y-%m-%d %H:%M:%E*S`, with or without a `+00:00` offset, and returns Bangkok `DATETIME` (SAFE; master_sku, d365 journals) |
+| `parseFlexibleUtcDatetime(col)` | parses a UTC `%Y-%m-%d %H:%M:%E*S`, with or without a `+00:00` offset, and returns Bangkok `DATETIME` (SAFE; master_sku, derp journals) |
 | `parseAsatDate()` | `PARSE_DATE('%Y%m%d', ASATDATE)` |
 | `castInt64(col)` / `castFloat64(col)` / `castBool(col)` | type casts (not SAFE — fail fast) |
 
@@ -221,7 +221,7 @@ databuffet.cdcConfig                        // CDC source/table config
 | MASTERSKU | `raw_mastersku` | `validated_mastersku` | `curated_mastersku` |
 | MASTER_SKU (3.0) | `raw_master_sku` | `validated_master_sku` | `curated_master_sku` |
 | SALEOUT_MDT | `raw_saleout_mdt` | `validated_saleout_mdt` | `curated_saleout_mdt` |
-| D365 | `raw_d365` | `validated_d365` | — |
+| DERP | `raw_derp` | `validated_derp` | — |
 | ALLKONS_COMMISSION | `raw_allkons_commission` | `validated_allkons_commission` (left in BigQuery, no repo files) | — |
 
 Shared datasets and their purposes are listed in the
@@ -238,7 +238,7 @@ Select tags for an execution in the Dataform service (see the
 
 | Group | Tags in use |
 |-------|-------------|
-| Initial | `initial` (⚠️ drops the validated tables of cis360, mastersku, master_sku, saleout_mdt, allkons_commission and d365), `re-initial` (⚠️ drops validated/curated MAC5 tables) |
+| Initial | `initial` (⚠️ drops the validated tables of cis360, mastersku, master_sku, saleout_mdt, allkons_commission and derp), `re-initial` (⚠️ drops validated/curated MAC5 tables) |
 | Validated | `validated`, `validated_full`, `validated_incremental` |
 | Curated | `curated`, `curated_full`, `curated_incremental` (SALEOUT_MDT curated) |
 | Dimension | `dimension_daily` (every dim except `dim_calendar`), `dimension_yearly` (`dim_calendar` only) |

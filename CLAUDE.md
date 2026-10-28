@@ -16,7 +16,7 @@ plus CDC and an AI address-parsing pipeline.
 - **Language**: SQLX (SQL + JavaScript)
 - **Raw data**: GCS `gs://file-raw-data` (AVRO, Hive-partitioned by `ASATDATE=YYYYMMDD`; one CSV table, `saleout_lastyear`)
 - **Sources**: MAC5 (5 companies: ag01/aa05/ab01/ac02/ak02), MASTERSKU, MASTER_SKU (`master_sku` 3.0), CIS360,
-  SALEOUT_MDT, D365, ALLKONS_COMMISSION + externally-loaded `mds_dataset` (master data — not built by this repo)
+  SALEOUT_MDT, DERP, ALLKONS_COMMISSION + externally-loaded `mds_dataset` (master data — not built by this repo)
 - **Branches**: `dev` (working/default) → `nonprod` → `prod` (+ `hotfix`)
 
 ## Documentation — read these first
@@ -107,7 +107,7 @@ work on Opus, pattern-following work on Sonnet):
   files) was converted to `databuffet.MDS_DATASET` on 2026-08-26.
 - `includes/controller/function-data.js` — SQL helpers: `cleanString`, `cleanCode`,
   `parseFlexibleDatetime` (SAFE), `parseFlexibleUtcDatetime` (SAFE; UTC raw → Bangkok,
-  used by master_sku and the D365 journals), `parseAsatDate`, `castInt64/castFloat64/castBool`
+  used by master_sku and the DERP journals), `parseAsatDate`, `castInt64/castFloat64/castBool`
   (not SAFE — fail fast).
 - **There is NO `primary-keys.json` / `databuffet.primaryKeys`.** Validated PKs are
   defined per file, twice: `uniqueKey` in config + `pk_key` in the js block (keep in sync).
@@ -124,7 +124,7 @@ work on Opus, pattern-following work on Sonnet):
 `${when(incremental(), \`WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))\`)}`
 (string compare, window = `BACKFILL_DAYS` วัน ปกติ 1) → `QUALIFY ROW_NUMBER() OVER(PARTITION BY pk ORDER BY asatdate DESC) = 1`
 → post_op retry-loop `ADD PRIMARY KEY ... NOT ENFORCED` guarded by `when(!incremental())`.
-Full-load variant: `type: "table"` + `TAG_VALIDATED_FULL` (mostly mac5; also saleout_mdt and d365 — `grep -rl TAG_VALIDATED_FULL definitions/validated`).
+Full-load variant: `type: "table"` + `TAG_VALIDATED_FULL` (mostly mac5; also saleout_mdt and derp — `grep -rl TAG_VALIDATED_FULL definitions/validated`).
 14 MAC5 tables UNION ALL 5 companies with literal `company_id`.
 Reference: `validated/cis360/customer_profile.sqlx`, `validated/mac5/mie.sqlx`.
 
@@ -214,7 +214,7 @@ addresses, gated on today's CDC changes (cost control — don't remove the gate)
 ## Tags (in use)
 
 `initial` (⚠️ also drops the validated tables of cis360, mastersku, master_sku,
-saleout_mdt, allkons_commission and d365 — to add/refresh raw tables run only the single
+saleout_mdt, allkons_commission and derp — to add/refresh raw tables run only the single
 `create_all_table_raw_<source>` action; see the [initial-layer guide](document/project_wiki/initial/initial-layer.md#การผูก-dependency)),
 `re-initial` (⚠️ drops validated/curated MAC5 tables), `validated`,
 `validated_full`, `validated_incremental`, `curated`, `curated_full`,

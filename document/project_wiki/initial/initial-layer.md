@@ -8,7 +8,7 @@
 > UDFs verified against `function_dataset.INFORMATION_SCHEMA.ROUTINES` on 2026-09-15.
 
 > ⚠️ **tag `initial` is destructive.** It runs every `drop_all_tables_validated_<source>`
-> file of cis360, mastersku, master_sku, saleout_mdt, allkons_commission and d365, so the
+> file of cis360, mastersku, master_sku, saleout_mdt, allkons_commission and derp, so the
 > validated tables of those sources are gone until they are rebuilt. To add or refresh a
 > raw table, run only the single `create_all_table_raw_<source>` action. See
 > [การผูก dependency](#การผูก-dependency) for dependency safety and manual rebuilds.
@@ -36,8 +36,8 @@
 | `saleout_mdt/drop_all_tables_validated_saleout_mdt.sqlx` | initial | DROP 11 validated tables (bt 7, gb, hp, tw, dh) — ไม่รวม `eom_*` และ `saleout_lastyear` |
 | `allkons_commission/create_all_table_raw_allkons_commission.sqlx` | initial | 7 hive-partitioned external tables |
 | `allkons_commission/drop_all_tables_validated_allkons_commission.sqlx` | initial | DROP 7 validated tables |
-| `d365/create_all_table_raw_d365.sqlx` | initial | สร้าง schema `raw_d365` + 3 AVRO hive-partitioned external tables จาก `gs://file-raw-data/derp_temp/` (journal headers, journal entries, item price) |
-| `d365/drop_all_tables_validated_d365.sqlx` | initial | DROP 3 validated_d365 tables |
+| `derp/create_all_table_raw_derp.sqlx` | initial | สร้าง schema `raw_derp` + 3 AVRO hive-partitioned external tables จาก `gs://file-raw-data/derp_temp/` (journal headers, journal entries, item price) |
+| `derp/drop_all_tables_validated_derp.sqlx` | initial | DROP 3 validated_derp tables |
 
 > ⚠️ **ALLKONS_COMMISSION หยุดอยู่แค่ชั้นนี้** — ไฟล์ `definitions/validated/allkons_commission/`
 > ถูกลบไปแล้วใน commit `74a10e0 "pause process data layer of commission"` · raw external
@@ -126,7 +126,7 @@ OPTIONS(format='AVRO', uris=['gs://file-raw-data/<gcs_prefix>/<table>/*.avro'])
   `reportsalesubscription` → ตาราง `report_sale_subscription`, `gb/*` → `saleout_gb`
   · ตาราง raw `eom_bt_*` (โฟลเดอร์ `so_mdt_eom/bt/`) → validated `eom_bt`
   · `saleout_lastyear` เป็น **CSV** ตารางเดียวในชั้นนี้ (ประกาศ schema ในไฟล์เอง)
-- **D365** โฟลเดอร์ GCS ชื่อ `derp_temp` (constant `GCS_D365`) — ชื่อฟังดูชั่วคราว อาจเปลี่ยน
+- **DERP** โฟลเดอร์ GCS ชื่อ `derp_temp` (constant `GCS_DERP`) — ชื่อฟังดูชั่วคราว อาจเปลี่ยน
   · journal headers/entries: 20260914–16 เป็น full load (20260915 มีไฟล์ซ้ำ `*_NNN_1.avro`)
   ตั้งแต่ 20260917 เป็น incremental รายวัน → validated ต้อง dedup ข้ามทุก partition
   · `inventory_item_price` เป็น snapshot เต็มทุกวัน (~175k แถว) · ไฟล์ AVRO ช่วง 2026-10

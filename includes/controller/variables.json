@@ -53,8 +53,8 @@
     "VALIDATED_ALLKONS_COMMISSION" : "validated_allkons_commission",
     "RAW_ALLKONS_COMMISSION" : "raw_allkons_commission",
 
-    "RAW_D365": "raw_d365",
-    "VALIDATED_D365": "validated_d365",
+    "RAW_DERP": "raw_derp",
+    "VALIDATED_DERP": "validated_derp",
 
     "DIMENSION_TABLE" : "dimension_table",
     "DIMENSION_VIEW" : "dimension_view",
@@ -81,7 +81,7 @@
     "GCS_CIS360": "cis360",
     "GCS_SALEOUT_MDT": "saleout_mdt",
     "GCS_ALLKONS_COMMISSION": "allkons_commission",
-    "GCS_D365": "derp_temp"
+    "GCS_DERP": "derp_temp"
     
 
 }

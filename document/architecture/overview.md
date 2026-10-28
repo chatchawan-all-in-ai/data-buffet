@@ -16,7 +16,7 @@ GCS files  gs://file-raw-data  (AVRO, Hive partition: ASATDATE=YYYYMMDD · ม�
       ▼
 ┌────────────┐  definitions/validated/ (ตาราง + schema bootstrap 1 ไฟล์ต่อ source)
 │ VALIDATED  │  cast + TRIM + NULL + dedup (QUALIFY) — 1 ไฟล์ต่อ 1 ตารางต้นทาง
-└────────────┘  mac5 · cis360 · mastersku · master_sku · saleout_mdt · d365
+└────────────┘  mac5 · cis360 · mastersku · master_sku · saleout_mdt · derp
       ▼
 ┌────────────┐  definitions/curated/ (ตาราง + schema bootstrap 1 ไฟล์ต่อ source)
 │  CURATED   │  business logic: status lookup, split-sale, JSON parsing, รวม sell-out

@@ -1,0 +1,7 @@
+config {
+    type: "operations",
+    dependencies: ["create_all_table_raw_derp"],
+    tags: [databuffet.TAG_VALIDATED],
+}
+
+CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}` OPTIONS(location="${databuffet.REGION}") ;

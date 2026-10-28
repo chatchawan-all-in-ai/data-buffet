@@ -25,7 +25,7 @@ Pub/Sub pilot ยังอยู่เฉพาะ nonprd ตาม [export cont
 > **ทบทวนเพิ่ม 2026-10-18** — ของที่เพิ่มหลัง 2026-09-15 และใส่ไว้ใน step ด้านล่างแล้ว:
 > - **MASTER_SKU (`master_sku` 3.0)**: dataset `raw_master_sku`, `validated_master_sku`,
 >   `curated_master_sku` · โฟลเดอร์ GCS `master_sku` (Step 5, 8, 9, 16, 17, 22)
-> - **D365**: dataset `raw_d365`, `validated_d365` · โฟลเดอร์ GCS `derp_temp` (Step 5, 8, 9, 16, 17, 22)
+> - **DERP**: dataset `raw_derp`, `validated_derp` · โฟลเดอร์ GCS `derp_temp` (Step 5, 8, 9, 16, 17, 22)
 > - **workflow `saleout_morning`** (08:55) มีใน nonprd แต่ Step 25 เดิมไม่ได้สร้าง — เพิ่มเป็น Step 25 (ค)
 > - **`yearly_process` ใน nonprd รันด้วยบัญชีผู้ใช้ส่วนตัว** (end-user auth) และตั้ง timezone
 >   `Asia/Jakarta` — ที่ prd ให้ใช้ service account ตาม Step 25 (ข)
@@ -151,13 +151,13 @@ dataset ที่ยังไม่มี (ตรวจเมื่อ 2026-08-1
 | `raw_master_sku` | external table ของ master_sku 3.0 (เพิ่ม 2026-10) |
 | `validated_master_sku` | validated ของ master_sku 3.0 (เพิ่ม 2026-10) |
 | `curated_master_sku` | curated ของ master_sku 3.0 (`curated_products`, `product_for_aisearch_v3`) |
-| `raw_d365` | external table ของ D365 (เพิ่ม 2026-10) |
-| `validated_d365` | validated ของ D365 (เพิ่ม 2026-10 · ยังไม่มีใคร downstream อ่าน) |
+| `raw_derp` | external table ของ DERP (เพิ่ม 2026-10) |
+| `validated_derp` | validated ของ DERP (เพิ่ม 2026-10 · ยังไม่มีใคร downstream อ่าน) |
 | `bridge_dataset` | view `GroupCustomerSK_CustomerSK` |
 | `monitor_dataset` | ตาราง run telemetry |
 
 **ต้องเห็น**: ในแถบซ้ายมี dataset ครบ **33 ตัว** (28 ตัวตามการตรวจ 2026-08-13 + 5 ตัวของ
-master_sku/d365 · ถ้าตัด `validated_allkons_commission` ทิ้งก็เป็น 32)
+master_sku/derp · ถ้าตัด `validated_allkons_commission` ทิ้งก็เป็น 32)
 
 **ถ้าไม่ตรง**: กดที่ dataset แล้วดู **Data location** ต้องเป็น `asia-southeast1`
 ถ้าเผลอสร้างเป็น `us-central1` ต้องลบแล้วสร้างใหม่ (ย้าย location ไม่ได้)
@@ -219,7 +219,7 @@ https://console.cloud.google.com/transfer/jobs?project=databuffet-nonprd
 
 **ต้องเห็น**: โฟลเดอร์ครบ 13 ตัว — `mac5_ag01`, `mac5_aa05`, `mac5_ab01`, `mac5_ac02`,
 `mac5_ak02`, `mac5_report`, `mac5_gps`, `mastersku`, `cis360`, **`saleout_mdt`**,
-**`allkons_commission`**, **`master_sku`**, **`derp_temp`** (D365)
+**`allkons_commission`**, **`master_sku`**, **`derp_temp`** (DERP)
 (เดิม prd **ไม่มี** `saleout_mdt` เลย ต้องโผล่มาหลัง Step 7)
 
 เปิด `mac5_ag01/mih/` แล้วเลื่อนลงล่างสุด
@@ -260,7 +260,7 @@ https://console.cloud.google.com/bigquery/transfers?project=databuffet-prd
 | `curated_saleout_mdt_from_nonprd` | `curated_saleout_mdt` |
 | `validated_master_sku_from_nonprd` | `validated_master_sku` |
 | `curated_master_sku_from_nonprd` | `curated_master_sku` |
-| `validated_d365_from_nonprd` | `validated_d365` |
+| `validated_derp_from_nonprd` | `validated_derp` |
 | `onetime_from_nonprd` | `onetime` |
 | `cdc_dataset_from_nonprd` | `cdc_dataset` |
 | `monitor_dataset_from_nonprd` | `monitor_dataset` |
@@ -414,7 +414,7 @@ region `us-central1`) แล้ว copy SQL ไปสร้างใหม่ท
 
 ⚠️ **step นี้ต้องมาก่อน Step 17 เสมอ** เพราะไฟล์
 `drop_all_tables_validated_cis360` / `_mastersku` / `_master_sku` / `_saleout_mdt` /
-`_allkons_commission` / `_d365` ติด tag `initial` เอง
+`_allkons_commission` / `_derp` ติด tag `initial` เอง
 = มันจะ **ลบตาราง validated** ตาม [initial file map](../project_wiki/initial/initial-layer.md#file-map)
 ถ้าไปรันหลัง copy ข้อมูลจะหายทันที
 
@@ -489,7 +489,7 @@ UNION ALL SELECT 'validated_mastersku', COUNT(*) FROM `databuffet-nonprd.validat
 UNION ALL SELECT 'validated_saleout_mdt', COUNT(*) FROM `databuffet-nonprd.validated_saleout_mdt.__TABLES__`
 UNION ALL SELECT 'validated_allkons_commission', COUNT(*) FROM `databuffet-nonprd.validated_allkons_commission.__TABLES__`
 UNION ALL SELECT 'validated_master_sku', COUNT(*) FROM `databuffet-nonprd.validated_master_sku.__TABLES__`
-UNION ALL SELECT 'validated_d365', COUNT(*) FROM `databuffet-nonprd.validated_d365.__TABLES__`
+UNION ALL SELECT 'validated_derp', COUNT(*) FROM `databuffet-nonprd.validated_derp.__TABLES__`
 UNION ALL SELECT 'curated_mac5', COUNT(*) FROM `databuffet-nonprd.curated_mac5.__TABLES__`
 UNION ALL SELECT 'curated_master_sku', COUNT(*) FROM `databuffet-nonprd.curated_master_sku.__TABLES__`
 UNION ALL SELECT 'curated_mastersku', COUNT(*) FROM `databuffet-nonprd.curated_mastersku.__TABLES__`
@@ -620,7 +620,7 @@ WITH t AS (
   UNION ALL SELECT 'validated_mastersku', table_id, row_count FROM `databuffet-nonprd.validated_mastersku.__TABLES__`
   UNION ALL SELECT 'validated_saleout_mdt', table_id, row_count FROM `databuffet-nonprd.validated_saleout_mdt.__TABLES__`
   UNION ALL SELECT 'validated_master_sku', table_id, row_count FROM `databuffet-nonprd.validated_master_sku.__TABLES__`
-  UNION ALL SELECT 'validated_d365', table_id, row_count FROM `databuffet-nonprd.validated_d365.__TABLES__`
+  UNION ALL SELECT 'validated_derp', table_id, row_count FROM `databuffet-nonprd.validated_derp.__TABLES__`
   UNION ALL SELECT 'validated_allkons_commission', table_id, row_count FROM `databuffet-nonprd.validated_allkons_commission.__TABLES__`
   UNION ALL SELECT 'curated_mac5', table_id, row_count FROM `databuffet-nonprd.curated_mac5.__TABLES__`
   UNION ALL SELECT 'curated_mastersku', table_id, row_count FROM `databuffet-nonprd.curated_mastersku.__TABLES__`
@@ -810,7 +810,7 @@ dataset **`raw_mac5`** เก่า (85 external table ของโครงเ�
    `yearly_process` → **EDIT** → ลบ schedule ออก / **PAUSE** ทุกตัว เพื่อหยุด scheduled writes
 2. ชี้ Power BI กลับ `databuffet-nonprd`
 
-จุดที่ย้อนยากคือ **Step 16** — tag `initial` ลบ validated ของ cis360/mastersku/master_sku/saleout/allkons/d365 ไปแล้ว
+จุดที่ย้อนยากคือ **Step 16** — tag `initial` ลบ validated ของ cis360/mastersku/master_sku/saleout/allkons/derp ไปแล้ว
 ถ้าหยุดกลางทางระหว่าง Step 16–17 ต้องรัน Data Transfer ให้จบ หรือรัน tag `validated`
 เพื่อปั้นใหม่จาก raw
 
