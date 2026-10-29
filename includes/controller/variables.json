@@ -66,6 +66,7 @@
     "CDC_DATESET" : "cdc_dataset",
     "PROCESS_DATASET": "process_dataset",
     "PUB_SUB": "pub_sub",
+    "ORG_CENTER": "org_center",
     "FUNCTION_DATASET": "function_dataset",
     "MDS_DATASET": "mds_dataset",
 

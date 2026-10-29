@@ -1,0 +1,6 @@
+config {
+    type: "operations",
+    tags: [databuffet.TAG_DIM_DAILY],
+}
+
+CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.ORG_CENTER}` OPTIONS(location="${databuffet.REGION}") ;

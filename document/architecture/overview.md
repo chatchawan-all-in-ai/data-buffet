@@ -51,6 +51,7 @@ GCS files  gs://file-raw-data  (AVRO, Hive partition: ASATDATE=YYYYMMDD · ม�
 | View | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset`, `pub_sub` | view | BI/reporting อ่านจาก dim/fact/curated (`type: "view"`, tag `view`) |
 | CDC | `cdc_dataset` | operations | จับ NEW/CHANGED จาก config |
 | Pub/Sub | `pub_sub` | operations | `pub_sub_schema` สร้าง dataset · ที่อยู่ของตารางเตรียมข้อมูลก่อนส่ง Pub/Sub ในอนาคต (view ส่งออกอยู่ที่ `definitions/view/pub_sub/`) |
+| Org center | `org_center` | table (`dimension_daily`) + operations | `org_center_schema` สร้าง dataset · [`org_center_unit` / `org_center_member`](../project_wiki/org_center/org-center.md) บอกว่าใครอยู่หน่วยไหน ตำแหน่งอะไร สร้างใหม่ทุกคืนจาก `dim_*_last` |
 | Process | `process_dataset` | incremental / table / operations | AI แกะที่อยู่ไทย (row ที่ CDC เปลี่ยน) + RLS (`rls_customer360`) + [นำร่องส่ง Pub/Sub](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
 
 ### แยกย่อย dimension

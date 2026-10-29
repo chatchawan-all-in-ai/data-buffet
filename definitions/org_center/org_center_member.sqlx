@@ -1,0 +1,189 @@
+config {
+    type: "table",
+    schema: databuffet.ORG_CENTER,
+    dependencies: [
+                    "org_center_schema",
+                    "dim_director_last", "dim_region_manager_last", "dim_section_manager_last",
+                    "dim_sale_representative_last", "dim_section_last",
+                    "update_sk_sale_rep_group"
+                  ],
+    tags: [databuffet.TAG_DIM_DAILY],
+    uniqueKey: ["company_id", "employee_id", "position_code", "unit_id"],
+    bigquery: {
+        clusterBy: ["company_id", "employee_id"]
+    },
+}
+
+js {
+    const MdsDataOrgEmployeeMappingCenterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_org_employee_mapping_center",
+    };
+    const MdsDataOrgEmployeeMappingCenterTableRef = `${MdsDataOrgEmployeeMappingCenterTable.database}.${MdsDataOrgEmployeeMappingCenterTable.schema}.${MdsDataOrgEmployeeMappingCenterTable.name}`;
+
+    const DimDirectorLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_director_last",
+    };
+    const DimDirectorLastTableRef = `${DimDirectorLastTable.database}.${DimDirectorLastTable.schema}.${DimDirectorLastTable.name}`;
+
+    const DimRegionManagerLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region_manager_last",
+    };
+    const DimRegionManagerLastTableRef = `${DimRegionManagerLastTable.database}.${DimRegionManagerLastTable.schema}.${DimRegionManagerLastTable.name}`;
+
+    const DimSectionManagerLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_section_manager_last",
+    };
+    const DimSectionManagerLastTableRef = `${DimSectionManagerLastTable.database}.${DimSectionManagerLastTable.schema}.${DimSectionManagerLastTable.name}`;
+
+    const DimSaleRepresentativeLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sale_representative_last",
+    };
+    const DimSaleRepresentativeLastTableRef = `${DimSaleRepresentativeLastTable.database}.${DimSaleRepresentativeLastTable.schema}.${DimSaleRepresentativeLastTable.name}`;
+
+    const DimSectionLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_section_last",
+    };
+    const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
+}
+
+-- unit_id ต้องตรงกับ org_center_unit · ไม่กรองแถวหมดอายุ
+WITH emp_email AS (
+  SELECT
+    ${databuffet.functionData.cleanString("employeeid")} AS employee_id,
+    ${databuffet.functionData.cleanString("employeeemail")} AS email
+  FROM `${MdsDataOrgEmployeeMappingCenterTableRef}`
+  WHERE is_active = TRUE
+    AND ${databuffet.functionData.cleanString("employeeid")} IS NOT NULL
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY employee_id ORDER BY email IS NULL, updated_at DESC) = 1
+
+), director AS (
+  -- dim มีแค่ชื่อเต็ม: คำแรก = ชื่อ ที่เหลือ = นามสกุล
+  SELECT
+    ${databuffet.functionData.cleanString("companyID")} AS company_id,
+    ${databuffet.functionData.cleanString("DirectorOfSalesID")} AS employee_id,
+    REGEXP_EXTRACT(${databuffet.functionData.cleanString("DirectorOfSalesName")}, r'^(\S+)') AS first_name,
+    REGEXP_EXTRACT(${databuffet.functionData.cleanString("DirectorOfSalesName")}, r'^\S+\s+(.+)$') AS last_name,
+    CAST(NULL AS STRING) AS nickname,
+    'DIRECTOR' AS position_code,
+    CONCAT('DIR-', ${databuffet.functionData.cleanString("DirectorID")}) AS unit_id,
+    CAST([] AS ARRAY<STRING>) AS department_ids,
+    StartDate AS valid_from,
+    EndDate AS valid_to
+  FROM `${DimDirectorLastTableRef}`
+
+), region_manager AS (
+  SELECT
+    ${databuffet.functionData.cleanString("companyID")} AS company_id,
+    ${databuffet.functionData.cleanString("RegionManagerEmployeeID")} AS employee_id,
+    ${databuffet.functionData.cleanString("RegionManagerName")} AS first_name,
+    ${databuffet.functionData.cleanString("RegionManagerSurname")} AS last_name,
+    ${databuffet.functionData.cleanString("RegionManagerNickname")} AS nickname,
+    'REGION_MGR' AS position_code,
+    CONCAT('REG-', ${databuffet.functionData.cleanString("SubRegionID")}) AS unit_id,
+    CAST([] AS ARRAY<STRING>) AS department_ids,
+    StartDate AS valid_from,
+    EndDate AS valid_to
+  FROM `${DimRegionManagerLastTableRef}`
+
+), section_manager AS (
+  SELECT
+    ${databuffet.functionData.cleanString("companyID")} AS company_id,
+    ${databuffet.functionData.cleanString("SectionManagerEmployeeID")} AS employee_id,
+    ${databuffet.functionData.cleanString("SectionManagerName")} AS first_name,
+    ${databuffet.functionData.cleanString("SectionManagerSurname")} AS last_name,
+    ${databuffet.functionData.cleanString("SectionManagerNickname")} AS nickname,
+    'SECTION_MGR' AS position_code,
+    CONCAT('SEC-', ${databuffet.functionData.cleanString("SectionID")}) AS unit_id,
+    CAST([] AS ARRAY<STRING>) AS department_ids,
+    StartDate AS valid_from,
+    EndDate AS valid_to
+  FROM `${DimSectionManagerLastTableRef}`
+
+), ta_base AS (
+  -- เฉพาะแถวจาก MDS (DepartmentID IS NOT NULL) · TA สังกัดส่วนของ Department ตัวเอง
+  SELECT
+    ${databuffet.functionData.cleanString("rep.companyID")} AS company_id,
+    ${databuffet.functionData.cleanString("rep.EmployeeID")} AS employee_id,
+    ${databuffet.functionData.cleanString("rep.EmployeeName")} AS first_name,
+    ${databuffet.functionData.cleanString("rep.EmployeeSurname")} AS last_name,
+    ${databuffet.functionData.cleanString("rep.EmployeeNickname")} AS nickname,
+    CONCAT('SEC-', ${databuffet.functionData.cleanString("sec.SectionID")}) AS unit_id,
+    ${databuffet.functionData.cleanString("rep.DepartmentID")} AS department_id,
+    rep.StartDate,
+    rep.EndDate
+  FROM `${DimSaleRepresentativeLastTableRef}` AS rep
+  LEFT JOIN `${DimSectionLastTableRef}` AS sec
+    ON rep.SectionSK = sec.SectionSK
+  WHERE rep.DepartmentID IS NOT NULL
+
+), ta_agg AS (
+  -- หลาย Department ในส่วนเดียว = 1 แถว · ชื่อจากแถวที่ EndDate ล่าสุด
+  SELECT
+    company_id,
+    employee_id,
+    unit_id,
+    ARRAY_AGG(STRUCT(first_name, last_name, nickname) ORDER BY EndDate DESC, StartDate DESC LIMIT 1)[OFFSET(0)] AS latest,
+    ARRAY_AGG(DISTINCT department_id IGNORE NULLS ORDER BY department_id) AS department_ids,
+    MIN(StartDate) AS valid_from,
+    MAX(EndDate) AS valid_to
+  FROM ta_base
+  GROUP BY company_id, employee_id, unit_id
+
+), ta AS (
+  SELECT
+    company_id,
+    employee_id,
+    latest.first_name,
+    latest.last_name,
+    latest.nickname,
+    'TA' AS position_code,
+    unit_id,
+    department_ids,
+    valid_from,
+    valid_to
+  FROM ta_agg
+
+), member AS (
+  SELECT * FROM director
+  UNION ALL
+  SELECT * FROM region_manager
+  UNION ALL
+  SELECT * FROM section_manager
+  UNION ALL
+  SELECT * FROM ta
+
+)
+  SELECT
+    m.company_id,
+    m.employee_id,
+    m.first_name,
+    m.last_name,
+    m.nickname,
+    em.email,
+    m.position_code,
+    m.unit_id,
+    m.department_ids,
+    m.valid_from,
+    m.valid_to
+  FROM member AS m
+  LEFT JOIN emp_email AS em
+    ON m.employee_id = em.employee_id
+  WHERE m.employee_id IS NOT NULL
+
+pre_operations {
+}
+
+post_operations {
+}

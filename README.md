@@ -75,6 +75,7 @@ JavaScript-generated actions are outside that diagram's scope.
 | **View** | `definitions/view/` | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset`, `pub_sub` (Pub/Sub export views) |
 | **CDC** | `definitions/cdc/` | Config-driven change log over validated tables |
 | **Pub/Sub** | `definitions/pub_sub/` | `pub_sub_schema` creates the `pub_sub` dataset; future shaping tables before Pub/Sub (export views live in `definitions/view/pub_sub/`) |
+| **Org center** | `definitions/org_center/` | `org_center_schema` creates the `org_center` dataset; [`org_center_unit` / `org_center_member`](document/project_wiki/org_center/org-center.md) — who sits in which unit and position, rebuilt nightly (`dimension_daily`) from the `dim_*_last` tables |
 | **Process** | `definitions/process/` | AI address parsing + row-level security (`rls_customer360`) + [Pub/Sub export pilot](document/project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
 
 The Pub/Sub pilot covers `dim_company`: Dataform objects here, plus the publishing
@@ -121,7 +122,8 @@ definitions/
 ├── view/             # BI/reporting views (dimension_view, fact_view, ...)
 ├── cdc/              # cdc_schema, cdc_change_log
 ├── process/          # deb_address_data (AI.GENERATE address parsing), rls_customer360, Pub/Sub export pilot
-└── pub_sub/          # pub_sub_schema (creates the pub_sub dataset)
+├── pub_sub/          # pub_sub_schema (creates the pub_sub dataset)
+└── org_center/       # org_center_schema, org_center_unit, org_center_member
 
 includes/
 ├── databuffet.js                 # Central config hub (imported by every SQLX file)
@@ -241,7 +243,7 @@ Select tags for an execution in the Dataform service (see the
 | Initial | `initial` (⚠️ drops the validated tables of cis360, mastersku, master_sku, saleout_mdt, allkons_commission and derp), `re-initial` (⚠️ drops validated/curated MAC5 tables) |
 | Validated | `validated`, `validated_full`, `validated_incremental` |
 | Curated | `curated`, `curated_full`, `curated_incremental` (SALEOUT_MDT curated) |
-| Dimension | `dimension_daily` (every dim except `dim_calendar`), `dimension_yearly` (`dim_calendar` only) |
+| Dimension | `dimension_daily` (every dim except `dim_calendar`, plus the org center tables), `dimension_yearly` (`dim_calendar` only) |
 | Fact | `fact_daily` |
 | Support | `process`, `cdc`, `cdc_incremental`, `pub_sub` (Pub/Sub pilot objects, run by hand — [pilot deploy](document/project_wiki/cdc-process/process.md#deploy)) |
 

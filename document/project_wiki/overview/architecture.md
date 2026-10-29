@@ -55,6 +55,7 @@ Per-source context (what each system is, who reads it):
 | Process | `process_dataset` | incremental (`deb_address_data`, AI.GENERATE) + table (`rls_customer360`) + Pub/Sub export pilot (operations, tag `pub_sub`) | [cdc-process/process.md](../cdc-process/process.md) |
 | View | `dimension_view`, `fact_view`, `onetime`, `process_dataset`, `bridge_dataset`, `pub_sub` | `type: "view"` (presentation; folder ≠ target dataset) | [view/view-layer.md](../view/view-layer.md) |
 | Pub/Sub | `pub_sub` | operations (`pub_sub_schema` creates the dataset); future shaping tables before Pub/Sub | [cdc-process/process.md](../cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
+| Org center | `org_center` | table rebuild (`dimension_daily`, after `update_sk_sale_rep_group`) + operations (`org_center_schema` creates the dataset) | [org_center/org-center.md](../org_center/org-center.md) |
 
 ## External inputs NOT managed by this repo
 

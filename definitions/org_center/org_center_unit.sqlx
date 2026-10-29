@@ -1,0 +1,95 @@
+config {
+    type: "table",
+    schema: databuffet.ORG_CENTER,
+    dependencies: [
+                    "org_center_schema",
+                    "dim_director_last", "dim_region_last", "dim_section_last",
+                    "update_sk_sale_rep_group"
+                  ],
+    tags: [databuffet.TAG_DIM_DAILY],
+    uniqueKey: ["company_id", "unit_id"],
+    bigquery: {
+        clusterBy: ["company_id", "unit_id"]
+    },
+}
+
+js {
+    const DimDirectorLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_director_last",
+    };
+    const DimDirectorLastTableRef = `${DimDirectorLastTable.database}.${DimDirectorLastTable.schema}.${DimDirectorLastTable.name}`;
+
+    const DimRegionLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region_last",
+    };
+    const DimRegionLastTableRef = `${DimRegionLastTable.database}.${DimRegionLastTable.schema}.${DimRegionLastTable.name}`;
+
+    const DimSectionLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_section_last",
+    };
+    const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
+}
+
+-- 3 ชั้น: ฝ่าย / ภาค / ส่วน · ไม่กรองแถวหมดอายุ ส่ง StartDate/EndDate ให้ปลายทางตัดสินเอง
+WITH division AS (
+  SELECT
+    ${databuffet.functionData.cleanString("dir.companyID")} AS company_id,
+    CONCAT('DIR-', ${databuffet.functionData.cleanString("dir.DirectorID")}) AS unit_id,
+    'DIVISION' AS unit_level,
+    1 AS depth,
+    ${databuffet.functionData.cleanString("dir.DirectorID")} AS unit_code,
+    ${databuffet.functionData.cleanString("dir.DirectorName")} AS unit_name,
+    CAST(NULL AS STRING) AS parent_unit_id,
+    dir.StartDate AS valid_from,
+    dir.EndDate AS valid_to
+  FROM `${DimDirectorLastTableRef}` AS dir
+
+), region AS (
+  -- SubRegionID ไม่ใช่ RegionID: PS1 มีหลายภาคย่อย (PS1-1..PS1-5) รหัสจะชนกัน
+  SELECT
+    ${databuffet.functionData.cleanString("reg.companyID")} AS company_id,
+    CONCAT('REG-', ${databuffet.functionData.cleanString("reg.SubRegionID")}) AS unit_id,
+    'REGION' AS unit_level,
+    2 AS depth,
+    ${databuffet.functionData.cleanString("reg.SubRegionID")} AS unit_code,
+    ${databuffet.functionData.cleanString("reg.RegionName")} AS unit_name,
+    CONCAT('DIR-', ${databuffet.functionData.cleanString("dir.DirectorID")}) AS parent_unit_id,
+    reg.StartDate AS valid_from,
+    reg.EndDate AS valid_to
+  FROM `${DimRegionLastTableRef}` AS reg
+  LEFT JOIN `${DimDirectorLastTableRef}` AS dir
+    ON reg.DirectorSK = dir.DirectorSK
+
+), section AS (
+  SELECT
+    ${databuffet.functionData.cleanString("sec.companyID")} AS company_id,
+    CONCAT('SEC-', ${databuffet.functionData.cleanString("sec.SectionID")}) AS unit_id,
+    'SECTION' AS unit_level,
+    3 AS depth,
+    ${databuffet.functionData.cleanString("sec.SectionID")} AS unit_code,
+    ${databuffet.functionData.cleanString("sec.SectionName")} AS unit_name,
+    CONCAT('REG-', ${databuffet.functionData.cleanString("reg.SubRegionID")}) AS parent_unit_id,
+    sec.StartDate AS valid_from,
+    sec.EndDate AS valid_to
+  FROM `${DimSectionLastTableRef}` AS sec
+  LEFT JOIN `${DimRegionLastTableRef}` AS reg
+    ON sec.RegionSK = reg.RegionSK
+
+)
+  SELECT * FROM division
+  UNION ALL
+  SELECT * FROM region
+  UNION ALL
+  SELECT * FROM section
+
+pre_operations {
+}
+
+post_operations {
+}
