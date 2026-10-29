@@ -123,7 +123,7 @@ definitions/
 ├── cdc/              # cdc_schema, cdc_change_log
 ├── process/          # deb_address_data (AI.GENERATE address parsing), rls_customer360, Pub/Sub export pilot
 ├── pub_sub/          # pub_sub_schema (creates the pub_sub dataset)
-└── org_center/       # org_center_schema, org_center_unit, org_center_member, org_center_person
+└── org_center/       # org_center_schema, org_center_unit, org_center_member, org_center_person, org_center_link
 
 includes/
 ├── databuffet.js                 # Central config hub (imported by every SQLX file)

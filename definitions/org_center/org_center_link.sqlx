@@ -1,0 +1,33 @@
+config {
+    type: "table",
+    schema: databuffet.ORG_CENTER,
+    dependencies: [
+                    "org_center_schema"
+                  ],
+    tags: [databuffet.TAG_DIM_DAILY],
+    uniqueKey: ["company_id", "pc_employee_id", "branch_code", "valid_from"],
+    bigquery: {
+        clusterBy: ["company_id", "pc_employee_id"]
+    },
+}
+
+-- 1 แถว = PC 1 คน ผูกกับ TA ที่ 1 สาขา ในช่วงวันที่หนึ่ง
+-- ตอนนี้ว่าง (0 แถว): แถวจะมาจาก MDS P1_PC_TA เมื่อมีตารางแล้ว เปลี่ยนแค่ต้นทาง ไม่เปลี่ยนโครง
+  SELECT
+    CAST(NULL AS STRING) AS company_id,
+    'PC_TA' AS link_type,
+    CAST(NULL AS STRING) AS pc_employee_id,
+    CAST(NULL AS STRING) AS pc_type,
+    CAST(NULL AS STRING) AS branch_code,
+    CAST(NULL AS STRING) AS branch_type,
+    CAST(NULL AS STRING) AS ta_employee_id,
+    CAST(NULL AS DATE) AS valid_from,
+    CAST(NULL AS DATE) AS valid_to
+  FROM UNNEST([1])
+  WHERE FALSE
+
+pre_operations {
+}
+
+post_operations {
+}

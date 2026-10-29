@@ -1,11 +1,12 @@
-# Org Center — `org_center_unit` / `org_center_member` / `org_center_person`
+# Org Center — `org_center_unit` / `org_center_member` / `org_center_person` / `org_center_link`
 
 > **LLM context**: Dataset `org_center` (`databuffet.ORG_CENTER`), folder
 > `definitions/org_center/`, added 2026-10-29 for the TA AI Assistant. It is the single
 > source of **who sits in which unit and position**; Power BI RLS, the TA app and other
-> systems build their own access rules from it later. All three tables are `type: "table"`,
+> systems build their own access rules from it later. All four tables are `type: "table"`,
 > tag `dimension_daily`, rebuilt every night after `update_sk_sale_rep_group`
-> (`org_center_person` after `org_center_member`).
+> (`org_center_person` after `org_center_member`). `org_center_link` (PC → TA) is
+> structure only and has 0 rows until the MDS table `P1_PC_TA` exists.
 > They carry **business codes, not SKs**, so consumers can keep them across days.
 
 ## Files
@@ -16,12 +17,14 @@
 | `org_center_unit.sqlx` | table | 1 row = 1 unit (division / region / section) |
 | `org_center_member.sqlx` | table | 1 row = 1 person in one position at one unit |
 | `org_center_person.sqlx` | table | 1 row = 1 person (across companies), built from `org_center_member` |
+| `org_center_link.sqlx` | table | 1 row = 1 PC linked to 1 TA at 1 branch for a date range — **empty for now** |
 
 `org_center_unit` and `org_center_member` depend on `org_center_schema`, the `dim_*_last` tables they read, and
 `update_sk_sale_rep_group` — the `_last` tables are built with NULL `DirectorSK` /
 `RegionSK` / `SectionSK`, and that step fills them
 ([special-cases](../dimension/special-cases.md#update_sk_sale_rep_group--imperative-update-step)).
 `org_center_person` depends on `org_center_schema` and `org_center_member` only.
+`org_center_link` depends on `org_center_schema` only (it reads no table yet).
 
 ## Org levels (3)
 
@@ -127,6 +130,35 @@ Checks before the first build (2026-10-29, read-only SELECT): 206 rows = 206 dis
 `employee_id` present, 201 `is_active` = 201 people with a member row valid today,
 8 people in two companies (`ab01` + `ag01`), email NULL for 171.
 
+## `org_center_link`
+
+Key: `company_id` + `pc_employee_id` + `branch_code` + `valid_from`. Mirrors the TA app's
+`member_links` with `link_type = 'PC_TA'`: from = PC, to = TA, site = `branch_code`.
+
+PC is the lowest level and sits under a TA, not in a unit of its own, so PC is not in
+`org_center_member` / `org_center_person` yet: a PC's unit follows its TA, which is not
+known. `org_center_member` and `org_center_unit` are unchanged by this table.
+
+**The table is empty (0 rows) on purpose.** The SQL is a typed `SELECT … WHERE FALSE`
+that reads no source. Rows will come from the MDS table `P1_PC_TA`
+(`mds_data_p1_pc_ta_master`) once it exists; then only the source changes, not the
+columns. Until then neither PC nor TA is filled from anywhere else — in particular **not**
+from `mds_data_mdt_sales_pc_master` + the zone-TA table, which would be a guess.
+
+| Column | Type | Source once `P1_PC_TA` exists |
+|---|---|---|
+| `company_id` | STRING | `companyID` |
+| `link_type` | STRING | always `PC_TA` |
+| `pc_employee_id` | STRING | `PCEmployeeID` (must be in `mds_data_mdt_sales_pc_master.employee_id`) |
+| `pc_type` | STRING | `PCType`: `MDT` (`employee_type` empty) / `AGENT` (`'พันธมิตร'`) |
+| `branch_code` | STRING | `BranchCode` — MT branch or the ERP customer code of an Agent shop |
+| `branch_type` | STRING | `BranchType`: `MT_STORE` / `AGENT_SHOP`, by `pc_type` |
+| `ta_employee_id` | STRING | `TAEmployeeID` — the TA who approves the PC's requests |
+| `valid_from` / `valid_to` | DATE | `StartDate` / `EndDate` (`2066-12-31` = still linked, same as the other org center tables) |
+
+Source rule (checked by the MDS team on load): one valid row per
+`(companyID, PCEmployeeID, BranchCode)` per day — periods never overlap.
+
 ## Rules
 
 - **Expired rows are kept.** `valid_from` / `valid_to` are passed through; the consumer
@@ -151,6 +183,7 @@ Checks before the first build (2026-10-29, read-only SELECT): 206 rows = 206 dis
 
 ## Not in this round
 
-- `org_center_link` (PC → TA), waiting for the MDS `P1_PC_TA` table.
+- `org_center_link` rows and PC rows in `org_center_member` / `org_center_person`:
+  waiting for the MDS `P1_PC_TA` table (the link table already exists, empty).
 - Per-system RLS views (Power BI, TA app) and read grants for the backend team.
 - Changing the TA spec from 4 levels to 3.
