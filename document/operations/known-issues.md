@@ -362,6 +362,11 @@ DAG `pipline_saleout_mdt_eom` **รวมทุกไฟล์ในโฟลเ
 
 ## การตัดสินใจเชิงออกแบบ
 
+- **2026-10-29 — DERP customer/business-unit raw + validated (10 tables)**
+
+  Schema differences, date handling, dedup rules and feed limitations are owned by
+  [the source inventory](../project_wiki/validated/source-inventory.md#derp-42--41-incremental--1-schema).
+
 - **2026-10-28 — DERP: เพิ่ม raw + validated ของ 28 ตาราง crm/sales และเปลี่ยน `inventory_item_price` เป็น incremental**
 
   ตามโครงสร้าง GCS: โฟลเดอร์ที่มี partition `ASATDATE=YYYYMMDD` = incremental → ทั้ง 28 ตาราง

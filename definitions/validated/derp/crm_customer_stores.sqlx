@@ -1,0 +1,84 @@
+config {
+  type: "incremental",
+  schema: databuffet.VALIDATED_DERP,
+  dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
+  tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+  uniqueKey: ["customer_stores_id"],
+  bigquery: {
+    partitionBy: "asatdate",
+    clusterBy: ["customer_stores_id"]
+  },
+}
+
+js {
+  // Define table references
+  const sourceTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.RAW_DERP,
+    name: name(),
+  };
+
+  // Build source table reference
+  const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+  const pk_key = ["customer_stores_id"]
+
+  let partition_statement, post_operations_statement;
+
+  if (pk_key && pk_key.length > 0) {
+    partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_at DESC, asatdate DESC) = 1`;
+    post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+  } else {
+    partition_statement = "";
+    post_operations_statement = "";
+  }
+}
+
+SELECT
+  IFNULL(${databuffet.functionData.cleanString('customer_stores_id')}, '') AS customer_stores_id,
+  ${databuffet.functionData.cleanString('customer_master_id')} AS customer_master_id,
+  ${databuffet.functionData.cleanString('store_id')} AS store_id,
+  ${databuffet.functionData.cleanString('store_code')} AS store_code,
+  ${databuffet.functionData.cleanString('store_name')} AS store_name,
+  ${databuffet.functionData.cleanString('employee_id')} AS employee_id,
+  ${databuffet.functionData.cleanString('employee_code')} AS employee_code,
+  ${databuffet.functionData.cleanString('employee_name')} AS employee_name,
+  ${databuffet.functionData.cleanString('user_id')} AS user_id,
+  ${databuffet.functionData.cleanString('user_code')} AS user_code,
+  ${databuffet.functionData.cleanString('user_name')} AS user_name,
+  ${databuffet.functionData.cleanString('status')} AS status,
+  ${databuffet.functionData.parseFlexibleDatetime('created_at')} AS created_at,
+  ${databuffet.functionData.cleanString('created_by')} AS created_by,
+  ${databuffet.functionData.parseFlexibleDatetime('updated_at')} AS updated_at,
+  ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+  ${databuffet.functionData.cleanString('created_by_name')} AS created_by_name,
+  ${databuffet.functionData.cleanString('updated_by_name')} AS updated_by_name,
+  ${databuffet.functionData.castBool('is_sync')} AS is_sync,
+  ${databuffet.functionData.cleanString('customer_code')} AS customer_code,
+  ${databuffet.functionData.parseAsatDate()} AS asatdate,
+FROM
+  `${sourceTableRef}` ${when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`)} ${partition_statement}
+
+pre_operations {
+
+}
+
+post_operations {
+  ${when(!incremental(), post_operations_statement)}
+}

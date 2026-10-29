@@ -1,0 +1,118 @@
+config {
+  type: "incremental",
+  schema: databuffet.VALIDATED_DERP,
+  dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
+  tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+  uniqueKey: ["customer_master_id"],
+  bigquery: {
+    partitionBy: "asatdate",
+    clusterBy: ["customer_master_id"]
+  },
+}
+
+js {
+  // Define table references
+  const sourceTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.RAW_DERP,
+    name: name(),
+  };
+
+  // Build source table reference
+  const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+  const pk_key = ["customer_master_id"]
+
+  let partition_statement, post_operations_statement;
+
+  if (pk_key && pk_key.length > 0) {
+    partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_at DESC, asatdate DESC) = 1`;
+    post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+  } else {
+    partition_statement = "";
+    post_operations_statement = "";
+  }
+}
+
+SELECT
+  IFNULL(${databuffet.functionData.cleanString('customer_master_id')}, '') AS customer_master_id,
+  ${databuffet.functionData.cleanString('customer_code')} AS customer_code,
+  ${databuffet.functionData.cleanString('mac5_code')} AS mac5_code,
+  ${databuffet.functionData.cleanString('d365_party_id')} AS d365_party_id,
+  ${databuffet.functionData.cleanString('party_type')} AS party_type,
+  ${databuffet.functionData.cleanString('party_type_raw')} AS party_type_raw,
+  ${databuffet.functionData.cleanString('tax_id')} AS tax_id,
+  ${databuffet.functionData.cleanString('organization_name_th')} AS organization_name_th,
+  ${databuffet.functionData.cleanString('organization_name_en')} AS organization_name_en,
+  ${databuffet.functionData.cleanString('short_name_th')} AS short_name_th,
+  ${databuffet.functionData.cleanString('short_name_en')} AS short_name_en,
+  ${databuffet.functionData.cleanString('acronym_th')} AS acronym_th,
+  ${databuffet.functionData.cleanString('acronym_en')} AS acronym_en,
+  ${databuffet.functionData.cleanString('search_name')} AS search_name,
+  ${databuffet.functionData.cleanString('prefix_name')} AS prefix_name,
+  ${databuffet.functionData.cleanString('first_name_th')} AS first_name_th,
+  ${databuffet.functionData.cleanString('last_name_th')} AS last_name_th,
+  ${databuffet.functionData.cleanString('middle_name_th')} AS middle_name_th,
+  ${databuffet.functionData.cleanString('first_name_en')} AS first_name_en,
+  ${databuffet.functionData.cleanString('last_name_en')} AS last_name_en,
+  ${databuffet.functionData.cleanString('middle_name_en')} AS middle_name_en,
+  ${databuffet.functionData.cleanString('branch_code')} AS branch_code,
+  ${databuffet.functionData.cleanString('branch_name')} AS branch_name,
+  ${databuffet.functionData.castBool('is_one_time')} AS is_one_time,
+  ${databuffet.functionData.cleanString('invoice_account')} AS invoice_account,
+  ${databuffet.functionData.cleanString('order_account')} AS order_account,
+  ${databuffet.functionData.cleanString('delivery_account')} AS delivery_account,
+  ${databuffet.functionData.cleanString('withholding_tax_code')} AS withholding_tax_code,
+  ${databuffet.functionData.castFloat64('withholding_tax_rate')} AS withholding_tax_rate,
+  ${databuffet.functionData.cleanString('vat_code')} AS vat_code,
+  ${databuffet.functionData.castFloat64('vat_rate')} AS vat_rate,
+  ${databuffet.functionData.cleanString('sales_tax_group')} AS sales_tax_group,
+  ${databuffet.functionData.cleanString('currency')} AS currency,
+  ${databuffet.functionData.cleanString('language')} AS `language`,
+  ${databuffet.functionData.cleanString('website')} AS website,
+  ${databuffet.functionData.cleanString('grade')} AS grade,
+  ${databuffet.functionData.cleanString('book3_color')} AS book3_color,
+  ${databuffet.functionData.cleanString('store_code')} AS store_code,
+  ${databuffet.functionData.cleanString('store_name')} AS store_name,
+  ${databuffet.functionData.cleanString('sales_remark')} AS sales_remark,
+  ${databuffet.functionData.cleanString('account_remark')} AS account_remark,
+  ${databuffet.functionData.cleanString('marketing_remark')} AS marketing_remark,
+  ${databuffet.functionData.cleanString('status')} AS status,
+  ${databuffet.functionData.parseFlexibleDatetime('created_at')} AS created_at,
+  ${databuffet.functionData.cleanString('created_by')} AS created_by,
+  ${databuffet.functionData.parseFlexibleDatetime('updated_at')} AS updated_at,
+  ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+  ${databuffet.functionData.cleanString('full_text_search')} AS full_text_search,
+  ${databuffet.functionData.castBool('is_new_customer')} AS is_new_customer,
+  ${databuffet.functionData.cleanString('created_by_name')} AS created_by_name,
+  ${databuffet.functionData.cleanString('updated_by_name')} AS updated_by_name,
+  ${databuffet.functionData.castBool('is_sync')} AS is_sync,
+  ${databuffet.functionData.castBool('require_po')} AS require_po,
+  ${databuffet.functionData.cleanString('customer_known_as')} AS customer_known_as,
+  ${databuffet.functionData.parseAsatDate()} AS asatdate,
+FROM
+  `${sourceTableRef}` ${when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`)} ${partition_statement}
+
+pre_operations {
+
+}
+
+post_operations {
+  ${when(!incremental(), post_operations_statement)}
+}

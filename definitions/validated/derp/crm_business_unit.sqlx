@@ -1,0 +1,103 @@
+config {
+  type: "incremental",
+  schema: databuffet.VALIDATED_DERP,
+  dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
+  tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+  uniqueKey: ["business_unit_id"],
+  bigquery: {
+    partitionBy: "asatdate",
+    clusterBy: ["business_unit_id"]
+  },
+}
+
+js {
+  // Define table references
+  const sourceTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.RAW_DERP,
+    name: name(),
+  };
+
+  // Build source table reference
+  const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+  const pk_key = ["business_unit_id"]
+
+  let partition_statement, post_operations_statement;
+
+  if (pk_key && pk_key.length > 0) {
+    partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY COALESCE(updated_at, created_at) DESC, asatdate DESC) = 1`;
+    post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+  } else {
+    partition_statement = "";
+    post_operations_statement = "";
+  }
+}
+
+SELECT
+  IFNULL(${databuffet.functionData.cleanString('business_unit_id')}, '') AS business_unit_id,
+  ${databuffet.functionData.cleanString('bu_code')} AS bu_code,
+  ${databuffet.functionData.cleanString('bu_name')} AS bu_name,
+  ${databuffet.functionData.cleanString('bu_description')} AS bu_description,
+  ${databuffet.functionData.castInt64('level')} AS level,
+  ${databuffet.functionData.cleanString('parent_id')} AS parent_id,
+  ${databuffet.functionData.cleanString('parent_code')} AS parent_code,
+  ${databuffet.functionData.cleanString('path_id')} AS path_id,
+  ${databuffet.functionData.cleanString('path_code')} AS path_code,
+  ${databuffet.functionData.cleanString('path_name')} AS path_name,
+  ${databuffet.functionData.cleanString('company_id')} AS company_id,
+  ${databuffet.functionData.cleanString('company_code')} AS company_code,
+  ${databuffet.functionData.cleanString('organization_id')} AS organization_id,
+  ${databuffet.functionData.cleanString('organization_code')} AS organization_code,
+  ${databuffet.functionData.cleanString('responsible_employee_id')} AS responsible_employee_id,
+  ${databuffet.functionData.cleanString('responsible_employee_no')} AS responsible_employee_no,
+  ${databuffet.functionData.cleanString('responsible_user_id')} AS responsible_user_id,
+  ${databuffet.functionData.cleanString('responsible_name')} AS responsible_name,
+  ${databuffet.functionData.parseFlexibleDate('responsible_effective_date')} AS responsible_effective_date,
+  ${databuffet.functionData.parseFlexibleDate('responsible_expiry_date')} AS responsible_expiry_date,
+  ${databuffet.functionData.cleanString('alt1_employee_id')} AS alt1_employee_id,
+  ${databuffet.functionData.cleanString('alt1_employee_no')} AS alt1_employee_no,
+  ${databuffet.functionData.cleanString('alt1_user_id')} AS alt1_user_id,
+  ${databuffet.functionData.cleanString('alt1_name')} AS alt1_name,
+  ${databuffet.functionData.parseFlexibleDate('alt1_effective_date')} AS alt1_effective_date,
+  ${databuffet.functionData.parseFlexibleDate('alt1_expiry_date')} AS alt1_expiry_date,
+  ${databuffet.functionData.cleanString('alt2_employee_id')} AS alt2_employee_id,
+  ${databuffet.functionData.cleanString('alt2_employee_no')} AS alt2_employee_no,
+  ${databuffet.functionData.cleanString('alt2_user_id')} AS alt2_user_id,
+  ${databuffet.functionData.cleanString('alt2_name')} AS alt2_name,
+  ${databuffet.functionData.parseFlexibleDate('alt2_effective_date')} AS alt2_effective_date,
+  ${databuffet.functionData.parseFlexibleDate('alt2_expiry_date')} AS alt2_expiry_date,
+  ${databuffet.functionData.cleanString('status')} AS status,
+  ${databuffet.functionData.parseFlexibleDatetime('created_at')} AS created_at,
+  ${databuffet.functionData.cleanString('created_by')} AS created_by,
+  ${databuffet.functionData.cleanString('created_by_name')} AS created_by_name,
+  ${databuffet.functionData.parseFlexibleDatetime('updated_at')} AS updated_at,
+  ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+  ${databuffet.functionData.cleanString('updated_by_name')} AS updated_by_name,
+  ${databuffet.functionData.parseAsatDate()} AS asatdate,
+FROM
+  `${sourceTableRef}` ${when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`)} ${partition_statement}
+
+pre_operations {
+
+}
+
+post_operations {
+  ${when(!incremental(), post_operations_statement)}
+}

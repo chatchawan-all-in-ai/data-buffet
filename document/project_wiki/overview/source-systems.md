@@ -115,24 +115,28 @@ GCS saleout_mdt/{bt,dh,gb,hp,tw,so_mdt_eom,lastyear}
 - เข้า repo ใน `7819bef` (2026-10-17) · dataset `raw_d365` / `validated_d365` ถูกสร้างด้วยมือ
   ไว้ก่อนแล้วเมื่อ 2026-10-16 (ปัจจุบันคือ `raw_derp` / `validated_derp`)
 - GCS folder **`derp_temp/`** (constant `GCS_DERP`) — ชื่อฟังดูชั่วคราว อาจเปลี่ยน
-- 31 ตาราง:
+- 41 ตาราง:
   - `inventory_movement_journal_headers`, `inventory_movement_journal_entries` — journal
     การเคลื่อนไหวสินค้า เป็น incremental feed (20260914–16 เป็น full load, ตั้งแต่ 20260917
     รายวัน) · เวลาใน raw เป็น UTC · ขอบเขตการ dedup ตอนเริ่มสร้างและรอบ incremental ดู
-    [source-inventory § DERP](../validated/source-inventory.md#derp-32--31-incremental--1-schema)
+    [source-inventory § DERP](../validated/source-inventory.md#derp-42--41-incremental--1-schema)
   - `inventory_item_price` — snapshot ราคาเต็มทุกวัน (~175k แถว) · validated เป็น incremental
     ตั้งแต่ 2026-10-28 (แถวที่ต้นทางลบยังค้างอยู่)
   - 23 `crm_*` (ราคา ND/SD, ใบเสนอราคา, ใบสั่งขาย) + 5 `sales_*` (ช่องทางขาย, เขตการขาย,
     พนักงานขาย) — เพิ่ม 2026-10-28 · โฟลเดอร์เริ่มส่ง 2026-10-21/22/26 · incremental ทั้งหมด ·
     เวลาใน raw เป็นเวลาไทยอยู่แล้ว
-- ไฟล์ของวัน `ASATDATE=D` ลงประมาณ **01:02 น. (เวลาไทย) ของวัน D+1** · รันใน `daily_process`
+  - 10 `crm_*` customer/business-unit tables added 2026-10-29: customer master,
+    address, contact, contact channels, credit, segment, stores, customer data zone,
+    data zone and business unit. First files use `ASATDATE=20261029`; future cadence
+    is unconfirmed. See the source inventory for keys and schema differences.
+- ไฟล์ journal ของวัน `ASATDATE=D` ลงประมาณ **01:02 น. (เวลาไทย) ของวัน D+1** · รันใน `daily_process`
   06:00 (tag `validated`) ตั้งแต่ 2026-10-18 · ไม่อยู่ใน `saleout_morning`
 - **ยังไม่มีใครอ่านต่อ** (ไม่มี curated/dim/fact/view/CDC) · join key ที่น่าจะใช้ในอนาคตคือ
   คอลัมน์ `d365_*` ใน `validated_master_sku.products`
 - เรื่องที่ยังเปิดอยู่: timezone ของ `inventory_item_price` ยังไม่ยืนยัน (จึงใช้
   `parseFlexibleDatetime`) · ไฟล์ AVRO ช่วง 2026-10 มีค่า default ผิดกฎใน 3 ฟิลด์ · ชื่อโฟลเดอร์
   `derp_temp` อาจเปลี่ยน
-- ตารางต่อไฟล์: [source-inventory § DERP](../validated/source-inventory.md#derp-32--31-incremental--1-schema)
+- ตารางต่อไฟล์: [source-inventory § DERP](../validated/source-inventory.md#derp-42--41-incremental--1-schema)
 
 ## ALLKONS_COMMISSION — ค่าคอมมิชชั่น (⚠️ หยุดไว้)
 

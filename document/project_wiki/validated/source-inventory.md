@@ -128,7 +128,7 @@ Readers: `curated_master_sku.curated_products` and `product_for_aisearch_v3` onl
 (`curated_products.prdD365Sku` = `d365_code`) — the likely join key to DERP
 `item_number`.
 
-## DERP (32 = 31 incremental + 1 schema)
+## DERP (42 = 41 incremental + 1 schema)
 
 DERP inventory, CRM and sales tables (`raw_derp` → `validated_derp`), GCS folder `derp_temp/`.
 In the repo since `7819bef` (2026-10-17); the datasets were built by hand on 2026-10-16
@@ -171,8 +171,45 @@ Column rules shared by the 28:
   (`crm_sale_order_approval_log`, `crm_sale_order_approver`, `crm_sale_order_payment_allocation`,
   `crm_sale_order_status_history`) order by `created_at`. Rows deleted at source are not purged.
 
-The first build of every DERP table dedups by ID across all raw partitions, including the
-initial 3-day full load. Incremental runs read only the `BACKFILL_DAYS` window,
+**Customer / business-unit tables (10, all incremental, added 2026-10-29)** —
+all use `ASATDATE` partitions. All 12 AVRO files in `ASATDATE=20261029` were checked
+(three address shards have identical schemas); query-time external SELECTs confirmed
+all keys below are unique and nonblank after trimming. One partition cannot prove ID
+stability across resyncs or the future feed cadence.
+
+| Table | PK | First-partition rows | AVRO columns |
+|---|---|---:|---:|
+| `crm_business_unit` | `business_unit_id` | 141 | 39 |
+| `crm_customer_address` | `customer_address_id` | 81,218 | 29 |
+| `crm_customer_contact` | `customer_contact_id` | 22,567 | 19 |
+| `crm_customer_contact_channels` | `customer_contact_channels_id` | 12 | 14 |
+| `crm_customer_credit` | `customer_credit_id` | 22,529 | 24 |
+| `crm_customer_data_zone` | `customer_data_zone_id` | 8 | 26 |
+| `crm_customer_master` | `customer_master_id` | 22,547 | 54 |
+| `crm_customer_segment` | `customer_segment_id` | 22,518 | 25 |
+| `crm_customer_stores` | `customer_stores_id` | 6,309 | 20 |
+| `crm_data_zone` | `data_zone_id` | 4 | 18 |
+
+- All actual AVRO fields are retained, plus `asatdate`. `crm_customer_contact_channels`
+  and `crm_customer_stores` preserve `status`; the workbook-only `is_active` is not invented.
+- `crm_business_unit` has six effective/expiry dates; `crm_customer_credit` has
+  `credit_limit_change_date`, `collateral_start_date`, `collateral_end_date`.
+  Use `parseFlexibleDate`: populated values are bare `YYYY-MM-DD`; expiry/collateral
+  fields currently all NULL retain the workbook DATE contract.
+- `created_at` / `updated_at` use `parseFlexibleDatetime` without a timezone shift,
+  consistent with CRM siblings. Customer timestamps later than upload's UTC clock
+  support the local-time interpretation; unit/zone timezone is not independently
+  established. The existing helper truncates fractional seconds to seconds.
+- Dedup orders by `updated_at DESC, asatdate DESC`. For `crm_business_unit`,
+  `crm_customer_data_zone`, `crm_data_zone`, nullable updates fall back to
+  `COALESCE(updated_at, created_at) DESC, asatdate DESC`.
+- `crm_customer_stores.created_at` contains a source value in year 2569. It is retained
+  as supplied, not silently converted between calendars; dedup uses `updated_at`.
+- AVRO booleans use `castBool`, integers `castInt64`, doubles `castFloat64`; string
+  keys use `IFNULL(cleanString(...), '')`. No hard-delete purge is added.
+
+The first build of every DERP table dedups by ID across all raw partitions (for the
+journals, this includes the initial 3-day full load). Incremental runs read only the `BACKFILL_DAYS` window,
 dedup that input, then MERGE by ID; they do not rescan all historical partitions.
 
 Nothing downstream reads `validated_derp` yet (no curated, dim, fact, view or CDC).
@@ -243,6 +280,5 @@ Nothing downstream reads `validated_allkons_commission` yet.
 
 ไม่มี `validated_schema_allkons_commission.sqlx` แล้ว — ดูหัวข้อ ALLKONS ข้างบน
 
-**รวมทั้งชั้น**: MAC5 87 + CIS360 25 + MASTERSKU 12 + MASTER_SKU 17 + SALEOUT_MDT 17 + DERP 32
-(นับรวม schema-bootstrap ของแต่ละ source แล้ว) · ตรวจ 2026-10-28 · ยอดรวมล่าสุดดูที่
+**รวมทั้งชั้น**: จำนวนไฟล์ล่าสุด (นับรวม schema-bootstrap ของแต่ละ source) ดูที่
 [generated lineage](../../diagrams/pipeline_lineage.md#1-layer-overview)
