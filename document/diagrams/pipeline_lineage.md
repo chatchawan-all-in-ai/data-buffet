@@ -7,7 +7,7 @@
 > inline `ref(...)` + `tags: [...]`), so the views — and `topic_flows.md` — always
 > match the repo.
 
-**Objects: 366** — initial 21 · validated 186 · curated 19 · dimension 71 · fact 18 · view 41 · cdc 2 · process 4 · pub_sub 1 · org_center 3
+**Objects: 367** — initial 21 · validated 186 · curated 19 · dimension 71 · fact 18 · view 41 · cdc 2 · process 4 · pub_sub 1 · org_center 4
 
 **Paused (config commented out):** —
 
@@ -91,7 +91,7 @@ flowchart TB
     direction TB
     V["validated | 186<br/>clean - cast - dedup<br/>tag: validated"]
     C["curated | 19<br/>business joins<br/>tag: curated"]
-    D["dimension_daily | 73<br/>SK + SCD rebuild<br/>tag: dimension_daily"]
+    D["dimension_daily | 74<br/>SK + SCD rebuild<br/>tag: dimension_daily"]
     Fd["fact_daily | 18<br/>star-schema load<br/>tag: fact_daily"]
     CDC["cdc_incremental | 1<br/>change log<br/>tag: cdc_incremental"]
     P["process | 2<br/>AI address parse - CDC gated + RLS map<br/>tag: process"]

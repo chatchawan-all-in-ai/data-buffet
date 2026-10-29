@@ -20,7 +20,7 @@
 | Add/edit a view (presentation layer) | [view/view-layer.md](view/view-layer.md), how-to: `document/how-to/add-view.md` |
 | Deploy a view to BigQuery (done by hand — `view` tag is not scheduled) | `document/how-to/deploy-view.md` |
 | What a business flag means (`FlagFree`, `FlagExpire`, `item_status`, `seq_condition`) | [overview/business-flags.md](overview/business-flags.md) |
-| Org center (who sits in which unit / position — `org_center_unit`, `org_center_member`) | [org_center/org-center.md](org_center/org-center.md) |
+| Org center (who sits in which unit / position — `org_center_unit`, `org_center_member`, `org_center_person`) | [org_center/org-center.md](org_center/org-center.md) |
 | CDC / change tracking | [cdc-process/cdc.md](cdc-process/cdc.md) |
 | AI address parsing | [cdc-process/process.md](cdc-process/process.md) |
 | Config, tags, helpers | [includes/databuffet-js.md](includes/databuffet-js.md), [includes/variables.md](includes/variables.md), [includes/function-data.md](includes/function-data.md), [includes/cdc-config.md](includes/cdc-config.md) |

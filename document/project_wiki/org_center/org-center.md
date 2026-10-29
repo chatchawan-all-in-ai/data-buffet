@@ -1,10 +1,11 @@
-# Org Center — `org_center_unit` / `org_center_member`
+# Org Center — `org_center_unit` / `org_center_member` / `org_center_person`
 
 > **LLM context**: Dataset `org_center` (`databuffet.ORG_CENTER`), folder
 > `definitions/org_center/`, added 2026-10-29 for the TA AI Assistant. It is the single
 > source of **who sits in which unit and position**; Power BI RLS, the TA app and other
-> systems build their own access rules from it later. Both tables are `type: "table"`,
-> tag `dimension_daily`, rebuilt every night after `update_sk_sale_rep_group`.
+> systems build their own access rules from it later. All three tables are `type: "table"`,
+> tag `dimension_daily`, rebuilt every night after `update_sk_sale_rep_group`
+> (`org_center_person` after `org_center_member`).
 > They carry **business codes, not SKs**, so consumers can keep them across days.
 
 ## Files
@@ -14,11 +15,13 @@
 | `org_center_schema.sqlx` | operations, tag `dimension_daily` | `CREATE SCHEMA IF NOT EXISTS org_center` — same bootstrap as `pub_sub_schema` / `cdc_schema` |
 | `org_center_unit.sqlx` | table | 1 row = 1 unit (division / region / section) |
 | `org_center_member.sqlx` | table | 1 row = 1 person in one position at one unit |
+| `org_center_person.sqlx` | table | 1 row = 1 person (across companies), built from `org_center_member` |
 
-Both tables depend on `org_center_schema`, the `dim_*_last` tables they read, and
+`org_center_unit` and `org_center_member` depend on `org_center_schema`, the `dim_*_last` tables they read, and
 `update_sk_sale_rep_group` — the `_last` tables are built with NULL `DirectorSK` /
 `RegionSK` / `SectionSK`, and that step fills them
 ([special-cases](../dimension/special-cases.md#update_sk_sale_rep_group--imperative-update-step)).
+`org_center_person` depends on `org_center_schema` and `org_center_member` only.
 
 ## Org levels (3)
 
@@ -84,6 +87,45 @@ NULL are dropped (one region manager slot, `Other`).
 
 Email: active rows of the mapping table, one per `employeeid` (a non-NULL email
 first, then the latest `updated_at`).
+
+## `org_center_person`
+
+Key: `employee_id` — one row per person, even when the person is in two companies.
+The who-is-who list (the TA app's `employees`); `org_center_member` stays the
+where-they-sit list with dates (the app's `appointments`). No boss column: the direct
+boss of a DIRECTOR / REGION_MGR / SECTION_MGR / TA is the manager of the parent unit
+(`org_center_unit.parent_unit_id` → `org_center_member`).
+
+| Column | Type | Source |
+|---|---|---|
+| `employee_id` | STRING | `org_center_member.employee_id` (never NULL) |
+| `first_name` / `last_name` / `nickname` / `email` | STRING | picked from the person's member rows (rule below) |
+| `company_ids` | ARRAY&lt;STRING&gt; | every `company_id` of the person's member rows, sorted |
+| `position_codes` | ARRAY&lt;STRING&gt; | distinct positions with a member row valid today, in order `DIRECTOR`, `REGION_MGR`, `SECTION_MGR`, `TA`; empty when none is valid |
+| `is_active` | BOOL | the person has a member row valid today |
+
+"Valid today" = `CURRENT_DATE('Asia/Bangkok') BETWEEN valid_from AND valid_to`.
+
+**Name / email pick rule** (deterministic). Row order: among the person's member rows
+valid today, the highest position (`DIRECTOR` > `REGION_MGR` > `SECTION_MGR` > `TA`), then
+the latest `valid_to`, then the lowest `company_id`. If no row is valid today, the row
+with the latest `valid_to` (then `company_id`). Remaining ties go to the higher position,
+then the lowest `unit_id`.
+
+- `email`: the first non-NULL `email` in that order (email is joined per `employee_id`,
+  so every row carries the same value).
+- `nickname`: the first non-NULL `nickname` in that order (`DIRECTOR` rows have none).
+- `first_name` / `last_name`: the first non-`DIRECTOR` row in that order, because those
+  rows have real separate name and surname fields. Only a person with no non-`DIRECTOR`
+  row gets the `DIRECTOR` name, split at the first space.
+
+Placeholder managers (`Non Director`, `9999990`–`9999999`)
+get a row like any other person.
+
+Checks before the first build (2026-10-29, read-only SELECT): 206 rows = 206 distinct
+`employee_id` in `org_center_member`, 0 duplicate `employee_id`, every member
+`employee_id` present, 201 `is_active` = 201 people with a member row valid today,
+8 people in two companies (`ab01` + `ag01`), email NULL for 171.
 
 ## Rules
 

@@ -1,0 +1,75 @@
+config {
+    type: "table",
+    schema: databuffet.ORG_CENTER,
+    dependencies: [
+                    "org_center_schema",
+                    "org_center_member"
+                  ],
+    tags: [databuffet.TAG_DIM_DAILY],
+    uniqueKey: ["employee_id"],
+    bigquery: {
+        clusterBy: ["employee_id"]
+    },
+}
+
+js {
+    const OrgCenterMemberTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.ORG_CENTER,
+        name: "org_center_member",
+    };
+    const OrgCenterMemberTableRef = `${OrgCenterMemberTable.database}.${OrgCenterMemberTable.schema}.${OrgCenterMemberTable.name}`;
+
+    // ตำแหน่งสูงสุดก่อน: DIRECTOR > REGION_MGR > SECTION_MGR > TA
+    const positionRank = (col) => `CASE ${col} WHEN 'DIRECTOR' THEN 1 WHEN 'REGION_MGR' THEN 2 WHEN 'SECTION_MGR' THEN 3 WHEN 'TA' THEN 4 END`;
+
+    // แถวที่ใช้ได้วันนี้ ตำแหน่งสูงสุด > valid_to ล่าสุด > company_id · ไม่มีแถวใช้ได้ = valid_to ล่าสุด
+    const pickOrder = `is_valid DESC, IF(is_valid, position_rank, 0), valid_to DESC, company_id, position_rank, unit_id`;
+}
+
+-- 1 แถว = 1 คน (ข้ามบริษัท) · ที่นั่งและวันที่อยู่ใน org_center_member
+WITH member AS (
+  SELECT
+    *,
+    CURRENT_DATE('Asia/Bangkok') BETWEEN valid_from AND valid_to AS is_valid,
+    ${positionRank("position_code")} AS position_rank
+  FROM `${OrgCenterMemberTableRef}`
+
+), person AS (
+  SELECT
+    employee_id,
+    -- ชื่อ-นามสกุล: แถวที่ไม่ใช่ DIRECTOR ก่อน (DIRECTOR เดาจากการแยกชื่อเต็ม) แล้วตาม pickOrder
+    ARRAY_AGG(STRUCT(first_name, last_name)
+              ORDER BY position_code = 'DIRECTOR', ${pickOrder}
+              LIMIT 1)[OFFSET(0)] AS picked,
+    -- ชื่อเล่น: ค่าแรกที่ไม่ NULL ตาม pickOrder (แถว DIRECTOR ไม่มีชื่อเล่น)
+    ARRAY_AGG(nickname IGNORE NULLS ORDER BY ${pickOrder} LIMIT 1)[SAFE_OFFSET(0)] AS nickname,
+    ARRAY_AGG(email IGNORE NULLS ORDER BY ${pickOrder} LIMIT 1)[SAFE_OFFSET(0)] AS email,
+    ARRAY_AGG(DISTINCT company_id ORDER BY company_id) AS company_ids,
+    ARRAY_AGG(IF(is_valid, position_code, NULL) IGNORE NULLS) AS valid_positions,
+    LOGICAL_OR(is_valid) AS is_active
+  FROM member
+  GROUP BY employee_id
+
+)
+  SELECT
+    employee_id,
+    picked.first_name,
+    picked.last_name,
+    nickname,
+    email,
+    company_ids,
+    ARRAY(
+      SELECT p
+      FROM UNNEST(valid_positions) AS p
+      GROUP BY p
+      ORDER BY ${positionRank("p")}
+    ) AS position_codes,
+    is_active
+  FROM person
+
+pre_operations {
+}
+
+post_operations {
+}
