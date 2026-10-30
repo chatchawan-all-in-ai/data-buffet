@@ -40,6 +40,13 @@ js {
     };
     const OrgCenterLinkTableRef = `${OrgCenterLinkTable.database}.${OrgCenterLinkTable.schema}.${OrgCenterLinkTable.name}`;
 
+    const MdsDataCompanyMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_company_master",
+    };
+    const MdsDataCompanyMasterTableRef = `${MdsDataCompanyMasterTable.database}.${MdsDataCompanyMasterTable.schema}.${MdsDataCompanyMasterTable.name}`;
+
     const MdsDataMdtSalesPcMasterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
@@ -110,14 +117,13 @@ WITH today AS (
   WHERE u.unit_id IS NULL
 
 ), unit_no_parent AS (
-  -- ภาค/ส่วนต้องมีแม่ในบริษัทเดียวกัน · ฝ่าย (depth 1) ไม่มีแม่เป็นปกติ
   SELECT u.company_id, 'UNIT' AS entity, TO_JSON_STRING([u.company_id, u.unit_id]) AS entity_key,
-         'UNIT_NO_PARENT' AS rule_code, 'หน่วยไม่มีหน่วยแม่ใน org_center_unit (ภาคไม่มีฝ่าย หรือส่วนไม่มีภาค)' AS rule_description
+         'UNIT_NO_PARENT' AS rule_code, 'หน่วยไม่มีหน่วยแม่ใน org_center_unit (ฝ่ายไม่มีบริษัท ภาคไม่มีฝ่าย หรือส่วนไม่มีภาค)' AS rule_description
   FROM `${OrgCenterUnitTableRef}` AS u
   LEFT JOIN `${OrgCenterUnitTableRef}` AS p
     ON u.company_id = p.company_id
    AND u.parent_unit_id = p.unit_id
-  WHERE u.depth > 1
+  WHERE u.depth > 0
     AND p.unit_id IS NULL
 
 ), unit_no_manager AS (
@@ -126,7 +132,8 @@ WITH today AS (
          'UNIT_NO_MANAGER' AS rule_code, 'หน่วยที่ยังมีผลไม่มีผู้จัดการที่มีผลวันนี้ใน org_center_member' AS rule_description
   FROM `${OrgCenterUnitTableRef}` AS u
   CROSS JOIN today
-  WHERE today.d BETWEEN u.valid_from AND u.valid_to
+  WHERE u.unit_level != 'COMPANY'
+    AND today.d BETWEEN u.valid_from AND u.valid_to
     AND NOT EXISTS (
       SELECT 1
       FROM `${OrgCenterMemberTableRef}` AS m
@@ -135,6 +142,21 @@ WITH today AS (
         AND m.position_code = CASE u.unit_level WHEN 'DIVISION' THEN 'DIRECTOR' WHEN 'REGION' THEN 'REGION_MGR' WHEN 'SECTION' THEN 'SECTION_MGR' END
         AND today.d BETWEEN m.valid_from AND m.valid_to
     )
+
+), company_source AS (
+  SELECT
+    ${databuffet.functionData.cleanString("CompanyID")} AS company_id,
+    ${databuffet.functionData.cleanString("CEOEmpID")} AS employee_id
+  FROM `${MdsDataCompanyMasterTableRef}`
+  WHERE is_active = TRUE
+    AND ${databuffet.functionData.cleanString("CompanyID")} IS NOT NULL
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY company_id ORDER BY updated_at DESC, id) = 1
+
+), company_no_ceo AS (
+  SELECT company_id, 'COMPANY' AS entity, TO_JSON_STRING([company_id]) AS entity_key,
+         'COMPANY_NO_CEO' AS rule_code, 'บริษัทยังไม่มี CEOEmpID ใน mds_data_company_master' AS rule_description
+  FROM company_source
+  WHERE employee_id IS NULL
 
 ), link_pc AS (
   SELECT l.company_id, 'LINK' AS entity,
@@ -218,6 +240,7 @@ WITH today AS (
   UNION ALL SELECT * FROM member_no_unit
   UNION ALL SELECT * FROM unit_no_parent
   UNION ALL SELECT * FROM unit_no_manager
+  UNION ALL SELECT * FROM company_no_ceo
   UNION ALL SELECT * FROM link_pc
   UNION ALL SELECT * FROM link_ta
   UNION ALL SELECT * FROM link_branch

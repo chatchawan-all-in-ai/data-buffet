@@ -27,8 +27,8 @@ js {
     };
     const MdsDataEmployeeInfoTableRef = `${MdsDataEmployeeInfoTable.database}.${MdsDataEmployeeInfoTable.schema}.${MdsDataEmployeeInfoTable.name}`;
 
-    // ตำแหน่งสูงสุดก่อน: DIRECTOR > REGION_MGR > SECTION_MGR > TA > PC_MDT > PC_AGENT
-    const positionRank = (col) => `CASE ${col} WHEN 'DIRECTOR' THEN 1 WHEN 'REGION_MGR' THEN 2 WHEN 'SECTION_MGR' THEN 3 WHEN 'TA' THEN 4 WHEN 'PC_MDT' THEN 5 WHEN 'PC_AGENT' THEN 6 END`;
+    // ตำแหน่งสูงสุดก่อน: CEO > DIRECTOR > REGION_MGR > SECTION_MGR > TA > PC_MDT > PC_AGENT
+    const positionRank = (col) => `CASE ${col} WHEN 'CEO' THEN 1 WHEN 'DIRECTOR' THEN 2 WHEN 'REGION_MGR' THEN 3 WHEN 'SECTION_MGR' THEN 4 WHEN 'TA' THEN 5 WHEN 'PC_MDT' THEN 6 WHEN 'PC_AGENT' THEN 7 END`;
 
     // แถวที่ใช้ได้วันนี้ ตำแหน่งสูงสุด > valid_to ล่าสุด > company_id · ไม่มีแถวใช้ได้ = valid_to ล่าสุด
     const pickOrder = `is_valid DESC, IF(is_valid, position_rank, 0), valid_to DESC, company_id, position_rank, unit_id`;
@@ -52,11 +52,11 @@ WITH member AS (
 ), person AS (
   SELECT
     employee_id,
-    -- ชื่อ-นามสกุล: แถวที่ไม่ใช่ DIRECTOR ก่อน (DIRECTOR เดาจากการแยกชื่อเต็ม) แล้วตาม pickOrder
+    -- ชื่อ-นามสกุล: แถวที่ไม่ใช่ CEO/DIRECTOR ก่อน (DIRECTOR และ CEO เดาจากการแยกชื่อเต็ม · CEO ท้ายสุด เพื่อคนที่มีชื่ออยู่แล้วคงชื่อเดิม) แล้วตาม pickOrder
     ARRAY_AGG(STRUCT(first_name, last_name)
-              ORDER BY position_code = 'DIRECTOR', ${pickOrder}
+              ORDER BY position_code = 'CEO', position_code = 'DIRECTOR', ${pickOrder}
               LIMIT 1)[OFFSET(0)] AS picked,
-    -- ชื่อเล่น: ค่าแรกที่ไม่ NULL ตาม pickOrder (แถว DIRECTOR ไม่มีชื่อเล่น)
+    -- ชื่อเล่น: ค่าแรกที่ไม่ NULL ตาม pickOrder (แถว CEO และ DIRECTOR ไม่มีชื่อเล่น)
     ARRAY_AGG(nickname IGNORE NULLS ORDER BY ${pickOrder} LIMIT 1)[SAFE_OFFSET(0)] AS nickname,
     ARRAY_AGG(email IGNORE NULLS ORDER BY ${pickOrder} LIMIT 1)[SAFE_OFFSET(0)] AS email,
     ARRAY_AGG(DISTINCT company_id ORDER BY company_id) AS company_ids,

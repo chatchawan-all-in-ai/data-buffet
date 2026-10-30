@@ -14,6 +14,8 @@ config {
 }
 
 js {
+    const MdsDataCompanyMasterTableRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_company_master`;
+
     const DimDirectorLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -55,9 +57,17 @@ js {
     const planSectionCase = `CASE unit_code ${Object.entries(planSectionCode).map(([k, v]) => `WHEN '${k}' THEN '${v}'`).join(" ")} ELSE unit_code END`;
 }
 
--- 3 ชั้น: ฝ่าย / ภาค / ส่วน · ไม่กรองแถวหมดอายุ ส่ง StartDate/EndDate ให้ปลายทางตัดสินเอง
 -- plan_code = รหัสของหน่วยในไฟล์แผน Org_Mock_Master_Plan_v4.xlsx (unit_id / unit_code ไม่เปลี่ยน)
-WITH division AS (
+WITH company_source AS (
+  SELECT
+    ${databuffet.functionData.cleanString("CompanyID")} AS company_id,
+    ${databuffet.functionData.cleanString("CompanyNameTH")} AS company_name
+  FROM `${MdsDataCompanyMasterTableRef}`
+  WHERE is_active = TRUE
+    AND ${databuffet.functionData.cleanString("CompanyID")} IS NOT NULL
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY company_id ORDER BY updated_at DESC, id) = 1
+
+), division AS (
   SELECT
     ${databuffet.functionData.cleanString("dir.companyID")} AS company_id,
     CONCAT('DIR-', ${databuffet.functionData.cleanString("dir.DirectorID")}) AS unit_id,
@@ -65,7 +75,7 @@ WITH division AS (
     1 AS depth,
     ${databuffet.functionData.cleanString("dir.DirectorID")} AS unit_code,
     ${databuffet.functionData.cleanString("dir.DirectorName")} AS unit_name,
-    CAST(NULL AS STRING) AS parent_unit_id,
+    CONCAT('CO-', ${databuffet.functionData.cleanString("dir.companyID")}) AS parent_unit_id,
     dir.StartDate AS valid_from,
     dir.EndDate AS valid_to,
     ${databuffet.functionData.cleanString("dir.DirectorID")} AS plan_code
@@ -134,6 +144,21 @@ WITH division AS (
   FROM unit
   LEFT JOIN company
     ON unit.company_id = company.company_id
+
+  UNION ALL
+  SELECT
+    company_id,
+    CONCAT('CO-', company_id) AS unit_id,
+    'COMPANY' AS unit_level,
+    0 AS depth,
+    company_id AS unit_code,
+    company_name AS unit_name,
+    CAST(NULL AS STRING) AS parent_unit_id,
+    DATE '2000-01-01' AS valid_from,
+    DATE '2066-12-31' AS valid_to,
+    CAST(NULL AS STRING) AS plan_code,
+    company_name
+  FROM company_source
 
 pre_operations {
 }

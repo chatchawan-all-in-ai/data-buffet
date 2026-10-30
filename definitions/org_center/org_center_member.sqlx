@@ -43,6 +43,13 @@ js {
     };
     const MdsDataMdtSalesBranchMasterTableRef = `${MdsDataMdtSalesBranchMasterTable.database}.${MdsDataMdtSalesBranchMasterTable.schema}.${MdsDataMdtSalesBranchMasterTable.name}`;
 
+    const MdsDataCompanyMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_company_master",
+    };
+    const MdsDataCompanyMasterTableRef = `${MdsDataCompanyMasterTable.database}.${MdsDataCompanyMasterTable.schema}.${MdsDataCompanyMasterTable.name}`;
+
     const DimDirectorLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -110,6 +117,33 @@ WITH emp_email AS (
     StartDate AS valid_from,
     EndDate AS valid_to
   FROM `${DimDirectorLastTableRef}`
+
+), ceo_source AS (
+  -- ยังไม่กรอก CEOEmpID ใน MDS = ไม่มีที่นั่ง CEO; CEOName ว่างได้
+  SELECT
+    ${databuffet.functionData.cleanString("CompanyID")} AS company_id,
+    ${databuffet.functionData.cleanString("CEOEmpID")} AS employee_id,
+    ${databuffet.functionData.cleanString("CEOName")} AS full_name
+  FROM `${MdsDataCompanyMasterTableRef}`
+  WHERE is_active = TRUE
+    AND ${databuffet.functionData.cleanString("CompanyID")} IS NOT NULL
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY company_id ORDER BY updated_at DESC, id) = 1
+
+), ceo AS (
+  -- ชื่อเต็มแยกเหมือน DIRECTOR: คำแรก = ชื่อ ที่เหลือ = นามสกุล
+  SELECT
+    c.company_id,
+    c.employee_id,
+    REGEXP_EXTRACT(c.full_name, r'^(\S+)') AS first_name,
+    REGEXP_EXTRACT(c.full_name, r'^\S+\s+(.+)$') AS last_name,
+    CAST(NULL AS STRING) AS nickname,
+    'CEO' AS position_code,
+    CONCAT('CO-', c.company_id) AS unit_id,
+    CAST([] AS ARRAY<STRING>) AS department_ids,
+    DATE '2000-01-01' AS valid_from,
+    DATE '2066-12-31' AS valid_to
+  FROM ceo_source AS c
+  WHERE c.employee_id IS NOT NULL
 
 ), region_manager AS (
   SELECT
@@ -303,6 +337,8 @@ WITH emp_email AS (
   FROM `${DimCompanyTableRef}`
 
 ), member AS (
+  SELECT * FROM ceo
+  UNION ALL
   SELECT * FROM director
   UNION ALL
   SELECT * FROM region_manager

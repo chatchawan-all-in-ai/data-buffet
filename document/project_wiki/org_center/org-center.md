@@ -14,11 +14,11 @@
 | File | Type | What it does |
 |---|---|---|
 | `org_center_schema.sqlx` | operations, tag `dimension_daily` | `CREATE SCHEMA IF NOT EXISTS org_center` — same bootstrap as `pub_sub_schema` / `cdc_schema` |
-| `org_center_unit.sqlx` | table | 1 row = 1 unit (division / region / section) |
+| `org_center_unit.sqlx` | table | 1 row = 1 unit (company / division / region / section) |
 | `org_center_member.sqlx` | table | 1 row = 1 person in one position at one unit for a date range |
 | `org_center_person.sqlx` | table | 1 row = 1 person (across companies), built from `org_center_member` |
 | `org_center_link.sqlx` | table | 1 row = 1 PC linked to 1 TA at 1 branch for a date range, from `mds_data_pc_ta` (0 rows while MDS is empty) |
-| `org_center_flags.sqlx` | table | 1 row = 1 data-quality problem found in the four tables above (see [`org_center_flags`](#org_center_flags)) |
+| `org_center_flags.sqlx` | table | 1 row = 1 data-quality problem found in the four tables above or their MDS sources (see [`org_center_flags`](#org_center_flags)) |
 
 `org_center_unit` and `org_center_member` depend on `org_center_schema`, the `dim_*_last` tables they read, and
 `update_sk_sale_rep_group` — the `_last` tables are built with NULL `DirectorSK` /
@@ -27,18 +27,19 @@
 `org_center_person` depends on `org_center_schema` and `org_center_member` only.
 `org_center_link` depends on `org_center_schema` and `dim_company`. `org_center_unit`, `org_center_member` also depend on `dim_company` (company name). `org_center_flags` depends on the four tables. `org_center_member` also depends on `org_center_link` (PC rows).
 
-## Org levels (3)
+## Org levels (4)
 
 | depth | unit_level | Thai | Source | unit_code | parent |
 |---:|---|---|---|---|---|
-| 1 | `DIVISION` | ฝ่าย | `dim_director_last` | `DirectorID` | — (NULL) |
+| 0 | `COMPANY` | บริษัท | `mds_data_company_master` (latest active row per cleaned `CompanyID`) | `CompanyID` | — (NULL) |
+| 1 | `DIVISION` | ฝ่าย | `dim_director_last` | `DirectorID` | company via `CO-<company_id>` |
 | 2 | `REGION` | ภาค | `dim_region_last` | `SubRegionID` | division via `DirectorSK` |
 | 3 | `SECTION` | ส่วน | `dim_section_last` | `SectionID` | region via `RegionSK` |
 
 The TA app's "team" = section. Department (เขต) is **not** a level: a TA's departments
 are listed in `org_center_member.department_ids`.
 
-`unit_id` = prefix + code: `DIR-00001`, `REG-NE`, `SEC-NE1`. The prefix keeps codes
+`unit_id` = prefix + code: `CO-ag01`, `DIR-00001`, `REG-NE`, `SEC-NE1`. The prefix keeps codes
 from colliding across levels.
 
 **Region code is `SubRegionID`, not `RegionID`**: region `PS1` has five sub-regions
@@ -51,19 +52,20 @@ Key: `company_id` + `unit_id`.
 
 | Column | Type | Source |
 |---|---|---|
-| `company_id` | STRING | `companyID` of the dim |
-| `unit_id` | STRING | `DIR-` / `REG-` / `SEC-` + `unit_code` |
-| `unit_level` | STRING | `DIVISION` / `REGION` / `SECTION` |
-| `depth` | INT64 | 1 / 2 / 3 |
-| `unit_code` | STRING | `DirectorID` / `SubRegionID` / `SectionID` |
-| `unit_name` | STRING | `DirectorName` / `RegionName` / `SectionName` |
-| `parent_unit_id` | STRING | NULL for a division |
-| `valid_from` / `valid_to` | DATE | `StartDate` / `EndDate` of the `_last` row (`2066-12-31` = still active) |
+| `company_id` | STRING | cleaned `CompanyID` from MDS for COMPANY; `companyID` of the dim otherwise |
+| `unit_id` | STRING | `CO-` / `DIR-` / `REG-` / `SEC-` + `unit_code` |
+| `unit_level` | STRING | `COMPANY` / `DIVISION` / `REGION` / `SECTION` |
+| `depth` | INT64 | 0 / 1 / 2 / 3 |
+| `unit_code` | STRING | `CompanyID` / `DirectorID` / `SubRegionID` / `SectionID` |
+| `unit_name` | STRING | `CompanyNameTH` / `DirectorName` / `RegionName` / `SectionName` |
+| `parent_unit_id` | STRING | NULL for COMPANY; company for DIVISION; division for REGION; region for SECTION |
+| `valid_from` / `valid_to` | DATE | COMPANY: `2000-01-01` / `2066-12-31`; otherwise `StartDate` / `EndDate` of the `_last` row (`2066-12-31` = still active) |
 | `plan_code` | STRING | the unit's code in `Org_Mock_Master_Plan_v4.xlsx` (below); `unit_id` / `unit_code` are unchanged |
-| `company_name` | STRING | `dim_company.CompanyNameTH` by `company_id`; NULL if the company is not in the dim |
+| `company_name` | STRING | COMPANY: cleaned MDS `CompanyNameTH`; otherwise `dim_company.CompanyNameTH` by `company_id` (NULL if absent) |
 
 **`plan_code`** (added 2026-10-30; the plan file's codes differ from the live codes in two places):
 
+- COMPANY: NULL.
 - DIVISION: `DirectorID`.
 - REGION: `dim_region_last.RegionID` — the five `PS1-n` sub-regions all map to `PS1`; every other region equals `unit_code`.
 - SECTION: `unit_code`, except 7 Dummy sections that the plan names by their name: `Dummy999994`→`HO`, `Dummy999993`→`Imboon`, `Dummy999991`→`Online`, `Dummy999992`→`IMP1`, `Dummy999992_02/03/04`→`IMP2/3/4`. This is a fixed list in `org_center_unit.sqlx` (`planSectionCode`), because no Data Mart column holds it; add a row there if the plan adds one.
@@ -74,14 +76,14 @@ Key: `company_id` + `employee_id` + `position_code` + `unit_id` + `valid_from`.
 
 | Column | Type | Source |
 |---|---|---|
-| `company_id` | STRING | `companyID` |
+| `company_id` | STRING | cleaned MDS `CompanyID` for CEO; `companyID` otherwise |
 | `employee_id` | STRING | MDS employee code (the TA app's `person_key`); PC rows use the link's `pc_employee_id` |
-| `first_name` / `last_name` / `nickname` | STRING | the dim of that position; for PCs, see below |
+| `first_name` / `last_name` / `nickname` | STRING | the position source listed below; for PCs, see PC rows |
 | `email` | STRING | `mds_data_org_employee_mapping_center.employeeemail` — NULL when the person is not in that table |
-| `position_code` | STRING | `DIRECTOR` / `REGION_MGR` / `SECTION_MGR` / `TA` / `PC_MDT` / `PC_AGENT` |
+| `position_code` | STRING | `CEO` / `DIRECTOR` / `REGION_MGR` / `SECTION_MGR` / `TA` / `PC_MDT` / `PC_AGENT` |
 | `unit_id` | STRING | the unit the position is held at |
 | `department_ids` | ARRAY&lt;STRING&gt; | TA departments merged into the row; empty for managers and PCs |
-| `valid_from` / `valid_to` | DATE | inclusive membership interval: dim `StartDate` / `EndDate`; for a TA, earliest start to latest end over the merged departments; for PCs, see below |
+| `valid_from` / `valid_to` | DATE | inclusive membership interval: CEO matches the COMPANY interval in [`org_center_unit`](#org_center_unit); otherwise dim `StartDate` / `EndDate`; for a TA, earliest start to latest end over the merged departments; for PCs, see below |
 | `company_name` | STRING | `dim_company.CompanyNameTH` by `company_id` |
 
 **PC rows** (`PC_MDT` / `PC_AGENT`, from `org_center_link`): position = the link's `pc_type`; names from
@@ -99,6 +101,7 @@ No phone number in member — it is in `org_center_person`.
 
 | position_code | Source | unit | Names |
 |---|---|---|---|
+| `CEO` | `mds_data_company_master.CEOEmpID` (active row, latest `updated_at`, then lowest `id`, per cleaned `CompanyID`) | `CO-<company_id>` | cleaned `CEOName` split like `DIRECTOR`; no nickname |
 | `DIRECTOR` | `dim_director_last.DirectorOfSalesID` | `DIR-<DirectorID>` | `DirectorOfSalesName` split: first word = first name, rest = last name, no nickname |
 | `REGION_MGR` | `dim_region_manager_last.RegionManagerEmployeeID` | `REG-<SubRegionID>` | `RegionManagerName` / `Surname` / `Nickname` |
 | `SECTION_MGR` | `dim_section_manager_last.SectionManagerEmployeeID` | `SEC-<SectionID>` | `SectionManagerName` / `Surname` / `Nickname` |
@@ -108,6 +111,8 @@ TA rows are grouped by company + employee + section. A TA whose departments sit 
 several sections gets one row per section (on 2026-10-29: 139 active TAs in 1 section,
 40 in 2–18 sections — mostly MDT store-chain sections). Rows whose `employee_id` is
 NULL are dropped (one region manager slot, `Other`).
+
+`CEO` rows: one row per company on its COMPANY unit, including companies without divisions. Each DIVISION points to that COMPANY unit, so its DIRECTOR resolves the CEO through the parent-unit lookup. No CEO member row (and no person created from that seat) while cleaned `CEOEmpID` is empty; an empty `CEOName` does not suppress the seat.
 
 Email: active rows of the mapping table, one per `employeeid` (a non-NULL email
 first, then the latest `updated_at`).
@@ -127,23 +132,23 @@ boss of a DIRECTOR / REGION_MGR / SECTION_MGR / TA is the manager of the parent 
 | `email` | STRING | the member-row email (rule below); only when empty, `mds_data_employee_info.Email` |
 | `mobile_phone` | STRING | `mds_data_employee_info.MobilePhone` by `EmployeeID` (active rows, as entered); NULL when absent |
 | `company_ids` | ARRAY&lt;STRING&gt; | every `company_id` of the person's member rows, sorted |
-| `position_codes` | ARRAY&lt;STRING&gt; | distinct positions with a member row valid today, in order `DIRECTOR`, `REGION_MGR`, `SECTION_MGR`, `TA`, `PC_MDT`, `PC_AGENT`; empty when none is valid |
+| `position_codes` | ARRAY&lt;STRING&gt; | distinct positions with a member row valid today, in order `CEO`, `DIRECTOR`, `REGION_MGR`, `SECTION_MGR`, `TA`, `PC_MDT`, `PC_AGENT`; empty when none is valid |
 | `is_active` | BOOL | the person has a member row valid today |
 
 "Valid today" = `CURRENT_DATE('Asia/Bangkok') BETWEEN valid_from AND valid_to`.
 
 **Name / email pick rule** (deterministic). Row order: among the person's member rows
-valid today, the highest position (`DIRECTOR` > `REGION_MGR` > `SECTION_MGR` > `TA` > `PC_MDT` > `PC_AGENT`), then
+valid today, the highest position (`CEO` > `DIRECTOR` > `REGION_MGR` > `SECTION_MGR` > `TA` > `PC_MDT` > `PC_AGENT`), then
 the latest `valid_to`, then the lowest `company_id`. If no row is valid today, the row
 with the latest `valid_to` (then `company_id`). Remaining ties go to the higher position,
 then the lowest `unit_id`.
 
 - `email`: the first non-NULL member email in that order (email is joined per `employee_id`,
   so every row carries the same value); its fallback source is listed above.
-- `nickname`: the first non-NULL `nickname` in that order (`DIRECTOR` rows have none).
-- `first_name` / `last_name`: the first non-`DIRECTOR` row in that order, because those
-  rows have real separate name and surname fields. Only a person with no non-`DIRECTOR`
-  row gets the `DIRECTOR` name, split at the first space.
+- `nickname`: the first non-NULL `nickname` in that order (`CEO` and `DIRECTOR` rows have none).
+- `first_name` / `last_name`: the first row that is not `CEO` / `DIRECTOR` in that order, because those
+  rows have real separate name and surname fields. Only a person with no such row
+  gets the `DIRECTOR` name, then the `CEO` name (full name split at the first space), so a CEO already in the table keeps the existing name.
 
 `mds_data_employee_info` is filtered to active rows, picking the latest `updated_at`, then lowest `id`,
 per `EmployeeID`. Both contact fields are kept as entered. Contact-only employees do not create person rows.
@@ -190,8 +195,8 @@ LINE UUID (comes from the app login), "more than 1 current team assignment" (a T
 | Column | Type | Meaning |
 |---|---|---|
 | `company_id` | STRING | NULL for person-level rules |
-| `entity` | STRING | `UNIT` / `MEMBER` / `PERSON` / `LINK` |
-| `entity_key` | STRING | JSON array of the entity's key components, preserving NULL as JSON null (unit: company, unit_id · member: its 5 key columns · person: employee_id · link: its 5 key columns; dates are ISO strings) |
+| `entity` | STRING | `UNIT` / `MEMBER` / `PERSON` / `LINK` / `COMPANY` |
+| `entity_key` | STRING | JSON array of the entity's key components, preserving NULL as JSON null (company: company_id · unit: company, unit_id · member: its 5 key columns · person: employee_id · link: its 5 key columns; dates are ISO strings) |
 | `rule_code` | STRING | see below |
 | `rule_description` | STRING | Thai description |
 
@@ -200,8 +205,9 @@ LINE UUID (comes from the app login), "more than 1 current team assignment" (a T
 | `DUPLICATE_ID` | UNIT / MEMBER / PERSON / LINK | the table's key appears more than once |
 | `MEMBER_NO_PERSON` | MEMBER | `employee_id` not in `org_center_person` |
 | `MEMBER_NO_UNIT` | MEMBER | `unit_id` not in `org_center_unit` for that company |
-| `UNIT_NO_PARENT` | UNIT | REGION / SECTION whose `parent_unit_id` is not a unit of the same company |
-| `UNIT_NO_MANAGER` | UNIT | unit valid today with no `DIRECTOR` / `REGION_MGR` / `SECTION_MGR` (by level) member valid today |
+| `UNIT_NO_PARENT` | UNIT | DIVISION / REGION / SECTION whose `parent_unit_id` is not a unit of the same company |
+| `UNIT_NO_MANAGER` | UNIT | DIVISION / REGION / SECTION valid today with no `DIRECTOR` / `REGION_MGR` / `SECTION_MGR` (by level) member valid today |
+| `COMPANY_NO_CEO` | COMPANY | an active company in `mds_data_company_master` has an empty cleaned `CEOEmpID` in its latest active row (`updated_at` descending, then lowest `id`); includes companies without divisions (today: all 5 companies) |
 | `PC_TA_UNKNOWN_PC` | LINK | `pc_employee_id` not in active `mds_data_mdt_sales_pc_master` |
 | `PC_TA_UNKNOWN_TA` | LINK | `ta_employee_id` has no `TA` member row in that company |
 | `PC_TA_UNKNOWN_BRANCH` | LINK | `PC_MDT` link whose `branch_code` is not in active `mds_data_mdt_sales_branch_master` (the master is MDT only) |
@@ -209,15 +215,16 @@ LINE UUID (comes from the app login), "more than 1 current team assignment" (a T
 | `PHONE_FORMAT` | PERSON | non-NULL `mobile_phone` matches neither `0xx-xxx-xxxx` nor `+66` followed by 1–2 digits, 3 digits, and 4 digits, with an optional space or hyphen between each group (including after `+66`) |
 | `PHONE_DUPLICATE` | PERSON | the same `mobile_phone` belongs to more than one person |
 
-Checks before the first build (2026-10-30, read-only SELECT of the compiled queries against the live tables): units
+Checks before the CEO/company-level change (2026-10-30, read-only SELECT of the compiled queries against the live tables): units
 164 = 164 and members 604 = 604 with zero differing rows on the old columns; `plan_code` / `company_name` never NULL;
 flags returned 2 rows, both `UNIT_NO_MANAGER` (`ag01` `REG-Other`, `ag01` `SEC-PS1-5`). The link and phone rules returned 0 because
 `mds_data_pc_ta` and `mds_data_employee_info` are still empty.
 
-## Not built: CEO
+COMPANY units are excluded from `UNIT_NO_MANAGER`; missing CEOs are covered by `COMPANY_NO_CEO`. With current empty CEO values, the expected result after this change is 169 units (164 existing + 5 COMPANY), 604 members, 206 people, and only 5 additional flags, all `COMPANY_NO_CEO`.
 
-No Data Mart or MDS field identifies a CEO per company (searched 2026-10-30; the only `ceo` column is the legacy
-`tdis_mail.ceo` menu code). Captain decision: skip CEO until MDS holds one; no placeholder row.
+## CEO
+
+Added 2026-10-30 after MDS Company Master got optional CEO fields, following `Org_Mock_Master_Plan_v4.xlsx` (sheets M00_Company / M02_Position). The Excel CEO values are mock; MDS supplies the real assignments later. See [`org_center_member`](#org_center_member) for the seat contract, [org levels](#org-levels-4) for the hierarchy, and [`org_center_flags`](#org_center_flags) for missing-CEO checks.
 
 ## Rules
 
