@@ -1,0 +1,232 @@
+config {
+    type: "table",
+    schema: databuffet.ORG_CENTER,
+    dependencies: [
+                    "org_center_schema",
+                    "org_center_unit", "org_center_member", "org_center_person", "org_center_link"
+                  ],
+    tags: [databuffet.TAG_DIM_DAILY],
+    bigquery: {
+        clusterBy: ["rule_code", "entity"]
+    },
+}
+
+js {
+    const OrgCenterUnitTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.ORG_CENTER,
+        name: "org_center_unit",
+    };
+    const OrgCenterUnitTableRef = `${OrgCenterUnitTable.database}.${OrgCenterUnitTable.schema}.${OrgCenterUnitTable.name}`;
+
+    const OrgCenterMemberTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.ORG_CENTER,
+        name: "org_center_member",
+    };
+    const OrgCenterMemberTableRef = `${OrgCenterMemberTable.database}.${OrgCenterMemberTable.schema}.${OrgCenterMemberTable.name}`;
+
+    const OrgCenterPersonTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.ORG_CENTER,
+        name: "org_center_person",
+    };
+    const OrgCenterPersonTableRef = `${OrgCenterPersonTable.database}.${OrgCenterPersonTable.schema}.${OrgCenterPersonTable.name}`;
+
+    const OrgCenterLinkTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.ORG_CENTER,
+        name: "org_center_link",
+    };
+    const OrgCenterLinkTableRef = `${OrgCenterLinkTable.database}.${OrgCenterLinkTable.schema}.${OrgCenterLinkTable.name}`;
+
+    const MdsDataMdtSalesPcMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_sales_pc_master",
+    };
+    const MdsDataMdtSalesPcMasterTableRef = `${MdsDataMdtSalesPcMasterTable.database}.${MdsDataMdtSalesPcMasterTable.schema}.${MdsDataMdtSalesPcMasterTable.name}`;
+
+    const MdsDataMdtSalesBranchMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_sales_branch_master",
+    };
+    const MdsDataMdtSalesBranchMasterTableRef = `${MdsDataMdtSalesBranchMasterTable.database}.${MdsDataMdtSalesBranchMasterTable.schema}.${MdsDataMdtSalesBranchMasterTable.name}`;
+}
+
+-- 1 แถว = 1 ปัญหาที่พบ · ตามชีต Check ของ Org_Mock_Master_Plan_v4.xlsx เฉพาะข้อที่ใช้กับ design นี้
+-- input = output: ตารางนี้แค่รายงาน ไม่แก้ค่าใน org center · แก้ที่ MDS แล้วรอบถัดไปแถวจะหายเอง
+WITH today AS (
+  SELECT CURRENT_DATE('Asia/Bangkok') AS d
+
+), dup_unit AS (
+  SELECT company_id, 'UNIT' AS entity, TO_JSON_STRING([company_id, unit_id]) AS entity_key,
+         'DUPLICATE_ID' AS rule_code, 'รหัสหน่วย (company_id + unit_id) ซ้ำใน org_center_unit' AS rule_description
+  FROM `${OrgCenterUnitTableRef}`
+  GROUP BY company_id, unit_id
+  HAVING COUNT(*) > 1
+
+), dup_member AS (
+  SELECT company_id, 'MEMBER' AS entity,
+         TO_JSON_STRING([company_id, employee_id, position_code, unit_id, CAST(valid_from AS STRING)]) AS entity_key,
+         'DUPLICATE_ID' AS rule_code, 'สมาชิก (company_id + employee_id + position_code + unit_id + valid_from) ซ้ำใน org_center_member' AS rule_description
+  FROM `${OrgCenterMemberTableRef}`
+  GROUP BY company_id, employee_id, position_code, unit_id, valid_from
+  HAVING COUNT(*) > 1
+
+), dup_person AS (
+  SELECT CAST(NULL AS STRING) AS company_id, 'PERSON' AS entity, TO_JSON_STRING([employee_id]) AS entity_key,
+         'DUPLICATE_ID' AS rule_code, 'employee_id ซ้ำใน org_center_person' AS rule_description
+  FROM `${OrgCenterPersonTableRef}`
+  GROUP BY employee_id
+  HAVING COUNT(*) > 1
+
+), dup_link AS (
+  SELECT company_id, 'LINK' AS entity,
+         TO_JSON_STRING([company_id, pc_employee_id, branch_type, branch_code, CAST(valid_from AS STRING)]) AS entity_key,
+         'DUPLICATE_ID' AS rule_code, 'การผูก PC-TA (company + PC + branch_type + branch_code + valid_from) ซ้ำใน org_center_link' AS rule_description
+  FROM `${OrgCenterLinkTableRef}`
+  GROUP BY company_id, pc_employee_id, branch_type, branch_code, valid_from
+  HAVING COUNT(*) > 1
+
+), member_no_person AS (
+  SELECT m.company_id, 'MEMBER' AS entity,
+         TO_JSON_STRING([m.company_id, m.employee_id, m.position_code, m.unit_id, CAST(m.valid_from AS STRING)]) AS entity_key,
+         'MEMBER_NO_PERSON' AS rule_code, 'สมาชิกไม่มี employee_id ใน org_center_person' AS rule_description
+  FROM `${OrgCenterMemberTableRef}` AS m
+  LEFT JOIN `${OrgCenterPersonTableRef}` AS p
+    ON m.employee_id = p.employee_id
+  WHERE p.employee_id IS NULL
+
+), member_no_unit AS (
+  SELECT m.company_id, 'MEMBER' AS entity,
+         TO_JSON_STRING([m.company_id, m.employee_id, m.position_code, m.unit_id, CAST(m.valid_from AS STRING)]) AS entity_key,
+         'MEMBER_NO_UNIT' AS rule_code, 'สมาชิกอยู่ในหน่วยที่ไม่มีใน org_center_unit' AS rule_description
+  FROM `${OrgCenterMemberTableRef}` AS m
+  LEFT JOIN `${OrgCenterUnitTableRef}` AS u
+    ON m.company_id = u.company_id
+   AND m.unit_id = u.unit_id
+  WHERE u.unit_id IS NULL
+
+), unit_no_parent AS (
+  -- ภาค/ส่วนต้องมีแม่ในบริษัทเดียวกัน · ฝ่าย (depth 1) ไม่มีแม่เป็นปกติ
+  SELECT u.company_id, 'UNIT' AS entity, TO_JSON_STRING([u.company_id, u.unit_id]) AS entity_key,
+         'UNIT_NO_PARENT' AS rule_code, 'หน่วยไม่มีหน่วยแม่ใน org_center_unit (ภาคไม่มีฝ่าย หรือส่วนไม่มีภาค)' AS rule_description
+  FROM `${OrgCenterUnitTableRef}` AS u
+  LEFT JOIN `${OrgCenterUnitTableRef}` AS p
+    ON u.company_id = p.company_id
+   AND u.parent_unit_id = p.unit_id
+  WHERE u.depth > 1
+    AND p.unit_id IS NULL
+
+), unit_no_manager AS (
+  -- หน่วยที่ยังมีผลวันนี้ ต้องมีผู้จัดการตามระดับที่มีผลวันนี้ (ฝ่าย DIRECTOR · ภาค REGION_MGR · ส่วน SECTION_MGR)
+  SELECT u.company_id, 'UNIT' AS entity, TO_JSON_STRING([u.company_id, u.unit_id]) AS entity_key,
+         'UNIT_NO_MANAGER' AS rule_code, 'หน่วยที่ยังมีผลไม่มีผู้จัดการที่มีผลวันนี้ใน org_center_member' AS rule_description
+  FROM `${OrgCenterUnitTableRef}` AS u
+  CROSS JOIN today
+  WHERE today.d BETWEEN u.valid_from AND u.valid_to
+    AND NOT EXISTS (
+      SELECT 1
+      FROM `${OrgCenterMemberTableRef}` AS m
+      WHERE m.company_id = u.company_id
+        AND m.unit_id = u.unit_id
+        AND m.position_code = CASE u.unit_level WHEN 'DIVISION' THEN 'DIRECTOR' WHEN 'REGION' THEN 'REGION_MGR' WHEN 'SECTION' THEN 'SECTION_MGR' END
+        AND today.d BETWEEN m.valid_from AND m.valid_to
+    )
+
+), link_pc AS (
+  SELECT l.company_id, 'LINK' AS entity,
+         TO_JSON_STRING([l.company_id, l.pc_employee_id, l.branch_type, l.branch_code, CAST(l.valid_from AS STRING)]) AS entity_key,
+         'PC_TA_UNKNOWN_PC' AS rule_code, 'PC ใน mds_data_pc_ta ไม่มีใน mds_data_mdt_sales_pc_master' AS rule_description
+  FROM `${OrgCenterLinkTableRef}` AS l
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM `${MdsDataMdtSalesPcMasterTableRef}` AS pc
+    WHERE pc.is_active = TRUE
+      AND pc.employee_id = l.pc_employee_id
+  )
+
+), link_ta AS (
+  SELECT l.company_id, 'LINK' AS entity,
+         TO_JSON_STRING([l.company_id, l.pc_employee_id, l.branch_type, l.branch_code, CAST(l.valid_from AS STRING)]) AS entity_key,
+         'PC_TA_UNKNOWN_TA' AS rule_code, 'TA ใน mds_data_pc_ta ไม่มีตำแหน่ง TA ของบริษัทเดียวกันใน org_center_member' AS rule_description
+  FROM `${OrgCenterLinkTableRef}` AS l
+  WHERE NOT EXISTS (
+    SELECT 1
+    FROM `${OrgCenterMemberTableRef}` AS m
+    WHERE m.position_code = 'TA'
+      AND m.company_id = l.company_id
+      AND m.employee_id = l.ta_employee_id
+  )
+
+), link_branch AS (
+  -- branch master มีเฉพาะสาขา MDT จึงตรวจเฉพาะ PC ของ MDT
+  SELECT l.company_id, 'LINK' AS entity,
+         TO_JSON_STRING([l.company_id, l.pc_employee_id, l.branch_type, l.branch_code, CAST(l.valid_from AS STRING)]) AS entity_key,
+         'PC_TA_UNKNOWN_BRANCH' AS rule_code, 'สาขาของ PC MDT ใน mds_data_pc_ta ไม่มีใน mds_data_mdt_sales_branch_master' AS rule_description
+  FROM `${OrgCenterLinkTableRef}` AS l
+  WHERE l.pc_type = 'PC_MDT'
+    AND NOT EXISTS (
+      SELECT 1
+      FROM `${MdsDataMdtSalesBranchMasterTableRef}` AS br
+      WHERE br.is_active = TRUE
+        AND br.branch_code = l.branch_code
+    )
+
+), link_overlap AS (
+  -- PC 1 คน + บริษัท + branch_type + สาขา ต้องมี TA หลัก 1 คนต่อวัน · valid_to ไม่รวมวันนั้น
+  SELECT a.company_id, 'LINK' AS entity,
+         TO_JSON_STRING([a.company_id, a.pc_employee_id, a.branch_type, a.branch_code, CAST(a.valid_from AS STRING)]) AS entity_key,
+         'PC_TA_OVERLAP' AS rule_code, 'ช่วงวันที่ซ้อนกับแถวอื่นของ PC + บริษัท + branch_type + สาขาเดียวกัน (ต้องมี TA หลัก 1 คนต่อวัน)' AS rule_description
+  FROM `${OrgCenterLinkTableRef}` AS a
+  WHERE EXISTS (
+    SELECT 1
+    FROM `${OrgCenterLinkTableRef}` AS b
+    WHERE a.company_id = b.company_id
+      AND a.pc_employee_id = b.pc_employee_id
+      AND a.branch_type IS NOT DISTINCT FROM b.branch_type
+      AND a.branch_code IS NOT DISTINCT FROM b.branch_code
+      AND a.valid_from < b.valid_to
+      AND b.valid_from < a.valid_to
+      AND (a.valid_from, a.ta_employee_id) != (b.valid_from, b.ta_employee_id)
+  )
+
+), phone_format AS (
+  -- เบอร์เก็บตามที่กรอก ไม่แก้ · รูปแบบที่รับ 0xx-xxx-xxxx หรือ +66
+  SELECT CAST(NULL AS STRING) AS company_id, 'PERSON' AS entity, TO_JSON_STRING([employee_id]) AS entity_key,
+         'PHONE_FORMAT' AS rule_code, 'เบอร์มือถือไม่อยู่ในรูปแบบ 0xx-xxx-xxxx หรือ +66' AS rule_description
+  FROM `${OrgCenterPersonTableRef}`
+  WHERE mobile_phone IS NOT NULL
+    AND NOT REGEXP_CONTAINS(mobile_phone, r'^0\d{2}-\d{3}-\d{4}$')
+    AND NOT REGEXP_CONTAINS(mobile_phone, r'^\+66[ -]?\d{1,2}[ -]?\d{3}[ -]?\d{4}$')
+
+), phone_dup AS (
+  SELECT CAST(NULL AS STRING) AS company_id, 'PERSON' AS entity, TO_JSON_STRING([employee_id]) AS entity_key,
+         'PHONE_DUPLICATE' AS rule_code, 'เบอร์มือถือซ้ำกับพนักงานคนอื่น' AS rule_description
+  FROM `${OrgCenterPersonTableRef}`
+  WHERE mobile_phone IS NOT NULL
+  QUALIFY COUNT(*) OVER (PARTITION BY mobile_phone) > 1
+
+)
+  SELECT * FROM dup_unit
+  UNION ALL SELECT * FROM dup_member
+  UNION ALL SELECT * FROM dup_person
+  UNION ALL SELECT * FROM dup_link
+  UNION ALL SELECT * FROM member_no_person
+  UNION ALL SELECT * FROM member_no_unit
+  UNION ALL SELECT * FROM unit_no_parent
+  UNION ALL SELECT * FROM unit_no_manager
+  UNION ALL SELECT * FROM link_pc
+  UNION ALL SELECT * FROM link_ta
+  UNION ALL SELECT * FROM link_branch
+  UNION ALL SELECT * FROM link_overlap
+  UNION ALL SELECT * FROM phone_format
+  UNION ALL SELECT * FROM phone_dup
+
+pre_operations {
+}
+
+post_operations {
+}

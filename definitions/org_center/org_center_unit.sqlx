@@ -2,7 +2,7 @@ config {
     type: "table",
     schema: databuffet.ORG_CENTER,
     dependencies: [
-                    "org_center_schema",
+                    "org_center_schema", "dim_company",
                     "dim_director_last", "dim_region_last", "dim_section_last",
                     "update_sk_sale_rep_group"
                   ],
@@ -34,9 +34,29 @@ js {
         name: "dim_section_last",
     };
     const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
+
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+
+    // Org_Mock_Master_Plan_v4.xlsx ใช้ "ชื่อ" แทนรหัสสำหรับ 7 Section แบบ Dummy (รหัสในแผน ← unit_code ของ Section)
+    const planSectionCode = {
+        "Dummy999994": "HO",
+        "Dummy999993": "Imboon",
+        "Dummy999991": "Online",
+        "Dummy999992": "IMP1",
+        "Dummy999992_02": "IMP2",
+        "Dummy999992_03": "IMP3",
+        "Dummy999992_04": "IMP4",
+    };
+    const planSectionCase = `CASE unit_code ${Object.entries(planSectionCode).map(([k, v]) => `WHEN '${k}' THEN '${v}'`).join(" ")} ELSE unit_code END`;
 }
 
 -- 3 ชั้น: ฝ่าย / ภาค / ส่วน · ไม่กรองแถวหมดอายุ ส่ง StartDate/EndDate ให้ปลายทางตัดสินเอง
+-- plan_code = รหัสของหน่วยในไฟล์แผน Org_Mock_Master_Plan_v4.xlsx (unit_id / unit_code ไม่เปลี่ยน)
 WITH division AS (
   SELECT
     ${databuffet.functionData.cleanString("dir.companyID")} AS company_id,
@@ -47,7 +67,8 @@ WITH division AS (
     ${databuffet.functionData.cleanString("dir.DirectorName")} AS unit_name,
     CAST(NULL AS STRING) AS parent_unit_id,
     dir.StartDate AS valid_from,
-    dir.EndDate AS valid_to
+    dir.EndDate AS valid_to,
+    ${databuffet.functionData.cleanString("dir.DirectorID")} AS plan_code
   FROM `${DimDirectorLastTableRef}` AS dir
 
 ), region AS (
@@ -61,7 +82,9 @@ WITH division AS (
     ${databuffet.functionData.cleanString("reg.RegionName")} AS unit_name,
     CONCAT('DIR-', ${databuffet.functionData.cleanString("dir.DirectorID")}) AS parent_unit_id,
     reg.StartDate AS valid_from,
-    reg.EndDate AS valid_to
+    reg.EndDate AS valid_to,
+    -- แผนใช้ RegionID: PS1-1..PS1-5 รวมเป็น PS1 · ภาคอื่น RegionID = SubRegionID
+    ${databuffet.functionData.cleanString("reg.RegionID")} AS plan_code
   FROM `${DimRegionLastTableRef}` AS reg
   LEFT JOIN `${DimDirectorLastTableRef}` AS dir
     ON reg.DirectorSK = dir.DirectorSK
@@ -76,17 +99,41 @@ WITH division AS (
     ${databuffet.functionData.cleanString("sec.SectionName")} AS unit_name,
     CONCAT('REG-', ${databuffet.functionData.cleanString("reg.SubRegionID")}) AS parent_unit_id,
     sec.StartDate AS valid_from,
-    sec.EndDate AS valid_to
+    sec.EndDate AS valid_to,
+    CAST(NULL AS STRING) AS plan_code
   FROM `${DimSectionLastTableRef}` AS sec
   LEFT JOIN `${DimRegionLastTableRef}` AS reg
     ON sec.RegionSK = reg.RegionSK
 
-)
+), unit AS (
   SELECT * FROM division
   UNION ALL
   SELECT * FROM region
   UNION ALL
   SELECT * FROM section
+
+), company AS (
+  SELECT
+    ${databuffet.functionData.cleanString("CompanyID")} AS company_id,
+    ${databuffet.functionData.cleanString("CompanyNameTH")} AS company_name
+  FROM `${DimCompanyTableRef}`
+
+)
+  SELECT
+    unit.company_id,
+    unit.unit_id,
+    unit.unit_level,
+    unit.depth,
+    unit.unit_code,
+    unit.unit_name,
+    unit.parent_unit_id,
+    unit.valid_from,
+    unit.valid_to,
+    IF(unit.unit_level = 'SECTION', ${planSectionCase}, unit.plan_code) AS plan_code,
+    company.company_name
+  FROM unit
+  LEFT JOIN company
+    ON unit.company_id = company.company_id
 
 pre_operations {
 }

@@ -2,7 +2,7 @@ config {
     type: "table",
     schema: databuffet.ORG_CENTER,
     dependencies: [
-                    "org_center_schema", "org_center_link",
+                    "org_center_schema", "org_center_link", "dim_company",
                     "dim_director_last", "dim_region_manager_last", "dim_section_manager_last",
                     "dim_sale_representative_last", "dim_section_last",
                     "update_sk_sale_rep_group"
@@ -77,6 +77,13 @@ js {
         name: "dim_section_last",
     };
     const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
+
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 }
 
 -- unit_id ต้องตรงกับ org_center_unit · ไม่กรองแถวหมดอายุ
@@ -289,6 +296,12 @@ WITH emp_email AS (
   LEFT JOIN pc_name AS n
     ON pl.employee_id = n.employee_id
 
+), company AS (
+  SELECT
+    ${databuffet.functionData.cleanString("CompanyID")} AS company_id,
+    ${databuffet.functionData.cleanString("CompanyNameTH")} AS company_name
+  FROM `${DimCompanyTableRef}`
+
 ), member AS (
   SELECT * FROM director
   UNION ALL
@@ -312,10 +325,13 @@ WITH emp_email AS (
     m.unit_id,
     m.department_ids,
     m.valid_from,
-    m.valid_to
+    m.valid_to,
+    co.company_name
   FROM member AS m
   LEFT JOIN emp_email AS em
     ON m.employee_id = em.employee_id
+  LEFT JOIN company AS co
+    ON m.company_id = co.company_id
   WHERE m.employee_id IS NOT NULL
 
 pre_operations {

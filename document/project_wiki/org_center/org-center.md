@@ -1,9 +1,9 @@
-# Org Center — `org_center_unit` / `org_center_member` / `org_center_person` / `org_center_link`
+# Org Center — `org_center_unit` / `org_center_member` / `org_center_person` / `org_center_link` / `org_center_flags`
 
 > **LLM context**: Dataset `org_center` (`databuffet.ORG_CENTER`), folder
 > `definitions/org_center/`, added 2026-10-29 for the TA AI Assistant. It is the single
 > source of **who sits in which unit and position**; Power BI RLS, the TA app and other
-> systems build their own access rules from it later. All four tables are `type: "table"`,
+> systems build their own access rules from it later. All five tables are `type: "table"`,
 > tag `dimension_daily`, rebuilt every night (`org_center_unit` and `org_center_member` after
 > `update_sk_sale_rep_group`; `org_center_person` after `org_center_member`). `org_center_link` (PC → TA) reads
 > `mds_dataset.mds_data_pc_ta` and has 0 rows while that MDS table is empty.
@@ -18,13 +18,14 @@
 | `org_center_member.sqlx` | table | 1 row = 1 person in one position at one unit for a date range |
 | `org_center_person.sqlx` | table | 1 row = 1 person (across companies), built from `org_center_member` |
 | `org_center_link.sqlx` | table | 1 row = 1 PC linked to 1 TA at 1 branch for a date range, from `mds_data_pc_ta` (0 rows while MDS is empty) |
+| `org_center_flags.sqlx` | table | 1 row = 1 data-quality problem found in the four tables above (see [`org_center_flags`](#org_center_flags)) |
 
 `org_center_unit` and `org_center_member` depend on `org_center_schema`, the `dim_*_last` tables they read, and
 `update_sk_sale_rep_group` — the `_last` tables are built with NULL `DirectorSK` /
 `RegionSK` / `SectionSK`, and that step fills them
 ([special-cases](../dimension/special-cases.md#update_sk_sale_rep_group--imperative-update-step)).
 `org_center_person` depends on `org_center_schema` and `org_center_member` only.
-`org_center_link` depends on `org_center_schema` only. `org_center_member` also depends on `org_center_link` (PC rows).
+`org_center_link` depends on `org_center_schema` and `dim_company`. `org_center_unit`, `org_center_member` also depend on `dim_company` (company name). `org_center_flags` depends on the four tables. `org_center_member` also depends on `org_center_link` (PC rows).
 
 ## Org levels (3)
 
@@ -58,6 +59,14 @@ Key: `company_id` + `unit_id`.
 | `unit_name` | STRING | `DirectorName` / `RegionName` / `SectionName` |
 | `parent_unit_id` | STRING | NULL for a division |
 | `valid_from` / `valid_to` | DATE | `StartDate` / `EndDate` of the `_last` row (`2066-12-31` = still active) |
+| `plan_code` | STRING | the unit's code in `Org_Mock_Master_Plan_v4.xlsx` (below); `unit_id` / `unit_code` are unchanged |
+| `company_name` | STRING | `dim_company.CompanyNameTH` by `company_id`; NULL if the company is not in the dim |
+
+**`plan_code`** (added 2026-10-30; the plan file's codes differ from the live codes in two places):
+
+- DIVISION: `DirectorID`.
+- REGION: `dim_region_last.RegionID` — the five `PS1-n` sub-regions all map to `PS1`; every other region equals `unit_code`.
+- SECTION: `unit_code`, except 7 Dummy sections that the plan names by their name: `Dummy999994`→`HO`, `Dummy999993`→`Imboon`, `Dummy999991`→`Online`, `Dummy999992`→`IMP1`, `Dummy999992_02/03/04`→`IMP2/3/4`. This is a fixed list in `org_center_unit.sqlx` (`planSectionCode`), because no Data Mart column holds it; add a row there if the plan adds one.
 
 ## `org_center_member`
 
@@ -73,6 +82,7 @@ Key: `company_id` + `employee_id` + `position_code` + `unit_id` + `valid_from`.
 | `unit_id` | STRING | the unit the position is held at |
 | `department_ids` | ARRAY&lt;STRING&gt; | TA departments merged into the row; empty for managers and PCs |
 | `valid_from` / `valid_to` | DATE | inclusive membership interval: dim `StartDate` / `EndDate`; for a TA, earliest start to latest end over the merged departments; for PCs, see below |
+| `company_name` | STRING | `dim_company.CompanyNameTH` by `company_id` |
 
 **PC rows** (`PC_MDT` / `PC_AGENT`, from `org_center_link`): position = the link's `pc_type`; names from
 `mds_data_mdt_sales_pc_master` (active rows; latest `end_date`, then `start_date`, then `updated_at`, then lowest `id`; no nickname).
@@ -165,9 +175,49 @@ empty.**
 | `branch_type` | STRING | `BranchType` |
 | `ta_employee_id` | STRING | `TAEmployeeID` |
 | `valid_from` / `valid_to` | DATE | `StartDate` / `EndDate`; `EndDate` is the first day the TA is **no longer** responsible (exclusive); empty = `2066-12-31` |
+| `company_name` | STRING | `dim_company.CompanyNameTH` by `company_id` |
 
 Source rule (checked by the MDS team on load): one valid row per
 `(companyID, PCEmployeeID, BranchType, BranchCode)` per day — periods never overlap.
+
+## `org_center_flags`
+
+1 row = 1 problem, rebuilt every night. Report only (input = output): nothing in the other tables is
+fixed or hidden; fix the source (MDS) and the row disappears on the next run. Rules follow the Check sheet of
+`Org_Mock_Master_Plan_v4.xlsx`, only the ones that fit this design. Not built: Approved HC (no source),
+LINE UUID (comes from the app login), "more than 1 current team assignment" (a TA in several sections is valid).
+
+| Column | Type | Meaning |
+|---|---|---|
+| `company_id` | STRING | NULL for person-level rules |
+| `entity` | STRING | `UNIT` / `MEMBER` / `PERSON` / `LINK` |
+| `entity_key` | STRING | JSON array of the entity's key components, preserving NULL as JSON null (unit: company, unit_id · member: its 5 key columns · person: employee_id · link: its 5 key columns; dates are ISO strings) |
+| `rule_code` | STRING | see below |
+| `rule_description` | STRING | Thai description |
+
+| `rule_code` | Entity | Raised when |
+|---|---|---|
+| `DUPLICATE_ID` | UNIT / MEMBER / PERSON / LINK | the table's key appears more than once |
+| `MEMBER_NO_PERSON` | MEMBER | `employee_id` not in `org_center_person` |
+| `MEMBER_NO_UNIT` | MEMBER | `unit_id` not in `org_center_unit` for that company |
+| `UNIT_NO_PARENT` | UNIT | REGION / SECTION whose `parent_unit_id` is not a unit of the same company |
+| `UNIT_NO_MANAGER` | UNIT | unit valid today with no `DIRECTOR` / `REGION_MGR` / `SECTION_MGR` (by level) member valid today |
+| `PC_TA_UNKNOWN_PC` | LINK | `pc_employee_id` not in active `mds_data_mdt_sales_pc_master` |
+| `PC_TA_UNKNOWN_TA` | LINK | `ta_employee_id` has no `TA` member row in that company |
+| `PC_TA_UNKNOWN_BRANCH` | LINK | `PC_MDT` link whose `branch_code` is not in active `mds_data_mdt_sales_branch_master` (the master is MDT only) |
+| `PC_TA_OVERLAP` | LINK | another row of the same company + PC + `branch_type` + `branch_code` overlaps in `[valid_from, valid_to)` with different TAs or start dates — one flag per affected link row, regardless of how many counterparts overlap |
+| `PHONE_FORMAT` | PERSON | non-NULL `mobile_phone` matches neither `0xx-xxx-xxxx` nor `+66` followed by 1–2 digits, 3 digits, and 4 digits, with an optional space or hyphen between each group (including after `+66`) |
+| `PHONE_DUPLICATE` | PERSON | the same `mobile_phone` belongs to more than one person |
+
+Checks before the first build (2026-10-30, read-only SELECT of the compiled queries against the live tables): units
+164 = 164 and members 604 = 604 with zero differing rows on the old columns; `plan_code` / `company_name` never NULL;
+flags returned 2 rows, both `UNIT_NO_MANAGER` (`ag01` `REG-Other`, `ag01` `SEC-PS1-5`). The link and phone rules returned 0 because
+`mds_data_pc_ta` and `mds_data_employee_info` are still empty.
+
+## Not built: CEO
+
+No Data Mart or MDS field identifies a CEO per company (searched 2026-10-30; the only `ceo` column is the legacy
+`tdis_mail.ceo` menu code). Captain decision: skip CEO until MDS holds one; no placeholder row.
 
 ## Rules
 

@@ -13,7 +13,7 @@
 | `re-initial` | ⚠️ DROP validated/curated MAC5 tables (destructive, mac5 only) |
 | `validated` / `validated_full` / `validated_incremental` | Validated layer |
 | `curated` / `curated_full` / `curated_incremental` | Curated layer (the sub-tags are used by the SALEOUT_MDT curated files) |
-| `dimension_daily` | Every dim except `dim_calendar`, plus the [org center](../org_center/org-center.md) tables (`org_center_schema`, `org_center_unit`, `org_center_member`, `org_center_person`, `org_center_link`) |
+| `dimension_daily` | Every dim except `dim_calendar`, plus the [Org Center objects](../org_center/org-center.md#files) |
 | `dimension_yearly` | `dim_calendar` only |
 | `fact_daily` | Every fact |
 | `cdc` / `cdc_incremental` | CDC change log |

@@ -27,7 +27,9 @@ dataform compile --json | jq '.tables[] | {name: .target.name, deps: .dependency
 **ประกาศไว้แต่ยังไม่ถูกใช้**: `dimension_monthly`, `fact_monthly`, `fact_yearly`
 
 **ไม่มี tag `assertions`** — โปรเจกต์นี้ไม่มี Dataform assertion เลย
-การตรวจคุณภาพข้อมูลทำด้วย skill `data-quality-check` แทน
+การตรวจคุณภาพข้อมูลแบบเฉพาะกิจทำด้วย skill `data-quality-check`
+ส่วน Org Center มี [ตารางรายงาน data-quality flags](../project_wiki/org_center/org-center.md#org_center_flags)
+ที่สร้างพร้อม tag `dimension_daily` (ไม่ใช่ assertion)
 
 ### ลำดับที่ควรรัน
 

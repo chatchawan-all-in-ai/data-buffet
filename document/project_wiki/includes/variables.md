@@ -49,7 +49,7 @@
 | `CDC_DATESET` (sic) | `cdc_dataset` | CDC change log |
 | `PROCESS_DATASET` | `process_dataset` | Derived datasets (address parsing) + RLS/address views + Pub/Sub export config + memory (`mart_export_config`) and sent state (`mart_sent_state`) |
 | `PUB_SUB` | `pub_sub` | Views read by the Pub/Sub publish workflow (`definitions/view/pub_sub/`), e.g. `export_dim_company` |
-| `ORG_CENTER` | `org_center` | Org center tables `org_center_unit` / `org_center_member` / `org_center_person` / `org_center_link` (`definitions/org_center/`) — see [org-center.md](../org_center/org-center.md) |
+| `ORG_CENTER` | `org_center` | Org center (`definitions/org_center/`) — table inventory and contracts: [org-center.md](../org_center/org-center.md) |
 | `FUNCTION_DATASET` | `function_dataset` | BigQuery UDFs (7 ตัว) |
 | `MDS_DATASET` | `mds_dataset` | Master-data-service tables (externally loaded, **not** created by this repo) |
 
