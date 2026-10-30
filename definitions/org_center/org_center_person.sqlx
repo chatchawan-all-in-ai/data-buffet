@@ -20,8 +20,15 @@ js {
     };
     const OrgCenterMemberTableRef = `${OrgCenterMemberTable.database}.${OrgCenterMemberTable.schema}.${OrgCenterMemberTable.name}`;
 
-    // ตำแหน่งสูงสุดก่อน: DIRECTOR > REGION_MGR > SECTION_MGR > TA
-    const positionRank = (col) => `CASE ${col} WHEN 'DIRECTOR' THEN 1 WHEN 'REGION_MGR' THEN 2 WHEN 'SECTION_MGR' THEN 3 WHEN 'TA' THEN 4 END`;
+    const MdsDataEmployeeInfoTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_employee_info",
+    };
+    const MdsDataEmployeeInfoTableRef = `${MdsDataEmployeeInfoTable.database}.${MdsDataEmployeeInfoTable.schema}.${MdsDataEmployeeInfoTable.name}`;
+
+    // ตำแหน่งสูงสุดก่อน: DIRECTOR > REGION_MGR > SECTION_MGR > TA > PC_MDT > PC_AGENT
+    const positionRank = (col) => `CASE ${col} WHEN 'DIRECTOR' THEN 1 WHEN 'REGION_MGR' THEN 2 WHEN 'SECTION_MGR' THEN 3 WHEN 'TA' THEN 4 WHEN 'PC_MDT' THEN 5 WHEN 'PC_AGENT' THEN 6 END`;
 
     // แถวที่ใช้ได้วันนี้ ตำแหน่งสูงสุด > valid_to ล่าสุด > company_id · ไม่มีแถวใช้ได้ = valid_to ล่าสุด
     const pickOrder = `is_valid DESC, IF(is_valid, position_rank, 0), valid_to DESC, company_id, position_rank, unit_id`;
@@ -34,6 +41,13 @@ WITH member AS (
     CURRENT_DATE('Asia/Bangkok') BETWEEN valid_from AND valid_to AS is_valid,
     ${positionRank("position_code")} AS position_rank
   FROM `${OrgCenterMemberTableRef}`
+
+), employee_info AS (
+  -- เบอร์มือถือและอีเมลที่กรอกใน MDS เก็บตามที่กรอก · 1 แถวต่อ EmployeeID
+  SELECT EmployeeID AS employee_id, MobilePhone AS mobile_phone, Email AS email
+  FROM `${MdsDataEmployeeInfoTableRef}`
+  WHERE is_active = TRUE
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY EmployeeID ORDER BY updated_at DESC, id) = 1
 
 ), person AS (
   SELECT
@@ -53,11 +67,13 @@ WITH member AS (
 
 )
   SELECT
-    employee_id,
+    person.employee_id,
     picked.first_name,
     picked.last_name,
     nickname,
-    email,
+    -- อีเมลใน Data Mart ก่อน ว่างค่อยใช้ของ EMPLOYEE_INFO
+    COALESCE(person.email, ei.email) AS email,
+    ei.mobile_phone,
     company_ids,
     ARRAY(
       SELECT p
@@ -67,6 +83,8 @@ WITH member AS (
     ) AS position_codes,
     is_active
   FROM person
+  LEFT JOIN employee_info AS ei
+    ON person.employee_id = ei.employee_id
 
 pre_operations {
 }

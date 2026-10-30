@@ -5,26 +5,56 @@ config {
                     "org_center_schema"
                   ],
     tags: [databuffet.TAG_DIM_DAILY],
-    uniqueKey: ["company_id", "pc_employee_id", "branch_code", "valid_from"],
+    uniqueKey: ["company_id", "pc_employee_id", "branch_type", "branch_code", "valid_from"],
     bigquery: {
         clusterBy: ["company_id", "pc_employee_id"]
     },
 }
 
--- 1 แถว = PC 1 คน ผูกกับ TA ที่ 1 สาขา ในช่วงวันที่หนึ่ง
--- ตอนนี้ว่าง (0 แถว): แถวจะมาจาก MDS P1_PC_TA เมื่อมีตารางแล้ว เปลี่ยนแค่ต้นทาง ไม่เปลี่ยนโครง
+js {
+    const MdsDataPcTaTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_pc_ta",
+    };
+    const MdsDataPcTaTableRef = `${MdsDataPcTaTable.database}.${MdsDataPcTaTable.schema}.${MdsDataPcTaTable.name}`;
+
+    const MdsDataMdtSalesPcMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_sales_pc_master",
+    };
+    const MdsDataMdtSalesPcMasterTableRef = `${MdsDataMdtSalesPcMasterTable.database}.${MdsDataMdtSalesPcMasterTable.schema}.${MdsDataMdtSalesPcMasterTable.name}`;
+}
+
+-- 1 แถว = PC 1 คน ผูกกับ TA ที่ 1 สาขา ในช่วงวันที่หนึ่ง · ค่าจาก MDS เก็บตามที่กรอก (ไม่ trim ไม่แก้รหัส)
+-- valid_to = EndDate ของ MDS (วันแรกที่ไม่รับผิดชอบแล้ว) · EndDate ว่าง = 2066-12-31 เหมือนตารางอื่นใน org center
+WITH pc_type AS (
+  -- employee_type ว่าง = PC_MDT · 'พันธมิตร' = PC_AGENT · ค่าอื่นหรือไม่มีใน PC master = NULL
   SELECT
-    CAST(NULL AS STRING) AS company_id,
+    employee_id,
+    CASE
+      WHEN employee_type IS NULL OR employee_type = '' THEN 'PC_MDT'
+      WHEN employee_type = 'พันธมิตร' THEN 'PC_AGENT'
+    END AS pc_type
+  FROM `${MdsDataMdtSalesPcMasterTableRef}`
+  WHERE is_active = TRUE
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY employee_id ORDER BY end_date DESC, start_date DESC, updated_at DESC, id) = 1
+)
+  SELECT
+    pt.companyID AS company_id,
     'PC_TA' AS link_type,
-    CAST(NULL AS STRING) AS pc_employee_id,
-    CAST(NULL AS STRING) AS pc_type,
-    CAST(NULL AS STRING) AS branch_code,
-    CAST(NULL AS STRING) AS branch_type,
-    CAST(NULL AS STRING) AS ta_employee_id,
-    CAST(NULL AS DATE) AS valid_from,
-    CAST(NULL AS DATE) AS valid_to
-  FROM UNNEST([1])
-  WHERE FALSE
+    pt.PCEmployeeID AS pc_employee_id,
+    ty.pc_type AS pc_type,
+    pt.BranchCode AS branch_code,
+    pt.BranchType AS branch_type,
+    pt.TAEmployeeID AS ta_employee_id,
+    pt.StartDate AS valid_from,
+    IFNULL(pt.EndDate, DATE '2066-12-31') AS valid_to
+  FROM `${MdsDataPcTaTableRef}` AS pt
+  LEFT JOIN pc_type AS ty
+    ON pt.PCEmployeeID = ty.employee_id
+  WHERE pt.is_active = TRUE
 
 pre_operations {
 }

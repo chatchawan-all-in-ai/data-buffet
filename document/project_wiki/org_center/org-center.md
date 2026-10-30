@@ -4,9 +4,9 @@
 > `definitions/org_center/`, added 2026-10-29 for the TA AI Assistant. It is the single
 > source of **who sits in which unit and position**; Power BI RLS, the TA app and other
 > systems build their own access rules from it later. All four tables are `type: "table"`,
-> tag `dimension_daily`, rebuilt every night after `update_sk_sale_rep_group`
-> (`org_center_person` after `org_center_member`). `org_center_link` (PC → TA) is
-> structure only and has 0 rows until the MDS table `P1_PC_TA` exists.
+> tag `dimension_daily`, rebuilt every night (`org_center_unit` and `org_center_member` after
+> `update_sk_sale_rep_group`; `org_center_person` after `org_center_member`). `org_center_link` (PC → TA) reads
+> `mds_dataset.mds_data_pc_ta` and has 0 rows while that MDS table is empty.
 > They carry **business codes, not SKs**, so consumers can keep them across days.
 
 ## Files
@@ -15,16 +15,16 @@
 |---|---|---|
 | `org_center_schema.sqlx` | operations, tag `dimension_daily` | `CREATE SCHEMA IF NOT EXISTS org_center` — same bootstrap as `pub_sub_schema` / `cdc_schema` |
 | `org_center_unit.sqlx` | table | 1 row = 1 unit (division / region / section) |
-| `org_center_member.sqlx` | table | 1 row = 1 person in one position at one unit |
+| `org_center_member.sqlx` | table | 1 row = 1 person in one position at one unit for a date range |
 | `org_center_person.sqlx` | table | 1 row = 1 person (across companies), built from `org_center_member` |
-| `org_center_link.sqlx` | table | 1 row = 1 PC linked to 1 TA at 1 branch for a date range — **empty for now** |
+| `org_center_link.sqlx` | table | 1 row = 1 PC linked to 1 TA at 1 branch for a date range, from `mds_data_pc_ta` (0 rows while MDS is empty) |
 
 `org_center_unit` and `org_center_member` depend on `org_center_schema`, the `dim_*_last` tables they read, and
 `update_sk_sale_rep_group` — the `_last` tables are built with NULL `DirectorSK` /
 `RegionSK` / `SectionSK`, and that step fills them
 ([special-cases](../dimension/special-cases.md#update_sk_sale_rep_group--imperative-update-step)).
 `org_center_person` depends on `org_center_schema` and `org_center_member` only.
-`org_center_link` depends on `org_center_schema` only (it reads no table yet).
+`org_center_link` depends on `org_center_schema` only. `org_center_member` also depends on `org_center_link` (PC rows).
 
 ## Org levels (3)
 
@@ -61,20 +61,31 @@ Key: `company_id` + `unit_id`.
 
 ## `org_center_member`
 
-Key: `company_id` + `employee_id` + `position_code` + `unit_id`.
+Key: `company_id` + `employee_id` + `position_code` + `unit_id` + `valid_from`.
 
 | Column | Type | Source |
 |---|---|---|
 | `company_id` | STRING | `companyID` |
-| `employee_id` | STRING | MDS `EmployeeID` (the TA app's `person_key`) |
-| `first_name` / `last_name` / `nickname` | STRING | the dim of that position (see below) |
+| `employee_id` | STRING | MDS employee code (the TA app's `person_key`); PC rows use the link's `pc_employee_id` |
+| `first_name` / `last_name` / `nickname` | STRING | the dim of that position; for PCs, see below |
 | `email` | STRING | `mds_data_org_employee_mapping_center.employeeemail` — NULL when the person is not in that table |
-| `position_code` | STRING | `DIRECTOR` / `REGION_MGR` / `SECTION_MGR` / `TA` |
+| `position_code` | STRING | `DIRECTOR` / `REGION_MGR` / `SECTION_MGR` / `TA` / `PC_MDT` / `PC_AGENT` |
 | `unit_id` | STRING | the unit the position is held at |
-| `department_ids` | ARRAY&lt;STRING&gt; | TA departments merged into the row; empty for managers |
-| `valid_from` / `valid_to` | DATE | `StartDate` / `EndDate`; for a TA, earliest start to latest end over the merged departments |
+| `department_ids` | ARRAY&lt;STRING&gt; | TA departments merged into the row; empty for managers and PCs |
+| `valid_from` / `valid_to` | DATE | inclusive membership interval: dim `StartDate` / `EndDate`; for a TA, earliest start to latest end over the merged departments; for PCs, see below |
 
-No phone number — MDS has none yet.
+**PC rows** (`PC_MDT` / `PC_AGENT`, from `org_center_link`): position = the link's `pc_type`; names from
+`mds_data_mdt_sales_pc_master` (active rows; latest `end_date`, then `start_date`, then `updated_at`, then lowest `id`; no nickname).
+A link with NULL `pc_type` or NULL `pc_employee_id`, or no overlapping TA row, produces no PC member row.
+Unit = the unit of the linked TA's `TA` member row in the same
+company whose dates overlap the link period; dates = the overlap (link `valid_to` is exclusive, so one day
+earlier unless `2066-12-31`). If the TA has exactly one overlapping unit, the PC takes it. If the TA has more
+than one (41 of 180 TAs on 2026-10-30, all ag01), only the unit whose `department_ids` has a `_`-separated segment
+exactly equal to the `zone_id` of the PC's branch (`mds_data_mdt_sales_branch_master.branch_code`) is kept; no match =
+no member row (the link row stays). For each company + person + PC type + unit, overlapping or adjacent
+periods across branches and TAs merge into one contiguous interval. Disjoint periods stay in separate rows;
+`valid_from` distinguishes those rows, so gaps do not make the person active in `org_center_person`.
+No phone number in member — it is in `org_center_person`.
 
 | position_code | Source | unit | Names |
 |---|---|---|---|
@@ -102,25 +113,30 @@ boss of a DIRECTOR / REGION_MGR / SECTION_MGR / TA is the manager of the parent 
 | Column | Type | Source |
 |---|---|---|
 | `employee_id` | STRING | `org_center_member.employee_id` (never NULL) |
-| `first_name` / `last_name` / `nickname` / `email` | STRING | picked from the person's member rows (rule below) |
+| `first_name` / `last_name` / `nickname` | STRING | picked from the person's member rows (rule below) |
+| `email` | STRING | the member-row email (rule below); only when empty, `mds_data_employee_info.Email` |
+| `mobile_phone` | STRING | `mds_data_employee_info.MobilePhone` by `EmployeeID` (active rows, as entered); NULL when absent |
 | `company_ids` | ARRAY&lt;STRING&gt; | every `company_id` of the person's member rows, sorted |
-| `position_codes` | ARRAY&lt;STRING&gt; | distinct positions with a member row valid today, in order `DIRECTOR`, `REGION_MGR`, `SECTION_MGR`, `TA`; empty when none is valid |
+| `position_codes` | ARRAY&lt;STRING&gt; | distinct positions with a member row valid today, in order `DIRECTOR`, `REGION_MGR`, `SECTION_MGR`, `TA`, `PC_MDT`, `PC_AGENT`; empty when none is valid |
 | `is_active` | BOOL | the person has a member row valid today |
 
 "Valid today" = `CURRENT_DATE('Asia/Bangkok') BETWEEN valid_from AND valid_to`.
 
 **Name / email pick rule** (deterministic). Row order: among the person's member rows
-valid today, the highest position (`DIRECTOR` > `REGION_MGR` > `SECTION_MGR` > `TA`), then
+valid today, the highest position (`DIRECTOR` > `REGION_MGR` > `SECTION_MGR` > `TA` > `PC_MDT` > `PC_AGENT`), then
 the latest `valid_to`, then the lowest `company_id`. If no row is valid today, the row
 with the latest `valid_to` (then `company_id`). Remaining ties go to the higher position,
 then the lowest `unit_id`.
 
-- `email`: the first non-NULL `email` in that order (email is joined per `employee_id`,
-  so every row carries the same value).
+- `email`: the first non-NULL member email in that order (email is joined per `employee_id`,
+  so every row carries the same value); its fallback source is listed above.
 - `nickname`: the first non-NULL `nickname` in that order (`DIRECTOR` rows have none).
 - `first_name` / `last_name`: the first non-`DIRECTOR` row in that order, because those
   rows have real separate name and surname fields. Only a person with no non-`DIRECTOR`
   row gets the `DIRECTOR` name, split at the first space.
+
+`mds_data_employee_info` is filtered to active rows, picking the latest `updated_at`, then lowest `id`,
+per `EmployeeID`. Both contact fields are kept as entered. Contact-only employees do not create person rows.
 
 Placeholder managers (`Non Director`, `9999990`–`9999999`)
 get a row like any other person.
@@ -132,39 +148,34 @@ Checks before the first build (2026-10-29, read-only SELECT): 206 rows = 206 dis
 
 ## `org_center_link`
 
-Key: `company_id` + `pc_employee_id` + `branch_code` + `valid_from`. Mirrors the TA app's
-`member_links` with `link_type = 'PC_TA'`: from = PC, to = TA, site = `branch_code`.
+Key: `company_id` + `pc_employee_id` + `branch_type` + `branch_code` + `valid_from` (the MDS key). Mirrors the
+TA app's `member_links` with `link_type = 'PC_TA'`: from = PC, to = TA, site = `branch_code`.
 
-PC is the lowest level and sits under a TA, not in a unit of its own, so PC is not in
-`org_center_member` / `org_center_person` yet: a PC's unit follows its TA, which is not
-known. `org_center_member` and `org_center_unit` are unchanged by this table.
+Rows = `mds_dataset.mds_data_pc_ta` with `is_active = TRUE`, values **as entered** (no trim, case change,
+dedupe or filtering of unknown codes; wrong codes are fixed in MDS, not here). **0 rows while the MDS table is
+empty.**
 
-**The table is empty (0 rows) on purpose.** The SQL is a typed `SELECT … WHERE FALSE`
-that reads no source. Rows will come from the MDS table `P1_PC_TA`
-(`mds_data_p1_pc_ta_master`) once it exists; then only the source changes, not the
-columns. Until then neither PC nor TA is filled from anywhere else — in particular **not**
-from `mds_data_mdt_sales_pc_master` + the zone-TA table, which would be a guess.
-
-| Column | Type | Source once `P1_PC_TA` exists |
+| Column | Type | Source |
 |---|---|---|
 | `company_id` | STRING | `companyID` |
 | `link_type` | STRING | always `PC_TA` |
-| `pc_employee_id` | STRING | `PCEmployeeID` (must be in `mds_data_mdt_sales_pc_master.employee_id`) |
-| `pc_type` | STRING | `PCType`: `MDT` (`employee_type` empty) / `AGENT` (`'พันธมิตร'`) |
-| `branch_code` | STRING | `BranchCode` — MT branch or the ERP customer code of an Agent shop |
-| `branch_type` | STRING | `BranchType`: `MT_STORE` / `AGENT_SHOP`, by `pc_type` |
-| `ta_employee_id` | STRING | `TAEmployeeID` — the TA who approves the PC's requests |
-| `valid_from` / `valid_to` | DATE | `StartDate` / `EndDate` (`2066-12-31` = still linked, same as the other org center tables) |
+| `pc_employee_id` | STRING | `PCEmployeeID` |
+| `pc_type` | STRING | `mds_data_mdt_sales_pc_master.employee_type`: NULL or empty string → `PC_MDT`, `พันธมิตร` → `PC_AGENT`; other value or PC not in the active master → NULL; master row selected as described under PC member rows |
+| `branch_code` | STRING | `BranchCode` |
+| `branch_type` | STRING | `BranchType` |
+| `ta_employee_id` | STRING | `TAEmployeeID` |
+| `valid_from` / `valid_to` | DATE | `StartDate` / `EndDate`; `EndDate` is the first day the TA is **no longer** responsible (exclusive); empty = `2066-12-31` |
 
 Source rule (checked by the MDS team on load): one valid row per
-`(companyID, PCEmployeeID, BranchCode)` per day — periods never overlap.
+`(companyID, PCEmployeeID, BranchType, BranchCode)` per day — periods never overlap.
 
 ## Rules
 
-- **Expired rows are kept.** `valid_from` / `valid_to` are passed through; the consumer
+- **Expired rows are kept.** Date derivation is described per table above; the consumer
   decides who is active. Placeholder managers from MDS (`Non Director`, `9999990`–
   `9999999` such as `HO`, `Online`, `Imboon`) are passed through too.
-- Only `_last` data: latest row per code. History after go-live is the consumer's job.
+- Dim-sourced units and memberships use only `_last` data: latest row per code. PC link periods
+  come from active MDS assignments as described above. History after go-live is the consumer's job.
 - Known gap (accepted 2026-10-29): 7 MDS assignments of 2 people (`1053148` on 6 cost
   channels `BT/DH/GB/HP/MH/TW_001`, `1052088` on `N2_TA01`) are not in
   `dim_sale_representative_last`, so they are not in org center.
@@ -183,7 +194,5 @@ Source rule (checked by the MDS team on load): one valid row per
 
 ## Not in this round
 
-- `org_center_link` rows and PC rows in `org_center_member` / `org_center_person`:
-  waiting for the MDS `P1_PC_TA` table (the link table already exists, empty).
 - Per-system RLS views (Power BI, TA app) and read grants for the backend team.
 - Changing the TA spec from 4 levels to 3.
