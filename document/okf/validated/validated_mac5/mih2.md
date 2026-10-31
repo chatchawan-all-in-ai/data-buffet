@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mih2"
 description: "One row = one document header revision, unique on (company_id, MIH2day, MIH2month, MIH2year, MIH2type, MIH2vnos, MIH2cus, MIH2rev)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mih2&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: mih2
 tags: ["validated", "validated_mac5", "mac5", "validated_incremental"]
 sources:
   - id: sqlx

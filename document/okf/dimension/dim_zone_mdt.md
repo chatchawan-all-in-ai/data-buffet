@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_zone_mdt"
 description: "One row = one MDT sales zone (ZoneCode) with its name and validity dates, from the MDS MDT zone master, plus a reserved -1 NotZone row."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_zone_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_zone_mdt
 tags: ["dimension", "mds", "dimension_daily", "saleout_daily"]
 sources:
   - id: sqlx

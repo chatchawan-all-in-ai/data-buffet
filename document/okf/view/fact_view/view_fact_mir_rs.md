@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_fact_mir_rs"
 description: "One row = one receipt (mirtype RS) line or cheque of fact_mir_rs, extended with AgingSK and the receipt document's cancel flag and status name; ReceiveSK is unique."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_view&t=view_fact_mir_rs&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_view
+table_id: view_fact_mir_rs
 tags: ["view", "fact_view", "mac5"]
 sources:
   - id: sqlx

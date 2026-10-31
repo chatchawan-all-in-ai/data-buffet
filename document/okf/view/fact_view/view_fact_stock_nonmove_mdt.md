@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_fact_stock_nonmove_mdt"
 description: "One row = the latest in-stock snapshot (onhand_qty > 0) of one product at one chain branch, with its last sale date and a slow/non-moving status bucket."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_view&t=view_fact_stock_nonmove_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_view
+table_id: view_fact_stock_nonmove_mdt
 tags: ["view", "fact_view"]
 sources:
   - id: sqlx

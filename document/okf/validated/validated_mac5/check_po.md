@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "check_po"
 description: "One row = one PO check, unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=check_po&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: check_po
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

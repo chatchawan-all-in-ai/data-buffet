@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_fact_salein_mdt"
 description: "One row = one sales document line of fact_transcation sold to a modern-trade chain customer (MH, HP, TW, GB, DH, BT), tagged with chain code and the matching MDT branch/zone SK."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_view&t=view_fact_salein_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_view
+table_id: view_fact_salein_mdt
 tags: ["view", "fact_view"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "curated_eom_bt"
 description: "One row = the month-end sales total of one product at one Boonthavorn (BT) branch for one closed period, as reported by the chain itself."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=curated_saleout_mdt&t=curated_eom_bt&page=table"
+project_id: databuffet-nonprd
+dataset_id: curated_saleout_mdt
+table_id: curated_eom_bt
 tags: ["curated", "curated_saleout_mdt", "saleout", "curated_full", "saleout_daily", "SALEOUT_MDT"]
 sources:
   - id: sqlx

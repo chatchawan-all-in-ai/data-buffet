@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "curated_mih"
 description: "One row = one MAC5 document header (order, invoice, billing, etc.) per company, unique on (company_id, mihType, mihVnos)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=curated_mac5&t=curated_mih&page=table"
+project_id: databuffet-nonprd
+dataset_id: curated_mac5
+table_id: curated_mih
 tags: ["curated", "curated_mac5", "mac5", "MAC5"]
 sources:
   - id: sqlx

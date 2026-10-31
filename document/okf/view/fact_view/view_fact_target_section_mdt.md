@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_fact_target_section_mdt"
 description: "One row = one day x modern-trade chain x marketing group, with the summed sell-out target amount and the number of branches with a target."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_view&t=view_fact_target_section_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_view
+table_id: view_fact_target_section_mdt
 tags: ["view", "fact_view"]
 sources:
   - id: sqlx

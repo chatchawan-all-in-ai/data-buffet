@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_target_series_mdt"
 description: "One row = the daily target quantity of one MDT branch for one product series on one date."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_target_series_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_target_series_mdt
 tags: ["fact", "fact_daily", "saleout_daily"]
 sources:
   - id: sqlx

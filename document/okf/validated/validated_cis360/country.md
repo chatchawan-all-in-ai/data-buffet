@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "country"
 description: "One row = one cleaned copy of the source table `country`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_cis360&t=country&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_cis360
+table_id: country
 tags: ["validated", "validated_cis360", "cis360", "validated_incremental"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_department"
 description: "One row = one sales department (company, region, section, department id) with its validity period, from the MDS sales-department master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_department&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_department
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

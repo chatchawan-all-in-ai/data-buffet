@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_store"
 description: "One row = one warehouse or branch store (StoreCode) of a company from the MAC5 stock-location master, plus a reserved -1 row for unknown stores."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_store&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_store
 tags: ["dimension", "mac5", "dimension_daily"]
 sources:
   - id: sqlx

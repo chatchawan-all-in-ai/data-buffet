@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "deb_address_data"
 description: "One row = the AI-parsed Thai address (sub-district, district, province in Thai and English) of one MAC5 customer (debtor) per company."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=process_dataset&t=deb_address_data&page=table"
+project_id: databuffet-nonprd
+dataset_id: process_dataset
+table_id: deb_address_data
 tags: ["process", "mac5", "AI.GENERATE", "MAC5"]
 sources:
   - id: sqlx

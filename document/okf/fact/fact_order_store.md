@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_order_store"
 description: "One row = one product line (milListNo) of a sales order (PS) in a warehouse-flagged status for ag01/ab01, with product, customer and store SKs."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_order_store&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_order_store
 tags: ["fact", "mds", "mac5", "fact_daily"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "order_from_allkon_m"
 description: "One row = one orders from the Allkons-M channel, unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=order_from_allkon_m&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: order_from_allkon_m
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

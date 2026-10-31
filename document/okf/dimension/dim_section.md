@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_section"
 description: "One row = one sales section (SectionID) of one company over one StartDate to EndDate validity interval, from the MDS section master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_section&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_section
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

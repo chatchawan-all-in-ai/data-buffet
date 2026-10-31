@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "per"
 description: "One row = one personnel, unique on (company_id, percode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=per&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: per
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_company"
 description: "One row = one MAC5 company (ag01, aa05, ab01, ac02, ak02) with its code, Thai and English names and a stable surrogate key."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_company&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_company
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

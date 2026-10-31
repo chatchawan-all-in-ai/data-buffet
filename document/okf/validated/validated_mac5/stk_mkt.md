@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "stk_mkt"
 description: "One row = one stock marketing attributes, unique on (company_id, stkcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=stk_mkt&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: stk_mkt
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

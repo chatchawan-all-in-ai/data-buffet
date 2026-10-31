@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "sales_channel_master_sales_channel"
 description: "One row = one record of source table `sales_channel_master_sales_channel` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=sales_channel_master_sales_channel&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_derp
+table_id: sales_channel_master_sales_channel
 tags: ["initial", "raw_derp", "derp"]
 sources:
   - id: sqlx

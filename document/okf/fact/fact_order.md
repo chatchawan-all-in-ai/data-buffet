@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_order"
 description: "PS order aggregates expanded by retained product versions and matching quotation rows; quantities and amounts can repeat within a company/order/product."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_order&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_order
 tags: ["fact", "mac5", "fact_daily"]
 sources:
   - id: sqlx

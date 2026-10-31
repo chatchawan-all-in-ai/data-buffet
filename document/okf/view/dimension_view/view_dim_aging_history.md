@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_dim_aging_history"
 description: "One row = one AR document in a non-completed group under a prior-day asatdate label, with SKs re-derived from natural keys."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_aging_history&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_view
+table_id: view_dim_aging_history
 tags: ["view", "dimension_view"]
 sources:
   - id: sqlx

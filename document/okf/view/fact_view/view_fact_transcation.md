@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_fact_transcation"
 description: "One row = one sales document line (IS/AS/BS/QS) per company with all org, product, customer, channel and flag SKs, plus one zero-valued row per company and date without any line."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_view&t=view_fact_transcation&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_view
+table_id: view_fact_transcation
 tags: ["view", "fact_view", "mac5"]
 sources:
   - id: sqlx

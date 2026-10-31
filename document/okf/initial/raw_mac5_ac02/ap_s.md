@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "ap_s"
 description: "One row = one record of source table `ap_s` (MAC5 for company `ac02`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ac02&t=ap_s&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_mac5_ac02
+table_id: ap_s
 tags: ["initial", "raw_mac5_ac02", "mac5"]
 sources:
   - id: sqlx

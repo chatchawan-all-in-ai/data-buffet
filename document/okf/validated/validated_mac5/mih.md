@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mih"
 description: "One row = one invoice/document header (one row per document, per company), unique on (company_id, MIHtype, MIHvnos)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mih&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: mih
 tags: ["validated", "validated_mac5", "mac5", "validated_incremental"]
 sources:
   - id: sqlx

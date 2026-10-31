@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "sales_channel_master_sales_channel"
 description: "One row = one cleaned copy of the source table `sales_channel_master_sales_channel`, unique on (master_sales_channel_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=sales_channel_master_sales_channel&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_derp
+table_id: sales_channel_master_sales_channel
 tags: ["validated", "validated_derp", "derp", "validated_incremental"]
 sources:
   - id: sqlx

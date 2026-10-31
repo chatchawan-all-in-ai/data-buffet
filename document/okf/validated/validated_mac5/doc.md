@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "doc"
 description: "One row = one document type reference, unique on (company_id, doccode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=doc&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: doc
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

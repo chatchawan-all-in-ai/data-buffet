@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "stg_report"
 description: "One row = one stock group report, unique on (company_id, stgcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=stg_report&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: stg_report
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

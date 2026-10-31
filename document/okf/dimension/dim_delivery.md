@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_delivery"
 description: "One row = one delivered invoice document (MAC5 IS document) per company with trip, vehicle, item quantity and preparation/release/receipt status counts."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_delivery&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_delivery
 tags: ["dimension", "mac5", "dimension_daily"]
 sources:
   - id: sqlx

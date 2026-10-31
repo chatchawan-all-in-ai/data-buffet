@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_customer"
 description: "One row = one MAC5 customer (debtor) per company, enriched with CIS360 customer-360 attributes (ag01 only) and parsed invoice-address SKs."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_customer&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_customer
 tags: ["dimension", "mac5", "cis360", "dimension_daily"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_dim_customer_report_info"
 description: "One row = one report shop name (CustomerReportName) per company, with its segment, PC flag, online info, responsible sales chain (TA) and address names."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_customer_report_info&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_view
+table_id: view_dim_customer_report_info
 tags: ["view", "dimension_view"]
 sources:
   - id: sqlx

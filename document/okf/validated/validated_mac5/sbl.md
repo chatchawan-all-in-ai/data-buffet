@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "sbl"
 description: "One row = one reference code table (sbl), unique on (company_id, sblstk, sblsto)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=sbl&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: sbl
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

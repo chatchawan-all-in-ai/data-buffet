@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_mir_vs"
 description: "One row = one billing (VS) document line of a company that bills an invoice (mirbinvno), de-duplicated to one row per invoice."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_mir_vs&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_mir_vs
 tags: ["fact", "mac5", "fact_daily"]
 sources:
   - id: sqlx

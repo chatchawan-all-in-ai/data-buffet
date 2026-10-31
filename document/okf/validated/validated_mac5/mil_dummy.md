@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mil_dummy"
 description: "One row = one document line item, staging variant, unique on (company_id, MILday, MILmonth, MILyear, MILtype, MILvnos, MILcus, MILlistNo)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mil_dummy&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: mil_dummy
 tags: ["validated", "validated_mac5", "mac5", "validated_incremental"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "synonyms"
 description: "One row = one cleaned copy of the source table `synonyms`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_master_sku&t=synonyms&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_master_sku
+table_id: synonyms
 tags: ["validated", "validated_master_sku", "master_sku", "validated_incremental"]
 sources:
   - id: sqlx

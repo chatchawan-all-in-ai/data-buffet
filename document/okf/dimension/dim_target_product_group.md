@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_target_product_group"
 description: "One row = one company-level sales target (Amt and Qty) for a year and month by marketing group, sub group, segment, channel target group and TargetID, from the MDS target by product group master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_target_product_group&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_target_product_group
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

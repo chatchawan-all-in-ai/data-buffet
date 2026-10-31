@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "chq"
 description: "One row = one record of source table `chq` (MAC5 for company `ak02`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ak02&t=chq&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_mac5_ak02
+table_id: chq
 tags: ["initial", "raw_mac5_ak02", "mac5"]
 sources:
   - id: sqlx

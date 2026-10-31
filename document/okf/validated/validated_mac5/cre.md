@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "cre"
 description: "One row = one reference code table (cre), unique on (company_id, crecode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=cre&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: cre
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

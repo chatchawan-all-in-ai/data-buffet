@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_rls_data"
 description: "One row = one (employee, restricted attribute, allowed value) entry of the organisation-based row-level-security map for sales managers, plus one CompanyID row per employee."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=process_dataset&t=view_rls_data&page=table"
+project_id: databuffet-nonprd
+dataset_id: process_dataset
+table_id: view_rls_data
 tags: ["view", "process_dataset"]
 sources:
   - id: sqlx

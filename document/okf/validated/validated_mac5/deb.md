@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "deb"
 description: "One row = one debtor / customer master, unique on (company_id, debcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=deb&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: deb
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

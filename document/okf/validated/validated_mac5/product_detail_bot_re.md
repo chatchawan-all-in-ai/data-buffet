@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "product_detail_bot_re"
 description: "One row = one BOT-RE product detail, unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=product_detail_bot_re&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: product_detail_bot_re
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

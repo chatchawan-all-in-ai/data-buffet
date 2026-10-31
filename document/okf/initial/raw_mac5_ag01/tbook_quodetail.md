@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "tbook_quodetail"
 description: "One row = one record of source table `tbook_quodetail` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=tbook_quodetail&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_mac5_ag01
+table_id: tbook_quodetail
 tags: ["initial", "raw_mac5_ag01", "mac5"]
 sources:
   - id: sqlx

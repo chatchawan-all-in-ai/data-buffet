@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "apilog"
 description: "One row = one API call log, unique on (company_id, logid)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=apilog&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: apilog
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

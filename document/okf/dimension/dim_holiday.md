@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_holiday"
 description: "One row = one public holiday date with Thai and English names and a long-weekend flag, from the MDS holiday master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_holiday&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_holiday
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

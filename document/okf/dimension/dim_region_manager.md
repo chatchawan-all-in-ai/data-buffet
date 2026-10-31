@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_region_manager"
 description: "One row = one region manager assignment for a region or sub-region of one company over one StartDate to EndDate interval, from the MDS region manager master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_region_manager&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_region_manager
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

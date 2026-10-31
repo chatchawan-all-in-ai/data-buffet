@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_dim_customer"
 description: "One row = one customer (CustomerSK) of a company, with group SK, address names, MDS nickname and key-account info."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_customer&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_view
+table_id: view_dim_customer
 tags: ["view", "dimension_view", "mds"]
 sources:
   - id: sqlx

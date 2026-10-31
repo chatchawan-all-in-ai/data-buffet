@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "deb"
 description: "One row = one record of source table `deb` (MAC5 for company `ab01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ab01&t=deb&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_mac5_ab01
+table_id: deb
 tags: ["initial", "raw_mac5_ab01", "mac5"]
 sources:
   - id: sqlx

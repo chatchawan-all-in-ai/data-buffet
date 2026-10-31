@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_rate_target"
 description: "One row = one target-share rule: the percent of a target (TargetID, optionally by product group and month) assigned to one employee in one department of a company, from the MDS target rate master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_rate_target&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_rate_target
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

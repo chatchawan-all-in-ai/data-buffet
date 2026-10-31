@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mip"
 description: "One row = one cleaned source record of `mip` (no declared key; append-style, not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mip&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: mip
 tags: ["validated", "validated_mac5", "mac5", "validated_incremental"]
 sources:
   - id: sqlx

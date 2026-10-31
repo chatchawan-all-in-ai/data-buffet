@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "org_center_member"
 description: "One row = one person holding one position at one unit for a date range (CEO, director, region manager, section manager, TA, or PC)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=org_center&t=org_center_member&page=table"
+project_id: databuffet-nonprd
+dataset_id: org_center
+table_id: org_center_member
 tags: ["org_center", "mds", "dimension_daily", "org_center"]
 sources:
   - id: sqlx

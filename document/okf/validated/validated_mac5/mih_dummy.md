@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mih_dummy"
 description: "One row = one document header, staging variant, unique on (company_id, MIHday, MIHmonth, MIHyear, MIHtype, MIHvnos, MIHcus)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mih_dummy&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: mih_dummy
 tags: ["validated", "validated_mac5", "mac5", "validated_incremental"]
 sources:
   - id: sqlx

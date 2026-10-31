@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_quotation"
 description: "Quotation detail aggregates by quotation, customer, project, company and matched ProductSK; retained barcode versions can repeat quoted quantities and totals."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_quotation&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_quotation
 tags: ["fact", "mac5", "fact_daily"]
 sources:
   - id: sqlx

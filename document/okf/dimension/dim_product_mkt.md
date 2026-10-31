@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_product_mkt"
 description: "One row = one marketing classification (type, marketing group, sub-marketing, segment) per company, from the MDS marketing-name master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_product_mkt&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_product_mkt
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

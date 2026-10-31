@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "sale_by_branch_detail"
 description: "One row = one cleaned copy of the source table `sale_by_branch_detail`, unique on (branch, article_id, distribution_channel, end_date)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_saleout_mdt&t=sale_by_branch_detail&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_saleout_mdt
+table_id: sale_by_branch_detail
 tags: ["validated", "validated_saleout_mdt", "saleout", "validated_incremental", "saleout_daily"]
 sources:
   - id: sqlx

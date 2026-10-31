@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mec"
 description: "One row = one reference code table (mec), unique on (company_id, meccode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mec&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: mec
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

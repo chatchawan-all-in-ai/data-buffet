@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "cql"
 description: "One row = one MAC5 cheque/receipt linkage record (per company), unique on (company_id, cqlbank, cqlno, cqlsys, cqlday, cqlmonth, cqlyear, cqlautono)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=cql&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: cql
 tags: ["validated", "validated_mac5", "mac5", "validated_incremental"]
 sources:
   - id: sqlx

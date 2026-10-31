@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "org_center_link"
 description: "One row = one promoter (PC) linked to one TA at one branch for a date range, from the MDS PC-to-TA assignment table."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=org_center&t=org_center_link&page=table"
+project_id: databuffet-nonprd
+dataset_id: org_center
+table_id: org_center_link
 tags: ["org_center", "mds", "dimension_daily", "org_center"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_report"
 description: "One row = one report-group mapping of a company: a ReportID tied to a RegionID and optionally a MarketingGroupID, with two display names, from the MDS report group master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_report&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_report
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "match_product"
 description: "One row = one product matching map, unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=match_product&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: match_product
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

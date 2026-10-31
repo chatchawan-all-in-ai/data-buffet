@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_payment"
 description: "One row = one payment memo code (CodeMemo) per company with its payment id, name, method (EN/TH) and type, from the MDS payment master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_payment&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_payment
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

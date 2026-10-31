@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_product_master"
 description: "One row = one MAC5 stock item (product code) per company and barcode, enriched with MAC5 stock-group, MASTERSKU product master data and marketing-group SKs."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_product_master&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_product_master
 tags: ["dimension", "mac5", "mastersku", "dimension_daily"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery View
 title: "Model_Invoice_Transaction"
 description: "Sales rows of CompanySK 4 for 2024-2026 enriched with names; retained product barcode versions can repeat each source row and its measures."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=onetime&t=Model_Invoice_Transaction&page=table"
+project_id: databuffet-nonprd
+dataset_id: onetime
+table_id: Model_Invoice_Transaction
 tags: ["view", "onetime"]
 sources:
   - id: sqlx

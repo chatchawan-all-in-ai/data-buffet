@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_dim_calendar"
 description: "One row = one calendar date, with day/week/month/quarter attributes, holiday flags and the LatestDateFilter flag."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_calendar&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_view
+table_id: view_dim_calendar
 tags: ["view", "dimension_view"]
 sources:
   - id: sqlx

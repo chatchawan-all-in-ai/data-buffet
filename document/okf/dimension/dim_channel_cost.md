@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_channel_cost"
 description: "One row = one cost channel (code and name) per company, from the MDS cost-channel master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_channel_cost&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_channel_cost
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

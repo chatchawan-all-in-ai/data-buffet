@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "cps"
 description: "One row = one cost-per-stock movement, unique on (company_id, rowguid)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=cps&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: cps
 tags: ["validated", "validated_mac5", "mac5", "validated_incremental"]
 sources:
   - id: sqlx

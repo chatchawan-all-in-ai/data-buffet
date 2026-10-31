@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "stk"
 description: "One row = one record of source table `stk` (MAC5 for company `ab01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ab01&t=stk&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_mac5_ab01
+table_id: stk
 tags: ["initial", "raw_mac5_ab01", "mac5"]
 sources:
   - id: sqlx

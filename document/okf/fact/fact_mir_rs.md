@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_mir_rs"
 description: "One row = one receipt (RS) document line against an invoice, optionally matched to the billing row (BillingSK) and to the cheque (FactChqSK) that paid it, or a cheque with no receipt line."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_mir_rs&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_mir_rs
 tags: ["fact", "mac5", "fact_daily"]
 sources:
   - id: sqlx

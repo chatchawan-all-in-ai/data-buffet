@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_channel_finance"
 description: "One row = one finance channel (code and name) per company, from the MDS finance-channel master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_channel_finance&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_channel_finance
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

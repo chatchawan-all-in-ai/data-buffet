@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "rls_customer360"
 description: "One row = one customer (milCus) with the pipe-delimited lists of every salesperson, section, region, director and product-marketing combination associated with that customer in the transaction fact."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=process_dataset&t=rls_customer360&page=table"
+project_id: databuffet-nonprd
+dataset_id: process_dataset
+table_id: rls_customer360
 tags: ["process", "RLS"]
 sources:
   - id: sqlx

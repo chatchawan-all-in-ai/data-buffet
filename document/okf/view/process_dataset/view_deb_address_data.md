@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_deb_address_data"
 description: "One row = one ag01 customer (debcode) whose AI-parsed invoice address was matched to a Thai sub-district, district or province, with the geography SKs."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=process_dataset&t=view_deb_address_data&page=table"
+project_id: databuffet-nonprd
+dataset_id: process_dataset
+table_id: view_deb_address_data
 tags: ["view", "process_dataset"]
 sources:
   - id: sqlx

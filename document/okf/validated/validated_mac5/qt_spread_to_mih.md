@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "qt_spread_to_mih"
 description: "One row = one quotation spread to document link, unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=qt_spread_to_mih&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: qt_spread_to_mih
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

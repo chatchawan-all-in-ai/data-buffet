@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "log_print_billing"
 description: "One row = one billing print log, unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=log_print_billing&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: log_print_billing
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

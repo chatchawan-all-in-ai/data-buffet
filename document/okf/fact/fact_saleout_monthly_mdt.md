@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_saleout_monthly_mdt"
 description: "One row = one chain (store_code) x branch x sales channel x product x month_date total of sell-out as reported by the chain monthly (or collapsed from the daily feed)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_saleout_monthly_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_saleout_monthly_mdt
 tags: ["fact", "saleout", "fact_daily", "saleout_daily"]
 sources:
   - id: sqlx

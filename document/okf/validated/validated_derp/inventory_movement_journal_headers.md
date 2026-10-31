@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "inventory_movement_journal_headers"
 description: "One row = one cleaned copy of the source table `inventory_movement_journal_headers`, unique on (journal_number)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=inventory_movement_journal_headers&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_derp
+table_id: inventory_movement_journal_headers
 tags: ["validated", "validated_derp", "derp", "validated_incremental"]
 sources:
   - id: sqlx

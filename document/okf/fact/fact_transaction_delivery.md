@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_transaction_delivery"
 description: "IS invoice aggregates by customer, company, InvoiceSK and matched ProductSK; retained barcode versions can repeat invoiced measures."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_transaction_delivery&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_transaction_delivery
 tags: ["fact", "mac5", "fact_daily"]
 sources:
   - id: sqlx

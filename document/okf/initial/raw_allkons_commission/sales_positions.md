@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "sales_positions"
 description: "One row = one record of source table `sales_positions` (ALLKONS_COMMISSION) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_allkons_commission&t=sales_positions&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_allkons_commission
+table_id: sales_positions
 tags: ["initial", "raw_allkons_commission", "allkons"]
 sources:
   - id: sqlx

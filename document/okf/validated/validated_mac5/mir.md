@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mir"
 description: "One row = one receipt/return line (per company), unique on (company_id, mirtype, mirvnos, mirlistno)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mir&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: mir
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

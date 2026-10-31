@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "sub_district"
 description: "One row = one record of source table `sub_district` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_cis360&t=sub_district&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_cis360
+table_id: sub_district
 tags: ["initial", "raw_cis360", "cis360"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_product_mdt"
 description: "One row = one MDT (modern trade saleout) product code with its link to the MAC5 product SK and marketing-group SK, plus placeholder rows for unmapped codes and a -1 unknown row."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_product_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_product_mdt
 tags: ["dimension", "mds", "saleout", "dimension_daily", "saleout_daily"]
 sources:
   - id: sqlx

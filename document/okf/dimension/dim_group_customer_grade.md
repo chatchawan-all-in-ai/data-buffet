@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_group_customer_grade"
 description: "One row = one customer group per company per year with payment, collection-speed, bounced-cheque and relationship scores and the resulting credit grade."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_group_customer_grade&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_group_customer_grade
 tags: ["dimension", "mac5", "dimension_daily"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_pc"
 description: "One row = one promoter/PC (product consultant) assignment (employee, MDT branch, marketing group, period) from the MDS PC master, plus a reserved -1 'unknown' row."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_pc&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_pc
 tags: ["dimension", "mds", "dimension_daily", "saleout_daily"]
 sources:
   - id: sqlx

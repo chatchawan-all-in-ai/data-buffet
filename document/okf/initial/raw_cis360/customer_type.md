@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "customer_type"
 description: "One row = one record of source table `customer_type` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_cis360&t=customer_type&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_cis360
+table_id: customer_type
 tags: ["initial", "raw_cis360", "cis360"]
 sources:
   - id: sqlx

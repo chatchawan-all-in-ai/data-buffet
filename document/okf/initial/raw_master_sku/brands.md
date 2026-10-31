@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "brands"
 description: "One row = one record of source table `brands` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_master_sku&t=brands&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_master_sku
+table_id: brands
 tags: ["initial", "raw_master_sku", "master_sku"]
 sources:
   - id: sqlx

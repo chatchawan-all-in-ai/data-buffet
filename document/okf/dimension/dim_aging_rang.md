@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_aging_rang"
 description: "One row = one aging bucket (min and max days past due, with its report label) defined per company in MDS master data."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_aging_rang&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_aging_rang
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

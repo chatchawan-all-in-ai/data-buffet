@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_dim_company"
 description: "One row = one company (CompanySK) with report-friendly company names and a merged report company code."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_company&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_view
+table_id: view_dim_company
 tags: ["view", "dimension_view"]
 sources:
   - id: sqlx

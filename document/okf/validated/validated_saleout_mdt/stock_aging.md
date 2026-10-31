@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "stock_aging"
 description: "One row per (vendor_id, branch, article_id, aging_tier, brand, mch3, mch2, end_date, asatdate) after SQL deduplication; fully rebuilt, with arbitrary selection among tied source records."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_saleout_mdt&t=stock_aging&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_saleout_mdt
+table_id: stock_aging
 tags: ["validated", "validated_saleout_mdt", "saleout", "validated_full", "saleout_daily"]
 sources:
   - id: sqlx

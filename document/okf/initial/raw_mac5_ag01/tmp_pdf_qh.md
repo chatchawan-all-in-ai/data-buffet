@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "tmp_pdf_qh"
 description: "One row = one record of source table `tmp_pdf_qh` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=tmp_pdf_qh&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_mac5_ag01
+table_id: tmp_pdf_qh
 tags: ["initial", "raw_mac5_ag01", "mac5"]
 sources:
   - id: sqlx

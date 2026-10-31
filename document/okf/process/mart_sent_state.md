@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mart_sent_state"
 description: "One row = one data row (by row_key) that a Pub/Sub export table last sent successfully, with its hash and the Dataform invocation that sent it."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=process_dataset&t=mart_sent_state&page=table"
+project_id: databuffet-nonprd
+dataset_id: process_dataset
+table_id: mart_sent_state
 tags: ["process", "pub_sub", "Pub/Sub"]
 sources:
   - id: sqlx

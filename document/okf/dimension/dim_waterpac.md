@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_waterpac"
 description: "One row = one WaterPac (pump variant) code of a company with its name and brand, from the MDS WaterPac master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_waterpac&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_waterpac
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

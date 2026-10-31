@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "pro_crc"
 description: "One row = one promotion (CRC), unique on (company_id, id, procrcstkcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=pro_crc&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: pro_crc
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "categories"
 description: "One row = one cleaned copy of the source table `categories`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_master_sku&t=categories&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_master_sku
+table_id: categories
 tags: ["validated", "validated_master_sku", "master_sku", "validated_incremental"]
 sources:
   - id: sqlx

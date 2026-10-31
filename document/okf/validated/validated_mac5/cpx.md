@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "cpx"
 description: "One row = one reference code table (cpx), unique on (company_id, cpxstkid, cpxlinkid, cpxvnosid, cpxdateid)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=cpx&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: cpx
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

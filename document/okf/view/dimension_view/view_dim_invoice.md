@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_dim_invoice"
 description: "One row = one invoice-type document line group (InvoiceSK: IS/BS/AS/QS document x customer x linked order) with order/aging SKs, SCG flag and a resolved customer report (shop) name."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_invoice&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_view
+table_id: view_dim_invoice
 tags: ["view", "dimension_view", "mac5", "mds"]
 sources:
   - id: sqlx

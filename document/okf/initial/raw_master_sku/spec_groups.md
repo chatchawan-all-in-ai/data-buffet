@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "spec_groups"
 description: "One row = one record of source table `spec_groups` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_master_sku&t=spec_groups&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_master_sku
+table_id: spec_groups
 tags: ["initial", "raw_master_sku", "master_sku"]
 sources:
   - id: sqlx

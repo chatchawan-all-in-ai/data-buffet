@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "tmp_mihstatus"
 description: "One row = one cleaned source record of `tmp_mihstatus` (no declared key; append-style, not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tmp_mihstatus&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: tmp_mihstatus
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

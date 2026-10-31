@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_fact_target_product_group_mdt"
 description: "One row = one day x marketing product group x report line x region/manager/director combination of the MDT-channel sales target, aggregated from dim_target_product_group_by_sale_dayofwork."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_view&t=view_fact_target_product_group_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_view
+table_id: view_fact_target_product_group_mdt
 tags: ["view", "fact_view"]
 sources:
   - id: sqlx

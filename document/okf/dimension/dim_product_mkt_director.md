@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_product_mkt_director"
 description: "One row = one active MDS marketing-director assignment record, with company, marketing type and validity interval; several records can share a company and type."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_product_mkt_director&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_product_mkt_director
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

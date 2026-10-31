@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mkt_per"
 description: "One row = one marketing personnel, unique on (company_id, percode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mkt_per&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: mkt_per
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

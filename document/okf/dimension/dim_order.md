@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_order"
 description: "One row = one MAC5 sales order (document type PS) per company with header attributes, status text and a derived fulfilment status (On Order / In Process / Complete)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_order&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_order
 tags: ["dimension", "mac5", "dimension_daily"]
 sources:
   - id: sqlx

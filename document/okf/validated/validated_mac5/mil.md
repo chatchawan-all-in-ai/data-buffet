@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mil"
 description: "One row = one document line item (invoice/delivery lines, per company), unique on (company_id, MILtype, MILvnos, MILlistNo)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mil&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: mil
 tags: ["validated", "validated_mac5", "mac5", "validated_incremental"]
 sources:
   - id: sqlx

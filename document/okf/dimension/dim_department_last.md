@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_department_last"
 description: "One row = the latest-period row of each department per company, taken from dim_department, with placeholder FK columns for section, region and director."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_department_last&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_department_last
 tags: ["dimension", "dimension_daily"]
 sources:
   - id: sqlx

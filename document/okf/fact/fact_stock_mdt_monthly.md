@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_stock_mdt_monthly"
 description: "One row = the stock position of one product at one chain branch on the last usable stock date of a month for that chain."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_stock_mdt_monthly&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_stock_mdt_monthly
 tags: ["fact", "fact_daily", "saleout_daily"]
 sources:
   - id: sqlx

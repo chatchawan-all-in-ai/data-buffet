@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_section_manager_last"
 description: "One row = one section code (companyID, SectionID) with its latest section manager interval from dim_section_manager."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_section_manager_last&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_section_manager_last
 tags: ["dimension", "dimension_daily"]
 sources:
   - id: sqlx

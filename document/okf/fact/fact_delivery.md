@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_delivery"
 description: "Delivery status groups enriched with invoice/product candidates; retained product versions can repeat both invoice measures and delivery status counts."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_delivery&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_delivery
 tags: ["fact", "mac5", "fact_daily"]
 sources:
   - id: sqlx

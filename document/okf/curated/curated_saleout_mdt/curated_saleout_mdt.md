@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "curated_saleout_mdt"
 description: "One row = the net sales (or returns) of one product at one modern-trade branch on one sale date and document type, merged from every chain feed."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=curated_saleout_mdt&t=curated_saleout_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: curated_saleout_mdt
+table_id: curated_saleout_mdt
 tags: ["curated", "curated_saleout_mdt", "saleout", "curated_incremental", "saleout_daily", "SALEOUT_MDT"]
 sources:
   - id: sqlx

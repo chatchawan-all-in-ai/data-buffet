@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "rcv"
 description: "One row = one receiving / goods receipt, unique on (company_id, serial)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=rcv&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: rcv
 tags: ["validated", "validated_mac5", "mac5", "validated_incremental"]
 sources:
   - id: sqlx

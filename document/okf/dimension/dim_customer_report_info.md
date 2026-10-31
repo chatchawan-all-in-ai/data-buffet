@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_customer_report_info"
 description: "One row = one customer report name (shop/account name as shown on reports, whitespace-insensitive) per company, with segment, TA (team-area) chain, sale rep, address and online-shop attributes."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_customer_report_info&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_customer_report_info
 tags: ["dimension", "mds", "mac5", "dimension_daily"]
 sources:
   - id: sqlx

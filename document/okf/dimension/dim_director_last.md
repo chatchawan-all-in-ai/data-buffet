@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_director_last"
 description: "One row = the latest-period row of each director per company, taken from dim_director."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_director_last&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_director_last
 tags: ["dimension", "dimension_daily"]
 sources:
   - id: sqlx

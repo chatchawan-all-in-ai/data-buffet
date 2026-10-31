@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "customer_status"
 description: "One row = one cleaned copy of the source table `customer_status`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_cis360&t=customer_status&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_cis360
+table_id: customer_status
 tags: ["validated", "validated_cis360", "cis360", "validated_incremental"]
 sources:
   - id: sqlx

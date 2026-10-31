@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "cst"
 description: "One row = one cost/stock transaction, unique on (company_id, CSTdate, CSTtype, CSTvnos, CSTcus, CSTstk, CSTsto, CSTio, CSTlist)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=cst&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: cst
 tags: ["validated", "validated_mac5", "mac5", "validated_incremental"]
 sources:
   - id: sqlx

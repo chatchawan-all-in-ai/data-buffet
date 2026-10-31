@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_chq"
 description: "One row = one cheque (chqno) per customer per company, linked to the receipt line (cqlvnos) that records it, for cheques with cqlbook = 0."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_chq&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_chq
 tags: ["fact", "mac5", "fact_daily"]
 sources:
   - id: sqlx

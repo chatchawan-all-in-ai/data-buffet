@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_payment_receive_score"
 description: "One row = one score band (min/max total payment received, validity period) per company, used to score a customer's yearly payment volume."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_payment_receive_score&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_payment_receive_score
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

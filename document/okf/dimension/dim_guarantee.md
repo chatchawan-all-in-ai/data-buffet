@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_guarantee"
 description: "One row = one bank guarantee (BG) document for a customer at a bank (company, customer code, bank name), with its limit and expiry date, from the MDS guarantee master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_guarantee&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_guarantee
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

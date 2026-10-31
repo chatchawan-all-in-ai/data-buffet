@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_sales_representative_last"
 description: "One row = one sales-representative assignment rule in the latest organisation, with department, section and region IDs and names resolved; an employee can have several rows."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_sales_representative_last&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_view
+table_id: view_sales_representative_last
 tags: ["view", "dimension_view"]
 sources:
   - id: sqlx

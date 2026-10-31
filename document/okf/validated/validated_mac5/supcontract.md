@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "supcontract"
 description: "One row = one supplementary contract, unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=supcontract&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: supcontract
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "spec_attribute_translations"
 description: "One row = one cleaned copy of the source table `spec_attribute_translations`, unique on (spec_attribute_id, language_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_master_sku&t=spec_attribute_translations&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_master_sku
+table_id: spec_attribute_translations
 tags: ["validated", "validated_master_sku", "master_sku", "validated_incremental"]
 sources:
   - id: sqlx

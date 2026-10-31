@@ -3,6 +3,9 @@ type: BigQuery View
 title: "GroupCustomerSK_CustomerSK"
 description: "One row = one (GroupCustomerSK, CustomerSK) pair linking a customer group to a customer, in the bridge_dataset schema."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=bridge_dataset&t=GroupCustomerSK_CustomerSK&page=table"
+project_id: databuffet-nonprd
+dataset_id: bridge_dataset
+table_id: GroupCustomerSK_CustomerSK
 tags: ["view", "bridge_dataset"]
 sources:
   - id: sqlx

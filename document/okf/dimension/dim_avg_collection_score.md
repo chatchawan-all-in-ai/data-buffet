@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_avg_collection_score"
 description: "One row = one score band (min/max average collection days, validity period) per company, used to score a customer's average receipt age."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_avg_collection_score&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_avg_collection_score
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

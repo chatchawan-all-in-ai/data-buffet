@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "product_admin_status"
 description: "One row = one cleaned copy of the source table `product_admin_status`, unique on (pas_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mastersku&t=product_admin_status&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mastersku
+table_id: product_admin_status
 tags: ["validated", "validated_mastersku", "mastersku", "validated_incremental"]
 sources:
   - id: sqlx

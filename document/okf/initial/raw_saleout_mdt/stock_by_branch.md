@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "stock_by_branch"
 description: "One row = one record of source table `stock_by_branch` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=stock_by_branch&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_saleout_mdt
+table_id: stock_by_branch
 tags: ["initial", "raw_saleout_mdt", "saleout"]
 sources:
   - id: sqlx

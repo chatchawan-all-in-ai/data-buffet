@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "cpp"
 description: "One row = one reference code table (cpp), unique on (company_id, rowguid)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=cpp&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: cpp
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

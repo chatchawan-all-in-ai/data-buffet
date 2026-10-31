@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_dim_sale_representative_last"
 description: "One row = one sales representative in the latest-organisation snapshot (SaleRepSK) with department name and a per-region sort number."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_sale_representative_last&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_view
+table_id: view_dim_sale_representative_last
 tags: ["view", "dimension_view"]
 sources:
   - id: sqlx

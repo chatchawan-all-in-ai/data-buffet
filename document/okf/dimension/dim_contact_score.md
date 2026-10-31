@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_contact_score"
 description: "One row = one score band (min/max years since first contact, validity period) per company, used to score customer relationship length."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_contact_score&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_contact_score
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "curated_saleout_monthly_mdt"
 description: "One row = the monthly sell-out of one product at one branch of one modern-trade chain, taken from the single best source available for that chain and month."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=curated_saleout_mdt&t=curated_saleout_monthly_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: curated_saleout_mdt
+table_id: curated_saleout_monthly_mdt
 tags: ["curated", "curated_saleout_mdt", "saleout", "curated_full", "saleout_daily", "SALEOUT_MDT"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "stk"
 description: "One row = one stock (SKU) master, unique on (company_id, stkcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=stk&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: stk
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

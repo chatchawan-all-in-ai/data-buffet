@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_aging"
 description: "One row = one AR document (tax invoice IS, credit note BS or debit note AS) per company with its payment, credit/debit-note adjustments, outstanding balance, completion flag and invoice-group flag."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_aging&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_aging
 tags: ["dimension", "mac5", "dimension_daily"]
 sources:
   - id: sqlx

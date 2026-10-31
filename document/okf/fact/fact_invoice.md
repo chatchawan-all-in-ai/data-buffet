@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_invoice"
 description: "One row = one product (milStk) on one invoice-type document (IS/BS/AS/QS) per customer and link number per company, within the last 4 years."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_invoice&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_invoice
 tags: ["fact", "mac5", "fact_daily"]
 sources:
   - id: sqlx

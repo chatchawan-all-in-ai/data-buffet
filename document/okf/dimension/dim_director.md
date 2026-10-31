@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_director"
 description: "One row = one sales director (company, DirectorID) with the director of sales and a validity period, from the MDS sales-director master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_director&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_director
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

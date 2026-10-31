@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_dim_target_by_agent"
 description: "One row = one sales target (product group, year, month, target ID) allocated to one salesperson, with the latest org-chart SKs."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_target_by_agent&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_view
+table_id: view_dim_target_by_agent
 tags: ["view", "dimension_view"]
 sources:
   - id: sqlx

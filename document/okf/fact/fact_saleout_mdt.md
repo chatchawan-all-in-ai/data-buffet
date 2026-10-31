@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_saleout_mdt"
 description: "One row = one sell-out (sale or return) document-type total per sale date, store (chain), branch and product from the modern-trade chains' daily feeds."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_saleout_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_saleout_mdt
 tags: ["fact", "saleout", "fact_daily", "saleout_daily"]
 sources:
   - id: sqlx

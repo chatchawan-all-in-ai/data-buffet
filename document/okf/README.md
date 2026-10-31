@@ -17,8 +17,10 @@ card per BigQuery table or view that this repository's Dataform definitions crea
   `<layer>/<dataset>/<table>.md` for `initial`, `validated`, `curated`, `view`.
 - `index.md` in the root, every layer folder and every dataset folder; `log.md` lists bundle changes (newest first).
 - A card is a markdown file with YAML frontmatter (`type` is `BigQuery Table` or `BigQuery View`, plus title, description,
-  resource, tags, sources, generated, status) and these sections: `# What it is` (what it is and who uses it),
+  resource, project_id, dataset_id, table_id, tags, sources, generated, status) and these sections: `# What it is` (what it is and who uses it),
   `# Grain and key`, `# Schema` (every column: name, type, meaning), `# How it is built`, `# Examples`.
+- `project_id`, `dataset_id` and `table_id` are plain strings that state where the table lives in BigQuery; they match
+  the `resource` console URL (`p`, `d`, `t`). They are producer extensions allowed by OKF v0.2.
 - Not covered: MDS, Dify, other repositories, tables Dataform does not build, operations that own no table.
 
 # Rule

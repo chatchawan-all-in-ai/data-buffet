@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_fact_salein_director_mdt"
 description: "One row = one day x product x marketing group x report line x region/manager/director combination of sell-in sales to the director with DirectorID 00004, aggregated from view_fact_transcation."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_view&t=view_fact_salein_director_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_view
+table_id: view_fact_salein_director_mdt
 tags: ["view", "fact_view"]
 sources:
   - id: sqlx

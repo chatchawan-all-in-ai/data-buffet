@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "common_codes"
 description: "One row = one record of source table `common_codes` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_master_sku&t=common_codes&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_master_sku
+table_id: common_codes
 tags: ["initial", "raw_master_sku", "master_sku"]
 sources:
   - id: sqlx

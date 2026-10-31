@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_fact_target_pc_mdt"
 description: "One row = one fact_target_saleout_mdt target row (day x branch x marketing group/segment) split evenly across the PCs assigned to the branch and marketing group in that month."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_view&t=view_fact_target_pc_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_view
+table_id: view_fact_target_pc_mdt
 tags: ["view", "fact_view"]
 sources:
   - id: sqlx

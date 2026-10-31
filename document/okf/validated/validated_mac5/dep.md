@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dep"
 description: "One row = one department, unique on (company_id, depcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=dep&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: dep
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

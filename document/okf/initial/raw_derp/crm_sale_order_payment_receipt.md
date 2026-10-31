@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "crm_sale_order_payment_receipt"
 description: "One row = one record of source table `crm_sale_order_payment_receipt` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_sale_order_payment_receipt&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_derp
+table_id: crm_sale_order_payment_receipt
 tags: ["initial", "raw_derp", "derp"]
 sources:
   - id: sqlx

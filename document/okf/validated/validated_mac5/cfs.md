@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "cfs"
 description: "One row = one cashflow, unique on (company_id, cfsvnosid, cfsdateid, cfscusid, cfstypeid)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=cfs&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: cfs
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

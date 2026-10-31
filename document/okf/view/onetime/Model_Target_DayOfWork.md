@@ -3,6 +3,9 @@ type: BigQuery View
 title: "Model_Target_DayOfWork"
 description: "One row = one day-of-work target for CompanySK 4, with marketing/report names and potentially incorrect org attributes due to joins across independently numbered dimension families."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=onetime&t=Model_Target_DayOfWork&page=table"
+project_id: databuffet-nonprd
+dataset_id: onetime
+table_id: Model_Target_DayOfWork
 tags: ["view", "onetime"]
 sources:
   - id: sqlx

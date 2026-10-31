@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "marketing_condition_version_details"
 description: "One row = one record of source table `marketing_condition_version_details` (ALLKONS_COMMISSION) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_allkons_commission&t=marketing_condition_version_details&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_allkons_commission
+table_id: marketing_condition_version_details
 tags: ["initial", "raw_allkons_commission", "allkons"]
 sources:
   - id: sqlx

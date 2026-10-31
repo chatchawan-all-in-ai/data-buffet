@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "curated_mil"
 description: "One row = one document line (order/invoice line) per company, with ag01 lines credited to a split-sale rep duplicated into two rows, unique on (company_id, milType, milVnos, milListno) plus the split."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=curated_mac5&t=curated_mil&page=table"
+project_id: databuffet-nonprd
+dataset_id: curated_mac5
+table_id: curated_mil
 tags: ["curated", "curated_mac5", "mac5", "MAC5"]
 sources:
   - id: sqlx

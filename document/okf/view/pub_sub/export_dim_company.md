@@ -3,6 +3,9 @@ type: BigQuery View
 title: "export_dim_company"
 description: "One row = one company of dim_company exposed for the Pub/Sub export (data columns without SKs, plus row_key and row_hash)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=pub_sub&t=export_dim_company&page=table"
+project_id: databuffet-nonprd
+dataset_id: pub_sub
+table_id: export_dim_company
 tags: ["view", "pub_sub"]
 sources:
   - id: sqlx

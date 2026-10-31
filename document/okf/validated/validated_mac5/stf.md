@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "stf"
 description: "One row = one staff reference, unique on (company_id, stfcode, stflist)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=stf&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: stf
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

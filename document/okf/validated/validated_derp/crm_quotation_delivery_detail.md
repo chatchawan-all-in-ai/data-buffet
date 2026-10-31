@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "crm_quotation_delivery_detail"
 description: "One row = one cleaned copy of the source table `crm_quotation_delivery_detail`, unique on (quotation_delivery_detail_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_quotation_delivery_detail&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_derp
+table_id: crm_quotation_delivery_detail
 tags: ["validated", "validated_derp", "derp", "validated_incremental"]
 sources:
   - id: sqlx

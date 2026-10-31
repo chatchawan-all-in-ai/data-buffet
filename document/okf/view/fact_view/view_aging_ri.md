@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_aging_ri"
 description: "One row = one not-yet-fully-collected invoice, credit note or debit note per company (AR aging) with due dates, outstanding amount, aging days and receipt history text."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_view&t=view_aging_ri&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_view
+table_id: view_aging_ri
 tags: ["view", "fact_view", "mac5"]
 sources:
   - id: sqlx

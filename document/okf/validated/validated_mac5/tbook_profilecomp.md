@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "tbook_profilecomp"
 description: "One row = one cleaned source record of `tbook_profilecomp` (no declared key; append-style, not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tbook_profilecomp&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: tbook_profilecomp
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

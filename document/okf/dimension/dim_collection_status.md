@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_collection_status"
 description: "One row = one collection follow-up record (company, year, month, customer) with the action, justification and responsible person, from the MDS collection-status master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_collection_status&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_collection_status
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

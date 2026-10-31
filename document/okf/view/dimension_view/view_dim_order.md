@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_dim_order"
 description: "One row = one sales order (OrderSK, MAC5 PS document) with status, order type, ship-to and an expiry flag."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_order&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_view
+table_id: view_dim_order
 tags: ["view", "dimension_view", "mac5", "mds"]
 sources:
   - id: sqlx

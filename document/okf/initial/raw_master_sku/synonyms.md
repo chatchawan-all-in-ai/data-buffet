@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "synonyms"
 description: "One row = one record of source table `synonyms` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_master_sku&t=synonyms&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_master_sku
+table_id: synonyms
 tags: ["initial", "raw_master_sku", "master_sku"]
 sources:
   - id: sqlx

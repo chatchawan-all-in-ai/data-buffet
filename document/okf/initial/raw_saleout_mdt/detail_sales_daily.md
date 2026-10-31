@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "detail_sales_daily"
 description: "One row = one record of source table `detail_sales_daily` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=detail_sales_daily&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_saleout_mdt
+table_id: detail_sales_daily
 tags: ["initial", "raw_saleout_mdt", "saleout"]
 sources:
   - id: sqlx

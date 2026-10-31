@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_mih_address_data"
 description: "One row = one document (mihType + mihVnos) whose AI-parsed address was matched to a Thai sub-district, district or province, with the geography SKs."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=process_dataset&t=view_mih_address_data&page=table"
+project_id: databuffet-nonprd
+dataset_id: process_dataset
+table_id: view_mih_address_data
 tags: ["view", "process_dataset"]
 sources:
   - id: sqlx

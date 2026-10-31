@@ -3,6 +3,9 @@ type: BigQuery View
 title: "Product_Master_ALL"
 description: "An ag01 dim_product_master barcode version enriched with descriptions, marketing hierarchy, marketing director and physical attributes; enrichment joins can multiply rows."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=onetime&t=Product_Master_ALL&page=table"
+project_id: databuffet-nonprd
+dataset_id: onetime
+table_id: Product_Master_ALL
 tags: ["view", "onetime"]
 sources:
   - id: sqlx

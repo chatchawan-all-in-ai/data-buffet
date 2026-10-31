@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_region_manager_last"
 description: "One row = one region or sub-region code (companyID, RegionID, SubRegionID) with its latest region manager interval from dim_region_manager."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_region_manager_last&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_region_manager_last
 tags: ["dimension", "dimension_daily"]
 sources:
   - id: sqlx

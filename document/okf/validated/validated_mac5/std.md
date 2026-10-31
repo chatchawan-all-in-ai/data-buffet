@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "std"
 description: "One row = one reference code table (std), unique on (company_id, stdautono)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=std&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: std
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

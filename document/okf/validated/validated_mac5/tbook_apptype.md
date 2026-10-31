@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "tbook_apptype"
 description: "One row = one booking application type, unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tbook_apptype&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: tbook_apptype
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

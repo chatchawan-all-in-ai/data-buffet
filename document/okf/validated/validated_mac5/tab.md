@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "tab"
 description: "One row = one cleaned copy of the source table `tab`, unique on (company_id, tabvnosid, tabdateid, tabcusid, tabtypeid, tablistno)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tab&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: tab
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

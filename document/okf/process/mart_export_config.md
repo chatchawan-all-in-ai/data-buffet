@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mart_export_config"
 description: "One row = one Data Mart table exported to Pub/Sub, with its source view, topic and the publisher's memory of the last Dataform run it handled."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=process_dataset&t=mart_export_config&page=table"
+project_id: databuffet-nonprd
+dataset_id: process_dataset
+table_id: mart_export_config
 tags: ["process", "pub_sub", "Pub/Sub"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_group_customer"
 description: "One row = one customer group (`debgroup`) per company, used to group customers that belong to the same account group."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_group_customer&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_group_customer
 tags: ["dimension", "dimension_daily"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "ap_s"
 description: "One row = one AP status, unique on (company_id, ap_scode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=ap_s&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: ap_s
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

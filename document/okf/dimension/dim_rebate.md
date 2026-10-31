@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_rebate"
 description: "One row = one rebate or sales-KPI exclusion rule of a company: a code (rebate) of a given status type (customer, sales, product, dep, textsplit) with its sales and accounting exclusion flags, from the MDS KPI condition master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_rebate&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_rebate
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

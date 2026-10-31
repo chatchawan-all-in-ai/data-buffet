@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_aging_history"
 description: "One row = one AR document in a non-completed group, captured under the prior-day asatdate label; kept for the latest label and month-ends."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_aging_history&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_aging_history
 tags: ["dimension", "mac5", "dimension_daily"]
 sources:
   - id: sqlx

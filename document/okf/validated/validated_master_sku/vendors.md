@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "vendors"
 description: "One row = one cleaned copy of the source table `vendors`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_master_sku&t=vendors&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_master_sku
+table_id: vendors
 tags: ["validated", "validated_master_sku", "master_sku", "validated_incremental"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "comboset"
 description: "One row = one product combo set, unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=comboset&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: comboset
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

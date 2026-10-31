@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mie_dummy"
 description: "One row = one document extra line, staging variant, unique on (company_id, MIEday, MIEmonth, MIEyear, MIEtype, MIEvnos, MIEcus)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mie_dummy&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: mie_dummy
 tags: ["validated", "validated_mac5", "mac5", "validated_incremental"]
 sources:
   - id: sqlx

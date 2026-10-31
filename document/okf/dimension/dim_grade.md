@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_grade"
 description: "One row = one grade band (min/max score percentage, grade label, validity period) per company, used to turn a customer's total score into a grade."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_grade&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_grade
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

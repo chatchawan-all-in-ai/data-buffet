@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "inventory_movement_journal_entries"
 description: "One row = one record of source table `inventory_movement_journal_entries` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=inventory_movement_journal_entries&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_derp
+table_id: inventory_movement_journal_entries
 tags: ["initial", "raw_derp", "derp"]
 sources:
   - id: sqlx

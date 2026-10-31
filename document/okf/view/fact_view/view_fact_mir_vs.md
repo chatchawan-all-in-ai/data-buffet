@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_fact_mir_vs"
 description: "One row = one billing (mirtype VS) line of fact_mir_vs per company, extended with the AgingSK of the invoice it bills; BillingSK is unique."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_view&t=view_fact_mir_vs&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_view
+table_id: view_fact_mir_vs
 tags: ["view", "fact_view"]
 sources:
   - id: sqlx

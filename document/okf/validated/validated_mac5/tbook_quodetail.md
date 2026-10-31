@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "tbook_quodetail"
 description: "One row = one booking quotation detail, unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tbook_quodetail&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: tbook_quodetail
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

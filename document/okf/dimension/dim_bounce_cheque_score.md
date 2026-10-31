@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_bounce_cheque_score"
 description: "One row = one score band (min/max count of cancelled/bounced cheques, validity period) per company, used to score a customer's cheque reliability."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_bounce_cheque_score&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_bounce_cheque_score
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

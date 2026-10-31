@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "tdis_approveorder"
 description: "One row = one order approval (distribution), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tdis_approveorder&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: tdis_approveorder
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_sale_representative"
 description: "One row = one sales-representative rule row: an employee in a department (with optional DepCode, CostChannelID, ProvinceID, CustomerFlag and order window) over a StartDate to EndDate interval from the MDS representative master, plus one catch-all row per employee from the MAC5 personnel ledger."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_sale_representative&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_sale_representative
 tags: ["dimension", "mds", "mac5", "dimension_daily"]
 sources:
   - id: sqlx

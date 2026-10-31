@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "curated_eom_gb"
 description: "One row = the month-end sales total of one product and document type (SALE or RETURN) at one Global House (GB) branch for one period, as reported by the chain."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=curated_saleout_mdt&t=curated_eom_gb&page=table"
+project_id: databuffet-nonprd
+dataset_id: curated_saleout_mdt
+table_id: curated_eom_gb
 tags: ["curated", "curated_saleout_mdt", "saleout", "curated_full", "saleout_daily", "SALEOUT_MDT"]
 sources:
   - id: sqlx

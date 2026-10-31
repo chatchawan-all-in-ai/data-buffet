@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_target_product_group_by_sale_dayofwork"
 description: "One row = one allocated target row of dim_target_product_group_by_sale spread onto one calendar date (Amt_New and Qty_New for that date, zero on holidays), with the org-hierarchy SKs valid on that date."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_target_product_group_by_sale_dayofwork&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_target_product_group_by_sale_dayofwork
 tags: ["dimension", "dimension_daily"]
 sources:
   - id: sqlx

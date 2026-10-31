@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "cdc_change_log"
 description: "One row = one detected change (NEW or CHANGED) of one tracked source record on one day, comparing the raw table with the validated table."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=cdc_dataset&t=cdc_change_log&page=table"
+project_id: databuffet-nonprd
+dataset_id: cdc_dataset
+table_id: cdc_change_log
 tags: ["cdc", "mac5", "cdc_incremental"]
 sources:
   - id: sqlx

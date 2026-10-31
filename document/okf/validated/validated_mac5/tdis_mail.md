@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "tdis_mail"
 description: "One row = one cleaned source record of `tdis_mail` (no declared key; append-style, not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tdis_mail&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: tdis_mail
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

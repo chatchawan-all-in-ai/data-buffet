@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mie"
 description: "One row = one document extra/expense line (per company), unique on (company_id, MIEday, MIEmonth, MIEyear, MIEtype, MIEvnos, MIEcus)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mie&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: mie
 tags: ["validated", "validated_mac5", "mac5", "validated_incremental"]
 sources:
   - id: sqlx

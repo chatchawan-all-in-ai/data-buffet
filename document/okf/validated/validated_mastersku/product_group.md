@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "product_group"
 description: "One row = one cleaned copy of the source table `product_group`, unique on (pg_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mastersku&t=product_group&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mastersku
+table_id: product_group
 tags: ["validated", "validated_mastersku", "mastersku", "validated_incremental"]
 sources:
   - id: sqlx

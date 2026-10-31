@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_target_product_group_by_sale"
 description: "One row = one company-level product-group target (TargetProductGroupSK) allocated to one employee and department through a rate rule (RateTargetSK), with the allocated amount and quantity (CalAmt, CalQty) and the latest-snapshot org keys of that employee."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_target_product_group_by_sale&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_target_product_group_by_sale
 tags: ["dimension", "dimension_daily"]
 sources:
   - id: sqlx

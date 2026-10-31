@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "crm_quotation_delivery_detail"
 description: "One row = one record of source table `crm_quotation_delivery_detail` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_quotation_delivery_detail&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_derp
+table_id: crm_quotation_delivery_detail
 tags: ["initial", "raw_derp", "derp"]
 sources:
   - id: sqlx

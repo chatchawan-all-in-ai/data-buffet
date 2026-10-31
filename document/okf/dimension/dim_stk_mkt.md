@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_stk_mkt"
 description: "One row = one MAC5 stock code of a company with its marketing group, sub group and segment, from the MDS product market group master, plus placeholder rows for stock codes MDS does not know yet."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_stk_mkt&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_stk_mkt
 tags: ["dimension", "mds", "mac5", "dimension_daily"]
 sources:
   - id: sqlx

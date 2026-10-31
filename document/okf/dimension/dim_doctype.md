@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_doctype"
 description: "One row = one document-type code (AccountCategory + Code) per company with English and Thai descriptions, from the MDS document-type master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_doctype&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_doctype
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

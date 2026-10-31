@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "tdelivery"
 description: "One row = one delivery (logistics/GPS), unique on (company_id, frun)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tdelivery&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: tdelivery
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "product_for_aisearch"
 description: "One row = one product SKU per run date, in the shape the AI search index reads: an id plus a structData struct (legacy MASTERSKU source)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=curated_mastersku&t=product_for_aisearch&page=table"
+project_id: databuffet-nonprd
+dataset_id: curated_mastersku
+table_id: product_for_aisearch
 tags: ["curated", "curated_mastersku", "mastersku", "MASTERSKU", "AI search"]
 sources:
   - id: sqlx

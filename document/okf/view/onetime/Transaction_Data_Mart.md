@@ -3,6 +3,9 @@ type: BigQuery View
 title: "Transaction_Data_Mart"
 description: "One row = one line (curated_mil) of an invoice, debit note, credit note or QS document (types IS/AS/BS/QS) per company, with header fields, VAT allocation and address SKs."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=onetime&t=Transaction_Data_Mart&page=table"
+project_id: databuffet-nonprd
+dataset_id: onetime
+table_id: Transaction_Data_Mart
 tags: ["view", "onetime", "mac5"]
 sources:
   - id: sqlx

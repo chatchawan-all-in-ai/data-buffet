@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "crm_nd_sd_price"
 description: "One row = one record of source table `crm_nd_sd_price` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_nd_sd_price&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_derp
+table_id: crm_nd_sd_price
 tags: ["initial", "raw_derp", "derp"]
 sources:
   - id: sqlx

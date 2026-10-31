@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "curated_product"
 description: "One row = one product SKU of the legacy MASTERSKU catalogue, unique on prdSku (latest prdUpdatedDate wins)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=curated_mastersku&t=curated_product&page=table"
+project_id: databuffet-nonprd
+dataset_id: curated_mastersku
+table_id: curated_product
 tags: ["curated", "curated_mastersku", "mastersku", "MASTERSKU"]
 sources:
   - id: sqlx

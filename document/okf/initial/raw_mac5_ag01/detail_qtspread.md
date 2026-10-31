@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "detail_qtspread"
 description: "One row = one record of source table `detail_qtspread` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=detail_qtspread&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_mac5_ag01
+table_id: detail_qtspread
 tags: ["initial", "raw_mac5_ag01", "mac5"]
 sources:
   - id: sqlx

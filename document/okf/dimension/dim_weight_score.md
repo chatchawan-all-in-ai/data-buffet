@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_weight_score"
 description: "One row = one customer-grade weight score entry (score type with its weight) of a company over one StartDate to EndDate interval, from the MDS weight-score master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_weight_score&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_weight_score
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

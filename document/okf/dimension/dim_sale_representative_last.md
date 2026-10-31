@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_sale_representative_last"
 description: "One row = one sales-representative rule (latest interval per company, department, employee, DepCode, CostChannelID, ProvinceID and order window), collapsed to a single normal row per employee when one exists, plus one ledger row per employee with no department."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_sale_representative_last&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_sale_representative_last
 tags: ["dimension", "mac5", "dimension_daily"]
 sources:
   - id: sqlx

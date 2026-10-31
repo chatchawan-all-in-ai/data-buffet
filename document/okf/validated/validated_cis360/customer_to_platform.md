@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "customer_to_platform"
 description: "One row = one cleaned copy of the source table `customer_to_platform`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_cis360&t=customer_to_platform&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_cis360
+table_id: customer_to_platform
 tags: ["validated", "validated_cis360", "cis360", "validated_incremental"]
 sources:
   - id: sqlx

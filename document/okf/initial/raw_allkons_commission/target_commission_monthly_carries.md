@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "target_commission_monthly_carries"
 description: "One row = one record of source table `target_commission_monthly_carries` (ALLKONS_COMMISSION) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_allkons_commission&t=target_commission_monthly_carries&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_allkons_commission
+table_id: target_commission_monthly_carries
 tags: ["initial", "raw_allkons_commission", "allkons"]
 sources:
   - id: sqlx

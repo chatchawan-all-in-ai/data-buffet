@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_dim_channel"
 description: "One row = one MAC5 department code (DepCode) of a company, with its sales, finance and cost channel mappings and their SKs."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_channel&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_view
+table_id: view_dim_channel
 tags: ["view", "dimension_view"]
 sources:
   - id: sqlx

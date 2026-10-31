@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "cql"
 description: "One row = one record of source table `cql` (MAC5 for company `ac02`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ac02&t=cql&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_mac5_ac02
+table_id: cql
 tags: ["initial", "raw_mac5_ac02", "mac5"]
 sources:
   - id: sqlx

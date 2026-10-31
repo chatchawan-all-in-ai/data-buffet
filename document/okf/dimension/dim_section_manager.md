@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_section_manager"
 description: "One row = one section manager assignment for one section of one company over one StartDate to EndDate interval, from the MDS section manager master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_section_manager&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_section_manager
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

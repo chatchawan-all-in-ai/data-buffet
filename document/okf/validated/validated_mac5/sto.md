@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "sto"
 description: "One row = one reference code table (sto), unique on (company_id, stocode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=sto&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: sto
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

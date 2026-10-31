@@ -3,6 +3,9 @@ type: BigQuery View
 title: "Product_Attribute"
 description: "Current barcoded ag01 MAC5 stock joined to matching dim_product_master ProductSK rows and MASTERSKU attributes; a code can have multiple retained barcode versions."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=onetime&t=Product_Attribute&page=table"
+project_id: databuffet-nonprd
+dataset_id: onetime
+table_id: Product_Attribute
 tags: ["view", "onetime", "mac5", "mastersku"]
 sources:
   - id: sqlx

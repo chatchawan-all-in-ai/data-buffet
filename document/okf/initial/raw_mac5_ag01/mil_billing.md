@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "mil_billing"
 description: "One row = one record of source table `mil_billing` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=mil_billing&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_mac5_ag01
+table_id: mil_billing
 tags: ["initial", "raw_mac5_ag01", "mac5"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "chq"
 description: "One row = one cheque / payment instrument, unique on (company_id, chqno, chqbank, chqdatec, chqtag)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=chq&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: chq
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_transcation"
 description: "One row = one bill line (IS/AS/BS/QS document line, milListno) per company, enriched with product, customer, channel, sales-organisation and marketing SKs, for the last four years."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_transcation&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_transcation
 tags: ["fact", "mds", "mac5", "fact_daily"]
 sources:
   - id: sqlx

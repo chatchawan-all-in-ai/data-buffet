@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "curated_stock_mdt"
 description: "One row = the on-hand stock of one product at one Boonthavorn (BT) or Thai Watsadu (TW) branch on one stock date."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=curated_saleout_mdt&t=curated_stock_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: curated_saleout_mdt
+table_id: curated_stock_mdt
 tags: ["curated", "curated_saleout_mdt", "saleout", "curated_full", "saleout_daily", "SALEOUT_MDT"]
 sources:
   - id: sqlx

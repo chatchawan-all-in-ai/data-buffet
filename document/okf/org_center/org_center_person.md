@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "org_center_person"
 description: "One row = one person (across all companies) in the org center, with name, contact, companies, current positions and an active flag."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=org_center&t=org_center_person&page=table"
+project_id: databuffet-nonprd
+dataset_id: org_center
+table_id: org_center_person
 tags: ["org_center", "mds", "dimension_daily", "org_center"]
 sources:
   - id: sqlx

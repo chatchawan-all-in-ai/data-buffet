@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "product_admin_status"
 description: "One row = one record of source table `product_admin_status` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mastersku&t=product_admin_status&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_mastersku
+table_id: product_admin_status
 tags: ["initial", "raw_mastersku", "mastersku"]
 sources:
   - id: sqlx

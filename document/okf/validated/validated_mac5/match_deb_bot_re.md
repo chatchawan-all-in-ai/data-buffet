@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "match_deb_bot_re"
 description: "One row = one BOT-RE debtor matching, unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=match_deb_bot_re&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: match_deb_bot_re
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

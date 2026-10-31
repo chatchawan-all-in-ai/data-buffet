@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "inventory_item_price"
 description: "One row = one cleaned copy of the source table `inventory_item_price`, unique on (inventory_item_price_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=inventory_item_price&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_derp
+table_id: inventory_item_price
 tags: ["validated", "validated_derp", "derp", "validated_incremental"]
 sources:
   - id: sqlx

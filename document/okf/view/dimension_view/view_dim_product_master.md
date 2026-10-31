@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_dim_product_master"
 description: "ProductSK rows from the barcode-aware product dimension, enriched with marketing segment SKs, rebate exclusion flags and the pump segment."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_product_master&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_view
+table_id: view_dim_product_master
 tags: ["view", "dimension_view"]
 sources:
   - id: sqlx

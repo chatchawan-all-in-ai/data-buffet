@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_invoice_store"
 description: "One row = one product line of an invoice (IS) per salesperson share (milPer) for ag01/ab01, with invoice, order, product, customer and store SKs."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_invoice_store&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_invoice_store
 tags: ["fact", "mac5", "fact_daily"]
 sources:
   - id: sqlx

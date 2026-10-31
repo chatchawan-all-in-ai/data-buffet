@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_pump_information"
 description: "One row = one distinct combination of company, product code (milstk), RegionID and FlagNewProductMKT seen in fact_transcation, with the pump segment resolved for it."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_pump_information&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_pump_information
 tags: ["dimension", "dimension_daily"]
 sources:
   - id: sqlx

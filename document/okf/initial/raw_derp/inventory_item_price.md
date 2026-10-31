@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "inventory_item_price"
 description: "One row = one record of source table `inventory_item_price` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=inventory_item_price&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_derp
+table_id: inventory_item_price
 tags: ["initial", "raw_derp", "derp"]
 sources:
   - id: sqlx

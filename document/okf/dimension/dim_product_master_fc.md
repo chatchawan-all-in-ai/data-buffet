@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_product_master_fc"
 description: "One row = one product/variant (by barcode) per company from the MDS finance product master, with MAC5 and D365 codes, variant attributes, dimensions and product hierarchy."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_product_master_fc&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_product_master_fc
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_status_not_receive"
 description: "One row = one invoice status code (StatusID) of a company that counts as paid-without-receipt, with Thai and English names, from the MDS payment status master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_status_not_receive&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_status_not_receive
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

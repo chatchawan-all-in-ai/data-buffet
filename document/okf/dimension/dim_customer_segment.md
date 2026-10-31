@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_customer_segment"
 description: "One row = one customer segment code (Segment1/2/3 with Thai and English descriptions) per company, plus a reserved -1 'Non-Segment' row."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_customer_segment&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_customer_segment
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

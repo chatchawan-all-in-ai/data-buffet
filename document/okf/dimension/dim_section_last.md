@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_section_last"
 description: "One row = one section code (companyID, SectionID) with its latest validity interval from dim_section, plus hierarchy keys up to manager, region and director."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_section_last&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_section_last
 tags: ["dimension", "dimension_daily"]
 sources:
   - id: sqlx

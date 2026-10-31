@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "ttrip"
 description: "One row = one delivery trip, unique on (company_id, frun, fcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=ttrip&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: ttrip
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

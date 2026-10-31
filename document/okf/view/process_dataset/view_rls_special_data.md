@@ -3,6 +3,9 @@ type: BigQuery View
 title: "view_rls_special_data"
 description: "One row = one (employee e-mail, restricted attribute, allowed value) entry of the RLS access map for special and marketing employees, defined in mds rather than by the org hierarchy."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=process_dataset&t=view_rls_special_data&page=table"
+project_id: databuffet-nonprd
+dataset_id: process_dataset
+table_id: view_rls_special_data
 tags: ["view", "process_dataset", "mds"]
 sources:
   - id: sqlx

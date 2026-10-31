@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "combostk"
 description: "One row = one product combo stock items, unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=combostk&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: combostk
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

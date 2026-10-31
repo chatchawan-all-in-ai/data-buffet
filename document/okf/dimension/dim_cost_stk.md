@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_cost_stk"
 description: "One row = one product-level (MilStk) standard-cost percentage in a cost channel for a validity period, per company."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_cost_stk&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_cost_stk
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

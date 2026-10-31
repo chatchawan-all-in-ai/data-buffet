@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "pro_re"
 description: "One row = one promotion (RE), unique on (company_id, proreid, prorestkcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=pro_re&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: pro_re
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "main_qtspread"
 description: "One row = one quotation spread (main), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=main_qtspread&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: main_qtspread
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

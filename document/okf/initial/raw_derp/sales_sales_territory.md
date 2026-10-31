@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "sales_sales_territory"
 description: "One row = one record of source table `sales_sales_territory` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=sales_sales_territory&page=table"
+project_id: databuffet-nonprd
+dataset_id: raw_derp
+table_id: sales_sales_territory
 tags: ["initial", "raw_derp", "derp"]
 sources:
   - id: sqlx

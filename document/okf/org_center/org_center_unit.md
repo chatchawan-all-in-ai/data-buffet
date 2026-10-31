@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "org_center_unit"
 description: "One row = one organisation unit (company, division, region or section) of one company."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=org_center&t=org_center_unit&page=table"
+project_id: databuffet-nonprd
+dataset_id: org_center
+table_id: org_center_unit
 tags: ["org_center", "dimension_daily", "org_center"]
 sources:
   - id: sqlx

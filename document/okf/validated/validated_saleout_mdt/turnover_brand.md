@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "turnover_brand"
 description: "One row = one cleaned copy of the source table `turnover_brand`, unique on (vendor_id, mch3, brand, class_stock)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_saleout_mdt&t=turnover_brand&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_saleout_mdt
+table_id: turnover_brand
 tags: ["validated", "validated_saleout_mdt", "saleout"]
 sources:
   - id: sqlx

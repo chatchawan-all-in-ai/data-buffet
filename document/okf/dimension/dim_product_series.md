@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_product_series"
 description: "One row = one MDT product series (SeriesCode and SeriesName), from the MDS product-series master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_product_series&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_product_series
 tags: ["dimension", "mds", "dimension_daily", "saleout_daily"]
 sources:
   - id: sqlx

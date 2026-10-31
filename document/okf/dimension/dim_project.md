@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_project"
 description: "One row = one customer project profile (project code) per company from the MAC5 quotation-book company/project profiles."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_project&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_project
 tags: ["dimension", "mac5", "dimension_daily"]
 sources:
   - id: sqlx

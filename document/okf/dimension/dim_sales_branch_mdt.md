@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_sales_branch_mdt"
 description: "One row = one MDT (modern-trade) retail branch identified by store chain (StoreCode) and branch number (BranchCode), with its region, section and zone keys, plus waiting rows for branches that appear in the saleout feeds but not yet in the master and a reserved -1 row."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_sales_branch_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_sales_branch_mdt
 tags: ["dimension", "mds", "saleout", "dimension_daily", "saleout_daily"]
 sources:
   - id: sqlx

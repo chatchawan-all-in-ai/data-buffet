@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_invoice"
 description: "One row = one sales document line-link (invoice IS, credit note BS, debit note AS or quotation QS) per company, identified by document number, customer and linked order number, with sales-split percentages."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_invoice&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_invoice
 tags: ["dimension", "mac5", "dimension_daily"]
 sources:
   - id: sqlx

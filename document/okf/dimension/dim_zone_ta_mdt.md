@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_zone_ta_mdt"
 description: "One row = one zone manager (TA) assignment for an MDT zone over one StartDate to EndDate interval, from the MDS zone manager master, plus a reserved -1 row."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_zone_ta_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_zone_ta_mdt
 tags: ["dimension", "mds", "dimension_daily", "saleout_daily"]
 sources:
   - id: sqlx

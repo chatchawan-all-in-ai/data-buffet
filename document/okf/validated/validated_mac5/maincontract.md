@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "maincontract"
 description: "One row = one main contract, unique on (company_id, mcontractid)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=maincontract&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_mac5
+table_id: maincontract
 tags: ["validated", "validated_mac5", "mac5", "validated_full"]
 sources:
   - id: sqlx

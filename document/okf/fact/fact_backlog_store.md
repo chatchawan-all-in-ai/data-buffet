@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "fact_backlog_store"
 description: "One row = one product (cpsStkID) on one open sales order (cpsVnosID) per customer and store, with requested and cut quantities from the latest cps snapshot."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_backlog_store&page=table"
+project_id: databuffet-nonprd
+dataset_id: fact_table
+table_id: fact_backlog_store
 tags: ["fact", "mac5", "mds", "fact_daily"]
 sources:
   - id: sqlx

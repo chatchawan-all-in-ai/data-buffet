@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "report_sale_subscription"
 description: "One row = one cleaned source record of `report_sale_subscription` (no declared key; append-style, not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_saleout_mdt&t=report_sale_subscription&page=table"
+project_id: databuffet-nonprd
+dataset_id: validated_saleout_mdt
+table_id: report_sale_subscription
 tags: ["validated", "validated_saleout_mdt", "saleout", "validated_full", "saleout_daily"]
 sources:
   - id: sqlx

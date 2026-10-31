@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_region"
 description: "One row = one sales region or sub-region (RegionID, SubRegionID) of one company over one StartDate to EndDate validity interval, from the MDS region master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_region&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_region
 tags: ["dimension", "mds", "dimension_daily"]
 sources:
   - id: sqlx

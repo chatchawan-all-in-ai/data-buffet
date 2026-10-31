@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_target_series_mdt"
 description: "One row = the daily sales target (Amt, Qty) of one MDT branch for one product series on one date, derived by splitting the monthly MDS series target evenly over the days of the month, plus a reserved -1 row."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_target_series_mdt&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_target_series_mdt
 tags: ["dimension", "mds", "dimension_daily", "saleout_daily"]
 sources:
   - id: sqlx

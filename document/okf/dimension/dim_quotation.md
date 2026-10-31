@@ -3,6 +3,9 @@ type: BigQuery Table
 title: "dim_quotation"
 description: "One row = one MAC5 quotation (book quotation, identified by its running number) per company with date, project link, customer code, terms and a derived order-fulfilment status."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_quotation&page=table"
+project_id: databuffet-nonprd
+dataset_id: dimension_table
+table_id: dim_quotation
 tags: ["dimension", "mac5", "dimension_daily"]
 sources:
   - id: sqlx
