@@ -1,8 +1,9 @@
 # Data-Buffet Documentation
 
-เอกสารทั้งหมดของโปรเจกต์ แบ่งเป็น 2 ส่วน:
+เอกสารทั้งหมดของโปรเจกต์ แบ่งเป็น 3 ส่วน:
 - **เอกสารสอน developer** (ไทย) — getting-started, architecture, coding-standards, how-to, operations
 - **LLM Wiki** (อังกฤษ) — `project_wiki/` สำหรับทั้งคนและ AI agent ที่ทำงานกับ repo
+- **OKF** (อังกฤษ) — [okf/index.md](okf/index.md) สำหรับค้นหาการ์ดตารางและ view; วิธีใช้และกฎดูแลอยู่ที่ [okf/README.md](okf/README.md)
 
 สร้างจากการสแกนโค้ดทั้งโปรเจกต์เมื่อ **2026-07-10** — ถ้าโค้ดกับเอกสารขัดกัน
 ให้เชื่อโค้ดแล้วอัปเดตเอกสาร

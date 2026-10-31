@@ -214,6 +214,10 @@ addresses, gated on today's CDC changes (cost control — don't remove the gate)
    commit code + docs together. If not impacted (e.g. a bug fix that changes no
    pattern/inventory), state that assessment briefly to the user. A Stop hook
    enforces this; a pre-commit warning backs it up.
+   **OKF cards** (`document/okf/README.md`): a card holds only table information (no
+   warnings, discussion or decision notes). New table/view = create its card; changed
+   columns, grain, source or behavior = update its own card; dropped table = delete
+   its card; all in the same commit.
 
 ## Tags (in use)
 

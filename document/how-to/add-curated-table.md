@@ -106,4 +106,5 @@ pre_operations {
 - [ ] คอลัมน์ output เป็น camelCase
 - [ ] logic กลุ่ม/ซับซ้อนอยู่ใน post_operations ไม่ปนกับ SELECT หลัก
 - [ ] ถ้า `uniqueKey` เป็นระดับบรรทัด → มี doc-grain purge ใน `pre_operations` (§5)
+- [ ] สร้างการ์ด OKF ของตารางนี้ใน `document/okf/` (ข้อมูลตารางเท่านั้น ไม่มีคำเตือนหรือบันทึกการคุย) ตาม [okf/README.md](../okf/README.md) ใน commit เดียวกับโค้ด
 - [ ] comment สั้น 1 บรรทัด บอก "ทำไม" — รายละเอียดไปไว้ใน `document/` ([coding-standard §9](../coding-standards/sqlx-coding-standard.md))

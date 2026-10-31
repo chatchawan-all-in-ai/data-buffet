@@ -74,4 +74,5 @@ config {
 - [ ] tag ตรงกับ load pattern
 - [ ] QUALIFY dedup อยู่ท้าย SELECT
 - [ ] post_operations PK ครอบด้วย `when(!incremental(), ...)`
+- [ ] สร้างการ์ด OKF ของตารางนี้ใน `document/okf/` (ข้อมูลตารางเท่านั้น ไม่มีคำเตือนหรือบันทึกการคุย) ตาม [okf/README.md](../okf/README.md) ใน commit เดียวกับโค้ด
 - [ ] comment สั้น 1 บรรทัด บอก "ทำไม" — รายละเอียดไปไว้ใน `document/` ([coding-standard §9](../coding-standards/sqlx-coding-standard.md))

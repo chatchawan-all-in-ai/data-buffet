@@ -1,0 +1,64 @@
+---
+type: BigQuery Table
+title: "dim_doctype"
+description: "One row = one document-type code (AccountCategory + Code) per company with English and Thai descriptions, from the MDS document-type master."
+resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_doctype&page=table"
+tags: ["dimension", "mds", "dimension_daily"]
+sources:
+  - id: sqlx
+    resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/definitions/dimension/dim_doctype.sqlx"
+    title: "Dataform definition (dimension/dim_doctype.sqlx)"
+  - id: wiki
+    resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
+    title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+status: draft
+---
+
+# What it is
+
+Lookup that explains document type codes appearing on accounting/sales documents (category plus code, with EN and TH descriptions). It is joined by the invoice transaction model [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md). It has no surrogate key. Source: mds `mds_data_document_type_master`.
+
+# Grain and key
+
+One row per (company, AccountCategory, Code) among active mds rows. No SK and no `uniqueKey`; `MdsID` identifies the source row.
+
+# Schema
+
+| Column | Type | Description |
+|---|---|---|
+| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), found by a LEFT JOIN on `companyID`; NULL when the mds company code has no match in dim_company. |
+| `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
+| `AccountCategory` | STRING | Pass-through of mds `AccountCategory`, cleaned with `cleanString` (empty string becomes NULL). Category of the accounting document family the code belongs to. |
+| `Code` | STRING | Pass-through of mds `Code`, cleaned with `cleanString` (empty string becomes NULL). Document type code (e.g. the `type` value on MAC5 document headers, inferred); with AccountCategory and company it identifies the type. |
+| `DescriptionEN` | STRING | Pass-through of mds `DescriptionEN`, cleaned with `cleanString` (empty string becomes NULL). English description. |
+| `DescriptionTH` | STRING | Pass-through of mds `DescriptionTH`, cleaned with `cleanString` (empty string becomes NULL). Thai description. |
+| `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. |
+
+# How it is built
+
+- Definition: `definitions/dimension/dim_doctype.sqlx` (`type: "table"`, tags `dimension_daily`).
+- Storage options: `{"clusterBy": ["AccountCategory", "Code"]}`.
+- Reads: `mds_dataset.mds_data_document_type_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`), plain SELECT from active mds rows with no SK; clustered by `AccountCategory, Code` to match the existing table (CREATE OR REPLACE requires the same clustering spec). Runs after dim_company.
+- Approximate size (BigQuery metadata, 2026-10-31): 21 rows, 2.4 KB.
+
+# Examples
+
+Document-type descriptions for a company.
+
+```sql
+SELECT AccountCategory, Code, DescriptionEN, DescriptionTH
+FROM `databuffet-nonprd.dimension_table.dim_doctype`
+WHERE companyID = 'ag01'
+ORDER BY AccountCategory, Code;
+```
+
+Duplicate (company, category, code) keys.
+
+```sql
+SELECT companyID, AccountCategory, Code, COUNT(*) AS n
+FROM `databuffet-nonprd.dimension_table.dim_doctype`
+GROUP BY 1, 2, 3
+HAVING n > 1;
+```

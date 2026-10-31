@@ -1,0 +1,83 @@
+---
+type: BigQuery View
+title: "view_dim_channel"
+description: "One row = one MAC5 department code (DepCode) of a company, with its sales, finance and cost channel mappings and their SKs."
+resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_channel&page=table"
+tags: ["view", "dimension_view"]
+sources:
+  - id: sqlx
+    resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/definitions/view/dimension_view/view_dim_channel.sqlx"
+    title: "Dataform definition (view/dimension_view/view_dim_channel.sqlx)"
+  - id: wiki
+    resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
+    title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+status: draft
+---
+
+# What it is
+
+Combines [dim_channel](/dimension/dim_channel.md) with the three channel dimensions ([dim_channel_finance](/dimension/dim_channel_finance.md), [dim_channel_sales](/dimension/dim_channel_sales.md), [dim_channel_cost](/dimension/dim_channel_cost.md)) so that one row carries all four channel SKs (ChannelSK, ChannelFinanceSK, ChannelSaleSK, ChannelCostSK). Used to attach channels to facts and to AR aging: [view_dim_aging](/view/dimension_view/view_dim_aging.md), [view_dim_aging_history](/view/dimension_view/view_dim_aging_history.md) and [fact_transcation](/fact/fact_transcation.md) (read without a Dataform dependency). The join keys are CompanySK + DepCode.
+
+# Grain and key
+
+One row per dim_channel row (grain of dim_channel: companyID + DepCode). The three LEFT JOINs match on the channel ID and CompanySK, so a channel with no entry in a child dimension has NULL for that SK.
+
+# Schema
+
+| Column | Type | Description |
+|---|---|---|
+| `ChannelSK` | INT64 | SK of the row in [dim_channel](/dimension/dim_channel.md) (regenerated nightly). |
+| `ChannelFinanceSK` | INT64 | SK of the finance channel in dim_channel_finance matched on ChannelIDFinance + CompanySK; NULL if unmatched. |
+| `ChannelSaleSK` | INT64 | SK of the sales channel in dim_channel_sales matched on ChannelID + CompanySK; NULL if unmatched. |
+| `ChannelCostSK` | INT64 | SK of the cost channel in dim_channel_cost matched on ChannelCostID + CompanySK; NULL if unmatched. |
+| `CompanySK` | INT64 | SK of the company in [dim_company](/dimension/dim_company.md). |
+| `companyID` | STRING | MAC5 company code. |
+| `DepCode` | STRING | MAC5 department code (the join key to invoices/transactions, e.g. `mihDep`, `cfsDep`). |
+| `DepGroup` | STRING | Department group code from dim_channel (pass-through; meaning not documented in the repo). |
+| `DepDesct` | STRING | Department description in Thai (pass-through from dim_channel). |
+| `DepDesce` | STRING | Department description in English (pass-through from dim_channel). |
+| `ChannelGroup` | STRING | Sales channel group name (pass-through from dim_channel). |
+| `ChannelSubGroupName1` | STRING | Sales channel sub-group level 1 (pass-through). |
+| `ChannelSubGroupName2` | STRING | Sales channel sub-group level 2 (pass-through). |
+| `ChannelSubGroupName3` | STRING | Sales channel sub-group level 3 (pass-through). |
+| `ChannelID` | STRING | Sales channel code (pass-through; join key to dim_channel_sales). |
+| `ChannelName` | STRING | Sales channel name (pass-through). |
+| `ChannelCostID` | STRING | Cost channel code (pass-through; join key to dim_channel_cost). |
+| `ChannelCostName` | STRING | Cost channel name (pass-through). |
+| `ChannelGroupFinance` | STRING | Finance channel group name (pass-through). |
+| `ChannelSubGroupFinance1` | STRING | Finance channel sub-group level 1 (pass-through). |
+| `ChannelSubGroupFinance2` | STRING | Finance channel sub-group level 2 (pass-through). |
+| `ChannelSubGroupFinance3` | STRING | Finance channel sub-group level 3 (pass-through). |
+| `ChannelIDFinance` | STRING | Finance channel code (pass-through; join key to dim_channel_finance). |
+| `ChannelNameFinance` | STRING | Finance channel name (pass-through). |
+| `ChannelDSite01` | STRING | Channel hierarchy level 1 (site) from dim_channel; Meaning not documented in the repo beyond the name. |
+| `ChannelDDepartment02` | STRING | Channel hierarchy level 2 (department) from dim_channel; Meaning not documented in the repo beyond the name. |
+| `ChannelDDivision03` | STRING | Channel hierarchy level 3 (division) from dim_channel; Meaning not documented in the repo beyond the name. |
+| `ChannelDSubDivision04` | STRING | Channel hierarchy level 4 (sub-division) from dim_channel; Meaning not documented in the repo beyond the name. |
+| `DummyChannel` | STRING | Dummy-channel marker from dim_channel (pass-through; exact values not documented in the repo). |
+
+# How it is built
+
+- Definition: `definitions/view/dimension_view/view_dim_channel.sqlx` (`type: "view"`, tags `view`).
+- Reads: [dimension_table.dim_channel](/dimension/dim_channel.md), [dimension_table.dim_channel_finance](/dimension/dim_channel_finance.md), [dimension_table.dim_channel_sales](/dimension/dim_channel_sales.md), [dimension_table.dim_channel_cost](/dimension/dim_channel_cost.md).
+- Build: A plain BigQuery view (`type: "view"`, tag `view`): no storage, evaluated at query time over the current content of its base tables, so it is as fresh as they are. The `view` tag is not part of the nightly run; it is deployed with tag `view` after the base dimensions exist. Reads dim_channel and the three child channel dims (all tag `dimension_daily`, full rebuilds). The SKs are ROW_NUMBER-based and regenerate each night.
+
+# Examples
+
+Channel mapping for one company:
+
+```sql
+SELECT DepCode, ChannelID, ChannelName, ChannelNameFinance, ChannelCostName
+FROM `databuffet-nonprd.dimension_view.view_dim_channel`
+WHERE companyID = 'ag01'
+ORDER BY DepCode
+```
+
+Department codes without a sales-channel SK:
+
+```sql
+SELECT companyID, DepCode
+FROM `databuffet-nonprd.dimension_view.view_dim_channel`
+WHERE ChannelSaleSK IS NULL
+```

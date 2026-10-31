@@ -54,6 +54,7 @@
 - [ ] คอลัมน์ `MdsID` ปิดท้าย (ไว้ trace)
 - [ ] `dependencies[]` ตาม [กฎลำดับ build](../project_wiki/dimension/full-rebuild-pattern.md#properties) + tag `TAG_DIM_DAILY`
 - [ ] เพิ่มแถวใน `project_wiki/dimension/inventory.md`
+- [ ] สร้างการ์ด OKF ของตารางนี้ใน `document/okf/` (ข้อมูลตารางเท่านั้น ไม่มีคำเตือนหรือบันทึกการคุย) ตาม [okf/README.md](../okf/README.md) ใน commit เดียวกับโค้ด
 - [ ] comment สั้น 1 บรรทัด บอก "ทำไม" — รายละเอียดไปไว้ใน `document/` ([coding-standard §9](../coding-standards/sqlx-coding-standard.md))
 
 ## เพิ่ม dim แบบ SK เสถียร (MERGE — เคสพิเศษเท่านั้น)

@@ -74,4 +74,5 @@ END;
 - [ ] retention purge block แยกท้ายไฟล์
 - [ ] `mix_date` + `asatdate` ตาม convention
 - [ ] tag `fact_daily`
+- [ ] สร้างการ์ด OKF ของตารางนี้ใน `document/okf/` (ข้อมูลตารางเท่านั้น ไม่มีคำเตือนหรือบันทึกการคุย) ตาม [okf/README.md](../okf/README.md) ใน commit เดียวกับโค้ด
 - [ ] comment สั้น 1 บรรทัด บอก "ทำไม" — รายละเอียดไปไว้ใน `document/` ([coding-standard §9](../coding-standards/sqlx-coding-standard.md))

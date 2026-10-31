@@ -1,0 +1,51 @@
+---
+type: BigQuery Table
+title: "mart_sent_state"
+description: "One row = one data row (by row_key) that a Pub/Sub export table last sent successfully, with its hash and the Dataform invocation that sent it."
+resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=process_dataset&t=mart_sent_state&page=table"
+tags: ["process", "pub_sub", "Pub/Sub"]
+sources:
+  - id: sqlx
+    resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/definitions/process/mart_sent_state.sqlx"
+    title: "Dataform definition (process/mart_sent_state.sqlx)"
+  - id: wiki
+    resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
+    title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+status: draft
+---
+
+# What it is
+
+Sent-state ledger of the Data Mart to Pub/Sub export: it holds, per export table, every row the receivers currently hold. The publish workflow `datamart-publish` diffs the export view (for dim_company: [export_dim_company](/view/pub_sub/export_dim_company.md)) against this table: a key absent here is NEW, a different `row_hash` is UPDATE, a key only here is DELETE. Only the workflow writes it, after a publish succeeds. Paired with [mart_export_config](/process/mart_export_config.md).
+
+# Grain and key
+
+One row per `table_name` + `row_key` (neither NULL). `row_key` is `TO_JSON_STRING` of the export table's natural key columns (so a NULL key value would be the text 'null'). Clustered by table_name, row_key.
+
+# Schema
+
+| Column | Type | Description |
+|---|---|---|
+| `table_name` | STRING | Exported table (matches mart_export_config.table_name). |
+| `row_key` | STRING | JSON text of the row's natural key (export view's row_key), the message primary_key. |
+| `row_hash` | INT64 | FARM_FINGERPRINT of the JSON of all data columns sent (export view's row_hash); a different hash means the row changed and is re-sent as UPDATE. |
+| `invocation_id` | STRING | Dataform workflow invocation that sent the row. |
+| `sent_at` | TIMESTAMP | UTC timestamp when the row was recorded as sent. |
+
+# How it is built
+
+- Definition: `definitions/process/mart_sent_state.sqlx` (`type: "operations"`, tags `pub_sub`); the operation owns this table.
+- Reads: no other table.
+- Operations (`type: "operations"`, tag `pub_sub`, no scheduler runs it; deployed manually from `production` with dependencies off). `CREATE TABLE IF NOT EXISTS` only, never rebuilt; the workflow MERGEs into it (on table_name + row_key) after each published page of 50 rows and deletes DELETEd keys.
+- Approximate size (BigQuery metadata, 2026-10-31): 5 rows, 500 B.
+
+# Examples
+
+Rows held per export table and the latest send time.
+
+```sql
+SELECT table_name, COUNT(*) AS rows_held, MAX(sent_at) AS last_sent_at
+FROM `databuffet-nonprd.process_dataset.mart_sent_state`
+GROUP BY table_name
+```
