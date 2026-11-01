@@ -1,0 +1,41 @@
+config {
+    type: "table",
+    schema: databuffet.ORG_CENTER,
+    dependencies: [
+                    "org_center_schema"
+                  ],
+    tags: [databuffet.TAG_DIM_DAILY],
+    uniqueKey: ["company_id", "customer_code", "ta_employee_id", "valid_from"],
+    bigquery: {
+        clusterBy: ["company_id", "customer_code"]
+    },
+}
+
+js {
+    const MdsDataCustomerTaTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_customer_ta",
+    };
+    const MdsDataCustomerTaTableRef = `${MdsDataCustomerTaTable.database}.${MdsDataCustomerTaTable.schema}.${MdsDataCustomerTaTable.name}`;
+}
+
+-- 1 แถว = ลูกค้า 1 ราย อยู่ใน portfolio ของ TA 1 คน ในช่วงวันที่หนึ่ง · ค่าจาก MDS (active เท่านั้น)
+-- valid_to = EndDate ของ MDS (วันแรกที่ไม่รับผิดชอบแล้ว) · EndDate ว่าง = 2066-12-31 เหมือนตารางอื่นใน org center
+SELECT
+  ${databuffet.functionData.cleanString("companyID")} AS company_id,
+  ${databuffet.functionData.cleanString("CustomerCode")} AS customer_code,
+  ${databuffet.functionData.cleanString("TAEmployeeID")} AS ta_employee_id,
+  SharePercent AS share_percent,
+  StartDate AS valid_from,
+  IFNULL(EndDate, DATE '2066-12-31') AS valid_to,
+  ${databuffet.functionData.cleanString("CustomerName")} AS customer_name,
+  id AS source_row_id
+FROM `${MdsDataCustomerTaTableRef}`
+WHERE is_active = TRUE
+
+pre_operations {
+}
+
+post_operations {
+}

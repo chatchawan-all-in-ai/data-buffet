@@ -1,12 +1,13 @@
-# Org Center — `org_center_unit` / `org_center_member` / `org_center_person` / `org_center_link` / `org_center_flags`
+# Org Center — `org_center_unit` / `org_center_member` / `org_center_person` / `org_center_link` / `org_center_customer_ta` / `org_center_flags`
 
 > **LLM context**: Dataset `org_center` (`databuffet.ORG_CENTER`), folder
 > `definitions/org_center/`, added 2026-10-29 for the TA AI Assistant. It is the single
-> source of **who sits in which unit and position**; Power BI RLS, the TA app and other
-> systems build their own access rules from it later. All five tables are `type: "table"`,
+> source of **who sits in which unit and position, and TA customer portfolios**; Power BI RLS, the TA app and other
+> systems build their own access rules from it later. All six tables are `type: "table"`,
 > tag `dimension_daily`, rebuilt every night (`org_center_unit` and `org_center_member` after
 > `update_sk_sale_rep_group`; `org_center_person` after `org_center_member`). `org_center_link` (PC → TA) reads
 > `mds_dataset.mds_data_pc_ta` and has 0 rows while that MDS table is empty.
+> For TA customer portfolios, see the [table contract](../../okf/org_center/org_center_customer_ta.md).
 > They carry **business codes, not SKs**, so consumers can keep them across days.
 
 ## Files
@@ -18,14 +19,15 @@
 | `org_center_member.sqlx` | table | 1 row = 1 person in one position at one unit for a date range |
 | `org_center_person.sqlx` | table | 1 row = 1 person (across companies), built from `org_center_member` |
 | `org_center_link.sqlx` | table | 1 row = 1 PC linked to 1 TA at 1 branch for a date range, from `mds_data_pc_ta` (0 rows while MDS is empty) |
-| `org_center_flags.sqlx` | table | 1 row = 1 data-quality problem found in the four tables above or their MDS sources (see [`org_center_flags`](#org_center_flags)) |
+| `org_center_customer_ta.sqlx` | table | TA customer portfolios — [table contract](../../okf/org_center/org_center_customer_ta.md) |
+| `org_center_flags.sqlx` | table | 1 row = 1 data-quality problem found in `org_center_unit`, `org_center_member`, `org_center_person`, `org_center_link` or their MDS sources (see [`org_center_flags`](#org_center_flags)) |
 
 `org_center_unit` and `org_center_member` depend on `org_center_schema`, the `dim_*_last` tables they read, and
 `update_sk_sale_rep_group` — the `_last` tables are built with NULL `DirectorSK` /
 `RegionSK` / `SectionSK`, and that step fills them
 ([special-cases](../dimension/special-cases.md#update_sk_sale_rep_group--imperative-update-step)).
 `org_center_person` depends on `org_center_schema` and `org_center_member` only.
-`org_center_link` depends on `org_center_schema` and `dim_company`. `org_center_unit`, `org_center_member` also depend on `dim_company` (company name). `org_center_flags` depends on the four tables. `org_center_member` also depends on `org_center_link` (PC rows).
+`org_center_link` depends on `org_center_schema` and `dim_company`. `org_center_unit`, `org_center_member` also depend on `dim_company` (company name). `org_center_flags` depends on `org_center_unit`, `org_center_member`, `org_center_person` and `org_center_link`. `org_center_member` also depends on `org_center_link` (PC rows).
 
 ## Org levels (4)
 
@@ -184,6 +186,10 @@ empty.**
 
 Source rule (checked by the MDS team on load): one valid row per
 `(companyID, PCEmployeeID, BranchType, BranchCode)` per day — periods never overlap.
+
+## `org_center_customer_ta`
+
+See the [table card](../../okf/org_center/org_center_customer_ta.md) for the source, grain, schema, rebuild behavior and date-filter example.
 
 ## `org_center_flags`
 

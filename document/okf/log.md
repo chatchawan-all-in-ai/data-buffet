@@ -1,5 +1,8 @@
 # Directory Update Log
 
+## 2026-11-01
+* **Creation**: Added the `org_center_customer_ta` card (org_center 6 cards).
+
 ## 2026-10-31 (location keys)
 * **Update**: Added `project_id`, `dataset_id` and `table_id` frontmatter keys to all 605 cards (values match the `resource` URL; 598 confirmed against BigQuery `INFORMATION_SCHEMA`, the 7 `validated_mac5` tables mip, rcv, stg_report, tbook_payin, tbook_quotation, tdis_approveorder and tdis_mail are defined in the repo but not built in BigQuery yet); README card layout lists them.
 

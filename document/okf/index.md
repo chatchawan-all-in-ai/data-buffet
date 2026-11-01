@@ -15,4 +15,4 @@ One card per BigQuery table or view built by this repository's Dataform definiti
 * [View](view/) - BI/reporting views over dimensions, facts and curated tables. (41 cards)
 * [Process](process/) - AI address parsing, RLS access map and the Pub/Sub export tables. (4 cards)
 * [CDC](cdc/) - Change-data-capture log generated from `cdc-config.json`. (1 cards)
-* [Org Center](org_center/) - Organisation structure (units, members, people, links, data-quality flags). (5 cards)
+* [Org Center](org_center/) - Organisation structure (units, members, people, links, customer portfolios, data-quality flags). (6 cards)
