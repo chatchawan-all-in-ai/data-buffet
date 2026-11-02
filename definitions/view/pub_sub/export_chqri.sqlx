@@ -1,0 +1,51 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of commission set chqri for the TF team: one row = one ag01 received cheque (chqtype 1) line used by a 2026 receipt (RS); columns, names and order of the TF sample, plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- Commission sets keep the column names, order and JSON types of the sample sent to TF on
+-- 2026-10-14 (commission_tf_ag01_2026), which differ from the source column names on purpose.
+-- Natural key = company_source_id, chqno, chqbank, chqdatec, chqtag, cqlvnos, cqlbank, cqlautono, cqlsys (unique; may hold NULL, kept as JSON null in row_key).
+-- Data set   : chqri  (commission export for TF; target = sample commission_tf_ag01_2026, 2026-10-14)
+-- Original   : Query Commission คุณแป้ง/chqri.sql
+-- Sources    : databuffet-nonprd.validated_mac5.chq (chqtype 1), cql (RS)
+-- PK: company_source_id, chqno, chqbank, chqdatec, chqtag, cqlvnos, cqlbank, cqlautono, cqlsys. Scope: ag01, year(cqldate) = 2026.
+-- Columns, names, order and JSON types match the sample.
+-- Differences from the original query (the sample is the target):
+--   company_source_id, chqbank, chqdatec, chqtag, cqlautono, cqlsys are added (key columns in the sample, not in the source).
+--   The 2026 filter is on cqldate (the source has no year filter; the sample is 2026 only).
+--   The source joins with LEFT JOIN but filters cqlmivt = 'RS' in WHERE, so it behaves as an inner join; written as JOIN here.
+WITH src AS (
+  SELECT
+    q.company_id AS company_source_id,
+    q.chqbank,
+    q.chqdatec,
+    q.chqtag,
+    c.cqlautono,
+    c.cqlsys,
+    c.cqldate,
+    c.cqlbank,
+    CASE WHEN q.chqno IS NOT NULL AND q.chqno <> '' THEN 'Chq' ELSE 'Cash' END AS Paymen_Method,
+    IFNULL(q.chqno, '') AS chqno,
+    CASE q.chqstatus WHEN 2 THEN 'Bounced' WHEN 1 THEN 'Cleared' WHEN 0 THEN 'Due' ELSE '' END AS chqstatus,
+    c.cqlvnos,
+    c.cqlcus,
+    c.cqlsuml AS payment_amount
+  FROM ${ref(databuffet.VALIDATED_MAC5, "chq")} AS q
+  JOIN ${ref(databuffet.VALIDATED_MAC5, "cql")} AS c
+    ON c.company_id = q.company_id AND c.cqlno = q.chqno AND c.cqlcus = q.chqcus
+  WHERE q.company_id = 'ag01'
+    AND q.chqtype = 1
+    AND c.cqlmivt = 'RS'
+    AND EXTRACT(YEAR FROM c.cqldate) = 2026
+)
+SELECT
+  s.*,
+  TO_JSON_STRING(STRUCT(s.company_source_id, s.chqno, s.chqbank, s.chqdatec, s.chqtag, s.cqlvnos, s.cqlbank, s.cqlautono, s.cqlsys)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(s)) AS row_hash
+FROM src AS s

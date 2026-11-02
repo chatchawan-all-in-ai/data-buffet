@@ -3,32 +3,48 @@ config {
     schema: databuffet.PROCESS_DATASET,
     hasOutput: true,
     tags: [databuffet.TAG_PUB_SUB],
-    description: "One row per table exported to Pub/Sub: the config from includes/controller/mart-export-config.json plus the publish workflow's memory of the last Dataform workflow invocation it handled (last_invocation_id / last_invocation_end) and its being-processed marker (claimed_at)",
+    description: "One row per table exported to Pub/Sub: the config from includes/controller/mart-export-config.json (trigger_scheduler = the Dataform workflow configuration whose successful run triggers the export, NULL = a successful run of action table_name) plus the publish workflow's memory of the last Dataform workflow invocation it handled (last_invocation_id / last_invocation_end) and its being-processed marker (claimed_at). A new table has seeded_at NULL until its first manual Cloud Shell snapshot seeds mart_sent_state and writes first-load files together; deployment never seeds rows",
 }
 
 js {
     const cfg = databuffet.martExportConfig;
+    const sql = s => `'${s.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
+    const opt = s => (s === undefined || s === null ? "CAST(NULL AS STRING)" : sql(s));
+    const viewOf = t => ref(databuffet.PUB_SUB, t.source_view);
 }
 
--- Created once, never rebuilt: the publish workflow keeps its memory in the last three columns.
--- Times are UTC; convert to Asia/Bangkok when reading.
+-- Created once, never rebuilt: the publish workflow keeps its memory in last_invocation_* and
+-- claimed_at. Times are UTC; convert to Asia/Bangkok when reading.
 CREATE TABLE IF NOT EXISTS ${self()} (
   table_name STRING NOT NULL,
   source_view STRING NOT NULL,
   topic STRING NOT NULL,
   last_invocation_id STRING,
   last_invocation_end TIMESTAMP,
-  claimed_at TIMESTAMP
+  claimed_at TIMESTAMP,
+  trigger_scheduler STRING,
+  seeded_at TIMESTAMP
 );
+-- Added after the pilot in this order because the workflow reads columns by position.
+ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS trigger_scheduler STRING;
+ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS seeded_at TIMESTAMP;
 
+UPDATE ${self()} AS c
+SET seeded_at = (SELECT MIN(s.sent_at) FROM ${ref("mart_sent_state")} AS s WHERE s.table_name = c.table_name)
+WHERE c.seeded_at IS NULL
+  AND EXISTS (SELECT 1 FROM ${ref("mart_sent_state")} AS s WHERE s.table_name = c.table_name);
+
+-- Insert-only MERGE: preserves existing config and workflow memory; the migration above
+-- only backfills seeded_at for tables that already have sent state.
 -- ref() records the view as a dependency, so a config row naming a missing view fails compile.
 MERGE ${self()} AS t
 USING (
   SELECT *
-  FROM UNNEST(ARRAY<STRUCT<table_name STRING, source_view STRING, topic STRING>>[
-    ${cfg.tables.map(t => `('${t.table_name}', '${ref(databuffet.PUB_SUB, t.source_view).replace(/`/g, "")}', '${t.topic}')`).join(",\n    ")}
+  FROM UNNEST(ARRAY<STRUCT<table_name STRING, source_view STRING, topic STRING, trigger_scheduler STRING>>[
+    ${cfg.tables.map(t => `(${sql(t.table_name)}, ${sql(viewOf(t).replace(/`/g, ""))}, ${sql(t.topic)}, ${opt(t.trigger_scheduler)})`).join(",\n    ")}
   ])
 ) AS s
 ON t.table_name = s.table_name
 WHEN NOT MATCHED THEN
-  INSERT (table_name, source_view, topic) VALUES (s.table_name, s.source_view, s.topic)
+  INSERT (table_name, source_view, topic, trigger_scheduler, last_invocation_id, last_invocation_end, claimed_at, seeded_at)
+  VALUES (s.table_name, s.source_view, s.topic, s.trigger_scheduler, NULL, NULL, NULL, NULL);

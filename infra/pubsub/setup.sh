@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GCP setup of the Pub/Sub export pilot (dim_company) in databuffet-nonprd.
+# GCP setup of the Pub/Sub export (dim_company pilot + commission sets for TF) in databuffet-nonprd.
 # Guide: document/how-to/setup-pubsub-export.md (ส่วน A). Idempotent: every step checks or
 # re-applies its resource, so re-running after a fix or after adding an export table is safe.
 # Every grant is the narrowest that works; a rerun also removes the wider grants older
@@ -45,6 +45,19 @@ SNAPSHOT_GET_ROLE_PERMISSIONS=storage.objects.get
 # Add a line when a new table is added to includes/controller/mart-export-config.json.
 declare -A SOURCE_TABLES=(
   [dim_company]="dimension_table.dim_company"
+  # Commission sets for the TF team (ag01).
+  [order]="validated_mac5.mih validated_mac5.mie validated_mac5.mil validated_mac5.stk"
+  [invoice]="validated_mac5.mih validated_mac5.mie validated_mac5.mil validated_mac5.stk"
+  [credit_note]="validated_mac5.mih validated_mac5.mil validated_mac5.stk validated_mac5.ar_s"
+  [debit_note]="validated_mac5.mih validated_mac5.mil validated_mac5.stk validated_mac5.ar_s"
+  [receipt]="validated_mac5.mir validated_mac5.mih validated_mac5.cql validated_mac5.chq validated_mac5.ar_s"
+  [chqri]="validated_mac5.chq validated_mac5.cql"
+  [status]="validated_mac5.ar_s"
+  [company]="validated_mac5.deb"
+  [sell]="validated_mac5.per"
+  [warehouse]="validated_mac5.sto"
+  [stk]="validated_mac5.stk"
+  [company_source]="dimension_table.dim_company"
 )
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -194,6 +207,10 @@ export_tables="$(read_export_tables "$python_bin")"
 for t in "$BQ_DATASET.mart_export_config" "$BQ_DATASET.mart_sent_state"; do
   bq_table_exists "$t" || die "$PROJECT:$t not found - run tag pub_sub from Dataform release production first"
 done
+# The workflow reads mart_export_config by column position.
+bq --project_id="$PROJECT" show --schema --format=json "$PROJECT:$BQ_DATASET.mart_export_config" |
+  "$python_bin" -c 'import json, sys; sys.exit(0 if [f["name"] for f in json.load(sys.stdin)][6:8] == ["trigger_scheduler", "seeded_at"] else 1)' ||
+  die "$BQ_DATASET.mart_export_config requires trigger_scheduler as its 7th and seeded_at as its 8th column - run tag pub_sub from Dataform release production first"
 while IFS=$'\t' read -r table_name source_view _topic; do
   bq_table_exists "pub_sub.$source_view" || die "view pub_sub.$source_view not found - run tag pub_sub first"
   [ -n "${SOURCE_TABLES[$table_name]:-}" ] || die "SOURCE_TABLES has no entry for $table_name"

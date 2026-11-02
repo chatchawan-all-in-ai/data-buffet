@@ -1,7 +1,7 @@
 # Process Layer — `definitions/process/`
 
 > **LLM context**: 2 files with tag `process`, plus the Pub/Sub export pilot
-> (2 `.sqlx` here, plus `definitions/pub_sub/pub_sub_schema.sqlx` and the export view
+> (2 `.sqlx` here, plus `definitions/pub_sub/pub_sub_schema.sqlx` and the export views
 > in `definitions/view/pub_sub/`; tag `pub_sub`, run by hand — see the last section).
 > TA customer access is also built in this folder; see [`rls_ta_customer`](#rls_ta_customersqlx--ta-customer-access-who-sees-which-customer).
 > 1. **`deb_address_data.sqlx`** — AI-powered Thai address parsing, gated on CDC so only
@@ -94,7 +94,8 @@ run every 5 minutes by Cloud Scheduler `datamart-publish-every-5m`, both in
 with the sent state and publishes changed rows. GCP setup ([`infra/pubsub/setup.sh`](../../../infra/pubsub/setup.sh)),
 deploy/test steps and the message format are owned by
 [setup-pubsub-export.md](../../how-to/setup-pubsub-export.md).
-Only `dim_company` in `databuffet-nonprd` for now; deployment status is in that guide.
+Exported in `databuffet-nonprd` only: `dim_company` (the pilot) and, since 2026-11-02, the 12
+commission sets for the TF team (company ag01; table below). Deployment status is in that guide.
 
 **Run status comes from the Dataform API, not from Dataform actions** (redesigned
 2026-10-25). There are no start/end actions and no per-run log table. The publisher
@@ -121,41 +122,72 @@ runs** — see "Deploy" below:
 
 | File | Builds | What |
 |---|---|---|
-| `mart_export_config.sqlx` | `process_dataset.mart_export_config` | One row per exported table. `CREATE TABLE IF NOT EXISTS`, then an insert-only `MERGE` from `includes/controller/mart-export-config.json`. Columns below |
-| `mart_sent_state.sqlx` | `process_dataset.mart_sent_state` | One row per data row sent. `CREATE TABLE IF NOT EXISTS`, cluster `table_name, row_key`. Columns below. Only the workflow writes it, after a publish succeeds |
+| `mart_export_config.sqlx` | `process_dataset.mart_export_config` | One row per exported table. `CREATE TABLE IF NOT EXISTS`, then an insert-only `MERGE` from `includes/controller/mart-export-config.json`. Schema in its OKF card (linked below) |
+| `mart_sent_state.sqlx` | `process_dataset.mart_sent_state` | One row per data row sent. `CREATE TABLE IF NOT EXISTS`, cluster `table_name, row_key`. Schema and writers in its OKF card (linked below) |
 | `pub_sub/pub_sub_schema.sqlx` | dataset `pub_sub` (tags `view` + `pub_sub`) | `CREATE SCHEMA IF NOT EXISTS ... OPTIONS(location=REGION)`, the same bootstrap as `validated_schema_*` / `cdc_schema`. `definitions/pub_sub/` is the layer folder for future shaping tables before Pub/Sub |
 | `view/pub_sub/export_dim_company.sqlx` | `pub_sub.export_dim_company` (view, tags `view` + `pub_sub`) | `CompanyID`, `CompanyCode`, `CompanyNameTH`, `CompanyNameEN` as in `dim_company`, `row_key`, `row_hash` — no `CompanySK`, no `MdsId` |
+| `view/pub_sub/export_<set>.sqlx` × 12 | `pub_sub.export_<set>` (views, tags `view` + `pub_sub`) | Commission sets for TF (below): the columns of the sample sent to TF on 2026-10-14, `row_key`, `row_hash` |
 
-`mart_export_config` (times UTC):
+**Commission sets for the TF team** (company ag01, documents of 2026; added 2026-11-02).
+`table_name` = the message `table`; topic `export-commission-<set>`; all have
+`trigger_scheduler = daily_process`. Columns, names, order and JSON types follow the sample
+`commission_tf_ag01_2026` sent to TF on 2026-10-14 (e.g. `company_source_id`), not the source
+column names. Folder date = the column the first-load files are split by (`snapshot_date`;
+master data has none and goes under the export date).
 
-| Column | Owner | Meaning |
-|---|---|---|
-| `table_name` | Dataform (JSON, on insert) | Exported table = the message `table`; also the Dataform action whose run triggers an export |
-| `source_view` | Dataform (JSON, on insert) | Full name of the export view (`databuffet-nonprd.pub_sub.export_<table>`) |
-| `topic` | Dataform (JSON, on insert) | Pub/Sub topic |
-| `last_invocation_id` | workflow | Memory: the last Dataform workflow invocation already handled for this table (the id after `workflowInvocations/`) |
-| `last_invocation_end` | workflow | End time of that invocation; `NULL` before the first export, then only invocations that ended later are new |
-| `claimed_at` | workflow and first-load exporter | Shared being-processed marker; `NULL` = free, older than 30 minutes = abandoned for the publisher. First-load claim rules are in the [onboarding guide, B3](../../how-to/setup-pubsub-export.md#3-โหลดครั้งแรกด้วยไฟล์-ครั้งแรกที่ทีมต่อ-topic-นั้นเท่านั้น) |
+| Set (`table`) | View | Natural key (`primary_key`) | Built from (validated_mac5 unless noted) | Folder date |
+|---|---|---|---|---|
+| `order` | `export_order` | `company_source_id`, `Order_Type`, `Order_No`, `No` (`No` NULL on a document without lines) | `mih`, latest `mie` row per document, `mil`, `stk`; all document types, not cancelled | `Order_Date` |
+| `invoice` | `export_invoice` | `company_source_id`, `Invoice_No`, `No` | `mih` (IS), `mie`, `mil`, `stk` | `Invoice_Date` |
+| `credit_note` | `export_credit_note` | `company_source_id`, `CN_id`, `no` | `mih` (BS), `mil`, `stk`, `ar_s` | `CN_Date` |
+| `debit_note` | `export_debit_note` | `company_source_id`, `DN_id`, `no` | `mih` (AS), `mil`, `stk`, `ar_s` | `DN_Date` |
+| `receipt` | `export_receipt` | `company_source_id`, `mirvnos`, `mirlistno`, `cqlno`, `cqlbank`, `cqlautono`, `chqbank`, `chqdatec`, `chqtag` (cheque columns NULL for cash) | `mir` (RS), `mih`, `cql`, `chq`, `ar_s` | `Payment_Date` |
+| `chqri` | `export_chqri` | `company_source_id`, `chqno`, `chqbank`, `chqdatec`, `chqtag`, `cqlvnos`, `cqlbank`, `cqlautono`, `cqlsys` | `chq` (type 1), `cql` (RS), year of `cqldate` | `cqldate` |
+| `status` | `export_status` | `company_source_id`, `id` | `ar_s` | export date |
+| `company` | `export_company` | `company_source_id`, `id` (customer code) | `deb` | export date |
+| `sell` | `export_sell` | `company_source_id`, `id` | `per` (hidden sellers included) | export date |
+| `warehouse` | `export_warehouse` | `company_source_id`, `id` | `sto` | export date |
+| `stk` | `export_stk` | `company_source_id`, `stkcode` | `stk` | export date |
+| `company_source` | `export_company_source` | `company_source_id` | `dimension_table.dim_company` (ag01) | export date |
+
+Year 2026 is fixed in the views (`mihyear`, `miryear`, `cqldate`); the SQL headers list each
+deviation from the original SQL Server queries.
+
+The authoritative table schemas and writer contracts are in the OKF cards for
+[`mart_export_config`](../../okf/process/mart_export_config.md#schema) and
+[`mart_sent_state`](../../okf/process/mart_sent_state.md#schema). The workflow reads config
+columns by position; preserve the order in the SQLX definition.
 
 The `MERGE` only inserts new export tables. Every existing row is preserved, including
-`source_view`, `topic`, `last_invocation_id`, `last_invocation_end` and `claimed_at`,
-even if its JSON entry changes or is removed. Changing an existing export table's
+`source_view`, `topic`, `trigger_scheduler`, `last_invocation_id`, `last_invocation_end` and
+`claimed_at`, even if its JSON entry changes or is removed.
+
+**A new export table starts unseeded.** The insert-only config MERGE sets
+`last_invocation_id`, `last_invocation_end`, `claimed_at` and `seeded_at` to NULL.
+`seeded_at` is the durable initialization marker, independent of expiring claims.
+Tag `pub_sub` appends it after `trigger_scheduler` and backfills only this marker from
+MIN(sent_at) for tables with existing sent state, preserving dim_company's checkpoint and claim.
+Tag `pub_sub`, setup, merge and deployment never seed sent state or write first-load files.
+The publisher returns `not seeded: waiting for the first-load export` before any Dataform
+or BigQuery call for an unseeded table; it cannot advance, claim or publish that table.
+The first-load execution, transaction, claim cleanup and retry procedure are owned by
+[onboarding guide B3](../../how-to/setup-pubsub-export.md#3-โหลดครั้งแรกด้วยไฟล์-ครั้งแรกที่ทีมต่อ-topic-นั้นเท่านั้น);
+the TF rollout date and sequence are in [section C](../../how-to/setup-pubsub-export.md#ส่วน-c--ชุด-commission-ของทีม-tf).
+
+Changing an existing export table's
 view/topic or removing it is a deliberate manual change. `ref()` to each export view
 keeps a config row naming a missing view a compile error.
 
-`mart_sent_state`: `table_name`, `row_key` (the table's natural key), `row_hash`
-(fingerprint of the row data), `invocation_id` (the Dataform workflow invocation that
-sent it), `sent_at` (UTC). It holds the last successfully recorded state; a row matching
-its stored `row_key` + `row_hash` is skipped.
-
 **Duplicate guard** (what `datamart-publish` does every 5 minutes). It reads
-`mart_export_config` with `tabledata.list` (no query cost), then for each row:
+`mart_export_config` with `tabledata.list` (no query cost), then for each row (returning immediately if seeded_at is NULL):
 
 1. List the invocations that ended after `last_invocation_end` (the last 48 hours while it
    is `NULL`), excluding `last_invocation_id`. None → stop for this table, no BigQuery
-   query at all. For each `SUCCEEDED` invocation, query its actions; the newest one whose
-   action `table_name` is `SUCCEEDED` is the export invocation. None of them qualifies
-   (failed, or did not run the table) → only advance `last_invocation_*` to the newest
+   query at all. The newest `SUCCEEDED` invocation that triggers the table is the export
+   invocation: with `trigger_scheduler` set, one whose `workflowConfig` is that
+   configuration (no actions query; manual runs never trigger); without it, one whose
+   action `table_name` is `SUCCEEDED` (its actions are queried). None of them qualifies
+   (failed, or did not trigger the table) → only advance `last_invocation_*` to the newest
    ended invocation and stop. The scheduler id from `workflowConfig` (unset = `manual`)
    is logged with the invocation id.
 2. Claim the row atomically: `UPDATE mart_export_config SET claimed_at = <now>
@@ -188,7 +220,8 @@ rules in the [message guide](../../how-to/setup-pubsub-export.md).
 **Export view contract** (every export view):
 
 - data columns first, under the **source table's column names** (no renaming, no
-  `company_source_id`); no SK of any dimension and no value that moves by itself day to
+  `company_source_id`) — except the commission sets, which keep the names of the sample
+  agreed with TF; no SK of any dimension and no value that moves by itself day to
   day — otherwise every row looks changed every day;
 - no cleaning helpers when the source is a dim/fact: it was cleaned when it was built.
   Round decimals to a fixed scale before they reach the hash if the source does not;
@@ -205,8 +238,11 @@ rules in the [message guide](../../how-to/setup-pubsub-export.md).
 `definitions/view/pub_sub/` (schema `databuffet.PUB_SUB`, tags `TAG_VIEW` +
 `TAG_PUB_SUB`, `dependencies` including `pub_sub_schema`) following the contract, then
 one entry under `tables` in `mart-export-config.json` (`table_name` = the message
-`table` and the Dataform action that triggers it, `source_view`, `topic`), then run
-tag `pub_sub` once as below. The workflow needs no change. Add the view's base tables
+`table`, `source_view`, `topic`; `trigger_scheduler` = the Dataform workflow configuration
+whose successful run triggers it, or omit it to trigger on the action named `table_name`;
+optional `snapshot_date` = `{"column", "format"}` of the document date that splits the
+first-load files into date folders), then run tag `pub_sub` once as below — it leaves seeded_at NULL for the
+new table until its first manual Cloud Shell snapshot seeds state and writes files together. The workflow needs no change. Add the view's base tables
 to `SOURCE_TABLES` in `infra/pubsub/setup.sh` and re-run it: it creates the topic and
 its dead-letter topic, grants the publisher read on the view only and authorizes the view on
 its base tables' datasets. Consumer teams get the new topic through `infra/pubsub/add-consumer.sh`.
@@ -226,8 +262,9 @@ follow these steps for the first deployment and whenever an export table is adde
 Manual execution uses the release's live compilation result
 ([Dataform compilation reference](https://docs.cloud.google.com/dataform/docs/configure-compilation#trigger-execution-release-configuration)).
 The run creates the `pub_sub` dataset (in `databuffet.REGION`), the export views and
-the two tables, and only adds missing export config rows. Re-running preserves every
-existing config row, the memory and the sent state. No workflow configuration carries
+the two tables, and adds missing export config rows (unseeded until their first manual
+Cloud Shell snapshot). Re-running preserves config values, checkpoints, claims and sent
+state; the migration only backfills `seeded_at` for tables with existing sent state. No workflow configuration carries
 `pub_sub`. Do not use tag `view` for this: it deploys every view and skips the two
 tables. Then set up GCP and test per
 [setup-pubsub-export.md — ส่วน A](../../how-to/setup-pubsub-export.md#ส่วน-a--deploy-และทดสอบ-pilot).

@@ -1,0 +1,58 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of commission set debit_note for the TF team: one row = one line of an ag01 debit note (AS) of 2026, not cancelled; columns, names and order of the TF sample, plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- Commission sets keep the column names, order and JSON types of the sample sent to TF on
+-- 2026-10-14 (commission_tf_ag01_2026), which differ from the source column names on purpose.
+-- Natural key = company_source_id, DN_id, no (unique, never NULL).
+-- Data set   : debit_note  (commission export for TF; target = sample commission_tf_ag01_2026, 2026-10-14)
+-- Original   : Query Commission คุณแป้ง/DebitNote.sql
+-- Sources    : databuffet-nonprd.validated_mac5.mih, mil, stk, ar_s
+-- PK: company_source_id, DN_id, no. Scope: ag01, mihtype = 'AS', mihyear = 2026, mihcancel = 0.
+-- Columns, names, order and JSON types match the sample.
+-- Differences from the original query (the sample is the target):
+--   DNType = ar_s.ar_snamet for mihstatus (replaces fn_returnAR_SnameT). DN_Date is not zero-padded, as in the source.
+--   Unit_Price uses SAFE_DIVIDE (the source would error on milquan = 0).
+WITH src AS (
+  SELECT
+    m.company_id AS company_source_id,
+    l.millinkvcno AS INV_No,
+    '' AS Invoiceid,
+    m.mihvnos AS DN_id,
+    FORMAT('%d/%d/%d', m.mihday, m.mihmonth, m.mihyear) AS DN_Date,
+    m.mihcus AS companyid,
+    l.millistno AS `no`,
+    l.milcut AS stkcut,
+    l.milstk,
+    l.mildesc,
+    s.stkcode885 AS Product_Barcode,
+    l.milquan AS Unit,
+    SAFE_DIVIDE(l.milcog, l.milquan) AS Unit_Price,
+    l.milcog AS TotalPriceAmt,
+    l.milsum AS invoice_value,
+    l.milsum AS Actual_amt,
+    m.mihkeydate AS MIHkeyDate,
+    ars.ar_snamet AS DNType
+  FROM ${ref(databuffet.VALIDATED_MAC5, "mih")} AS m
+  LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, "mil")} AS l
+    ON l.company_id = m.company_id AND l.miltype = m.mihtype AND l.milvnos = m.mihvnos
+  LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, "stk")} AS s
+    ON s.company_id = l.company_id AND s.stkcode = l.milstk
+  LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, "ar_s")} AS ars
+    ON ars.company_id = m.company_id AND ars.ar_scode = m.mihstatus
+  WHERE m.company_id = 'ag01'
+    AND m.mihyear = 2026
+    AND m.mihtype = 'AS'
+    AND m.mihcancel = 0
+)
+SELECT
+  s.*,
+  TO_JSON_STRING(STRUCT(s.company_source_id, s.DN_id, s.`no`)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(s)) AS row_hash
+FROM src AS s

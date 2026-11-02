@@ -78,8 +78,9 @@ JavaScript-generated actions are outside that diagram's scope.
 | **Org center** | `definitions/org_center/` | Who sits in which unit and position, plus TA customer portfolios and special access exceptions, rebuilt nightly (`dimension_daily`); see the [Org Center reference](document/project_wiki/org_center/org-center.md) for tables, sources, PC → TA links, plan codes, company names, and data-quality flags |
 | **Process** | `definitions/process/` | AI address parsing + row-level security (see the [process reference](document/project_wiki/cdc-process/process.md), including TA customer access) + [Pub/Sub export pilot](document/project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
 
-The Pub/Sub pilot covers `dim_company`: Dataform objects here, plus the publishing
-Cloud Workflow and its idempotent GCP setup script in `infra/pubsub/`, deployed by hand.
+The Pub/Sub export includes the `dim_company` pilot and commission datasets for TF.
+Dataform objects live here, with the publishing Cloud Workflow and its idempotent
+GCP setup script in `infra/pubsub/`, deployed by hand.
 See the [setup and message guide](document/how-to/setup-pubsub-export.md).
 
 **Validated by source:** MAC5, CIS360, MASTERSKU, MASTER_SKU (3.0),

@@ -1,0 +1,70 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of commission set receipt for the TF team: one row = one ag01 receipt (RS) line of 2026 per paying cheque line (cash receipts have NULL cheque columns); columns, names and order of the TF sample, plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- Commission sets keep the column names, order and JSON types of the sample sent to TF on
+-- 2026-10-14 (commission_tf_ag01_2026), which differ from the source column names on purpose.
+-- Natural key = company_source_id, mirvnos, mirlistno, cqlno, cqlbank, cqlautono, chqbank, chqdatec, chqtag (unique; may hold NULL, kept as JSON null in row_key).
+-- Data set   : receipt  (commission export for TF; target = sample commission_tf_ag01_2026, 2026-10-14)
+-- Original   : Query Commission คุณแป้ง/Receipt.sql
+-- Sources    : databuffet-nonprd.validated_mac5.mir, mih (RS), cql (RS), chq (chqtype 1), ar_s
+-- PK: company_source_id, mirvnos, mirlistno, cqlno, cqlbank, cqlautono, chqbank, chqdatec, chqtag. Scope: ag01, mirtype = 'RS', miryear = 2026, mihcancel = 0.
+-- Columns, names, order and JSON types match the sample.
+-- Differences from the original query (the sample is the target):
+--   mirlistno, cqlno, cqlbank, cqlautono, chqbank, chqdatec, chqtag are added (key columns in the sample, not in the source).
+--   BankAccount = ar_s.ar_snamet for mihstatus (replaces fn_returnAR_SnameT).
+--   Key columns can be NULL (cash receipts). A receipt line paid by several cheques gives several rows and repeats Payment_AmtInVat.
+WITH src AS (
+  SELECT
+    r.company_id AS company_source_id,
+    r.mirlistno,
+    c.cqlno,
+    c.cqlbank,
+    c.cqlautono,
+    q.chqbank,
+    q.chqdatec,
+    q.chqtag,
+    r.mirvnos,
+    '' AS invoiceid,
+    r.mirbinvno,
+    CASE WHEN q.chqno IS NOT NULL AND q.chqno <> '' THEN 'Chq' ELSE 'Cash' END AS Paymen_Method,
+    IFNULL(q.chqno, '') AS chqno,
+    CASE q.chqstatus WHEN 2 THEN 'Bounced' WHEN 1 THEN 'Cleared' WHEN 0 THEN 'Due' ELSE '' END AS chqstatus,
+    FORMAT('%02d/%02d/%d', r.mirday, r.mirmonth, r.miryear) AS Payment_Date,
+    r.mirsum AS Payment_AmtInVat,
+    ars.ar_snamet AS BankAccount,
+    m.mihstatus AS Statusid,
+    m.mihcus AS CompanyId,
+    m.mihper AS Sell_id,
+    '' AS Product_Barcode, '' AS Unit, '' AS Unit_Price, '' AS TotalPriceAmt,
+    '' AS Discount_Type, '' AS DiscountAmt, '' AS TotalAmt,
+    '' AS Discount1_Type, '' AS Discount1Amt, '' AS TotalAmt1,
+    '' AS Discount2_Type, '' AS Discount2Amt, '' AS Total2Amt,
+    '' AS TotalDisAmt, '' AS PriceExvat, '' AS `ลดหนี้`, '' AS PerDisCN, '' AS CN_No,
+    '' AS TotalDisCN, '' AS PercentMargin, '' AS Warehouse_id, '' AS SaleChannel,
+    m.mihkeydate AS MIHkeyDate
+  FROM ${ref(databuffet.VALIDATED_MAC5, "mir")} AS r
+  JOIN ${ref(databuffet.VALIDATED_MAC5, "mih")} AS m
+    ON m.company_id = r.company_id AND m.mihtype = 'RS' AND m.mihvnos = r.mirvnos
+  LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, "cql")} AS c
+    ON c.company_id = r.company_id AND c.cqlmivt = 'RS' AND c.cqlvnos = r.mirvnos
+  LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, "chq")} AS q
+    ON q.company_id = c.company_id AND q.chqtype = 1 AND q.chqno = c.cqlno
+  LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, "ar_s")} AS ars
+    ON ars.company_id = m.company_id AND ars.ar_scode = m.mihstatus
+  WHERE r.company_id = 'ag01'
+    AND r.miryear = 2026
+    AND r.mirtype = 'RS'
+    AND m.mihcancel = 0
+)
+SELECT
+  s.*,
+  TO_JSON_STRING(STRUCT(s.company_source_id, s.mirvnos, s.mirlistno, s.cqlno, s.cqlbank, s.cqlautono, s.chqbank, s.chqdatec, s.chqtag)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(s)) AS row_hash
+FROM src AS s

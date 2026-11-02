@@ -4,6 +4,102 @@
       "table_name": "dim_company",
       "source_view": "export_dim_company",
       "topic": "export-ta-dim_company"
+    },
+    {
+      "table_name": "order",
+      "source_view": "export_order",
+      "topic": "export-commission-order",
+      "trigger_scheduler": "daily_process",
+      "snapshot_date": {
+        "column": "Order_Date",
+        "format": "%d/%m/%Y"
+      }
+    },
+    {
+      "table_name": "invoice",
+      "source_view": "export_invoice",
+      "topic": "export-commission-invoice",
+      "trigger_scheduler": "daily_process",
+      "snapshot_date": {
+        "column": "Invoice_Date",
+        "format": "%d/%m/%Y"
+      }
+    },
+    {
+      "table_name": "credit_note",
+      "source_view": "export_credit_note",
+      "topic": "export-commission-credit_note",
+      "trigger_scheduler": "daily_process",
+      "snapshot_date": {
+        "column": "CN_Date",
+        "format": "%d/%m/%Y"
+      }
+    },
+    {
+      "table_name": "debit_note",
+      "source_view": "export_debit_note",
+      "topic": "export-commission-debit_note",
+      "trigger_scheduler": "daily_process",
+      "snapshot_date": {
+        "column": "DN_Date",
+        "format": "%d/%m/%Y"
+      }
+    },
+    {
+      "table_name": "receipt",
+      "source_view": "export_receipt",
+      "topic": "export-commission-receipt",
+      "trigger_scheduler": "daily_process",
+      "snapshot_date": {
+        "column": "Payment_Date",
+        "format": "%d/%m/%Y"
+      }
+    },
+    {
+      "table_name": "chqri",
+      "source_view": "export_chqri",
+      "topic": "export-commission-chqri",
+      "trigger_scheduler": "daily_process",
+      "snapshot_date": {
+        "column": "cqldate",
+        "format": "%Y-%m-%dT%H:%M:%S"
+      }
+    },
+    {
+      "table_name": "status",
+      "source_view": "export_status",
+      "topic": "export-commission-status",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "company",
+      "source_view": "export_company",
+      "topic": "export-commission-company",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "sell",
+      "source_view": "export_sell",
+      "topic": "export-commission-sell",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "warehouse",
+      "source_view": "export_warehouse",
+      "topic": "export-commission-warehouse",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "stk",
+      "source_view": "export_stk",
+      "topic": "export-commission-stk",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "company_source",
+      "source_view": "export_company_source",
+      "topic": "export-commission-company_source",
+      "trigger_scheduler": "daily_process"
     }
   ]
 }

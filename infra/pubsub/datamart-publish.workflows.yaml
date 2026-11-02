@@ -3,11 +3,14 @@
 # Contract: document/project_wiki/cdc-process/process.md (Pub/Sub export pilot).
 #
 # For every row of process_dataset.mart_export_config:
-#   1. read the config through tabledata.list (no query cost);
+#   1. read the config through tabledata.list (no query cost); skip unseeded tables
+#      before any per-table Dataform or BigQuery call;
 #   2. list Dataform workflow invocations of repository data-buffet that ended after
 #      last_invocation_end (scheduler = workflowConfig, unset = manual);
-#   3. none -> end; failed or did not run the table -> only advance last_invocation_*;
-#      a SUCCEEDED invocation whose action `table_name` SUCCEEDED -> continue with the newest one;
+#   3. none -> end; failed or did not trigger the table -> only advance last_invocation_*;
+#      a SUCCEEDED invocation that triggers it -> continue with the newest one. With
+#      trigger_scheduler set, every SUCCEEDED invocation of that workflow configuration
+#      triggers (e.g. daily_process); without it, one whose action `table_name` SUCCEEDED;
 #   4. claim the row (claimed_at empty or older than CLAIM_TIMEOUT_MINUTES), 0 rows -> end;
 #   5. diff the export view with mart_sent_state -> NEW / UPDATE / DELETE;
 #   6. publish one message per changed row (no attributes);
@@ -61,7 +64,9 @@ main:
           in: ${default(map.get(config_data, "rows"), [])}
           steps:
             # Column order of mart_export_config: table_name, source_view, topic,
-            # last_invocation_id, last_invocation_end (epoch seconds), claimed_at.
+            # last_invocation_id, last_invocation_end (epoch seconds), claimed_at,
+            # trigger_scheduler (NULL = triggered by a successful run of action table_name),
+            # seeded_at (NULL = waiting for the first-load export).
             - table_row:
                 assign:
                   - export:
@@ -70,6 +75,8 @@ main:
                       topic: ${row.f[2].v}
                       last_invocation_id: ${row.f[3].v}
                       last_invocation_end: ${row.f[4].v}
+                      trigger_scheduler: ${row.f[6].v}
+                      seeded_at: ${row.f[7].v}
             - run_table:
                 try:
                   steps:
@@ -107,6 +114,10 @@ main:
 export_table:
   params: [cfg, export]
   steps:
+    - not_seeded:
+        switch:
+          - condition: ${export.seeded_at == null}
+            return: "not seeded: waiting for the first-load export"
     - checkpoint:
         assign:
           - last_id: ${export.last_invocation_id}
@@ -184,6 +195,15 @@ export_table:
                 switch:
                   - condition: ${inv.state != "SUCCEEDED" or inv_end <= best_end}
                     next: continue
+            # trigger_scheduler set: the invocation's workflow configuration decides, no actions query.
+            - check_scheduler:
+                switch:
+                  - condition: ${export.trigger_scheduler == null}
+                    next: check_actions
+            - by_scheduler:
+                assign:
+                  - ran: ${scheduler == export.trigger_scheduler}
+                next: track_best
             - check_actions:
                 call: ran_table
                 args:

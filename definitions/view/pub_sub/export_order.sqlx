@@ -1,0 +1,101 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of commission set order for the TF team: one row = one line of an ag01 sales document of 2026 (any document type, not cancelled); columns, names and order of the TF sample, plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- Commission sets keep the column names, order and JSON types of the sample sent to TF on
+-- 2026-10-14 (commission_tf_ag01_2026), which differ from the source column names on purpose.
+-- Natural key = company_source_id, Order_Type, Order_No, No (unique; No is NULL on a document
+-- without lines (LEFT JOIN mil), kept as JSON null in row_key).
+-- Data set   : order  (commission export for TF; target = sample commission_tf_ag01_2026, 2026-10-14)
+-- Original   : Query Commission คุณแป้ง/order.sql
+-- Sources    : databuffet-nonprd.validated_mac5.mih, mie (latest row per document), mil, stk
+-- PK: company_source_id, Order_Type, Order_No, No. Scope: ag01, mihyear = 2026, mihcancel = 0, all document types.
+-- Columns, names, order and JSON types match the sample.
+-- Differences from the original query (the sample is the target):
+--   Order_Type (mihtype) and company_source_id are added; they are in the sample, not in the source query.
+--   Condition_payment_id is NULL: mih_payment_mapping is not in the Data Mart (the sample is NULL on every row).
+--   mie/mil are joined on type + vnos (the source joins vnos only). mie is reduced to its latest row per document,
+--     because validated mie keeps a stale row when a document's customer or date changes; without this, 5,005 keys duplicate.
+WITH mie_latest AS (
+  -- validated_mac5.mie keeps a stale row when a document's customer/date changes
+  -- (its key includes MIEcus + date), so keep only the latest row per document.
+  SELECT *
+  FROM ${ref(databuffet.VALIDATED_MAC5, "mie")}
+  WHERE company_id = 'ag01'
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY company_id, mietype, mievnos
+    ORDER BY asatdate DESC, mieyear DESC, miemonth DESC, mieday DESC, miecus DESC) = 1
+),
+src AS (
+  SELECT
+    m.company_id AS company_source_id,
+    m.mihtype AS Order_Type,
+    FORMAT('%02d/%02d/%d', m.mihday, m.mihmonth, m.mihyear) AS Order_Date,
+    m.mihvnos AS Order_No,
+    CAST(NULL AS STRING) AS Condition_payment_id,
+    '' AS Credit_StartDate,
+    REPLACE(SUBSTR(mie.miectermcx, 1, 4), '|', '') AS CreditTerm,
+    m.mihstatus AS stausid,
+    m.mihcus AS companyid,
+    m.mihper AS Sell_id,
+    m.mihdep AS Sales_area,
+    '' AS Sales_Region,
+    l.millistno AS `No`,
+    l.milstk AS stk,
+    l.mildesc,
+    s.stkcode885 AS Product_Barcode,
+    CASE WHEN l.milstk = 'บ-0027' THEN l.milstk ELSE '' END AS Deposit_code,
+    CASE WHEN l.milstk = 'บ-0027' THEN l.mildesc ELSE '' END AS Deposit_percent,
+    l.milquan AS Unit,
+    ROUND(l.milcog / NULLIF(l.milquan, 0), 2) AS Unit_Price,
+    l.milcog AS TotalPriceAmt,
+    'baht' AS Discount_Type,
+    ROUND(l.mildisca / NULLIF(l.milquan, 0), 2) AS DiscountAmt,
+    l.milsum AS TotalDiscountAmt,
+    'baht' AS Discount1_Type,
+    CASE WHEN m.mihdischf1 > 0
+      THEN ROUND(((l.milsum / NULLIF(l.milquan, 0)) / NULLIF(m.mihnetsum - m.mihvatsum + m.mihdischf1 + m.mihdischf2, 0)) * m.mihdischf1, 2)
+      ELSE 0 END AS Discount1Amt,
+    CASE WHEN m.mihdischf1 > 0
+      THEN ROUND(l.milsum - ((l.milsum / NULLIF(m.mihnetsum - m.mihvatsum + m.mihdischf1 + m.mihdischf2, 0)) * m.mihdischf1), 2)
+      ELSE l.milsum END AS TotalDiscount1Amt,
+    'baht' AS Discount2_Type,
+    CASE WHEN m.mihdischf2 > 0
+      THEN ROUND((((l.milsum / NULLIF(l.milquan, 0))
+                   - (((l.milsum / NULLIF(l.milquan, 0)) / NULLIF(m.mihnetsum - m.mihvatsum + m.mihdischf1 + m.mihdischf2, 0)) * m.mihdischf1))
+                  / NULLIF(m.mihnetsum - m.mihvatsum - m.mihdischf1 + m.mihdischf1 + m.mihdischf2, 0)) * m.mihdischf2, 2)
+      ELSE 0 END AS Discount2Amt,
+    CASE
+      WHEN m.mihdischf2 > 0
+      THEN ROUND(l.milsum
+                 - ((l.milsum / NULLIF(m.mihnetsum - m.mihvatsum + m.mihdischf1 + m.mihdischf2, 0)) * m.mihdischf1)
+                 - (((l.milsum - ((l.milsum / NULLIF(m.mihnetsum - m.mihvatsum + m.mihdischf1 + m.mihdischf2, 0)) * m.mihdischf1))
+                     / NULLIF(m.mihnetsum - m.mihvatsum - m.mihdischf1 + m.mihdischf1 + m.mihdischf2, 0)) * m.mihdischf2), 2)
+      WHEN m.mihdischf1 > 0
+      THEN ROUND(l.milsum - ((l.milsum / NULLIF(m.mihnetsum - m.mihvatsum + m.mihdischf1 + m.mihdischf2, 0)) * m.mihdischf1), 2)
+      ELSE l.milsum END AS TotalDiscount2Amt,
+    REGEXP_EXTRACT(m.mihvnos, r'^[^0-9]*') AS SaleChannel,
+    m.mihkeydate AS MIHkeyDate,
+    CASE WHEN SUBSTR(m.mihref2, 1, 4) = 'QOAG' THEN 'Online-AllkonsM' ELSE 'Offline' END AS OrderChannel
+  FROM ${ref(databuffet.VALIDATED_MAC5, "mih")} AS m
+  LEFT JOIN mie_latest AS mie
+    ON mie.company_id = m.company_id AND mie.mietype = m.mihtype AND mie.mievnos = m.mihvnos
+  LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, "mil")} AS l
+    ON l.company_id = m.company_id AND l.miltype = m.mihtype AND l.milvnos = m.mihvnos
+  LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, "stk")} AS s
+    ON s.company_id = l.company_id AND s.stkcode = l.milstk
+  WHERE m.company_id = 'ag01'
+    AND m.mihyear = 2026
+    AND m.mihcancel = 0
+)
+SELECT
+  s.*,
+  TO_JSON_STRING(STRUCT(s.company_source_id, s.Order_Type, s.Order_No, s.`No`)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(s)) AS row_hash
+FROM src AS s

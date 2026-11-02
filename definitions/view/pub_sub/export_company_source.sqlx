@@ -1,0 +1,32 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "dim_company"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of commission set company_source for the TF team: one row = the Data Mart company ag01 that owns the data; columns, names and order of the TF sample, plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const DimCompanyTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_company`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- Commission sets keep the column names, order and JSON types of the sample sent to TF on
+-- 2026-10-14 (commission_tf_ag01_2026), which differ from the source column names on purpose.
+-- Natural key = company_source_id (unique, never NULL).
+-- Data set   : company_source  (commission export for TF; target = sample commission_tf_ag01_2026, 2026-10-14)
+-- Original   : Query Commission คุณแป้ง/none (not in the source queries)
+-- Sources    : databuffet-nonprd.dimension_table.dim_company
+-- PK: company_source_id. Scope: ag01. The Data Mart company that owns the data (not a customer).
+-- Columns, names, order and JSON types match the sample.
+WITH src AS (
+  SELECT CompanyID AS company_source_id, CompanyCode, CompanyNameTH, CompanyNameEN
+  FROM `${DimCompanyTableRef}`
+  WHERE CompanyID = 'ag01'
+)
+SELECT
+  s.*,
+  TO_JSON_STRING(STRUCT(s.company_source_id)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(s)) AS row_hash
+FROM src AS s
