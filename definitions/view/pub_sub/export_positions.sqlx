@@ -1,0 +1,34 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "org_center_member"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of the TA app table positions: one row = one position that someone holds in a company; columns of the 2026-11-02 org sample plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const OrgCenterMemberTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_member`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
+--   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
+--   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
+--   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
+-- Natural key = company_id, code. Positions that someone holds in the company (any period);
+-- name, default_role_id and uniform_code have no source and stay NULL.
+WITH pos AS (
+  SELECT DISTINCT
+    company_id,
+    position_code AS code,
+    CAST(NULL AS STRING) AS name,
+    CAST(NULL AS STRING) AS default_role_id,
+    CAST(NULL AS STRING) AS uniform_code
+  FROM `${OrgCenterMemberTableRef}`
+)
+SELECT
+  p.*,
+  TO_JSON_STRING(STRUCT(p.company_id, p.code)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(p)) AS row_hash
+FROM pos AS p

@@ -1,0 +1,87 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "org_center_person", "org_center_exception"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of the TA app table employees: one row = one person of org_center_person plus the people of org_center_exception who are not in it (names from MDS); columns of the 2026-11-02 org sample plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const OrgCenterPersonTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_person`;
+    const OrgCenterExceptionTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_exception`;
+    const MdsDataOrgEmployeeMappingCenterTableRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_org_employee_mapping_center`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
+--   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
+--   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
+--   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
+-- Natural key = person_key (MDS EmployeeID, never NULL).
+-- Two sources: org_center_person (people with a seat) and the people with a special access row who have
+-- no seat (captain decision 2026-11-02: add them), named from the MDS employee mapping center that
+-- org_center_member already reads. They have no phone in MDS employee info, so phone stays NULL.
+WITH mds_mapping AS (
+  SELECT
+    ${databuffet.functionData.cleanString("employeeid")} AS employee_id,
+    ${databuffet.functionData.cleanString("employeename")} AS employee_name,
+    ${databuffet.functionData.cleanString("employeeemail")} AS email
+  FROM `${MdsDataOrgEmployeeMappingCenterTableRef}`
+  WHERE is_active = TRUE
+    AND ${databuffet.functionData.cleanString("employeeid")} IS NOT NULL
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY employee_id ORDER BY updated_at DESC, id) = 1
+
+), seated AS (
+  SELECT
+    employee_id AS person_key,
+    first_name,
+    last_name,
+    nickname,
+    email,
+    mobile_phone AS phone
+  FROM `${OrgCenterPersonTableRef}`
+
+), unseated AS (
+  -- first word = first name, the rest = last name (the same split org_center_member applies to CEO names)
+  SELECT
+    ex.employee_id AS person_key,
+    REGEXP_EXTRACT(mp.employee_name, r'^(\S+)') AS first_name,
+    REGEXP_EXTRACT(mp.employee_name, r'^\S+\s+(.+)$') AS last_name,
+    CAST(NULL AS STRING) AS nickname,
+    mp.email AS email,
+    CAST(NULL AS STRING) AS phone
+  FROM (
+    SELECT DISTINCT employee_id
+    FROM `${OrgCenterExceptionTableRef}`
+    WHERE employee_id IS NOT NULL
+  ) AS ex
+  LEFT JOIN seated AS se
+    ON ex.employee_id = se.person_key
+  LEFT JOIN mds_mapping AS mp
+    ON ex.employee_id = mp.employee_id
+  WHERE se.person_key IS NULL
+
+), employee AS (
+  SELECT * FROM seated
+  UNION ALL
+  SELECT * FROM unseated
+
+), shaped AS (
+  SELECT
+    person_key,
+    -- nickname if there is one, else first name
+    COALESCE(nickname, first_name) AS display_name,
+    first_name,
+    last_name,
+    nickname,
+    email,
+    phone,
+    IF(phone IS NULL, CAST(NULL AS STRING), 'mds') AS phone_source
+  FROM employee
+)
+SELECT
+  s.*,
+  TO_JSON_STRING(STRUCT(s.person_key)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(s)) AS row_hash
+FROM shaped AS s

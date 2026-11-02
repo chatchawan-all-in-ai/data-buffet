@@ -100,6 +100,60 @@
       "source_view": "export_company_source",
       "topic": "export-commission-company_source",
       "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "org_levels",
+      "source_view": "export_org_levels",
+      "topic": "export-ta-org_levels",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "org_units",
+      "source_view": "export_org_units",
+      "topic": "export-ta-org_units",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "positions",
+      "source_view": "export_positions",
+      "topic": "export-ta-positions",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "employees",
+      "source_view": "export_employees",
+      "topic": "export-ta-employees",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "memberships",
+      "source_view": "export_memberships",
+      "topic": "export-ta-memberships",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "appointments",
+      "source_view": "export_appointments",
+      "topic": "export-ta-appointments",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "member_links",
+      "source_view": "export_member_links",
+      "topic": "export-ta-member_links",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "access_exceptions",
+      "source_view": "export_access_exceptions",
+      "topic": "export-ta-access_exceptions",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "customer_ta_assignments",
+      "source_view": "export_customer_ta_assignments",
+      "topic": "export-ta-customer_ta_assignments",
+      "trigger_scheduler": "daily_process"
     }
   ]
 }

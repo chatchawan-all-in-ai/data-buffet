@@ -94,8 +94,8 @@ run every 5 minutes by Cloud Scheduler `datamart-publish-every-5m`, both in
 with the sent state and publishes changed rows. GCP setup ([`infra/pubsub/setup.sh`](../../../infra/pubsub/setup.sh)),
 deploy/test steps and the message format are owned by
 [setup-pubsub-export.md](../../how-to/setup-pubsub-export.md).
-Exported in `databuffet-nonprd` only: `dim_company` (the pilot) and, since 2026-11-02, the 12
-commission sets for the TF team (company ag01; table below). Deployment status is in that guide.
+Exports are configured in `databuffet-nonprd` only. The inventory is listed below;
+deployment status is owned by that guide.
 
 **Run status comes from the Dataform API, not from Dataform actions** (redesigned
 2026-10-25). There are no start/end actions and no per-run log table. The publisher
@@ -126,6 +126,7 @@ runs** — see "Deploy" below:
 | `mart_sent_state.sqlx` | `process_dataset.mart_sent_state` | One row per data row sent. `CREATE TABLE IF NOT EXISTS`, cluster `table_name, row_key`. Schema and writers in its OKF card (linked below) |
 | `pub_sub/pub_sub_schema.sqlx` | dataset `pub_sub` (tags `view` + `pub_sub`) | `CREATE SCHEMA IF NOT EXISTS ... OPTIONS(location=REGION)`, the same bootstrap as `validated_schema_*` / `cdc_schema`. `definitions/pub_sub/` is the layer folder for future shaping tables before Pub/Sub |
 | `view/pub_sub/export_dim_company.sqlx` | `pub_sub.export_dim_company` (view, tags `view` + `pub_sub`) | `CompanyID`, `CompanyCode`, `CompanyNameTH`, `CompanyNameEN` as in `dim_company`, `row_key`, `row_hash` — no `CompanySK`, no `MdsId` |
+| `view/pub_sub/export_<table>.sqlx` × 9 | `pub_sub.export_<table>` (views, tags `view` + `pub_sub`) | TA app org tables for the AI team (below): the columns of the org sample sent 2026-11-02, `row_key`, `row_hash` |
 | `view/pub_sub/export_<set>.sqlx` × 12 | `pub_sub.export_<set>` (views, tags `view` + `pub_sub`) | Commission sets for TF (below): the columns of the sample sent to TF on 2026-10-14, `row_key`, `row_hash` |
 
 **Commission sets for the TF team** (company ag01, documents of 2026; added 2026-11-02).
@@ -134,6 +135,9 @@ runs** — see "Deploy" below:
 `commission_tf_ag01_2026` sent to TF on 2026-10-14 (e.g. `company_source_id`), not the source
 column names. Folder date = the column the first-load files are split by (`snapshot_date`;
 master data has none and goes under the export date).
+
+Year 2026 is fixed in the commission views (`mihyear`, `miryear`, `cqldate`); the SQL headers
+list each deviation from the original SQL Server queries.
 
 | Set (`table`) | View | Natural key (`primary_key`) | Built from (validated_mac5 unless noted) | Folder date |
 |---|---|---|---|---|
@@ -150,8 +154,26 @@ master data has none and goes under the export date).
 | `stk` | `export_stk` | `company_source_id`, `stkcode` | `stk` | export date |
 | `company_source` | `export_company_source` | `company_source_id` | `dimension_table.dim_company` (ag01) | export date |
 
-Year 2026 is fixed in the views (`mihyear`, `miryear`, `cqldate`); the SQL headers list each
-deviation from the original SQL Server queries.
+**TA app org tables for the AI team** (added 2026-11-02; org data reaches the AI team through
+Pub/Sub only). One view and topic per TA app table, `table_name` = the app table, topic
+`export-ta-<table>`, `trigger_scheduler = daily_process`. Columns follow the org sample
+(one file per app table): no app-generated `id` / `created_at` / `updated_at`, `company_id` = company
+code, ranges `[valid_from, valid_to)` where org center's inclusive end day becomes `valid_to + 1 day` for
+units and seats (memberships too) and 2066-12-31 becomes NULL. Sources are `org_center`
+tables plus the MDS mapping used by `export_employees`; a unit/seat change is exported after
+the next successful `daily_process` run.
+
+| Set (`table`) | View | Natural key (`primary_key`) | Built from |
+|---|---|---|---|
+| `org_levels` | `export_org_levels` | `company_id`, `depth` | `org_center_unit` (depth 1-3; no team level) |
+| `org_units` | `export_org_units` | `company_id`, `id` (`unit_id` repeats across companies) | `org_center_unit` minus COMPANY rows; extra column `region_code` (PS1 on PS1-1..PS1-5) |
+| `positions` | `export_positions` | `company_id`, `code` | `org_center_member` |
+| `employees` | `export_employees` | `person_key` | `org_center_person` + people of `org_center_exception` without a seat, named from `mds_data_org_employee_mapping_center` |
+| `memberships` | `export_memberships` | `company_id`, `employee_id` | `org_center_member` folded per person and company; status from today's seats |
+| `appointments` | `export_appointments` | `company_id`, `membership_id`, `org_unit_id`, `position_id`, `valid_from` | `org_center_member`; extra column `zone` (TA DepartmentID) |
+| `member_links` | `export_member_links` | `company_id`, `link_type`, `from_membership_id`, `to_membership_id`, `site_id`, `valid_from` | `org_center_link` |
+| `access_exceptions` | `export_access_exceptions` | `source_row_id` + every scope column | `org_center_exception`, arrays split |
+| `customer_ta_assignments` | `export_customer_ta_assignments` | `company_id`, `customer_id`, `membership_id`, `valid_from` | `org_center_customer_ta`; extra column `membership_company_id` (the company of the TA membership the row points to) |
 
 The authoritative table schemas and writer contracts are in the OKF cards for
 [`mart_export_config`](../../okf/process/mart_export_config.md#schema) and
@@ -220,9 +242,11 @@ rules in the [message guide](../../how-to/setup-pubsub-export.md).
 **Export view contract** (every export view):
 
 - data columns first, under the **source table's column names** (no renaming, no
-  `company_source_id`) — except the commission sets, which keep the names of the sample
-  agreed with TF; no SK of any dimension and no value that moves by itself day to
-  day — otherwise every row looks changed every day;
+  `company_source_id`) — except the commission and TA app sets, which keep the names
+  agreed in their respective samples; no SK of any dimension or incidental daily value
+  that makes unchanged rows look changed. Date-driven membership status is intentional;
+  its transition rules are owned by the
+  [`export_memberships` schema](../../okf/view/pub_sub/export_memberships.md#schema);
 - no cleaning helpers when the source is a dim/fact: it was cleaned when it was built.
   Round decimals to a fixed scale before they reach the hash if the source does not;
 - `row_key = TO_JSON_STRING(STRUCT(<natural key>))` — the natural key of the source,

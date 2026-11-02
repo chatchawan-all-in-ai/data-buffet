@@ -1,0 +1,41 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "org_center_member"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of the TA app table appointments: one row = one seat (person, unit, position, start) with company_id and the TA zone; columns of the 2026-11-02 org sample plus zone, row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const OrgCenterMemberTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_member`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
+--   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
+--   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
+--   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
+-- Natural key = company_id, membership_id, org_unit_id, position_id, valid_from (the uniqueKey of org_center_member).
+-- membership_id = MDS EmployeeID, org_unit_id = org_units.id (with company_id), position_id = positions.code.
+-- zone = DepartmentID of a TA seat (TAs sit at the section; captain decision 2026-11-02), several joined by '|';
+-- NULL on every other seat. is_primary and source_row_id have no source and stay NULL.
+WITH appointment AS (
+  SELECT
+    company_id,
+    employee_id AS membership_id,
+    unit_id AS org_unit_id,
+    position_code AS position_id,
+    valid_from,
+    IF(valid_to >= DATE '2066-12-31', CAST(NULL AS DATE), DATE_ADD(valid_to, INTERVAL 1 DAY)) AS valid_to,
+    CAST(NULL AS BOOL) AS is_primary,
+    'mds' AS source,
+    CAST(NULL AS STRING) AS source_row_id,
+    NULLIF(ARRAY_TO_STRING(department_ids, '|'), '') AS zone
+  FROM `${OrgCenterMemberTableRef}`
+)
+SELECT
+  a.*,
+  TO_JSON_STRING(STRUCT(a.company_id, a.membership_id, a.org_unit_id, a.position_id, a.valid_from)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(a)) AS row_hash
+FROM appointment AS a

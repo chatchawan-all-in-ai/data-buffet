@@ -1,0 +1,92 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "org_center_member"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of the TA app table memberships: one row = one person in one company (all seats of the pair folded together); columns of the 2026-11-02 org sample plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const OrgCenterMemberTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_member`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
+--   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
+--   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
+--   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
+-- Natural key = company_id, employee_id. employee_id = employee_code = MDS EmployeeID.
+-- valid_from = earliest seat start, valid_to = last seat end + 1 day (NULL while any seat is open).
+-- status = active when the person holds a seat valid today (Asia/Bangkok), else inactive;
+WITH seat AS (
+  SELECT DISTINCT
+    company_id,
+    employee_id,
+    valid_from,
+    valid_to
+  FROM `${OrgCenterMemberTableRef}`
+
+), previous_seat AS (
+  SELECT
+    *,
+    MAX(valid_to) OVER (
+      PARTITION BY company_id, employee_id
+      ORDER BY valid_from, valid_to
+      ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+    ) AS previous_valid_to
+  FROM seat
+
+), grouped_seat AS (
+  SELECT
+    *,
+    SUM(CASE
+      WHEN UNIX_DATE(valid_from) <= UNIX_DATE(previous_valid_to) + 1 THEN 0
+      ELSE 1
+    END) OVER (
+      PARTITION BY company_id, employee_id
+      ORDER BY valid_from, valid_to
+      ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS period_id
+  FROM previous_seat
+
+), period AS (
+  SELECT
+    company_id,
+    employee_id,
+    MIN(valid_from) AS valid_from,
+    MAX(valid_to) AS valid_to
+  FROM grouped_seat
+  GROUP BY company_id, employee_id, period_id
+
+), membership AS (
+  SELECT
+    company_id,
+    employee_id,
+    employee_id AS employee_code,
+    IF(LOGICAL_OR(CURRENT_DATE('Asia/Bangkok') BETWEEN valid_from AND valid_to), 'active', 'inactive') AS status,
+    COALESCE(
+      MIN(IF(CURRENT_DATE('Asia/Bangkok') BETWEEN valid_from AND valid_to, valid_from, NULL)),
+      DATE_ADD(MAX(IF(valid_to < CURRENT_DATE('Asia/Bangkok'), valid_to, NULL)), INTERVAL 1 DAY)
+    ) AS status_since,
+    MIN(valid_from) AS valid_from,
+    IF(MAX(valid_to) >= DATE '2066-12-31', CAST(NULL AS DATE), DATE_ADD(MAX(valid_to), INTERVAL 1 DAY)) AS valid_to
+  FROM period
+  GROUP BY company_id, employee_id
+
+), shaped AS (
+  SELECT
+    company_id,
+    employee_id,
+    employee_code,
+    status,
+    status_since,
+    valid_from,
+    valid_to
+  FROM membership
+)
+SELECT
+  s.*,
+  TO_JSON_STRING(STRUCT(s.company_id, s.employee_id)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(s)) AS row_hash
+FROM shaped AS s

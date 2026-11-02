@@ -1,0 +1,49 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "org_center_exception"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of the TA app table access_exceptions: one row = one special-access scope of a person (the code arrays split to one value per row); columns of the 2026-11-02 org sample plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const OrgCenterExceptionTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_exception`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
+--   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
+--   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
+--   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
+-- Natural key = source_row_id + every scope column: the director / region / section arrays split to one value
+-- per row (cross product; one value each today, so one row per org_center_exception row). Rows without an
+-- employee_id are kept (employee_id NULL). report_id, report_name and department_code have no source and stay NULL.
+WITH access_exception AS (
+  SELECT
+    x.employee_id,
+    x.company_code,
+    CAST(NULL AS STRING) AS report_id,
+    CAST(NULL AS STRING) AS report_name,
+    director_code,
+    region_code,
+    section_code,
+    CAST(NULL AS STRING) AS department_code,
+    x.marketing_group_id AS mkt_group_id,
+    x.sub_marketing_id AS mkt_subgroup_id,
+    x.segment_id AS mkt_segment_id,
+    x.flag_customer,
+    x.source_row_id
+  FROM `${OrgCenterExceptionTableRef}` AS x,
+  UNNEST(x.director_codes) AS director_code,
+  UNNEST(x.region_codes) AS region_code,
+  UNNEST(x.section_codes) AS section_code
+)
+SELECT
+  a.*,
+  TO_JSON_STRING(STRUCT(
+    a.source_row_id, a.company_code, a.director_code, a.region_code, a.section_code,
+    a.mkt_group_id, a.mkt_subgroup_id, a.mkt_segment_id
+  )) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(a)) AS row_hash
+FROM access_exception AS a

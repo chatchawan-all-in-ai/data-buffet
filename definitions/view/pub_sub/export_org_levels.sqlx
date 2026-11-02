@@ -1,0 +1,38 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "org_center_unit"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of the TA app table org_levels: one row = one org level (depth 1-3) of a company that has units; columns of the 2026-11-02 org sample plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const OrgCenterUnitTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_unit`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
+--   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
+--   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
+--   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
+-- Natural key = company_id, depth. No team level (depth 4): TAs sit at the section and carry a zone
+-- on appointments (captain decision 2026-11-02).
+WITH level AS (
+  SELECT DISTINCT
+    company_id,
+    depth,
+    CASE depth WHEN 1 THEN 'ฝ่าย' WHEN 2 THEN 'ภาค' WHEN 3 THEN 'ส่วน' END AS name,
+    CASE depth
+      WHEN 1 THEN 'mds_data_sales_director_master'
+      WHEN 2 THEN 'mds_data_sales_region_master'
+      WHEN 3 THEN 'mds_data_sales_section_master'
+    END AS mds_source_table
+  FROM `${OrgCenterUnitTableRef}`
+  WHERE depth BETWEEN 1 AND 3
+)
+SELECT
+  l.*,
+  TO_JSON_STRING(STRUCT(l.company_id, l.depth)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(l)) AS row_hash
+FROM level AS l

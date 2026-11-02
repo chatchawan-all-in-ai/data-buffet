@@ -1,0 +1,45 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "org_center_unit"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of the TA app table org_units: one row = one division / region / section of a company (company rows left out); columns of the 2026-11-02 org sample plus region_code, row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const OrgCenterUnitTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_unit`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
+--   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
+--   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
+--   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
+-- Natural key = company_id, id. id = org center unit_id, which is NOT unique across companies
+-- (DIR-00002, REG-PS1-2, SEC-PS1-2, ... exist in ab01 and ag01), so the company is part of the key and
+-- of every reference to it (parent_unit_id here, org_unit_id in appointments).
+-- region_code = RegionID on region rows (PS1 for PS1-1..PS1-5), NULL on the other levels.
+WITH unit AS (
+  SELECT
+    u.unit_id AS id,
+    u.company_id,
+    u.depth AS org_level_id,
+    IF(p.unit_level = 'COMPANY', CAST(NULL AS STRING), u.parent_unit_id) AS parent_unit_id,
+    u.unit_code AS code,
+    u.unit_name AS name,
+    u.valid_from,
+    IF(u.valid_to >= DATE '2066-12-31', CAST(NULL AS DATE), DATE_ADD(u.valid_to, INTERVAL 1 DAY)) AS valid_to,
+    CAST(NULL AS STRING) AS source_row_id,
+    u.region_code
+  FROM `${OrgCenterUnitTableRef}` AS u
+  LEFT JOIN `${OrgCenterUnitTableRef}` AS p
+    ON u.company_id = p.company_id
+   AND u.parent_unit_id = p.unit_id
+  WHERE u.unit_level != 'COMPANY'
+)
+SELECT
+  u.*,
+  TO_JSON_STRING(STRUCT(u.company_id, u.id)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(u)) AS row_hash
+FROM unit AS u

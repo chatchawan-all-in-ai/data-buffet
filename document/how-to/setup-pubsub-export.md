@@ -8,6 +8,8 @@
 > ให้เหลือเท่าที่ใช้ แล้วต่อทีมผู้รับตาม [ส่วน B](#ส่วน-b--ต่อทีมที่มาใช้ข้อมูล-ทำซ้ำทุกครั้งที่มีทีมใหม่)
 > · 2026-11-02: เพิ่มชุด commission 12 ชุดของ ag01 ให้ทีม TF ใน repo แล้ว (topic `export-commission-<ชุด>`
 > ดู [ส่วน C](#ส่วน-c--ชุด-commission-ของทีม-tf)) — **ยังไม่ได้ทำฝั่ง GCP** ทำตามส่วน C หลัง PR merge
+> · 2026-11-02: เพิ่มชุดตารางองค์กรของแอป TA 9 ชุดให้ทีม AI ใน repo แล้ว (topic `export-ta-<ตาราง>` ดู
+> [ส่วน D](#ส่วน-d--ตารางองค์กรของแอป-ta-ให้ทีม-ai)) — **ยังไม่ได้ทำฝั่ง GCP**
 > รายละเอียด repo และวิธีเพิ่มตารางอยู่ที่
 > [process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
 
@@ -108,7 +110,7 @@ bash infra/pubsub/setup.sh
    (และ Dataform / BigQuery ที่เปิดอยู่แล้ว)
 3. สร้าง service accounts `datamart-publish-trigger` และ `datamart-publisher` — **ไม่สร้าง key**
 4. ต่อทุกตารางใน [`mart-export-config.json`](../../includes/controller/mart-export-config.json):
-   topic (`export-ta-dim_company` และ `export-commission-<ชุด>` 12 topic), dead-letter topic (`<topic>-dead-letter`) และสิทธิ์ publisher
+   topic (`export-ta-dim_company`, `export-commission-<ชุด>` 12 topic และ `export-ta-<ตาราง>` 9 topic), dead-letter topic (`<topic>-dead-letter`) และสิทธิ์ publisher
    ของ Pub/Sub service agent บน dead-letter topic · ไม่สร้าง subscription ทดสอบ
    - dead-letter topic รับ dead letter ของทุก subscription ของทีมบน topic นั้น — subscription
      ของทีมและ `dlq.<ทีม>.<topic>` ที่เก็บ dead letter สร้างตอนต่อทีมด้วย `add-consumer.sh` (ส่วน B)
@@ -522,6 +524,28 @@ serialize ทุกการเขียนต่อ `(table, primary_key)` เ�
    ส่ง path ของ folder และ export time ของแต่ละชุดให้ TF — ไฟล์อยู่ที่
    `gs://databuffet-nonprd-datamart-snapshot/tf-prd/export-commission-<ชุด>/<export time>/<YYYY>/<MM>/<DD>/`
 3. TF รอ manifest และโหลดไฟล์ครบก่อนเริ่ม pull ภายใน 7 วัน
+
+---
+
+## ส่วน D — ตารางองค์กรของแอป TA ให้ทีม AI
+
+เพิ่ม 2026-11-02 · ข้อมูลองค์กรถึงทีม AI ทาง Pub/Sub อย่างเดียว (ไม่อ่าน dataset `org_center` ตรง) · 1 topic ต่อ 1 ตารางในแอป ·
+คอลัมน์ตามชุดตัวอย่างองค์กรที่ส่งทีม AI 2 พ.ย. 2026 บวก `region_code` (org_units), `zone` (appointments),
+`membership_company_id` (customer_ta_assignments) · ส่งหลังรอบ `daily_process` ที่สำเร็จ ·
+รายชื่อชุดและ natural key อยู่ใน [process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
+
+topic: `export-ta-org_levels`, `export-ta-org_units`, `export-ta-positions`, `export-ta-employees`,
+`export-ta-memberships`, `export-ta-appointments`, `export-ta-member_links`,
+`export-ta-access_exceptions`, `export-ta-customer_ta_assignments`
+
+### D(a). หลัง PR merge และ code ถึง `nonprod`
+
+1. รัน tag `pub_sub` ตาม [ขั้น deploy](../project_wiki/cdc-process/process.md#deploy) — สร้าง 9 view และเพิ่ม 9 แถว config
+   ที่ `seeded_at` เป็น NULL (ไม่ต้องรัน `org_center_unit` ใหม่: คอลัมน์ `region_code` มีอยู่แล้ว)
+2. `bash infra/pubsub/setup.sh` — สร้าง 9 topic + dead-letter topic, ให้สิทธิ์ publisher อ่าน 9 view
+   (authorized view บน dataset `org_center` และ `mds_dataset` สำหรับ `export_employees`)
+3. ต่อทีม AI ด้วย `add-consumer.sh <ทีม> <topic>...` และโหลดครั้งแรกด้วย `export-snapshot.sh` ในวันที่กัปตันกำหนด
+   (ส่วน B) — จนกว่าจะ seed publisher ข้ามทั้ง 9 topic
 
 ## Checklist ก่อนเปิดใช้งานจริง (หลัง merge)
 

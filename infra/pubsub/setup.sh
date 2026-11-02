@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GCP setup of the Pub/Sub export (dim_company pilot + commission sets for TF) in databuffet-nonprd.
+# GCP setup of the Pub/Sub export; inventory and contract: document/project_wiki/cdc-process/process.md.
 # Guide: document/how-to/setup-pubsub-export.md (ส่วน A). Idempotent: every step checks or
 # re-applies its resource, so re-running after a fix or after adding an export table is safe.
 # Every grant is the narrowest that works; a rerun also removes the wider grants older
@@ -58,6 +58,16 @@ declare -A SOURCE_TABLES=(
   [warehouse]="validated_mac5.sto"
   [stk]="validated_mac5.stk"
   [company_source]="dimension_table.dim_company"
+  # TA app org tables for the AI team (org sample 2026-11-02, one topic per app table).
+  [org_levels]="org_center.org_center_unit"
+  [org_units]="org_center.org_center_unit"
+  [positions]="org_center.org_center_member"
+  [employees]="org_center.org_center_person org_center.org_center_exception mds_dataset.mds_data_org_employee_mapping_center"
+  [memberships]="org_center.org_center_member"
+  [appointments]="org_center.org_center_member"
+  [member_links]="org_center.org_center_link"
+  [access_exceptions]="org_center.org_center_exception"
+  [customer_ta_assignments]="org_center.org_center_customer_ta org_center.org_center_member"
 )
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

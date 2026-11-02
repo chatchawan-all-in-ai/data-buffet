@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-02 (TA org Pub/Sub export)
+* **Creation**: Added 9 cards for the TA app org export views in `pub_sub` (export_org_levels, export_org_units, export_positions, export_employees, export_memberships, export_appointments, export_member_links, export_access_exceptions, export_customer_ta_assignments; pub_sub 22 cards, view 62 cards).
+* **Update**: `mart_export_config` card: 22 rows (dim_company, 12 commission sets, 9 TA org sets).
+
 ## 2026-11-02 (commission Pub/Sub export)
 * **Creation**: Added 12 cards for the commission export views of the TF team in `pub_sub` (export_order, export_invoice, export_credit_note, export_debit_note, export_receipt, export_chqri, export_status, export_company, export_sell, export_warehouse, export_stk, export_company_source; pub_sub 13 cards, view 53 cards).
 * **Update**: Corrected the config card's sent-state dependency and claim semantics; linked the first-load procedure to its owner. `mart_export_config` card: new `trigger_scheduler` and `seeded_at` columns, durable not-yet-seeded marker for new export tables and backfill from existing sent state for dim_company, 13 rows; `mart_sent_state` card: seed only during the captain-dated manual Cloud Shell snapshot, with files from the same snapshot.
