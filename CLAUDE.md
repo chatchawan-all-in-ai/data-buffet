@@ -91,7 +91,7 @@ work on Opus, pattern-following work on Sonnet):
 | View | `definitions/view/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset`, `pub_sub` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |
 | CDC | `definitions/cdc/` | 2 | `cdc_dataset` | operations, generated from `cdc-config.json` |
 | Pub/Sub | `definitions/pub_sub/` | 1 | `pub_sub` | `pub_sub_schema` creates the dataset; export views live in `definitions/view/pub_sub/` |
-| Process | `definitions/process/` | 6 | `process_dataset` | `deb_address_data` (`AI.GENERATE` gated on CDC) + `rls_customer360` (RLS access map, `type: "table"`) + Pub/Sub export pilot `mart_export_config` / `mart_sent_state` (tag `pub_sub`, run by hand; run status from the Dataform API — see `document/project_wiki/cdc-process/process.md`) |
+| Process | `definitions/process/` | 5 | `process_dataset` | `deb_address_data` (`AI.GENERATE` gated on CDC) + `rls_customer360` (RLS access map, `type: "table"`) + Pub/Sub export pilot `mart_export_config` / `mart_sent_state` (tag `pub_sub`, run by hand; run status from the Dataform API — see `document/project_wiki/cdc-process/process.md`) |
 
 ## Configuration
 

@@ -76,7 +76,7 @@ JavaScript-generated actions are outside that diagram's scope.
 | **CDC** | `definitions/cdc/` | Config-driven change log over validated tables |
 | **Pub/Sub** | `definitions/pub_sub/` | `pub_sub_schema` creates the `pub_sub` dataset; future shaping tables before Pub/Sub (export views live in `definitions/view/pub_sub/`) |
 | **Org center** | `definitions/org_center/` | Who sits in which unit and position, plus TA customer portfolios and special access exceptions, rebuilt nightly (`dimension_daily`); see the [Org Center reference](document/project_wiki/org_center/org-center.md) for tables, sources, PC → TA links, plan codes, company names, and data-quality flags |
-| **Process** | `definitions/process/` | AI address parsing + row-level security (see the [process reference](document/project_wiki/cdc-process/process.md), including TA customer and sales access) + [Pub/Sub export pilot](document/project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
+| **Process** | `definitions/process/` | AI address parsing + row-level security (see the [process reference](document/project_wiki/cdc-process/process.md), including TA customer access) + [Pub/Sub export pilot](document/project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
 
 The Pub/Sub pilot covers `dim_company`: Dataform objects here, plus the publishing
 Cloud Workflow and its idempotent GCP setup script in `infra/pubsub/`, deployed by hand.
@@ -243,7 +243,7 @@ Select tags for an execution in the Dataform service (see the
 | Initial | `initial` (⚠️ drops the validated tables of cis360, mastersku, master_sku, saleout_mdt, allkons_commission and derp), `re-initial` (⚠️ drops validated/curated MAC5 tables) |
 | Validated | `validated`, `validated_full`, `validated_incremental` |
 | Curated | `curated`, `curated_full`, `curated_incremental` (SALEOUT_MDT curated) |
-| Dimension | `dimension_daily` (every dim except `dim_calendar`, plus org center, [TA customer access](document/okf/process/rls_ta_customer.md) and [TA sales access](document/okf/process/rls_ta_sale.md)), `dimension_yearly` (`dim_calendar` only) |
+| Dimension | `dimension_daily` (every dim except `dim_calendar`, plus org center and [TA customer access](document/okf/process/rls_ta_customer.md)), `dimension_yearly` (`dim_calendar` only) |
 | Fact | `fact_daily` |
 | Support | `process`, `cdc`, `cdc_incremental`, `pub_sub` (Pub/Sub pilot objects, run by hand — [pilot deploy](document/project_wiki/cdc-process/process.md#deploy)) |
 
