@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "stk_mkt"
-description: "One row = one stock marketing attributes, unique on (company_id, stkcode)."
+description: "One row = one product with its marketing attributes (per company), unique on (company_id, stkcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=stk_mkt&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `stk_mkt`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: stock marketing attributes. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `stk_mkt`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Marketing attributes of products (production type, segment, series, size, colour).
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,18 +35,18 @@ One row per `company_id`, `stkcode`. The key is declared twice in the definition
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `stkcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `stkgroup` | STRING | Meaning not documented in the repo. |
-| `stkdesct1` | STRING | Meaning not documented in the repo. |
-| `zgroup1` | STRING | Meaning not documented in the repo. |
-| `zgroup2` | STRING | Meaning not documented in the repo. |
-| `zsize` | STRING | Meaning not documented in the repo. |
-| `zcolor` | STRING | Meaning not documented in the repo. |
-| `zgroup3` | STRING | Meaning not documented in the repo. |
-| `zgroup4` | STRING | Meaning not documented in the repo. |
-| `zgroup5` | STRING | Meaning not documented in the repo. |
-| `zgroup6` | STRING | Meaning not documented in the repo. |
-| `zgroup7` | STRING | Meaning not documented in the repo. |
+| `stkcode` | STRING | Product (stock item) code. |
+| `stkgroup` | STRING | Stock group code (joins `stg.stgcode`). |
+| `stkdesct1` | STRING | Thai product description, line 1. |
+| `zgroup1` | STRING | Marketing group, level 1. |
+| `zgroup2` | STRING | Marketing group, level 2. |
+| `zsize` | STRING | Size label of the product (e.g. 3000 litres, 3.0Q). |
+| `zcolor` | STRING | Colour of the product (e.g. GRAY, BLACK, NATURAL). |
+| `zgroup3` | STRING | Product category name in Thai (e.g. treatment tank). |
+| `zgroup4` | STRING | Marketing group, level 4 (e.g. `OK`). |
+| `zgroup5` | STRING | Production or sourcing type (e.g. SOURCING, FRP, ROTO, BLOW, INJECTION, SERVICE). |
+| `zgroup6` | STRING | Marketing segment as a numeric code plus Thai name (e.g. `0301030201` exterior paint). |
+| `zgroup7` | STRING | Product series or brand line (e.g. LITETITE, Z Series). |
 
 # How it is built
 

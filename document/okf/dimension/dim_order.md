@@ -36,33 +36,33 @@ One row per (`CompanySK`, `mihYear`, `mihMonth`, `mihDay`, `mihType` = 'PS', `mi
 | `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md). |
 | `companyID` | STRING | MAC5 company code. |
 | `mix_date` | DATE | Order date built from `mihYear`/`mihMonth`/`mihDay`. |
-| `mihYear` | INT64 | Year part of the order date (pass-through of `curated_mih.mihYear`). |
-| `mihMonth` | INT64 | Month part of the order date. |
-| `mihDay` | INT64 | Day part of the order date. |
-| `mihType` | STRING | Document type; always 'PS' (sales order) in this table. |
-| `mihVnos` | STRING | Order document number. |
-| `mihCus` | STRING | Customer code on the order (joins to `dim_customer.debcode`). |
-| `mihJob` | STRING | Job code of the header (pass-through; likely job/project code, inferred). |
-| `mihRef1` | STRING | Reference number 1 of the header (pass-through). |
-| `mihRef2` | STRING | Reference number 2 of the header (pass-through). |
-| `mihRef3` | STRING | Reference number 3 of the header (pass-through). |
-| `mihCancel` | INT64 | Cancel flag (-1 = cancelled, 0 = active). |
-| `mihStatus` | INT64 | Status code of the order (`curated_mih.mihStatus`), looked up in `ar_s`. |
-| `StatusName` | STRING | Status name from `ar_s.ar_snamet` for `mihStatus` (company-specific). |
-| `memoExtract` | STRING | Pass-through of `curated_mih.memoExtract`; Meaning not documented in the repo. |
-| `mihMemoNew` | STRING | Pass-through of `curated_mih.mihMemoNew`; Meaning not documented in the repo (likely free-text memo). |
+| `mihYear` | INT64 | Year part of the document date (Gregorian). |
+| `mihMonth` | INT64 | Month part of the document date. |
+| `mihDay` | INT64 | Day part of the document date. |
+| `mihType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `mihVnos` | STRING | Document number, unique within company and document type. |
+| `mihCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mihJob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
+| `mihRef1` | STRING | Reference document number 1 for the source quotation or sales order. |
+| `mihRef2` | STRING | Customer purchase-order or external order reference number. |
+| `mihRef3` | STRING | Free-text reference 3 of the document. |
+| `mihCancel` | INT64 | Cancellation flag (-1 = cancelled, 0 = active). |
+| `mihStatus` | INT64 | Document status code; meaning in `ar_s` for sales types and `ap_s` for purchase types (e.g. 26 = approved sales order, 30 = VAT sale, 32 = cancelled tax invoice). |
+| `StatusName` | STRING | Thai status name. |
+| `memoExtract` | STRING | Tag extracted from the document memo, defaulting to `฿00฿` and matched to `dim_payment.CodeMemo`. |
+| `mihMemoNew` | STRING | Document memo with the tag enclosed in `฿` signs removed, or NULL when no text remains. |
 | `mihStatusDesc` | STRING | Pass-through of `curated_mih.mihstatus_desc` (status description derived upstream). |
 | `OrderStatus` | STRING | Fulfilment status computed here: per item, 'On Order' if no invoice line links to it, 'Complete' if invoiced quantity >= ordered quantity, else 'In Process'; per order, any 'In Process' item makes 'In Process', else any 'On Order' makes 'On Order', else 'Complete'. NULL when the order has no PS lines. |
-| `mihNotes` | STRING | Free-text notes of the header. |
-| `mihDesc` | STRING | Free-text description of the header. |
-| `mihKeydate` | DATETIME | Date/time the order was keyed in (`curated_mih.mihKeydate`, DATETIME); NULL for rows outside the refresh window that were loaded before the column existed. |
-| `mihDelvdate` | DATETIME | Requested delivery date/time of the order (`curated_mih.mihDelvdate`, DATETIME). |
-| `mihClearum` | INT64 | Pass-through of `curated_mih.mihClearum`; Meaning not documented in the repo. |
-| `mihExtrasum` | FLOAT64 | Extra amount on the document (`curated_mih.mihExtrasum`); meaning not documented in the repo. |
-| `mihPer` | STRING | Salesperson code of the order header. |
-| `pernamet` | STRING | Salesperson Thai name from `validated_mac5.per` (join `mihPer = percode`, company). |
-| `mihBl` | INT64 | Pass-through of `curated_mih.mihBl`; Meaning not documented in the repo. |
-| `StatusColorBg` | INT64 | Background colour code of the status from `ar_s.ar_scolb` (INT64), used by reports to colour status cells. |
+| `mihNotes` | STRING | Free-text notes such as delivery instructions or site details. |
+| `mihDesc` | STRING | Free-text document description. |
+| `mihKeydate` | DATETIME | Date and time the document was keyed. |
+| `mihDelvdate` | DATETIME | Requested delivery date. |
+| `mihClearum` | INT64 | Flag: outstanding quantities of the document cleared (0 = still open). |
+| `mihExtrasum` | FLOAT64 | Deposit amount deducted on the document, excluding VAT. |
+| `mihPer` | STRING | Salesperson (employee) code, matching `per.percode`. |
+| `pernamet` | STRING | Employee name in Thai (first name, surname and nickname in parentheses). |
+| `mihBl` | INT64 | Billing-note flag of the document. |
+| `StatusColorBg` | INT64 | Background colour of the status in the ERP, as a Windows RGB integer. |
 
 # How it is built
 

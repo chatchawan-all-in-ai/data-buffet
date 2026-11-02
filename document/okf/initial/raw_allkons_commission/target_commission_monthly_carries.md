@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "target_commission_monthly_carries"
-description: "One row = one record of source table `target_commission_monthly_carries` (ALLKONS_COMMISSION) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one monthly target carry-over for a salesperson and condition version, a record of source table `target_commission_monthly_carries` (ALLKONS_COMMISSION) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_allkons_commission&t=target_commission_monthly_carries&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_allkons_commission
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/allkons_commission/target_commission_monthly_carries/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `target_commission_monthly_carries` table from ALLKONS_COMMISSION; nothing is cleaned or deduplicated here.
+External table over AVRO files in `gs://file-raw-data/allkons_commission/target_commission_monthly_carries/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `target_commission_monthly_carries` table from ALLKONS_COMMISSION; nothing is cleaned or deduplicated here. Table meaning: Remaining sales-target amounts carried over month to month per salesperson and commission condition version.
 
 # Grain and key
 
@@ -30,15 +30,15 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `marketing_condition_version_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `month_key` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_target_unit` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `leftover` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `job_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | STRING | Unique identifier (UUID) of the carry-over record. |
+| `marketing_condition_version_id` | STRING | Commission condition version the carry-over belongs to (`marketing_condition_version_details.id`). |
+| `sales_id` | STRING | Employee code of the salesperson. |
+| `month_key` | STRING | Month of the carry-over (`YYYY-MM`). |
+| `sales_target_unit` | STRING | Unit of the sales target (`THB`). |
+| `leftover` | FLOAT64 | Remaining target amount carried over to the next month, in the target unit. |
+| `job_id` | STRING | Identifier of the calculation job that produced the record. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

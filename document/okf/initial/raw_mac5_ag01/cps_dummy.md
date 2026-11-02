@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "cps_dummy"
-description: "One row = one record of source table `cps_dummy` (MAC5 for company `ag01`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one outstanding sales order line, a record of source table `cps_dummy` (MAC5 for company `ag01`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=cps_dummy&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/cps_dummy/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `cps_dummy` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.cps_dummy](/validated/validated_mac5/cps_dummy.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/cps_dummy/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `cps_dummy` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Outstanding sales order lines from the ERP's dummy (staging) table, same layout as `cps`. Used by: [validated_mac5.cps_dummy](/validated/validated_mac5/cps_dummy.md).
 
 # Grain and key
 
@@ -30,33 +30,33 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `cpsstkid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpslinkid` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsvnosid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsdateid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpscusid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsjob` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsdep` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsper` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsdoc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsmec` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpssto` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsstkreq` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsstkcut1` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsstkcut2` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpssumreq` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpssumcut1` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpssumcut2` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsclearstk` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsclearsum` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsclearuser` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsclearall` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpscurc` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsexchg` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpscut` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpsdelvdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cpslistno` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rowguid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `cpsstkid` | STRING | Product (stock) code of the outstanding line, matching `stk.stkcode`. |
+| `cpslinkid` | INT64 | Internal ID linking the outstanding record to its document line. |
+| `cpsvnosid` | STRING | Number of the sales order document that has the outstanding line (e.g. a `PS` sales order). |
+| `cpsdateid` | STRING | Date of the sales order document. |
+| `cpscusid` | STRING | Customer code of the document, matching `deb.debcode`. |
+| `cpsjob` | STRING | Job code of the document (sales job or project category). |
+| `cpsdep` | STRING | Department code of the document, used as the sales channel code. |
+| `cpsper` | STRING | Salesperson (employee) code of the document. |
+| `cpsdoc` | STRING | Document reference code. |
+| `cpsmec` | STRING | Memo-card code of the document, matching `mec.meccode`. |
+| `cpssto` | STRING | Warehouse (store) code the line is issued from or received into. |
+| `cpsstkreq` | FLOAT64 | Quantity ordered on the line. |
+| `cpsstkcut1` | FLOAT64 | Quantity already delivered or received against the line. |
+| `cpsstkcut2` | FLOAT64 | Quantity cut against the line by adjustment documents. |
+| `cpssumreq` | FLOAT64 | Amount ordered on the line. |
+| `cpssumcut1` | FLOAT64 | Amount already delivered or invoiced against the line. |
+| `cpssumcut2` | FLOAT64 | Amount cut against the line by adjustment documents. |
+| `cpsclearstk` | INT64 | Flag: outstanding quantity cleared (-1 = cleared). |
+| `cpsclearsum` | INT64 | Flag: outstanding amount cleared (-1 = cleared). |
+| `cpsclearuser` | INT64 | Flag: line cleared manually by a user (-1 = yes). |
+| `cpsclearall` | INT64 | Flag: line fully cleared (-1 = cleared). |
+| `cpscurc` | INT64 | Currency code (0 = Thai baht). |
+| `cpsexchg` | FLOAT64 | Exchange rate to Thai baht (1 for baht documents). |
+| `cpscut` | INT64 | Flag: line deducts stock (-1 = yes). |
+| `cpsdelvdate` | STRING | Requested delivery date of the line. |
+| `cpslistno` | INT64 | Line number within the document. |
+| `rowguid` | STRING | Row GUID assigned to the record by the source database. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

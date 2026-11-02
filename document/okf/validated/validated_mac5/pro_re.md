@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "pro_re"
-description: "One row = one promotion (RE), unique on (company_id, proreid, prorestkcode)."
+description: "One row = one product in an RE-channel promotion (per company), unique on (company_id, proreid, prorestkcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=pro_re&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `pro_re`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: promotion (RE). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `pro_re`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Products included in RE-channel promotions of the MAC5 ERP, with period and region.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,14 +35,14 @@ One row per `company_id`, `proreid`, `prorestkcode`. The key is declared twice i
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `proreid` | INT64 | Meaning not documented in the repo. |
-| `prorestkcode` | STRING | Meaning not documented in the repo. |
-| `proresttcode` | STRING | Meaning not documented in the repo. |
-| `prorestt` | STRING | Meaning not documented in the repo. |
-| `prorestrdate` | DATE | Meaning not documented in the repo. |
-| `proreenddate` | DATE | Meaning not documented in the repo. |
-| `proreregion` | STRING | Meaning not documented in the repo. |
-| `dinsert` | DATETIME | Meaning not documented in the repo. |
+| `proreid` | INT64 | Running ID of the promotion item row. |
+| `prorestkcode` | STRING | Stock (product) code included in the promotion. |
+| `proresttcode` | STRING | Promotion set code the product belongs to (numeric, e.g. `80164`). |
+| `prorestt` | STRING | Promotion item status flag (`y` = active). |
+| `prorestrdate` | DATE | Start date of the promotion period. |
+| `proreenddate` | DATE | End date of the promotion period. |
+| `proreregion` | STRING | Region the promotion applies to (`ALL` = all regions). |
+| `dinsert` | DATETIME | Date and time the row was inserted. |
 
 # How it is built
 

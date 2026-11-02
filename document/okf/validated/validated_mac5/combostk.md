@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "combostk"
-description: "One row = one product combo stock items, unique on (company_id, id)."
+description: "One row = one combo set (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=combostk&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `combostk`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: product combo stock items. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `combostk`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Combo set headers: combo set code, status and audit fields.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,13 +35,13 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `combostk` | STRING | Meaning not documented in the repo. |
-| `date` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `uinsert` | STRING | Meaning not documented in the repo. |
-| `uupdate` | STRING | Likely date (inferred from the column name only; not documented in the repo). |
-| `status` | INT64 | Likely status code (inferred from the column name only; not documented in the repo). |
-| `notecomboset` | STRING | Meaning not documented in the repo. |
+| `id` | INT64 | Running ID of the combo set header row. |
+| `combostk` | STRING | Combo set code (e.g. `COMBOSET56`). |
+| `date` | DATETIME | Date and time the row was created. |
+| `uinsert` | STRING | User code of the person who created the record. |
+| `uupdate` | STRING | User code of the person who last updated the record. |
+| `status` | INT64 | Status code of the combo set (1, 2). |
+| `notecomboset` | STRING | Note on the combo set. |
 
 # How it is built
 

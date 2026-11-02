@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tbook_payin"
-description: "One row = one cleaned source record of `tbook_payin` (no declared key; append-style, not deduplicated)."
+description: "One row = one pay-in record of a sales order from source table `tbook_payin` (no declared key; append-style, not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tbook_payin&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tbook_payin`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: booking pay-in. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `tbook_payin`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Pay-in submissions of sales orders with status and approval time.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,10 +35,10 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `orderno` | STRING | Meaning not documented in the repo. |
-| `status` | INT64 | Likely status code (inferred from the column name only; not documented in the repo). |
-| `datetime` | DATETIME | Meaning not documented in the repo. |
-| `datetimeapprove` | DATETIME | Meaning not documented in the repo. |
+| `orderno` | STRING | MAC5 sales order number the pay-in belongs to. |
+| `status` | INT64 | Pay-in status code (0 to 6). |
+| `datetime` | DATETIME | Date and time the pay-in was submitted. |
+| `datetimeapprove` | DATETIME | Date and time the pay-in was approved. |
 
 # How it is built
 

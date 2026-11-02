@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mec"
-description: "One row = one record of source table `mec` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one memo card, a record of source table `mec` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=mec&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/mec/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `mec` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.mec](/validated/validated_mac5/mec.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/mec/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `mec` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Memo cards attached to documents (address, contact and shop or branch name per template), referenced by `mihmec`/`milmec`. Used by: [validated_mac5.mec](/validated/validated_mac5/mec.md).
 
 # Grain and key
 
@@ -30,48 +30,48 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `MECcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECtpl` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECtoCType` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECtoCode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECt1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECt2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECt3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECt4` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECt5` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECd1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECd2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECd3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECi1` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECi2` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECc1` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECc2` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECc3` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECc4` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECc5` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECm1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECm2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECm3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECm4` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECm5` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECm6` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECm7` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECm8` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECm9` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECdesc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MEChide` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MEClock` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECeditLK` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECrefWE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECsortN` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECt6` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECt7` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECt8` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECt9` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECt10` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECeditDT` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MECeditMF` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rowguid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `MECcode` | STRING | Memo-card code, referenced by `mihmec` and `milmec` on documents. |
+| `MECtpl` | INT64 | Template number that defines the layout of the card's text fields. |
+| `MECtoCType` | INT64 | Owner type of the card (2 = card attached to a customer through `mectocode`, 11 = general card, 8 = other). |
+| `MECtoCode` | STRING | Code of the record the card belongs to, such as the customer code when `mectoctype` is 2. |
+| `MECt1` | STRING | Text field 1 of the card (an address part, contact name or postal code, depending on the template). |
+| `MECt2` | STRING | Text field 2 of the card (an address part, contact name or postal code, depending on the template). |
+| `MECt3` | STRING | Text field 3 of the card (an address part, contact name or postal code, depending on the template). |
+| `MECt4` | STRING | Text field 4 of the card (an address part, contact name or postal code, depending on the template). |
+| `MECt5` | STRING | Text field 5 of the card (an address part, contact name or postal code, depending on the template). |
+| `MECd1` | STRING | Date field 1 of the card. |
+| `MECd2` | STRING | Date field 2 of the card. |
+| `MECd3` | STRING | Date field 3 of the card. |
+| `MECi1` | INT64 | Integer field 1 of the card. |
+| `MECi2` | INT64 | Integer field 2 of the card. |
+| `MECc1` | FLOAT64 | Numeric field 1 of the card. |
+| `MECc2` | FLOAT64 | Numeric field 2 of the card. |
+| `MECc3` | FLOAT64 | Numeric field 3 of the card. |
+| `MECc4` | FLOAT64 | Numeric field 4 of the card. |
+| `MECc5` | FLOAT64 | Numeric field 5 of the card. |
+| `MECm1` | STRING | Memo field 1 of the card. |
+| `MECm2` | STRING | Memo field 2 of the card. |
+| `MECm3` | STRING | Memo field 3 of the card. |
+| `MECm4` | STRING | Memo field 4 of the card. |
+| `MECm5` | STRING | Memo field 5 of the card. |
+| `MECm6` | STRING | Memo field 6 of the card. |
+| `MECm7` | STRING | Memo field 7 of the card. |
+| `MECm8` | STRING | Memo field 8 of the card. |
+| `MECm9` | STRING | Memo field 9 of the card. |
+| `MECdesc` | STRING | Card title, used as the shop or branch name of chain-store customers in invoice reporting. |
+| `MEChide` | INT64 | Flag: card hidden from selection lists. |
+| `MEClock` | INT64 | Flag: card locked against editing. |
+| `MECeditLK` | STRING | Timestamp of the current edit lock on the card. |
+| `MECrefWE` | STRING | Web reference of the card. |
+| `MECsortN` | STRING | Sort name of the card. |
+| `MECt6` | STRING | Text field 6 of the card (an address part, contact name or postal code, depending on the template). |
+| `MECt7` | STRING | Text field 7 of the card (an address part, contact name or postal code, depending on the template). |
+| `MECt8` | STRING | Text field 8 of the card (an address part, contact name or postal code, depending on the template). |
+| `MECt9` | STRING | Text field 9 of the card (an address part, contact name or postal code, depending on the template). |
+| `MECt10` | STRING | Text field 10 of the card (an address part, contact name or postal code, depending on the template). |
+| `MECeditDT` | STRING | Date and time the card was last edited. |
+| `MECeditMF` | STRING | User code of the person who last edited the card. |
+| `rowguid` | STRING | Row GUID assigned to the record by the source database. |
 
 # How it is built
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mkt_per"
-description: "One row = one record of source table `mkt_per` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one salesperson in the marketing roster, a record of source table `mkt_per` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=mkt_per&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/mkt_per/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `mkt_per` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.mkt_per](/validated/validated_mac5/mkt_per.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/mkt_per/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `mkt_per` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Salesperson roster used by marketing, with name, zone and assignment period. Used by: [validated_mac5.mkt_per](/validated/validated_mac5/mkt_per.md).
 
 # Grain and key
 
@@ -30,13 +30,13 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `percode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pername` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `perstart` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `perend` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `perzone` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `persector` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zseq` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `percode` | STRING | Salesperson (employee) code. |
+| `pername` | STRING | Salesperson name. |
+| `perstart` | STRING | Start date of the salesperson's marketing assignment. |
+| `perend` | STRING | End date of the salesperson's marketing assignment. |
+| `perzone` | STRING | Sales zone of the salesperson (e.g. `M/T`, Northeast in Thai). |
+| `persector` | STRING | Sales sector of the salesperson. |
+| `zseq` | FLOAT64 | Sequence number of the assignment. |
 
 # How it is built
 

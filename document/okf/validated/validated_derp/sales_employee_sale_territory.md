@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sales_employee_sale_territory"
-description: "One row = one cleaned copy of the source table `sales_employee_sale_territory`, unique on (employee_sale_territory_id)."
+description: "One row = one assignment of an employee to a sales territory from source table `sales_employee_sale_territory`, unique on (employee_sale_territory_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=sales_employee_sale_territory&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `sales_employee_sale_territory`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `sales_employee_sale_territory`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Assignments of sales employees to sales territories, with primary flag and validity dates.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,20 +34,20 @@ One row per `employee_sale_territory_id`. The key is declared twice in the defin
 
 | Column | Type | Description |
 |---|---|---|
-| `employee_sale_territory_id` | STRING | Meaning not documented in the repo. |
-| `employee_id` | STRING | Meaning not documented in the repo. |
-| `employee_no` | STRING | Meaning not documented in the repo. |
-| `sale_territory_id` | STRING | Meaning not documented in the repo. |
-| `start_date` | DATETIME | Meaning not documented in the repo. |
-| `end_date` | DATE | Meaning not documented in the repo. |
-| `alternate_level` | INT64 | Meaning not documented in the repo. |
-| `is_primary` | BOOL | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
+| `employee_sale_territory_id` | STRING | UUID of the employee-to-sales-territory assignment. |
+| `employee_id` | STRING | UUID of the employee in `sales_employee`. |
+| `employee_no` | STRING | Employee number. |
+| `sale_territory_id` | STRING | UUID of the sales territory in `sales_sales_territory`. |
+| `start_date` | DATETIME | Timestamp the assignment starts. |
+| `end_date` | DATE | Date the assignment ends (NULL = open-ended). |
+| `alternate_level` | INT64 | Assignment level of the employee in the territory (1 = main, 2 = alternate). |
+| `is_primary` | BOOL | Flag marking the employee's primary territory. |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

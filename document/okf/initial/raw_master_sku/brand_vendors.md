@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "brand_vendors"
-description: "One row = one record of source table `brand_vendors` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one brand supplied by one vendor, a record of source table `brand_vendors` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_master_sku&t=brand_vendors&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_master_sku
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/master_sku/brand_vendors/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `brand_vendors` table from MASTER_SKU; nothing is cleaned or deduplicated here. Used by: [validated_master_sku.brand_vendors](/validated/validated_master_sku/brand_vendors.md).
+External table over AVRO files in `gs://file-raw-data/master_sku/brand_vendors/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `brand_vendors` table from MASTER_SKU; nothing is cleaned or deduplicated here. Table meaning: Links between master_sku brands and the vendors that supply them; products reference this link to get their vendor. Used by: [validated_master_sku.brand_vendors](/validated/validated_master_sku/brand_vendors.md).
 
 # Grain and key
 
@@ -30,16 +30,16 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `brand_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vendor_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sort_order` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `image_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | STRING | Unique identifier (UUID) of the brand-vendor link. |
+| `brand_id` | STRING | Brand (FK to `brands.id`). |
+| `vendor_id` | STRING | Vendor that supplies the brand (FK to `vendors.id`). |
+| `sort_order` | INT64 | Display order of the brand for the vendor. |
+| `image_name` | STRING | File name of the brand logo image for this vendor. |
+| `status` | STRING | Record status (`Active`, `Inactive`, `Deleted`). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

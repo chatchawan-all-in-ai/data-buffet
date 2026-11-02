@@ -33,7 +33,7 @@ Uniqueness key: (`month_date`, `store_code`, `branch_code`, `sales_channel`, `pr
 | Column | Type | Description |
 |---|---|---|
 | `month_date` | DATE | Month key (partition column): daily date for the current month, month-end date for closed months. Group by DATE_TRUNC(month_date, MONTH). |
-| `store_code` | STRING | Retail-chain (store) code as sent by the chain (e.g. HP/MH/BT/GB/TW/DH, inferred from curated docs); joins dim_region.RegionID for the region sets. |
+| `store_code` | STRING | Retail-chain (store) code: HP, MH, BT, GB, TW or DH, set per chain feed in the curated_saleout_mdt build; joins dim_region.RegionID for the region sets. |
 | `branch_code` | STRING | Branch code/name as sent by the chain (trimmed when matched). |
 | `sales_channel` | STRING | Sales channel from the source, '-' when the source grain has none. |
 | `product_code` | STRING | Product code as the chain sent it (leading zeros stripped for the dim match). |

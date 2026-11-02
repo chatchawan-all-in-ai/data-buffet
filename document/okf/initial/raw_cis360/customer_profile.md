@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "customer_profile"
-description: "One row = one record of source table `customer_profile` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one customer profile, a record of source table `customer_profile` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_cis360&t=customer_profile&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_cis360
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/cis360/customer_profile/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_profile` table from CIS360; nothing is cleaned or deduplicated here. Used by: [validated_cis360.customer_profile](/validated/validated_cis360/customer_profile.md).
+External table over AVRO files in `gs://file-raw-data/cis360/customer_profile/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_profile` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Master customer profiles of the CIS360 customer 360 system (individuals and juristic persons) with type, status, KYC and verification flags; `customer_code` links them to MAC5 customers in `dim_customer`. Used by: [validated_cis360.customer_profile](/validated/validated_cis360/customer_profile.md).
 
 # Grain and key
 
@@ -30,32 +30,32 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `allkons_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `tax_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_type_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_profile_type_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_status_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `image_profile_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `prefix_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `first_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `middle_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `last_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `full_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `kyc_status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `active_status` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_dopa` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_dbd` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_allow_concern` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_delete` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | STRING | Unique identifier (UUID) of the customer profile. |
+| `allkons_id` | STRING | Identifier of the customer's Allkons ID account (32-character ID). |
+| `tax_id` | STRING | Tax identification number of the customer (13-digit Thai tax or national ID). |
+| `customer_id` | STRING | External customer identifier (not populated in current data). |
+| `customer_type_id` | INT64 | Customer type (`customer_type.id`: 1 = PERSONAL, 2 = JURISTIC). |
+| `customer_profile_type_id` | INT64 | Customer profile type (`customer_profile_type.id`: 1 = PERSONAL, 2 = JURISTIC, 3 = OFFICE_BRAND, 4 = OFFICE). |
+| `customer_status_id` | INT64 | Customer status (`customer_status.id`: 1 = VISITOR, 2 = CUSTOMER). |
+| `image_profile_id` | STRING | Identifier of the customer's profile image file. |
+| `customer_code` | STRING | CIS360 customer code (`C` + 7 digits), matched to `match_customer.customer_allkon` to link MAC5 customers. |
+| `prefix_id` | INT64 | Name prefix (title) of the customer (`prefix.id`). |
+| `first_name` | STRING | First name of the customer (individual). |
+| `middle_name` | STRING | Middle name of the customer (individual). |
+| `last_name` | STRING | Last name of the customer (individual). |
+| `full_name` | STRING | Full display name of the customer (person or company). |
+| `kyc_status` | STRING | KYC verification status (`APPROVE`, `WAIT_FOR_APPROVE`, `REQUEST_MORE`, `REJECT`, `NONE`). |
+| `active_status` | BOOL | Whether the customer profile is active. |
+| `is_dopa` | BOOL | Whether the person's identity was verified with the Department of Provincial Administration (DOPA). |
+| `is_dbd` | BOOL | Whether the juristic person was verified with the Department of Business Development (DBD). |
+| `is_allow_concern` | BOOL | Whether the customer gave consent for use of personal data. |
+| `is_delete` | BOOL | Soft-delete flag (TRUE = record deleted). |
+| `create_date` | STRING | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | STRING | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

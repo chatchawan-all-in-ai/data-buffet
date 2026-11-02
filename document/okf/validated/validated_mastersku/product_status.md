@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "product_status"
-description: "One row = one cleaned copy of the source table `product_status`, unique on (ps_id)."
+description: "One row = one product status from source table `product_status`, unique on (ps_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mastersku&t=product_status&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mastersku
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MASTERSKU `product_status`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MASTERSKU `product_status`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Lookup of MASTERSKU product statuses (On, Off, Draft, Pending, Approve, Reject, InActive By Allkons).
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,11 +34,11 @@ One row per `ps_id`. The key is declared twice in the definition (`uniqueKey` an
 
 | Column | Type | Description |
 |---|---|---|
-| `ps_id` | STRING | Meaning not documented in the repo. |
-| `ps_name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `ps_is_use` | BOOL | Meaning not documented in the repo. |
-| `ps_created_date` | DATETIME | Meaning not documented in the repo. |
-| `ps_updated_date` | DATETIME | Meaning not documented in the repo. |
+| `ps_id` | STRING | Unique identifier (UUID) of the product status. |
+| `ps_name` | STRING | Product status name (`On`, `Off`, `Draft`, `Pending`, `Approve`, `Reject`, `InActive By Allkons`). |
+| `ps_is_use` | BOOL | In-use flag of the record (FALSE = retired from use). |
+| `ps_created_date` | DATETIME | Timestamp when the record was created. |
+| `ps_updated_date` | DATETIME | Timestamp when the record was last updated. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

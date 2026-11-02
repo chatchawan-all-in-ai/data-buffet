@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_approval_log"
-description: "One row = one cleaned copy of the source table `crm_sale_order_approval_log`, unique on (sale_order_approval_log_id)."
+description: "One row = one approval action on a sale order from source table `crm_sale_order_approval_log`, unique on (sale_order_approval_log_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_sale_order_approval_log&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_sale_order_approval_log`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_sale_order_approval_log`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Log of approval actions (approve, reject, credit and pay-in approvals) on DERP sale orders with the status change.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,25 +34,25 @@ One row per `sale_order_approval_log_id`. The key is declared twice in the defin
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_approval_log_id` | STRING | Meaning not documented in the repo. |
-| `sale_order_id` | STRING | Meaning not documented in the repo. |
-| `so_no` | STRING | Meaning not documented in the repo. |
-| `rev_no` | INT64 | Meaning not documented in the repo. |
-| `action_type` | STRING | Meaning not documented in the repo. |
-| `prev_status` | STRING | Meaning not documented in the repo. |
-| `next_status` | STRING | Meaning not documented in the repo. |
-| `payment_type` | STRING | Meaning not documented in the repo. |
-| `reject_reason_code` | STRING | Meaning not documented in the repo. |
-| `reject_reason_name` | STRING | Meaning not documented in the repo. |
-| `note` | STRING | Meaning not documented in the repo. |
-| `context_data` | STRING | Meaning not documented in the repo. |
-| `notified_at` | DATETIME | Meaning not documented in the repo. |
-| `notified_via` | STRING | Meaning not documented in the repo. |
-| `action_by` | STRING | Meaning not documented in the repo. |
-| `action_by_name` | STRING | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
+| `sale_order_approval_log_id` | STRING | Unique identifier of the approval log entry. |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `so_no` | STRING | Sale order number of the parent sale order (e.g. `A2610000106`). |
+| `rev_no` | INT64 | Sale order revision number this record belongs to. |
+| `action_type` | STRING | Approval action taken (e.g. `APPROVE`, `REJECT`, `CREDIT_APPROVE`, `PAYIN_APPROVE_CASH`, `PAYIN_APPROVE_DEPOSIT`, `PAYIN_RETURN`). |
+| `prev_status` | STRING | Sale order status code before the action (same codes as `crm_sale_order.status`). |
+| `next_status` | STRING | Sale order status code after the action (same codes as `crm_sale_order.status`). |
+| `payment_type` | STRING | Payment type of the order at the time of the action (`CASH`, `CREDIT` or `OTHER`). |
+| `reject_reason_code` | STRING | Rejection reason code (e.g. `01`). |
+| `reject_reason_name` | STRING | Rejection reason description in Thai. |
+| `note` | STRING | Free-text note from the approver. |
+| `context_data` | STRING | JSON with extra context of the action (e.g. attached files, revision number, creation source). |
+| `notified_at` | DATETIME | Timestamp when the notification about the action was sent. |
+| `notified_via` | STRING | Channel the notification was sent through (e.g. `IN_SYSTEM`). |
+| `action_by` | STRING | Identifier of the user who performed the action. |
+| `action_by_name` | STRING | Display name of the user who performed the action. |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

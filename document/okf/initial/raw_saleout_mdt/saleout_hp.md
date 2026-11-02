@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "saleout_hp"
-description: "One row = one record of source table `saleout_hp` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one article, branch and sale date, a record of source table `saleout_hp` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=saleout_hp&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_saleout_mdt
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/hp/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `saleout_hp` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Used by: [validated_saleout_mdt.saleout_hp](/validated/validated_saleout_mdt/saleout_hp.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/hp/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `saleout_hp` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Daily sell-out of the company products at HomePro and MegaHome branches (quantity and amount per article, branch and day). Used by: [validated_saleout_mdt.saleout_hp](/validated/validated_saleout_mdt/saleout_hp.md).
 
 # Grain and key
 
@@ -30,24 +30,24 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `CRDATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `PERIODTYPE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `PERIODDATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `VENDORNO` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `VENDORNAME` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `SITENO` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `SITENAME` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ITEMNO` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MCH3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MCH2DESC` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MCH1DESC` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ARTNO` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ARTDESC` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ARTEAN` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `VDARTNO` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `VDARTDESC` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `QTY` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `VALUE` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `CRDATE` | STRING | Date-time HomePro created the report file (`DD/MM/YYYY HH:MM`). |
+| `PERIODTYPE` | STRING | Report period type (`D` = daily, `M` = monthly). |
+| `PERIODDATE` | STRING | Sale date (`DD/MM/YYYY`). |
+| `VENDORNO` | STRING | HomePro vendor number of the supplier (the company). |
+| `VENDORNAME` | STRING | Supplier (vendor) name as registered at HomePro. |
+| `SITENO` | STRING | HomePro/MegaHome branch code (`S...` = HomePro, `M...` = MegaHome). |
+| `SITENAME` | STRING | Branch name. |
+| `ITEMNO` | STRING | Item sequence number of the article line in the report. |
+| `MCH3` | STRING | HomePro merchandise category code (e.g. `PB` = plumbing, `DW` = door and window). |
+| `MCH2DESC` | STRING | HomePro merchandise category, second level, description. |
+| `MCH1DESC` | STRING | HomePro merchandise category, lowest level, description. |
+| `ARTNO` | STRING | HomePro article (product) number. |
+| `ARTDESC` | STRING | HomePro article description (product name). |
+| `ARTEAN` | STRING | HomePro in-store EAN barcode (starts with `24`), not a product barcode. |
+| `VDARTNO` | STRING | Vendor article number: the GS1 barcode (starts with `885`) used to match `dim_product_master.Barcode`. |
+| `VDARTDESC` | STRING | Vendor article description as registered at HomePro. |
+| `QTY` | INT64 | Sales quantity (negative = return). |
+| `VALUE` | FLOAT64 | Sales amount (THB; negative = return). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

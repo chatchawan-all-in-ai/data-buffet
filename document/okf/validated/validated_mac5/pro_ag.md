@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "pro_ag"
-description: "One row = one promotion (AG), unique on (company_id, proagid, proagstkcode)."
+description: "One row = one product in an Agent-channel promotion (per company), unique on (company_id, proagid, proagstkcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=pro_ag&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `pro_ag`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: promotion (AG). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `pro_ag`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Products included in Agent (AG) channel promotions of the MAC5 ERP, with promotion set code, period and region.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,14 +35,14 @@ One row per `company_id`, `proagid`, `proagstkcode`. The key is declared twice i
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `proagid` | INT64 | Meaning not documented in the repo. |
-| `proagstkcode` | STRING | Meaning not documented in the repo. |
-| `proagsttcode` | STRING | Meaning not documented in the repo. |
-| `proagstt` | STRING | Meaning not documented in the repo. |
-| `proagstrdate` | DATE | Meaning not documented in the repo. |
-| `proagenddate` | DATE | Meaning not documented in the repo. |
-| `proagregion` | STRING | Meaning not documented in the repo. |
-| `dinsert` | DATETIME | Meaning not documented in the repo. |
+| `proagid` | INT64 | Running ID of the promotion item row. |
+| `proagstkcode` | STRING | Stock (product) code included in the promotion. |
+| `proagsttcode` | STRING | Promotion set code the product belongs to (numeric, e.g. `80164`). |
+| `proagstt` | STRING | Promotion item status flag (`y` = active). |
+| `proagstrdate` | DATE | Start date of the promotion period. |
+| `proagenddate` | DATE | End date of the promotion period. |
+| `proagregion` | STRING | Region the promotion applies to (`ALL` = all regions). |
+| `dinsert` | DATETIME | Date and time the row was inserted. |
 
 # How it is built
 

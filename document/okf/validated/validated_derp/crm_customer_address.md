@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_customer_address"
-description: "One row = one cleaned copy of the source table `crm_customer_address`, unique on (customer_address_id)."
+description: "One row = one customer address from source table `crm_customer_address`, unique on (customer_address_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_customer_address&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_customer_address`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_customer_address`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Business, delivery and invoice addresses of CRM customers, with Thai administrative codes and coordinates.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,35 +34,35 @@ One row per `customer_address_id`. The key is declared twice in the definition (
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_address_id` | STRING | Meaning not documented in the repo. |
-| `customer_master_id` | STRING | Meaning not documented in the repo. |
-| `customer_code` | STRING | Meaning not documented in the repo. |
-| `address_type` | STRING | Meaning not documented in the repo. |
-| `address_name` | STRING | Meaning not documented in the repo. |
-| `address_full` | STRING | Meaning not documented in the repo. |
-| `address_detail` | STRING | Meaning not documented in the repo. |
-| `location` | STRING | Meaning not documented in the repo. |
-| `sub_district` | STRING | Meaning not documented in the repo. |
-| `sub_district_code` | STRING | Meaning not documented in the repo. |
-| `district` | STRING | Meaning not documented in the repo. |
-| `district_code` | STRING | Meaning not documented in the repo. |
-| `province` | STRING | Meaning not documented in the repo. |
-| `province_code` | STRING | Meaning not documented in the repo. |
-| `postal_code` | STRING | Meaning not documented in the repo. |
-| `country_code` | STRING | Meaning not documented in the repo. |
-| `latitude` | FLOAT64 | Meaning not documented in the repo. |
-| `longitude` | FLOAT64 | Meaning not documented in the repo. |
-| `delivery_note` | STRING | Meaning not documented in the repo. |
-| `is_primary` | BOOL | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `map_url` | STRING | Meaning not documented in the repo. |
-| `is_sync` | BOOL | Meaning not documented in the repo. |
+| `customer_address_id` | STRING | UUID of the customer address record. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
+| `address_type` | STRING | Address purpose (`Business`, `Delivery`, `Invoice`). |
+| `address_name` | STRING | Name or label of the address. |
+| `address_full` | STRING | Full address as one text string. |
+| `address_detail` | STRING | Address detail line (house number, building, street). |
+| `location` | STRING | Location (address) ID of the address in the ERP. |
+| `sub_district` | STRING | Sub-district (tambon or khwaeng) name. |
+| `sub_district_code` | STRING | Sub-district code (6-digit Thai administrative code). |
+| `district` | STRING | District (amphoe or khet) name. |
+| `district_code` | STRING | District code (4-digit Thai administrative code). |
+| `province` | STRING | Province name. |
+| `province_code` | STRING | Province code (2-digit Thai administrative code). |
+| `postal_code` | STRING | Postal code. |
+| `country_code` | STRING | Country code (ISO 3166 alpha-3, e.g. `THA`). |
+| `latitude` | FLOAT64 | Latitude of the location in decimal degrees. |
+| `longitude` | FLOAT64 | Longitude of the location in decimal degrees. |
+| `delivery_note` | STRING | Delivery instructions for the address. |
+| `is_primary` | BOOL | Flag marking the customer's primary address of this type. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `map_url` | STRING | Map link (e.g. Google Maps URL) of the location. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

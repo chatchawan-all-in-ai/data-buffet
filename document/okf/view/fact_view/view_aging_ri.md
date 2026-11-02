@@ -38,20 +38,20 @@ One row per aging document: (`companyID`, `cfsVnosID`, `cfsTypeID`), i.e. one in
 | `invoiceDate` | DATE | Document date of the invoice (type IS) or credit/debit note (BS/AS) built from `mihYear/mihMonth/mihDay`. |
 | `cfsVnosID` | STRING | Document number (`mihVnos`) of the invoice or note; with `companyID` and `cfsTypeID` it identifies the row. Joins to `dim_invoice.mihVnos` and `fact_mir_vs.mirbinvno`. |
 | `cfsTypeID` | STRING | Document type: `IS` = invoice, `BS` = credit note (feeds CreditNoteAmount), `AS` = debit note (feeds DebitNoteAmount). |
-| `cfsJob` | STRING | Job code of the document (`mihJob`). |
-| `cfsDep` | STRING | Department code of the document (`mihDep`); joined to `view_dim_channel.DepCode` to find the channel. |
-| `cfsPer` | STRING | Sales-person code of the document (`mihPer`). |
-| `debCode` | STRING | Customer code (`mihCus`); matches `dim_customer.debcode`. |
+| `cfsJob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
+| `cfsDep` | STRING | Department code of the document, used as the sales channel code. |
+| `cfsPer` | STRING | Salesperson (employee) code, matching `per.percode`. |
+| `debCode` | STRING | Customer (debtor) code. |
 | `debName` | STRING | Customer Thai name from `dim_customer.debnamet`. |
 | `calCreditTerm` | INT64 | Credit term in days used in the aging calculation; equals `transCreditTerm` (`mihstanding` of the document). |
-| `debCreditTerm` | INT64 | Credit term in days from the customer master (`dim_customer.DEBcreditTerm`); informational, not used in DayRange. |
+| `debCreditTerm` | INT64 | Credit term in days. |
 | `transCreditTerm` | INT64 | Credit term in days stored on the document itself (`mihstanding`). |
-| `debLimit` | FLOAT64 | Customer credit limit from `dim_customer.debLimit`. |
-| `debMemo` | STRING | Customer memo text from `dim_customer.debMemo`. |
+| `debLimit` | FLOAT64 | Credit limit of the customer in baht. |
+| `debMemo` | STRING | Free-text memo on the customer. |
 | `channel` | STRING | Always NULL (`dim_aging` writes `CAST(NULL AS STRING)`). |
-| `mihRef2` | STRING | Always NULL in `dim_aging`; the real reference is exposed as `PoNumber` (from `dim_invoice.mihRef2`). |
-| `mihNote` | STRING | Free-text notes of the document (`mihnotes`). |
-| `mihRef1` | STRING | Pipe-separated (`/`) list of linked document numbers (`InvoiceRef`): an invoice lists its credit/debit notes and a note lists its invoice. |
+| `mihRef2` | STRING | Always NULL as an aging-schema placeholder. |
+| `mihNote` | STRING | Free-text notes such as delivery instructions or site details. |
+| `mihRef1` | STRING | Distinct linked document numbers separated by pipes: credit/debit notes for IS rows and referenced invoices for BS/AS rows, with links in the closed-invoice exclusion list omitted. |
 | `TotalAmount` | FLOAT64 | Net amount of the document (`mihNetSum`, rounded to 2 decimals for notes). |
 | `PaymentAmount` | FLOAT64 | Amount received against the document (`RiAmount`): sum of RS receipt lines (cheque-adjusted); equals TotalAmount for old documents flagged complete by status. |
 | `CreditNoteAmount` | FLOAT64 | Credit-note (BS) amount linked to the invoice (`mil.milSum * 1.07`, so VAT-inclusive at a fixed 7%); a BS row carries its own amount. |
@@ -69,10 +69,10 @@ One row per aging document: (`companyID`, `cfsVnosID`, `cfsTypeID`), i.e. one in
 | `minCustomerReceiptAgeDay` | INT64 | Minimum `ReceiptAgeDays` over all rows with the same `debcode` (window `PARTITION BY debcode`, not by company); NULL when the customer has no completed document. |
 | `maxCustomerReceiptAgeDay` | INT64 | Maximum `ReceiptAgeDays` over all rows with the same `debcode`. |
 | `ReceiptAgeDays` | INT64 | For Completed documents: days from invoiceDate to MaxReceiveDate; NULL when not completed. |
-| `PoNumber` | STRING | Customer PO reference: `dim_invoice.mihRef2` of the invoice (join on InvoiceSK). |
+| `PoNumber` | STRING | Customer purchase-order or external order reference number. |
 | `ReportName` | STRING | `dim_aging_rang.ReportName` for the row's aging bucket (join on AgingRangSK); NULL when no bucket matches (mds currently only has ranges for ag01 per the view_dim_aging comment). |
-| `mirdesc` | STRING | Description of the billing line from `fact_mir_vs.mirdesc` (join on BillingSK). |
-| `mirnotes` | STRING | Notes of the billing line from `fact_mir_vs.mirnotes`. |
+| `mirdesc` | STRING | Description copied from the referenced invoice. |
+| `mirnotes` | STRING | Notes copied from the referenced invoice. |
 | `ri_information` | STRING | Multi-line text, one numbered line per receipt (RS) document of the invoice, ordered by receive date: `n. (Y/N) <receipt no> / <receive date> / (<status code>) <status name>`. `(Y)` = receipt counts (FlagUse), `(N)` = excluded status. |
 | `ri_amt` | STRING | Multi-line text (STRING, not numeric), one numbered line per receipt: `n. (Y/N) <receipt no> / <amount, 2 decimals> / เช็คปกติ/เช็คเด้ง [/ adjusted amount]`; `เช็คเด้ง` = bounced cheque, in which case the cheque-adjusted amount is appended. |
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "userloginanyprogram"
-description: "One row = one record of source table `userloginanyprogram` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one login account for one web application, a record of source table `userloginanyprogram` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=userloginanyprogram&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/userloginanyprogram/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `userloginanyprogram` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.userloginanyprogram](/validated/validated_mac5/userloginanyprogram.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/userloginanyprogram/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `userloginanyprogram` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Login accounts for the MAC5 companion web applications (pay-in, bill payment, billing, promotion master), with user department and permission level. Used by: [validated_mac5.userloginanyprogram](/validated/validated_mac5/userloginanyprogram.md).
 
 # Grain and key
 
@@ -30,18 +30,18 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `username` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `password` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `actionapp` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `notes` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `department` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `levelaction` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `email` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `token` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `tokenexpiry` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `istokenvalid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Running ID of the login account row. |
+| `username` | STRING | Login user name (usually the employee code). |
+| `password` | STRING | Account password, stored as a bcrypt hash or as plain text. |
+| `actionapp` | STRING | Web application the login is for (PayinOnline, Billpayment, BillingOnline, MasterPromotion, ManagementTAOut). |
+| `name` | STRING | Full name of the user. |
+| `notes` | STRING | Free-text note on the user's section or role (e.g. general accounting, credit). |
+| `department` | STRING | Department of the user (e.g. Account, Admin, Marketing, IT). |
+| `levelaction` | STRING | Extra permission level in the application (e.g. `printBilling`, `CheckPayment`). |
+| `email` | STRING | Email address of the user. |
+| `token` | STRING | Access or reset token issued to the account. |
+| `tokenexpiry` | STRING | Expiry date and time of `token`. |
+| `istokenvalid` | STRING | Flag whether `token` is still valid (1 = valid, 0 = not). |
 
 # How it is built
 

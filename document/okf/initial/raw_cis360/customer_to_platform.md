@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "customer_to_platform"
-description: "One row = one record of source table `customer_to_platform` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one customer-platform link, a record of source table `customer_to_platform` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_cis360&t=customer_to_platform&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_cis360
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/cis360/customer_to_platform/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_to_platform` table from CIS360; nothing is cleaned or deduplicated here. Used by: [validated_cis360.customer_to_platform](/validated/validated_cis360/customer_to_platform.md).
+External table over AVRO files in `gs://file-raw-data/cis360/customer_to_platform/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_to_platform` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Which platforms (Allkons ID, Allkons M buyer/seller, AMRP, D365, CIS360) each CIS360 customer profile is registered on. Used by: [validated_cis360.customer_to_platform](/validated/validated_cis360/customer_to_platform.md).
 
 # Grain and key
 
@@ -30,17 +30,17 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_profile_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `platform_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_relationship_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_delete` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | STRING | Unique identifier (UUID) of the customer-platform link. |
+| `customer_profile_id` | STRING | Customer profile linked to the platform (`customer_profile.id`). |
+| `platform_id` | INT64 | Platform the customer is registered on (1 = ALLKONS_M_BUYER, 2 = ALLKONS_M_SELLER, 4 = ALLKONS_ID, 6 = ALLKONS_AMRP, 8 = CIS360, 14 = D365). |
+| `create_relationship_date` | STRING | Date and time the customer was linked to the platform. |
+| `is_delete` | BOOL | Soft-delete flag (TRUE = record deleted). |
+| `create_date` | STRING | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | STRING | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

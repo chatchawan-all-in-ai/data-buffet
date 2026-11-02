@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "report_sale_subscription"
-description: "One row = one cleaned source record of `report_sale_subscription` (no declared key; append-style, not deduplicated)."
+description: "One row = one SKU at one Thai Watsadu branch in one daily file from source table `report_sale_subscription` (no declared key; append-style, not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_saleout_mdt&t=report_sale_subscription&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_saleout_mdt
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of SALEOUT_MDT `report_sale_subscription`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of SALEOUT_MDT `report_sale_subscription`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Daily Thai Watsadu (TW) sales-and-stock report for the company products: sales on the last sold date, stock on hand and on order per branch and SKU.
 Used by: [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md), [curated_saleout_mdt.curated_stock_mdt](/curated/curated_saleout_mdt/curated_stock_mdt.md).
 
 # Grain and key
@@ -34,20 +34,20 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 
 | Column | Type | Description |
 |---|---|---|
-| `Store` | STRING | Meaning not documented in the repo. |
-| `Cat` | STRING | Meaning not documented in the repo. |
-| `Sub_Cat` | STRING | Meaning not documented in the repo. |
-| `Brand` | STRING | Meaning not documented in the repo. |
-| `SKU` | STRING | Meaning not documented in the repo. |
-| `Barcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `Description` | STRING | Meaning not documented in the repo. |
-| `Product_Type` | STRING | Meaning not documented in the repo. |
-| `Sales_Amount` | FLOAT64 | Meaning not documented in the repo. |
-| `Sales_Qty` | INT64 | Meaning not documented in the repo. |
-| `Stock_On_Hand` | FLOAT64 | Meaning not documented in the repo. |
-| `Stock_On_Order` | INT64 | Meaning not documented in the repo. |
-| `Last_Sold_Date` | DATE | Meaning not documented in the repo. |
-| `Last_Receive_Date` | DATE | Meaning not documented in the repo. |
+| `Store` | STRING | Thai Watsadu branch as code plus name (e.g. `60001-CRC Thai Watsadu ...`), used as the branch code. |
+| `Cat` | STRING | Thai Watsadu category code (e.g. `002`). |
+| `Sub_Cat` | STRING | Thai Watsadu sub-category code (e.g. `004`). |
+| `Brand` | STRING | Product brand. |
+| `SKU` | STRING | Thai Watsadu SKU (zero-padded). |
+| `Barcode` | STRING | Product barcode (EAN-13). |
+| `Description` | STRING | Product description (name). |
+| `Product_Type` | STRING | Stock location type of the row (e.g. `Branch`). |
+| `Sales_Amount` | FLOAT64 | Sales amount of the SKU at the branch (THB). |
+| `Sales_Qty` | INT64 | Sales quantity of the SKU at the branch. |
+| `Stock_On_Hand` | FLOAT64 | Stock quantity on hand at the branch. |
+| `Stock_On_Order` | INT64 | Stock quantity on open purchase orders. |
+| `Last_Sold_Date` | DATE | Date the SKU was last sold at the branch. |
+| `Last_Receive_Date` | DATE | Date the SKU was last received at the branch. |
 | `ASATDATE` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sales_by_branch"
-description: "One row = one cleaned copy of the source table `sales_by_branch`, unique on (vendor_id, branch)."
+description: "One row = one Boonthavorn branch for one report date from source table `sales_by_branch`, unique on (vendor_id, branch)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_saleout_mdt&t=sales_by_branch&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_saleout_mdt
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of SALEOUT_MDT `sales_by_branch`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of SALEOUT_MDT `sales_by_branch`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Boonthavorn (BT) sales summary of the company products per branch: month-to-date and year-to-date amount, quantity and square metres against last year.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,29 +34,29 @@ One row per `vendor_id`, `branch`. The key is declared twice in the definition (
 
 | Column | Type | Description |
 |---|---|---|
-| `vendor_id` | STRING | Meaning not documented in the repo. |
-| `vendor_name` | STRING | Meaning not documented in the repo. |
-| `branch` | STRING | Meaning not documented in the repo. |
-| `mtd_last_year` | FLOAT64 | Meaning not documented in the repo. |
-| `mtd_current_year` | FLOAT64 | Meaning not documented in the repo. |
-| `mtd_growth` | STRING | Meaning not documented in the repo. |
-| `ytd_last_year` | FLOAT64 | Meaning not documented in the repo. |
-| `ytd_current_year` | FLOAT64 | Meaning not documented in the repo. |
-| `ytd_growth` | STRING | Meaning not documented in the repo. |
-| `mtd_last_year_qty` | FLOAT64 | Meaning not documented in the repo. |
-| `mtd_curr_year_qty` | FLOAT64 | Meaning not documented in the repo. |
-| `mtd_pct_growth_qty` | FLOAT64 | Meaning not documented in the repo. |
-| `ytd_last_year_qty` | FLOAT64 | Meaning not documented in the repo. |
-| `ytd_curr_year_qty` | FLOAT64 | Meaning not documented in the repo. |
-| `ytd_pct_growth_qty` | FLOAT64 | Meaning not documented in the repo. |
-| `mtd_last_year_sqm` | FLOAT64 | Meaning not documented in the repo. |
-| `mtd_curr_year_sqm` | FLOAT64 | Meaning not documented in the repo. |
-| `mtd_pct_growth_sqm` | FLOAT64 | Meaning not documented in the repo. |
-| `ytd_last_year_sqm` | FLOAT64 | Meaning not documented in the repo. |
-| `ytd_curr_year_sqm` | FLOAT64 | Meaning not documented in the repo. |
-| `ytd_pct_growth_sqm` | FLOAT64 | Meaning not documented in the repo. |
-| `start_date` | DATE | Meaning not documented in the repo. |
-| `end_date` | DATE | Meaning not documented in the repo. |
+| `vendor_id` | STRING | Boonthavorn vendor code of the supplier (the company), e.g. `10009`. |
+| `vendor_name` | STRING | Supplier (vendor) name as registered at Boonthavorn. |
+| `branch` | STRING | Boonthavorn branch name in Thai, used as the branch code. |
+| `mtd_last_year` | FLOAT64 | Month-to-date sales amount for the same period last year (THB). |
+| `mtd_current_year` | FLOAT64 | Month-to-date sales amount this year (THB). |
+| `mtd_growth` | STRING | Month-to-date sales growth versus last year, as percentage text (e.g. `-4.8%`). |
+| `ytd_last_year` | FLOAT64 | Year-to-date sales amount for the same period last year (THB). |
+| `ytd_current_year` | FLOAT64 | Year-to-date sales amount this year (THB). |
+| `ytd_growth` | STRING | Year-to-date sales growth versus last year, as percentage text (e.g. `67.51%`). |
+| `mtd_last_year_qty` | FLOAT64 | Month-to-date sales quantity for the same period last year. |
+| `mtd_curr_year_qty` | FLOAT64 | Month-to-date sales quantity this year. |
+| `mtd_pct_growth_qty` | FLOAT64 | Month-to-date sales quantity growth versus last year, in percent. |
+| `ytd_last_year_qty` | FLOAT64 | Year-to-date sales quantity for the same period last year. |
+| `ytd_curr_year_qty` | FLOAT64 | Year-to-date sales quantity this year. |
+| `ytd_pct_growth_qty` | FLOAT64 | Year-to-date sales quantity growth versus last year, in percent. |
+| `mtd_last_year_sqm` | FLOAT64 | Month-to-date sales in square metres for the same period last year. |
+| `mtd_curr_year_sqm` | FLOAT64 | Month-to-date sales in square metres this year. |
+| `mtd_pct_growth_sqm` | FLOAT64 | Month-to-date square-metre sales growth versus last year, in percent. |
+| `ytd_last_year_sqm` | FLOAT64 | Year-to-date sales in square metres for the same period last year. |
+| `ytd_curr_year_sqm` | FLOAT64 | Year-to-date sales in square metres this year. |
+| `ytd_pct_growth_sqm` | FLOAT64 | Year-to-date square-metre sales growth versus last year, in percent. |
+| `start_date` | DATE | First day of the reporting period. |
+| `end_date` | DATE | Last day covered by the report (figures are counted up to this date). |
 | `ASATDATE` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of SALEOUT_MDT `stock_by_branch`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of SALEOUT_MDT `stock_by_branch`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Daily on-hand stock (quantity and cost value) of the company products at each Boonthavorn (BT) branch.
 Used by: [curated_saleout_mdt.curated_stock_mdt](/curated/curated_saleout_mdt/curated_stock_mdt.md).
 
 # Grain and key
@@ -34,17 +34,17 @@ One row per cleaned tuple `(vendor_id, branch, article_id, end_date, asatdate)`,
 
 | Column | Type | Description |
 |---|---|---|
-| `vendor_id` | STRING | Meaning not documented in the repo. |
-| `vendor_name` | STRING | Meaning not documented in the repo. |
-| `branch` | STRING | Meaning not documented in the repo. |
-| `mch3` | STRING | Meaning not documented in the repo. |
-| `article_id` | STRING | Meaning not documented in the repo. |
-| `article_name_th` | STRING | Meaning not documented in the repo. |
-| `item_flag` | STRING | Meaning not documented in the repo. |
-| `ur_qty` | INT64 | Likely quantity (inferred from the column name only; not documented in the repo). |
-| `ur_cost_amt` | FLOAT64 | Meaning not documented in the repo. |
-| `start_date` | DATE | Meaning not documented in the repo. |
-| `end_date` | DATE | Meaning not documented in the repo. |
+| `vendor_id` | STRING | Boonthavorn vendor code of the supplier (the company), e.g. `10009`. |
+| `vendor_name` | STRING | Supplier (vendor) name as registered at Boonthavorn. |
+| `branch` | STRING | Boonthavorn branch name in Thai, used as the branch code. |
+| `mch3` | STRING | Boonthavorn merchandise category, top level (department). |
+| `article_id` | STRING | Boonthavorn article (product) code. |
+| `article_name_th` | STRING | Product name in Thai. |
+| `item_flag` | STRING | Item movement flag (`REGULAR`, `FAST`, `DISCON` = discontinued). |
+| `ur_qty` | INT64 | Unrestricted (available) stock quantity on hand. |
+| `ur_cost_amt` | FLOAT64 | Value of the unrestricted stock at cost (THB). |
+| `start_date` | DATE | Stock snapshot date (same as `end_date`). |
+| `end_date` | DATE | Stock snapshot date. |
 | `ASATDATE` | DATE | Extract date (raw ASATDATE parsed to DATE); part of the deduplication tuple and the storage partition. It does not break ties within the tuple. |
 
 # How it is built

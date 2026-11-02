@@ -36,7 +36,7 @@ One row per assignment: unique per (EmployeeID, BranchCodeMdt, MarketingGroupID)
 | `EmployeeID` | STRING | PC employee id (mds `employee_id`, trimmed, empty to NULL); the -1 row uses 'NotEmployee'. 'Dummy_NotPC' marks a placeholder assignment. |
 | `EmployeeName` | STRING | PC first name (mds `employee_name`); the -1 row is the Thai text for 'unspecified'. Personal data. |
 | `EmployeeSurname` | STRING | PC surname (mds `employee_surname`); NULL on the -1 row. Personal data. |
-| `EmployeeType` | STRING | Employment type code of the PC (mds `employee_type`; values not documented in the repo); 'NotType' on the -1 row. |
+| `EmployeeType` | STRING | Employment type of the PC from mds `employee_type`: `พันธมิตร` (partner staff) or NULL; 'NotType' on the -1 row. |
 | `MarketingGroupID` | STRING | Marketing group id the PC is assigned to (mds `marketinggroupid`); the join key to product marketing groups; 'NotGroup' on the -1 row. |
 | `MarketingGroupName` | STRING | Marketing group name (mds `marketinggroup`); Thai 'unspecified marketing group' text on the -1 row. |
 | `StartDate` | DATE | First day of the assignment (mds `start_date`, DATE); NULL on the -1 row. |

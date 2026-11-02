@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "brand"
-description: "One row = one cleaned copy of the source table `brand`, unique on (bra_id)."
+description: "One row = one brand from source table `brand`, unique on (bra_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mastersku&t=brand&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mastersku
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MASTERSKU `brand`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MASTERSKU `brand`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Product brands of the old product master MASTERSKU, each owned by a vendor.
 Used by: [curated_mastersku.product_for_aisearch](/curated/curated_mastersku/product_for_aisearch.md).
 
 # Grain and key
@@ -34,19 +34,19 @@ One row per `bra_id`. The key is declared twice in the definition (`uniqueKey` a
 
 | Column | Type | Description |
 |---|---|---|
-| `bra_id` | STRING | Meaning not documented in the repo. |
-| `bra_name` | STRING | Meaning not documented in the repo. |
-| `bra_name_th` | STRING | Meaning not documented in the repo. |
-| `bra_detail` | STRING | Meaning not documented in the repo. |
-| `bra_vendor_id` | STRING | Meaning not documented in the repo. |
-| `bra_logo_name` | STRING | Meaning not documented in the repo. |
-| `bra_logo_path` | STRING | Meaning not documented in the repo. |
-| `bra_is_use` | BOOL | Meaning not documented in the repo. |
-| `bra_is_active` | BOOL | Meaning not documented in the repo. |
-| `bra_created_date` | DATETIME | Meaning not documented in the repo. |
-| `bra_created_by` | STRING | Meaning not documented in the repo. |
-| `bra_updated_date` | DATETIME | Meaning not documented in the repo. |
-| `bra_updated_by` | STRING | Meaning not documented in the repo. |
+| `bra_id` | STRING | Unique identifier (UUID) of the brand. |
+| `bra_name` | STRING | Brand name. |
+| `bra_name_th` | STRING | Brand name in Thai. |
+| `bra_detail` | STRING | Brand description. |
+| `bra_vendor_id` | STRING | Vendor that owns the brand (FK to `vendor.vd_id`). |
+| `bra_logo_name` | STRING | File name of the brand logo. |
+| `bra_logo_path` | STRING | Storage path of the brand logo. |
+| `bra_is_use` | BOOL | In-use flag of the record (FALSE = retired from use). |
+| `bra_is_active` | BOOL | Active flag of the record. |
+| `bra_created_date` | DATETIME | Timestamp when the record was created. |
+| `bra_created_by` | STRING | Identifier of the user who created the record. |
+| `bra_updated_date` | DATETIME | Timestamp when the record was last updated. |
+| `bra_updated_by` | STRING | Identifier of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mih_dummy"
-description: "One row = one document header, staging variant, unique on (company_id, MIHday, MIHmonth, MIHyear, MIHtype, MIHvnos, MIHcus)."
+description: "One row = one sales order header (per company), unique on (company_id, MIHday, MIHmonth, MIHyear, MIHtype, MIHvnos, MIHcus)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mih_dummy&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `mih_dummy`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: document header, staging variant. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `mih_dummy`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Sales order (`PS`) headers from the ERP's dummy (staging) header table, same layout as `mih`.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,80 +35,80 @@ One row per `company_id`, `MIHday`, `MIHmonth`, `MIHyear`, `MIHtype`, `MIHvnos`,
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `mihday` | INT64 | Likely day part of the document date (inferred from the column name only; not documented in the repo). |
-| `mihmonth` | INT64 | Likely month part of the document date (inferred from the column name only; not documented in the repo). |
-| `mihyear` | INT64 | Likely year part of the document date (inferred from the column name only; not documented in the repo). |
-| `mihtype` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `mihvnos` | STRING | Likely document number (inferred from the column name only; not documented in the repo). |
-| `mihcus` | STRING | Likely customer code (inferred from the column name only; not documented in the repo). |
-| `mihjob` | STRING | Meaning not documented in the repo. |
-| `mihdep` | STRING | Meaning not documented in the repo. |
-| `mihper` | STRING | Meaning not documented in the repo. |
-| `mihdoc` | STRING | Meaning not documented in the repo. |
-| `mihmec` | STRING | Meaning not documented in the repo. |
-| `mihvatno` | STRING | Meaning not documented in the repo. |
-| `mihdesc` | STRING | Meaning not documented in the repo. |
-| `mihmemo` | STRING | Meaning not documented in the repo. |
-| `mihnotes` | STRING | Meaning not documented in the repo. |
-| `mihref1` | STRING | Meaning not documented in the repo. |
-| `mihref2` | STRING | Meaning not documented in the repo. |
-| `mihref3` | STRING | Meaning not documented in the repo. |
-| `mihdischt1` | STRING | Meaning not documented in the repo. |
-| `mihdischt2` | STRING | Meaning not documented in the repo. |
-| `mihdelvsite` | STRING | Meaning not documented in the repo. |
-| `mihdelvdate` | DATETIME | Meaning not documented in the repo. |
-| `mihstanding` | INT64 | Meaning not documented in the repo. |
-| `mihlinkgl` | INT64 | Meaning not documented in the repo. |
-| `mihnouplink` | INT64 | Meaning not documented in the repo. |
-| `mihnolist` | INT64 | Meaning not documented in the repo. |
-| `mihcurc` | INT64 | Meaning not documented in the repo. |
-| `mihvatinlist` | INT64 | Meaning not documented in the repo. |
-| `mihlock` | INT64 | Meaning not documented in the repo. |
-| `mihprintn` | INT64 | Meaning not documented in the repo. |
-| `mihcheque` | INT64 | Meaning not documented in the repo. |
-| `mihcancel` | INT64 | Likely cancel flag (inferred from the column name only; not documented in the repo). |
-| `mihstatus` | INT64 | Likely status code (inferred from the column name only; not documented in the repo). |
-| `mihclearum` | INT64 | Meaning not documented in the repo. |
-| `mihctermno` | INT64 | Meaning not documented in the repo. |
-| `mihcog` | FLOAT64 | Meaning not documented in the repo. |
-| `mihvatsum` | FLOAT64 | Meaning not documented in the repo. |
-| `mihnetsum` | FLOAT64 | Meaning not documented in the repo. |
-| `mihdisclst` | FLOAT64 | Meaning not documented in the repo. |
-| `mihdischf1` | FLOAT64 | Meaning not documented in the repo. |
-| `mihdischf2` | FLOAT64 | Meaning not documented in the repo. |
-| `mihexchg` | FLOAT64 | Meaning not documented in the repo. |
-| `mihextrasum` | FLOAT64 | Meaning not documented in the repo. |
-| `mihextravat` | FLOAT64 | Meaning not documented in the repo. |
-| `mihextracut` | INT64 | Meaning not documented in the repo. |
-| `mihextramem` | STRING | Meaning not documented in the repo. |
-| `mihrecno` | STRING | Meaning not documented in the repo. |
-| `mihrecdate` | DATETIME | Meaning not documented in the repo. |
-| `mihsavetag` | STRING | Meaning not documented in the repo. |
-| `mihkeyuser` | STRING | Meaning not documented in the repo. |
-| `mihkeydate` | DATETIME | Meaning not documented in the repo. |
-| `mihdocrunno` | STRING | Meaning not documented in the repo. |
-| `mihdategl` | DATETIME | Meaning not documented in the repo. |
-| `mihduepo` | DATETIME | Meaning not documented in the repo. |
-| `miheditlk` | DATETIME | Meaning not documented in the repo. |
-| `mihiscf` | INT64 | Meaning not documented in the repo. |
-| `mihissp` | INT64 | Meaning not documented in the repo. |
-| `mihdates1` | DATETIME | Meaning not documented in the repo. |
-| `mihdates2` | DATETIME | Meaning not documented in the repo. |
-| `mihnumsi` | INT64 | Meaning not documented in the repo. |
-| `mihnumsc` | FLOAT64 | Meaning not documented in the repo. |
-| `mihvatpc` | FLOAT64 | Meaning not documented in the repo. |
-| `mihincluded` | INT64 | Meaning not documented in the repo. |
-| `mihtaxvnos` | STRING | Meaning not documented in the repo. |
-| `mihtaxdate` | DATETIME | Meaning not documented in the repo. |
-| `mihtaxsum` | FLOAT64 | Meaning not documented in the repo. |
-| `mihload` | INT64 | Meaning not documented in the repo. |
-| `mihpaiddate` | DATETIME | Meaning not documented in the repo. |
-| `mihbookordernum` | STRING | Meaning not documented in the repo. |
-| `mihsenddate` | DATETIME | Meaning not documented in the repo. |
-| `mihbl` | INT64 | Meaning not documented in the repo. |
-| `mihrpv` | INT64 | Meaning not documented in the repo. |
-| `mihclearcut` | INT64 | Meaning not documented in the repo. |
-| `mihsettlecut` | INT64 | Meaning not documented in the repo. |
+| `mihday` | INT64 | Day part of the document date. |
+| `mihmonth` | INT64 | Month part of the document date. |
+| `mihyear` | INT64 | Year part of the document date (Gregorian). |
+| `mihtype` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `mihvnos` | STRING | Document number, unique within company and document type. |
+| `mihcus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mihjob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
+| `mihdep` | STRING | Department code of the document, used as the sales channel code. |
+| `mihper` | STRING | Salesperson (employee) code, matching `per.percode`. |
+| `mihdoc` | STRING | Document print-form code of the header from the MAC5 `doc` master. |
+| `mihmec` | STRING | Memo-card code of the document, matching `mec.meccode` (holds the shop or branch name for chain-store customers). |
+| `mihvatno` | STRING | Tax invoice number of the document. |
+| `mihdesc` | STRING | Free-text document description. |
+| `mihmemo` | STRING | Free-text document memo with an optional tag enclosed in `฿` signs. |
+| `mihnotes` | STRING | Free-text notes such as delivery instructions or site details. |
+| `mihref1` | STRING | Reference document number 1 for the source quotation or sales order. |
+| `mihref2` | STRING | Customer purchase-order or external order reference number. |
+| `mihref3` | STRING | Free-text reference 3 of the document. |
+| `mihdischt1` | STRING | Header discount 1 as entered (percentage or amount text). |
+| `mihdischt2` | STRING | Header discount 2 as entered (percentage or amount text). |
+| `mihdelvsite` | STRING | Delivery site code (e.g. `0002`). |
+| `mihdelvdate` | DATETIME | Requested delivery date. |
+| `mihstanding` | INT64 | Credit term in days; due date = document date + this value. |
+| `mihlinkgl` | INT64 | General-ledger posting link status (0 = not posted). |
+| `mihnouplink` | INT64 | Code controlling updates to linked documents. |
+| `mihnolist` | INT64 | Number of line items on the document. |
+| `mihcurc` | INT64 | Currency code (0 = Thai baht). |
+| `mihvatinlist` | INT64 | Flag indicating VAT-inclusive line prices (-1 = yes, 0 = no). |
+| `mihlock` | INT64 | Flag: document locked against editing (-1 = locked). |
+| `mihprintn` | INT64 | Number of times the document has been printed. |
+| `mihcheque` | INT64 | Flag: document settled by cheque. |
+| `mihcancel` | INT64 | Cancellation flag (-1 = cancelled, 0 = active). |
+| `mihstatus` | INT64 | Document status code; meaning in `ar_s` for sales types and `ap_s` for purchase types (e.g. 26 = approved sales order, 30 = VAT sale, 32 = cancelled tax invoice). |
+| `mihclearum` | INT64 | Flag: outstanding quantities of the document cleared (0 = still open). |
+| `mihctermno` | INT64 | Payment-term number of the document. |
+| `mihcog` | FLOAT64 | Gross document amount before discounts, excluding VAT. |
+| `mihvatsum` | FLOAT64 | VAT amount of the document. |
+| `mihnetsum` | FLOAT64 | Net document total including VAT, after all discounts. |
+| `mihdisclst` | FLOAT64 | Total of line-level discounts on the document. |
+| `mihdischf1` | FLOAT64 | Header discount 1 amount. |
+| `mihdischf2` | FLOAT64 | Header discount 2 amount. |
+| `mihexchg` | FLOAT64 | Exchange rate to Thai baht (1 for baht documents). |
+| `mihextrasum` | FLOAT64 | Deposit amount deducted on the document, excluding VAT. |
+| `mihextravat` | FLOAT64 | VAT on the deducted deposit amount. |
+| `mihextracut` | INT64 | Flag indicating that a deposit deduction is applied. |
+| `mihextramem` | STRING | Memo of the deducted deposit, listing the deposit receipt numbers and dates. |
+| `mihrecno` | STRING | Number of the related receipt or received document. |
+| `mihrecdate` | DATETIME | Date of the related receipt or received document. |
+| `mihsavetag` | STRING | Save-tag marker set by the ERP when the document is saved. |
+| `mihkeyuser` | STRING | User code of the person who keyed the document. |
+| `mihkeydate` | DATETIME | Date and time the document was keyed. |
+| `mihdocrunno` | STRING | Document running number. |
+| `mihdategl` | DATETIME | General-ledger posting date. |
+| `mihduepo` | DATETIME | Purchase-order due date and time. |
+| `miheditlk` | DATETIME | Timestamp of the current edit lock on the document. |
+| `mihiscf` | INT64 | Flag indicating a carry-forward (opening balance) document. |
+| `mihissp` | INT64 | Special-document flag. |
+| `mihdates1` | DATETIME | Special date 1 of the document. |
+| `mihdates2` | DATETIME | Special date 2 of the document. |
+| `mihnumsi` | INT64 | Special integer field of the document. |
+| `mihnumsc` | FLOAT64 | Special numeric field of the document. |
+| `mihvatpc` | FLOAT64 | VAT rate in percent (e.g. 7). |
+| `mihincluded` | INT64 | Flag indicating VAT-inclusive document amounts. |
+| `mihtaxvnos` | STRING | Separate tax invoice number issued for the document. |
+| `mihtaxdate` | DATETIME | Date of the separate tax invoice. |
+| `mihtaxsum` | FLOAT64 | Amount of the separate tax invoice. |
+| `mihload` | INT64 | Flag indicating goods loaded for delivery (1 = loaded). |
+| `mihpaiddate` | DATETIME | Date the document was fully paid. |
+| `mihbookordernum` | STRING | Number of the booking (order) document linked to this document. |
+| `mihsenddate` | DATETIME | Date the goods were sent. |
+| `mihbl` | INT64 | Billing-note flag of the document. |
+| `mihrpv` | INT64 | Receipt/payment-voucher flag of the document. |
+| `mihclearcut` | INT64 | Flag: outstanding amount cleared (-1 = cleared). |
+| `mihsettlecut` | INT64 | Flag: settlement completed (-1 = settled). |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

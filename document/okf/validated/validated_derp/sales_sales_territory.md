@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sales_sales_territory"
-description: "One row = one cleaned copy of the source table `sales_sales_territory`, unique on (sale_territory_id)."
+description: "One row = one sales territory node from source table `sales_sales_territory`, unique on (sale_territory_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=sales_sales_territory&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `sales_sales_territory`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `sales_sales_territory`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Hierarchy of sales territories (up to four levels) with code, name and validity dates.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,28 +34,28 @@ One row per `sale_territory_id`. The key is declared twice in the definition (`u
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_territory_id` | STRING | Meaning not documented in the repo. |
-| `code` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `description` | STRING | Meaning not documented in the repo. |
-| `level` | INT64 | Meaning not documented in the repo. |
-| `parent_id` | STRING | Meaning not documented in the repo. |
-| `path_id` | STRING | Meaning not documented in the repo. |
-| `path_code` | STRING | Meaning not documented in the repo. |
-| `path_name` | STRING | Meaning not documented in the repo. |
-| `valid_from` | DATE | Meaning not documented in the repo. |
-| `valid_to` | DATE | Meaning not documented in the repo. |
-| `company_id` | STRING | Company identifier from the DERP raw source, cleaned with `cleanString` (trimmed, empty to NULL); distinct from `company_code`. No MAC5 code mapping is applied. |
-| `company_code` | STRING | Meaning not documented in the repo. |
-| `organization_id` | STRING | Meaning not documented in the repo. |
-| `organization_code` | STRING | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
+| `sale_territory_id` | STRING | UUID of the sales territory. |
+| `code` | STRING | Sales territory code (e.g. `SV13_0_TA_01`). |
+| `name` | STRING | Sales territory name. |
+| `description` | STRING | Description of the sales territory. |
+| `level` | INT64 | Depth of the node in the hierarchy (1 = top level). |
+| `parent_id` | STRING | UUID of the parent node in the same hierarchy (NULL at the top level). |
+| `path_id` | STRING | Chain of territory UUIDs from the top level down to this territory, separated by `/`. |
+| `path_code` | STRING | Chain of territory codes from the top level down to this territory, separated by `/` (e.g. `SV/SV_13/SV13_0/SV13_0_TA_01/`). |
+| `path_name` | STRING | Chain of territory names from the top level down to this territory, separated by `/`. |
+| `valid_from` | DATE | Date from which the territory is valid. |
+| `valid_to` | DATE | Date until which the territory is valid (NULL = open-ended). |
+| `company_id` | STRING | UUID of the company that owns the record. |
+| `company_code` | STRING | Code of the company that owns the record. |
+| `organization_id` | STRING | UUID of the organization that owns the record. |
+| `organization_code` | STRING | Code of the organization that owns the record. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

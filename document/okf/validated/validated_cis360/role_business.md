@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "role_business"
-description: "One row = one cleaned copy of the source table `role_business`, unique on (id)."
+description: "One row = one business role from source table `role_business`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_cis360&t=role_business&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_cis360
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of CIS360 `role_business`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of CIS360 `role_business`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Lookup of CIS360 business roles in a two-level hierarchy (`parent_ref`).
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,21 +34,21 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `role_business_name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `role_business_name_en` | STRING | Meaning not documented in the repo. |
-| `role_business_code` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `role_business_order` | INT64 | Meaning not documented in the repo. |
-| `parent_ref` | STRING | Meaning not documented in the repo. |
-| `is_constant` | BOOL | Meaning not documented in the repo. |
-| `active_status` | BOOL | Meaning not documented in the repo. |
-| `is_delete` | BOOL | Meaning not documented in the repo. |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
-| `create_by` | STRING | Meaning not documented in the repo. |
-| `create_by_platform` | STRING | Meaning not documented in the repo. |
-| `update_by_platform` | STRING | Meaning not documented in the repo. |
-| `update_date` | DATETIME | Meaning not documented in the repo. |
-| `update_by` | STRING | Meaning not documented in the repo. |
+| `id` | INT64 | Primary key of the business role lookup. |
+| `role_business_name` | STRING | Business role name in Thai. |
+| `role_business_name_en` | STRING | Business role name in English. |
+| `role_business_code` | STRING | Business role code (e.g. `AGENT`, `BIGBOX`, `MDT`, `ONL`, `CON`, `FAC`, `DVP`, `ARC`; sub-roles such as `DVP_HOTEL`). |
+| `role_business_order` | INT64 | Display sort order of the business role. |
+| `parent_ref` | STRING | Code of the parent business role for a sub-role (e.g. `DVP`, `ARC`); NULL for top-level roles. |
+| `is_constant` | BOOL | Whether the business role is a fixed system-defined value. |
+| `active_status` | BOOL | Whether the business role is active. |
+| `is_delete` | BOOL | Soft-delete flag (TRUE = record deleted). |
+| `create_date` | DATETIME | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | DATETIME | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_customer_credit"
-description: "One row = one record of source table `crm_customer_credit` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one customer credit record, a record of source table `crm_customer_credit` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_customer_credit&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_credit/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_credit` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_customer_credit](/validated/validated_derp/crm_customer_credit.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_credit/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_credit` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Credit settings of CRM customers: credit limit, credit and payment terms, credit status and collateral. Used by: [validated_derp.crm_customer_credit](/validated/validated_derp/crm_customer_credit.md).
 
 # Grain and key
 
@@ -30,30 +30,30 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_credit_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_master_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `credit_limit` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `credit_limit_change_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `credit_term` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `credit_rating` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `credit_scoring` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `credit_status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `credit_management_group` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_term` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_method` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_condition` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `collateral_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `collateral_start_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `collateral_end_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_sync` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `customer_credit_id` | STRING | UUID of the customer credit record. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
+| `credit_limit` | FLOAT64 | Credit limit of the customer in THB (0 = no credit). |
+| `credit_limit_change_date` | STRING | Date the credit limit was last changed. |
+| `credit_term` | STRING | Credit term code (e.g. `N000` = cash, `N030` = 30 days). |
+| `credit_rating` | STRING | Credit rating of the customer. |
+| `credit_scoring` | FLOAT64 | Credit score of the customer. |
+| `credit_status` | STRING | Credit status (e.g. `NORMAL`). |
+| `credit_management_group` | STRING | Credit management group (customer chain) the customer is managed under. |
+| `payment_term` | STRING | Payment term code (e.g. `N000`, `N030`). |
+| `payment_method` | STRING | Payment method of the customer. |
+| `payment_condition` | STRING | Payment condition of the customer. |
+| `collateral_type` | STRING | Type of collateral held for the credit. |
+| `collateral_start_date` | STRING | Start date of the collateral. |
+| `collateral_end_date` | STRING | End date of the collateral. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

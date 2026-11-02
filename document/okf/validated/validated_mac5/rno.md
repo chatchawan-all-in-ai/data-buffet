@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "rno"
-description: "One row = one cleaned source record of `rno` (no declared key; append-style, not deduplicated)."
+description: "One row = one document running-number sequence for one prefix and period from source table `rno` (no declared key; append-style, not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=rno&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `rno`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: running number reference. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `rno`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Running-number sequences per document prefix and year/month, with the last number issued.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,14 +35,14 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `rnoid` | INT64 | Meaning not documented in the repo. |
-| `rnoprefix` | STRING | Meaning not documented in the repo. |
-| `rnoyear` | STRING | Likely year part of the document date (inferred from the column name only; not documented in the repo). |
-| `rnomonth` | STRING | Likely month part of the document date (inferred from the column name only; not documented in the repo). |
-| `rnorunning` | INT64 | Meaning not documented in the repo. |
-| `rnorunno` | STRING | Meaning not documented in the repo. |
-| `rnocrdate` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `rnoupdatedate` | DATETIME | Meaning not documented in the repo. |
+| `rnoid` | INT64 | Running ID of the running-number row. |
+| `rnoprefix` | STRING | Document number prefix of the sequence (e.g. RTM, RCM, PCM). |
+| `rnoyear` | STRING | Two-digit Buddhist-era year of the sequence (e.g. `58` = 2015). |
+| `rnomonth` | STRING | Two-digit month of the sequence. |
+| `rnorunning` | INT64 | Last running number used in the sequence. |
+| `rnorunno` | STRING | Last full document number issued in the sequence. |
+| `rnocrdate` | DATETIME | Date and time the sequence row was created. |
+| `rnoupdatedate` | DATETIME | Date and time the sequence row was last updated. |
 
 # How it is built
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "stf"
-description: "One row = one record of source table `stf` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one component line of a product formula, a record of source table `stf` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=stf&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/stf/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `stf` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.stf](/validated/validated_mac5/stf.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/stf/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `stf` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Product formulas (bills of material): components and quantities per finished item. Used by: [validated_mac5.stf](/validated/validated_mac5/stf.md).
 
 # Grain and key
 
@@ -30,13 +30,13 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `STFcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STFlist` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STFquan` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STFunit` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STFAutoNo` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STFmemo` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rowguid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `STFcode` | STRING | Product code of the finished item the formula belongs to. |
+| `STFlist` | STRING | Stock code of the component in the formula. |
+| `STFquan` | FLOAT64 | Quantity of the component per finished item. |
+| `STFunit` | INT64 | Unit number of the component quantity. |
+| `STFAutoNo` | INT64 | Running ID of the formula line. |
+| `STFmemo` | STRING | Free-text memo on the formula line. |
+| `rowguid` | STRING | Row GUID that uniquely identifies the record in the source database. |
 
 # How it is built
 

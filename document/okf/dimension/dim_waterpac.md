@@ -37,7 +37,7 @@ One row per active MDS row, ordered and SK-numbered by CompanyID, WaterPacCode. 
 | `CompanyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `WaterPacCode` | STRING | WaterPac code; matched case-insensitively to the product-code suffix extracted by `view_dim_product_master`. |
 | `WaterPacName` | STRING | Display name of the WaterPac, used as `PumpSegment` for water-pac segments. |
-| `Brand` | STRING | Brand of the WaterPac as entered in MDS (meaning beyond the name not documented in the repo). |
+| `Brand` | STRING | Pump brand of the WaterPac set as entered in MDS, e.g. `HITACHI`, `MITSUBISHI`, `CMB`, `DAB`, `RINNAI`. |
 | `MdsID` | STRING | `id` of the source row in `mds_data_waterpac_master`; trace column. |
 
 # How it is built

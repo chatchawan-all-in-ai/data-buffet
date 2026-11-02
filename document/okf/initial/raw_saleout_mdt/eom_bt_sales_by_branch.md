@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "eom_bt_sales_by_branch"
-description: "One row = one record of source table `eom_bt_sales_by_branch` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one Boonthavorn branch in one month-end report, a record of source table `eom_bt_sales_by_branch` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=eom_bt_sales_by_branch&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_saleout_mdt
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/so_mdt_eom/bt/sales_by_branch/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `eom_bt_sales_by_branch` table from SALEOUT_MDT; nothing is cleaned or deduplicated here.
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/so_mdt_eom/bt/sales_by_branch/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `eom_bt_sales_by_branch` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Month-end closing sales summary sent by Boonthavorn (BT) per branch: month-to-date and year-to-date amount, quantity and square metres against last year.
 
 # Grain and key
 
@@ -30,29 +30,29 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `VENDOR_ID` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `VENDOR_NAME` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `BRANCH` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MTD_LAST_YEAR` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MTD_CURRENT_YEAR` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MTD__Growth` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `YTD_LAST_YEAR` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `YTD_CURRENT_YEAR` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `YTD__Growth` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MTD_LAST_YEAR_QTY` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MTD_CURR_YEAR_QTY` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MTD_PCT_GROWTH_QTY` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `YTD_LAST_YEAR_QTY` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `YTD_CURR_YEAR_QTY` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `YTD_PCT_GROWTH_QTY` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MTD_LAST_YEAR_SQM` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MTD_CURR_YEAR_SQM` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MTD_PCT_GROWTH_SQM` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `YTD_LAST_YEAR_SQM` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `YTD_CURR_YEAR_SQM` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `YTD_PCT_GROWTH_SQM` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `START_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `END_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `VENDOR_ID` | STRING | Boonthavorn vendor code of the supplier (the company), e.g. `10009`. |
+| `VENDOR_NAME` | STRING | Supplier (vendor) name as registered at Boonthavorn. |
+| `BRANCH` | STRING | Boonthavorn branch name in Thai, used as the branch code. |
+| `MTD_LAST_YEAR` | FLOAT64 | Month-to-date sales amount for the same period last year (THB). |
+| `MTD_CURRENT_YEAR` | FLOAT64 | Month-to-date sales amount this year (THB). |
+| `MTD__Growth` | STRING | Month-to-date sales growth versus last year, as percentage text (e.g. `-4.8%`). |
+| `YTD_LAST_YEAR` | FLOAT64 | Year-to-date sales amount for the same period last year (THB). |
+| `YTD_CURRENT_YEAR` | FLOAT64 | Year-to-date sales amount this year (THB). |
+| `YTD__Growth` | STRING | Year-to-date sales growth versus last year, as percentage text (e.g. `67.51%`). |
+| `MTD_LAST_YEAR_QTY` | INT64 | Month-to-date sales quantity for the same period last year. |
+| `MTD_CURR_YEAR_QTY` | INT64 | Month-to-date sales quantity this year. |
+| `MTD_PCT_GROWTH_QTY` | INT64 | Month-to-date sales quantity growth versus last year, in percent. |
+| `YTD_LAST_YEAR_QTY` | FLOAT64 | Year-to-date sales quantity for the same period last year. |
+| `YTD_CURR_YEAR_QTY` | FLOAT64 | Year-to-date sales quantity this year. |
+| `YTD_PCT_GROWTH_QTY` | FLOAT64 | Year-to-date sales quantity growth versus last year, in percent. |
+| `MTD_LAST_YEAR_SQM` | INT64 | Month-to-date sales in square metres for the same period last year. |
+| `MTD_CURR_YEAR_SQM` | INT64 | Month-to-date sales in square metres this year. |
+| `MTD_PCT_GROWTH_SQM` | INT64 | Month-to-date square-metre sales growth versus last year, in percent. |
+| `YTD_LAST_YEAR_SQM` | FLOAT64 | Year-to-date sales in square metres for the same period last year. |
+| `YTD_CURR_YEAR_SQM` | FLOAT64 | Year-to-date sales in square metres this year. |
+| `YTD_PCT_GROWTH_SQM` | FLOAT64 | Year-to-date square-metre sales growth versus last year, in percent. |
+| `START_DATE` | STRING | First day of the reporting period. |
+| `END_DATE` | STRING | Last day covered by the report (figures are counted up to this date). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

@@ -43,21 +43,21 @@ One row per (`companyID`, `cfsVnosID`, `cfsTypeID`) document, i.e. one invoice/c
 | `invoiceDate` | DATE | Document date, built from `mihYear/mihMonth/mihDay` of [curated_mih](/curated/curated_mac5/curated_mih.md). |
 | `cfsVnosID` | STRING | Document number (`mihVnos`) of the invoice or note. Natural key together with `companyID` and `cfsTypeID`. |
 | `cfsTypeID` | STRING | Document type (`mihType`): IS = tax invoice, BS = credit note, AS = debit note. |
-| `cfsJob` | STRING | Job code `mihJob` of the document header (pass-through). |
-| `cfsDep` | STRING | Department code `mihDep` of the document header; joins to channel/department by `DepCode` in the views. |
-| `cfsPer` | STRING | Salesperson/employee code `mihPer` of the document header (pass-through). |
-| `debCode` | STRING | Customer (debtor) code, `mihCus` of the document. |
-| `debName` | STRING | Customer Thai name from `dim_customer.debnamet`. |
+| `cfsJob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
+| `cfsDep` | STRING | Department code of the document, used as the sales channel code. |
+| `cfsPer` | STRING | Salesperson (employee) code, matching `per.percode`. |
+| `debCode` | STRING | Customer (debtor) code. |
+| `debName` | STRING | Customer name in Thai. |
 | `calCreditTerm` | INT64 | Credit term in days used for the aging calculation (= `transCreditTerm`, i.e. `mihstanding`). |
-| `debCreditTerm` | INT64 | Credit term in days on the customer master (`dim_customer.DEBcreditTerm`), for comparison with the term on the document. |
-| `transCreditTerm` | INT64 | Credit term in days recorded on the document itself (`mihstanding`; MAX over grouped rows for notes). |
-| `debLimit` | FLOAT64 | Customer credit limit from `dim_customer.debLimit`. |
-| `debMemo` | STRING | Customer memo text from `dim_customer.debMemo`. |
+| `debCreditTerm` | INT64 | Credit term in days. |
+| `transCreditTerm` | INT64 | Credit term in days; due date = document date + this value. |
+| `debLimit` | FLOAT64 | Credit limit of the customer in baht. |
+| `debMemo` | STRING | Free-text memo on the customer. |
 | `channel` | STRING | Always NULL (placeholder `CAST(NULL AS STRING)`); channel is attached later in the views via `dim_channel`. |
-| `mihRef2` | STRING | Always NULL (placeholder). |
-| `mihNote` | STRING | Document notes `mihNotes` from the header. |
-| `mihRef1` | STRING | Linked invoice reference. For IS rows: pipe-separated (`/`) list of the credit/debit note numbers that point at this invoice. For BS/AS rows: pipe-separated list of invoice numbers they reference (`milLinkVcno`, blanked when the invoice is in `onetime.cfsinvclose2024`). |
-| `TotalAmount` | FLOAT64 | Document net total (`mihNetSum`), rounded to 2 decimals for notes. |
+| `mihRef2` | STRING | Always NULL as an aging-schema placeholder. |
+| `mihNote` | STRING | Free-text notes such as delivery instructions or site details. |
+| `mihRef1` | STRING | Distinct linked document numbers separated by pipes: credit/debit notes for IS rows and referenced invoices for BS/AS rows, with links in the closed-invoice exclusion list omitted. |
+| `TotalAmount` | FLOAT64 | Net document total including VAT, after all discounts; negative for credit notes (`BS`). |
 | `PaymentAmount` | FLOAT64 | Amount received against the document: sum of RS receipt amounts from `mir` (with the cheque-extract adjustment). If the document is flagged complete via `dim_status_not_receive` (year <= 2023) it equals TotalAmount. For BS/AS rows it is TotalAmount when any receipt exists, else 0. |
 | `CreditNoteAmount` | FLOAT64 | Credit notes (type BS) attached to the invoice, `milSum * 1.07` summed (counts only notes with no receipt of their own). 0 on BS/AS rows. |
 | `DebitNoteAmount` | FLOAT64 | Debit notes (type AS) attached to the invoice, `milSum * 1.07` summed (counts only notes with no receipt of their own). 0 on BS/AS rows. |

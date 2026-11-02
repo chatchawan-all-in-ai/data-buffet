@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_approver"
-description: "One row = one cleaned copy of the source table `crm_sale_order_approver`, unique on (sale_order_approver_id)."
+description: "One row = one approver assigned to a sale order revision from source table `crm_sale_order_approver`, unique on (sale_order_approver_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_sale_order_approver&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_sale_order_approver`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_sale_order_approver`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Approvers assigned to each DERP sale order revision, with role, level and approval scope.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,22 +34,22 @@ One row per `sale_order_approver_id`. The key is declared twice in the definitio
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_approver_id` | STRING | Meaning not documented in the repo. |
-| `sale_order_id` | STRING | Meaning not documented in the repo. |
-| `rev_no` | INT64 | Meaning not documented in the repo. |
-| `employee_id` | STRING | Meaning not documented in the repo. |
-| `user_id` | STRING | Meaning not documented in the repo. |
-| `employee_no` | STRING | Meaning not documented in the repo. |
-| `approver_name` | STRING | Meaning not documented in the repo. |
-| `alternate_level` | INT64 | Meaning not documented in the repo. |
-| `approver_role` | STRING | Meaning not documented in the repo. |
-| `is_primary` | BOOL | Meaning not documented in the repo. |
-| `approval_scope_id` | STRING | Meaning not documented in the repo. |
-| `approval_scope_code` | STRING | Meaning not documented in the repo. |
-| `approval_scope_name` | STRING | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
+| `sale_order_approver_id` | STRING | Unique identifier of the approver assignment. |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `rev_no` | INT64 | Sale order revision number this record belongs to. |
+| `employee_id` | STRING | Identifier of the approver's employee record. |
+| `user_id` | STRING | Identifier of the approver's user account. |
+| `employee_no` | STRING | Employee code of the approver. |
+| `approver_name` | STRING | Name of the approver. |
+| `alternate_level` | INT64 | Approver level in the approval chain, starting at 1. |
+| `approver_role` | STRING | Approver role (`MANAGER` or `ALTERNATE`). |
+| `is_primary` | BOOL | TRUE for the primary approver. |
+| `approval_scope_id` | STRING | Identifier of the approval scope (sales team or territory). |
+| `approval_scope_code` | STRING | Code of the approval scope (sales team or territory). |
+| `approval_scope_name` | STRING | Name of the approval scope (sales team or territory). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

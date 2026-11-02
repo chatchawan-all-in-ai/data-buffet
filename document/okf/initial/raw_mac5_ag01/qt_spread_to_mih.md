@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "qt_spread_to_mih"
-description: "One row = one record of source table `qt_spread_to_mih` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one link from a quotation spread to a pre-order, a record of source table `qt_spread_to_mih` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=qt_spread_to_mih&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/qt_spread_to_mih/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `qt_spread_to_mih` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.qt_spread_to_mih](/validated/validated_mac5/qt_spread_to_mih.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/qt_spread_to_mih/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `qt_spread_to_mih` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Links from quotation spreads (main_qtspread) to the pre-order numbers created from them. Used by: [validated_mac5.qt_spread_to_mih](/validated/validated_mac5/qt_spread_to_mih.md).
 
 # Grain and key
 
@@ -30,13 +30,13 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qt_spread_ref_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qtid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mihvnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rdysendtomac5` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sto` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Row identifier of the link. |
+| `qt_spread_ref_id` | INT64 | Quotation spread identifier (`main_qtspread.id`). |
+| `qtid` | STRING | Quotation identifier (`tbook_quotation.id`). |
+| `mihvnos` | STRING | Document number, unique within company and document type. |
+| `status` | INT64 | Status flag of the link (1 = active). |
+| `rdysendtomac5` | INT64 | Ready-to-send-to-MAC5 flag. |
+| `sto` | STRING | Stock location code of the order. |
 
 # How it is built
 

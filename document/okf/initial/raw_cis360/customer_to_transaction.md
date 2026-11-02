@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "customer_to_transaction"
-description: "One row = one record of source table `customer_to_transaction` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one buyer-seller transaction, a record of source table `customer_to_transaction` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_cis360&t=customer_to_transaction&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_cis360
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/cis360/customer_to_transaction/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_to_transaction` table from CIS360; nothing is cleaned or deduplicated here. Used by: [validated_cis360.customer_to_transaction](/validated/validated_cis360/customer_to_transaction.md).
+External table over AVRO files in `gs://file-raw-data/cis360/customer_to_transaction/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_to_transaction` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Purchase transactions between CIS360 buyer and seller profiles recorded from the Allkons M platform, with item count and total amount. Used by: [validated_cis360.customer_to_transaction](/validated/validated_cis360/customer_to_transaction.md).
 
 # Grain and key
 
@@ -30,26 +30,26 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `buyer_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `seller_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `transaction_type_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `platform_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `platform_reference_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `buyer_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `seller_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `transaction_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `total_items` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `total_amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `url_reference` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_delete` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `transaction_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | STRING | Unique identifier (UUID) of the transaction record. |
+| `buyer_id` | STRING | Customer profile of the buyer (`customer_profile.id`). |
+| `seller_id` | STRING | Customer profile of the seller (`customer_profile.id`). |
+| `transaction_type_id` | INT64 | Transaction type code (values 1, 2; type 2 carries a `platform_reference_id`). |
+| `platform_id` | INT64 | Platform where the transaction was made (1 = ALLKONS_M_BUYER). |
+| `platform_reference_id` | INT64 | Reference identifier of the transaction on the source platform. |
+| `buyer_name` | STRING | Name of the buyer. |
+| `seller_name` | STRING | Name of the seller. |
+| `transaction_code` | STRING | Document code of the transaction on Allkons M (e.g. `QOAG-` + digits). |
+| `total_items` | INT64 | Number of items in the transaction. |
+| `total_amount` | FLOAT64 | Total amount of the transaction in THB. |
+| `url_reference` | STRING | URL reference of the transaction (not populated in current data). |
+| `is_delete` | BOOL | Soft-delete flag (TRUE = record deleted). |
+| `transaction_date` | STRING | Date and time of the transaction. |
+| `create_date` | STRING | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | STRING | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

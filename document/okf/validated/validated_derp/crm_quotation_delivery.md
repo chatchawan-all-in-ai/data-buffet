@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_quotation_delivery"
-description: "One row = one cleaned copy of the source table `crm_quotation_delivery`, unique on (quotation_delivery_id)."
+description: "One row = one delivery round of a quotation from source table `crm_quotation_delivery`, unique on (quotation_delivery_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_quotation_delivery&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_quotation_delivery`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_quotation_delivery`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Planned delivery rounds of quotations: ship date, time window, receiver and delivery address.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,42 +34,42 @@ One row per `quotation_delivery_id`. The key is declared twice in the definition
 
 | Column | Type | Description |
 |---|---|---|
-| `quotation_delivery_id` | STRING | Meaning not documented in the repo. |
-| `quotation_id` | STRING | Meaning not documented in the repo. |
-| `quotation_no` | STRING | Meaning not documented in the repo. |
-| `quotation_date` | DATE | Meaning not documented in the repo. |
-| `round_no` | INT64 | Meaning not documented in the repo. |
-| `ship_date` | DATETIME | Meaning not documented in the repo. |
-| `time_start` | STRING | Meaning not documented in the repo. |
-| `time_end` | STRING | Meaning not documented in the repo. |
-| `receiver_name` | STRING | Meaning not documented in the repo. |
-| `phone` | STRING | Meaning not documented in the repo. |
-| `ship_type` | STRING | Meaning not documented in the repo. |
-| `address_full` | STRING | Meaning not documented in the repo. |
-| `address_detail` | STRING | Meaning not documented in the repo. |
-| `sub_district_code` | STRING | Meaning not documented in the repo. |
-| `sub_district` | STRING | Meaning not documented in the repo. |
-| `district_code` | STRING | Meaning not documented in the repo. |
-| `district` | STRING | Meaning not documented in the repo. |
-| `province_code` | STRING | Meaning not documented in the repo. |
-| `province` | STRING | Meaning not documented in the repo. |
-| `postal_code` | STRING | Meaning not documented in the repo. |
-| `country_code` | STRING | Meaning not documented in the repo. |
-| `phase` | STRING | Meaning not documented in the repo. |
-| `house_no` | STRING | Meaning not documented in the repo. |
-| `plot` | STRING | Meaning not documented in the repo. |
-| `remark_logistic` | STRING | Meaning not documented in the repo. |
-| `latitude` | FLOAT64 | Meaning not documented in the repo. |
-| `longitude` | FLOAT64 | Meaning not documented in the repo. |
-| `customer_address_id` | STRING | Meaning not documented in the repo. |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `map_url` | STRING | Meaning not documented in the repo. |
-| `nearby_landmark` | STRING | Meaning not documented in the repo. |
+| `quotation_delivery_id` | STRING | UUID of the quotation delivery round. |
+| `quotation_id` | STRING | UUID of the quotation in `crm_quotation`. |
+| `quotation_no` | STRING | Quotation document number (e.g. `QT2607...` or `MDT2610...`). |
+| `quotation_date` | DATE | Quotation document date. |
+| `round_no` | INT64 | Delivery round number within the quotation (1, 2, ...). |
+| `ship_date` | DATETIME | Planned ship date and time of the delivery round. |
+| `time_start` | STRING | Start of the delivery time window (`HH:MM:SS`). |
+| `time_end` | STRING | End of the delivery time window (`HH:MM:SS`). |
+| `receiver_name` | STRING | Name of the person receiving the delivery. |
+| `phone` | STRING | Phone number of the delivery receiver. |
+| `ship_type` | STRING | Shipping type code of the delivery round (`0` or `1`). |
+| `address_full` | STRING | Full delivery address as one text string. |
+| `address_detail` | STRING | Delivery address detail line. |
+| `sub_district_code` | STRING | Sub-district code (6-digit Thai administrative code). |
+| `sub_district` | STRING | Sub-district (tambon or khwaeng) name. |
+| `district_code` | STRING | District code (4-digit Thai administrative code). |
+| `district` | STRING | District (amphoe or khet) name. |
+| `province_code` | STRING | Province code (2-digit Thai administrative code). |
+| `province` | STRING | Province name. |
+| `postal_code` | STRING | Postal code. |
+| `country_code` | STRING | Country code (ISO 3166 alpha-3, e.g. `THA`). |
+| `phase` | STRING | Phase (project stage) of the delivery address. |
+| `house_no` | STRING | House number of the delivery address. |
+| `plot` | STRING | Plot (land lot) number of the delivery address. |
+| `remark_logistic` | STRING | Remark for the logistics team. |
+| `latitude` | FLOAT64 | Latitude of the location in decimal degrees. |
+| `longitude` | FLOAT64 | Longitude of the location in decimal degrees. |
+| `customer_address_id` | STRING | UUID of the customer address in `crm_customer_address` used for the delivery. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `map_url` | STRING | Map link (e.g. Google Maps URL) of the location. |
+| `nearby_landmark` | STRING | Nearby landmark of the delivery address. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

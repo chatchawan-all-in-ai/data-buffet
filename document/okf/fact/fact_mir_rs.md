@@ -42,27 +42,27 @@ One row per `ReceiveSK` (ROW_NUMBER over BillingSK, FactChqSK, company_id, mirty
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md), joined on `mircus = debcode` and `company_id = companyID`. NULL when the customer is not in the dimension. |
 | `InvoiceSK` | INT64 | Surrogate key of [dim_invoice](/dimension/dim_invoice.md) for the invoice this line settles (`mirbinvno`, `mirbinvtype`, `mircus`, `mirbinvdate = mix_date`, company); dim_invoice is first de-duplicated to one row per that key. |
 | `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md), joined on `company_id = companyID`. |
-| `duedate` | DATE | Invoice due date: first 10 characters of `mie.miectermdx` parsed as `dd/mm/yyyy`, where mie is the validated MAC5 invoice-extension row matched on `mirbinvno = mievnos`, `mircus = miecus`, company. (Meaning of `miectermdx` inferred from usage.) NULL when no mie match. |
+| `duedate` | DATE | Invoice due date: first 10 characters of `mie.miectermdx` parsed as `dd/mm/yyyy`, where mie is the validated MAC5 invoice-extension row matched on `mirbinvno = mievnos`, `mircus = miecus`, company. NULL when no mie match. |
 | `company_id` | STRING | MAC5 company code (ag01, aa05, ab01, ac02, ak02). Pass-through of validated `mir.company_id`. |
-| `mirday` | INT64 | Day part of the receipt/billing document date. Pass-through of validated `mir.mirday` (meaning inferred from the name). |
-| `mirmonth` | INT64 | Month part of the receipt/billing document date. Pass-through of validated `mir.mirmonth`; used with `miryear` to join dim_collection_status. |
-| `miryear` | INT64 | Year part of the receipt/billing document date. Pass-through of validated `mir.miryear`; used with `mirmonth` to join dim_collection_status. |
-| `mirtype` | STRING | Document type of the mir row. 'RS' for receipt lines; NULL on cheque-only rows from the FULL JOIN. |
-| `mirvnos` | STRING | Document number (vnos) of the receipt/billing document. Pass-through of validated `mir.mirvnos`; with `mirtype` it joins to `curated_mih`. |
-| `mircus` | STRING | Customer code (matches `dim_customer.debcode` and `deb`). Pass-through of validated `mir.mircus`. |
-| `mirlistno` | INT64 | Line number within the document. Pass-through of validated `mir.mirlistno` (meaning inferred from the name). |
-| `mirbinvno` | STRING | Number of the invoice this line is billed/received against (joins `dim_invoice.mihVnos`). Pass-through of validated `mir.mirbinvno`. |
-| `mirbinvdate` | DATETIME | Date of that invoice (joins `dim_invoice.mix_date`). Pass-through of validated `mir.mirbinvdate`. |
-| `mirbinvtype` | STRING | Type of that invoice (joins `dim_invoice.mihType`). Pass-through of validated `mir.mirbinvtype`. |
-| `mirdesc` | STRING | Line description. Pass-through of validated `mir.mirdesc` (meaning inferred from the name). |
-| `mircog` | FLOAT64 | Pass-through of validated `mir.mircog`. Meaning not documented in the repo (likely a cost/goods-related amount, inferred from the name). |
-| `mirvat` | FLOAT64 | VAT amount of the line. Pass-through of validated `mir.mirvat` (meaning inferred from the name). |
-| `mirsum` | FLOAT64 | Receipt-line amount (THB), passed through from validated `mir.mirsum` and repeated on every matching cheque row. |
-| `mircurc` | INT64 | Currency code. Pass-through of validated `mir.mircurc` (meaning inferred from the name). |
-| `mirexchg` | FLOAT64 | Exchange rate. Pass-through of validated `mir.mirexchg` (meaning inferred from the name). |
-| `mirtag` | INT64 | Pass-through of validated `mir.mirtag`. Meaning not documented in the repo. |
-| `mirnotes` | STRING | Free-text notes. Pass-through of validated `mir.mirnotes` (meaning inferred from the name). |
-| `miraccount` | STRING | Account code. Pass-through of validated `mir.miraccount` (meaning inferred from the name). |
+| `mirday` | INT64 | Day part of the document date. |
+| `mirmonth` | INT64 | Month part of the document date. |
+| `miryear` | INT64 | Year part of the document date (Gregorian). |
+| `mirtype` | STRING | Document type code (RS = sales receipt, VS = sales billing statement; RP / VP on the purchase side). |
+| `mirvnos` | STRING | Receipt or billing-statement document number. |
+| `mircus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mirlistno` | INT64 | Line number within the receipt or billing statement. |
+| `mirbinvno` | STRING | Number of the invoice (or debit/credit note) settled or billed by this line. |
+| `mirbinvdate` | DATETIME | Date of the invoice settled or billed by this line. |
+| `mirbinvtype` | STRING | Document type of the invoice settled or billed by this line (IS, AS, BS). |
+| `mirdesc` | STRING | Description copied from the referenced invoice. |
+| `mircog` | FLOAT64 | Line amount excluding VAT. |
+| `mirvat` | FLOAT64 | VAT amount of the line. |
+| `mirsum` | FLOAT64 | Line amount including VAT (amount received or billed). |
+| `mircurc` | INT64 | Currency code (0 = Thai baht). |
+| `mirexchg` | FLOAT64 | Exchange rate to Thai baht (1 for baht documents). |
+| `mirtag` | INT64 | Tag marker of the line. |
+| `mirnotes` | STRING | Notes copied from the referenced invoice. |
+| `miraccount` | STRING | Account code of the line. |
 | `asatdate` | DATE | Snapshot/extract date carried from validated `mir.asatdate` (DATE). |
 
 # How it is built

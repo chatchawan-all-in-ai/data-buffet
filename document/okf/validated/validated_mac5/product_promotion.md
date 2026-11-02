@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "product_promotion"
-description: "One row = one product promotion, unique on (company_id, id)."
+description: "One row = one promotion item line (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=product_promotion&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `product_promotion`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: product promotion. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `product_promotion`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Promotion items with quantity and channel (currently empty).
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,12 +35,12 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `product_detail_id` | INT64 | Meaning not documented in the repo. |
-| `sku_id` | STRING | Meaning not documented in the repo. |
-| `qty` | FLOAT64 | Likely quantity (inferred from the column name only; not documented in the repo). |
-| `channel` | STRING | Meaning not documented in the repo. |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
+| `id` | INT64 | Row identifier of the promotion item. |
+| `product_detail_id` | INT64 | Identifier of the related product detail line. |
+| `sku_id` | STRING | Stock code of the promotion item. |
+| `qty` | FLOAT64 | Quantity of the promotion item. |
+| `channel` | STRING | Sales channel of the promotion. |
+| `create_date` | DATETIME | Date and time the row was created. |
 
 # How it is built
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tbook_quodetail"
-description: "One row = one booking quotation detail, unique on (company_id, id)."
+description: "One row = one quotation detail line (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tbook_quodetail&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tbook_quodetail`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: booking quotation detail. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `tbook_quodetail`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Item lines of quotations: stock code, quantity, list price, discounts, net price, total and line type; source of fact_quotation.
 Used by: [dimension_table.dim_quotation](/dimension/dim_quotation.md), [fact_table.fact_quotation](/fact/fact_quotation.md).
 
 # Grain and key
@@ -35,54 +35,54 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `linkid` | INT64 | Meaning not documented in the repo. |
-| `stkcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `stkdesc` | STRING | Meaning not documented in the repo. |
-| `quantity` | FLOAT64 | Meaning not documented in the repo. |
-| `lp` | FLOAT64 | Meaning not documented in the repo. |
-| `nd` | FLOAT64 | Meaning not documented in the repo. |
-| `sd1` | FLOAT64 | Meaning not documented in the repo. |
-| `sd2` | FLOAT64 | Meaning not documented in the repo. |
-| `sd3` | FLOAT64 | Meaning not documented in the repo. |
-| `dispercent` | FLOAT64 | Meaning not documented in the repo. |
-| `crc` | FLOAT64 | Meaning not documented in the repo. |
-| `price` | FLOAT64 | Likely price (inferred from the column name only; not documented in the repo). |
-| `total` | FLOAT64 | Likely total amount (inferred from the column name only; not documented in the repo). |
-| `priceforag` | FLOAT64 | Meaning not documented in the repo. |
-| `com` | FLOAT64 | Meaning not documented in the repo. |
-| `setcb` | INT64 | Meaning not documented in the repo. |
-| `type` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `sent` | STRING | Meaning not documented in the repo. |
-| `datepart` | STRING | Meaning not documented in the repo. |
-| `fg` | STRING | Meaning not documented in the repo. |
-| `pic` | STRING | Meaning not documented in the repo. |
-| `productcp` | STRING | Meaning not documented in the repo. |
-| `pricecp` | FLOAT64 | Meaning not documented in the repo. |
-| `uinsert` | STRING | Meaning not documented in the repo. |
-| `uupdate` | STRING | Likely date (inferred from the column name only; not documented in the repo). |
-| `dinsert` | STRING | Meaning not documented in the repo. |
-| `dupdate` | STRING | Likely date (inferred from the column name only; not documented in the repo). |
-| `giveaway` | STRING | Meaning not documented in the repo. |
-| `givestk` | STRING | Meaning not documented in the repo. |
-| `bgcount` | FLOAT64 | Meaning not documented in the repo. |
-| `orderno` | INT64 | Meaning not documented in the repo. |
-| `lat` | STRING | Meaning not documented in the repo. |
-| `long` | STRING | Meaning not documented in the repo. |
-| `mapnote` | STRING | Meaning not documented in the repo. |
-| `fileupload` | STRING | Meaning not documented in the repo. |
-| `city` | STRING | Meaning not documented in the repo. |
-| `rdosend` | INT64 | Meaning not documented in the repo. |
-| `cname` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `ctel` | STRING | Meaning not documented in the repo. |
-| `caddress` | STRING | Meaning not documented in the repo. |
-| `checknote` | STRING | Meaning not documented in the repo. |
-| `textnote` | STRING | Meaning not documented in the repo. |
-| `ref_quodetail` | INT64 | Meaning not documented in the repo. |
-| `productgrade` | INT64 | Meaning not documented in the repo. |
-| `fobprice` | FLOAT64 | Likely price (inferred from the column name only; not documented in the repo). |
-| `isshow` | INT64 | Meaning not documented in the repo. |
+| `id` | INT64 | Quotation detail line identifier. |
+| `linkid` | INT64 | Quotation identifier (`tbook_quotation.id`) the line belongs to. |
+| `stkcode` | STRING | MAC5 stock code of the item. |
+| `stkdesc` | STRING | Item description. |
+| `quantity` | FLOAT64 | Quoted quantity. |
+| `lp` | FLOAT64 | List price per unit. |
+| `nd` | FLOAT64 | Normal discount percent applied to the list price. |
+| `sd1` | FLOAT64 | Step discount 1 percent. |
+| `sd2` | FLOAT64 | Step discount 2 percent. |
+| `sd3` | FLOAT64 | Step discount 3 percent. |
+| `dispercent` | FLOAT64 | Discount amount of the line (negative value). |
+| `crc` | FLOAT64 | CRC rate percent of the line. |
+| `price` | FLOAT64 | Net unit price. |
+| `total` | FLOAT64 | Line total amount. |
+| `priceforag` | FLOAT64 | Unit price for the dealer (agent). |
+| `com` | FLOAT64 | Commission amount of the line. |
+| `setcb` | INT64 | Number of sets in the combo line. |
+| `type` | STRING | Line type (`ขาย` = sale, `แถม` = free item, `แถมจากโปรโมชั่น` = promotion giveaway, `ข้อมูล Comboset` = combo-set component, `ชุดข้อมูลสี` = colour set). |
+| `status` | STRING | Line status label (e.g. `ขายได้`, `ทำสลพ`, `แถมจากโปรโมชั่น`, `ข้อมูล Comboset`). |
+| `sent` | STRING | Delivery date of the line (text). |
+| `datepart` | STRING | Delivery time slot (`เช้า` = morning, `บ่าย` = afternoon). |
+| `fg` | STRING | Factory or warehouse code that supplies the item (e.g. `KTB`, `HY`, `LP`, `KK`, `PK`, `UB`). |
+| `pic` | STRING | Image file name attached to the line. |
+| `productcp` | STRING | Competitor product or brand quoted against (e.g. `WAVE`, `BUDDY`). |
+| `pricecp` | FLOAT64 | Competitor price. |
+| `uinsert` | STRING | Employee code of the user who created the row. |
+| `uupdate` | STRING | Employee code of the user who last updated the row. |
+| `dinsert` | STRING | Date and time the row was created (text). |
+| `dupdate` | STRING | Date and time the row was last updated (text). |
+| `giveaway` | STRING | Giveaway flag of the line. |
+| `givestk` | STRING | Stock code of the giveaway item. |
+| `bgcount` | FLOAT64 | Count value of the line. |
+| `orderno` | INT64 | Order number of the line. |
+| `lat` | STRING | Latitude of the delivery location. |
+| `long` | STRING | Longitude of the delivery location. |
+| `mapnote` | STRING | Map note for the delivery location. |
+| `fileupload` | STRING | Uploaded file name. |
+| `city` | STRING | Province of the delivery address. |
+| `rdosend` | INT64 | Delivery method option code. |
+| `cname` | STRING | Customer contact name. |
+| `ctel` | STRING | Customer contact phone number. |
+| `caddress` | STRING | Customer delivery address. |
+| `checknote` | STRING | Delivery checklist note. |
+| `textnote` | STRING | Free-text note of the line, such as a paint colour formula. |
+| `ref_quodetail` | INT64 | Parent quotation detail line in the same quotation (`tbook_quodetail.id`). |
+| `productgrade` | INT64 | Product grade code (0, 1, 2). |
+| `fobprice` | FLOAT64 | FOB price of the line. |
+| `isshow` | INT64 | Show-on-quotation flag (1 = shown). |
 
 # How it is built
 

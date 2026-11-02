@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "order_from_allkon_m"
-description: "One row = one record of source table `order_from_allkon_m` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one order received from the Allkons platform, a record of source table `order_from_allkon_m` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=order_from_allkon_m&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/order_from_allkon_m/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `order_from_allkon_m` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.order_from_allkon_m](/validated/validated_mac5/order_from_allkon_m.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/order_from_allkon_m/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `order_from_allkon_m` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Orders received from the Allkons platform, with promotion type, source and processing statuses. Used by: [validated_mac5.order_from_allkon_m](/validated/validated_mac5/order_from_allkon_m.md).
 
 # Grain and key
 
@@ -30,21 +30,21 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `order_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `promotion_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `notes` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sub_order` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `made_from` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `datetime` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `deliverystatus` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cancelstatus` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `confirmstatus` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `order_source` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_complete` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Row identifier of the order. |
+| `order_no` | STRING | Allkons platform order number (e.g. `QOAG-00158-00048-22-09`). |
+| `status` | STRING | Status code of the order row (1, 2, 3). |
+| `create_date` | STRING | Date and time the order was received. |
+| `promotion_type` | STRING | Promotion types applied to the order (e.g. `Premium`, `ComboSet`, `VolumePrice`, comma-separated). |
+| `notes` | STRING | Processing notes of the order import, such as confirm status codes or `#order_null`. |
+| `sub_order` | STRING | Sub-order number of the order. |
+| `made_from` | STRING | Source application that created the order (e.g. `AKM`, `AMRP`). |
+| `datetime` | STRING | Date and time of the order event. |
+| `deliverystatus` | STRING | Delivery status code of the order. |
+| `cancelstatus` | STRING | Cancel status code of the order (0, 1, 2). |
+| `confirmstatus` | STRING | Confirm status code of the order (0, 1, 2). |
+| `order_source` | STRING | Channel the order came from (e.g. `AK Platform`, `BOT (Semi-Auto)`). |
+| `is_complete` | INT64 | Completion status code of the order import (0 to 3). |
+| `update_date` | STRING | Date and time the order row was last updated. |
 
 # How it is built
 

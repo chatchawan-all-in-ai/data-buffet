@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "match_product"
-description: "One row = one product matching map, unique on (company_id, id)."
+description: "One row = one barcode to MAC5 stock code mapping (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=match_product&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `match_product`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: product matching map. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `match_product`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Mapping of product barcodes to MAC5 stock codes.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,10 +35,10 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `barcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `product_id` | STRING | Meaning not documented in the repo. |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
+| `id` | INT64 | Row identifier of the mapping. |
+| `barcode` | STRING | Product barcode (EAN-13). |
+| `product_id` | STRING | MAC5 stock code mapped to the barcode. |
+| `create_date` | DATETIME | Date and time the mapping was created. |
 
 # How it is built
 

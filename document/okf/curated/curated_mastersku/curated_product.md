@@ -30,55 +30,55 @@ One row per `prdSku` (the MERGE `uniqueKey`); dedup is `ROW_NUMBER() OVER (PARTI
 
 | Column | Type | Description |
 |---|---|---|
-| `prdId` | STRING | Product row id (prd_id) from validated_mastersku.product; also the join key to product_detail.pd_prd_id. |
-| `prdSku` | STRING | Product SKU (prd_sku); the MERGE key (one row per prdSku, latest prdUpdatedDate wins). |
-| `prdDescription` | STRING | Product description / name (prd_description). |
-| `prdD365Sku` | STRING | Pass-through of prd_d365_sku. |
-| `prdItemText` | STRING | Pass-through of prd_item_text. |
-| `prdItemCode` | STRING | Pass-through of prd_item_code. |
-| `prdStoppedSate` | STRING | Pass-through of prd_stopped_sate (source typo kept). |
-| `prdMadeToOrder` | STRING | Pass-through of prd_made_to_order. |
-| `prdSaleUnite` | STRING | Pass-through of prd_sale_unite (sales unit). |
-| `prdTag` | STRING | Pass-through of prd_tag. |
-| `prdUniversalBarcode` | STRING | Pass-through of prd_universal_barcode; cluster column. |
-| `prdInternalBarcode` | STRING | Pass-through of prd_internal_barcode. |
-| `prdCatId` | STRING | Pass-through of prd_cat_id (category id; join to validated_mastersku.category.cat_id). |
-| `prdFilter1` | STRING | Pass-through of prd_filter1. |
-| `prdFilter2` | STRING | Pass-through of prd_filter2. |
-| `prdBrandId` | STRING | Pass-through of prd_brand_id (join to validated_mastersku.brand.bra_id). |
+| `prdId` | STRING | Unique identifier (UUID) of the product. |
+| `prdSku` | STRING | Master SKU code of the product (`MSKU` + 10 digits). |
+| `prdDescription` | STRING | Product name/description. |
+| `prdD365Sku` | STRING | Item number of the product in Dynamics 365. |
+| `prdItemText` | STRING | Free-text item text of the product. |
+| `prdItemCode` | STRING | Item code of the product in the MAC5 ERP. |
+| `prdStoppedSate` | STRING | Date the product was stopped (discontinued). |
+| `prdMadeToOrder` | STRING | Made-to-order indicator of the product. |
+| `prdSaleUnite` | STRING | Sales unit of the product (e.g. `EA`, `SET`, `ชุด`, `ชิ้น`). |
+| `prdTag` | STRING | Search tags of the product as JSON (`{"mypro_tag":[...]}`). |
+| `prdUniversalBarcode` | STRING | Universal (GS1/EAN) barcode of the product. |
+| `prdInternalBarcode` | STRING | Internal barcode/code assigned to the product. |
+| `prdCatId` | STRING | Category of the product (FK to `category.cat_id`). |
+| `prdFilter1` | STRING | First search filter value of the product. |
+| `prdFilter2` | STRING | Second search filter value of the product. |
+| `prdBrandId` | STRING | Brand of the product (FK to `brand.bra_id`). |
 | `prdSize` | STRING | Size: pass-through of prd_size, then overwritten by the post-operation with the 'ขนาด'/'size' value from the product JSON (dimFeild first, then SpeciFeild from product_detail.pd_spacific_fields). |
-| `prdLine` | STRING | Pass-through of prd_line. |
+| `prdLine` | STRING | Product line. |
 | `prdColorTH` | STRING | Thai part of the colour: set by the post-operation UPDATE from the 'สี'/'color' label in the product JSON (leading Thai-character run); NULL when the colour starts with a non-Thai word. |
 | `prdColorEN` | STRING | English part of the colour: set by the post-operation UPDATE (whole value if it does not start with Thai, else the text after the Thai run). Both colour columns start as prd_color. |
-| `prdModel` | STRING | Pass-through of prd_model. |
-| `prdDimension1` | STRING | Pass-through of prd_dimension1. |
-| `prdDimension2` | STRING | Pass-through of prd_dimension2. |
-| `prdDimension3` | STRING | Pass-through of prd_dimension3. |
-| `prdDimension4` | STRING | Pass-through of prd_dimension4. |
-| `prdVendorId` | STRING | Pass-through of prd_vendor_id (join to validated_mastersku.vendor.vd_id); cluster column. |
-| `prdIsActive` | BOOL | Pass-through of prd_is_active. |
-| `prdIsUse` | BOOL | Pass-through of prd_is_use. |
-| `prdCreatedDate` | DATETIME | Pass-through of prd_created_date. |
-| `prdCreatedBy` | STRING | Pass-through of prd_created_by. |
-| `prdUpdatedDate` | DATETIME | Pass-through of prd_updated_date; the dedup order (latest wins). |
-| `prdUpdatedBy` | STRING | Pass-through of prd_updated_by. |
-| `prdPgId` | STRING | Pass-through of prd_pg_id. |
-| `prdPsId` | STRING | Pass-through of prd_ps_id. |
-| `prdIdSource` | STRING | Pass-through of prd_id_source. |
-| `prdMcId` | STRING | Pass-through of prd_mc_id. |
-| `prdDiminsionData` | STRING | Pass-through of prd_diminsion_data: JSON text with a `dimFeild` array of label/value pairs (source typos are load-bearing). |
-| `prdPasId` | STRING | Pass-through of prd_pas_id. |
-| `prdBarcode` | STRING | Pass-through of prd_barcode. |
-| `prdRejectRemark` | STRING | Pass-through of prd_reject_remark. |
-| `prdRefMpId` | STRING | Pass-through of prd_ref_mp_id. |
-| `prdIsCombo` | BOOL | Pass-through of prd_is_combo. |
-| `prdComboPrice` | FLOAT64 | Pass-through of prd_combo_price. |
-| `prdIsTime` | BOOL | Pass-through of prd_is_time. |
-| `prdComboStart` | DATETIME | Pass-through of prd_combo_start. |
-| `prdComboEnd` | DATETIME | Pass-through of prd_combo_end. |
-| `prdTotalComboPrice` | FLOAT64 | Pass-through of prd_total_combo_price. |
-| `prdTotalCostComboPrice` | FLOAT64 | Pass-through of prd_total_cost_combo_price. |
-| `prdBarcodeFormat` | STRING | Pass-through of prd_barcode_format. |
+| `prdModel` | STRING | Model of the product. |
+| `prdDimension1` | STRING | Value of variant dimension 1 of the product (label set by its product group `pg_dimension1`). |
+| `prdDimension2` | STRING | Value of variant dimension 2 of the product (label set by its product group `pg_dimension2`). |
+| `prdDimension3` | STRING | Value of variant dimension 3 of the product (label set by its product group `pg_dimension3`). |
+| `prdDimension4` | STRING | Value of variant dimension 4 of the product (label set by its product group `pg_dimension4`). |
+| `prdVendorId` | STRING | Vendor (supplier) of the product (FK to `vendor.vd_id`). |
+| `prdIsActive` | BOOL | Product active flag (product status is active). |
+| `prdIsUse` | BOOL | Product open-for-sale flag. |
+| `prdCreatedDate` | DATETIME | Timestamp when the record was created. |
+| `prdCreatedBy` | STRING | Identifier of the user who created the record. |
+| `prdUpdatedDate` | DATETIME | Timestamp when the record was last updated. |
+| `prdUpdatedBy` | STRING | Identifier of the user who last updated the record. |
+| `prdPgId` | STRING | Product group of the product (FK to `product_group.pg_id`). |
+| `prdPsId` | STRING | Product status (FK to `product_status.ps_id`; e.g. On, Off, Draft, Pending, Approve, Reject). |
+| `prdIdSource` | STRING | Product identifier in the system the product was imported from (barcode-like code). |
+| `prdMcId` | STRING | Merchandise category identifier of the product. |
+| `prdDiminsionData` | STRING | Variant dimension labels and values as JSON (`{"dimFeild":[{"label","value"}]}`). |
+| `prdPasId` | STRING | Admin review status of the product (FK to `product_admin_status.pas_id`; e.g. new, edit, duplicate, open, close, delete). |
+| `prdBarcode` | STRING | Barcode of the product, used to match MAC5 products (`STKcode885`). |
+| `prdRejectRemark` | STRING | Remark explaining why the product was rejected. |
+| `prdRefMpId` | STRING | Reference to the master product record this product was created from. |
+| `prdIsCombo` | BOOL | Flag marking the product as a combo (bundle) set. |
+| `prdComboPrice` | FLOAT64 | Selling price of the combo set. |
+| `prdIsTime` | BOOL | Flag marking the combo as time-limited (valid between `prd_combo_start` and `prd_combo_end`). |
+| `prdComboStart` | DATETIME | Start date-time of the combo offer. |
+| `prdComboEnd` | DATETIME | End date-time of the combo offer. |
+| `prdTotalComboPrice` | FLOAT64 | Total selling price of all items in the combo. |
+| `prdTotalCostComboPrice` | FLOAT64 | Total cost price of all items in the combo. |
+| `prdBarcodeFormat` | STRING | Barcode format of the product (e.g. `GTIN-13 / EAN-13`, `GTIN-12 / UPC-A`). |
 | `asatdate` | DATE | Extract date of the validated row; partition column and the incremental window column. |
 
 # How it is built

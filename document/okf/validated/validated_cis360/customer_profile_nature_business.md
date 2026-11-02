@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "customer_profile_nature_business"
-description: "One row = one cleaned copy of the source table `customer_profile_nature_business`, unique on (id)."
+description: "One row = one nature of business assigned to a customer profile from source table `customer_profile_nature_business`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_cis360&t=customer_profile_nature_business&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_cis360
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of CIS360 `customer_profile_nature_business`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of CIS360 `customer_profile_nature_business`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Link between CIS360 customer profiles and their nature of business; read by `dim_customer`.
 Used by: [dimension_table.dim_customer](/dimension/dim_customer.md).
 
 # Grain and key
@@ -34,13 +34,13 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Surrogate identifier from the source system (the primary key). |
-| `customer_profile_id` | STRING | Meaning not documented in the repo. |
-| `nature_business_id` | INT64 | Meaning not documented in the repo. |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
-| `create_by` | STRING | Meaning not documented in the repo. |
-| `update_date` | DATETIME | Meaning not documented in the repo. |
-| `update_by` | STRING | Meaning not documented in the repo. |
+| `id` | STRING | Unique identifier (UUID) of the link record. |
+| `customer_profile_id` | STRING | Customer profile the link belongs to (`customer_profile.id`). |
+| `nature_business_id` | INT64 | Nature of business assigned to the customer profile (`nature_business.id`). |
+| `create_date` | DATETIME | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `update_date` | DATETIME | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

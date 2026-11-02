@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "per"
-description: "One row = one personnel, unique on (company_id, percode)."
+description: "One row = one employee (per company), unique on (company_id, percode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=per&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `per` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: personnel. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `per` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Employee master of the MAC5 ERP (mainly salespeople): name, department, position, employment dates and contact details.
 Used by: [dimension_table.dim_sale_representative](/dimension/dim_sale_representative.md), [dimension_table.dim_sale_representative_last](/dimension/dim_sale_representative_last.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md), [dimension_table.dim_order](/dimension/dim_order.md).
 
 # Grain and key
@@ -35,32 +35,32 @@ One row per `company_id`, `percode`. The key is declared twice in the definition
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `percode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `perdep` | STRING | Meaning not documented in the repo. |
-| `pertaxnos` | STRING | Meaning not documented in the repo. |
-| `pernamet` | STRING | Meaning not documented in the repo. |
-| `pernamee` | STRING | Meaning not documented in the repo. |
-| `perbdate` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `perworks` | DATETIME | Meaning not documented in the repo. |
-| `perworkf` | DATETIME | Meaning not documented in the repo. |
-| `peradd1` | STRING | Meaning not documented in the repo. |
-| `peradd2` | STRING | Meaning not documented in the repo. |
-| `peradd3` | STRING | Meaning not documented in the repo. |
-| `pertel` | STRING | Meaning not documented in the repo. |
-| `perpositn` | STRING | Meaning not documented in the repo. |
-| `perstatus` | INT64 | Likely status code (inferred from the column name only; not documented in the repo). |
-| `pernchild` | INT64 | Meaning not documented in the repo. |
-| `percisstudy` | INT64 | Meaning not documented in the repo. |
-| `pernotstudy` | INT64 | Meaning not documented in the repo. |
-| `persalary` | FLOAT64 | Meaning not documented in the repo. |
-| `perhide` | INT64 | Meaning not documented in the repo. |
-| `perlock` | INT64 | Meaning not documented in the repo. |
-| `permemo` | STRING | Meaning not documented in the repo. |
-| `pereditlk` | DATETIME | Meaning not documented in the repo. |
-| `perrefwe` | STRING | Meaning not documented in the repo. |
-| `pereditdt` | DATETIME | Meaning not documented in the repo. |
-| `pereditmf` | STRING | Meaning not documented in the repo. |
-| `perzone` | STRING | Meaning not documented in the repo. |
+| `percode` | STRING | Employee (salesperson) code. |
+| `perdep` | STRING | Department code of the employee (joins `dep.depcode`). |
+| `pertaxnos` | STRING | Tax ID of the employee. |
+| `pernamet` | STRING | Employee name in Thai (first name, surname and nickname in parentheses). |
+| `pernamee` | STRING | Employee name in English. |
+| `perbdate` | DATETIME | Birth date of the employee. |
+| `perworks` | DATETIME | Employment start date. |
+| `perworkf` | DATETIME | Employment end date. |
+| `peradd1` | STRING | Address line 1 of the employee. |
+| `peradd2` | STRING | Address line 2 of the employee. |
+| `peradd3` | STRING | Address line 3 of the employee. |
+| `pertel` | STRING | Phone number of the employee. |
+| `perpositn` | STRING | Job position title in Thai (e.g. Agent salesperson, TA Water Solution). |
+| `perstatus` | INT64 | Employment status code (0, 1, 2). |
+| `pernchild` | INT64 | Number of children of the employee. |
+| `percisstudy` | INT64 | Number of the employee's children in school. |
+| `pernotstudy` | INT64 | Number of the employee's children not in school. |
+| `persalary` | FLOAT64 | Salary of the employee. |
+| `perhide` | INT64 | Hidden flag (-1 = hidden from pick lists, 0 = shown). |
+| `perlock` | INT64 | Lock flag (-1 = locked against editing, 0 = unlocked). |
+| `permemo` | STRING | Free-text memo on the employee. |
+| `pereditlk` | DATETIME | Date and time the record was locked for editing. |
+| `perrefwe` | STRING | External reference code of the record. |
+| `pereditdt` | DATETIME | Date and time the record was last edited. |
+| `pereditmf` | STRING | User code of the person who last edited the record. |
+| `perzone` | STRING | Sales zone of the employee. |
 
 # How it is built
 

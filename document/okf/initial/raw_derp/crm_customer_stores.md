@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_customer_stores"
-description: "One row = one record of source table `crm_customer_stores` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one customer store, a record of source table `crm_customer_stores` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_customer_stores&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_stores/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_stores` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_customer_stores](/validated/validated_derp/crm_customer_stores.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_stores/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_stores` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Stores (branches) of CRM customers, with the store code and name. Used by: [validated_derp.crm_customer_stores](/validated/validated_derp/crm_customer_stores.md).
 
 # Grain and key
 
@@ -30,26 +30,26 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_stores_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_master_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `store_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `store_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `store_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `employee_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `employee_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `employee_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `user_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `user_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `user_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_sync` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `customer_stores_id` | STRING | UUID of the customer store record. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `store_id` | STRING | UUID of the store. |
+| `store_code` | STRING | Store (branch) code of the customer. |
+| `store_name` | STRING | Store (branch) name. |
+| `employee_id` | STRING | UUID of the employee responsible for the store. |
+| `employee_code` | STRING | Employee number of the employee responsible for the store. |
+| `employee_name` | STRING | Name of the employee responsible for the store. |
+| `user_id` | STRING | UUID of the system user responsible for the store. |
+| `user_code` | STRING | Code of the system user responsible for the store. |
+| `user_name` | STRING | Name of the system user responsible for the store. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

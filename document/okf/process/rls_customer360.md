@@ -30,7 +30,7 @@ One row per `milCus` (customer code in the fact; it does not carry company_id, s
 
 | Column | Type | Description |
 |---|---|---|
-| `milCus` | STRING | Customer code (fact_transcation.milCus). The grain; no company column. |
+| `milCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
 | `milPer` | STRING | Pipe-separated distinct salesperson codes (fact milPer) that sold to the customer. |
 | `SectionID` | STRING | Pipe-separated distinct section ids (dim_section.SectionID, via the fact's SectionSK); NULL when the fact rows have no section. |
 | `RegionID` | STRING | Pipe-separated distinct region ids (dim_region.RegionID, via RegionSK). |

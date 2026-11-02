@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tdis_approveorder"
-description: "One row = one order approval (distribution), unique on (company_id, id)."
+description: "One row = one order approval (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tdis_approveorder&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tdis_approveorder`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: order approval (distribution). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `tdis_approveorder`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Approvals that turn quotation-app pre-orders into MAC5 sales orders, with the keying user, approver and time.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,12 +35,12 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `preorder` | STRING | Meaning not documented in the repo. |
-| `orderno` | STRING | Meaning not documented in the repo. |
-| `userkey` | STRING | Meaning not documented in the repo. |
-| `userapprove` | STRING | Meaning not documented in the repo. |
-| `datetime` | DATETIME | Meaning not documented in the repo. |
+| `id` | INT64 | Row identifier of the approval. |
+| `preorder` | STRING | Pre-order number from the quotation app (T-prefixed, e.g. `TAR63041193`). |
+| `orderno` | STRING | MAC5 sales order number created from the pre-order. |
+| `userkey` | STRING | Employee code of the user who keyed the order. |
+| `userapprove` | STRING | Code of the user who approved the order. |
+| `datetime` | DATETIME | Date and time of the approval. |
 
 # How it is built
 

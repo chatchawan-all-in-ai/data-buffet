@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sto"
-description: "One row = one reference code table (sto), unique on (company_id, stocode)."
+description: "One row = one warehouse (per company), unique on (company_id, stocode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=sto&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `sto`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: reference code table (sto). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `sto`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Warehouse master of the MAC5 ERP: code, group (FG, WIP, RM...) and Thai/English name.
 Used by: [dimension_table.dim_store](/dimension/dim_store.md).
 
 # Grain and key
@@ -35,14 +35,14 @@ One row per `company_id`, `stocode`. The key is declared twice in the definition
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `stocode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `stogroup` | STRING | Meaning not documented in the repo. |
-| `stodesct` | STRING | Meaning not documented in the repo. |
-| `stodesce` | STRING | Meaning not documented in the repo. |
-| `stolock` | INT64 | Meaning not documented in the repo. |
-| `stohide` | INT64 | Meaning not documented in the repo. |
-| `stoeditdt` | DATETIME | Meaning not documented in the repo. |
-| `stoeditmf` | STRING | Meaning not documented in the repo. |
+| `stocode` | STRING | Warehouse code. |
+| `stogroup` | STRING | Warehouse group code (FG = finished goods, WIP, RM = raw material, SP, TM, CRC). |
+| `stodesct` | STRING | Thai name of the warehouse. |
+| `stodesce` | STRING | English name of the warehouse. |
+| `stolock` | INT64 | Lock flag (-1 = locked against editing, 0 = unlocked). |
+| `stohide` | INT64 | Hidden flag (-1 = hidden from pick lists, 0 = shown). |
+| `stoeditdt` | DATETIME | Date and time the record was last edited. |
+| `stoeditmf` | STRING | User code of the person who last edited the record. |
 
 # How it is built
 

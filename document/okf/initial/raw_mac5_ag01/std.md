@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "std"
-description: "One row = one record of source table `std` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one customer item-code mapping, a record of source table `std` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=std&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/std/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `std` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.std](/validated/validated_mac5/std.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/std/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `std` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Mapping of products to the item codes and descriptions used by specific customers. Used by: [validated_mac5.std](/validated/validated_mac5/std.md).
 
 # Grain and key
 
@@ -30,14 +30,14 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `STDcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STDtype` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STDdebtor` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STDstkcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STDdescT1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STDdescE1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STDAutoNO` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rowguid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `STDcode` | STRING | Item code the customer uses for the product. |
+| `STDtype` | INT64 | Mapping type code (1, 2). |
+| `STDdebtor` | STRING | Customer code the mapping belongs to (joins `deb.debcode`). |
+| `STDstkcode` | STRING | Stock code of the product (joins `stk.stkcode`). |
+| `STDdescT1` | STRING | Thai description of the item for this customer. |
+| `STDdescE1` | STRING | English description of the item for this customer. |
+| `STDAutoNO` | INT64 | Running ID of the mapping row. |
+| `rowguid` | STRING | Row GUID that uniquely identifies the record in the source database. |
 
 # How it is built
 

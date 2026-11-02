@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "customer_profile"
-description: "One row = one cleaned copy of the source table `customer_profile`, unique on (id)."
+description: "One row = one customer profile from source table `customer_profile`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_cis360&t=customer_profile&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_cis360
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of CIS360 `customer_profile`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of CIS360 `customer_profile`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Master customer profiles of the CIS360 customer 360 system (individuals and juristic persons) with type, status, KYC and verification flags; `customer_code` links them to MAC5 customers in `dim_customer`.
 Used by: [dimension_table.dim_customer](/dimension/dim_customer.md).
 
 # Grain and key
@@ -34,32 +34,32 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Surrogate identifier from the source system (the primary key). |
-| `allkons_id` | STRING | Meaning not documented in the repo. |
-| `tax_id` | STRING | Meaning not documented in the repo. |
-| `customer_id` | STRING | Meaning not documented in the repo. |
-| `customer_type_id` | INT64 | Meaning not documented in the repo. |
-| `customer_profile_type_id` | INT64 | Meaning not documented in the repo. |
-| `customer_status_id` | INT64 | Meaning not documented in the repo. |
-| `image_profile_id` | STRING | Meaning not documented in the repo. |
-| `customer_code` | STRING | Meaning not documented in the repo. |
-| `prefix_id` | INT64 | Meaning not documented in the repo. |
-| `first_name` | STRING | Meaning not documented in the repo. |
-| `middle_name` | STRING | Meaning not documented in the repo. |
-| `last_name` | STRING | Meaning not documented in the repo. |
-| `full_name` | STRING | Meaning not documented in the repo. |
-| `kyc_status` | STRING | Meaning not documented in the repo. |
-| `active_status` | BOOL | Meaning not documented in the repo. |
-| `is_dopa` | BOOL | Meaning not documented in the repo. |
-| `is_dbd` | BOOL | Meaning not documented in the repo. |
-| `is_allow_concern` | BOOL | Meaning not documented in the repo. |
-| `is_delete` | BOOL | Meaning not documented in the repo. |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
-| `create_by` | STRING | Meaning not documented in the repo. |
-| `create_by_platform` | STRING | Meaning not documented in the repo. |
-| `update_by_platform` | STRING | Meaning not documented in the repo. |
-| `update_date` | DATETIME | Meaning not documented in the repo. |
-| `update_by` | STRING | Meaning not documented in the repo. |
+| `id` | STRING | Unique identifier (UUID) of the customer profile. |
+| `allkons_id` | STRING | Identifier of the customer's Allkons ID account (32-character ID). |
+| `tax_id` | STRING | Tax identification number of the customer (13-digit Thai tax or national ID). |
+| `customer_id` | STRING | External customer identifier (not populated in current data). |
+| `customer_type_id` | INT64 | Customer type (`customer_type.id`: 1 = PERSONAL, 2 = JURISTIC). |
+| `customer_profile_type_id` | INT64 | Customer profile type (`customer_profile_type.id`: 1 = PERSONAL, 2 = JURISTIC, 3 = OFFICE_BRAND, 4 = OFFICE). |
+| `customer_status_id` | INT64 | Customer status (`customer_status.id`: 1 = VISITOR, 2 = CUSTOMER). |
+| `image_profile_id` | STRING | Identifier of the customer's profile image file. |
+| `customer_code` | STRING | CIS360 customer code (`C` + 7 digits), matched to `match_customer.customer_allkon` to link MAC5 customers. |
+| `prefix_id` | INT64 | Name prefix (title) of the customer (`prefix.id`). |
+| `first_name` | STRING | First name of the customer (individual). |
+| `middle_name` | STRING | Middle name of the customer (individual). |
+| `last_name` | STRING | Last name of the customer (individual). |
+| `full_name` | STRING | Full display name of the customer (person or company). |
+| `kyc_status` | STRING | KYC verification status (`APPROVE`, `WAIT_FOR_APPROVE`, `REQUEST_MORE`, `REJECT`, `NONE`). |
+| `active_status` | BOOL | Whether the customer profile is active. |
+| `is_dopa` | BOOL | Whether the person's identity was verified with the Department of Provincial Administration (DOPA). |
+| `is_dbd` | BOOL | Whether the juristic person was verified with the Department of Business Development (DBD). |
+| `is_allow_concern` | BOOL | Whether the customer gave consent for use of personal data. |
+| `is_delete` | BOOL | Soft-delete flag (TRUE = record deleted). |
+| `create_date` | DATETIME | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | DATETIME | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

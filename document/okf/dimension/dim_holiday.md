@@ -33,7 +33,7 @@ One row per holiday date among active mds rows. No SK and no `uniqueKey`; `Holid
 | `HolidayDate` | DATE | Date of the holiday (mds `HolidayDate`, DATE passed through). |
 | `HolidayNameTH` | STRING | Pass-through of mds `HolidayNameTH`, cleaned with `cleanString` (empty string becomes NULL). Thai holiday name. |
 | `HolidayNameEN` | STRING | Pass-through of mds `HolidayNameEN`, cleaned with `cleanString` (empty string becomes NULL). English holiday name. |
-| `LongWeekEndFlag` | INT64 | Flag via `castInt64` of mds `LongWeekEndFlag`; indicates the holiday belongs to a long weekend (presumably 1 = yes, 0 = no; exact values not documented in the repo). |
+| `LongWeekEndFlag` | INT64 | `castInt64` of mds `LongWeekEndFlag`: 1 when the holiday is part of a long weekend, NULL otherwise. |
 | `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. |
 
 # How it is built

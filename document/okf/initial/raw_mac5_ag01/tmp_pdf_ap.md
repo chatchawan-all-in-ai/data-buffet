@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tmp_pdf_ap"
-description: "One row = one record of source table `tmp_pdf_ap` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one purchase order line imported from an AP (Asian Property) PDF purchase order, a record of source table `tmp_pdf_ap` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=tmp_pdf_ap&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/tmp_pdf_ap/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tmp_pdf_ap` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.tmp_pdf_ap](/validated/validated_mac5/tmp_pdf_ap.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/tmp_pdf_ap/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tmp_pdf_ap` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Purchase order lines read from PDF purchase orders of the developer AP (Asian Property), one row per PO line, staged for order entry. Used by: [validated_mac5.tmp_pdf_ap](/validated/validated_mac5/tmp_pdf_ap.md).
 
 # Grain and key
 
@@ -30,52 +30,52 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `crdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vendorno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vendorname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `newpo` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pono` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `podate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `potype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `deliverydate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `siteno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sitename` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `siteaddress` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `totalqty` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `totalamount` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `totalitem` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cancelpo` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `termcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `poremark` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quotationno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quotationdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `poitemno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `artno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `artdesc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `hpeancode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vdeancode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vdproductname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qty` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `purchunit` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `price` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qtyperunit` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `priceperunit` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `priceunit` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `packsize` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `articleremark` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `freegoodsflag` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `stk` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `novat` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `statusticket` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `duedate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `reciver` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `deladd` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `que` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `delvname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `delvtel` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `credit` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `crdate` | STRING | Creation date of the developer purchase order as printed in the PDF (text, format varies by developer). |
+| `vendorno` | STRING | Vendor number printed on the developer purchase order. |
+| `vendorname` | STRING | Name of the developer company that issued the purchase order. |
+| `newpo` | STRING | New purchase order flag from the PDF import. |
+| `pono` | STRING | Purchase order number of the developer. |
+| `podate` | STRING | Purchase order date as printed in the PDF (text). |
+| `potype` | STRING | Purchase order type printed on the PDF. |
+| `deliverydate` | STRING | Requested delivery date printed on the purchase order (text). |
+| `siteno` | STRING | Developer project (site) code printed on the purchase order. |
+| `sitename` | STRING | Developer project (site) name printed on the purchase order. |
+| `siteaddress` | STRING | Site or delivery address text printed on the purchase order. |
+| `totalqty` | STRING | Total quantity of the purchase order. |
+| `totalamount` | STRING | Total amount of the purchase order as printed (text, may include thousand separators and currency). |
+| `totalitem` | STRING | Total number of items on the purchase order. |
+| `cancelpo` | STRING | Cancelled purchase order flag. |
+| `termcode` | STRING | Payment term code printed on the purchase order (e.g. `PK45`, `PK30`). |
+| `poremark` | STRING | Remark printed on the purchase order, such as the house plot or unit reference. |
+| `quotationno` | STRING | Quotation number referenced by the purchase order. |
+| `quotationdate` | STRING | Quotation date referenced by the purchase order. |
+| `poitemno` | STRING | Line item number within the purchase order. |
+| `artno` | STRING | Developer article (item) code of the purchase order line. |
+| `artdesc` | STRING | Developer article (item) description of the purchase order line. |
+| `hpeancode` | STRING | EAN barcode of the item as assigned by the developer. |
+| `vdeancode` | STRING | EAN barcode of the item as assigned by the vendor. |
+| `vdproductname` | STRING | Vendor product name of the purchase order line. |
+| `qty` | STRING | Ordered quantity of the purchase order line (text). |
+| `purchunit` | STRING | Purchase unit of the ordered quantity (e.g. `SET`, `each`, `ชุด`). |
+| `price` | STRING | Line amount of the purchase order line as printed (text). |
+| `qtyperunit` | STRING | Quantity per purchase unit. |
+| `priceperunit` | STRING | Unit price of the purchase order line as printed (text). |
+| `priceunit` | STRING | Unit that the unit price refers to (e.g. `SET`, `each`). |
+| `packsize` | STRING | Pack size of the purchase order line. |
+| `articleremark` | STRING | Remark of the purchase order line, such as the unit type or plot reference. |
+| `freegoodsflag` | STRING | Free goods flag of the purchase order line. |
+| `stk` | STRING | MAC5 stock code matched to the purchase order line. |
+| `novat` | STRING | Amount or flag for the price before VAT. |
+| `status` | STRING | Import status flag of the purchase order row. |
+| `statusticket` | STRING | Processing status code of the imported purchase order (0 to 3). |
+| `duedate` | STRING | Due date printed on the purchase order. |
+| `reciver` | STRING | Receiver of the goods as entered on the purchase order (a name or the flag `1`). |
+| `deladd` | STRING | Delivery address printed on the purchase order. |
+| `que` | STRING | Queue number of the delivery. |
+| `delvname` | STRING | Name of the delivery contact on the purchase order. |
+| `delvtel` | STRING | Phone number of the delivery contact on the purchase order. |
+| `credit` | STRING | Credit term code of the purchase order (e.g. `PK45`). |
+| `dinsert` | STRING | Date and time the purchase order was imported. |
 
 # How it is built
 

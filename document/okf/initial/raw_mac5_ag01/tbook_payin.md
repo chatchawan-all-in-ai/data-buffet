@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tbook_payin"
-description: "One row = one record of source table `tbook_payin` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one pay-in record of a sales order, a record of source table `tbook_payin` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=tbook_payin&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbook_payin/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbook_payin` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.tbook_payin](/validated/validated_mac5/tbook_payin.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbook_payin/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbook_payin` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Pay-in submissions of sales orders with status and approval time. Used by: [validated_mac5.tbook_payin](/validated/validated_mac5/tbook_payin.md).
 
 # Grain and key
 
@@ -30,10 +30,10 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `orderno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `datetime` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `datetimeapprove` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `orderno` | STRING | MAC5 sales order number the pay-in belongs to. |
+| `status` | INT64 | Pay-in status code (0 to 6). |
+| `datetime` | STRING | Date and time the pay-in was submitted. |
+| `datetimeapprove` | STRING | Date and time the pay-in was approved. |
 
 # How it is built
 

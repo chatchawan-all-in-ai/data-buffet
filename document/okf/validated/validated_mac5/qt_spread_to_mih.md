@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "qt_spread_to_mih"
-description: "One row = one quotation spread to document link, unique on (company_id, id)."
+description: "One row = one link from a quotation spread to a pre-order (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=qt_spread_to_mih&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `qt_spread_to_mih`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: quotation spread to document link. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `qt_spread_to_mih`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Links from quotation spreads (main_qtspread) to the pre-order numbers created from them.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,13 +35,13 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `qt_spread_ref_id` | INT64 | Meaning not documented in the repo. |
-| `qtid` | STRING | Meaning not documented in the repo. |
-| `mihvnos` | STRING | Likely document number (inferred from the column name only; not documented in the repo). |
-| `status` | INT64 | Likely status code (inferred from the column name only; not documented in the repo). |
-| `rdysendtomac5` | INT64 | Meaning not documented in the repo. |
-| `sto` | STRING | Meaning not documented in the repo. |
+| `id` | INT64 | Row identifier of the link. |
+| `qt_spread_ref_id` | INT64 | Quotation spread identifier (`main_qtspread.id`). |
+| `qtid` | STRING | Quotation identifier (`tbook_quotation.id`). |
+| `mihvnos` | STRING | Document number, unique within company and document type. |
+| `status` | INT64 | Status flag of the link (1 = active). |
+| `rdysendtomac5` | INT64 | Ready-to-send-to-MAC5 flag. |
+| `sto` | STRING | Stock location code of the order. |
 
 # How it is built
 

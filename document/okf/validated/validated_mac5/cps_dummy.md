@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "cps_dummy"
-description: "One row = one cost-per-stock movement, staging variant, unique on (company_id, rowguid)."
+description: "One row = one outstanding sales order line (per company), unique on (company_id, rowguid)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=cps_dummy&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `cps_dummy`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: cost-per-stock movement, staging variant. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `cps_dummy`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Outstanding sales order lines from the ERP's dummy (staging) table, same layout as `cps`.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,33 +35,33 @@ One row per `company_id`, `rowguid`. The key is declared twice in the definition
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `rowguid` | STRING | Meaning not documented in the repo. |
-| `cpsstkid` | STRING | Meaning not documented in the repo. |
-| `cpslinkid` | INT64 | Meaning not documented in the repo. |
-| `cpsvnosid` | STRING | Meaning not documented in the repo. |
-| `cpsdateid` | DATETIME | Meaning not documented in the repo. |
-| `cpscusid` | STRING | Meaning not documented in the repo. |
-| `cpsjob` | STRING | Meaning not documented in the repo. |
-| `cpsdep` | STRING | Meaning not documented in the repo. |
-| `cpsper` | STRING | Meaning not documented in the repo. |
-| `cpsdoc` | STRING | Meaning not documented in the repo. |
-| `cpsmec` | STRING | Meaning not documented in the repo. |
-| `cpssto` | STRING | Meaning not documented in the repo. |
-| `cpsstkreq` | FLOAT64 | Meaning not documented in the repo. |
-| `cpsstkcut1` | FLOAT64 | Meaning not documented in the repo. |
-| `cpsstkcut2` | FLOAT64 | Meaning not documented in the repo. |
-| `cpssumreq` | FLOAT64 | Meaning not documented in the repo. |
-| `cpssumcut1` | FLOAT64 | Meaning not documented in the repo. |
-| `cpssumcut2` | FLOAT64 | Meaning not documented in the repo. |
-| `cpsclearstk` | INT64 | Meaning not documented in the repo. |
-| `cpsclearsum` | INT64 | Meaning not documented in the repo. |
-| `cpsclearuser` | INT64 | Meaning not documented in the repo. |
-| `cpsclearall` | INT64 | Meaning not documented in the repo. |
-| `cpscurc` | INT64 | Meaning not documented in the repo. |
-| `cpsexchg` | FLOAT64 | Meaning not documented in the repo. |
-| `cpscut` | INT64 | Meaning not documented in the repo. |
-| `cpsdelvdate` | DATETIME | Meaning not documented in the repo. |
-| `cpslistno` | INT64 | Meaning not documented in the repo. |
+| `rowguid` | STRING | Row GUID assigned to the record by the source database. |
+| `cpsstkid` | STRING | Product (stock) code of the outstanding line, matching `stk.stkcode`. |
+| `cpslinkid` | INT64 | Internal ID linking the outstanding record to its document line. |
+| `cpsvnosid` | STRING | Number of the sales order document that has the outstanding line (e.g. a `PS` sales order). |
+| `cpsdateid` | DATETIME | Date of the sales order document. |
+| `cpscusid` | STRING | Customer code of the document, matching `deb.debcode`. |
+| `cpsjob` | STRING | Job code of the document (sales job or project category). |
+| `cpsdep` | STRING | Department code of the document, used as the sales channel code. |
+| `cpsper` | STRING | Salesperson (employee) code of the document. |
+| `cpsdoc` | STRING | Document reference code. |
+| `cpsmec` | STRING | Memo-card code of the document, matching `mec.meccode`. |
+| `cpssto` | STRING | Warehouse (store) code the line is issued from or received into. |
+| `cpsstkreq` | FLOAT64 | Quantity ordered on the line. |
+| `cpsstkcut1` | FLOAT64 | Quantity already delivered or received against the line. |
+| `cpsstkcut2` | FLOAT64 | Quantity cut against the line by adjustment documents. |
+| `cpssumreq` | FLOAT64 | Amount ordered on the line. |
+| `cpssumcut1` | FLOAT64 | Amount already delivered or invoiced against the line. |
+| `cpssumcut2` | FLOAT64 | Amount cut against the line by adjustment documents. |
+| `cpsclearstk` | INT64 | Flag: outstanding quantity cleared (-1 = cleared). |
+| `cpsclearsum` | INT64 | Flag: outstanding amount cleared (-1 = cleared). |
+| `cpsclearuser` | INT64 | Flag: line cleared manually by a user (-1 = yes). |
+| `cpsclearall` | INT64 | Flag: line fully cleared (-1 = cleared). |
+| `cpscurc` | INT64 | Currency code (0 = Thai baht). |
+| `cpsexchg` | FLOAT64 | Exchange rate to Thai baht (1 for baht documents). |
+| `cpscut` | INT64 | Flag: line deducts stock (-1 = yes). |
+| `cpsdelvdate` | DATETIME | Requested delivery date of the line. |
+| `cpslistno` | INT64 | Line number within the document. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

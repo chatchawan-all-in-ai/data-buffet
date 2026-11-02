@@ -35,7 +35,7 @@ One row per active mds record, intended as (company, Year, Month, CustomerID). K
 | `CompanyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `CompanyID`; natural join key to dim_company.companyID. |
 | `Year` | INT64 | Calendar year of the follow-up record (`castInt64` of mds `Year`; fails the run on a non-numeric value). |
 | `Month` | INT64 | Month number 1-12 of the follow-up record (`castInt64` of mds `Month`). |
-| `CustomerID` | INT64 | Customer identifier as INT64 (`castInt64` of mds `CustomerID`); presumably the numeric customer code used by the AR facts (inferred from the name, not documented). |
+| `CustomerID` | INT64 | MAC5 customer code as INT64 (`castInt64` of mds `CustomerID`); fact_mir_rs joins it to the receipt customer `mircus` (cast to STRING) with company, year and month. |
 | `CustomerName` | STRING | Customer name as typed in MDS (`cleanString`); descriptive. |
 | `Actions` | STRING | Collection action taken or planned (free text from MDS). |
 | `Justification` | STRING | Reason or explanation recorded for the status (free text from MDS). |

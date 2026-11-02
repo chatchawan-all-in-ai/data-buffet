@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "stg"
-description: "One row = one stock group, unique on (company_id, stgcode)."
+description: "One row = one stock group (per company), unique on (company_id, stgcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=stg&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `stg` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: stock group. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `stg` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Stock group master with Thai/English names and the mapped accounting product group.
 Used by: [onetime.Product_Attribute](/view/onetime/Product_Attribute.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md).
 
 # Grain and key
@@ -35,11 +35,11 @@ One row per `company_id`, `stgcode`. The key is declared twice in the definition
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `stgcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `stgdesct` | STRING | Meaning not documented in the repo. |
-| `stgdesce` | STRING | Meaning not documented in the repo. |
-| `gacccode` | STRING | Meaning not documented in the repo. |
-| `gaccname` | STRING | Meaning not documented in the repo. |
+| `stgcode` | STRING | Stock group code. |
+| `stgdesct` | STRING | Thai name of the stock group. |
+| `stgdesce` | STRING | English name or type label of the stock group. |
+| `gacccode` | STRING | Accounting product group code of the stock group (from `stgacc`). |
+| `gaccname` | STRING | Accounting product group name of the stock group (from `stgacc`). |
 
 # How it is built
 

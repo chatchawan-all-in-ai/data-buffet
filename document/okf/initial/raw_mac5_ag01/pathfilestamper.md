@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "pathfilestamper"
-description: "One row = one record of source table `pathfilestamper` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one file attached to an order, a record of source table `pathfilestamper` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=pathfilestamper&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/pathfilestamper/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `pathfilestamper` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.pathfilestamper](/validated/validated_mac5/pathfilestamper.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/pathfilestamper/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `pathfilestamper` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Files attached to quotation-app orders (POs, pay-in slips, maps, delivery proofs), with file share paths and payment notes. Used by: [validated_mac5.pathfilestamper](/validated/validated_mac5/pathfilestamper.md).
 
 # Grain and key
 
@@ -30,22 +30,22 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mainqtid` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `preorderno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `orderno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path212` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path10acc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path10fac` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `filename` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pathqtid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `note` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `datepayinadmin` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `refpo` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Row identifier of the file record. |
+| `mainqtid` | INT64 | Quotation spread identifier (`main_qtspread.id`). |
+| `preorderno` | STRING | Pre-order number from the quotation app (T-prefixed). |
+| `orderno` | STRING | MAC5 sales order number the file belongs to. |
+| `type` | STRING | File type (`PO`, `Payin`, `Map`, `Delivery`, `MEMO`, `BOQ`, `Other`). |
+| `path212` | STRING | Path of the file on the web upload server. |
+| `path10acc` | STRING | Path of the file on the accounting file share. |
+| `path10fac` | STRING | Path of the file on the factory admin file share. |
+| `filename` | STRING | File name (e.g. `<order>-PAYIN.pdf`). |
+| `uinsert` | STRING | Employee code of the user who uploaded the file, or `bot`. |
+| `date` | STRING | Date and time the file was uploaded (text). |
+| `status` | INT64 | Active flag (1 = active). |
+| `pathqtid` | STRING | Identifier of the quotation-app record the file was uploaded under. |
+| `note` | STRING | Payment note of the file (e.g. 100 percent transfer, 30 percent deposit). |
+| `datepayinadmin` | STRING | Date the pay-in was confirmed by the admin. |
+| `refpo` | STRING | Customer purchase order reference. |
 
 # How it is built
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "product_category"
-description: "One row = one record of source table `product_category` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one product-to-category link, a record of source table `product_category` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mastersku&t=product_category&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mastersku
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mastersku/product_category/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `product_category` table from MASTERSKU; nothing is cleaned or deduplicated here. Used by: [validated_mastersku.product_category](/validated/validated_mastersku/product_category.md).
+External table over AVRO files in `gs://file-raw-data/mastersku/product_category/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `product_category` table from MASTERSKU; nothing is cleaned or deduplicated here. Table meaning: Additional category assignments of MASTERSKU products (product to category links). Used by: [validated_mastersku.product_category](/validated/validated_mastersku/product_category.md).
 
 # Grain and key
 
@@ -30,15 +30,15 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `pc_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pc_prod_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pc_cat_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pc_is_ise` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pc_is_active` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pc_created_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pc_updated_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pc_created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pc_updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `pc_id` | STRING | Unique identifier (UUID) of the product-category link. |
+| `pc_prod_id` | STRING | Product (FK to `product.prd_id`). |
+| `pc_cat_id` | STRING | Category (FK to `category.cat_id`). |
+| `pc_is_ise` | BOOL | In-use flag of the link (FALSE = retired from use). |
+| `pc_is_active` | BOOL | Active flag of the record. |
+| `pc_created_date` | STRING | Timestamp when the record was created. |
+| `pc_updated_date` | STRING | Timestamp when the record was last updated. |
+| `pc_created_by` | STRING | Identifier of the user who created the record. |
+| `pc_updated_by` | STRING | Identifier of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

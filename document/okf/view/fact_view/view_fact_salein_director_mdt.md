@@ -33,11 +33,11 @@ One row per (mix_date, ProductSK, milStk, NewProductMktSK, FlagSaleExc, FlagAccE
 | Column | Type | Description |
 |---|---|---|
 | `mix_date` | DATE | Transaction (bill) date, `PARSE_DATE('%Y%m%d', milYear//milMonth//milDay)` from `view_fact_transcation`. |
-| `milYear` | INT64 | Year part of the bill date (MAC5 `milYear`). |
-| `milMonth` | INT64 | Month part of the bill date. |
-| `milDay` | INT64 | Day part of the bill date. |
+| `milYear` | INT64 | Year part of the document date (Gregorian). |
+| `milMonth` | INT64 | Month part of the document date. |
+| `milDay` | INT64 | Day part of the document date. |
 | `ProductSK` | INT64 | SK of `dim_product_master` for the product (`milStk`, case-insensitive match per company); stable (MERGE dim). |
-| `milStk` | STRING | MAC5 product/stock code of the line. |
+| `milStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
 | `NewProductMktSK` | INT64 | Marketing product-group SK: `COALESCE(mds NewProductMktSK, ProductMktSK)` of `dim_product_mkt` (via `dim_stk_mkt`); `fact_transcation`. |
 | `FlagSaleExc` | STRING | `Yes` = line is excluded from sales KPI (cancelled/status 32,33, no linked order, or matched by a rebate/exclusion rule), else `No` (`fn_flag_exc`). |
 | `FlagAccExc` | STRING | `Yes` = line is excluded from finance/accounting sales (cancelled/status 32,33 or accounting-exclusion rebate rule), else `No`. |
@@ -49,7 +49,7 @@ One row per (mix_date, ProductSK, milStk, NewProductMktSK, FlagSaleExc, FlagAccE
 | `RegionManagerSKLast` | INT64 | SK of the region manager under the latest (`_last`) structure. |
 | `DirectorSKLast` | INT64 | SK of the director under the latest (`_last`) structure. |
 | `milQuan` | FLOAT64 | Quantity sold on the line(s), summed. After split-sale for ag01 (curated_mil divides by sale share); `milQuan_raw` in the source view has the full quantity. |
-| `milAdisc` | FLOAT64 | Pass-through sum of `mil.miladisc` (an additional discount amount on the line, inferred from the name; not documented further in the repo). |
+| `milAdisc` | FLOAT64 | Sum of the lines' additional discount amount (`mil.miladisc`). |
 | `milDisca` | FLOAT64 | Discount amount excluding VAT, summed (`DiscountAmountExcVat` in `Model_Invoice_Transaction`). |
 | `milSum` | FLOAT64 | Net sales amount excluding VAT, summed (`NetSalesExcVat`). |
 | `milsum_incvat` | FLOAT64 | Net sales including VAT: `milSum + Vat` (VAT allocated to the line from the document VAT), summed. |

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "inventory_item_price"
-description: "One row = one cleaned copy of the source table `inventory_item_price`, unique on (inventory_item_price_id)."
+description: "One row = one item price record per item, site and effective date from source table `inventory_item_price`, unique on (inventory_item_price_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=inventory_item_price&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `inventory_item_price`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `inventory_item_price`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Item cost prices (standard cost by site) from the ERP item price list, loaded from a daily full snapshot.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,31 +34,31 @@ One row per `inventory_item_price_id`. The key is declared twice in the definiti
 
 | Column | Type | Description |
 |---|---|---|
-| `inventory_item_price_id` | STRING | Meaning not documented in the repo. |
-| `record_id` | INT64 | Meaning not documented in the repo. |
-| `item_number` | STRING | Meaning not documented in the repo. |
-| `costing_version_id` | STRING | Meaning not documented in the repo. |
-| `price_type` | STRING | Meaning not documented in the repo. |
-| `from_date` | DATE | Meaning not documented in the repo. |
-| `price_site_id` | STRING | Meaning not documented in the repo. |
-| `product_configuration_id` | STRING | Meaning not documented in the repo. |
-| `product_color_id` | STRING | Meaning not documented in the repo. |
-| `product_size_id` | STRING | Meaning not documented in the repo. |
-| `product_style_id` | STRING | Meaning not documented in the repo. |
-| `product_version_id` | STRING | Meaning not documented in the repo. |
-| `product_unit_symbol` | STRING | Meaning not documented in the repo. |
-| `price` | FLOAT64 | Likely price (inferred from the column name only; not documented in the repo). |
-| `price_quantity` | FLOAT64 | Meaning not documented in the repo. |
-| `price_charges_quantity` | FLOAT64 | Meaning not documented in the repo. |
-| `fixed_price_charges` | FLOAT64 | Meaning not documented in the repo. |
-| `is_price_including_charges` | BOOL | Meaning not documented in the repo. |
-| `calculation_number` | STRING | Meaning not documented in the repo. |
-| `is_active` | BOOL | Active flag from the source (inferred from the column name). |
-| `price_created_datetime` | DATETIME | Meaning not documented in the repo. |
-| `created_datetime` | DATETIME | Meaning not documented in the repo. |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_datetime` | DATETIME | Meaning not documented in the repo. |
-| `updated_by` | STRING | Meaning not documented in the repo. |
+| `inventory_item_price_id` | STRING | UUID of the item price record. |
+| `record_id` | INT64 | Record ID (RecId) of the price in the ERP. |
+| `item_number` | STRING | Item (product) number in the ERP item master. |
+| `costing_version_id` | STRING | Costing version code (e.g. `STD` = standard cost). |
+| `price_type` | STRING | Price type (e.g. `Cost`). |
+| `from_date` | DATE | Date from which the price is effective. |
+| `price_site_id` | STRING | Inventory site code (plant) the price applies to, e.g. `KTB`. |
+| `product_configuration_id` | STRING | Product configuration dimension of the item. |
+| `product_color_id` | STRING | Product color dimension of the item (e.g. `BK`, `GY`). |
+| `product_size_id` | STRING | Product size dimension of the item (e.g. `01000L` = 1,000 litres). |
+| `product_style_id` | STRING | Product style dimension of the item (e.g. `STDA`, `MALA`). |
+| `product_version_id` | STRING | Product version dimension of the item. |
+| `product_unit_symbol` | STRING | Unit of measure of the price (e.g. `PCS`). |
+| `price` | FLOAT64 | Item price (unit cost) in THB per price quantity. |
+| `price_quantity` | FLOAT64 | Quantity the price is expressed for (price unit). |
+| `price_charges_quantity` | FLOAT64 | Quantity the price charges are expressed for. |
+| `fixed_price_charges` | FLOAT64 | Fixed charges added to the price. |
+| `is_price_including_charges` | BOOL | Flag showing the price includes charges. |
+| `calculation_number` | STRING | Cost calculation number that produced the price. |
+| `is_active` | BOOL | Flag showing the record is active. |
+| `price_created_datetime` | DATETIME | Timestamp when the price was created in the ERP. |
+| `created_datetime` | DATETIME | Timestamp when the record was created in the DERP extract. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_datetime` | DATETIME | Timestamp when the record was last updated in the DERP extract. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "stk_mkt"
-description: "One row = one record of source table `stk_mkt` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one product with its marketing attributes, a record of source table `stk_mkt` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=stk_mkt&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/stk_mkt/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `stk_mkt` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.stk_mkt](/validated/validated_mac5/stk_mkt.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/stk_mkt/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `stk_mkt` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Marketing attributes of products (production type, segment, series, size, colour). Used by: [validated_mac5.stk_mkt](/validated/validated_mac5/stk_mkt.md).
 
 # Grain and key
 
@@ -30,18 +30,18 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `stkcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `stkgroup` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `stkdesct1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zgroup1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zgroup2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zsize` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zcolor` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zgroup3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zgroup4` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zgroup5` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zgroup6` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zgroup7` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `stkcode` | STRING | Product (stock item) code. |
+| `stkgroup` | STRING | Stock group code (joins `stg.stgcode`). |
+| `stkdesct1` | STRING | Thai product description, line 1. |
+| `zgroup1` | STRING | Marketing group, level 1. |
+| `zgroup2` | STRING | Marketing group, level 2. |
+| `zsize` | STRING | Size label of the product (e.g. 3000 litres, 3.0Q). |
+| `zcolor` | STRING | Colour of the product (e.g. GRAY, BLACK, NATURAL). |
+| `zgroup3` | STRING | Product category name in Thai (e.g. treatment tank). |
+| `zgroup4` | STRING | Marketing group, level 4 (e.g. `OK`). |
+| `zgroup5` | STRING | Production or sourcing type (e.g. SOURCING, FRP, ROTO, BLOW, INJECTION, SERVICE). |
+| `zgroup6` | STRING | Marketing segment as a numeric code plus Thai name (e.g. `0301030201` exterior paint). |
+| `zgroup7` | STRING | Product series or brand line (e.g. LITETITE, Z Series). |
 
 # How it is built
 

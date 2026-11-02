@@ -35,21 +35,21 @@ One row per (`CompanySK`, `projectCode`). `ProjectSK` is a stable surrogate key 
 | `ProjectSK` | INT64 | Stable surrogate key; never regenerated. |
 | `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md). |
 | `companyID` | STRING | MAC5 company code. |
-| `projectCode` | INT64 | Numeric project code (`tbook_profilecomp.projectcode`); the natural key with company, matched by quotations through the numeric prefix in the project text. |
-| `docNo` | INT64 | Document number of the profile (`docno`). |
-| `companyName` | STRING | Name of the customer company owning the project (`compname`). |
-| `companyType` | STRING | Type of the customer company (`typecomp`); code list not documented in the repo. |
-| `companyStatus` | STRING | Status of the customer company (`statuscomp`); code list not documented in the repo. |
-| `companyGroup` | STRING | Group of the customer company (`compgroup`). |
-| `history` | STRING | Free-text history of the profile (`history`). |
-| `place` | STRING | Project/company place text (`place`). |
-| `district` | STRING | District text (`district`) of the place; free text, not linked to the geography dims. |
-| `province` | STRING | Province text (`province`) of the place; free text, not linked to the geography dims. |
-| `profileComp` | STRING | Profile text of the company (`profilecomp`). |
-| `projectName` | STRING | Project name (`projectname`). |
-| `projectFrom` | STRING | Origin/source of the project (`projectfrom`); Meaning not documented in the repo. |
-| `projectStart` | STRING | Project start (`pjstart`), kept as STRING; parsed with SAFE_CAST AS DATE for `projectDay`. |
-| `projectEnd` | STRING | Project end (`pjend`), kept as STRING. |
+| `projectCode` | INT64 | Project code, referenced by the quotation project text. |
+| `docNo` | INT64 | Document number of the project profile. |
+| `companyName` | STRING | Company name of the project owner or contractor. |
+| `companyType` | STRING | Business type of the company (e.g. construction contractor, hotel). |
+| `companyStatus` | STRING | Project status colour (`เขียว` = green, `เหลือง` = yellow, `แดง` = red). |
+| `companyGroup` | STRING | Company group of the project. |
+| `history` | STRING | Background history of the project or company. |
+| `place` | STRING | Location of the project. |
+| `district` | STRING | District of the project. |
+| `province` | STRING | Province of the project. |
+| `profileComp` | STRING | Project profile description (e.g. condominium, hotel). |
+| `projectName` | STRING | Project name. |
+| `projectFrom` | STRING | Source of the project lead. |
+| `projectStart` | STRING | Project start date (text). |
+| `projectEnd` | STRING | Project end date (text). |
 | `projectDay` | INT64 | Project length in days: 0 when `projectStart` is not a valid date; days from start to today (Asia/Bangkok) when `projectEnd` is not a valid date; otherwise end minus start. |
 
 # How it is built

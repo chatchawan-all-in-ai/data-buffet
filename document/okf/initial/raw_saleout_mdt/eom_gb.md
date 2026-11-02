@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "eom_gb"
-description: "One row = one record of source table `eom_gb` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one product line of one Global House bill in a month-end report, a record of source table `eom_gb` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=eom_gb&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_saleout_mdt
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/so_mdt_eom/gb/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `eom_gb` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Used by: [curated_saleout_mdt.curated_eom_gb](/curated/curated_saleout_mdt/curated_eom_gb.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/so_mdt_eom/gb/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `eom_gb` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Month-end closing sell-out bill lines sent by Global House, plus one trailing total row per file. Used by: [curated_saleout_mdt.curated_eom_gb](/curated/curated_saleout_mdt/curated_eom_gb.md).
 
 # Grain and key
 
@@ -30,19 +30,19 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `No_` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Sale_No_` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Sale_Date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Branch_Code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Branch_Name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Branch_Short_Name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Product_Code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Product_Name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Sale_Quantity` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Sale_Amount` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Reference_No_` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Deposit_No_` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `No_` | STRING | Line number of the row in the report file. |
+| `Sale_No_` | STRING | Global House bill (sales document) number; NULL on the trailing total row. |
+| `Sale_Date` | STRING | Sale (bill) date. |
+| `Branch_Code` | STRING | Global House branch code (e.g. `GH-218`). |
+| `Branch_Name` | STRING | Global House branch name. |
+| `Branch_Short_Name` | STRING | Short branch abbreviation used in bill numbers. |
+| `Product_Code` | STRING | Global House product code (13-digit barcode). |
+| `Product_Name` | STRING | Product name. |
+| `Sale_Quantity` | INT64 | Sales quantity (negative = return). |
+| `Sale_Amount` | STRING | Sales amount (THB; negative = return), as text with thousands separators. |
+| `Type` | STRING | Document type: `SALE` or `RETURN` (newer files send Thai `ขาย`/`รับคืน`). |
+| `Reference_No_` | STRING | Original bill number referenced by a return. |
+| `Deposit_No_` | STRING | Deposit document number linked to the bill. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

@@ -33,7 +33,7 @@ One row per (company, AccountCategory, Code) among active mds rows. No SK and no
 | `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), found by a LEFT JOIN on `companyID`; NULL when the mds company code has no match in dim_company. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `AccountCategory` | STRING | Pass-through of mds `AccountCategory`, cleaned with `cleanString` (empty string becomes NULL). Category of the accounting document family the code belongs to. |
-| `Code` | STRING | Pass-through of mds `Code`, cleaned with `cleanString` (empty string becomes NULL). Document type code (e.g. the `type` value on MAC5 document headers, inferred); with AccountCategory and company it identifies the type. |
+| `Code` | STRING | Pass-through of mds `Code`, cleaned with `cleanString` (empty string becomes NULL). MAC5 document type code as used in the `type` columns of document headers and lines, e.g. AR: QS quotation, PS sales order, IS invoice, AS debit note, BS credit note, VS billing statement, RS receipt; AP: QP, PP, IP, AP, BP, VP, RP; IC: PX, TP, JX, SP, SS, TS, MX. |
 | `DescriptionEN` | STRING | Pass-through of mds `DescriptionEN`, cleaned with `cleanString` (empty string becomes NULL). English description. |
 | `DescriptionTH` | STRING | Pass-through of mds `DescriptionTH`, cleaned with `cleanString` (empty string becomes NULL). Thai description. |
 | `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. |

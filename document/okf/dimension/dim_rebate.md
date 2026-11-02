@@ -38,7 +38,7 @@ One row per active MDS row, ordered (SK) by companyID, rebate, status. Uniquenes
 | `rebate` | STRING | The code or text the rule matches; its meaning depends on `status` (customer code, sales person code, product code, department code, or a text fragment for textsplit). `view_fact_transcation` compares it after TRIM. |
 | `rebateName` | STRING | Descriptive name of the rule, from MDS. |
 | `status` | STRING | Rule type that tells which field `rebate` is compared to: `cutomer` (spelled this way), `sales`, `product`, `dep`, `textsplit`. Consumers compare it case-insensitively with TRIM in view_fact_transcation; view_dim_product_master tests `status = 'Product'` exactly. |
-| `type` | STRING | Rule category from MDS; not used by any definition in this repo (meaning not documented in the repo). |
+| `type` | STRING | Name of the MAC5 field(s) the rebate rule matches on, e.g. `StkCode`, `MilPer`, `mildep`; several fields are joined by the pipe character (`MilCus`, `MihCus`). Not used by any definition in this repo. |
 | `salesExc` | STRING | 'Yes' when matching lines are excluded from sales KPIs; consumers treat any other value as no exclusion (default 'No'). |
 | `accExc` | STRING | 'Yes' when matching lines are excluded from accounting KPIs; any other value is no exclusion. |
 | `MdsID` | STRING | `id` of the source row in `mds_data_sales_kpi_condition_master`; trace column. |

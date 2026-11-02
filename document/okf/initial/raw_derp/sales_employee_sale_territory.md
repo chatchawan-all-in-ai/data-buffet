@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sales_employee_sale_territory"
-description: "One row = one record of source table `sales_employee_sale_territory` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one assignment of an employee to a sales territory, a record of source table `sales_employee_sale_territory` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=sales_employee_sale_territory&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/sales_employee_sale_territory/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sales_employee_sale_territory` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.sales_employee_sale_territory](/validated/validated_derp/sales_employee_sale_territory.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/sales_employee_sale_territory/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sales_employee_sale_territory` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Assignments of sales employees to sales territories, with primary flag and validity dates. Used by: [validated_derp.sales_employee_sale_territory](/validated/validated_derp/sales_employee_sale_territory.md).
 
 # Grain and key
 
@@ -30,20 +30,20 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `employee_sale_territory_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `employee_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `employee_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_territory_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `start_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `end_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alternate_level` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_primary` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `employee_sale_territory_id` | STRING | UUID of the employee-to-sales-territory assignment. |
+| `employee_id` | STRING | UUID of the employee in `sales_employee`. |
+| `employee_no` | STRING | Employee number. |
+| `sale_territory_id` | STRING | UUID of the sales territory in `sales_sales_territory`. |
+| `start_date` | STRING | Timestamp the assignment starts. |
+| `end_date` | STRING | Date the assignment ends (NULL = open-ended). |
+| `alternate_level` | INT64 | Assignment level of the employee in the territory (1 = main, 2 = alternate). |
+| `is_primary` | BOOL | Flag marking the employee's primary territory. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

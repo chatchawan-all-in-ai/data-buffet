@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "unit"
-description: "One row = one cleaned copy of the source table `unit`, unique on (unit_id)."
+description: "One row = one measurement unit from source table `unit`, unique on (unit_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mastersku&t=unit&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mastersku
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MASTERSKU `unit`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MASTERSKU `unit`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Lookup of length and weight/volume units used for MASTERSKU product dimensions and weights.
 Used by: [curated_mastersku.product_for_aisearch](/curated/curated_mastersku/product_for_aisearch.md).
 
 # Grain and key
@@ -34,12 +34,12 @@ One row per `unit_id`. The key is declared twice in the definition (`uniqueKey` 
 
 | Column | Type | Description |
 |---|---|---|
-| `unit_id` | STRING | Meaning not documented in the repo. |
-| `unit_type_name` | STRING | Meaning not documented in the repo. |
-| `unit_name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `unit_is_use` | BOOL | Meaning not documented in the repo. |
-| `unit_created_date` | DATETIME | Meaning not documented in the repo. |
-| `unit_updated_date` | DATETIME | Meaning not documented in the repo. |
+| `unit_id` | STRING | Unique identifier (UUID) of the measurement unit. |
+| `unit_type_name` | STRING | Unit type in Thai (`ความยาว` = length, `น้ำหนัก` = weight/volume). |
+| `unit_name` | STRING | Unit symbol (e.g. `mm`, `cm`, `m`, `inch`, `ft`, `kg`, `g`, `lt`, `ml`). |
+| `unit_is_use` | BOOL | In-use flag of the record (FALSE = retired from use). |
+| `unit_created_date` | DATETIME | Timestamp when the record was created. |
+| `unit_updated_date` | DATETIME | Timestamp when the record was last updated. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

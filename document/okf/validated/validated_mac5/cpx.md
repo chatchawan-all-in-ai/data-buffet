@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "cpx"
-description: "One row = one reference code table (cpx), unique on (company_id, cpxstkid, cpxlinkid, cpxvnosid, cpxdateid)."
+description: "One row = one outstanding internal request line (per company), unique on (company_id, cpxstkid, cpxlinkid, cpxvnosid, cpxdateid)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=cpx&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `cpx`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: reference code table (cpx). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `cpx`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Outstanding internal request (`PX`) lines: requested versus issued quantity, with clearing flags.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,22 +35,22 @@ One row per `company_id`, `cpxstkid`, `cpxlinkid`, `cpxvnosid`, `cpxdateid`. The
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `cpxstkid` | STRING | Meaning not documented in the repo. |
-| `cpxlinkid` | INT64 | Meaning not documented in the repo. |
-| `cpxvnosid` | STRING | Meaning not documented in the repo. |
-| `cpxdateid` | DATETIME | Meaning not documented in the repo. |
-| `cpxjob` | STRING | Meaning not documented in the repo. |
-| `cpxdep` | STRING | Meaning not documented in the repo. |
-| `cpxper` | STRING | Meaning not documented in the repo. |
-| `cpxdoc` | STRING | Meaning not documented in the repo. |
-| `cpxmec` | STRING | Meaning not documented in the repo. |
-| `cpxsto` | STRING | Meaning not documented in the repo. |
-| `cpxstkreq` | FLOAT64 | Meaning not documented in the repo. |
-| `cpxstkcut` | FLOAT64 | Meaning not documented in the repo. |
-| `cpxclearstk` | INT64 | Meaning not documented in the repo. |
-| `cpxclearuser` | INT64 | Meaning not documented in the repo. |
-| `cpxclearall` | INT64 | Meaning not documented in the repo. |
-| `cpxstatus` | INT64 | Likely status code (inferred from the column name only; not documented in the repo). |
+| `cpxstkid` | STRING | Product (stock) code of the outstanding request line, matching `stk.stkcode`. |
+| `cpxlinkid` | INT64 | Internal ID linking the outstanding record to its document line. |
+| `cpxvnosid` | STRING | Number of the internal request (`PX`) document that has the outstanding line. |
+| `cpxdateid` | DATETIME | Date of the internal request document. |
+| `cpxjob` | STRING | Job code of the document (sales job or project category). |
+| `cpxdep` | STRING | Department code of the document, used as the sales channel code. |
+| `cpxper` | STRING | Requesting employee code of the document. |
+| `cpxdoc` | STRING | Document reference code. |
+| `cpxmec` | STRING | Memo-card code of the document, matching `mec.meccode`. |
+| `cpxsto` | STRING | Warehouse (store) code the request is issued from. |
+| `cpxstkreq` | FLOAT64 | Quantity requested on the line. |
+| `cpxstkcut` | FLOAT64 | Quantity already issued against the request line. |
+| `cpxclearstk` | INT64 | Flag: outstanding quantity cleared (-1 = cleared). |
+| `cpxclearuser` | INT64 | Flag: line cleared manually by a user (-1 = yes). |
+| `cpxclearall` | INT64 | Flag: line fully cleared (-1 = cleared). |
+| `cpxstatus` | INT64 | Status code of the outstanding line. |
 
 # How it is built
 

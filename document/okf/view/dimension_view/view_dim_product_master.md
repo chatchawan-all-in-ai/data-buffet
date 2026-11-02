@@ -36,26 +36,26 @@ Starts from each dim_product_master row (`ProductSK`; natural key `CompanySK` + 
 | `CompanySK` | INT64 | SK of the company in dim_company. |
 | `companyID` | STRING | MAC5 company code. |
 | `ProductCode` | STRING | MAC5 stock code (`stkcode`). |
-| `ProductCode1` | STRING | Alternate stock code (`stkcode2`). |
+| `ProductCode1` | STRING | Secondary product code or short model name. |
 | `ProductMac5Description` | STRING | MAC5 stock description (`stkdesct1`). |
-| `ProductGroupMAC5` | STRING | MAC5 stock group code (`stg.stgcode`). |
-| `ProductGroupMac5Description` | STRING | MAC5 stock group description (Thai). |
-| `ProductGroupMAC5Type` | STRING | MAC5 stock group English description (`stgdesce`, used as the group type). |
-| `ProductGroupACC` | STRING | Accounting group code (`gacccode`). |
-| `ProductGroupACCName` | STRING | Accounting group name (`gaccname`). |
-| `ProductName` | STRING | Product name from MASTERSKU `product_detail`. |
-| `ProductDescription` | STRING | Product description from MASTERSKU `product`. |
-| `ProductDimension1` | STRING | Product dimension 1 from MASTERSKU. |
-| `ProductDimension2` | STRING | Product dimension 2 from MASTERSKU. |
-| `ProductDimension3` | STRING | Product dimension 3 from MASTERSKU. |
-| `ProductDimension4` | STRING | Product dimension 4 from MASTERSKU. |
-| `ProductGarantee` | STRING | Warranty text from MASTERSKU (`pd_garantee`; spelling as source). |
-| `ProductGaranteeDetail` | STRING | Warranty detail text from MASTERSKU. |
-| `ThaiIndustrialStandardFlag` | STRING | Flag derived in dim_product_master from the certificate (Thai Industrial Standard / TIS); exact values not documented here. |
-| `ThaiIndustrialSatandardDetail` | STRING | Certificate detail (`pd_certificate`; column spelled `Satandard`). |
-| `BrandID` | STRING | Brand id from MASTERSKU product. |
-| `VendorID` | STRING | Vendor id from MASTERSKU product. |
-| `WarehouseID` | STRING | Default warehouse (`stksto` in MAC5). |
+| `ProductGroupMAC5` | STRING | Stock group code. |
+| `ProductGroupMac5Description` | STRING | Thai name of the stock group. |
+| `ProductGroupMAC5Type` | STRING | English name or type label of the stock group. |
+| `ProductGroupACC` | STRING | Accounting product group code of the stock group (from `stgacc`). |
+| `ProductGroupACCName` | STRING | Accounting product group name of the stock group (from `stgacc`). |
+| `ProductName` | STRING | Full product name. |
+| `ProductDescription` | STRING | Product name/description. |
+| `ProductDimension1` | STRING | Value of variant dimension 1 of the product (label set by its product group `pg_dimension1`). |
+| `ProductDimension2` | STRING | Value of variant dimension 2 of the product (label set by its product group `pg_dimension2`). |
+| `ProductDimension3` | STRING | Value of variant dimension 3 of the product (label set by its product group `pg_dimension3`). |
+| `ProductDimension4` | STRING | Value of variant dimension 4 of the product (label set by its product group `pg_dimension4`). |
+| `ProductGarantee` | STRING | Warranty period of the product (e.g. `1Y`, `20 Y`). |
+| `ProductGaranteeDetail` | STRING | Warranty terms and conditions text. |
+| `ThaiIndustrialStandardFlag` | STRING | `Yes` when the product has a Thai Industrial Standard (TIS) certificate in `product_detail.pd_certificate` (not empty, `-`, `No`, `None` or `โปรดระบุ`), else `No`. |
+| `ThaiIndustrialSatandardDetail` | STRING | Thai Industrial Standard (TIS) certificate of the product (e.g. `TIS.982-2556`). |
+| `BrandID` | STRING | Brand of the product (FK to `brand.bra_id`). |
+| `VendorID` | STRING | Vendor (supplier) of the product (FK to `vendor.vd_id`). |
+| `WarehouseID` | STRING | Default warehouse code of the item (joins `sto.stocode`). |
 | `Barcode` | STRING | Barcode (`STKcode885`). |
 | `FlagSalesExc` | STRING | `salesExc` from dim_rebate (status 'Product') matched on ProductCode and CompanySK; 'No' when none. |
 | `FlagAccExc` | STRING | `accExc` from dim_rebate (status 'Product'); 'No' when none. |

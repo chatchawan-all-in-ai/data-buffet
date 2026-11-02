@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "cre"
-description: "One row = one record of source table `cre` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one supplier, a record of source table `cre` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=cre&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/cre/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `cre` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.cre](/validated/validated_mac5/cre.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/cre/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `cre` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Supplier (creditor) master of MAC5: names, address, tax ID, payable account and terms. Used by: [validated_mac5.cre](/validated/validated_mac5/cre.md).
 
 # Grain and key
 
@@ -30,46 +30,46 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `crecode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cregroup` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crenamet` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crenamee` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crecontactt` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crecontacte` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creadd1at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creadd2at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creadd3at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creadd1ae` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creadd2ae` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creadd3ae` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cretel` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cretaxnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crezone` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cregrade` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crelimit` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cretaxclass` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cregoodsdef` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crecreditterm` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `credate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crehide` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crefax` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creemail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cretarget` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crememo` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creac` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crelock` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creoname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creprice` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creeditlk` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crerefwe` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cresortnt` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cresortne` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crecardid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creeditdt` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creeditmf` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cretaxtype` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creinex` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crebranch` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `crecode` | STRING | Supplier (creditor) code. |
+| `cregroup` | STRING | Supplier group code. |
+| `crenamet` | STRING | Supplier name in Thai. |
+| `crenamee` | STRING | Supplier name in English. |
+| `crecontactt` | STRING | Contact person name in Thai. |
+| `crecontacte` | STRING | Contact person name in English. |
+| `creadd1at` | STRING | Thai address line 1 (house number, road, sub-district). |
+| `creadd2at` | STRING | Thai address line 2 (usually the province). |
+| `creadd3at` | STRING | Thai address line 3 (usually the postal code). |
+| `creadd1ae` | STRING | English address line 1. |
+| `creadd2ae` | STRING | English address line 2. |
+| `creadd3ae` | STRING | English address line 3. |
+| `cretel` | STRING | Supplier phone number. |
+| `cretaxnos` | STRING | Supplier 13-digit tax identification number. |
+| `crezone` | STRING | Zone code of the supplier. |
+| `cregrade` | STRING | Grade of the supplier. |
+| `crelimit` | FLOAT64 | Credit limit granted by the supplier. |
+| `cretaxclass` | FLOAT64 | Withholding tax class or rate of the supplier. |
+| `cregoodsdef` | INT64 | Default goods type of the supplier. |
+| `crecreditterm` | INT64 | Credit term in days granted by the supplier. |
+| `credate` | STRING | Date the supplier record was opened. |
+| `crehide` | INT64 | Flag: supplier hidden from selection lists. |
+| `crefax` | STRING | Supplier fax number. |
+| `creemail` | STRING | Supplier email address. |
+| `cretarget` | FLOAT64 | Purchase target for the supplier. |
+| `crememo` | STRING | Free-text memo of the supplier. |
+| `creac` | STRING | General-ledger payable account code of the supplier (e.g. 214401, 214999). |
+| `crelock` | INT64 | Flag: supplier record locked against editing. |
+| `creoname` | STRING | Other (alternative) name of the supplier. |
+| `creprice` | STRING | Price level of the supplier. |
+| `creeditlk` | STRING | Timestamp of the current edit lock on the supplier record. |
+| `crerefwe` | STRING | Web reference of the supplier. |
+| `cresortnt` | STRING | Thai sort name of the supplier. |
+| `cresortne` | STRING | English sort name of the supplier. |
+| `crecardid` | STRING | 13-digit national ID card number of an individual supplier. |
+| `creeditdt` | STRING | Date and time the supplier record was last edited. |
+| `creeditmf` | STRING | User code of the person who last edited the supplier record. |
+| `cretaxtype` | INT64 | Tax type of the supplier (0 or 1). |
+| `creinex` | INT64 | VAT inclusion mode of the supplier's prices. |
+| `crebranch` | STRING | Supplier branch number for tax purposes (`00000` = head office). |
 
 # How it is built
 

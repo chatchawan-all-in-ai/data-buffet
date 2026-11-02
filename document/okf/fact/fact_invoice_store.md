@@ -36,22 +36,22 @@ One row per `FactInvoiceStoreSK` (ROW_NUMBER over CompanySK, date parts, milType
 | `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md). |
 | `company_id` | STRING | MAC5 company code; only 'ag01' and 'ab01' are loaded. |
 | `mix_date` | DATE | Invoice date: SAFE.PARSE_DATE of mihYear, mihMonth, mihDay; partition column. |
-| `mihYear` | INT64 | Year of the document header (curated_mih). |
-| `mihMonth` | INT64 | Month of the document header (curated_mih). |
-| `mihDay` | INT64 | Day of the document header (curated_mih). |
-| `mihVnos` | STRING | Invoice document number (curated_mih). |
+| `mihYear` | INT64 | Year part of the document date (Gregorian). |
+| `mihMonth` | INT64 | Month part of the document date. |
+| `mihDay` | INT64 | Day part of the document date. |
+| `mihVnos` | STRING | Document number, unique within company and document type. |
 | `InvoiceSK` | INT64 | Surrogate key of [dim_invoice](/dimension/dim_invoice.md) (milType 'IS', company + mihVnos, latest InvoiceSK); NULL if unmatched. |
 | `OrderSK` | INT64 | OrderSK of the order whose `mihVnos = milLinkVcno`; -1 when none. |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md) (`debcode = mihCus`, same company); NULL when unmatched. |
 | `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md) (case-insensitive product code match); rows without a product (or with TypeMarketing 'Sourcing') are dropped by an INNER JOIN, so never NULL. |
 | `StoreSK` | INT64 | Surrogate key of [dim_store](/dimension/dim_store.md) (warehouse/branch) matched on company and store code; -1 when the store code is not in dim_store. |
-| `milType` | STRING | Document type from curated_mil. |
-| `milListNo` | INT64 | Line number within the document (curated_mil). |
-| `milStk` | STRING | Product code of the line. |
-| `milDesc` | STRING | Line description text from curated_mil. |
-| `milSto` | STRING | Store/warehouse code of the line (joins `dim_store.StoreCode`). |
-| `milLinkVcno` | STRING | Document number the line links to (the originating order); join key to dim_order. |
-| `milLinkVcType` | STRING | Document type of the linked document (curated_mil); meaning inferred from the name. |
+| `milType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `milListNo` | INT64 | Line number within the document. |
+| `milStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
+| `milDesc` | STRING | Free-text line description. |
+| `milSto` | STRING | Warehouse (store) code the line is issued from, matching `sto` store codes. |
+| `milLinkVcno` | STRING | Number of the source document this line was created from (e.g. the sales order of an invoice line). |
+| `milLinkVcType` | STRING | Document type of the linked source document (e.g. `PS`, `PP`). |
 | `milQuan` | FLOAT64 | Allocated quantity from curated_mil, passed through per salesperson share. |
 | `milPer` | STRING | Salesperson code of the line (the IS line is split by salesperson share). |
 | `percent_sale` | STRING | Salesperson share (percentage, stored as STRING) already applied to milQuan by curated_mil. |

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "grp"
-description: "One row = one cleaned source record of `grp` (no declared key; append-style, not deduplicated)."
+description: "One row = one user permission group from source table `grp` (no declared key; append-style, not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=grp&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `grp`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: group reference (append-style, no key). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `grp`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: User permission groups of the MAC5 web applications, with the role name, granted menu IDs and product lines.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,10 +35,10 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `grpid` | INT64 | Meaning not documented in the repo. |
-| `grpstatus` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `grpname` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `grpline` | STRING | Meaning not documented in the repo. |
+| `grpid` | INT64 | Permission group ID. |
+| `grpstatus` | STRING | Comma-separated list of menu or permission IDs granted to the group. |
+| `grpname` | STRING | Permission group name in Thai, describing the role (e.g. sales admin, installation manager). |
+| `grpline` | STRING | Product lines the group covers, as a quoted list (e.g. `'LYN','TEC'`). |
 
 # How it is built
 

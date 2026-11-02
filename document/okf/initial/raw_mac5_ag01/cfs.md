@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "cfs"
-description: "One row = one record of source table `cfs` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one invoice settlement record, a record of source table `cfs` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=cfs&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/cfs/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `cfs` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.cfs](/validated/validated_mac5/cfs.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/cfs/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `cfs` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Settlement status of each invoice: amount due, amount settled and adjusted, billing and clearing flags. Used by: [validated_mac5.cfs](/validated/validated_mac5/cfs.md).
 
 # Grain and key
 
@@ -30,26 +30,26 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `cfsvnosid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfsdateid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfscusid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfstypeid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfsjob` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfsdep` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfsper` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfsdoc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfsmec` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfssumreq` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfssumcut1` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfssumcut2` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfsclearsum` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfsclearuser` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfsclearall` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfscurc` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfsexchg` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfsbillcut` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cfsbillclr` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rowguid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `cfsvnosid` | STRING | Number of the invoice whose settlement is tracked. |
+| `cfsdateid` | STRING | Date of the invoice. |
+| `cfscusid` | STRING | Customer code of the invoice, matching `deb.debcode`. |
+| `cfstypeid` | STRING | Document type of the invoice (e.g. `IS`, `PS`). |
+| `cfsjob` | STRING | Job code of the invoice (sales job or project category). |
+| `cfsdep` | STRING | Department code of the invoice, used as the sales channel code. |
+| `cfsper` | STRING | Salesperson (employee) code of the invoice. |
+| `cfsdoc` | STRING | Document reference code. |
+| `cfsmec` | STRING | Memo-card code of the invoice, matching `mec.meccode`. |
+| `cfssumreq` | FLOAT64 | Invoice amount to be settled. |
+| `cfssumcut1` | FLOAT64 | Amount already settled by receipts. |
+| `cfssumcut2` | FLOAT64 | Amount adjusted by credit or debit notes (negative for credit notes). |
+| `cfsclearsum` | INT64 | Flag: invoice amount fully settled (-1 = settled). |
+| `cfsclearuser` | INT64 | Flag: invoice cleared manually by a user (-1 = yes). |
+| `cfsclearall` | INT64 | Flag: invoice fully cleared (-1 = cleared). |
+| `cfscurc` | INT64 | Currency code (0 = Thai baht). |
+| `cfsexchg` | FLOAT64 | Exchange rate to Thai baht (1 for baht documents). |
+| `cfsbillcut` | FLOAT64 | Amount of the invoice already placed on a billing statement. |
+| `cfsbillclr` | INT64 | Flag: invoice fully billed (-1 = billed). |
+| `rowguid` | STRING | Row GUID assigned to the record by the source database. |
 
 # How it is built
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "turnover_brand"
-description: "One row = one record of source table `turnover_brand` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one merchandise category, brand and stock class on one snapshot date, a record of source table `turnover_brand` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=turnover_brand&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_saleout_mdt
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/turnover_brand/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `turnover_brand` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Used by: [validated_saleout_mdt.turnover_brand](/validated/validated_saleout_mdt/turnover_brand.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/turnover_brand/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `turnover_brand` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Stock turnover by brand and stock class from Boonthavorn (BT) for the company products. Used by: [validated_saleout_mdt.turnover_brand](/validated/validated_saleout_mdt/turnover_brand.md).
 
 # Grain and key
 
@@ -30,15 +30,15 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `VENDOR_ID` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `VENDOR_NAME` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MCH3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `BRAND` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `CLASS_STOCK` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `UR_COST_AMT` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `T_O` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `START_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `END_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `VENDOR_ID` | STRING | Boonthavorn vendor code of the supplier (the company), e.g. `10009`. |
+| `VENDOR_NAME` | STRING | Supplier (vendor) name as registered at Boonthavorn. |
+| `MCH3` | STRING | Boonthavorn merchandise category, top level (department). |
+| `BRAND` | STRING | Product brand. |
+| `CLASS_STOCK` | STRING | Boonthavorn stock class (`B3G Class A`, `B3G Class B`, `B3G Class C`, `B3G New`, `B3G Dead`). |
+| `UR_COST_AMT` | FLOAT64 | Value of the unrestricted stock at cost for the category, brand and stock class. |
+| `T_O` | FLOAT64 | Stock turnover (T/O) of the category, brand and stock class, in days. |
+| `START_DATE` | STRING | Stock snapshot date (same as `end_date`). |
+| `END_DATE` | STRING | Stock snapshot date. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_quotation_delivery_detail"
-description: "One row = one cleaned copy of the source table `crm_quotation_delivery_detail`, unique on (quotation_delivery_detail_id)."
+description: "One row = one product line of a quotation delivery round from source table `crm_quotation_delivery_detail`, unique on (quotation_delivery_detail_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_quotation_delivery_detail&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_quotation_delivery_detail`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_quotation_delivery_detail`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Products and quantities to deliver in each quotation delivery round.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,25 +34,25 @@ One row per `quotation_delivery_detail_id`. The key is declared twice in the def
 
 | Column | Type | Description |
 |---|---|---|
-| `quotation_delivery_detail_id` | STRING | Meaning not documented in the repo. |
-| `quotation_delivery_id` | STRING | Meaning not documented in the repo. |
-| `quotation_id` | STRING | Meaning not documented in the repo. |
-| `quotation_no` | STRING | Meaning not documented in the repo. |
-| `quotation_date` | DATE | Meaning not documented in the repo. |
-| `product_id` | STRING | Meaning not documented in the repo. |
-| `product_code` | STRING | Meaning not documented in the repo. |
-| `product_name` | STRING | Meaning not documented in the repo. |
-| `qty_delivered` | INT64 | Meaning not documented in the repo. |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `order_sort` | INT64 | Meaning not documented in the repo. |
-| `combo_set_id` | STRING | Meaning not documented in the repo. |
-| `combo_set_code` | STRING | Meaning not documented in the repo. |
-| `quotation_detail_id` | STRING | Meaning not documented in the repo. |
+| `quotation_delivery_detail_id` | STRING | UUID of the delivery round line. |
+| `quotation_delivery_id` | STRING | UUID of the delivery round in `crm_quotation_delivery`. |
+| `quotation_id` | STRING | UUID of the quotation in `crm_quotation`. |
+| `quotation_no` | STRING | Quotation document number (e.g. `QT2607...` or `MDT2610...`). |
+| `quotation_date` | DATE | Quotation document date. |
+| `product_id` | STRING | UUID of the product in the DERP product master. |
+| `product_code` | STRING | Product (item) code. |
+| `product_name` | STRING | Product name. |
+| `qty_delivered` | INT64 | Quantity of the product to deliver in the round. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `order_sort` | INT64 | Display order of the row within its parent record. |
+| `combo_set_id` | STRING | UUID of the combo set (product bundle) the line belongs to. |
+| `combo_set_code` | STRING | Code of the combo set (product bundle) the line belongs to (e.g. `COMBOSET00014`). |
+| `quotation_detail_id` | STRING | UUID of the quotation line in `crm_quotation_detail`. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

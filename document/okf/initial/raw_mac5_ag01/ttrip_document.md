@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "ttrip_document"
-description: "One row = one record of source table `ttrip_document` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one scanned item unit loaded on a delivery trip, a record of source table `ttrip_document` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=ttrip_document&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_gps/ttrip_document/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `ttrip_document` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.ttrip_document](/validated/validated_mac5/ttrip_document.md).
+External table over AVRO files in `gs://file-raw-data/mac5_gps/ttrip_document/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `ttrip_document` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Item scans of delivery documents loaded on trips, linking each scanned unit to its trip and MAC5 delivery document; source of dim_delivery and fact_delivery. Used by: [validated_mac5.ttrip_document](/validated/validated_mac5/ttrip_document.md).
 
 # Grain and key
 
@@ -30,29 +30,29 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `frun` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fmaster` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fdocument` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fserial_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fitem` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fusername` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fdatetime` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fitem2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fdoc_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fcancel` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fref1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fdocument_rt` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fdocument_rtdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fdocument_ac` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fdocument_acdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `frepro` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fqty_order` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fitemdoc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fitem3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fprice` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fin365` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `im_mac` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `post` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `frun` | STRING | Scan record identifier (timestamp `yyMMddHHmmss` plus sequence). |
+| `fmaster` | STRING | Trip identifier (`ttrip.frun`). |
+| `fdocument` | STRING | MAC5 delivery document number loaded on the trip (matches `mil.milvnos` of type IS). |
+| `fserial_no` | STRING | Scanned serial or barcode of the unit. |
+| `fitem` | STRING | Stock code of the scanned item. |
+| `fusername` | STRING | Code of the user who scanned the item. |
+| `fdatetime` | STRING | Date and time the item was scanned (`yyyyMMddHHmmss`). |
+| `fitem2` | STRING | Alternative stock code of the scanned item, used when `fitem` does not match the invoice line. |
+| `fdoc_type` | STRING | Document type of `fdocument` (e.g. `IS`). |
+| `fcancel` | STRING | Customer refusal flag (0 = received, other = refused). |
+| `fref1` | STRING | Sales order number referenced by the delivery document. |
+| `fdocument_rt` | INT64 | Document returned flag. |
+| `fdocument_rtdate` | STRING | Date the document was returned. |
+| `fdocument_ac` | INT64 | Document received by accounting flag. |
+| `fdocument_acdate` | STRING | Date the document was received by accounting. |
+| `frepro` | STRING | Reprocess reference of the scan. |
+| `fqty_order` | INT64 | Ordered quantity of the item on the document. |
+| `fitemdoc` | STRING | Item reference of the document line. |
+| `fitem3` | STRING | Third stock code or barcode of the scanned item. |
+| `fprice` | FLOAT64 | Price value of the scanned item. |
+| `fin365` | INT64 | IN365 flag of the scan. |
+| `im_mac` | STRING | Device (MAC) identifier of the scanner. |
+| `post` | STRING | Posting flag of the scan. |
 
 # How it is built
 

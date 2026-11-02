@@ -37,7 +37,7 @@ One row per (`CompanyID`, `CustomerReportKey`), where the key is the report name
 | `CustomerSegmentSK` | INT64 | Segment SK from [dim_customer_segment](/dimension/dim_customer_segment.md) (matched on company and `Segment3` = tier or channel code); falls back to the 'DC' segment, then to -1 (Non-Segment). |
 | `CompanyID` | STRING | MAC5 company code (natural key part; NULL on the -1 row). |
 | `CustomerReportName` | STRING | Display name of the shop/account as printed on reports: the spelling most used on invoices (after MDS renames), else the MDS name. |
-| `FlagPC` | BOOL | MDS flag from the customer report master (boolean); `PC` is not defined in the repo (likely promoter/PC-assigned shop, inferred from the name). NULL when the name comes only from invoices. |
+| `FlagPC` | BOOL | Boolean flag from the MDS customer report master marking a PC (promoter) customer report name; NULL when the name comes only from invoices. |
 | `ShopOnline` | STRING | Online-shop attribute from the MDS customer report master (string, cleaned); NULL when not in MDS. |
 | `OnlinePercent` | FLOAT64 | Online share from the MDS customer report master (FLOAT64, cast with castFloat64); NULL when not in MDS. |
 | `SegmentSource` | STRING | How the segment was determined: 'MDS' (MDS `CustomerTier` matched a segment), 'CHANNEL' (derived from the quotation channel), 'DEFAULT' (fallback / Non-Segment). |
@@ -54,7 +54,7 @@ One row per (`CompanyID`, `CustomerReportKey`), where the key is the report name
 | `TADebcode` | STRING | Debtor code used to find the TA (a code whose own display name equals the report name; latest invoice if several). |
 | `SaleRepSK` | INT64 | Sale representative SK from `dim_sale_representative_last` for the employee behind the TA (`debsalesp`); NULL if none. |
 | `ReportDebcode` | STRING | Representative debtor code of the shop: `SegmentDebcode` if present, else `TADebcode`. |
-| `DEBcreditTerm` | INT64 | Credit term in days from MAC5 `deb` for `ReportDebcode`. |
+| `DEBcreditTerm` | INT64 | Credit term in days. |
 | `InvoiceProvinceSK` | INT64 | Province SK of `ReportDebcode`'s address (from `view_deb_address_data`, one row chosen per debtor: sub-district > district > province, then lowest SK). |
 | `InvoiceDistrictSK` | INT64 | District SK from the same address row. |
 | `InvoiceSubDistrictSK` | INT64 | Sub-district SK from the same address row. |

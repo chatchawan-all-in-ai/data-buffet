@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "product_admin_status"
-description: "One row = one record of source table `product_admin_status` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one admin review status, a record of source table `product_admin_status` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mastersku&t=product_admin_status&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mastersku
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mastersku/product_admin_status/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `product_admin_status` table from MASTERSKU; nothing is cleaned or deduplicated here. Used by: [validated_mastersku.product_admin_status](/validated/validated_mastersku/product_admin_status.md).
+External table over AVRO files in `gs://file-raw-data/mastersku/product_admin_status/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `product_admin_status` table from MASTERSKU; nothing is cleaned or deduplicated here. Table meaning: Lookup of the admin review statuses a MASTERSKU product can carry (new, edit, duplicate, open, close, delete). Used by: [validated_mastersku.product_admin_status](/validated/validated_mastersku/product_admin_status.md).
 
 # Grain and key
 
@@ -30,11 +30,11 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `pas_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pas_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pas_is_use` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pas_created_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pas_updated_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `pas_id` | STRING | Unique identifier (UUID) of the admin review status. |
+| `pas_name` | STRING | Admin review status name in Thai (new, edit, duplicate, open, close, delete). |
+| `pas_is_use` | BOOL | In-use flag of the record (FALSE = retired from use). |
+| `pas_created_date` | STRING | Timestamp when the record was created. |
+| `pas_updated_date` | STRING | Timestamp when the record was last updated. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "rcv"
-description: "One row = one record of source table `rcv` (MAC5 for company `ag01`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one received serial-numbered unit, a record of source table `rcv` (MAC5 for company `ag01`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=rcv&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/rcv/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `rcv` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.rcv](/validated/validated_mac5/rcv.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/rcv/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `rcv` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Finished-goods receiving log by unit serial number (product, warehouse, order and packing details). Used by: [validated_mac5.rcv](/validated/validated_mac5/rcv.md).
 
 # Grain and key
 
@@ -30,39 +30,39 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `serial` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvtype` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvvnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvstk` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `descT1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qty` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `unit` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvsto` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `username` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `remark` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvtime` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Fdatetime2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvStatus` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvtypeFG` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvstatusMR` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvzone` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvOrder` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvCommand` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvExtCode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mixVnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mixDate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvTranCode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvCancel` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvOrder_Pack` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `adjVnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `PackDate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `PackTime` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rcvConvert` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Odate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Ouser` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `FMIL2LISTNO` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Ostatus` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `serial` | STRING | Serial number of the received unit; unique within the company. |
+| `rcvdate` | STRING | Receiving date, as text. |
+| `rcvtype` | INT64 | Receiving type code. |
+| `rcvvnos` | STRING | Number of the receiving document. |
+| `rcvstk` | STRING | Product (stock) code of the received unit. |
+| `descT1` | STRING | Product description in Thai. |
+| `qty` | STRING | Received quantity, as text. |
+| `unit` | STRING | Unit of the received quantity. |
+| `rcvsto` | STRING | Warehouse (store) code the unit is received into. |
+| `username` | STRING | User who recorded the receipt. |
+| `remark` | STRING | Free-text remark. |
+| `rcvtime` | STRING | Receiving time, as text. |
+| `Fdatetime2` | STRING | Record date and time, as text. |
+| `rcvStatus` | STRING | Receiving status code. |
+| `rcvtypeFG` | STRING | Finished-goods receiving type code. |
+| `rcvstatusMR` | STRING | Material-receipt status code. |
+| `rcvzone` | STRING | Storage zone code. |
+| `rcvOrder` | STRING | Order number the unit is received for. |
+| `rcvCommand` | STRING | Production command (work order) number. |
+| `rcvExtCode` | STRING | External code of the received unit. |
+| `mixVnos` | STRING | Number of the linked ERP document. |
+| `mixDate` | STRING | Date of the linked ERP document. |
+| `rcvTranCode` | STRING | Transfer code of the receipt. |
+| `rcvCancel` | INT64 | Cancellation flag of the receipt. |
+| `rcvOrder_Pack` | STRING | Order number used for packing. |
+| `adjVnos` | STRING | Number of the related stock-adjustment document. |
+| `PackDate` | STRING | Packing date, as text. |
+| `PackTime` | STRING | Packing time, as text. |
+| `rcvConvert` | INT64 | Flag: receipt converted into an ERP document. |
+| `Odate` | STRING | Date of the last status change, as text. |
+| `Ouser` | STRING | User of the last status change. |
+| `FMIL2LISTNO` | INT64 | Line number of the linked document line. |
+| `Ostatus` | STRING | Status after the last change. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

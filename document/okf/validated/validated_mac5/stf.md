@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "stf"
-description: "One row = one staff reference, unique on (company_id, stfcode, stflist)."
+description: "One row = one component line of a product formula (per company), unique on (company_id, stfcode, stflist)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=stf&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `stf`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: staff reference. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `stf`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Product formulas (bills of material): components and quantities per finished item.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,12 +35,12 @@ One row per `company_id`, `stfcode`, `stflist`. The key is declared twice in the
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `stfcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `stflist` | STRING | Meaning not documented in the repo. |
-| `stfquan` | FLOAT64 | Meaning not documented in the repo. |
-| `stfunit` | INT64 | Meaning not documented in the repo. |
-| `stfautono` | INT64 | Meaning not documented in the repo. |
-| `stfmemo` | STRING | Meaning not documented in the repo. |
+| `stfcode` | STRING | Product code of the finished item the formula belongs to. |
+| `stflist` | STRING | Stock code of the component in the formula. |
+| `stfquan` | FLOAT64 | Quantity of the component per finished item. |
+| `stfunit` | INT64 | Unit number of the component quantity. |
+| `stfautono` | INT64 | Running ID of the formula line. |
+| `stfmemo` | STRING | Free-text memo on the formula line. |
 
 # How it is built
 

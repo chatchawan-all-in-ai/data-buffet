@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mir"
-description: "One row = one record of source table `mir` (MAC5 for company `aa05`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one receipt or billing statement line, a record of source table `mir` (MAC5 for company `aa05`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_aa05&t=mir&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_aa05
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_aa05/mir/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `mir` table from MAC5 for company `aa05`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.mir](/validated/validated_mac5/mir.md).
+External table over AVRO files in `gs://file-raw-data/mac5_aa05/mir/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `mir` table from MAC5 for company `aa05`; nothing is cleaned or deduplicated here. Table meaning: Lines of receipts (`RS`/`RP`) and billing statements (`VS`/`VP`), each settling or billing one invoice or note. Used by: [validated_mac5.mir](/validated/validated_mac5/mir.md).
 
 # Grain and key
 
@@ -30,25 +30,25 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `mirday` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mirmonth` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miryear` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mirtype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mirvnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mircus` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mirlistno` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mirbinvno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mirbinvdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mirbinvtype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mirdesc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mircog` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mirvat` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mirsum` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mircurc` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mirexchg` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mirtag` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mirnotes` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miraccount` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `mirday` | INT64 | Day part of the document date. |
+| `mirmonth` | INT64 | Month part of the document date. |
+| `miryear` | INT64 | Year part of the document date (Gregorian). |
+| `mirtype` | STRING | Document type code (RS = sales receipt, VS = sales billing statement; RP / VP on the purchase side). |
+| `mirvnos` | STRING | Receipt or billing-statement document number. |
+| `mircus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mirlistno` | INT64 | Line number within the receipt or billing statement. |
+| `mirbinvno` | STRING | Number of the invoice (or debit/credit note) settled or billed by this line. |
+| `mirbinvdate` | STRING | Date of the invoice settled or billed by this line. |
+| `mirbinvtype` | STRING | Document type of the invoice settled or billed by this line (IS, AS, BS). |
+| `mirdesc` | STRING | Description copied from the referenced invoice. |
+| `mircog` | FLOAT64 | Line amount excluding VAT. |
+| `mirvat` | FLOAT64 | VAT amount of the line. |
+| `mirsum` | FLOAT64 | Line amount including VAT (amount received or billed). |
+| `mircurc` | INT64 | Currency code (0 = Thai baht). |
+| `mirexchg` | FLOAT64 | Exchange rate to Thai baht (1 for baht documents). |
+| `mirtag` | INT64 | Tag marker of the line. |
+| `mirnotes` | STRING | Notes copied from the referenced invoice. |
+| `miraccount` | STRING | Account code of the line. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

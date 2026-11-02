@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_nd_sd_price_zone"
-description: "One row = one record of source table `crm_nd_sd_price_zone` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one link between an ND/SD price and a data zone, a record of source table `crm_nd_sd_price_zone` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_nd_sd_price_zone&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_nd_sd_price_zone/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_nd_sd_price_zone` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_nd_sd_price_zone](/validated/validated_derp/crm_nd_sd_price_zone.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_nd_sd_price_zone/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_nd_sd_price_zone` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Data zones each ND/SD price applies to. Used by: [validated_derp.crm_nd_sd_price_zone](/validated/validated_derp/crm_nd_sd_price_zone.md).
 
 # Grain and key
 
@@ -30,18 +30,18 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `nd_sd_price_zone_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `nd_sd_price_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `data_zone_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `data_zone_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `data_zone_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `data_zone_level` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `nd_sd_price_zone_id` | STRING | UUID of the price-to-data-zone link. |
+| `nd_sd_price_id` | STRING | UUID of the ND/SD price record in `crm_nd_sd_price`. |
+| `data_zone_id` | STRING | UUID of the data zone in `crm_data_zone`. |
+| `data_zone_code` | STRING | Code of the data zone the price applies to. |
+| `data_zone_name` | STRING | Name of the data zone the price applies to. |
+| `data_zone_level` | INT64 | Hierarchy level of the data zone (1 = top level). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

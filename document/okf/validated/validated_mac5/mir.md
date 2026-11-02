@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mir"
-description: "One row = one receipt/return line (per company), unique on (company_id, mirtype, mirvnos, mirlistno)."
+description: "One row = one receipt or billing statement line (per company), unique on (company_id, mirtype, mirvnos, mirlistno)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mir&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `mir` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: receipt/return line (per company). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `mir` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Lines of receipts (`RS`/`RP`) and billing statements (`VS`/`VP`), each settling or billing one invoice or note.
 Used by: [fact_table.fact_mir_rs](/fact/fact_mir_rs.md), [fact_table.fact_mir_vs](/fact/fact_mir_vs.md), [fact_view.view_aging_ri](/view/fact_view/view_aging_ri.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
 
 # Grain and key
@@ -35,25 +35,25 @@ One row per `company_id`, `mirtype`, `mirvnos`, `mirlistno`. The key is declared
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `mirday` | INT64 | Likely day part of the document date (inferred from the column name only; not documented in the repo). |
-| `mirmonth` | INT64 | Likely month part of the document date (inferred from the column name only; not documented in the repo). |
-| `miryear` | INT64 | Likely year part of the document date (inferred from the column name only; not documented in the repo). |
-| `mirtype` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `mirvnos` | STRING | Likely document number (inferred from the column name only; not documented in the repo). |
-| `mircus` | STRING | Likely customer code (inferred from the column name only; not documented in the repo). |
-| `mirlistno` | INT64 | Meaning not documented in the repo. |
-| `mirbinvno` | STRING | Meaning not documented in the repo. |
-| `mirbinvdate` | DATETIME | Meaning not documented in the repo. |
-| `mirbinvtype` | STRING | Meaning not documented in the repo. |
-| `mirdesc` | STRING | Meaning not documented in the repo. |
-| `mircog` | FLOAT64 | Meaning not documented in the repo. |
-| `mirvat` | FLOAT64 | Meaning not documented in the repo. |
-| `mirsum` | FLOAT64 | Meaning not documented in the repo. |
-| `mircurc` | INT64 | Meaning not documented in the repo. |
-| `mirexchg` | FLOAT64 | Meaning not documented in the repo. |
-| `mirtag` | INT64 | Meaning not documented in the repo. |
-| `mirnotes` | STRING | Meaning not documented in the repo. |
-| `miraccount` | STRING | Meaning not documented in the repo. |
+| `mirday` | INT64 | Day part of the document date. |
+| `mirmonth` | INT64 | Month part of the document date. |
+| `miryear` | INT64 | Year part of the document date (Gregorian). |
+| `mirtype` | STRING | Document type code (RS = sales receipt, VS = sales billing statement; RP / VP on the purchase side). |
+| `mirvnos` | STRING | Receipt or billing-statement document number. |
+| `mircus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mirlistno` | INT64 | Line number within the receipt or billing statement. |
+| `mirbinvno` | STRING | Number of the invoice (or debit/credit note) settled or billed by this line. |
+| `mirbinvdate` | DATETIME | Date of the invoice settled or billed by this line. |
+| `mirbinvtype` | STRING | Document type of the invoice settled or billed by this line (IS, AS, BS). |
+| `mirdesc` | STRING | Description copied from the referenced invoice. |
+| `mircog` | FLOAT64 | Line amount excluding VAT. |
+| `mirvat` | FLOAT64 | VAT amount of the line. |
+| `mirsum` | FLOAT64 | Line amount including VAT (amount received or billed). |
+| `mircurc` | INT64 | Currency code (0 = Thai baht). |
+| `mirexchg` | FLOAT64 | Exchange rate to Thai baht (1 for baht documents). |
+| `mirtag` | INT64 | Tag marker of the line. |
+| `mirnotes` | STRING | Notes copied from the referenced invoice. |
+| `miraccount` | STRING | Account code of the line. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_customer_contact"
-description: "One row = one record of source table `crm_customer_contact` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one customer contact, a record of source table `crm_customer_contact` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_customer_contact&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_contact/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_contact` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_customer_contact](/validated/validated_derp/crm_customer_contact.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_contact/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_contact` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Contact persons of CRM customers with phone, fax, email and LINE details. Used by: [validated_derp.crm_customer_contact](/validated/validated_derp/crm_customer_contact.md).
 
 # Grain and key
 
@@ -30,25 +30,25 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_contact_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_master_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `contact_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `contact_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `contact_position` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `phone` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fax` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `email` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `line_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_primary` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_sync` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `customer_contact_id` | STRING | UUID of the customer contact record. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
+| `contact_type` | STRING | Contact type (e.g. `Business`). |
+| `contact_name` | STRING | Name of the contact person. |
+| `contact_position` | STRING | Job position of the contact person. |
+| `phone` | STRING | Contact phone number. |
+| `fax` | STRING | Contact fax number. |
+| `email` | STRING | Contact email address. |
+| `line_id` | STRING | Contact LINE ID. |
+| `is_primary` | BOOL | Flag marking the customer's primary contact. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

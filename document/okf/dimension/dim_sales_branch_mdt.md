@@ -47,7 +47,7 @@ Three blocks UNION ALL'd. (1) `branch_master`: active MDS rows de-duplicated to 
 | `BranchName` | STRING | Branch name; for waiting rows the feed name or the BranchCode when the feed has no name; 'ไม่ระบุสาขา' on the -1 row. |
 | `ZoneCode` | STRING | Zone code (`zone_id`); 'WAITING' for waiting rows, 'NotZone' on the -1 row. |
 | `ZoneName` | STRING | Zone name from dim_zone_mdt; 'Waiting Master' for waiting rows, 'ไม่ระบุโซน' on the -1 row. |
-| `Warehouse` | STRING | Warehouse code from the MDS branch master (meaning of values not documented); NULL on waiting rows, 'NotWarehouse' on the -1 row. |
+| `Warehouse` | STRING | Company warehouse/site code serving the branch (`KTB`, `LP`, `KK`, `UB`, `PK`, `HY`); NULL on waiting rows, 'NotWarehouse' on the -1 row. |
 | `StartDate` | DATE | MDS start_date for master rows; first sale date seen in the feeds for waiting rows; NULL on the -1 row. |
 | `EndDate` | DATE | MDS end_date for master rows; NULL for waiting and -1 rows. |
 | `MdsID` | STRING | `id` of the source row in `mds_data_mdt_sales_branch_master`; NULL on waiting and -1 rows. |

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "cre"
-description: "One row = one reference code table (cre), unique on (company_id, crecode)."
+description: "One row = one supplier (per company), unique on (company_id, crecode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=cre&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `cre`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: reference code table (cre). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `cre`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Supplier (creditor) master of MAC5: names, address, tax ID, payable account and terms.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,46 +35,46 @@ One row per `company_id`, `crecode`. The key is declared twice in the definition
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `crecode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `cregroup` | STRING | Meaning not documented in the repo. |
-| `crenamet` | STRING | Meaning not documented in the repo. |
-| `crenamee` | STRING | Meaning not documented in the repo. |
-| `crecontactt` | STRING | Meaning not documented in the repo. |
-| `crecontacte` | STRING | Meaning not documented in the repo. |
-| `creadd1at` | STRING | Meaning not documented in the repo. |
-| `creadd2at` | STRING | Meaning not documented in the repo. |
-| `creadd3at` | STRING | Meaning not documented in the repo. |
-| `creadd1ae` | STRING | Meaning not documented in the repo. |
-| `creadd2ae` | STRING | Meaning not documented in the repo. |
-| `creadd3ae` | STRING | Meaning not documented in the repo. |
-| `cretel` | STRING | Meaning not documented in the repo. |
-| `cretaxnos` | STRING | Meaning not documented in the repo. |
-| `crezone` | STRING | Meaning not documented in the repo. |
-| `cregrade` | STRING | Meaning not documented in the repo. |
-| `crelimit` | FLOAT64 | Meaning not documented in the repo. |
-| `cretaxclass` | FLOAT64 | Meaning not documented in the repo. |
-| `cregoodsdef` | INT64 | Meaning not documented in the repo. |
-| `crecreditterm` | INT64 | Meaning not documented in the repo. |
-| `credate` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `crehide` | INT64 | Meaning not documented in the repo. |
-| `crefax` | STRING | Meaning not documented in the repo. |
-| `creemail` | STRING | Meaning not documented in the repo. |
-| `cretarget` | FLOAT64 | Meaning not documented in the repo. |
-| `crememo` | STRING | Meaning not documented in the repo. |
-| `creac` | STRING | Meaning not documented in the repo. |
-| `crelock` | INT64 | Meaning not documented in the repo. |
-| `creoname` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `creprice` | STRING | Likely price (inferred from the column name only; not documented in the repo). |
-| `creeditlk` | DATETIME | Meaning not documented in the repo. |
-| `crerefwe` | STRING | Meaning not documented in the repo. |
-| `cresortnt` | STRING | Meaning not documented in the repo. |
-| `cresortne` | STRING | Meaning not documented in the repo. |
-| `crecardid` | STRING | Meaning not documented in the repo. |
-| `creeditdt` | DATETIME | Meaning not documented in the repo. |
-| `creeditmf` | STRING | Meaning not documented in the repo. |
-| `cretaxtype` | INT64 | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `creinex` | INT64 | Meaning not documented in the repo. |
-| `crebranch` | STRING | Meaning not documented in the repo. |
+| `crecode` | STRING | Supplier (creditor) code. |
+| `cregroup` | STRING | Supplier group code. |
+| `crenamet` | STRING | Supplier name in Thai. |
+| `crenamee` | STRING | Supplier name in English. |
+| `crecontactt` | STRING | Contact person name in Thai. |
+| `crecontacte` | STRING | Contact person name in English. |
+| `creadd1at` | STRING | Thai address line 1 (house number, road, sub-district). |
+| `creadd2at` | STRING | Thai address line 2 (usually the province). |
+| `creadd3at` | STRING | Thai address line 3 (usually the postal code). |
+| `creadd1ae` | STRING | English address line 1. |
+| `creadd2ae` | STRING | English address line 2. |
+| `creadd3ae` | STRING | English address line 3. |
+| `cretel` | STRING | Supplier phone number. |
+| `cretaxnos` | STRING | Supplier 13-digit tax identification number. |
+| `crezone` | STRING | Zone code of the supplier. |
+| `cregrade` | STRING | Grade of the supplier. |
+| `crelimit` | FLOAT64 | Credit limit granted by the supplier. |
+| `cretaxclass` | FLOAT64 | Withholding tax class or rate of the supplier. |
+| `cregoodsdef` | INT64 | Default goods type of the supplier. |
+| `crecreditterm` | INT64 | Credit term in days granted by the supplier. |
+| `credate` | DATETIME | Date the supplier record was opened. |
+| `crehide` | INT64 | Flag: supplier hidden from selection lists. |
+| `crefax` | STRING | Supplier fax number. |
+| `creemail` | STRING | Supplier email address. |
+| `cretarget` | FLOAT64 | Purchase target for the supplier. |
+| `crememo` | STRING | Free-text memo of the supplier. |
+| `creac` | STRING | General-ledger payable account code of the supplier (e.g. 214401, 214999). |
+| `crelock` | INT64 | Flag: supplier record locked against editing. |
+| `creoname` | STRING | Other (alternative) name of the supplier. |
+| `creprice` | STRING | Price level of the supplier. |
+| `creeditlk` | DATETIME | Timestamp of the current edit lock on the supplier record. |
+| `crerefwe` | STRING | Web reference of the supplier. |
+| `cresortnt` | STRING | Thai sort name of the supplier. |
+| `cresortne` | STRING | English sort name of the supplier. |
+| `crecardid` | STRING | 13-digit national ID card number of an individual supplier. |
+| `creeditdt` | DATETIME | Date and time the supplier record was last edited. |
+| `creeditmf` | STRING | User code of the person who last edited the supplier record. |
+| `cretaxtype` | INT64 | Tax type of the supplier (0 or 1). |
+| `creinex` | INT64 | VAT inclusion mode of the supplier's prices. |
+| `crebranch` | STRING | Supplier branch number for tax purposes (`00000` = head office). |
 
 # How it is built
 

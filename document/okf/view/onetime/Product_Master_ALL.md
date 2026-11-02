@@ -33,23 +33,23 @@ Starts from each `dim_product_master` row of company `ag01`, whose natural key i
 | Column | Type | Description |
 |---|---|---|
 | `ProductCode` | STRING | MAC5 stock code (`dim_product_master.ProductCode`). |
-| `ProductCode1` | STRING | Alternative MAC5 stock code (`stk.stkcode2`). |
+| `ProductCode1` | STRING | Secondary product code or short model name. |
 | `ProductMac5Description` | STRING | MAC5 Thai product description (`stk.stkdesct1`). |
-| `ProductGroupMAC5` | STRING | MAC5 stock group code (`stg.stgcode`). |
-| `ProductGroupMac5Description` | STRING | Thai stock group description (`stg.stgdesct`). |
-| `ProductGroupMAC5Type` | STRING | English description/type of the stock group (`stg.stgdesce`). |
-| `ProductGroupACC` | STRING | Accounting group code (`stg.gacccode`). |
-| `ProductGroupACCName` | STRING | Accounting group name (`stg.gaccname`). |
-| `ProductName` | STRING | Product name from MASTERSKU (`product_detail.pd_product_name`). |
-| `ProductDescription` | STRING | Description from MASTERSKU (`product.prd_description`). |
-| `ProductDimension1` | STRING | MASTERSKU `prd_dimension1`; meaning not documented in the repo. |
-| `ProductDimension2` | STRING | MASTERSKU `prd_dimension2`; meaning not documented in the repo. |
-| `ProductDimension3` | STRING | MASTERSKU `prd_dimension3`; meaning not documented in the repo. |
-| `ProductDimension4` | STRING | MASTERSKU `prd_dimension4`; meaning not documented in the repo. |
-| `ProductGarantee` | STRING | Warranty text (`product_detail.pd_garantee`; spelling follows the source). |
-| `ProductGaranteeDetail` | STRING | Warranty detail (`pd_garantee_detail`). |
+| `ProductGroupMAC5` | STRING | Stock group code. |
+| `ProductGroupMac5Description` | STRING | Thai name of the stock group. |
+| `ProductGroupMAC5Type` | STRING | English name or type label of the stock group. |
+| `ProductGroupACC` | STRING | Accounting product group code of the stock group (from `stgacc`). |
+| `ProductGroupACCName` | STRING | Accounting product group name of the stock group (from `stgacc`). |
+| `ProductName` | STRING | Full product name. |
+| `ProductDescription` | STRING | Product name/description. |
+| `ProductDimension1` | STRING | Value of variant dimension 1 of the product (label set by its product group `pg_dimension1`). |
+| `ProductDimension2` | STRING | Value of variant dimension 2 of the product (label set by its product group `pg_dimension2`). |
+| `ProductDimension3` | STRING | Value of variant dimension 3 of the product (label set by its product group `pg_dimension3`). |
+| `ProductDimension4` | STRING | Value of variant dimension 4 of the product (label set by its product group `pg_dimension4`). |
+| `ProductGarantee` | STRING | Warranty period of the product (e.g. `1Y`, `20 Y`). |
+| `ProductGaranteeDetail` | STRING | Warranty terms and conditions text. |
 | `ThaiIndustrialStandardFlag` | STRING | `Yes` when `pd_certificate` is filled with a real value (not empty, `โปรดระบุ`, `-`, `None`, `No`), else `No` (TIS certification flag). |
-| `ThaiIndustrialSatandardDetail` | STRING | Certificate text (`pd_certificate`); the typo `Satandard` is the real column name. |
+| `ThaiIndustrialSatandardDetail` | STRING | Thai Industrial Standard (TIS) certificate of the product (e.g. `TIS.982-2556`). |
 | `Barcode` | STRING | Barcode (`stk.stkcode885`). |
 | `MarketingGroupID` | STRING | Marketing group id from `view_dim_product_mkt` (via ProductMktSK). |
 | `MarketingGroup` | STRING | Marketing group name. |
@@ -62,18 +62,18 @@ Starts from each `dim_product_master` row of company `ag01`, whose natural key i
 | `DirectorMarketingName` | STRING | First name of the marketing director responsible for the marketing type (`dim_product_mkt_director.name`, personal data). |
 | `DirectorMarketingSurname` | STRING | Surname of that director (personal data). |
 | `DirectorMarketingNameSurname` | STRING | Name and surname concatenated (personal data). |
-| `ProductColor` | STRING | Colour from `Product_Attribute`. |
-| `ProductShape` | STRING | Shape from `Product_Attribute`. |
-| `ProductGrossWeight` | FLOAT64 | Gross weight from `Product_Attribute`. |
-| `ProductNetWeight` | FLOAT64 | Net weight from `Product_Attribute`. |
-| `ProductSeries` | STRING | Series text from `Product_Attribute`. |
-| `ProductSize` | STRING | Size text from `Product_Attribute`. |
-| `ProductSizeHight` | FLOAT64 | Height from `Product_Attribute` (typo is the real name). |
-| `ProductSizeLong` | FLOAT64 | Length from `Product_Attribute`. |
-| `ProductSizeWide` | FLOAT64 | Width from `Product_Attribute`. |
-| `ProductUnit` | STRING | Sale unit from `Product_Attribute`. |
-| `ProductMaterials` | STRING | Material from `Product_Attribute`. |
-| `ProductModel` | STRING | Model from `Product_Attribute`. |
+| `ProductColor` | STRING | Color of the product. |
+| `ProductShape` | STRING | Packaging shape of the product (e.g. box, gallon, length). |
+| `ProductGrossWeight` | FLOAT64 | Gross (packed) weight of the product. |
+| `ProductNetWeight` | FLOAT64 | Net weight of the product. |
+| `ProductSeries` | STRING | Product series name. |
+| `ProductSize` | STRING | Size of the product. |
+| `ProductSizeHight` | FLOAT64 | Product height. |
+| `ProductSizeLong` | FLOAT64 | Product length (depth). |
+| `ProductSizeWide` | FLOAT64 | Product width. |
+| `ProductUnit` | STRING | Sales unit of the product (e.g. `EA`). |
+| `ProductMaterials` | STRING | Main material of the product (e.g. PE). |
+| `ProductModel` | STRING | Product model. |
 
 # How it is built
 

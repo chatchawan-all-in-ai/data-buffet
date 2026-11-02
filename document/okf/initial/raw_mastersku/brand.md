@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "brand"
-description: "One row = one record of source table `brand` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one brand, a record of source table `brand` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mastersku&t=brand&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mastersku
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mastersku/brand/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `brand` table from MASTERSKU; nothing is cleaned or deduplicated here. Used by: [validated_mastersku.brand](/validated/validated_mastersku/brand.md).
+External table over AVRO files in `gs://file-raw-data/mastersku/brand/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `brand` table from MASTERSKU; nothing is cleaned or deduplicated here. Table meaning: Product brands of the old product master MASTERSKU, each owned by a vendor. Used by: [validated_mastersku.brand](/validated/validated_mastersku/brand.md).
 
 # Grain and key
 
@@ -30,19 +30,19 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `bra_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bra_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bra_detail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bra_vendor_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bra_logo_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bra_logo_path` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bra_is_use` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bra_is_active` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bra_created_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bra_created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bra_updated_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bra_updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bra_name_th` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `bra_id` | STRING | Unique identifier (UUID) of the brand. |
+| `bra_name` | STRING | Brand name. |
+| `bra_detail` | STRING | Brand description. |
+| `bra_vendor_id` | STRING | Vendor that owns the brand (FK to `vendor.vd_id`). |
+| `bra_logo_name` | STRING | File name of the brand logo. |
+| `bra_logo_path` | STRING | Storage path of the brand logo. |
+| `bra_is_use` | BOOL | In-use flag of the record (FALSE = retired from use). |
+| `bra_is_active` | BOOL | Active flag of the record. |
+| `bra_created_date` | STRING | Timestamp when the record was created. |
+| `bra_created_by` | STRING | Identifier of the user who created the record. |
+| `bra_updated_date` | STRING | Timestamp when the record was last updated. |
+| `bra_updated_by` | STRING | Identifier of the user who last updated the record. |
+| `bra_name_th` | STRING | Brand name in Thai. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

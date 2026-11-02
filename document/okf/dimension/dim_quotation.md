@@ -36,18 +36,18 @@ One row per (`CompanySK`, `Running`) where `Running` is the quotation running nu
 | `ProjectSK` | INT64 | Project SK from [dim_project](/dimension/dim_project.md), joined on parsed `ProjectCode` and `CompanySK`; NULL when no project code was parsed or found. |
 | `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md). |
 | `companyID` | STRING | MAC5 company code. |
-| `ID` | INT64 | Source row id of the quotation (`curated_tbook_quotation.ID`), joined to `tbook_quodetail.linkid`. |
-| `Running` | STRING | Quotation running number (document number); the natural key with company and the value that orders put in `mihRef1`. |
-| `SDate` | DATE | Quotation date (DATE). |
+| `ID` | INT64 | Quotation identifier, referenced by `tbook_quodetail.linkid`. |
+| `Running` | STRING | Quotation number referenced by orders, with missing source numbers represented as an empty string. |
+| `SDate` | DATE | Quotation date. |
 | `Year` | INT64 | Year of `SDate`. |
 | `Month` | INT64 | Month of `SDate`. |
 | `Day` | INT64 | Day of `SDate`. |
-| `Atten` | STRING | Free-text 'attention' field of the quotation; its first backslash-separated part may hold the customer code. |
-| `Project` | STRING | Free-text project field; its first backslash-separated part may hold a customer code or a numeric project code. |
-| `UInsert` | STRING | User who inserted the quotation (`UInsert`, likely a user id, inferred from the name). |
-| `PriceValidity` | STRING | Price validity terms text from the quotation. |
-| `TermDelivery` | STRING | Delivery terms text from the quotation. |
-| `TermPayment` | STRING | Payment terms text from the quotation. |
+| `Atten` | STRING | Attention or contact text of the quotation, including a customer code before a backslash when supplied. |
+| `Project` | STRING | Project text of the quotation, including a project or customer code before a backslash when supplied. |
+| `UInsert` | STRING | Employee code of the user who created the row. |
+| `PriceValidity` | STRING | Price validity text. |
+| `TermDelivery` | STRING | Delivery terms text. |
+| `TermPayment` | STRING | Payment terms text (e.g. credit 30 days). |
 | `CustomerID` | STRING | Customer code parsed from `Atten` (alphanumeric, 5+ characters before a backslash) or, failing that, from `Project` (alphanumeric, 7+ characters); NULL if none. |
 | `ProjectCode` | INT64 | Numeric project code (2+ digits) parsed from the first part of `Project`; NULL when that part was taken as a customer code or is not numeric. |
 | `OrderStatus` | STRING | Fulfilment status: per quoted item 'On Order' (no PS order line with `mihRef1 = Running`), 'Complete' (ordered quantity and amount >= quoted), else 'In Process'; per quotation any 'In Process' wins, then 'On Order', else 'Complete'. NULL when the quotation has no detail lines. |

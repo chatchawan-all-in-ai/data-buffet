@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_customer_credit"
-description: "One row = one cleaned copy of the source table `crm_customer_credit`, unique on (customer_credit_id)."
+description: "One row = one customer credit record from source table `crm_customer_credit`, unique on (customer_credit_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_customer_credit&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_customer_credit`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_customer_credit`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Credit settings of CRM customers: credit limit, credit and payment terms, credit status and collateral.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,30 +34,30 @@ One row per `customer_credit_id`. The key is declared twice in the definition (`
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_credit_id` | STRING | Meaning not documented in the repo. |
-| `customer_master_id` | STRING | Meaning not documented in the repo. |
-| `customer_code` | STRING | Meaning not documented in the repo. |
-| `credit_limit` | FLOAT64 | Meaning not documented in the repo. |
-| `credit_limit_change_date` | DATE | Meaning not documented in the repo. |
-| `credit_term` | STRING | Meaning not documented in the repo. |
-| `credit_rating` | STRING | Meaning not documented in the repo. |
-| `credit_scoring` | FLOAT64 | Meaning not documented in the repo. |
-| `credit_status` | STRING | Meaning not documented in the repo. |
-| `credit_management_group` | STRING | Meaning not documented in the repo. |
-| `payment_term` | STRING | Meaning not documented in the repo. |
-| `payment_method` | STRING | Meaning not documented in the repo. |
-| `payment_condition` | STRING | Meaning not documented in the repo. |
-| `collateral_type` | STRING | Meaning not documented in the repo. |
-| `collateral_start_date` | DATE | Meaning not documented in the repo. |
-| `collateral_end_date` | DATE | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `is_sync` | BOOL | Meaning not documented in the repo. |
+| `customer_credit_id` | STRING | UUID of the customer credit record. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
+| `credit_limit` | FLOAT64 | Credit limit of the customer in THB (0 = no credit). |
+| `credit_limit_change_date` | DATE | Date the credit limit was last changed. |
+| `credit_term` | STRING | Credit term code (e.g. `N000` = cash, `N030` = 30 days). |
+| `credit_rating` | STRING | Credit rating of the customer. |
+| `credit_scoring` | FLOAT64 | Credit score of the customer. |
+| `credit_status` | STRING | Credit status (e.g. `NORMAL`). |
+| `credit_management_group` | STRING | Credit management group (customer chain) the customer is managed under. |
+| `payment_term` | STRING | Payment term code (e.g. `N000`, `N030`). |
+| `payment_method` | STRING | Payment method of the customer. |
+| `payment_condition` | STRING | Payment condition of the customer. |
+| `collateral_type` | STRING | Type of collateral held for the credit. |
+| `collateral_start_date` | DATE | Start date of the collateral. |
+| `collateral_end_date` | DATE | End date of the collateral. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

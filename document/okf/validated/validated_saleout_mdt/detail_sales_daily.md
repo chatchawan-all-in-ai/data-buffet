@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "detail_sales_daily"
-description: "One row = one cleaned copy of the source table `detail_sales_daily`, unique on (sale_date, branch, article_id, distribution_channel)."
+description: "One row = one article, branch and sales channel on one sale date from source table `detail_sales_daily`, unique on (sale_date, branch, article_id, distribution_channel)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_saleout_mdt&t=detail_sales_daily&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_saleout_mdt
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of SALEOUT_MDT `detail_sales_daily`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of SALEOUT_MDT `detail_sales_daily`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Boonthavorn (BT) daily sell-out of the company products per branch, article and channel (format used from 2026-10-08).
 Used by: [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md).
 
 # Grain and key
@@ -34,24 +34,24 @@ One row per `sale_date`, `branch`, `article_id`, `distribution_channel`. The key
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_date` | DATE | Meaning not documented in the repo. |
-| `branch` | STRING | Meaning not documented in the repo. |
-| `article_id` | STRING | Meaning not documented in the repo. |
-| `distribution_channel` | STRING | Meaning not documented in the repo. |
-| `net_inc_tax` | FLOAT64 | Meaning not documented in the repo. |
-| `sale_qty` | INT64 | Meaning not documented in the repo. |
-| `sale_sqm` | FLOAT64 | Meaning not documented in the repo. |
-| `article_name_th` | STRING | Meaning not documented in the repo. |
-| `brand` | STRING | Meaning not documented in the repo. |
-| `item_flag` | STRING | Meaning not documented in the repo. |
-| `flag_project` | STRING | Meaning not documented in the repo. |
-| `mch3` | STRING | Meaning not documented in the repo. |
-| `mch2` | STRING | Meaning not documented in the repo. |
-| `mch1` | STRING | Meaning not documented in the repo. |
-| `mc` | STRING | Meaning not documented in the repo. |
-| `vendor_id` | STRING | Meaning not documented in the repo. |
-| `vendor_name` | STRING | Meaning not documented in the repo. |
-| `vendor_article` | STRING | Meaning not documented in the repo. |
+| `sale_date` | DATE | Sale date. |
+| `branch` | STRING | Boonthavorn branch name in Thai, used as the branch code. |
+| `article_id` | STRING | Boonthavorn article (product) code. |
+| `distribution_channel` | STRING | Sales channel at Boonthavorn (`Showroom`, `Anyhome`, `Web`). |
+| `net_inc_tax` | FLOAT64 | Net sales amount for the day including VAT (THB). |
+| `sale_qty` | INT64 | Sales quantity for the day. |
+| `sale_sqm` | FLOAT64 | Sales in square metres for the day. |
+| `article_name_th` | STRING | Product name in Thai. |
+| `brand` | STRING | Product brand. |
+| `item_flag` | STRING | Item movement flag (`REGULAR`, `FAST`, `DISCON` = discontinued). |
+| `flag_project` | STRING | Project-sale flag (`Project`/`Non-Project`). |
+| `mch3` | STRING | Boonthavorn merchandise category, top level (department). |
+| `mch2` | STRING | Boonthavorn merchandise category, second level. |
+| `mch1` | STRING | Boonthavorn merchandise category, third level. |
+| `mc` | STRING | Boonthavorn merchandise category, lowest level. |
+| `vendor_id` | STRING | Boonthavorn vendor code of the supplier (the company), e.g. `10009`. |
+| `vendor_name` | STRING | Supplier (vendor) name as registered at Boonthavorn. |
+| `vendor_article` | STRING | Product code of the company (vendor) for the article; can be empty. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

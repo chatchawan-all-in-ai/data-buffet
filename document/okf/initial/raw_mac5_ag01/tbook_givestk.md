@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tbook_givestk"
-description: "One row = one record of source table `tbook_givestk` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one giveaway item line of a quotation spread, a record of source table `tbook_givestk` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=tbook_givestk&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbook_givestk/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbook_givestk` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.tbook_givestk](/validated/validated_mac5/tbook_givestk.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbook_givestk/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbook_givestk` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Giveaway items earned by sold items in quotation spreads, with the sold and giveaway stock codes and quantity. Used by: [validated_mac5.tbook_givestk](/validated/validated_mac5/tbook_givestk.md).
 
 # Grain and key
 
@@ -30,16 +30,16 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qtid` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qtspread_ref_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quodeid` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quolinkdel` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `stkcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `stkgive` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quantity` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `datetimekey` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Row identifier of the giveaway line. |
+| `qtid` | INT64 | Quotation identifier (`tbook_quotation.id`). |
+| `qtspread_ref_id` | INT64 | Sequence number of the quotation spread (`main_qtspread.ref_id` within the same quotation). |
+| `quodeid` | INT64 | Quotation detail line of the giveaway item (`tbook_quodetail.id`). |
+| `quolinkdel` | INT64 | Quotation detail line of the sold item that earns the giveaway (`tbook_quodetail.id`). |
+| `stkcode` | STRING | Stock code of the sold item that earns the giveaway. |
+| `stkgive` | STRING | Stock code of the giveaway item. |
+| `quantity` | INT64 | Quantity of the giveaway item. |
+| `datetimekey` | STRING | Date and time the giveaway line was keyed. |
+| `status` | INT64 | Status code of the giveaway line (1, 3). |
 
 # How it is built
 

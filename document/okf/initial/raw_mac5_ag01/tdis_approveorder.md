@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tdis_approveorder"
-description: "One row = one record of source table `tdis_approveorder` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one order approval, a record of source table `tdis_approveorder` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=tdis_approveorder&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/tdis_approveorder/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tdis_approveorder` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.tdis_approveorder](/validated/validated_mac5/tdis_approveorder.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/tdis_approveorder/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tdis_approveorder` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Approvals that turn quotation-app pre-orders into MAC5 sales orders, with the keying user, approver and time. Used by: [validated_mac5.tdis_approveorder](/validated/validated_mac5/tdis_approveorder.md).
 
 # Grain and key
 
@@ -30,12 +30,12 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `preorder` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `orderno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `userkey` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `userapprove` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `datetime` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Row identifier of the approval. |
+| `preorder` | STRING | Pre-order number from the quotation app (T-prefixed, e.g. `TAR63041193`). |
+| `orderno` | STRING | MAC5 sales order number created from the pre-order. |
+| `userkey` | STRING | Employee code of the user who keyed the order. |
+| `userapprove` | STRING | Code of the user who approved the order. |
+| `datetime` | STRING | Date and time of the approval. |
 
 # How it is built
 

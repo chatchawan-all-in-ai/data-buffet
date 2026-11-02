@@ -43,7 +43,7 @@ UNION ALL of two sources with one `ROW_NUMBER()`. (a) `mds_rep`: active MDS rows
 | `DepCode` | STRING | MAC5 department code(s) the rule matches against the line department (`milDep`); several codes may be joined by '\|' (for example a pair of codes). NULL on ledger rows and plain employee rows. |
 | `CostChannelID` | STRING | Cost channel code the rule matches; rule priority 1 with DepCode, 2 alone (business-flags `seq_condition`). NULL when unused. |
 | `ProvinceID` | STRING | Province code the rule matches (priority 4). NULL when unused. |
-| `ChangeSectionFlag` | STRING | Flag from MDS marking a change of section; used by `dim_sale_representative_last` to exclude such rows from the normal row. Exact values not documented in the repo. |
+| `ChangeSectionFlag` | STRING | Flag from MDS marking a change of section: `Yes` on such rows, NULL otherwise; dim_sale_representative_last excludes `Yes` rows from the normal row. |
 | `CustomerFlag` | STRING | List of customer codes separated by '\|' that this rule applies to, rolled up from flag-only MDS rows (only onto rows with a DepCode); the rule then also matches those customers (priority 2.5). NULL when none. |
 | `StartDate` | DATE | First date the rule is valid (MDS DATE); 1900-01-01 on ledger rows. |
 | `EndDate` | DATE | Last date the rule is valid; 2499-12-31 on ledger rows. |

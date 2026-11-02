@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sbl"
-description: "One row = one record of source table `sbl` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one stock balance for one item in one warehouse, a record of source table `sbl` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=sbl&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/sbl/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `sbl` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.sbl](/validated/validated_mac5/sbl.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/sbl/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `sbl` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Stock balances per item and warehouse. Used by: [validated_mac5.sbl](/validated/validated_mac5/sbl.md).
 
 # Grain and key
 
@@ -30,11 +30,11 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `SBLstk` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `SBLsto` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `SBLquan` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `SBLquanP2` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rowguid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `SBLstk` | STRING | Stock code of the balance row. |
+| `SBLsto` | STRING | Warehouse code of the balance row (joins `sto.stocode`). |
+| `SBLquan` | FLOAT64 | Stock balance quantity in the base unit. |
+| `SBLquanP2` | FLOAT64 | Stock balance quantity in the second unit. |
+| `rowguid` | STRING | Row GUID that uniquely identifies the record in the source database. |
 
 # How it is built
 

@@ -35,10 +35,10 @@ One row per `(company_id, stocode)` of `validated_mac5.sto`, restricted to compa
 | `StoreSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by company_id, stocode; -1 for the unknown-store row. Regenerated every run (except -1). |
 | `CompanySK` | INT64 | Company SK from dim_company by company id; NULL on the -1 row. |
 | `companyID` | STRING | Company code, from `sto.company_id`; NULL on the -1 row. |
-| `StoreCode` | STRING | Warehouse code, from `sto.stocode`; join key to order/invoice `milSto` / `cpsSto`. NULL on the -1 row. |
-| `StoreGroup` | STRING | Warehouse group, from `sto.stogroup` (examples: KK, LP, HY, UB, PK). NULL on the -1 row. |
-| `StoreNameT` | STRING | Thai warehouse name, from `sto.stodesct`; 'ไม่ระบุคลัง' on the -1 row. |
-| `StoreNameE` | STRING | English warehouse name, from `sto.stodesce`; 'Unknown' on the -1 row. |
+| `StoreCode` | STRING | Warehouse code; NULL on the unknown-warehouse row. |
+| `StoreGroup` | STRING | Warehouse group code (FG = finished goods, WIP, RM = raw material, SP, TM, CRC); NULL on the unknown-warehouse row. |
+| `StoreNameT` | STRING | Thai name of the warehouse; 'ไม่ระบุคลัง' on the unknown-warehouse row. |
+| `StoreNameE` | STRING | English name of the warehouse; 'Unknown' on the unknown-warehouse row. |
 | `ReportStore` | STRING | Report slicer: `StoreGroup` as is when its lower-case value is one of kk, pk, lp, ub, hy; otherwise (including NULL group) the bucket 'KTB'. The -1 row is 'KTB'. |
 
 # How it is built

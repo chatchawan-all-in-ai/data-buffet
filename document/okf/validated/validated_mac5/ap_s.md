@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "ap_s"
-description: "One row = one AP status, unique on (company_id, ap_scode)."
+description: "One row = one AP document status (per company), unique on (company_id, ap_scode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=ap_s&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `ap_s` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: AP status. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `ap_s` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Status codes and display names (with colours) for purchase-side documents, referenced by `mihstatus`.
 Used by: [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md).
 
 # Grain and key
@@ -35,11 +35,11 @@ One row per `company_id`, `ap_scode`. The key is declared twice in the definitio
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `ap_scode` | INT64 | Likely code (inferred from the column name only; not documented in the repo). |
-| `ap_snamet` | STRING | Meaning not documented in the repo. |
-| `ap_snamee` | STRING | Meaning not documented in the repo. |
-| `ap_scolf` | INT64 | Meaning not documented in the repo. |
-| `ap_scolb` | INT64 | Meaning not documented in the repo. |
+| `ap_scode` | INT64 | AP (purchase) document status code, referenced by `mihstatus` of purchase documents. |
+| `ap_snamet` | STRING | Thai status name. |
+| `ap_snamee` | STRING | English status name (often the same Thai text). |
+| `ap_scolf` | INT64 | Foreground (text) colour of the status in the ERP, as a Windows RGB integer. |
+| `ap_scolb` | INT64 | Background colour of the status in the ERP, as a Windows RGB integer. |
 
 # How it is built
 

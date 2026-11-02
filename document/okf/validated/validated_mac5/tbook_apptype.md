@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tbook_apptype"
-description: "One row = one booking application type, unique on (company_id, id)."
+description: "One row = one product-line approval type (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tbook_apptype&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tbook_apptype`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: booking application type. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `tbook_apptype`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Product-line approval types of the quotation app, with the approver, position and signature image.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,12 +35,12 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `iddesc` | STRING | Meaning not documented in the repo. |
-| `idcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `dep` | STRING | Meaning not documented in the repo. |
-| `pic` | STRING | Meaning not documented in the repo. |
+| `id` | INT64 | Approval type identifier, referenced by `tbook_quotation.apptype`. |
+| `iddesc` | STRING | Product-line code of the approval type (e.g. `PE`, `PUMP`, `RP`, `LYNN`, `CL`, `AIR`). |
+| `idcode` | STRING | Employee code of the approver for the product line. |
+| `name` | STRING | Name of the approver for the product line. |
+| `dep` | STRING | Position title of the approver. |
+| `pic` | STRING | Path of the approver signature image. |
 
 # How it is built
 

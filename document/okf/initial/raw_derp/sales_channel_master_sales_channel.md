@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sales_channel_master_sales_channel"
-description: "One row = one record of source table `sales_channel_master_sales_channel` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one sales channel node, a record of source table `sales_channel_master_sales_channel` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=sales_channel_master_sales_channel&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/sales_channel_master_sales_channel/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sales_channel_master_sales_channel` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.sales_channel_master_sales_channel](/validated/validated_derp/sales_channel_master_sales_channel.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/sales_channel_master_sales_channel/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sales_channel_master_sales_channel` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Hierarchy of sales channels with their document prefixes and quotation/sales-order approval and PO rules. Used by: [validated_derp.sales_channel_master_sales_channel](/validated/validated_derp/sales_channel_master_sales_channel.md).
 
 # Grain and key
 
@@ -30,39 +30,39 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `master_sales_channel_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_channel_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_channel_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `description` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `order_sort` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `level` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `parent_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `company_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `organization_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `prefix` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `billing_statement_prefix` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `channel_group` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qt_mgr_approval` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qt_bu_approval` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `so_approver_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `po_rule` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `default_order_delivery_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `whole_bill_enforce` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `project_required` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vendor_code_group_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `print_mac5_code` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `require_export_declaration` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `allow_so_without_qt` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `master_sales_channel_id` | STRING | UUID of the sales channel. |
+| `sales_channel_code` | STRING | Sales channel code (e.g. `MDT`, `EXPORT`, `ONL`, `RGB`). |
+| `sales_channel_name` | STRING | Sales channel name. |
+| `description` | STRING | Description of the sales channel. |
+| `order_sort` | INT64 | Display order of the channel. |
+| `level` | INT64 | Depth of the node in the hierarchy (1 = top level). |
+| `parent_id` | STRING | UUID of the parent node in the same hierarchy (NULL at the top level). |
+| `path_id` | STRING | Chain of channel UUIDs from the top level down to this channel, separated by `/`. |
+| `path_code` | STRING | Chain of channel codes from the top level down to this channel, separated by `/` (e.g. `MDT/RGB`). |
+| `path_name` | STRING | Chain of channel names from the top level down to this channel. |
+| `company_code` | STRING | Code of the company that owns the record. |
+| `organization_code` | STRING | Code of the organization that owns the record. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `prefix` | STRING | Document number prefix used for the channel (e.g. `RE`, `CRC`). |
+| `billing_statement_prefix` | STRING | Document number prefix for billing statements of the channel. |
+| `channel_group` | STRING | Channel group (`MDT`, `AGENT`, `RE`, `CRC`, `OTHER`). |
+| `qt_mgr_approval` | BOOL | Flag showing quotations in the channel need sales-manager approval. |
+| `qt_bu_approval` | BOOL | Flag showing quotations in the channel need business-unit approval. |
+| `so_approver_type` | STRING | Approver type for sales orders in the channel (`SALE_MANAGER` or `CREDIT`). |
+| `po_rule` | STRING | Customer purchase-order rule for the channel (`REQUIRED`, `NOT_REQUIRED`, `AGENT_CREDIT_PO_OR_MEMO`). |
+| `default_order_delivery_type` | STRING | Default delivery type for orders in the channel. |
+| `whole_bill_enforce` | BOOL | Flag forcing an order in the channel to be billed as a whole (no partial billing). |
+| `project_required` | BOOL | Flag showing a project is required on documents in the channel. |
+| `vendor_code_group_type` | STRING | Vendor code group type of the channel (e.g. `MDT`, `RE`, `CRC`). |
+| `print_mac5_code` | BOOL | Flag showing the MAC5 customer code is printed on documents. |
+| `require_export_declaration` | BOOL | Flag showing an export declaration is required in the channel. |
+| `allow_so_without_qt` | BOOL | Flag allowing sales orders without a quotation in the channel. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

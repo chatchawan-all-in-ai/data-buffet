@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "inventory_movement_journal_headers"
-description: "One row = one record of source table `inventory_movement_journal_headers` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one inventory movement journal header (latest version per journal number), a record of source table `inventory_movement_journal_headers` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=inventory_movement_journal_headers&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/inventory_movement_journal_headers/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `inventory_movement_journal_headers` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.inventory_movement_journal_headers](/validated/validated_derp/inventory_movement_journal_headers.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/inventory_movement_journal_headers/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `inventory_movement_journal_headers` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Headers of ERP inventory movement journals: journal type, default site and warehouse, and posting status. Used by: [validated_derp.inventory_movement_journal_headers](/validated/validated_derp/inventory_movement_journal_headers.md).
 
 # Grain and key
 
@@ -30,29 +30,29 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `inventory_movement_journal_headers_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `movement_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `journal_number` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_posted` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `description` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `default_warehouse_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `reservation_mode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `posting_detail_level` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `default_inventory_site_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `journal_name_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `voucher_number_selection_rule` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `posted_datetime` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `voucher_number_allocation_rule` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `voucher_number_sequence_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `are_lines_deleted_after_posting` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `posted_user_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_active` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `remarks` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_datetime` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_datetime` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sync_hash` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `inventory_movement_journal_headers_id` | STRING | UUID of this version of the journal header; the source issues a new UUID when the header is re-created, so the stable key is `journal_number`. |
+| `movement_id` | STRING | OData entity tag (ETag) of the journal header in the ERP. |
+| `journal_number` | STRING | Inventory movement journal number (e.g. `IJ26-0202167`). |
+| `is_posted` | STRING | Flag showing the journal has been posted. |
+| `description` | STRING | Journal description text (e.g. the source MAC5 issue document number and date). |
+| `default_warehouse_id` | STRING | Default warehouse code for the journal lines, e.g. `FG-KTB`. |
+| `reservation_mode` | STRING | Inventory reservation mode of the journal (e.g. `None`). |
+| `posting_detail_level` | STRING | Level of detail used when posting the journal (e.g. `Detail`). |
+| `default_inventory_site_id` | STRING | Default inventory site code (plant) for the journal lines, e.g. `KTB`, `HY1`. |
+| `journal_name_id` | STRING | Journal name (journal type) code, e.g. `IM-MAC-01`, `IM-SP`, `IM-SCRAP`. |
+| `voucher_number_selection_rule` | STRING | Rule for when a new voucher number is selected (e.g. `DateChange`). |
+| `posted_datetime` | STRING | Timestamp when the journal was posted. |
+| `voucher_number_allocation_rule` | STRING | Rule for when the voucher number is allocated (e.g. `Post`). |
+| `voucher_number_sequence_code` | STRING | Number sequence code used for voucher numbers (e.g. `IM-MAC-02`). |
+| `are_lines_deleted_after_posting` | STRING | Flag showing journal lines are deleted after posting. |
+| `posted_user_id` | STRING | User ID that posted the journal (e.g. `HY-S1`). |
+| `is_active` | STRING | Flag showing the record is active. |
+| `remarks` | STRING | Free-text remarks. |
+| `created_datetime` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_datetime` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `sync_hash` | STRING | MD5 hash of the record content, used by the extract to detect changed records. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

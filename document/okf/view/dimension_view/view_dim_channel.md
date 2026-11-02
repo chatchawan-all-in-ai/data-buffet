@@ -37,7 +37,7 @@ One row per dim_channel row (grain of dim_channel: companyID + DepCode). The thr
 | `CompanySK` | INT64 | SK of the company in [dim_company](/dimension/dim_company.md). |
 | `companyID` | STRING | MAC5 company code. |
 | `DepCode` | STRING | MAC5 department code (the join key to invoices/transactions, e.g. `mihDep`, `cfsDep`). |
-| `DepGroup` | STRING | Department group code from dim_channel (pass-through; meaning not documented in the repo). |
+| `DepGroup` | STRING | Department group code from dim_channel, e.g. `M35`, `MK4`, `HY`, `UB`. |
 | `DepDesct` | STRING | Department description in Thai (pass-through from dim_channel). |
 | `DepDesce` | STRING | Department description in English (pass-through from dim_channel). |
 | `ChannelGroup` | STRING | Sales channel group name (pass-through from dim_channel). |
@@ -54,11 +54,11 @@ One row per dim_channel row (grain of dim_channel: companyID + DepCode). The thr
 | `ChannelSubGroupFinance3` | STRING | Finance channel sub-group level 3 (pass-through). |
 | `ChannelIDFinance` | STRING | Finance channel code (pass-through; join key to dim_channel_finance). |
 | `ChannelNameFinance` | STRING | Finance channel name (pass-through). |
-| `ChannelDSite01` | STRING | Channel hierarchy level 1 (site) from dim_channel; Meaning not documented in the repo beyond the name. |
-| `ChannelDDepartment02` | STRING | Channel hierarchy level 2 (department) from dim_channel; Meaning not documented in the repo beyond the name. |
-| `ChannelDDivision03` | STRING | Channel hierarchy level 3 (division) from dim_channel; Meaning not documented in the repo beyond the name. |
-| `ChannelDSubDivision04` | STRING | Channel hierarchy level 4 (sub-division) from dim_channel; Meaning not documented in the repo beyond the name. |
-| `DummyChannel` | STRING | Dummy-channel marker from dim_channel (pass-through; exact values not documented in the repo). |
+| `ChannelDSite01` | STRING | Level 1 (site) of the D-channel hierarchy from dim_channel, e.g. `HO1`, `HY1`, `KTB`, `Other`. |
+| `ChannelDDepartment02` | STRING | Level 2 (department) of the D-channel hierarchy from dim_channel, e.g. `SA`, `PD`, `SV`, `MK`, `Other`. |
+| `ChannelDDivision03` | STRING | Level 3 (division) of the D-channel hierarchy from dim_channel, e.g. `SA_15`, `PD_10`, `Other`. |
+| `ChannelDSubDivision04` | STRING | Level 4 (sub-division) of the D-channel hierarchy from dim_channel, e.g. `SA15_HP_N01`, `SA10_CEN`, `Other`. |
+| `DummyChannel` | STRING | Dummy employee id from dim_channel (e.g. `9999991`) used in place of the line salesperson when matching sales representatives; `not calculated` when the department has none. |
 
 # How it is built
 

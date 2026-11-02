@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "std"
-description: "One row = one reference code table (std), unique on (company_id, stdautono)."
+description: "One row = one customer item-code mapping (per company), unique on (company_id, stdautono)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=std&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `std`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: reference code table (std). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `std`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Mapping of products to the item codes and descriptions used by specific customers.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,13 +35,13 @@ One row per `company_id`, `stdautono`. The key is declared twice in the definiti
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `stdcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `stdtype` | INT64 | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `stddebtor` | STRING | Meaning not documented in the repo. |
-| `stdstkcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `stddesct1` | STRING | Meaning not documented in the repo. |
-| `stddesce1` | STRING | Meaning not documented in the repo. |
-| `stdautono` | INT64 | Meaning not documented in the repo. |
+| `stdcode` | STRING | Item code the customer uses for the product. |
+| `stdtype` | INT64 | Mapping type code (1, 2). |
+| `stddebtor` | STRING | Customer code the mapping belongs to (joins `deb.debcode`). |
+| `stdstkcode` | STRING | Stock code of the product (joins `stk.stkcode`). |
+| `stddesct1` | STRING | Thai description of the item for this customer. |
+| `stddesce1` | STRING | English description of the item for this customer. |
+| `stdautono` | INT64 | Running ID of the mapping row. |
 
 # How it is built
 

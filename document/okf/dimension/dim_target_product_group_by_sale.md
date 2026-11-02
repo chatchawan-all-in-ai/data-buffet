@@ -54,7 +54,7 @@ Three allocation branches are combined with UNION ALL: (1) year-wide rate rows (
 | `SubMarketingName` | STRING | Sub group name. |
 | `SegmentID` | STRING | Segment code. |
 | `SegmentName` | STRING | Segment name. |
-| `ChannelTargetGroup` | STRING | Channel group of the target (values not documented in the repo). |
+| `ChannelTargetGroup` | STRING | Channel group of the target, e.g. `AGENT`, `MDT`, `PS1`, `PS2`, `IMP`, `ASIAN`, `HO`, `Non TargetID`; `MDT` rows feed view_fact_target_product_group_mdt. |
 | `TargetID` | STRING | Target code (join key to dim_rate_target). |
 | `Amt` | FLOAT64 | The whole target amount before allocation (dim_target_product_group.Amt). Repeated on every employee row of the same target. |
 | `Qty` | FLOAT64 | The whole target quantity before allocation. |

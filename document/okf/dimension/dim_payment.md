@@ -38,7 +38,7 @@ One row per (company, CodeMemo) among active mds rows. Key: `PaymentSK` (surroga
 | `PaymentName` | STRING | Pass-through of mds `PaymentName`, cleaned with `cleanString` (empty string becomes NULL). Payment name. |
 | `PaymentMethodEN` | STRING | Pass-through of mds `PaymentMethodEN`, cleaned with `cleanString` (empty string becomes NULL). Payment method, English. |
 | `PaymentMethodTH` | STRING | Pass-through of mds `PaymentMethodTH`, cleaned with `cleanString` (empty string becomes NULL). Payment method, Thai. |
-| `PaymentType` | STRING | Pass-through of mds `PaymentType`, cleaned with `cleanString` (empty string becomes NULL). Payment type category (code values not documented in the repo). |
+| `PaymentType` | STRING | Pass-through of mds `PaymentType`, cleaned with `cleanString` (empty string becomes NULL). Payment term category: `Cash`, `Credit` or `No Memo Code` (the default ฿00฿ row). |
 | `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. |
 
 # How it is built

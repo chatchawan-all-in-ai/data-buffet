@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_payment_allocation"
-description: "One row = one cleaned copy of the source table `crm_sale_order_payment_allocation`, unique on (sale_order_payment_allocation_id)."
+description: "One row = one allocation of a payment receipt to a deposit installment from source table `crm_sale_order_payment_allocation`, unique on (sale_order_payment_allocation_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_sale_order_payment_allocation&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_sale_order_payment_allocation`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_sale_order_payment_allocation`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Allocations of received payments to the deposit installments of DERP sale orders.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,16 +34,16 @@ One row per `sale_order_payment_allocation_id`. The key is declared twice in the
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_payment_allocation_id` | STRING | Meaning not documented in the repo. |
-| `receipt_id` | STRING | Meaning not documented in the repo. |
-| `sale_order_id` | STRING | Meaning not documented in the repo. |
-| `installment_seq` | INT64 | Meaning not documented in the repo. |
-| `sale_order_deposit_id` | STRING | Meaning not documented in the repo. |
-| `amount` | FLOAT64 | Meaning not documented in the repo. |
-| `note` | STRING | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
+| `sale_order_payment_allocation_id` | STRING | Unique identifier of the payment allocation. |
+| `receipt_id` | STRING | Identifier of the payment receipt being allocated (`crm_sale_order_payment_receipt`). |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `installment_seq` | INT64 | Deposit installment number the amount is allocated to. |
+| `sale_order_deposit_id` | STRING | Identifier of the deposit installment (`crm_sale_order_deposit.sale_order_deposit_id`). |
+| `amount` | FLOAT64 | Amount of the receipt allocated to the deposit installment (THB). |
+| `note` | STRING | Free-text note. |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

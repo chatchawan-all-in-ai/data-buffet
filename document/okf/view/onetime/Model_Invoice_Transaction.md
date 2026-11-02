@@ -26,7 +26,7 @@ No other object in this repo reads it; it is meant to be queried directly (BI to
 
 # Grain and key
 
-Starts from rows of `view_fact_transcation` restricted to `milYear IN (2024, 2025, 2026)`, `milvnos IS NOT NULL` (drops the calendar filler rows) and `CompanySK = 4` (hard-coded; which company that is is not documented in the SQL). Most dimension joins use SK + CompanySK, but the product join uses LOWER(milStk) = LOWER(ProductCode) + CompanySK, not ProductSK. It emits every retained barcode version, so one eligible 100-baht source row can become two model rows totalling 200. There is no deduplication of that product expansion.
+Starts from rows of `view_fact_transcation` restricted to `milYear IN (2024, 2025, 2026)`, `milvnos IS NOT NULL` (drops the calendar filler rows) and `CompanySK = 4` (hard-coded; company `ag01`, Thammasorn Co., Ltd., in `dim_company`). Most dimension joins use SK + CompanySK, but the product join uses LOWER(milStk) = LOWER(ProductCode) + CompanySK, not ProductSK. It emits every retained barcode version, so one eligible 100-baht source row can become two model rows totalling 200. There is no deduplication of that product expansion.
 
 # Schema
 
@@ -34,9 +34,9 @@ Starts from rows of `view_fact_transcation` restricted to `milYear IN (2024, 202
 |---|---|---|
 | `InvoiceDate` | DATE | Bill date (`view_fact_transcation.mix_date`). |
 | `InvoiceYear` | INT64 | Year of the bill date (`milYear`). |
-| `InvoiceMonth` | INT64 | Month of the bill date (`milMonth`). |
+| `InvoiceMonth` | INT64 | Month of the bill date. |
 | `InvoiceDay` | INT64 | Day of the bill date (`milDay`). |
-| `InvoiceNo` | STRING | Document number (`milVnos`). |
+| `InvoiceNo` | STRING | Document number of the line, matching `mihvnos` of the header. |
 | `InvoiceType` | STRING | Document type code from `dim_doctype.Code` (join on `milType` + company), e.g. IS/AS/BS. |
 | `InvoiceTypeName` | STRING | English description of the document type (`dim_doctype.DescriptionEN`). |
 | `InvoiceStatusID` | INT64 | Status code of the invoice header (`dim_invoice.mihStatus`, join on InvoiceSK). |
@@ -62,10 +62,10 @@ Starts from rows of `view_fact_transcation` restricted to `milYear IN (2024, 202
 | `ChannelD02Department` | STRING | Cost-centre dimension level 2 (department) from `ChannelDDepartment02`. |
 | `ChannelD03Division` | STRING | Cost-centre dimension level 3 (division) from `ChannelDDivision03`. |
 | `ChannelD04SubDivision` | STRING | Cost-centre dimension level 4 (sub division) from `ChannelDSubDivision04`. |
-| `Job` | STRING | Job code of the line (`milJob`). |
+| `Job` | STRING | Job code of the line (sales job or project category such as `TT`, `SHOP`, or a project number). |
 | `SalesRepID` | STRING | Employee id of the sales rep chosen under the LATEST structure (`dim_sale_representative_last.EmployeeID` via `SaleRepSKLast`). |
 | `SalesRepNameSurname` | STRING | Concatenated first name and surname of that sales rep. |
-| `DepartmentCode` | STRING | Department code written on the line (`milDep`), the key used for channel lookup. |
+| `DepartmentCode` | STRING | Department code of the line, used as the sales channel code. |
 | `TeamID` | STRING | Department/team id of the sales rep in the latest structure (`dim_sale_representative_last.DepartmentID`). |
 | `TeamName` | STRING | Department/team name (`dim_department_last.DepartmentName`). |
 | `SectionID` | STRING | Section id under the latest structure, using `ChangeSectionSKLast` (so district/PS changes are applied). |
@@ -80,7 +80,7 @@ Starts from rows of `view_fact_transcation` restricted to `milYear IN (2024, 202
 | `FlagSaleKPIExclude` | STRING | `view_fact_transcation.FlagSaleExc`: `Yes` = line excluded from the sales KPI. |
 | `FlagSalesFiananceExclude` | STRING | `view_fact_transcation.FlagAccExc`: `Yes` = line excluded from finance sales (column name keeps the original typo `Fianance`). |
 | `SCGSalesType` | STRING | `FlagSCG`: `ซื้อตรง` (direct) or `ซื้อผ่านร้าน` (through a shop) for SCG `CRC` documents, else NULL. |
-| `Product` | STRING | MAC5 product code (`milstk`). |
+| `Product` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
 | `ProductName` | STRING | MAC5 product description (`dim_product_master.ProductMac5Description`). |
 | `MarketingGroupID` | STRING | Marketing group id from `dim_product_mkt` via `ProductMktSK` (not `NewProductMktSK`). |
 | `MarketingGroupName` | STRING | Marketing group name. |
@@ -88,17 +88,17 @@ Starts from rows of `view_fact_transcation` restricted to `milYear IN (2024, 202
 | `SubMarketingName` | STRING | Sub-marketing group name. |
 | `SegmentID` | STRING | Segment id. |
 | `SegmentName` | STRING | Segment name. |
-| `NetSalesExcVat` | FLOAT64 | `milsum`: net sales of the line excluding VAT. |
+| `NetSalesExcVat` | FLOAT64 | Net line amount excluding VAT after line and allocated header discounts, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows; zero on calendar rows without a transaction. |
 | `NetSalesIncVat` | FLOAT64 | `milsum_incvat`: net sales including VAT. |
-| `Quantity` | FLOAT64 | `milQuan`: quantity sold (after split-sale for ag01). |
-| `DiscountAmountExcVat` | FLOAT64 | `milDisca`: discount amount excluding VAT. |
+| `Quantity` | FLOAT64 | Line quantity, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows; zero on calendar rows without a transaction. |
+| `DiscountAmountExcVat` | FLOAT64 | Line discount amount excluding VAT, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows; zero on calendar rows without a transaction. |
 | `DiscountAmountIncVat` | FLOAT64 | `mildisca_incvat`: discount including VAT. |
-| `GrossAmountExcVat` | FLOAT64 | `milCog`: gross amount excluding VAT. |
+| `GrossAmountExcVat` | FLOAT64 | Gross line amount before discounts excluding VAT, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows; zero on calendar rows without a transaction. |
 | `GrossAmountIncVat` | FLOAT64 | `milcog_incvat`: gross amount including VAT. |
 | `ProductCostPercent` | FLOAT64 | `ProductPercent`: cost percentage as a fraction from the cost-% rule; NULL when no rule. |
-| `DepositExcVat` | FLOAT64 | Deposit/extra amount allocated to the line excluding VAT. |
-| `DepositIncVat` | FLOAT64 | Deposit/extra amount allocated to the line including VAT. |
-| `CustomerID` | STRING | Customer code (`milcus`). |
+| `DepositExcVat` | FLOAT64 | Deposit amount excluding VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero; zero on calendar rows without a transaction. |
+| `DepositIncVat` | FLOAT64 | Deposit amount including VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero; zero on calendar rows without a transaction. |
+| `CustomerID` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
 | `CustomerName` | STRING | Customer Thai name from `view_dim_customer.debnamet`. |
 | `SubDistrict` | STRING | Sub-district name of the customer (`view_dim_customer.SubDistrict`). |
 | `District` | STRING | District name of the customer. |

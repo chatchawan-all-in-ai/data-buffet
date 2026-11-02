@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tdis_mail"
-description: "One row = one cleaned source record of `tdis_mail` (no declared key; append-style, not deduplicated)."
+description: "One row = one sales user of the approval system from source table `tdis_mail` (no declared key; append-style, not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tdis_mail&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tdis_mail`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: distribution mail log. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `tdis_mail`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Sales users of the quotation approval system with their approval level, approver email chains per product line and access flags.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,69 +35,69 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `saleid` | STRING | Meaning not documented in the repo. |
-| `spass` | STRING | Meaning not documented in the repo. |
-| `salename` | STRING | Meaning not documented in the repo. |
-| `salemail` | STRING | Meaning not documented in the repo. |
-| `mail1` | STRING | Meaning not documented in the repo. |
-| `mail2` | STRING | Meaning not documented in the repo. |
-| `mail3` | STRING | Meaning not documented in the repo. |
-| `mail4` | STRING | Meaning not documented in the repo. |
-| `lv` | STRING | Meaning not documented in the repo. |
-| `cc1` | STRING | Meaning not documented in the repo. |
-| `cc2` | STRING | Meaning not documented in the repo. |
-| `cc3` | STRING | Meaning not documented in the repo. |
-| `cc4` | STRING | Meaning not documented in the repo. |
-| `cc5` | STRING | Meaning not documented in the repo. |
-| `cc6` | STRING | Meaning not documented in the repo. |
-| `cc7` | STRING | Meaning not documented in the repo. |
-| `cc8` | STRING | Meaning not documented in the repo. |
-| `cc9` | STRING | Meaning not documented in the repo. |
-| `passlv1` | STRING | Meaning not documented in the repo. |
-| `passlv2` | STRING | Meaning not documented in the repo. |
-| `passlv3` | STRING | Meaning not documented in the repo. |
-| `passlv4` | STRING | Meaning not documented in the repo. |
-| `f1` | STRING | Meaning not documented in the repo. |
-| `f2` | STRING | Meaning not documented in the repo. |
-| `f3` | STRING | Meaning not documented in the repo. |
-| `f4` | STRING | Meaning not documented in the repo. |
-| `f5` | STRING | Meaning not documented in the repo. |
-| `f6` | STRING | Meaning not documented in the repo. |
-| `f7` | STRING | Meaning not documented in the repo. |
-| `f8` | STRING | Meaning not documented in the repo. |
-| `f9` | STRING | Meaning not documented in the repo. |
-| `f10` | STRING | Meaning not documented in the repo. |
-| `pum1` | STRING | Meaning not documented in the repo. |
-| `pum2` | STRING | Meaning not documented in the repo. |
-| `pum3` | STRING | Meaning not documented in the repo. |
-| `ppass1` | STRING | Meaning not documented in the repo. |
-| `ppass2` | STRING | Meaning not documented in the repo. |
-| `ppass3` | STRING | Meaning not documented in the repo. |
-| `ma` | STRING | Meaning not documented in the repo. |
-| `ta` | STRING | Meaning not documented in the repo. |
-| `ceo` | STRING | Meaning not documented in the repo. |
-| `app` | STRING | Meaning not documented in the repo. |
-| `lv_pum` | STRING | Meaning not documented in the repo. |
-| `lv_rp` | STRING | Meaning not documented in the repo. |
-| `rp1` | STRING | Meaning not documented in the repo. |
-| `rp2` | STRING | Meaning not documented in the repo. |
-| `rp3` | STRING | Meaning not documented in the repo. |
-| `rpass1` | STRING | Meaning not documented in the repo. |
-| `rpass2` | STRING | Meaning not documented in the repo. |
-| `rpass3` | STRING | Meaning not documented in the repo. |
-| `lv_ele` | STRING | Meaning not documented in the repo. |
-| `ele1` | STRING | Meaning not documented in the repo. |
-| `ele2` | STRING | Meaning not documented in the repo. |
-| `ele3` | STRING | Meaning not documented in the repo. |
-| `epass1` | STRING | Meaning not documented in the repo. |
-| `epass2` | STRING | Meaning not documented in the repo. |
-| `epass3` | STRING | Meaning not documented in the repo. |
-| `type` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `menu1` | STRING | Meaning not documented in the repo. |
-| `download` | STRING | Meaning not documented in the repo. |
-| `pic` | STRING | Meaning not documented in the repo. |
-| `lv_boq_lyn` | STRING | Meaning not documented in the repo. |
-| `active` | INT64 | Meaning not documented in the repo. |
+| `saleid` | STRING | Employee code of the sales user. |
+| `spass` | STRING | Login password of the sales user (mostly hashed). |
+| `salename` | STRING | Name of the sales user. |
+| `salemail` | STRING | Email address of the sales user. |
+| `mail1` | STRING | Email address of the level-1 approver of the sales user. |
+| `mail2` | STRING | Email address of the level-2 approver of the sales user. |
+| `mail3` | STRING | Email address of the level-3 approver of the sales user. |
+| `mail4` | STRING | Email address of the level-4 approver of the sales user. |
+| `lv` | STRING | Approval level code of the sales user (e.g. `lv0`, `lv2`, `RP`). |
+| `cc1` | STRING | CC email address 1 for approval mails. |
+| `cc2` | STRING | CC email address 2 for approval mails. |
+| `cc3` | STRING | CC email address 3 for approval mails. |
+| `cc4` | STRING | CC email address 4 for approval mails. |
+| `cc5` | STRING | CC email address 5 for approval mails. |
+| `cc6` | STRING | CC email address 6 for approval mails. |
+| `cc7` | STRING | CC email address 7 for approval mails. |
+| `cc8` | STRING | CC email address 8 for approval mails. |
+| `cc9` | STRING | CC email address 9 for approval mails. |
+| `passlv1` | STRING | Approval password of the level-1 approver. |
+| `passlv2` | STRING | Approval password of the level-2 approver. |
+| `passlv3` | STRING | Approval password of the level-3 approver. |
+| `passlv4` | STRING | Approval password of the level-4 approver. |
+| `f1` | STRING | Additional notification email address 1. |
+| `f2` | STRING | Additional notification email address 2. |
+| `f3` | STRING | Additional notification email address 3. |
+| `f4` | STRING | Additional notification email address 4. |
+| `f5` | STRING | Additional notification email address 5. |
+| `f6` | STRING | Additional notification email address 6. |
+| `f7` | STRING | Additional notification email address 7. |
+| `f8` | STRING | Additional notification email address 8. |
+| `f9` | STRING | Additional notification email address 9. |
+| `f10` | STRING | Additional notification email address 10. |
+| `pum1` | STRING | Email address of the level-1 PUMP product-line approver. |
+| `pum2` | STRING | Email address of the level-2 PUMP product-line approver. |
+| `pum3` | STRING | Email address of the level-3 PUMP product-line approver. |
+| `ppass1` | STRING | Approval password of the level-1 PUMP product-line approver. |
+| `ppass2` | STRING | Approval password of the level-2 PUMP product-line approver. |
+| `ppass3` | STRING | Approval password of the level-3 PUMP product-line approver. |
+| `ma` | STRING | Employee code of the manager approver of the sales user. |
+| `ta` | STRING | Employee code of the team approver of the sales user. |
+| `ceo` | STRING | Employee code of the top-level (CEO) approver. |
+| `app` | STRING | Approval option code of the sales user. |
+| `lv_pum` | STRING | Employee code of the PUMP product-line approver. |
+| `lv_rp` | STRING | Code of the RP product-line approver. |
+| `rp1` | STRING | Email address of the level-1 RP product-line approver. |
+| `rp2` | STRING | Email address of the level-2 RP product-line approver. |
+| `rp3` | STRING | Email address of the level-3 RP product-line approver. |
+| `rpass1` | STRING | Approval password of the level-1 RP product-line approver. |
+| `rpass2` | STRING | Approval password of the level-2 RP product-line approver. |
+| `rpass3` | STRING | Approval password of the level-3 RP product-line approver. |
+| `lv_ele` | STRING | Code of the electrical product-line approver. |
+| `ele1` | STRING | Email address of the level-1 electrical product-line approver. |
+| `ele2` | STRING | Email address of the level-2 electrical product-line approver. |
+| `ele3` | STRING | Email address of the level-3 electrical product-line approver. |
+| `epass1` | STRING | Approval password of the level-1 electrical product-line approver. |
+| `epass2` | STRING | Approval password of the level-2 electrical product-line approver. |
+| `epass3` | STRING | Approval password of the level-3 electrical product-line approver. |
+| `type` | STRING | User type code (e.g. `PBK`). |
+| `menu1` | STRING | Menu access flag. |
+| `download` | STRING | Download permission flag (1 = allowed). |
+| `pic` | STRING | Picture file name of the sales user. |
+| `lv_boq_lyn` | STRING | Approver level for LYNN BOQ quotations. |
+| `active` | INT64 | Active flag (1 = active, 0 = inactive). |
 
 # How it is built
 

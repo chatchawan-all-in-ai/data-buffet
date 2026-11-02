@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "apilog"
-description: "One row = one record of source table `apilog` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one API job run, a record of source table `apilog` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=apilog&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/apilog/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `apilog` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.apilog](/validated/validated_mac5/apilog.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/apilog/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `apilog` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Run log of the API job that processes Allkons orders, with start and end time, success flag, message and processed orders. Used by: [validated_mac5.apilog](/validated/validated_mac5/apilog.md).
 
 # Grain and key
 
@@ -30,12 +30,12 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `logid` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `runat` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `completedat` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `issuccess` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `errormessage` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `resultjson` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `logid` | INT64 | Run identifier of the API job. |
+| `runat` | STRING | Date and time the API run started. |
+| `completedat` | STRING | Date and time the API run finished. |
+| `issuccess` | INT64 | Success flag of the run (1 = success, 0 = failed). |
+| `errormessage` | STRING | Error or status message of the run (e.g. `Batch is null - no orders to process.`). |
+| `resultjson` | STRING | JSON array of the orders processed in the run, keyed by Allkons billing number. |
 
 # How it is built
 

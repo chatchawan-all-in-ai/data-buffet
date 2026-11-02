@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sales_customer_sales_territory"
-description: "One row = one cleaned copy of the source table `sales_customer_sales_territory`, unique on (customer_sales_territory_id)."
+description: "One row = one assignment of a customer to a salesperson or sales territory from source table `sales_customer_sales_territory`, unique on (customer_sales_territory_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=sales_customer_sales_territory&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `sales_customer_sales_territory`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `sales_customer_sales_territory`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Assignments of CRM customers to salespeople and sales organization units (division, section, department, TA area).
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,41 +34,41 @@ One row per `customer_sales_territory_id`. The key is declared twice in the defi
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_sales_territory_id` | STRING | Meaning not documented in the repo. |
-| `customer_master_id` | STRING | Meaning not documented in the repo. |
-| `customer_code` | STRING | Meaning not documented in the repo. |
-| `department_id` | STRING | Meaning not documented in the repo. |
-| `department_code` | STRING | Meaning not documented in the repo. |
-| `department_name` | STRING | Meaning not documented in the repo. |
-| `section_id` | STRING | Meaning not documented in the repo. |
-| `section_code` | STRING | Meaning not documented in the repo. |
-| `section_name` | STRING | Meaning not documented in the repo. |
-| `division_id` | STRING | Meaning not documented in the repo. |
-| `division_code` | STRING | Meaning not documented in the repo. |
-| `division_name` | STRING | Meaning not documented in the repo. |
-| `ta_area_id` | STRING | Meaning not documented in the repo. |
-| `ta_area_code` | STRING | Meaning not documented in the repo. |
-| `ta_area_name` | STRING | Meaning not documented in the repo. |
-| `path_id` | STRING | Meaning not documented in the repo. |
-| `path_code` | STRING | Meaning not documented in the repo. |
-| `path_name` | STRING | Meaning not documented in the repo. |
-| `sale_id` | STRING | Meaning not documented in the repo. |
-| `sale_no` | STRING | Meaning not documented in the repo. |
-| `sale_first_name` | STRING | Meaning not documented in the repo. |
-| `sale_last_name` | STRING | Meaning not documented in the repo. |
-| `sale_nickname` | STRING | Meaning not documented in the repo. |
-| `start_date` | DATE | Meaning not documented in the repo. |
-| `end_date` | DATE | Meaning not documented in the repo. |
-| `is_primary` | BOOL | Meaning not documented in the repo. |
-| `is_default` | BOOL | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `is_sync` | BOOL | Meaning not documented in the repo. |
+| `customer_sales_territory_id` | STRING | UUID of the customer-to-sales-territory assignment. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
+| `department_id` | STRING | UUID of the sales department of the assignment. |
+| `department_code` | STRING | Code of the sales department of the assignment. |
+| `department_name` | STRING | Name of the sales department of the assignment. |
+| `section_id` | STRING | UUID of the sales section of the assignment. |
+| `section_code` | STRING | Code of the sales section of the assignment. |
+| `section_name` | STRING | Name of the sales section of the assignment. |
+| `division_id` | STRING | UUID of the sales division of the assignment. |
+| `division_code` | STRING | Code of the sales division of the assignment. |
+| `division_name` | STRING | Name of the sales division of the assignment. |
+| `ta_area_id` | STRING | UUID of the TA (territory) area of the assignment. |
+| `ta_area_code` | STRING | Code of the TA (territory) area of the assignment. |
+| `ta_area_name` | STRING | Name of the TA (territory) area of the assignment. |
+| `path_id` | STRING | Chain of territory UUIDs from the top level down to the assigned territory. |
+| `path_code` | STRING | Chain of territory codes from the top level down to the assigned territory. |
+| `path_name` | STRING | Chain of territory names from the top level down to the assigned territory. |
+| `sale_id` | STRING | UUID of the salesperson (employee) assigned to the customer. |
+| `sale_no` | STRING | Employee number of the assigned salesperson. |
+| `sale_first_name` | STRING | First name of the assigned salesperson. |
+| `sale_last_name` | STRING | Last name of the assigned salesperson. |
+| `sale_nickname` | STRING | Nickname of the assigned salesperson. |
+| `start_date` | DATE | Date the assignment starts. |
+| `end_date` | DATE | Date the assignment ends (NULL = open-ended). |
+| `is_primary` | BOOL | Flag marking the customer's primary sales assignment. |
+| `is_default` | BOOL | Flag marking the default sales assignment of the customer. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "product_group_cost_group"
-description: "One row = one cleaned copy of the source table `product_group_cost_group`, unique on (pgcg_id)."
+description: "One row = one product group cost-group assignment from source table `product_group_cost_group`, unique on (pgcg_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mastersku&t=product_group_cost_group&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mastersku
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MASTERSKU `product_group_cost_group`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MASTERSKU `product_group_cost_group`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Cost groups assigned to each MASTERSKU product group.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,14 +34,14 @@ One row per `pgcg_id`. The key is declared twice in the definition (`uniqueKey` 
 
 | Column | Type | Description |
 |---|---|---|
-| `pgcg_id` | STRING | Meaning not documented in the repo. |
-| `pgcg_pg_id` | STRING | Meaning not documented in the repo. |
-| `pgcg_cost_group_detail` | STRING | Meaning not documented in the repo. |
-| `pgcg_is_use` | BOOL | Meaning not documented in the repo. |
-| `pgcg_create_date` | DATETIME | Meaning not documented in the repo. |
-| `pgcg_create_by` | STRING | Meaning not documented in the repo. |
-| `pgcg_update_date` | DATETIME | Meaning not documented in the repo. |
-| `pgcg_update_by` | STRING | Meaning not documented in the repo. |
+| `pgcg_id` | STRING | Unique identifier (UUID) of the cost-group assignment. |
+| `pgcg_pg_id` | STRING | Product group (FK to `product_group.pg_id`). |
+| `pgcg_cost_group_detail` | STRING | Cost groups assigned to the product group as a JSON array of identifiers. |
+| `pgcg_is_use` | BOOL | In-use flag of the record (FALSE = retired from use). |
+| `pgcg_create_date` | DATETIME | Timestamp when the record was created. |
+| `pgcg_create_by` | STRING | Identifier of the user who created the record. |
+| `pgcg_update_date` | DATETIME | Timestamp when the record was last updated. |
+| `pgcg_update_by` | STRING | Identifier of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

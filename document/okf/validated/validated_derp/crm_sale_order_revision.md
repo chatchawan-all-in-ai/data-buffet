@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_revision"
-description: "One row = one cleaned copy of the source table `crm_sale_order_revision`, unique on (sale_order_revision_id)."
+description: "One row = one saved revision of a sale order from source table `crm_sale_order_revision`, unique on (sale_order_revision_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_sale_order_revision&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_sale_order_revision`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_sale_order_revision`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Revisions of DERP sale orders, each with a JSON snapshot of the whole order.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,17 +34,17 @@ One row per `sale_order_revision_id`. The key is declared twice in the definitio
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_revision_id` | STRING | Meaning not documented in the repo. |
-| `sale_order_id` | STRING | Meaning not documented in the repo. |
-| `so_no` | STRING | Meaning not documented in the repo. |
-| `so_date` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `rev_no` | INT64 | Meaning not documented in the repo. |
-| `snapshot_data` | STRING | Meaning not documented in the repo. |
-| `action_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `action_by_name` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
+| `sale_order_revision_id` | STRING | Unique identifier of the sale order revision. |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `so_no` | STRING | Sale order number of the parent sale order (e.g. `A2610000106`). |
+| `so_date` | DATETIME | Date and time of the parent sale order. |
+| `rev_no` | INT64 | Revision number of the sale order captured in this snapshot. |
+| `snapshot_data` | STRING | JSON snapshot of the whole sale order at this revision (header, lines, deliveries, deposits, payments, sales persons, attachments). |
+| `action_by` | STRING | Identifier of the user who saved the revision. |
+| `updated_at` | DATETIME | Timestamp when the revision was saved. |
+| `action_by_name` | STRING | Display name of the user who saved the revision. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

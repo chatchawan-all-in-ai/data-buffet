@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "log_print_billing"
-description: "One row = one record of source table `log_print_billing` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one printed bill-payment slip, a record of source table `log_print_billing` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=log_print_billing&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/log_print_billing/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `log_print_billing` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.log_print_billing](/validated/validated_mac5/log_print_billing.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/log_print_billing/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `log_print_billing` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Log of printed billing (bill-payment) slips, with references, billing document number and amount. Used by: [validated_mac5.log_print_billing](/validated/validated_mac5/log_print_billing.md).
 
 # Grain and key
 
@@ -30,13 +30,13 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ref1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ref2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `order_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Row identifier of the print log entry. |
+| `ref1` | STRING | Bill-payment reference 1, holding the MAC5 customer (debtor) code. |
+| `ref2` | STRING | Bill-payment reference 2, a 13-digit code built from the billing document number. |
+| `order_no` | STRING | Billing document number (e.g. `BAB6610247`). |
+| `amount` | FLOAT64 | Billed amount in THB. |
+| `status` | INT64 | Status flag of the print log entry (0 or 1). |
+| `dinsert` | STRING | Date the billing slip was printed. |
 
 # How it is built
 

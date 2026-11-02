@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sales_customer_sales_territory"
-description: "One row = one record of source table `sales_customer_sales_territory` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one assignment of a customer to a salesperson or sales territory, a record of source table `sales_customer_sales_territory` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=sales_customer_sales_territory&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/sales_customer_sales_territory/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sales_customer_sales_territory` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.sales_customer_sales_territory](/validated/validated_derp/sales_customer_sales_territory.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/sales_customer_sales_territory/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sales_customer_sales_territory` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Assignments of CRM customers to salespeople and sales organization units (division, section, department, TA area). Used by: [validated_derp.sales_customer_sales_territory](/validated/validated_derp/sales_customer_sales_territory.md).
 
 # Grain and key
 
@@ -30,41 +30,41 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_sales_territory_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_master_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `department_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `department_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `department_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `section_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `section_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `section_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `division_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `division_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `division_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ta_area_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ta_area_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ta_area_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_first_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_last_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_nickname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `start_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `end_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_primary` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_default` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_sync` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `customer_sales_territory_id` | STRING | UUID of the customer-to-sales-territory assignment. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
+| `department_id` | STRING | UUID of the sales department of the assignment. |
+| `department_code` | STRING | Code of the sales department of the assignment. |
+| `department_name` | STRING | Name of the sales department of the assignment. |
+| `section_id` | STRING | UUID of the sales section of the assignment. |
+| `section_code` | STRING | Code of the sales section of the assignment. |
+| `section_name` | STRING | Name of the sales section of the assignment. |
+| `division_id` | STRING | UUID of the sales division of the assignment. |
+| `division_code` | STRING | Code of the sales division of the assignment. |
+| `division_name` | STRING | Name of the sales division of the assignment. |
+| `ta_area_id` | STRING | UUID of the TA (territory) area of the assignment. |
+| `ta_area_code` | STRING | Code of the TA (territory) area of the assignment. |
+| `ta_area_name` | STRING | Name of the TA (territory) area of the assignment. |
+| `path_id` | STRING | Chain of territory UUIDs from the top level down to the assigned territory. |
+| `path_code` | STRING | Chain of territory codes from the top level down to the assigned territory. |
+| `path_name` | STRING | Chain of territory names from the top level down to the assigned territory. |
+| `sale_id` | STRING | UUID of the salesperson (employee) assigned to the customer. |
+| `sale_no` | STRING | Employee number of the assigned salesperson. |
+| `sale_first_name` | STRING | First name of the assigned salesperson. |
+| `sale_last_name` | STRING | Last name of the assigned salesperson. |
+| `sale_nickname` | STRING | Nickname of the assigned salesperson. |
+| `start_date` | STRING | Date the assignment starts. |
+| `end_date` | STRING | Date the assignment ends (NULL = open-ended). |
+| `is_primary` | BOOL | Flag marking the customer's primary sales assignment. |
+| `is_default` | BOOL | Flag marking the default sales assignment of the customer. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

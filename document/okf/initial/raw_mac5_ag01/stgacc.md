@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "stgacc"
-description: "One row = one record of source table `stgacc` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one accounting product group, a record of source table `stgacc` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=stgacc&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_report/stgacc/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `stgacc` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.stgacc](/validated/validated_mac5/stgacc.md).
+External table over AVRO files in `gs://file-raw-data/mac5_report/stgacc/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `stgacc` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Accounting product groups (code and name) used to map stock groups to accounting groups. Used by: [validated_mac5.stgacc](/validated/validated_mac5/stgacc.md).
 
 # Grain and key
 
@@ -30,8 +30,8 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `gacccode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `gaccname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `gacccode` | STRING | Accounting product group code (e.g. `02BI`). |
+| `gaccname` | STRING | Accounting product group name. |
 
 # How it is built
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "product_group_cost_group"
-description: "One row = one record of source table `product_group_cost_group` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one product group cost-group assignment, a record of source table `product_group_cost_group` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mastersku&t=product_group_cost_group&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mastersku
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mastersku/product_group_cost_group/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `product_group_cost_group` table from MASTERSKU; nothing is cleaned or deduplicated here. Used by: [validated_mastersku.product_group_cost_group](/validated/validated_mastersku/product_group_cost_group.md).
+External table over AVRO files in `gs://file-raw-data/mastersku/product_group_cost_group/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `product_group_cost_group` table from MASTERSKU; nothing is cleaned or deduplicated here. Table meaning: Cost groups assigned to each MASTERSKU product group. Used by: [validated_mastersku.product_group_cost_group](/validated/validated_mastersku/product_group_cost_group.md).
 
 # Grain and key
 
@@ -30,14 +30,14 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `pgcg_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pgcg_pg_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pgcg_cost_group_detail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pgcg_is_use` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pgcg_create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pgcg_create_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pgcg_update_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pgcg_update_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `pgcg_id` | STRING | Unique identifier (UUID) of the cost-group assignment. |
+| `pgcg_pg_id` | STRING | Product group (FK to `product_group.pg_id`). |
+| `pgcg_cost_group_detail` | STRING | Cost groups assigned to the product group as a JSON array of identifiers. |
+| `pgcg_is_use` | BOOL | In-use flag of the record (FALSE = retired from use). |
+| `pgcg_create_date` | STRING | Timestamp when the record was created. |
+| `pgcg_create_by` | STRING | Identifier of the user who created the record. |
+| `pgcg_update_date` | STRING | Timestamp when the record was last updated. |
+| `pgcg_update_by` | STRING | Identifier of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "main_qtspread"
-description: "One row = one record of source table `main_qtspread` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one quotation spread (one order raised from a quotation), a record of source table `main_qtspread` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=main_qtspread&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/main_qtspread/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `main_qtspread` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.main_qtspread](/validated/validated_mac5/main_qtspread.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/main_qtspread/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `main_qtspread` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Orders raised from quotations (quotation spreads), with delivery address, contact, delivery notes, payment terms and project details. Used by: [validated_mac5.main_qtspread](/validated/validated_mac5/main_qtspread.md).
 
 # Grain and key
 
@@ -30,58 +30,58 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ref_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qtid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uupdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dupdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `atten` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `lat` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `long` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mapnote` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `city` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ctel` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ctel2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `road` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `area` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `district` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `postcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `caddress` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `podocno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rdosend` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `checknote` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `checknote2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `checknote3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `checknote4` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `checknotemoney` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `textnote` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `editnote` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `editnotedate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `delvdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `transferfg` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `meccode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `subcontract` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `blueprint` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `projectname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mihjob` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `repeatblueprint` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `noteblueprint` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `discountthreepercent` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `paybycash` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `creditterm` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `moneydeposit` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `extrasum` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `agent` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `termpayment` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `discountcash` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `paytype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `refer_order_allkons_m` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `etax` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `etax_email` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Quotation spread identifier, referenced by `detail_qtspread.ref_id`, `qt_spread_to_mih.qt_spread_ref_id` and `pathfilestamper.mainqtid`. |
+| `ref_id` | INT64 | Sequence number of the spread within the quotation (1 = first order from the quotation). |
+| `qtid` | STRING | Quotation identifier (`tbook_quotation.id`). |
+| `uinsert` | STRING | Employee code of the user who created the row. |
+| `uupdate` | STRING | Employee code of the user who last updated the row. |
+| `dinsert` | STRING | Date and time the row was created. |
+| `dupdate` | STRING | Date and time the row was last updated. |
+| `atten` | STRING | Attention or contact name for the delivery. |
+| `lat` | STRING | Latitude of the delivery location. |
+| `long` | STRING | Longitude of the delivery location. |
+| `mapnote` | STRING | Map note for the delivery location. |
+| `city` | STRING | Province of the delivery address. |
+| `ctel` | STRING | Contact phone number for the delivery. |
+| `ctel2` | STRING | Second contact phone number for the delivery. |
+| `road` | STRING | Road of the delivery address. |
+| `area` | STRING | District (amphoe) of the delivery address. |
+| `district` | STRING | Sub-district (tambon) of the delivery address. |
+| `postcode` | STRING | Postal code of the delivery address. |
+| `caddress` | STRING | Delivery address text. |
+| `podocno` | STRING | Customer purchase order number. |
+| `rdosend` | STRING | Delivery method option code (1 to 6). |
+| `checknote` | STRING | Delivery checklist note (e.g. notify the customer before delivery). |
+| `checknote2` | STRING | Second delivery checklist note (e.g. deliver with the tax invoice). |
+| `checknote3` | STRING | Third delivery checklist note (e.g. collect cheque or cash on delivery). |
+| `checknote4` | STRING | Fourth delivery checklist note. |
+| `checknotemoney` | STRING | Amount to collect on delivery. |
+| `textnote` | STRING | Free-text delivery note. |
+| `status` | STRING | Status code of the quotation spread (1, 2, 3). |
+| `editnote` | STRING | Note explaining an edit of the spread (e.g. wrong price, duplicate). |
+| `editnotedate` | STRING | Date and time of the edit note. |
+| `delvdate` | STRING | Requested delivery date (text). |
+| `transferfg` | STRING | Factory or warehouse code to transfer the goods from (e.g. `LP`, `KK`, `HY`, `UB`, `PK`, `KTB`). |
+| `meccode` | STRING | Customer branch (ship-to) code, matching `mec.meccode`. |
+| `subcontract` | STRING | MAC5 customer (debtor) code of the subcontractor, or a placeholder when none is chosen. |
+| `blueprint` | STRING | House plot or unit reference of the delivery. |
+| `projectname` | STRING | Developer project name of the order. |
+| `mihjob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
+| `repeatblueprint` | INT64 | Repeat-delivery flag for the same plot (1 = repeat). |
+| `noteblueprint` | STRING | Note for a repeat delivery to the same plot. |
+| `discountthreepercent` | INT64 | Three-percent discount flag (1 = applied). |
+| `paybycash` | INT64 | Pay-by-cash flag (1 = cash). |
+| `creditterm` | INT64 | Credit term option code (0, 1, 2). |
+| `moneydeposit` | FLOAT64 | Deposit amount paid for the order. |
+| `extrasum` | INT64 | Extra charge flag or amount of the order. |
+| `agent` | STRING | Dealer customer code and name the order goes through. |
+| `termpayment` | STRING | Payment terms text (e.g. transfer before delivery). |
+| `discountcash` | INT64 | Cash discount flag. |
+| `paytype` | STRING | Payment type (e.g. transfer, cash, credit card). |
+| `amount` | FLOAT64 | Order amount entered for the payment. |
+| `refer_order_allkons_m` | STRING | Allkons order number referenced by this order (`order_from_allkon_m.order_no`). |
+| `etax` | INT64 | E-tax invoice flag (1 = issue an e-tax invoice). |
+| `etax_email` | STRING | Email address that receives the e-tax invoice. |
 
 # How it is built
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "dep"
-description: "One row = one department, unique on (company_id, depcode)."
+description: "One row = one department (per company), unique on (company_id, depcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=dep&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `dep` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: department. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `dep` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Department master of the MAC5 ERP: code, group and Thai/English name.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,14 +35,14 @@ One row per `company_id`, `depcode`. The key is declared twice in the definition
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `depcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `depgroup` | STRING | Meaning not documented in the repo. |
-| `depdesct` | STRING | Meaning not documented in the repo. |
-| `depdesce` | STRING | Meaning not documented in the repo. |
-| `dephide` | INT64 | Meaning not documented in the repo. |
-| `deplock` | INT64 | Meaning not documented in the repo. |
-| `depeditdt` | DATETIME | Meaning not documented in the repo. |
-| `depeditmf` | STRING | Meaning not documented in the repo. |
+| `depcode` | STRING | Department code. |
+| `depgroup` | STRING | Department group code (e.g. `H`, `HY`, `F`, `CB`). |
+| `depdesct` | STRING | Thai name of the department. |
+| `depdesce` | STRING | English name of the department. |
+| `dephide` | INT64 | Hidden flag (-1 = hidden from pick lists, 0 = shown). |
+| `deplock` | INT64 | Lock flag (-1 = locked against editing, 0 = unlocked). |
+| `depeditdt` | DATETIME | Date and time the record was last edited. |
+| `depeditmf` | STRING | User code of the person who last edited the record. |
 
 # How it is built
 

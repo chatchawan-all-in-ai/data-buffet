@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "product_promotion"
-description: "One row = one record of source table `product_promotion` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one promotion item line, a record of source table `product_promotion` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=product_promotion&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/product_promotion/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `product_promotion` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.product_promotion](/validated/validated_mac5/product_promotion.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/product_promotion/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `product_promotion` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Promotion items with quantity and channel (currently empty). Used by: [validated_mac5.product_promotion](/validated/validated_mac5/product_promotion.md).
 
 # Grain and key
 
@@ -30,12 +30,12 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `product_detail_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sku_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qty` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `channel` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Row identifier of the promotion item. |
+| `product_detail_id` | INT64 | Identifier of the related product detail line. |
+| `sku_id` | STRING | Stock code of the promotion item. |
+| `qty` | FLOAT64 | Quantity of the promotion item. |
+| `channel` | STRING | Sales channel of the promotion. |
+| `create_date` | STRING | Date and time the row was created. |
 
 # How it is built
 

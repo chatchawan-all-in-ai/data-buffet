@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_customer_segment"
-description: "One row = one cleaned copy of the source table `crm_customer_segment`, unique on (customer_segment_id)."
+description: "One row = one customer segment record from source table `crm_customer_segment`, unique on (customer_segment_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_customer_segment&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_customer_segment`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_customer_segment`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Segmentation attributes of each customer: customer group, customer type, company chain and category hierarchies.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,31 +34,31 @@ One row per `customer_segment_id`. The key is declared twice in the definition (
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_segment_id` | STRING | Meaning not documented in the repo. |
-| `customer_master_id` | STRING | Meaning not documented in the repo. |
-| `customer_code` | STRING | Meaning not documented in the repo. |
-| `customer_group_id` | STRING | Meaning not documented in the repo. |
-| `item_customer_group` | STRING | Meaning not documented in the repo. |
-| `customer_type` | STRING | Meaning not documented in the repo. |
-| `business_type` | STRING | Meaning not documented in the repo. |
-| `company_chain` | STRING | Meaning not documented in the repo. |
-| `region` | STRING | Meaning not documented in the repo. |
-| `customer_category_level` | INT64 | Meaning not documented in the repo. |
-| `customer_category_path` | STRING | Meaning not documented in the repo. |
-| `marketing_group_level` | INT64 | Meaning not documented in the repo. |
-| `marketing_group_path` | STRING | Meaning not documented in the repo. |
-| `sales_group_level` | INT64 | Meaning not documented in the repo. |
-| `sales_group_path` | STRING | Meaning not documented in the repo. |
-| `accounting_group_level` | INT64 | Meaning not documented in the repo. |
-| `accounting_group_path` | STRING | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `is_sync` | BOOL | Meaning not documented in the repo. |
+| `customer_segment_id` | STRING | UUID of the customer segment record. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
+| `customer_group_id` | STRING | Customer group code (e.g. `DOM` = domestic). |
+| `item_customer_group` | STRING | Item customer group code used for pricing. |
+| `customer_type` | STRING | Customer type (e.g. general company, real estate, modern trade, government). |
+| `business_type` | STRING | Business type of the customer. |
+| `company_chain` | STRING | Company chain (group) the customer belongs to. |
+| `region` | STRING | Sales region of the customer. |
+| `customer_category_level` | INT64 | Depth of the customer category in its hierarchy. |
+| `customer_category_path` | STRING | Hierarchy path of the customer category. |
+| `marketing_group_level` | INT64 | Depth of the marketing group in its hierarchy. |
+| `marketing_group_path` | STRING | Hierarchy path of the marketing group. |
+| `sales_group_level` | INT64 | Depth of the sales group in its hierarchy. |
+| `sales_group_path` | STRING | Hierarchy path of the sales group. |
+| `accounting_group_level` | INT64 | Depth of the accounting group in its hierarchy. |
+| `accounting_group_path` | STRING | Hierarchy path of the accounting group. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

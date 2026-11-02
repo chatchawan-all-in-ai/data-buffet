@@ -45,10 +45,10 @@ One row per `fact_transcation` line that belongs to an MDT chain customer: (comp
 | `companyID` | STRING | Company code from `fact_transcation.companyID`. |
 | `ProductSK` | INT64 | SK of `dim_product_master` for the product on the line. |
 | `SaleRepSK` | INT64 | SK of the sale representative on the line (`fact_transcation.SaleRepSK`, daily-regenerated). |
-| `doc_type_code` | STRING | MAC5 document type of the line (`milType`, e.g. IS/AS/BS); degenerate key. |
-| `doc_no` | STRING | MAC5 document number (`milVnos`); degenerate key used to trace back to the bill in MAC5. |
-| `doc_line_no` | INT64 | Line number inside the document (`milListno`). |
-| `product_code_mac5` | STRING | MAC5 product code (`milStk`). |
+| `doc_type_code` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `doc_no` | STRING | Document number of the line, matching `mihvnos` of the header. |
+| `doc_line_no` | INT64 | Line number within the document. |
+| `product_code_mac5` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
 | `sale_qty` | FLOAT64 | Quantity on the line (`milQuan`). |
 | `sale_amount` | FLOAT64 | Line amount excluding VAT (`milSum`). |
 | `sale_amount_incvat` | FLOAT64 | Line amount including VAT (`milsum_incvat`). |

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "rno"
-description: "One row = one record of source table `rno` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one document running-number sequence for one prefix and period, a record of source table `rno` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=rno&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/rno/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `rno` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.rno](/validated/validated_mac5/rno.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/rno/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `rno` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Running-number sequences per document prefix and year/month, with the last number issued. Used by: [validated_mac5.rno](/validated/validated_mac5/rno.md).
 
 # Grain and key
 
@@ -30,14 +30,14 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `RNOid` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `RNOprefix` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `RNOyear` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `RNOmonth` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `RNOrunning` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `RNOrunno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `RNOcrdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `RNOupdatedate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `RNOid` | INT64 | Running ID of the running-number row. |
+| `RNOprefix` | STRING | Document number prefix of the sequence (e.g. RTM, RCM, PCM). |
+| `RNOyear` | STRING | Two-digit Buddhist-era year of the sequence (e.g. `58` = 2015). |
+| `RNOmonth` | STRING | Two-digit month of the sequence. |
+| `RNOrunning` | INT64 | Last running number used in the sequence. |
+| `RNOrunno` | STRING | Last full document number issued in the sequence. |
+| `RNOcrdate` | STRING | Date and time the sequence row was created. |
+| `RNOupdatedate` | STRING | Date and time the sequence row was last updated. |
 
 # How it is built
 

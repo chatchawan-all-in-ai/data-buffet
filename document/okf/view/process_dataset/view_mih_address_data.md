@@ -34,8 +34,8 @@ One row per (mihType, mihVnos) of `mih_address_data` that matched at some level,
 |---|---|---|
 | `address_type` | STRING | Constant `invoice`. |
 | `condition` | STRING | How the address was matched: `sub_districts` (matched to a sub-district), `districts` (only a district matched) or `provinces` (only a province matched). |
-| `mihType` | STRING | MAC5 document type of the header (`mih_address_data.mihType`). |
-| `mihVnos` | STRING | MAC5 document number of the header (`mih_address_data.mihVnos`); with `mihType` it keys the row. |
+| `mihType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `mihVnos` | STRING | Document number, unique within company and document type. |
 | `raw_address` | STRING | Source address text (debtor address lines concatenated) that was sent to the AI parser. |
 | `ProvinceSK` | INT64 | SK of `dim_provinces` (Thai province); NULL only if not matched at any level (such rows are not returned). |
 | `DistrictSK` | INT64 | SK of `dim_districts`; NULL when matching stopped at province level. |

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "order_from_allkon_m"
-description: "One row = one orders from the Allkons-M channel, unique on (company_id, id)."
+description: "One row = one order received from the Allkons platform (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=order_from_allkon_m&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `order_from_allkon_m`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: orders from the Allkons-M channel. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `order_from_allkon_m`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Orders received from the Allkons platform, with promotion type, source and processing statuses.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,21 +35,21 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `order_no` | STRING | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
-| `promotion_type` | STRING | Meaning not documented in the repo. |
-| `notes` | STRING | Meaning not documented in the repo. |
-| `sub_order` | STRING | Meaning not documented in the repo. |
-| `made_from` | STRING | Meaning not documented in the repo. |
-| `datetime` | DATETIME | Meaning not documented in the repo. |
-| `deliverystatus` | STRING | Meaning not documented in the repo. |
-| `cancelstatus` | STRING | Meaning not documented in the repo. |
-| `confirmstatus` | STRING | Meaning not documented in the repo. |
-| `order_source` | STRING | Meaning not documented in the repo. |
-| `is_complete` | INT64 | Meaning not documented in the repo. |
-| `update_date` | DATETIME | Meaning not documented in the repo. |
+| `id` | INT64 | Row identifier of the order. |
+| `order_no` | STRING | Allkons platform order number (e.g. `QOAG-00158-00048-22-09`). |
+| `status` | STRING | Status code of the order row (1, 2, 3). |
+| `create_date` | DATETIME | Date and time the order was received. |
+| `promotion_type` | STRING | Promotion types applied to the order (e.g. `Premium`, `ComboSet`, `VolumePrice`, comma-separated). |
+| `notes` | STRING | Processing notes of the order import, such as confirm status codes or `#order_null`. |
+| `sub_order` | STRING | Sub-order number of the order. |
+| `made_from` | STRING | Source application that created the order (e.g. `AKM`, `AMRP`). |
+| `datetime` | DATETIME | Date and time of the order event. |
+| `deliverystatus` | STRING | Delivery status code of the order. |
+| `cancelstatus` | STRING | Cancel status code of the order (0, 1, 2). |
+| `confirmstatus` | STRING | Confirm status code of the order (0, 1, 2). |
+| `order_source` | STRING | Channel the order came from (e.g. `AK Platform`, `BOT (Semi-Auto)`). |
+| `is_complete` | INT64 | Completion status code of the order import (0 to 3). |
+| `update_date` | DATETIME | Date and time the order row was last updated. |
 
 # How it is built
 

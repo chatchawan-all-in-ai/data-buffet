@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_quotation_history"
-description: "One row = one record of source table `crm_quotation_history` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one snapshot of a quotation at a revision, a record of source table `crm_quotation_history` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_quotation_history&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_quotation_history/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_quotation_history` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_quotation_history](/validated/validated_derp/crm_quotation_history.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_quotation_history/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_quotation_history` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Revision history of sales quotations, holding a JSON snapshot of the quotation for each saved revision. Used by: [validated_derp.crm_quotation_history](/validated/validated_derp/crm_quotation_history.md).
 
 # Grain and key
 
@@ -30,18 +30,18 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `quotation_history_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quotation_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quotation_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `revision_no` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `snapshot_data` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `action_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `quotation_history_id` | STRING | UUID of the quotation history snapshot. |
+| `quotation_id` | STRING | UUID of the quotation in `crm_quotation`. |
+| `quotation_date` | STRING | Quotation document date. |
+| `revision_no` | INT64 | Quotation revision number the snapshot was taken for. |
+| `snapshot_data` | STRING | JSON snapshot of the quotation header and lines at that revision. |
+| `action_by` | STRING | Identifier of the user whose action produced the snapshot. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_at` | STRING | Timestamp when the record was created. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

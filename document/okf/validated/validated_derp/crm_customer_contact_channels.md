@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_customer_contact_channels"
-description: "One row = one cleaned copy of the source table `crm_customer_contact_channels`, unique on (customer_contact_channels_id)."
+description: "One row = one contact channel of a customer from source table `crm_customer_contact_channels`, unique on (customer_contact_channels_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_customer_contact_channels&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_customer_contact_channels`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_customer_contact_channels`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Contact channels (phone, email, LINE) recorded for CRM customers.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,20 +34,20 @@ One row per `customer_contact_channels_id`. The key is declared twice in the def
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_contact_channels_id` | STRING | Meaning not documented in the repo. |
-| `customer_master_id` | STRING | Meaning not documented in the repo. |
-| `contact_type` | STRING | Meaning not documented in the repo. |
-| `contact_value` | STRING | Meaning not documented in the repo. |
-| `contact_name` | STRING | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `is_sync` | BOOL | Meaning not documented in the repo. |
-| `customer_code` | STRING | Meaning not documented in the repo. |
+| `customer_contact_channels_id` | STRING | UUID of the contact channel record. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `contact_type` | STRING | Contact channel type (`phone`, `email`, `line`). |
+| `contact_value` | STRING | Contact value (phone number, email address or LINE ID). |
+| `contact_name` | STRING | Name of the contact person for the channel. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

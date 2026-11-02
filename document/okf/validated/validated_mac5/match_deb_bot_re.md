@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "match_deb_bot_re"
-description: "One row = one BOT-RE debtor matching, unique on (company_id, id)."
+description: "One row = one developer company to MAC5 customer mapping (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=match_deb_bot_re&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `match_deb_bot_re`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: BOT-RE debtor matching. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `match_deb_bot_re`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Mapping of developer company names on purchase orders to MAC5 customer (debtor) codes, used by the real-estate PO bot.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,10 +35,10 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `deb_code` | STRING | Meaning not documented in the repo. |
-| `vendor_name` | STRING | Meaning not documented in the repo. |
-| `channel` | STRING | Meaning not documented in the repo. |
+| `id` | INT64 | Row identifier of the mapping. |
+| `deb_code` | STRING | MAC5 customer (debtor) code of the developer company. |
+| `vendor_name` | STRING | Developer company name as printed on its purchase orders, used to match the MAC5 customer. |
+| `channel` | STRING | Developer group of the purchase order (e.g. `AP`, `SC`, `QH`, `Sansiri`, `Frasers`). |
 
 # How it is built
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "supcontract"
-description: "One row = one supplementary contract, unique on (company_id, id)."
+description: "One row = one main contractor to subcontractor link (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=supcontract&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `supcontract`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: supplementary contract. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `supcontract`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Subcontractors linked to each main contractor, both identified by MAC5 customer codes.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,12 +35,12 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `mcontractid` | STRING | Meaning not documented in the repo. |
-| `scontractid` | STRING | Meaning not documented in the repo. |
-| `dateinsert` | DATETIME | Meaning not documented in the repo. |
-| `status` | INT64 | Likely status code (inferred from the column name only; not documented in the repo). |
-| `uinsert` | STRING | Meaning not documented in the repo. |
+| `id` | INT64 | Row identifier of the subcontractor link. |
+| `mcontractid` | STRING | MAC5 customer (debtor) code of the main contractor (developer). |
+| `scontractid` | STRING | MAC5 customer (debtor) code of the subcontractor linked to the main contractor. |
+| `dateinsert` | DATETIME | Date and time the row was created. |
+| `status` | INT64 | Active flag (1 = active, 0 = inactive). |
+| `uinsert` | STRING | Employee code of the user who created the row. |
 
 # How it is built
 

@@ -35,7 +35,7 @@ One row per (company_id, debcode) for company `ag01` that matched at some level:
 | `address_type` | STRING | Constant `invoice` (the address is the customer's invoice/debtor address). |
 | `condition` | STRING | How the address was matched: `sub_districts` (matched to a sub-district), `districts` (only a district matched) or `provinces` (only a province matched). |
 | `company_id` | STRING | Company code from `deb_address_data`; this view keeps only `ag01`. |
-| `debcode` | STRING | Customer (debtor) code; with `company_id` it is the key of `deb_address_data`. Matches `dim_customer.debcode`. |
+| `debcode` | STRING | Customer (debtor) code. |
 | `raw_address` | STRING | Source address text (debtor address lines concatenated) that was sent to the AI parser. |
 | `ProvinceSK` | INT64 | SK of `dim_provinces` (Thai province); NULL only if not matched at any level (such rows are not returned). |
 | `DistrictSK` | INT64 | SK of `dim_districts`; NULL when matching stopped at province level. |

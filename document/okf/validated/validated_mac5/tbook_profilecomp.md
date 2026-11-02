@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tbook_profilecomp"
-description: "One row = one cleaned source record of `tbook_profilecomp` (no declared key; append-style, not deduplicated)."
+description: "One row = one project profile from source table `tbook_profilecomp` (no declared key; append-style, not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tbook_profilecomp&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tbook_profilecomp`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: booking profile/company. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `tbook_profilecomp`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Construction project and company profiles of the quotation app, with project dates, value, location and contacts; source of dim_project.
 Used by: [dimension_table.dim_project](/dimension/dim_project.md).
 
 # Grain and key
@@ -35,50 +35,50 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `docno` | INT64 | Meaning not documented in the repo. |
-| `projectcode` | INT64 | Meaning not documented in the repo. |
-| `projectname` | STRING | Meaning not documented in the repo. |
-| `statuscomp` | STRING | Meaning not documented in the repo. |
-| `compname` | STRING | Meaning not documented in the repo. |
-| `register` | STRING | Meaning not documented in the repo. |
-| `addresscomp` | STRING | Meaning not documented in the repo. |
-| `province` | STRING | Meaning not documented in the repo. |
-| `district` | STRING | Meaning not documented in the repo. |
-| `country` | STRING | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `capital` | STRING | Meaning not documented in the repo. |
-| `place` | STRING | Meaning not documented in the repo. |
-| `tel` | STRING | Meaning not documented in the repo. |
-| `mobile` | STRING | Meaning not documented in the repo. |
-| `fax` | STRING | Meaning not documented in the repo. |
-| `mail` | STRING | Meaning not documented in the repo. |
-| `namedirector` | STRING | Meaning not documented in the repo. |
-| `nickname` | STRING | Meaning not documented in the repo. |
-| `teldirector` | STRING | Meaning not documented in the repo. |
-| `profilecomp` | STRING | Meaning not documented in the repo. |
-| `typecomp` | STRING | Meaning not documented in the repo. |
-| `startdate` | STRING | Meaning not documented in the repo. |
-| `history` | STRING | Meaning not documented in the repo. |
-| `pjstart` | STRING | Meaning not documented in the repo. |
-| `pjend` | STRING | Meaning not documented in the repo. |
-| `pjval` | STRING | Meaning not documented in the repo. |
-| `pjfor` | STRING | Meaning not documented in the repo. |
-| `compgroup` | STRING | Meaning not documented in the repo. |
-| `acccode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `accname` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `closedby` | STRING | Meaning not documented in the repo. |
-| `projectfrom` | STRING | Meaning not documented in the repo. |
-| `ptype` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `ppc` | STRING | Meaning not documented in the repo. |
-| `pecom` | STRING | Meaning not documented in the repo. |
-| `uinsert` | STRING | Meaning not documented in the repo. |
-| `dinsert` | DATETIME | Meaning not documented in the repo. |
-| `insertby` | STRING | Meaning not documented in the repo. |
-| `uupdate` | STRING | Likely date (inferred from the column name only; not documented in the repo). |
-| `dupdate` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `meccode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `contactdebcode` | STRING | Meaning not documented in the repo. |
-| `refallkon` | STRING | Meaning not documented in the repo. |
+| `docno` | INT64 | Document number of the project profile. |
+| `projectcode` | INT64 | Project code, referenced by the quotation project text. |
+| `projectname` | STRING | Project name. |
+| `statuscomp` | STRING | Project status colour (`เขียว` = green, `เหลือง` = yellow, `แดง` = red). |
+| `compname` | STRING | Company name of the project owner or contractor. |
+| `register` | STRING | Company registration (tax ID) number. |
+| `addresscomp` | STRING | Company address. |
+| `province` | STRING | Province of the project. |
+| `district` | STRING | District of the project. |
+| `country` | STRING | Country of the project. |
+| `status` | STRING | Work category of the project (e.g. residential, hotel, housing estate, school). |
+| `capital` | STRING | Registered capital of the company. |
+| `place` | STRING | Location of the project. |
+| `tel` | STRING | Company phone number. |
+| `mobile` | STRING | Contact mobile number. |
+| `fax` | STRING | Company fax number. |
+| `mail` | STRING | Contact email address. |
+| `namedirector` | STRING | Name of the company director or decision maker. |
+| `nickname` | STRING | Nickname of the contact person. |
+| `teldirector` | STRING | Phone number of the director. |
+| `profilecomp` | STRING | Project profile description (e.g. condominium, hotel). |
+| `typecomp` | STRING | Business type of the company (e.g. construction contractor, hotel). |
+| `startdate` | STRING | Date the profile was opened. |
+| `history` | STRING | Background history of the project or company. |
+| `pjstart` | STRING | Project start date (text). |
+| `pjend` | STRING | Project end date (text). |
+| `pjval` | STRING | Project value (text). |
+| `pjfor` | STRING | Expected purchase value for the project (text). |
+| `compgroup` | STRING | Company group of the project. |
+| `acccode` | STRING | Account code linked to the project (e.g. `AC958-60`). |
+| `accname` | STRING | Account name linked to the project. |
+| `closedby` | STRING | User who closed the project. |
+| `projectfrom` | STRING | Source of the project lead. |
+| `ptype` | STRING | Profile type (e.g. `Project`). |
+| `ppc` | STRING | PPC code of the project. |
+| `pecom` | STRING | PE commission value of the project. |
+| `uinsert` | STRING | Employee code of the user who created the row. |
+| `dinsert` | DATETIME | Date and time the row was created. |
+| `insertby` | STRING | Employee code of the user who created the profile. |
+| `uupdate` | STRING | Employee code of the user who last updated the row. |
+| `dupdate` | DATETIME | Date and time the row was last updated. |
+| `meccode` | STRING | Customer branch (ship-to) code, matching `mec.meccode`. |
+| `contactdebcode` | STRING | MAC5 customer (debtor) code of the contact. |
+| `refallkon` | STRING | Allkons reference code of the project. |
 
 # How it is built
 

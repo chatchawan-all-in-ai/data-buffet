@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sale_by_branch_mch3"
-description: "One row = one record of source table `sale_by_branch_mch3` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one branch and merchandise category for one report date, a record of source table `sale_by_branch_mch3` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=sale_by_branch_mch3&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_saleout_mdt
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/sale_by_branch_mch3/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sale_by_branch_mch3` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Used by: [validated_saleout_mdt.sale_by_branch_mch3](/validated/validated_saleout_mdt/sale_by_branch_mch3.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/sale_by_branch_mch3/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sale_by_branch_mch3` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Boonthavorn (BT) sales summary of the company products per branch and category: month-to-date and year-to-date sales against last year. Used by: [validated_saleout_mdt.sale_by_branch_mch3](/validated/validated_saleout_mdt/sale_by_branch_mch3.md).
 
 # Grain and key
 
@@ -30,18 +30,18 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `VENDOR_ID` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `VENDOR_NAME` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MCH3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `BRANCH` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MTD_LAST_YEAR` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MTD_CURRENT_YEAR` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MTD_PCT_GROWTH` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `YTD_LAST_YEAR` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `YTD_CURRENT_YEAR` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `YTD_PCT_GROWTH` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `START_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `END_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `VENDOR_ID` | STRING | Boonthavorn vendor code of the supplier (the company), e.g. `10009`. |
+| `VENDOR_NAME` | STRING | Supplier (vendor) name as registered at Boonthavorn. |
+| `MCH3` | STRING | Boonthavorn merchandise category, top level (department). |
+| `BRANCH` | STRING | Boonthavorn branch name in Thai, used as the branch code. |
+| `MTD_LAST_YEAR` | FLOAT64 | Month-to-date sales amount for the same period last year (THB). |
+| `MTD_CURRENT_YEAR` | FLOAT64 | Month-to-date sales amount this year (THB). |
+| `MTD_PCT_GROWTH` | FLOAT64 | Month-to-date sales growth versus last year, in percent. |
+| `YTD_LAST_YEAR` | FLOAT64 | Year-to-date sales amount for the same period last year (THB). |
+| `YTD_CURRENT_YEAR` | FLOAT64 | Year-to-date sales amount this year (THB). |
+| `YTD_PCT_GROWTH` | FLOAT64 | Year-to-date sales growth versus last year, in percent. |
+| `START_DATE` | STRING | First day of the reporting period. |
+| `END_DATE` | STRING | Last day covered by the report (figures are counted up to this date). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

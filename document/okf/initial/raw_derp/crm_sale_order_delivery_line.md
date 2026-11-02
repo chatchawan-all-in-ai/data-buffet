@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_delivery_line"
-description: "One row = one record of source table `crm_sale_order_delivery_line` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one product line within a delivery round, a record of source table `crm_sale_order_delivery_line` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_sale_order_delivery_line&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_delivery_line/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_delivery_line` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_sale_order_delivery_line](/validated/validated_derp/crm_sale_order_delivery_line.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_delivery_line/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_delivery_line` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Products and quantities scheduled in each delivery round of a DERP sale order. Used by: [validated_derp.crm_sale_order_delivery_line](/validated/validated_derp/crm_sale_order_delivery_line.md).
 
 # Grain and key
 
@@ -30,25 +30,25 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_delivery_line_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_order_delivery_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_order_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_order_line_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `product_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `product_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `unit` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qty` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `order_sort` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `site_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `site_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `combo_set_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `combo_set_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `sale_order_delivery_line_id` | STRING | Unique identifier of the delivery line. |
+| `sale_order_delivery_id` | STRING | Identifier of the sale order delivery round (`crm_sale_order_delivery.sale_order_delivery_id`). |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `sale_order_line_id` | STRING | Identifier of the sale order line (`crm_sale_order_line.sale_order_line_id`). |
+| `product_id` | STRING | Identifier of the product. |
+| `product_code` | STRING | Product code (SKU, e.g. `OWT_GNT`). |
+| `unit` | STRING | Sales unit of the product (e.g. `EA`, `SET`, or a Thai unit name). |
+| `qty` | FLOAT64 | Quantity of the product in this delivery round. |
+| `order_sort` | INT64 | Display order of the row within its sale order, starting at 0. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `site_id` | STRING | Identifier of the shipping site (plant or warehouse). |
+| `site_code` | STRING | Code of the shipping site (plant or warehouse, e.g. `KTB`, `KK1`, `LP1`). |
+| `combo_set_id` | STRING | Identifier of the combo set (product bundle) the line belongs to. |
+| `combo_set_code` | STRING | Code of the combo set (product bundle) the line belongs to (e.g. `COMBOSET00006`). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "specifications"
-description: "One row = one record of source table `specifications` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one attribute assigned to one specification group, a record of source table `specifications` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_master_sku&t=specifications&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_master_sku
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/master_sku/specifications/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `specifications` table from MASTER_SKU; nothing is cleaned or deduplicated here. Used by: [validated_master_sku.specifications](/validated/validated_master_sku/specifications.md).
+External table over AVRO files in `gs://file-raw-data/master_sku/specifications/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `specifications` table from MASTER_SKU; nothing is cleaned or deduplicated here. Table meaning: Attributes assigned to each master_sku specification group, with display order and required/variant flags. Used by: [validated_master_sku.specifications](/validated/validated_master_sku/specifications.md).
 
 # Grain and key
 
@@ -30,17 +30,17 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `group_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `attribute_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sort_order` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_displayed` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_required` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_variant` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `group_id` | STRING | Specification group (FK to `spec_groups.id`). |
+| `attribute_id` | STRING | Specification attribute (FK to `spec_attributes.id`). |
+| `sort_order` | INT64 | Display order of the attribute within the group. |
+| `is_displayed` | BOOL | Flag marking the attribute as shown on the product. |
+| `is_required` | BOOL | Flag marking the attribute as mandatory for products in the group. |
+| `is_variant` | BOOL | Flag marking the attribute as a variant dimension that distinguishes SKUs in the group. |
+| `status` | STRING | Record status (`Active`, `Inactive`, `Deleted`). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

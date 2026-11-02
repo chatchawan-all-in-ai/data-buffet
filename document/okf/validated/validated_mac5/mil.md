@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mil"
-description: "One row = one document line item (invoice/delivery lines, per company), unique on (company_id, MILtype, MILvnos, MILlistNo)."
+description: "One row = one document line (per company), unique on (company_id, MILtype, MILvnos, MILlistNo)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mil&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `mil` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: document line item (invoice/delivery lines, per company). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `mil` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Line items of all MAC5 trading documents (product, quantity, prices, discounts, link to the source document), one row per company, document type, document number and line number.
 Used by: [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md).
 
 # Grain and key
@@ -35,70 +35,70 @@ One row per `company_id`, `MILtype`, `MILvnos`, `MILlistNo`. The key is declared
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `milday` | INT64 | Likely day part of the document date (inferred from the column name only; not documented in the repo). |
-| `milmonth` | INT64 | Likely month part of the document date (inferred from the column name only; not documented in the repo). |
-| `milyear` | INT64 | Likely year part of the document date (inferred from the column name only; not documented in the repo). |
-| `miltype` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `milvnos` | STRING | Likely document number (inferred from the column name only; not documented in the repo). |
-| `milcus` | STRING | Likely customer code (inferred from the column name only; not documented in the repo). |
-| `milstk` | STRING | Likely stock (SKU) code (inferred from the column name only; not documented in the repo). |
-| `miljob` | STRING | Meaning not documented in the repo. |
-| `mildep` | STRING | Meaning not documented in the repo. |
-| `milper` | STRING | Meaning not documented in the repo. |
-| `mildoc` | STRING | Meaning not documented in the repo. |
-| `milmec` | STRING | Meaning not documented in the repo. |
-| `milsto` | STRING | Meaning not documented in the repo. |
-| `milstomt` | STRING | Meaning not documented in the repo. |
-| `millistno` | INT64 | Meaning not documented in the repo. |
-| `milquan` | FLOAT64 | Meaning not documented in the repo. |
-| `milquan_raw` | FLOAT64 | Meaning not documented in the repo. |
-| `milquanp2` | FLOAT64 | Meaning not documented in the repo. |
-| `miladisc` | FLOAT64 | Meaning not documented in the repo. |
-| `miladisc_raw` | FLOAT64 | Meaning not documented in the repo. |
-| `milcog` | FLOAT64 | Meaning not documented in the repo. |
-| `milcog_raw` | FLOAT64 | Meaning not documented in the repo. |
-| `milconv` | FLOAT64 | Meaning not documented in the repo. |
-| `mildisca` | FLOAT64 | Meaning not documented in the repo. |
-| `mildisca_raw` | FLOAT64 | Meaning not documented in the repo. |
-| `mildisct` | STRING | Meaning not documented in the repo. |
-| `milvat` | FLOAT64 | Meaning not documented in the repo. |
-| `milvat_raw` | FLOAT64 | Meaning not documented in the repo. |
-| `milsum` | FLOAT64 | Meaning not documented in the repo. |
-| `milsum_raw` | FLOAT64 | Meaning not documented in the repo. |
-| `milcut` | INT64 | Meaning not documented in the repo. |
-| `milstype` | INT64 | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `miluname` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `mildesc` | STRING | Meaning not documented in the repo. |
-| `milvcol1` | STRING | Meaning not documented in the repo. |
-| `milvcol2` | STRING | Meaning not documented in the repo. |
-| `milvcol3` | STRING | Meaning not documented in the repo. |
-| `milvcol4` | STRING | Meaning not documented in the repo. |
-| `milcurc` | INT64 | Meaning not documented in the repo. |
-| `milexchg` | FLOAT64 | Meaning not documented in the repo. |
-| `milacost` | FLOAT64 | Meaning not documented in the repo. |
-| `milpqm` | INT64 | Meaning not documented in the repo. |
-| `milpmfrom` | INT64 | Meaning not documented in the repo. |
-| `milpmto` | INT64 | Meaning not documented in the repo. |
-| `miltag` | INT64 | Meaning not documented in the repo. |
-| `millinkvcno` | STRING | Meaning not documented in the repo. |
-| `millinkvcdate` | DATETIME | Meaning not documented in the repo. |
-| `millinkvctype` | STRING | Meaning not documented in the repo. |
-| `millinkvcdeposit` | STRING | Meaning not documented in the repo. |
-| `millinkvcid` | INT64 | Meaning not documented in the repo. |
-| `milclearum` | INT64 | Meaning not documented in the repo. |
-| `milexpdate` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `milnotes` | STRING | Meaning not documented in the repo. |
-| `milnotkl` | INT64 | Meaning not documented in the repo. |
-| `mildelvdt` | DATETIME | Meaning not documented in the repo. |
-| `mildatesp` | DATETIME | Meaning not documented in the repo. |
-| `milnumcsp` | FLOAT64 | Meaning not documented in the repo. |
-| `milnumisp` | INT64 | Meaning not documented in the repo. |
-| `milcost` | FLOAT64 | Meaning not documented in the repo. |
-| `milucost` | FLOAT64 | Meaning not documented in the repo. |
-| `miluprice` | FLOAT64 | Likely price (inferred from the column name only; not documented in the repo). |
-| `milusequanp` | INT64 | Meaning not documented in the repo. |
-| `milvcol5` | STRING | Meaning not documented in the repo. |
-| `milfitem` | INT64 | Meaning not documented in the repo. |
+| `milday` | INT64 | Day part of the document date. |
+| `milmonth` | INT64 | Month part of the document date. |
+| `milyear` | INT64 | Year part of the document date (Gregorian). |
+| `miltype` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `milvnos` | STRING | Document number of the line, matching `mihvnos` of the header. |
+| `milcus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `milstk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
+| `miljob` | STRING | Job code of the line (sales job or project category such as `TT`, `SHOP`, or a project number). |
+| `mildep` | STRING | Department code of the line, used as the sales channel code. |
+| `milper` | STRING | Salesperson (employee) code of the line. |
+| `mildoc` | STRING | Document print-form code of the line from the MAC5 `doc` master. |
+| `milmec` | STRING | Memo-card code of the line, matching `mec.meccode`. |
+| `milsto` | STRING | Warehouse (store) code the line is issued from, matching `sto` store codes. |
+| `milstomt` | STRING | Destination warehouse code for transfer lines. |
+| `millistno` | INT64 | Line number within the document. |
+| `milquan` | FLOAT64 | Quantity in the line's unit; negative for credit notes (`BS`). |
+| `milquan_raw` | FLOAT64 | Quantity as recorded at source, without the credit-note sign flip. |
+| `milquanp2` | FLOAT64 | Quantity in the secondary unit. |
+| `miladisc` | FLOAT64 | Header discount amount allocated to the line; negative for credit notes (`BS`). |
+| `miladisc_raw` | FLOAT64 | Allocated header discount as recorded at source, without the credit-note sign flip. |
+| `milcog` | FLOAT64 | Line gross amount (quantity times unit price) before discounts, excluding VAT; negative for credit notes (`BS`). |
+| `milcog_raw` | FLOAT64 | Line gross amount as recorded at source, without the credit-note sign flip. |
+| `milconv` | FLOAT64 | Unit conversion factor of the line (1 when no conversion). |
+| `mildisca` | FLOAT64 | Line discount amount; negative for credit notes (`BS`). |
+| `mildisca_raw` | FLOAT64 | Line discount amount as recorded at source, without the credit-note sign flip. |
+| `mildisct` | STRING | Line discount as entered (a percentage such as `35`, or a formula text). |
+| `milvat` | FLOAT64 | VAT amount of the line; negative for credit notes (`BS`). |
+| `milvat_raw` | FLOAT64 | Line VAT amount as recorded at source, without the credit-note sign flip. |
+| `milsum` | FLOAT64 | Line net amount excluding VAT, after the line discount and the allocated header discount `miladisc`; negative for credit notes (`BS`). |
+| `milsum_raw` | FLOAT64 | Line net amount after the line discount as recorded at source, without the header-discount deduction or credit-note sign flip. |
+| `milcut` | INT64 | Flag: line deducts stock (-1 = yes). |
+| `milstype` | INT64 | Line item type (1 = item, 2 = serial-tracked item, 3 = service). |
+| `miluname` | STRING | Unit name of the line (e.g. `SET`, `ชุด`, `Pcs.`). |
+| `mildesc` | STRING | Free-text line description. |
+| `milvcol1` | STRING | User-defined text column 1 of the line. |
+| `milvcol2` | STRING | User-defined text column 2 of the line. |
+| `milvcol3` | STRING | User-defined text column 3 of the line. |
+| `milvcol4` | STRING | User-defined text column 4 of the line. |
+| `milcurc` | INT64 | Currency code (0 = Thai baht). |
+| `milexchg` | FLOAT64 | Exchange rate to Thai baht (1 for baht documents). |
+| `milacost` | FLOAT64 | Average cost of the line. |
+| `milpqm` | INT64 | Price-quantity mode of the line. |
+| `milpmfrom` | INT64 | Start of the line-number range the line belongs to (equals `millistno` for ordinary lines). |
+| `milpmto` | INT64 | End of the line-number range the line belongs to (equals `millistno` for ordinary lines). |
+| `miltag` | INT64 | Tag marker of the line. |
+| `millinkvcno` | STRING | Number of the source document this line was created from (e.g. the sales order of an invoice line). |
+| `millinkvcdate` | DATETIME | Date of the linked source document. |
+| `millinkvctype` | STRING | Document type of the linked source document (e.g. `PS`, `PP`). |
+| `millinkvcdeposit` | STRING | Deposit amount and VAT deducted from the linked document, stored as `amount/VAT` text. |
+| `millinkvcid` | INT64 | Internal ID of the linked source-document line. |
+| `milclearum` | INT64 | Flag: outstanding quantity of the line cleared (0 = still open). |
+| `milexpdate` | DATETIME | Expiry date of the line item. |
+| `milnotes` | STRING | Free-text line notes. |
+| `milnotkl` | INT64 | Flag indicating that the line is excluded from stock reservation. |
+| `mildelvdt` | DATETIME | Requested delivery date of the line. |
+| `mildatesp` | DATETIME | Special date of the line. |
+| `milnumcsp` | FLOAT64 | Special numeric field of the line. |
+| `milnumisp` | INT64 | Special integer field of the line. |
+| `milcost` | FLOAT64 | Cost amount of the line. |
+| `milucost` | FLOAT64 | Unit cost of the line. |
+| `miluprice` | FLOAT64 | Unit price of the line, excluding VAT. |
+| `milusequanp` | INT64 | Flag indicating use of the secondary-unit quantity (1 = yes). |
+| `milvcol5` | STRING | User-defined text column 5 of the line. |
+| `milfitem` | INT64 | Free-item flag of the line. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

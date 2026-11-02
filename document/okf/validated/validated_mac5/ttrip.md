@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "ttrip"
-description: "One row = one delivery trip, unique on (company_id, frun, fcode)."
+description: "One row = one delivery trip (per company), unique on (company_id, frun, fcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=ttrip&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `ttrip`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: delivery trip. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `ttrip`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Delivery trips of the GPS delivery app, with vehicle, release time and trip costs.
 Used by: [dimension_table.dim_delivery](/dimension/dim_delivery.md), [fact_table.fact_delivery](/fact/fact_delivery.md).
 
 # Grain and key
@@ -35,29 +35,29 @@ One row per `company_id`, `frun`, `fcode`. The key is declared twice in the defi
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `frun` | STRING | Meaning not documented in the repo. |
-| `fmaster` | STRING | Meaning not documented in the repo. |
-| `fcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `fdate` | STRING | Likely date (inferred from the column name only; not documented in the repo). |
-| `fvehicle` | STRING | Meaning not documented in the repo. |
-| `fother` | STRING | Meaning not documented in the repo. |
-| `fprice` | INT64 | Likely price (inferred from the column name only; not documented in the repo). |
-| `fbuddy` | INT64 | Meaning not documented in the repo. |
-| `fdeduct_detail` | STRING | Meaning not documented in the repo. |
-| `fdeduct_monkey` | FLOAT64 | Meaning not documented in the repo. |
-| `fdeduct_money` | FLOAT64 | Meaning not documented in the repo. |
-| `ftype` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `fcomplete` | STRING | Meaning not documented in the repo. |
-| `foil` | STRING | Meaning not documented in the repo. |
-| `fpass_date` | STRING | Meaning not documented in the repo. |
-| `fpay` | STRING | Meaning not documented in the repo. |
-| `foil_deduct` | INT64 | Meaning not documented in the repo. |
-| `loadip` | INT64 | Meaning not documented in the repo. |
-| `loadvnos` | STRING | Meaning not documented in the repo. |
-| `fremark` | STRING | Likely free-text remark (inferred from the column name only; not documented in the repo). |
-| `flitre_price` | FLOAT64 | Meaning not documented in the repo. |
-| `flitre` | FLOAT64 | Meaning not documented in the repo. |
-| `fcubic` | FLOAT64 | Meaning not documented in the repo. |
+| `frun` | STRING | Trip identifier (timestamp `yyMMddHHmmss` plus sequence), referenced by `ttrip_document.fmaster` and `tdelivery.fmaster`. |
+| `fmaster` | STRING | Master reference of the trip. |
+| `fcode` | STRING | Trip code (document number of the trip). |
+| `fdate` | STRING | Date and time the trip was created (`yyyyMMddHHmmss`). |
+| `fvehicle` | STRING | Vehicle registration plate of the trip. |
+| `fother` | STRING | Other note of the trip. |
+| `fprice` | INT64 | Trip price. |
+| `fbuddy` | INT64 | Helper (buddy) allowance amount of the trip. |
+| `fdeduct_detail` | STRING | Deduction detail of the trip. |
+| `fdeduct_monkey` | FLOAT64 | Deduction amount of the trip (misspelled duplicate of `fdeduct_money`). |
+| `fdeduct_money` | FLOAT64 | Deduction amount of the trip. |
+| `ftype` | STRING | Trip type code. |
+| `fcomplete` | STRING | Trip completion flag. |
+| `foil` | STRING | Fuel rate code of the trip. |
+| `fpass_date` | STRING | Date and time the vehicle was released for the trip (`yyyyMMddHHmmss`). |
+| `fpay` | STRING | Paid flag of the trip (1 = paid). |
+| `foil_deduct` | INT64 | Fuel deduction value of the trip. |
+| `loadip` | INT64 | Load IP flag. |
+| `loadvnos` | STRING | Loading document number. |
+| `fremark` | STRING | Trip remark, such as the distance driven. |
+| `flitre_price` | FLOAT64 | Fuel price value of the trip. |
+| `flitre` | FLOAT64 | Fuel quantity value of the trip. |
+| `fcubic` | FLOAT64 | Cubic volume loaded on the trip. |
 
 # How it is built
 

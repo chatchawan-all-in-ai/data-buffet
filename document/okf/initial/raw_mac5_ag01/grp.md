@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "grp"
-description: "One row = one record of source table `grp` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one user permission group, a record of source table `grp` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=grp&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/grp/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `grp` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.grp](/validated/validated_mac5/grp.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/grp/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `grp` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: User permission groups of the MAC5 web applications, with the role name, granted menu IDs and product lines. Used by: [validated_mac5.grp](/validated/validated_mac5/grp.md).
 
 # Grain and key
 
@@ -30,11 +30,11 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `grpid` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `grpstatus` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `grpname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `grpline` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rowguid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `grpid` | INT64 | Permission group ID. |
+| `grpstatus` | STRING | Comma-separated list of menu or permission IDs granted to the group. |
+| `grpname` | STRING | Permission group name in Thai, describing the role (e.g. sales admin, installation manager). |
+| `grpline` | STRING | Product lines the group covers, as a quoted list (e.g. `'LYN','TEC'`). |
+| `rowguid` | STRING | Row GUID that uniquely identifies the record in the source database. |
 
 # How it is built
 

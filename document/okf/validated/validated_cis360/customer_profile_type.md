@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "customer_profile_type"
-description: "One row = one cleaned copy of the source table `customer_profile_type`, unique on (id)."
+description: "One row = one customer profile type from source table `customer_profile_type`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_cis360&t=customer_profile_type&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_cis360
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of CIS360 `customer_profile_type`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of CIS360 `customer_profile_type`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Lookup of CIS360 customer profile types (personal, juristic, shop, office).
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,18 +34,18 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `customer_profile_type_name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `customer_profile_type_name_en` | STRING | Meaning not documented in the repo. |
-| `customer_profile_type_code` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `customer_profile_type_order` | INT64 | Meaning not documented in the repo. |
-| `is_constant` | BOOL | Meaning not documented in the repo. |
-| `active_status` | BOOL | Meaning not documented in the repo. |
-| `is_delete` | BOOL | Meaning not documented in the repo. |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
-| `create_by` | STRING | Meaning not documented in the repo. |
-| `update_date` | DATETIME | Meaning not documented in the repo. |
-| `update_by` | STRING | Meaning not documented in the repo. |
+| `id` | INT64 | Primary key of the customer profile type lookup. |
+| `customer_profile_type_name` | STRING | Customer profile type name in Thai. |
+| `customer_profile_type_name_en` | STRING | Customer profile type name in English. |
+| `customer_profile_type_code` | STRING | Customer profile type code (`PERSONAL`, `JURISTIC`, `OFFICE_BRAND` = shop, `OFFICE` = office such as a branch). |
+| `customer_profile_type_order` | INT64 | Display sort order of the customer profile type. |
+| `is_constant` | BOOL | Whether the customer profile type is a fixed system-defined value. |
+| `active_status` | BOOL | Whether the customer profile type is active. |
+| `is_delete` | BOOL | Soft-delete flag (TRUE = record deleted). |
+| `create_date` | DATETIME | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `update_date` | DATETIME | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

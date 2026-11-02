@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_delivery"
-description: "One row = one cleaned copy of the source table `crm_sale_order_delivery`, unique on (sale_order_delivery_id)."
+description: "One row = one delivery round of a sale order from source table `crm_sale_order_delivery`, unique on (sale_order_delivery_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_sale_order_delivery&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_sale_order_delivery`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_sale_order_delivery`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Delivery rounds of DERP sale orders: delivery date, time window, receiver and delivery address.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,46 +34,46 @@ One row per `sale_order_delivery_id`. The key is declared twice in the definitio
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_delivery_id` | STRING | Meaning not documented in the repo. |
-| `sale_order_id` | STRING | Meaning not documented in the repo. |
-| `so_no` | STRING | Meaning not documented in the repo. |
-| `so_date` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `round_no` | INT64 | Meaning not documented in the repo. |
-| `delivery_date` | DATETIME | Meaning not documented in the repo. |
-| `delivery_address_id` | STRING | Meaning not documented in the repo. |
-| `delivery_address_code` | STRING | Meaning not documented in the repo. |
-| `delivery_address_text` | STRING | Meaning not documented in the repo. |
-| `receiver_name` | STRING | Meaning not documented in the repo. |
-| `receiver_phone` | STRING | Meaning not documented in the repo. |
-| `remark_logistic` | STRING | Meaning not documented in the repo. |
-| `order_sort` | INT64 | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `time_start` | STRING | Meaning not documented in the repo. |
-| `time_end` | STRING | Meaning not documented in the repo. |
-| `ship_type` | STRING | Meaning not documented in the repo. |
-| `phase` | STRING | Meaning not documented in the repo. |
-| `house_no` | STRING | Meaning not documented in the repo. |
-| `plot` | STRING | Meaning not documented in the repo. |
-| `latitude` | FLOAT64 | Meaning not documented in the repo. |
-| `longitude` | FLOAT64 | Meaning not documented in the repo. |
-| `site_id` | STRING | Meaning not documented in the repo. |
-| `site_code` | STRING | Meaning not documented in the repo. |
-| `delivery_address_full` | STRING | Meaning not documented in the repo. |
-| `delivery_sub_district` | STRING | Meaning not documented in the repo. |
-| `delivery_sub_district_code` | STRING | Meaning not documented in the repo. |
-| `delivery_district` | STRING | Meaning not documented in the repo. |
-| `delivery_district_code` | STRING | Meaning not documented in the repo. |
-| `delivery_province` | STRING | Meaning not documented in the repo. |
-| `delivery_province_code` | STRING | Meaning not documented in the repo. |
-| `delivery_postal_code` | STRING | Meaning not documented in the repo. |
-| `delivery_country_code` | STRING | Meaning not documented in the repo. |
-| `delivery_map_url` | STRING | Meaning not documented in the repo. |
-| `nearby_landmark` | STRING | Meaning not documented in the repo. |
+| `sale_order_delivery_id` | STRING | Unique identifier of the sale order delivery round. |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `so_no` | STRING | Sale order number of the parent sale order (e.g. `A2610000106`). |
+| `so_date` | DATETIME | Date and time of the parent sale order. |
+| `round_no` | INT64 | Delivery round number within the sale order, starting at 1. |
+| `delivery_date` | DATETIME | Scheduled delivery date of the delivery round. |
+| `delivery_address_id` | STRING | Identifier of the customer delivery address. |
+| `delivery_address_code` | STRING | Customer code of the delivery address. |
+| `delivery_address_text` | STRING | Delivery address text. |
+| `receiver_name` | STRING | Name of the person receiving the goods. |
+| `receiver_phone` | STRING | Phone number of the person receiving the goods. |
+| `remark_logistic` | STRING | Remark for logistics. |
+| `order_sort` | INT64 | Display order of the delivery round within its sale order, starting at 0. |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `time_start` | STRING | Start time of the delivery time window (`HH:MM:SS`). |
+| `time_end` | STRING | End time of the delivery time window (`HH:MM:SS`). |
+| `ship_type` | STRING | Delivery destination type (`site` or `store`). |
+| `phase` | STRING | Project phase of the delivery address. |
+| `house_no` | STRING | House number of the delivery address. |
+| `plot` | STRING | Plot number of the delivery address. |
+| `latitude` | FLOAT64 | Latitude of the delivery address. |
+| `longitude` | FLOAT64 | Longitude of the delivery address. |
+| `site_id` | STRING | Identifier of the shipping site (plant or warehouse). |
+| `site_code` | STRING | Code of the shipping site (plant or warehouse, e.g. `KTB`, `KK1`, `LP1`). |
+| `delivery_address_full` | STRING | Full delivery address. |
+| `delivery_sub_district` | STRING | Sub-district of the delivery address. |
+| `delivery_sub_district_code` | STRING | Sub-district code of the delivery address. |
+| `delivery_district` | STRING | District of the delivery address. |
+| `delivery_district_code` | STRING | District code of the delivery address. |
+| `delivery_province` | STRING | Province of the delivery address. |
+| `delivery_province_code` | STRING | Province code of the delivery address. |
+| `delivery_postal_code` | STRING | Postal code of the delivery address. |
+| `delivery_country_code` | STRING | Country code of the delivery address (e.g. `THA`). |
+| `delivery_map_url` | STRING | Map URL of the delivery address. |
+| `nearby_landmark` | STRING | Nearby landmark of the delivery address. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

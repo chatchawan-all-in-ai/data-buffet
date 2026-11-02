@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "category"
-description: "One row = one record of source table `category` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one product category, a record of source table `category` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mastersku&t=category&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mastersku
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mastersku/category/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `category` table from MASTERSKU; nothing is cleaned or deduplicated here. Used by: [validated_mastersku.category](/validated/validated_mastersku/category.md).
+External table over AVRO files in `gs://file-raw-data/mastersku/category/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `category` table from MASTERSKU; nothing is cleaned or deduplicated here. Table meaning: Product category tree (up to 5 levels) of the old product master MASTERSKU. Used by: [validated_mastersku.category](/validated/validated_mastersku/category.md).
 
 # Grain and key
 
@@ -30,24 +30,24 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `cat_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_d365_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_description` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_tag` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_parent_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_level` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_img_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_img_path` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_vendor_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_is_active` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_is_use` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_created_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_updated_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cat_specific_field` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `cat_id` | STRING | Unique identifier (UUID) of the category. |
+| `cat_code` | STRING | Category code (hierarchical digits, e.g. `0301030204`). |
+| `cat_name` | STRING | Category name. |
+| `cat_d365_code` | STRING | Category code in Dynamics 365. |
+| `cat_description` | STRING | Category description. |
+| `cat_tag` | STRING | Search tags of the category as JSON (`{"cat_tag":[...]}`). |
+| `cat_parent_id` | STRING | Parent category (FK to `category.cat_id`; NULL at level 1). |
+| `cat_level` | INT64 | Level of the category in the hierarchy (1 = top, up to 5). |
+| `cat_img_name` | STRING | File name of the category image. |
+| `cat_img_path` | STRING | Storage path of the category image. |
+| `cat_vendor_id` | STRING | Vendor that owns the category (FK to `vendor.vd_id`). |
+| `cat_is_active` | BOOL | Active flag of the record. |
+| `cat_is_use` | BOOL | In-use flag of the record (FALSE = retired from use). |
+| `cat_created_date` | STRING | Timestamp when the record was created. |
+| `cat_created_by` | STRING | Identifier of the user who created the record. |
+| `cat_updated_date` | STRING | Timestamp when the record was last updated. |
+| `cat_updated_by` | STRING | Identifier of the user who last updated the record. |
+| `cat_specific_field` | STRING | Category-specific attribute labels as JSON (`{"specific":[...]}`). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

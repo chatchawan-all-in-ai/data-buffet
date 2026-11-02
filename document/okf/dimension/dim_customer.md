@@ -38,29 +38,29 @@ One row per (`CompanySK`, `debcode`) (QUALIFY keeps one row per `companyID` + `d
 | `InvoiceSubDistrictSK` | INT64 | Sub-district SK of the invoice address from `view_deb_address_data` (same join). |
 | `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), joined on `deb.company_id`. |
 | `companyID` | STRING | MAC5 company code (ag01/aa05/ab01/ac02/ak02) from `dim_company.companyID`. |
-| `debcode` | STRING | MAC5 debtor/customer code (`deb.debcode`); natural key with company. Matches `mihCus` on invoices. |
-| `debdate` | DATETIME | Date field `deb.debdate` of the MAC5 debtor master (DATETIME); used to compute `Total_contact_time_Year`. Likely the customer creation/registration date, inferred from how it is used. |
-| `customer_code` | STRING | CIS360 customer code (`customer_profile.customer_code`) matched to this debtor through `match_customer`. NULL for non-ag01 companies and unmatched debtors. |
-| `prefix_id` | INT64 | CIS360 name-prefix id (`customer_profile.prefix_id`); NULL if unmatched. |
-| `debnamet` | STRING | Customer Thai name from MAC5 `deb.debnamet`. |
-| `first_name` | STRING | First name from the CIS360 customer profile (NULL if unmatched). |
-| `last_name` | STRING | Last name from the CIS360 customer profile (NULL if unmatched). |
-| `debtaxclass` | FLOAT64 | MAC5 `deb.debtaxclass` pass-through. Meaning not documented in the repo. |
-| `full_name` | STRING | Full name from the CIS360 customer profile (NULL if unmatched). |
-| `customer_status_name` | STRING | CIS360 customer status name (`customer_status.customer_status_name`, joined by `customer_status_id`). |
-| `debsalesp` | STRING | Salesperson/employee code assigned to the customer in MAC5 (`deb.debsalesp`); used to look up the sale representative in the TA logic of the views. |
-| `debxxxx` | STRING | MAC5 `deb.debxxxx` pass-through. Meaning not documented in the repo. |
-| `debgrade` | STRING | MAC5 `deb.debgrade` customer grade code (pass-through). |
-| `nature_business_code` | STRING | CIS360 nature-of-business code (via `customer_profile_nature_business` and `nature_business`). |
-| `nature_business_name` | STRING | CIS360 nature-of-business name (Thai). |
-| `nature_business_name_en` | STRING | CIS360 nature-of-business name (English). |
-| `customer_type_name` | STRING | CIS360 customer type name (Thai), from `customer_type` by `customer_type_id`. |
-| `customer_type_name_en` | STRING | CIS360 customer type name (English). |
-| `debbranch` | STRING | MAC5 `deb.debbranch` pass-through, likely the tax branch code (inferred from the name). |
-| `deblimit` | FLOAT64 | Customer credit limit from MAC5 `deb.deblimit`. |
-| `debgroup` | STRING | MAC5 customer group code (`deb.debgroup`); basis of [dim_group_customer](/dimension/dim_group_customer.md) (NULL falls back to `debcode` there). |
-| `DEBcreditTerm` | INT64 | Credit term in days from MAC5 `deb.DEBcreditTerm`. |
-| `debmemo` | STRING | Free-text memo on the debtor (`deb.debmemo`). |
+| `debcode` | STRING | Customer (debtor) code. |
+| `debdate` | DATETIME | Date the customer record was created. |
+| `customer_code` | STRING | CIS360 customer code (`C` + 7 digits), matched to `match_customer.customer_allkon` to link MAC5 customers. |
+| `prefix_id` | INT64 | Name prefix (title) of the customer (`prefix.id`). |
+| `debnamet` | STRING | Customer name in Thai. |
+| `first_name` | STRING | First name of the customer (individual). |
+| `last_name` | STRING | Last name of the customer (individual). |
+| `debtaxclass` | FLOAT64 | VAT rate applied to the customer in percent (7 or 0). |
+| `full_name` | STRING | Full display name of the customer (person or company). |
+| `customer_status_name` | STRING | Customer status name in Thai. |
+| `debsalesp` | STRING | Salesperson code assigned to the customer (joins `per.percode`). |
+| `debxxxx` | STRING | Secondary salesperson (employee) code of the customer. |
+| `debgrade` | STRING | Customer grade code. |
+| `nature_business_code` | STRING | Nature of business code (e.g. `WHOLESALE_BUSINESS`, `FINANCIAL_BUSINESS`, `LOGISTICS_BUSINESS`, `HRR`). |
+| `nature_business_name` | STRING | Nature of business name in Thai. |
+| `nature_business_name_en` | STRING | Nature of business name in English. |
+| `customer_type_name` | STRING | Customer type name in Thai. |
+| `customer_type_name_en` | STRING | Customer type name in English. |
+| `debbranch` | STRING | Tax branch number of the customer (`00000` = head office). |
+| `deblimit` | FLOAT64 | Credit limit of the customer in baht. |
+| `debgroup` | STRING | Customer group code (e.g. HP, TW, BT, GB, MH, DOHOME); drives channel matching in the sale-rep rules. |
+| `DEBcreditTerm` | INT64 | Credit term in days. |
+| `debmemo` | STRING | Free-text memo on the customer. |
 | `Customer_CM_Grade` | STRING | Always NULL here (`CAST(NULL AS STRING)` placeholder); credit-management grade lives in [dim_customer_grade](/dimension/dim_customer_grade.md). |
 | `Total_contact_time_Year` | INT64 | Whole years between `debdate` and today (`DATE_DIFF(CURRENT_DATE('Asia/Bangkok'), debdate, YEAR)`), recomputed every run. |
 

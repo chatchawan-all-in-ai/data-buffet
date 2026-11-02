@@ -34,7 +34,7 @@ One row per (`CompanyID`, `CompanyCode`); `CompanySK` is a stable surrogate key 
 |---|---|---|
 | `CompanySK` | INT64 | Stable surrogate key of the company; referenced as `CompanySK` throughout dimension and fact tables. Never regenerated. |
 | `CompanyID` | STRING | MAC5 company id such as ag01, aa05, ab01, ac02, ak02; matches `company_id` in validated/curated MAC5 tables. Part of the natural key. |
-| `CompanyCode` | STRING | Company code from MDS (`CompanyCode`); second part of the natural key. Meaning of the code values is not documented in the repo. |
+| `CompanyCode` | STRING | Short company code from MDS (`CompanyCode`): TM = ag01, TE = ac02, IM = ab01, SHANTA = aa05, SWAS = ak02; second part of the natural key. |
 | `CompanyNameTH` | STRING | Company name in Thai (MDS `CompanyNameTH`). |
 | `CompanyNameEN` | STRING | Company name in English (MDS `CompanyNameEN`). |
 | `MdsId` | STRING | Id of the source row in `mds_dataset.mds_data_company_master` (trace column; used to keep the SK when keys are edited and for tombstone deletes). |

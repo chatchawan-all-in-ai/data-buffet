@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_attachment"
-description: "One row = one record of source table `crm_sale_order_attachment` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one file attached to a sale order, a record of source table `crm_sale_order_attachment` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_sale_order_attachment&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_attachment/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_attachment` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_sale_order_attachment](/validated/validated_derp/crm_sale_order_attachment.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_attachment/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_attachment` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Files attached to DERP sale orders (customer POs, maps, pay-in evidence). Used by: [validated_derp.crm_sale_order_attachment](/validated/validated_derp/crm_sale_order_attachment.md).
 
 # Grain and key
 
@@ -30,27 +30,27 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_attachment_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_order_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `so_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `attachment_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `attach_source` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `file_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `file_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `file_url` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `file_size` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mime_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `po_ref` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `expiry_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `note` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `order_sort` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `sale_order_attachment_id` | STRING | Unique identifier of the sale order attachment. |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `so_no` | STRING | Sale order number of the parent sale order (e.g. `A2610000106`). |
+| `attachment_type` | STRING | Type of the attached document (e.g. `PO`, `MAP`, `Payin`, `Other`). |
+| `attach_source` | STRING | Who attached the file (`Admin` or `TA`). |
+| `file_id` | STRING | Identifier of the stored file. |
+| `file_name` | STRING | File name of the attachment. |
+| `file_url` | STRING | URL of the attachment. |
+| `file_size` | INT64 | File size in bytes. |
+| `mime_type` | STRING | MIME type of the file (e.g. `application/pdf`, `image/png`). |
+| `po_ref` | STRING | Customer purchase order (PO) number of the attached PO. |
+| `expiry_date` | STRING | Expiry date of the attached document (e.g. PO expiry). |
+| `note` | STRING | Free-text note on the attachment. |
+| `order_sort` | INT64 | Display order of the attachment within its sale order. |
+| `amount` | FLOAT64 | Amount stated on the attached document (THB). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

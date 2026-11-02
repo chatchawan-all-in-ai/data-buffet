@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "category_translations"
-description: "One row = one cleaned copy of the source table `category_translations`, unique on (category_id, language_id)."
+description: "One row = one category name in one language from source table `category_translations`, unique on (category_id, language_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_master_sku&t=category_translations&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_master_sku
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MASTER_SKU `category_translations`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MASTER_SKU `category_translations`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Translated (Thai/English) names and descriptions of master_sku categories.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,14 +34,14 @@ One row per `category_id`, `language_id`. The key is declared twice in the defin
 
 | Column | Type | Description |
 |---|---|---|
-| `category_id` | STRING | Meaning not documented in the repo. |
-| `language_id` | STRING | Meaning not documented in the repo. |
-| `name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `detail` | STRING | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
+| `category_id` | STRING | Category being translated (FK to `categories.id`). |
+| `language_id` | STRING | Language of the translation (FK to `common_codes.id` of type `language`: `en` or `th`). |
+| `name` | STRING | Category name in this language. |
+| `detail` | STRING | Category description in this language. |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "per"
-description: "One row = one record of source table `per` (MAC5 for company `ak02`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one employee, a record of source table `per` (MAC5 for company `ak02`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ak02&t=per&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ak02
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ak02/per/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `per` table from MAC5 for company `ak02`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.per](/validated/validated_mac5/per.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ak02/per/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `per` table from MAC5 for company `ak02`; nothing is cleaned or deduplicated here. Table meaning: Employee master of the MAC5 ERP (mainly salespeople): name, department, position, employment dates and contact details. Used by: [validated_mac5.per](/validated/validated_mac5/per.md).
 
 # Grain and key
 
@@ -30,31 +30,31 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `percode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `perdep` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pertaxnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pernamet` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pernamee` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `perbdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `perworks` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `perworkf` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `peradd1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `peradd2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `peradd3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pertel` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `perpositn` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `perstatus` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pernchild` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `percisstudy` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pernotstudy` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `persalary` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `perhide` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `perlock` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `permemo` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pereditlk` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `perrefwe` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pereditdt` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pereditmf` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `percode` | STRING | Employee (salesperson) code. |
+| `perdep` | STRING | Department code of the employee (joins `dep.depcode`). |
+| `pertaxnos` | STRING | Tax ID of the employee. |
+| `pernamet` | STRING | Employee name in Thai (first name, surname and nickname in parentheses). |
+| `pernamee` | STRING | Employee name in English. |
+| `perbdate` | STRING | Birth date of the employee. |
+| `perworks` | STRING | Employment start date. |
+| `perworkf` | STRING | Employment end date. |
+| `peradd1` | STRING | Address line 1 of the employee. |
+| `peradd2` | STRING | Address line 2 of the employee. |
+| `peradd3` | STRING | Address line 3 of the employee. |
+| `pertel` | STRING | Phone number of the employee. |
+| `perpositn` | STRING | Job position title in Thai (e.g. Agent salesperson, TA Water Solution). |
+| `perstatus` | INT64 | Employment status code (0, 1, 2). |
+| `pernchild` | INT64 | Number of children of the employee. |
+| `percisstudy` | INT64 | Number of the employee's children in school. |
+| `pernotstudy` | INT64 | Number of the employee's children not in school. |
+| `persalary` | FLOAT64 | Salary of the employee. |
+| `perhide` | INT64 | Hidden flag (-1 = hidden from pick lists, 0 = shown). |
+| `perlock` | INT64 | Lock flag (-1 = locked against editing, 0 = unlocked). |
+| `permemo` | STRING | Free-text memo on the employee. |
+| `pereditlk` | STRING | Date and time the record was locked for editing. |
+| `perrefwe` | STRING | External reference code of the record. |
+| `pereditdt` | STRING | Date and time the record was last edited. |
+| `pereditmf` | STRING | User code of the person who last edited the record. |
 
 # How it is built
 

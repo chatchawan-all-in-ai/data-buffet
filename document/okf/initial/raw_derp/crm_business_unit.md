@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_business_unit"
-description: "One row = one record of source table `crm_business_unit` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one business unit node, a record of source table `crm_business_unit` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_business_unit&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_business_unit/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_business_unit` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_business_unit](/validated/validated_derp/crm_business_unit.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_business_unit/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_business_unit` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Business unit (product line) hierarchy of the CRM, with the responsible employee and two alternates per unit. Used by: [validated_derp.crm_business_unit](/validated/validated_derp/crm_business_unit.md).
 
 # Grain and key
 
@@ -30,45 +30,45 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `business_unit_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bu_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bu_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bu_description` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `level` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `parent_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `parent_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `company_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `company_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `organization_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `organization_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `responsible_employee_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `responsible_employee_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `responsible_user_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `responsible_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `responsible_effective_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `responsible_expiry_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alt1_employee_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alt1_employee_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alt1_user_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alt1_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alt1_effective_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alt1_expiry_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alt2_employee_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alt2_employee_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alt2_user_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alt2_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alt2_effective_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alt2_expiry_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `business_unit_id` | STRING | UUID of the business unit. |
+| `bu_code` | STRING | Business unit code (e.g. `0311`; hierarchical, child codes extend the parent code). |
+| `bu_name` | STRING | Business unit name. |
+| `bu_description` | STRING | Description of the business unit (product line). |
+| `level` | INT64 | Depth of the node in the hierarchy (1 = top level). |
+| `parent_id` | STRING | UUID of the parent node in the same hierarchy (NULL at the top level). |
+| `parent_code` | STRING | Code of the parent business unit. |
+| `path_id` | STRING | Chain of business-unit UUIDs from the top level down to this unit. |
+| `path_code` | STRING | Chain of business-unit codes from the top level down to this unit (e.g. `03`, `031`, `0311`). |
+| `path_name` | STRING | Chain of business-unit names from the top level down to this unit. |
+| `company_id` | STRING | UUID of the company that owns the record. |
+| `company_code` | STRING | Code of the company that owns the record. |
+| `organization_id` | STRING | UUID of the organization that owns the record. |
+| `organization_code` | STRING | Code of the organization that owns the record. |
+| `responsible_employee_id` | STRING | UUID of the employee responsible for the business unit. |
+| `responsible_employee_no` | STRING | Employee number of the employee responsible for the business unit. |
+| `responsible_user_id` | STRING | User UUID of the employee responsible for the business unit. |
+| `responsible_name` | STRING | Name of the employee responsible for the business unit. |
+| `responsible_effective_date` | STRING | Date the responsible employee assignment starts. |
+| `responsible_expiry_date` | STRING | Date the responsible employee assignment ends. |
+| `alt1_employee_id` | STRING | UUID of the first alternate responsible employee. |
+| `alt1_employee_no` | STRING | Employee number of the first alternate responsible employee. |
+| `alt1_user_id` | STRING | User UUID of the first alternate responsible employee. |
+| `alt1_name` | STRING | Name of the first alternate responsible employee. |
+| `alt1_effective_date` | STRING | Date the first alternate assignment starts. |
+| `alt1_expiry_date` | STRING | Date the first alternate assignment ends. |
+| `alt2_employee_id` | STRING | UUID of the second alternate responsible employee. |
+| `alt2_employee_no` | STRING | Employee number of the second alternate responsible employee. |
+| `alt2_user_id` | STRING | User UUID of the second alternate responsible employee. |
+| `alt2_name` | STRING | Name of the second alternate responsible employee. |
+| `alt2_effective_date` | STRING | Date the second alternate assignment starts. |
+| `alt2_expiry_date` | STRING | Date the second alternate assignment ends. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

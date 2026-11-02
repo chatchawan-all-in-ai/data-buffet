@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "common_codes"
-description: "One row = one cleaned copy of the source table `common_codes`, unique on (id)."
+description: "One row = one code value in one code list from source table `common_codes`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_master_sku&t=common_codes&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_master_sku
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MASTER_SKU `common_codes`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MASTER_SKU `common_codes`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Shared code lists of master_sku 3.0 (units of measure, barcode formats, languages, statuses, product types, synonym types, color descriptors and group types).
 Used by: [curated_master_sku.curated_products](/curated/curated_master_sku/curated_products.md), [curated_master_sku.product_for_aisearch_v3](/curated/curated_master_sku/product_for_aisearch_v3.md).
 
 # Grain and key
@@ -34,18 +34,18 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Surrogate identifier from the source system (the primary key). |
-| `type` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `code` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `description` | STRING | Meaning not documented in the repo. |
-| `sort_order` | INT64 | Meaning not documented in the repo. |
-| `is_system` | BOOL | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
+| `id` | STRING | Unique identifier (UUID) of the code. |
+| `type` | STRING | Code list the value belongs to (e.g. `sales-unit`, `uom-length`, `uom-weight`, `barcode-format`, `language`, `synonym-type`, `color-descriptor`, `product-type`). |
+| `code` | STRING | Code value within its list (e.g. `KG`, `EAN13`, `th`). |
+| `name` | STRING | Display name of the code. |
+| `description` | STRING | Description of the code. |
+| `sort_order` | INT64 | Display order within the code list. |
+| `is_system` | BOOL | Flag marking a system-defined code. |
+| `status` | STRING | Record status (`Active`, `Inactive`, `Deleted`). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

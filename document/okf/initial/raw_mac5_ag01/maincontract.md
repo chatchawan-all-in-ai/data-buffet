@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "maincontract"
-description: "One row = one record of source table `maincontract` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one main contractor, a record of source table `maincontract` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=maincontract&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/maincontract/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `maincontract` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.maincontract](/validated/validated_mac5/maincontract.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/maincontract/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `maincontract` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Main contractors (developers), identified by their MAC5 customer code. Used by: [validated_mac5.maincontract](/validated/validated_mac5/maincontract.md).
 
 # Grain and key
 
@@ -30,10 +30,10 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `mcontractid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dateinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `mcontractid` | STRING | MAC5 customer (debtor) code of the main contractor (developer). |
+| `dateinsert` | STRING | Date and time the row was created. |
+| `status` | INT64 | Active flag (1 = active). |
+| `uinsert` | STRING | Employee code of the user who created the row. |
 
 # How it is built
 

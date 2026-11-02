@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_deposit"
-description: "One row = one record of source table `crm_sale_order_deposit` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one deposit installment of a sale order, a record of source table `crm_sale_order_deposit` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_sale_order_deposit&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_deposit/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_deposit` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_sale_order_deposit](/validated/validated_derp/crm_sale_order_deposit.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_deposit/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_deposit` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Deposit installments of DERP sale orders with due dates, amounts, payment status and deposit tax invoices. Used by: [validated_derp.crm_sale_order_deposit](/validated/validated_derp/crm_sale_order_deposit.md).
 
 # Grain and key
 
@@ -30,36 +30,36 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_deposit_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_order_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `so_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `installment_seq` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_method_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_method_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_term_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_term_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_condition_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_condition_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `percent` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `detail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `due_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `order_sort` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `paid_amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `remaining_amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `paid_status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `paid_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `deposit_tax_invoice_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `deposit_tax_invoice_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `invoiced_amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `deducted_amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `sale_order_deposit_id` | STRING | Unique identifier of the deposit installment. |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `so_no` | STRING | Sale order number of the parent sale order (e.g. `A2610000106`). |
+| `installment_seq` | INT64 | Deposit installment number, starting at 1. |
+| `payment_method_id` | STRING | Identifier of the payment method. |
+| `payment_method_code` | STRING | Payment method code (e.g. `BANK_TRANSFER`, `CASH`, `CHEQUE`, `CREDIT_LIMIT`, `BILL_PAYMENT`, `OTHER_FINANCE`). |
+| `payment_term_id` | STRING | Identifier of the payment term. |
+| `payment_term_code` | STRING | Payment term code (`N000`/`N030`/`N060` = pay 0/30/60 days after delivery, `N888` = no term). |
+| `payment_condition_id` | STRING | Identifier of the payment condition. |
+| `payment_condition_code` | STRING | Payment condition code (e.g. `BP_CRM` = by billing cycle, `BFF_LMS` = before delivery, `NOW_LMS` = on delivery, `AFT_LMS` = after delivery, `OTHER`). |
+| `amount` | FLOAT64 | Amount due for the deposit installment (THB). |
+| `percent` | FLOAT64 | Share of the order amount due for the installment, in percent. |
+| `detail` | STRING | Free-text description of the installment. |
+| `due_date` | STRING | Due date of the installment. |
+| `order_sort` | INT64 | Display order of the installment within its sale order, starting at 0. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `paid_amount` | FLOAT64 | Amount paid for the installment so far (THB). |
+| `remaining_amount` | FLOAT64 | Amount of the installment still unpaid (THB). |
+| `paid_status` | STRING | Payment status of the installment (`UNPAID`, `PARTIAL`, `PAID`). |
+| `paid_date` | STRING | Date and time the installment was paid. |
+| `deposit_tax_invoice_no` | STRING | Number of the deposit tax invoice issued for the installment. |
+| `deposit_tax_invoice_id` | STRING | Identifier of the deposit tax invoice issued for the installment. |
+| `invoiced_amount` | FLOAT64 | Amount of the installment covered by a deposit tax invoice (THB). |
+| `deducted_amount` | FLOAT64 | Deposit amount already deducted against invoices (THB). |
+| `payment_type` | STRING | Payment type of the installment (`CASH`, `CREDIT` or `OTHER`). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

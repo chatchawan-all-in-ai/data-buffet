@@ -33,8 +33,8 @@ One row per (company, PaymentReceivedMin, PaymentReceivedMax, StartDate, EndDate
 | `PaymentReceiveSK` | INT64 | `PaymentReceiveSK` is `ROW_NUMBER() OVER(ORDER BY companyID, PaymentReceivedMin, PaymentReceivedMax, StartDate, EndDate)` over the active mds rows; it regenerates on every daily run. |
 | `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), found by a LEFT JOIN on `companyID`; NULL when the mds company code has no match in dim_company. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
-| `PaymentReceivedMin` | FLOAT64 | Lower bound (inclusive) of the band for the total payment amount received from the customer in the year (receipt currency, likely THB), cast with `castFloat64` from the mds column. |
-| `PaymentReceivedMax` | FLOAT64 | Upper bound (inclusive) of the band for the total payment amount received from the customer in the year (receipt currency, likely THB), cast with `castFloat64` from the mds column. |
+| `PaymentReceivedMin` | FLOAT64 | Lower bound (inclusive) in THB of the band for the total payment amount received from the customer in the year, cast with `castFloat64` from the mds column. |
+| `PaymentReceivedMax` | FLOAT64 | Upper bound (inclusive) in THB of the band for the total payment amount received from the customer in the year, cast with `castFloat64` from the mds column. |
 | `Score` | FLOAT64 | Score points awarded to a customer whose metric falls inside the band; `castFloat64` of the mds `Score` column. [dim_customer_grade](/dimension/dim_customer_grade.md) uses `IFNULL(Score, 0)`. |
 | `StartDate` | DATE | First day the band row is valid (mds `StartDate`, passed through as DATE). |
 | `EndDate` | DATE | Last day the band row is valid (mds `EndDate`, passed through as DATE). dim_customer_grade matches rows where yesterday (Asia/Bangkok) is between StartDate and EndDate. |

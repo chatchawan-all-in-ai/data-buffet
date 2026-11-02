@@ -36,20 +36,20 @@ One row per `FactBacklogStoreSK` (ROW_NUMBER over CompanySK, date parts, cpsVnos
 | `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md). |
 | `company_id` | STRING | MAC5 company code; only 'ag01' and 'ab01' are loaded. |
 | `sDate` | DATE | Order date: SAFE.PARSE_DATE of mihYear, mihMonth, mihDay of the order header; partition column. |
-| `mihYear` | INT64 | Year of the document header (curated_mih). |
-| `mihMonth` | INT64 | Month of the document header (curated_mih). |
-| `mihDay` | INT64 | Day of the document header (curated_mih). |
+| `mihYear` | INT64 | Year part of the document date (Gregorian). |
+| `mihMonth` | INT64 | Month part of the document date. |
+| `mihDay` | INT64 | Day part of the document date. |
 | `OrderSK` | INT64 | Surrogate key of [dim_order](/dimension/dim_order.md) via `mihVnos`; never NULL (INNER JOIN). |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md) (`debcode = mihCus`, same company); NULL when unmatched. |
 | `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md) (case-insensitive product code match); rows without a product (or with TypeMarketing 'Sourcing') are dropped by an INNER JOIN, so never NULL. |
 | `StoreSK` | INT64 | Surrogate key of [dim_store](/dimension/dim_store.md) (warehouse/branch) matched on company and store code; -1 when the store code is not in dim_store. |
-| `cpsVnosID` | STRING | Sales order number from cps (`cpsVnosID`); equals `mihVnos`. |
-| `cpsCusID` | STRING | Customer code from cps (equals `mihCus`). |
-| `cpsStkID` | STRING | Product code from cps (compared exactly to `ProductCode`). |
-| `cpsSto` | STRING | Store/warehouse code from cps (joins `dim_store.StoreCode`). |
+| `cpsVnosID` | STRING | Number of the sales order document that has the outstanding line (e.g. a `PS` sales order). |
+| `cpsCusID` | STRING | Customer code of the document, matching `deb.debcode`. |
+| `cpsStkID` | STRING | Product (stock) code of the outstanding line, matching `stk.stkcode`. |
+| `cpsSto` | STRING | Warehouse (store) code the line is issued from or received into. |
 | `FlagFree` | STRING | 'Yes' when `cps.cpssumreq = 0` OR `ProductGroupMAC5 = '5000'`; else 'No'. Part of the GROUP BY. |
 | `cpsStkREQ` | FLOAT64 | SUM of `cps.cpsStkREQ`, quantity requested on the order. |
-| `cpsStkCUT1` | FLOAT64 | SUM of `cps.cpsStkCUT1`, quantity already cut (delivered/reserved out); meaning inferred from the name. |
+| `cpsStkCUT1` | FLOAT64 | SUM of `cps.cpsStkCUT1`: ordered quantity already cut from stock (delivered); qty = cpsStkREQ - cpsStkCUT1. |
 | `qty` | FLOAT64 | Backlog quantity = SUM(cpsStkREQ) - SUM(cpsStkCUT1). |
 
 # How it is built

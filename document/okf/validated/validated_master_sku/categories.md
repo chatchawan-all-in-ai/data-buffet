@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "categories"
-description: "One row = one cleaned copy of the source table `categories`, unique on (id)."
+description: "One row = one product category from source table `categories`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_master_sku&t=categories&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_master_sku
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MASTER_SKU `categories`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MASTER_SKU `categories`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Product category tree (up to 5 levels) of the master_sku 3.0 product master.
 Used by: [curated_master_sku.product_for_aisearch_v3](/curated/curated_master_sku/product_for_aisearch_v3.md).
 
 # Grain and key
@@ -34,18 +34,18 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Surrogate identifier from the source system (the primary key). |
-| `code` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `detail` | STRING | Meaning not documented in the repo. |
-| `tags` | STRING | Meaning not documented in the repo. |
-| `parent_id` | STRING | Meaning not documented in the repo. |
-| `level` | INT64 | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
+| `id` | STRING | Unique identifier (UUID) of the category. |
+| `code` | STRING | Category code. |
+| `name` | STRING | Category name. |
+| `detail` | STRING | Category description. |
+| `tags` | STRING | Search tags of the category (JSON array). |
+| `parent_id` | STRING | Parent category (FK to `categories.id`; NULL at level 1). |
+| `level` | INT64 | Level of the category in the hierarchy (1 = top, up to 5). |
+| `status` | STRING | Record status (`Active`, `Inactive`, `Deleted`). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

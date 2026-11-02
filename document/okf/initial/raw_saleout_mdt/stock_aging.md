@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "stock_aging"
-description: "One row = one record of source table `stock_aging` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one article age band at one Boonthavorn branch on one snapshot date, a record of source table `stock_aging` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=stock_aging&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_saleout_mdt
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/stock_aging/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `stock_aging` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Used by: [validated_saleout_mdt.stock_aging](/validated/validated_saleout_mdt/stock_aging.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/stock_aging/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `stock_aging` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Stock aging report from Boonthavorn (BT): stock quantity and value of the company products by branch, article and age band, with stock class. Used by: [validated_saleout_mdt.stock_aging](/validated/validated_saleout_mdt/stock_aging.md).
 
 # Grain and key
 
@@ -30,27 +30,27 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `VENDOR_ID` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `VENDOR_NAME` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `BRANCH` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ARTICLE_ID` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ARTICLE_NAME_TH` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `BRAND` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MCH3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MCH2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `TILE_SIZE` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ITEM_FLAG` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `AGING_TIER` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `CLASS_STOCK` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `AGING` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `UR_AMT` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `UR_QTY` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `RESERVE_AMT` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `RESERVE_QTY` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `REMAIN_AMT` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `REMAIN_QTY` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `START_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `END_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `VENDOR_ID` | STRING | Boonthavorn vendor code of the supplier (the company), e.g. `10009`. |
+| `VENDOR_NAME` | STRING | Supplier (vendor) name as registered at Boonthavorn. |
+| `BRANCH` | STRING | Boonthavorn branch name in Thai, used as the branch code. |
+| `ARTICLE_ID` | STRING | Boonthavorn article (product) code. |
+| `ARTICLE_NAME_TH` | STRING | Product name in Thai. |
+| `BRAND` | STRING | Product brand. |
+| `MCH3` | STRING | Boonthavorn merchandise category, top level (department). |
+| `MCH2` | STRING | Boonthavorn merchandise category, second level. |
+| `TILE_SIZE` | FLOAT64 | Tile size of the article (tile products only). |
+| `ITEM_FLAG` | STRING | Item movement flag (`REGULAR`, `FAST`, `DISCON` = discontinued). |
+| `AGING_TIER` | STRING | Stock age band (`1) 0 - 60 Days` to `8) >361 Days`). |
+| `CLASS_STOCK` | STRING | Boonthavorn stock class (`B3G Class A`, `B3G Class B`, `B3G Class C`, `B3G New`, `B3G Dead`). |
+| `AGING` | INT64 | Stock age in days. |
+| `UR_AMT` | FLOAT64 | Value of the unrestricted stock in this age band (THB). |
+| `UR_QTY` | INT64 | Unrestricted stock quantity in this age band. |
+| `RESERVE_AMT` | FLOAT64 | Value of the stock reserved for orders (THB). |
+| `RESERVE_QTY` | INT64 | Stock quantity reserved for orders. |
+| `REMAIN_AMT` | FLOAT64 | Value of the stock remaining after reservations (THB). |
+| `REMAIN_QTY` | INT64 | Stock quantity remaining after reservations. |
+| `START_DATE` | STRING | Stock snapshot date (same as `end_date`). |
+| `END_DATE` | STRING | Stock snapshot date. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

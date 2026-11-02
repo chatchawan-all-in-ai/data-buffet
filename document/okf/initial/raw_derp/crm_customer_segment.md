@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_customer_segment"
-description: "One row = one record of source table `crm_customer_segment` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one customer segment record, a record of source table `crm_customer_segment` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_customer_segment&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_segment/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_segment` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_customer_segment](/validated/validated_derp/crm_customer_segment.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_segment/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_segment` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Segmentation attributes of each customer: customer group, customer type, company chain and category hierarchies. Used by: [validated_derp.crm_customer_segment](/validated/validated_derp/crm_customer_segment.md).
 
 # Grain and key
 
@@ -30,31 +30,31 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_segment_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_master_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_group_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `item_customer_group` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `business_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `company_chain` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `region` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_category_level` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_category_path` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `marketing_group_level` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `marketing_group_path` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_group_level` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_group_path` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `accounting_group_level` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `accounting_group_path` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_sync` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `customer_segment_id` | STRING | UUID of the customer segment record. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
+| `customer_group_id` | STRING | Customer group code (e.g. `DOM` = domestic). |
+| `item_customer_group` | STRING | Item customer group code used for pricing. |
+| `customer_type` | STRING | Customer type (e.g. general company, real estate, modern trade, government). |
+| `business_type` | STRING | Business type of the customer. |
+| `company_chain` | STRING | Company chain (group) the customer belongs to. |
+| `region` | STRING | Sales region of the customer. |
+| `customer_category_level` | INT64 | Depth of the customer category in its hierarchy. |
+| `customer_category_path` | STRING | Hierarchy path of the customer category. |
+| `marketing_group_level` | INT64 | Depth of the marketing group in its hierarchy. |
+| `marketing_group_path` | STRING | Hierarchy path of the marketing group. |
+| `sales_group_level` | INT64 | Depth of the sales group in its hierarchy. |
+| `sales_group_path` | STRING | Hierarchy path of the sales group. |
+| `accounting_group_level` | INT64 | Depth of the accounting group in its hierarchy. |
+| `accounting_group_path` | STRING | Hierarchy path of the accounting group. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

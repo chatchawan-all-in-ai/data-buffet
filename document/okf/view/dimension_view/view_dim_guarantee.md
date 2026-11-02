@@ -40,7 +40,7 @@ One row per GuaranteeSK (grain of dim_guarantee: companyID + CustomerCode + Bank
 | `ExpiryDate` | DATE | Expiry date of the guarantee. |
 | `BankName` | STRING | Issuing bank name. |
 | `BG_Limit` | STRING | Bank guarantee limit (STRING as stored in MDS). |
-| `Renewal` | STRING | Renewal text from MDS (pass-through; values not documented). |
+| `Renewal` | STRING | Status of the guarantee in Thai from MDS: `ไม่ส่ง` (not sent), `คืน` (returned), `เคลม` (claimed), `รอเครม` (awaiting claim), `ยกเลิก` (cancelled). |
 | `Remarks` | STRING | Free-text remarks from MDS. |
 | `Address` | STRING | Address text from MDS guarantee master. |
 | `PhoneNumber` | STRING | Phone number text from MDS (personal contact data). |

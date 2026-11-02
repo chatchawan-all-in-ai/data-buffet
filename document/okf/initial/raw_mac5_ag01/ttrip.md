@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "ttrip"
-description: "One row = one record of source table `ttrip` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one delivery trip, a record of source table `ttrip` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=ttrip&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_gps/ttrip/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `ttrip` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.ttrip](/validated/validated_mac5/ttrip.md).
+External table over AVRO files in `gs://file-raw-data/mac5_gps/ttrip/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `ttrip` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Delivery trips of the GPS delivery app, with vehicle, release time and trip costs. Used by: [validated_mac5.ttrip](/validated/validated_mac5/ttrip.md).
 
 # Grain and key
 
@@ -30,29 +30,29 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `frun` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fmaster` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fvehicle` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fother` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fprice` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fbuddy` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fdeduct_detail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fdeduct_monkey` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fdeduct_money` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ftype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fcomplete` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `foil` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fpass_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fpay` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `foil_deduct` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `loadip` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `loadvnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fremark` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `flitre_price` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `flitre` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fcubic` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `frun` | STRING | Trip identifier (timestamp `yyMMddHHmmss` plus sequence), referenced by `ttrip_document.fmaster` and `tdelivery.fmaster`. |
+| `fmaster` | STRING | Master reference of the trip. |
+| `fcode` | STRING | Trip code (document number of the trip). |
+| `fdate` | STRING | Date and time the trip was created (`yyyyMMddHHmmss`). |
+| `fvehicle` | STRING | Vehicle registration plate of the trip. |
+| `fother` | STRING | Other note of the trip. |
+| `fprice` | INT64 | Trip price. |
+| `fbuddy` | INT64 | Helper (buddy) allowance amount of the trip. |
+| `fdeduct_detail` | STRING | Deduction detail of the trip. |
+| `fdeduct_monkey` | FLOAT64 | Deduction amount of the trip (misspelled duplicate of `fdeduct_money`). |
+| `fdeduct_money` | FLOAT64 | Deduction amount of the trip. |
+| `ftype` | STRING | Trip type code. |
+| `fcomplete` | STRING | Trip completion flag. |
+| `foil` | STRING | Fuel rate code of the trip. |
+| `fpass_date` | STRING | Date and time the vehicle was released for the trip (`yyyyMMddHHmmss`). |
+| `fpay` | STRING | Paid flag of the trip (1 = paid). |
+| `foil_deduct` | INT64 | Fuel deduction value of the trip. |
+| `loadip` | INT64 | Load IP flag. |
+| `loadvnos` | STRING | Loading document number. |
+| `fremark` | STRING | Trip remark, such as the distance driven. |
+| `flitre_price` | FLOAT64 | Fuel price value of the trip. |
+| `flitre` | FLOAT64 | Fuel quantity value of the trip. |
+| `fcubic` | FLOAT64 | Cubic volume loaded on the trip. |
 
 # How it is built
 

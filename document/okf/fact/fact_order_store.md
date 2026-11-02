@@ -36,22 +36,22 @@ One row per `FactOrderStoreSK` (ROW_NUMBER over CompanySK, mihYear, mihMonth, mi
 | `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md). |
 | `company_id` | STRING | MAC5 company code; only 'ag01' and 'ab01' are loaded. |
 | `mix_date` | DATE | Order date: SAFE.PARSE_DATE of mihYear, mihMonth, mihDay (Asia/Bangkok business date); partition column. |
-| `mihYear` | INT64 | Year of the document header (curated_mih). |
-| `mihMonth` | INT64 | Month of the document header (curated_mih). |
-| `mihDay` | INT64 | Day of the document header (curated_mih). |
+| `mihYear` | INT64 | Year part of the document date (Gregorian). |
+| `mihMonth` | INT64 | Month part of the document date. |
+| `mihDay` | INT64 | Day part of the document date. |
 | `OrderSK` | INT64 | Surrogate key of [dim_order](/dimension/dim_order.md) via `mihVnos`; never NULL (INNER JOIN). |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md) (`debcode = mihCus`, same company); NULL when unmatched. |
 | `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md) (case-insensitive product code match); rows without a product (or with TypeMarketing 'Sourcing') are dropped by an INNER JOIN, so never NULL. |
 | `StoreSK` | INT64 | Surrogate key of [dim_store](/dimension/dim_store.md) (warehouse/branch) matched on company and store code; -1 when the store code is not in dim_store. |
-| `milType` | STRING | Document type from curated_mil. |
-| `milVnos` | STRING | Document number of the line. |
-| `milListNo` | INT64 | Line number within the document (curated_mil). |
-| `milStk` | STRING | Product code of the line. |
-| `milDesc` | STRING | Line description text from curated_mil. |
-| `milSto` | STRING | Store/warehouse code of the line (joins `dim_store.StoreCode`). |
+| `milType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `milVnos` | STRING | Document number of the line, matching `mihvnos` of the header. |
+| `milListNo` | INT64 | Line number within the document. |
+| `milStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
+| `milDesc` | STRING | Free-text line description. |
+| `milSto` | STRING | Warehouse (store) code the line is issued from, matching `sto` store codes. |
 | `milQuan` | FLOAT64 | Line quantity from curated_mil (not summed; one row per line). |
-| `mihPer` | STRING | Salesperson code from the order header (`curated_mih.mihPer`). |
-| `milSType` | STRING | Line type label from `milstype`: 1 'Item', 2 'Serial', 3 'Service' (filtered out), else 'Unknown'. |
+| `mihPer` | STRING | Salesperson (employee) code, matching `per.percode`. |
+| `milSType` | STRING | Line item type (1 = item, 2 = serial-tracked item, 3 = service). |
 | `FlagFree` | STRING | 'Yes' when `milsum = 0` OR `ProductGroupMAC5 = '5000'` OR `milDesc` starts with the Thai word for promotion; else 'No'. |
 
 # How it is built

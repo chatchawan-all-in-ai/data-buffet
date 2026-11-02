@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "combostk"
-description: "One row = one record of source table `combostk` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one combo set, a record of source table `combostk` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=combostk&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/combostk/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `combostk` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.combostk](/validated/validated_mac5/combostk.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/combostk/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `combostk` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Combo set headers: combo set code, status and audit fields. Used by: [validated_mac5.combostk](/validated/validated_mac5/combostk.md).
 
 # Grain and key
 
@@ -30,13 +30,13 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `combostk` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uupdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `notecomboset` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Running ID of the combo set header row. |
+| `combostk` | STRING | Combo set code (e.g. `COMBOSET56`). |
+| `date` | STRING | Date and time the row was created. |
+| `uinsert` | STRING | User code of the person who created the record. |
+| `uupdate` | STRING | User code of the person who last updated the record. |
+| `status` | INT64 | Status code of the combo set (1, 2). |
+| `notecomboset` | STRING | Note on the combo set. |
 
 # How it is built
 

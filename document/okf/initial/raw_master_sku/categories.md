@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "categories"
-description: "One row = one record of source table `categories` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one product category, a record of source table `categories` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_master_sku&t=categories&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_master_sku
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/master_sku/categories/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `categories` table from MASTER_SKU; nothing is cleaned or deduplicated here. Used by: [validated_master_sku.categories](/validated/validated_master_sku/categories.md).
+External table over AVRO files in `gs://file-raw-data/master_sku/categories/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `categories` table from MASTER_SKU; nothing is cleaned or deduplicated here. Table meaning: Product category tree (up to 5 levels) of the master_sku 3.0 product master. Used by: [validated_master_sku.categories](/validated/validated_master_sku/categories.md).
 
 # Grain and key
 
@@ -30,18 +30,18 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `detail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `tags` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `parent_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `level` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | STRING | Unique identifier (UUID) of the category. |
+| `code` | STRING | Category code. |
+| `name` | STRING | Category name. |
+| `detail` | STRING | Category description. |
+| `tags` | STRING | Search tags of the category (JSON array). |
+| `parent_id` | STRING | Parent category (FK to `categories.id`; NULL at level 1). |
+| `level` | INT64 | Level of the category in the hierarchy (1 = top, up to 5). |
+| `status` | STRING | Record status (`Active`, `Inactive`, `Deleted`). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

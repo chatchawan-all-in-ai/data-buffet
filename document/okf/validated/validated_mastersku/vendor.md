@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "vendor"
-description: "One row = one cleaned copy of the source table `vendor`, unique on (vd_id)."
+description: "One row = one vendor from source table `vendor`, unique on (vd_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mastersku&t=vendor&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mastersku
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MASTERSKU `vendor`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MASTERSKU `vendor`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Vendors (suppliers registered via the Allkons platform) of the old product master MASTERSKU, with registration, address and KYC status.
 Used by: [curated_mastersku.product_for_aisearch](/curated/curated_mastersku/product_for_aisearch.md).
 
 # Grain and key
@@ -34,30 +34,30 @@ One row per `vd_id`. The key is declared twice in the definition (`uniqueKey` an
 
 | Column | Type | Description |
 |---|---|---|
-| `vd_id` | STRING | Meaning not documented in the repo. |
-| `vd_api_id` | STRING | Meaning not documented in the repo. |
-| `vd_code` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `vd_name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `vd_coporate_no` | STRING | Meaning not documented in the repo. |
-| `vd_tel` | STRING | Meaning not documented in the repo. |
-| `vd_country_name` | STRING | Meaning not documented in the repo. |
-| `vd_province_name` | STRING | Meaning not documented in the repo. |
-| `vd_district_name` | STRING | Meaning not documented in the repo. |
-| `vd_sub_district_name` | STRING | Meaning not documented in the repo. |
-| `vd_zipcode` | STRING | Meaning not documented in the repo. |
-| `vd_email` | STRING | Meaning not documented in the repo. |
-| `vd_address` | STRING | Meaning not documented in the repo. |
-| `vd_organize_name` | STRING | Meaning not documented in the repo. |
-| `vd_business_type_name` | STRING | Meaning not documented in the repo. |
-| `vd_document_id` | STRING | Meaning not documented in the repo. |
-| `vd_document_path` | STRING | Meaning not documented in the repo. |
-| `vd_is_dbd` | BOOL | Meaning not documented in the repo. |
-| `vd_account_type` | STRING | Meaning not documented in the repo. |
-| `vd_kyc_status` | STRING | Meaning not documented in the repo. |
-| `vd_is_active` | BOOL | Meaning not documented in the repo. |
-| `vd_is_use` | BOOL | Meaning not documented in the repo. |
-| `vd_created_date` | DATETIME | Meaning not documented in the repo. |
-| `vd_updated_date` | DATETIME | Meaning not documented in the repo. |
+| `vd_id` | STRING | Unique identifier (UUID) of the vendor. |
+| `vd_api_id` | STRING | Identifier of the vendor in the Allkons platform API (32-character encoded ID). |
+| `vd_code` | STRING | Vendor code. |
+| `vd_name` | STRING | Vendor (company) name. |
+| `vd_coporate_no` | STRING | Juristic person (company tax) registration number, 13 digits. |
+| `vd_tel` | STRING | Vendor phone number. |
+| `vd_country_name` | STRING | Country of the vendor address. |
+| `vd_province_name` | STRING | Province of the vendor address. |
+| `vd_district_name` | STRING | District of the vendor address. |
+| `vd_sub_district_name` | STRING | Sub-district of the vendor address. |
+| `vd_zipcode` | STRING | Postal code of the vendor address. |
+| `vd_email` | STRING | Vendor email address. |
+| `vd_address` | STRING | Street address of the vendor. |
+| `vd_organize_name` | STRING | Legal entity type of the vendor (e.g. limited company, limited partnership). |
+| `vd_business_type_name` | STRING | Business type code of the vendor. |
+| `vd_document_id` | STRING | Identifier of the vendor registration document. |
+| `vd_document_path` | STRING | Storage path of the vendor registration document. |
+| `vd_is_dbd` | BOOL | Flag marking the vendor as verified with the Department of Business Development (DBD) registry. |
+| `vd_account_type` | STRING | Account type of the vendor (`Organization`). |
+| `vd_kyc_status` | STRING | KYC approval status of the vendor (`Approved`, `NotApproved`, `WaitApprove`, `NotSendApprove`, `RequestDocument`). |
+| `vd_is_active` | BOOL | Active flag of the record. |
+| `vd_is_use` | BOOL | In-use flag of the record (FALSE = retired from use). |
+| `vd_created_date` | DATETIME | Timestamp when the record was created. |
+| `vd_updated_date` | DATETIME | Timestamp when the record was last updated. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

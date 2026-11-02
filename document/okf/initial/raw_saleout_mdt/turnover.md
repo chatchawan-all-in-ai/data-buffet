@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "turnover"
-description: "One row = one record of source table `turnover` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one branch and merchandise category on one snapshot date, a record of source table `turnover` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=turnover&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_saleout_mdt
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/turnover/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `turnover` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Used by: [validated_saleout_mdt.turnover](/validated/validated_saleout_mdt/turnover.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/turnover/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `turnover` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Stock turnover report from Boonthavorn (BT): stock value at cost, turnover and dead-stock share of the company products per branch and category. Used by: [validated_saleout_mdt.turnover](/validated/validated_saleout_mdt/turnover.md).
 
 # Grain and key
 
@@ -30,17 +30,17 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `VENDOR_ID` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `VENDOR_NAME` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `BRANCH` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MCH3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `UR_COST_AMT` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `T_O` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `UR_COST_AMT_DEAD` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `__Dead` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `T_O_VENDOR` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `START_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `END_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `VENDOR_ID` | STRING | Boonthavorn vendor code of the supplier (the company), e.g. `10009`. |
+| `VENDOR_NAME` | STRING | Supplier (vendor) name as registered at Boonthavorn. |
+| `BRANCH` | STRING | Boonthavorn branch name in Thai, used as the branch code. |
+| `MCH3` | STRING | Boonthavorn merchandise category, top level (department). |
+| `UR_COST_AMT` | FLOAT64 | Value of the unrestricted stock at cost for the branch and category. |
+| `T_O` | FLOAT64 | Stock turnover (T/O) of the branch and category, in days. |
+| `UR_COST_AMT_DEAD` | FLOAT64 | Value at cost of the dead stock for the branch and category. |
+| `__Dead` | STRING | Dead stock share of the stock value, as percentage text (e.g. `35.9%`). |
+| `T_O_VENDOR` | FLOAT64 | Stock turnover (T/O) of the vendor across all branches, in days. |
+| `START_DATE` | STRING | Stock snapshot date (same as `end_date`). |
+| `END_DATE` | STRING | Stock snapshot date. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

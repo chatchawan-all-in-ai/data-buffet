@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_quotation_delivery_detail"
-description: "One row = one record of source table `crm_quotation_delivery_detail` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one product line of a quotation delivery round, a record of source table `crm_quotation_delivery_detail` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_quotation_delivery_detail&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_quotation_delivery_detail/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_quotation_delivery_detail` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_quotation_delivery_detail](/validated/validated_derp/crm_quotation_delivery_detail.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_quotation_delivery_detail/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_quotation_delivery_detail` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Products and quantities to deliver in each quotation delivery round. Used by: [validated_derp.crm_quotation_delivery_detail](/validated/validated_derp/crm_quotation_delivery_detail.md).
 
 # Grain and key
 
@@ -30,25 +30,25 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `quotation_delivery_detail_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quotation_delivery_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quotation_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quotation_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quotation_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `product_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `product_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `product_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qty_delivered` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `order_sort` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `combo_set_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `combo_set_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quotation_detail_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `quotation_delivery_detail_id` | STRING | UUID of the delivery round line. |
+| `quotation_delivery_id` | STRING | UUID of the delivery round in `crm_quotation_delivery`. |
+| `quotation_id` | STRING | UUID of the quotation in `crm_quotation`. |
+| `quotation_no` | STRING | Quotation document number (e.g. `QT2607...` or `MDT2610...`). |
+| `quotation_date` | STRING | Quotation document date. |
+| `product_id` | STRING | UUID of the product in the DERP product master. |
+| `product_code` | STRING | Product (item) code. |
+| `product_name` | STRING | Product name. |
+| `qty_delivered` | INT64 | Quantity of the product to deliver in the round. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `order_sort` | INT64 | Display order of the row within its parent record. |
+| `combo_set_id` | STRING | UUID of the combo set (product bundle) the line belongs to. |
+| `combo_set_code` | STRING | Code of the combo set (product bundle) the line belongs to (e.g. `COMBOSET00014`). |
+| `quotation_detail_id` | STRING | UUID of the quotation line in `crm_quotation_detail`. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

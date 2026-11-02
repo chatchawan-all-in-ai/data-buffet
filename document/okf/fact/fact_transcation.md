@@ -71,91 +71,91 @@ One row per bill line, but the upsert key is only (`milVnos`, `milType`, `Compan
 | `OrderSubDistrictSK` | INT64 | Sub-district SK (order side), same source. |
 | `mix_date` | DATE | Business date of the line: PARSE_DATE of milYear, milMonth, milDay (Asia/Bangkok). Partition column; drives the 4-year retention. |
 | `DummyChannel` | STRING | Dummy channel/employee code from view_dim_channel used instead of milPer in the sale-rep match; NULL when 'not calculated' or when the employee is a special ab01 rep. |
-| `mihvatno` | STRING | VAT document number from the invoice header (`curated_mih.mihvatno`), via Transaction_Data_Mart. |
-| `mihdesc` | STRING | Header description text (`curated_mih.mihdesc`). |
-| `mihmemo` | STRING | Header memo text (`curated_mih.mihmemo`). |
-| `memoextract` | STRING | Payment code extracted from the memo (`curated_mih.memoextract`); join key to dim_payment.CodeMemo. |
-| `mihmemonew` | STRING | New-style header memo (`curated_mih.mihmemonew`). Meaning not documented in the repo. |
-| `mihCancel` | INT64 | Header cancel flag (`curated_mih.mihCancel`; 0 = not cancelled in other facts). |
-| `mihStatus` | INT64 | Header status code (`curated_mih.mihStatus`). |
+| `mihvatno` | STRING | Tax invoice number of the document. |
+| `mihdesc` | STRING | Free-text document description. |
+| `mihmemo` | STRING | Free-text document memo with an optional tag enclosed in `฿` signs. |
+| `memoextract` | STRING | Tag extracted from the document memo, defaulting to `฿00฿` and matched to `dim_payment.CodeMemo`. |
+| `mihmemonew` | STRING | Document memo with the tag enclosed in `฿` signs removed, or NULL when no text remains. |
+| `mihCancel` | INT64 | Cancellation flag (-1 = cancelled, 0 = active). |
+| `mihStatus` | INT64 | Document status code; meaning in `ar_s` for sales types and `ap_s` for purchase types (e.g. 26 = approved sales order, 30 = VAT sale, 32 = cancelled tax invoice). |
 | `QuotationID` | INT64 | Id of the quotation linked to the order behind the bill (via milLinkvcno to a PS header), from Transaction_Data_Mart. |
 | `QuotationCode` | STRING | Quotation running number of that quotation. |
-| `milDay` | INT64 | Pass-through of `curated_mil.milDay` via `onetime.Transaction_Data_Mart`; day of the bill date. |
-| `milMonth` | INT64 | Pass-through of `curated_mil.milMonth` via `onetime.Transaction_Data_Mart`; month of the bill date. |
-| `milYear` | INT64 | Pass-through of `curated_mil.milYear` via `onetime.Transaction_Data_Mart`; year of the bill date. |
-| `milType` | STRING | Bill document type: IS, AS, BS or QS (Transaction_Data_Mart filters `mihtype IN ('IS','AS','BS','QS')`); BS is treated as a credit (negative VAT sign). |
-| `milVnos` | STRING | Bill document number; part of the upsert key with milType and CompanySK. |
-| `milCus` | STRING | Customer code (joins `dim_customer.debcode`). |
-| `milStk` | STRING | Product code of the line. |
-| `milJob` | STRING | Pass-through of `curated_mil.milJob` via `onetime.Transaction_Data_Mart`; job code used by some MDS marketing re-map rules. |
-| `milDep` | STRING | Pass-through of `curated_mil.milDep` via `onetime.Transaction_Data_Mart`; department code; join key to view_dim_channel.DepCode and the DepCode sale-rep rules. |
-| `milPer` | STRING | Pass-through of `curated_mil.milPer` via `onetime.Transaction_Data_Mart`; salesperson (employee) code; after the split-sale logic of curated_mil, for ag01 this is the share-owning salesperson. |
-| `milPer_raw` | STRING | Pass-through of `curated_mil.milPer_raw` via `onetime.Transaction_Data_Mart`; salesperson before the split-sale row duplication. |
-| `milDoc` | STRING | Pass-through of `curated_mil.milDoc` via `onetime.Transaction_Data_Mart`; document code Meaning not documented in the repo.. |
-| `milMec` | STRING | Pass-through of `curated_mil.milMec` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milSto` | STRING | Pass-through of `curated_mil.milSto` via `onetime.Transaction_Data_Mart`; store/warehouse code. |
-| `milStomt` | STRING | Pass-through of `curated_mil.milStomt` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milListno` | INT64 | Pass-through of `curated_mil.milListno` via `onetime.Transaction_Data_Mart`; line number within the bill. |
-| `milQuan` | FLOAT64 | Pass-through of `curated_mil.milQuan` via `onetime.Transaction_Data_Mart`; quantity after split-sale allocation for ag01. |
-| `milQuan_raw` | FLOAT64 | Pass-through of `curated_mil.milQuan_raw` via `onetime.Transaction_Data_Mart`; quantity before split-sale allocation. |
-| `milQuanp2` | FLOAT64 | Pass-through of `curated_mil.milQuanp2` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milAdisc` | FLOAT64 | Pass-through of `curated_mil.milAdisc` via `onetime.Transaction_Data_Mart`; discount amount, after split-sale allocation. |
-| `milAdisc_raw` | FLOAT64 | Pass-through of `curated_mil.milAdisc_raw` via `onetime.Transaction_Data_Mart`; before split-sale allocation. |
-| `milCog` | FLOAT64 | Pass-through of `curated_mil.milCog` via `onetime.Transaction_Data_Mart`; gross line amount excluding VAT, after split-sale allocation. |
-| `milCog_raw` | FLOAT64 | Pass-through of `curated_mil.milCog_raw` via `onetime.Transaction_Data_Mart`; full gross line amount excluding VAT before split-sale allocation. |
-| `milConv` | FLOAT64 | Pass-through of `curated_mil.milConv` via `onetime.Transaction_Data_Mart`; conversion factor (inferred from the name). |
-| `milDisca` | FLOAT64 | Pass-through of `curated_mil.milDisca` via `onetime.Transaction_Data_Mart`; discount amount, after split-sale allocation. |
-| `milDisca_raw` | FLOAT64 | Pass-through of `curated_mil.milDisca_raw` via `onetime.Transaction_Data_Mart`; before split-sale allocation. |
-| `milDisct` | STRING | Pass-through of `curated_mil.milDisct` via `onetime.Transaction_Data_Mart`; discount text/code (inferred). |
-| `milVat` | FLOAT64 | Pass-through of `curated_mil.milVat` via `onetime.Transaction_Data_Mart`; VAT, after split-sale allocation. |
-| `milVat_raw` | FLOAT64 | Pass-through of `curated_mil.milVat_raw` via `onetime.Transaction_Data_Mart`; before split-sale allocation. |
-| `milSum` | FLOAT64 | Pass-through of `curated_mil.milSum` via `onetime.Transaction_Data_Mart`; net line amount excluding VAT in THB, after split-sale allocation. |
-| `milSum_raw` | FLOAT64 | Pass-through of `curated_mil.milSum_raw` via `onetime.Transaction_Data_Mart`; before split-sale allocation. |
-| `milCut` | INT64 | Pass-through of `curated_mil.milCut` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milStype` | INT64 | Pass-through of `curated_mil.milStype` via `onetime.Transaction_Data_Mart`; line type: 1 Item, 2 Serial, 3 Service as used in the store facts. |
-| `milUname` | STRING | Pass-through of `curated_mil.milUname` via `onetime.Transaction_Data_Mart`; unit name (inferred). |
-| `milDesc` | STRING | Pass-through of `curated_mil.milDesc` via `onetime.Transaction_Data_Mart`; line description. |
-| `milVcol1` | STRING | Pass-through of `curated_mil.milVcol1` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milVcol2` | STRING | Pass-through of `curated_mil.milVcol2` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milVcol3` | STRING | Pass-through of `curated_mil.milVcol3` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milVcol4` | STRING | Pass-through of `curated_mil.milVcol4` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milCurc` | INT64 | Pass-through of `curated_mil.milCurc` via `onetime.Transaction_Data_Mart`; currency code (inferred). |
-| `milExchg` | FLOAT64 | Pass-through of `curated_mil.milExchg` via `onetime.Transaction_Data_Mart`; exchange rate (inferred). |
-| `milAcost` | FLOAT64 | Pass-through of `curated_mil.milAcost` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milPqm` | INT64 | Pass-through of `curated_mil.milPqm` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milPmfrom` | INT64 | Pass-through of `curated_mil.milPmfrom` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milPmto` | INT64 | Pass-through of `curated_mil.milPmto` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milTag` | INT64 | Pass-through of `curated_mil.milTag` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milLinkvcno` | STRING | Pass-through of `curated_mil.milLinkvcno` via `onetime.Transaction_Data_Mart`; number of the linked document (the originating order, used to find QuotationID). |
-| `milLinkvcdate` | DATETIME | Pass-through of `curated_mil.milLinkvcdate` via `onetime.Transaction_Data_Mart`; date of the linked document (inferred). |
-| `milLinkvctype` | STRING | Pass-through of `curated_mil.milLinkvctype` via `onetime.Transaction_Data_Mart`; type of the linked document (inferred). |
-| `milLinkvcdeposit` | STRING | Pass-through of `curated_mil.milLinkvcdeposit` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milLinkvcid` | INT64 | Pass-through of `curated_mil.milLinkvcid` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milClearum` | INT64 | Pass-through of `curated_mil.milClearum` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milExpdate` | DATETIME | Pass-through of `curated_mil.milExpdate` via `onetime.Transaction_Data_Mart`; expiry date (inferred). |
-| `milNotes` | STRING | Pass-through of `curated_mil.milNotes` via `onetime.Transaction_Data_Mart`; line notes. |
-| `milNotkl` | INT64 | Pass-through of `curated_mil.milNotkl` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milDelvdt` | DATETIME | Pass-through of `curated_mil.milDelvdt` via `onetime.Transaction_Data_Mart`; delivery date (inferred). |
-| `milDatesp` | DATETIME | Pass-through of `curated_mil.milDatesp` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milNumcsp` | FLOAT64 | Pass-through of `curated_mil.milNumcsp` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milNumisp` | INT64 | Pass-through of `curated_mil.milNumisp` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milCost` | FLOAT64 | Pass-through of `curated_mil.milCost` via `onetime.Transaction_Data_Mart`; cost (inferred). |
-| `milUcost` | FLOAT64 | Pass-through of `curated_mil.milUcost` via `onetime.Transaction_Data_Mart`; unit cost (inferred). |
-| `milUprice` | FLOAT64 | Pass-through of `curated_mil.milUprice` via `onetime.Transaction_Data_Mart`; unit price (inferred). |
-| `milUsequanp` | INT64 | Pass-through of `curated_mil.milUsequanp` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milVcol5` | STRING | Pass-through of `curated_mil.milVcol5` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
-| `milFitem` | INT64 | Pass-through of `curated_mil.milFitem` via `onetime.Transaction_Data_Mart`; Meaning not documented in the repo.. |
+| `milDay` | INT64 | Day part of the document date. |
+| `milMonth` | INT64 | Month part of the document date. |
+| `milYear` | INT64 | Year part of the document date (Gregorian). |
+| `milType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `milVnos` | STRING | Document number of the line, matching `mihvnos` of the header. |
+| `milCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `milStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
+| `milJob` | STRING | Job code of the line (sales job or project category such as `TT`, `SHOP`, or a project number). |
+| `milDep` | STRING | Department code of the line, used as the sales channel code. |
+| `milPer` | STRING | Salesperson code of the line, replaced by the second salesperson's code on the second ag01 split-sale row. |
+| `milPer_raw` | STRING | Original salesperson code before the split-sale override. |
+| `milDoc` | STRING | Document print-form code of the line from the MAC5 `doc` master. |
+| `milMec` | STRING | Memo-card code of the line, matching `mec.meccode`. |
+| `milSto` | STRING | Warehouse (store) code the line is issued from, matching `sto` store codes. |
+| `milStomt` | STRING | Destination warehouse code for transfer lines. |
+| `milListno` | INT64 | Line number within the document. |
+| `milQuan` | FLOAT64 | Line quantity, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows. |
+| `milQuan_raw` | FLOAT64 | Full line quantity before split-sale allocation, with negative values for BS credit notes. |
+| `milQuanp2` | FLOAT64 | Quantity in the secondary unit. |
+| `milAdisc` | FLOAT64 | Allocated header discount deducted from the line amount, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows. |
+| `milAdisc_raw` | FLOAT64 | Full allocated header discount before split-sale allocation, with negative values for BS credit notes. |
+| `milCog` | FLOAT64 | Gross line amount before discounts excluding VAT, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows. |
+| `milCog_raw` | FLOAT64 | Full gross line amount before discounts excluding VAT and before split-sale allocation, with negative values for BS credit notes. |
+| `milConv` | FLOAT64 | Unit conversion factor of the line (1 when no conversion). |
+| `milDisca` | FLOAT64 | Line discount amount excluding VAT, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows. |
+| `milDisca_raw` | FLOAT64 | Full line discount amount excluding VAT before split-sale allocation, with negative values for BS credit notes. |
+| `milDisct` | STRING | Line discount as entered (a percentage such as `35`, or a formula text). |
+| `milVat` | FLOAT64 | Line VAT amount, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows. |
+| `milVat_raw` | FLOAT64 | Full line VAT amount before split-sale allocation, with negative values for BS credit notes. |
+| `milSum` | FLOAT64 | Net line amount excluding VAT after line and allocated header discounts, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows. |
+| `milSum_raw` | FLOAT64 | Full net line amount excluding VAT after line and allocated header discounts and before split-sale allocation, with negative values for BS credit notes. |
+| `milCut` | INT64 | Flag: line deducts stock (-1 = yes). |
+| `milStype` | INT64 | Line item type (1 = item, 2 = serial-tracked item, 3 = service). |
+| `milUname` | STRING | Unit name of the line (e.g. `SET`, `ชุด`, `Pcs.`). |
+| `milDesc` | STRING | Free-text line description. |
+| `milVcol1` | STRING | User-defined text column 1 of the line. |
+| `milVcol2` | STRING | User-defined text column 2 of the line. |
+| `milVcol3` | STRING | User-defined text column 3 of the line. |
+| `milVcol4` | STRING | User-defined text column 4 of the line. |
+| `milCurc` | INT64 | Currency code (0 = Thai baht). |
+| `milExchg` | FLOAT64 | Exchange rate to Thai baht (1 for baht documents). |
+| `milAcost` | FLOAT64 | Average cost of the line. |
+| `milPqm` | INT64 | Price-quantity mode of the line. |
+| `milPmfrom` | INT64 | Start of the line-number range the line belongs to (equals `millistno` for ordinary lines). |
+| `milPmto` | INT64 | End of the line-number range the line belongs to (equals `millistno` for ordinary lines). |
+| `milTag` | INT64 | Tag marker of the line. |
+| `milLinkvcno` | STRING | Number of the source document this line was created from (e.g. the sales order of an invoice line). |
+| `milLinkvcdate` | DATETIME | Date of the linked source document. |
+| `milLinkvctype` | STRING | Document type of the linked source document (e.g. `PS`, `PP`). |
+| `milLinkvcdeposit` | STRING | Deposit amount and VAT deducted from the linked document, stored as `amount/VAT` text. |
+| `milLinkvcid` | INT64 | Internal ID of the linked source-document line. |
+| `milClearum` | INT64 | Flag: outstanding quantity of the line cleared (0 = still open). |
+| `milExpdate` | DATETIME | Expiry date of the line item. |
+| `milNotes` | STRING | Free-text line notes. |
+| `milNotkl` | INT64 | Flag indicating that the line is excluded from stock reservation. |
+| `milDelvdt` | DATETIME | Requested delivery date of the line. |
+| `milDatesp` | DATETIME | Special date of the line. |
+| `milNumcsp` | FLOAT64 | Special numeric field of the line. |
+| `milNumisp` | INT64 | Special integer field of the line. |
+| `milCost` | FLOAT64 | Cost amount of the line. |
+| `milUcost` | FLOAT64 | Unit cost of the line. |
+| `milUprice` | FLOAT64 | Unit price of the line, excluding VAT. |
+| `milUsequanp` | INT64 | Flag indicating use of the secondary-unit quantity (1 = yes). |
+| `milVcol5` | STRING | User-defined text column 5 of the line. |
+| `milFitem` | INT64 | Free-item flag of the line. |
 | `asatdate` | DATE | Snapshot/extract date of the source line (`curated_mil.asatdate`). |
 | `percent_sale` | STRING | Salesperson share of the line, a percent STRING such as '100.00%' (curated_mil split-sale: ag01 lines can be split into two rows with per_sale1/per_sale2). |
-| `stkGroup` | STRING | Product group code from the stock master (`stk.stkgroup`) via Transaction_Data_Mart. |
+| `stkGroup` | STRING | Stock group code (joins `stg.stgcode`). |
 | `Vat` | FLOAT64 | VAT amount allocated to the line: `milSum / over_milsum * mihVatsum` (sign flipped for BS), where over_milsum is the bill total; 0 when the bill total is 0. |
 | `milsum_incvat` | FLOAT64 | `milSum + Vat`, line amount including VAT. |
 | `mildisca_incvat` | FLOAT64 | `milDisca * stkVat` (stock VAT multiplier) when the bill has VAT, otherwise milDisca. |
 | `milcog_incvat` | FLOAT64 | `milCog * stkVat` when the bill has VAT, otherwise milCog. |
 | `Barcode` | STRING | Product barcode (`stk.stkcode885`) from Transaction_Data_Mart. |
-| `DepositExcVat` | FLOAT64 | Share of the bill's deposit/extra sum (`mihExtrasum`) allocated to the line by `milSum / bill total`, excluding VAT. |
-| `DepositIncVat` | FLOAT64 | Allocated deposit including its VAT (`mihExtrasum + mihExtravat` shares). |
-| `DepositVat` | FLOAT64 | Allocated VAT of the deposit (`mihExtravat` share). |
+| `DepositExcVat` | FLOAT64 | Deposit amount excluding VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero. |
+| `DepositIncVat` | FLOAT64 | Deposit amount including VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero. |
+| `DepositVat` | FLOAT64 | Deposit VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero. |
 
 # How it is built
 

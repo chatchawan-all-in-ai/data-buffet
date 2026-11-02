@@ -36,33 +36,33 @@ One row per `InvoiceSK` (QUALIFY ROW_NUMBER over InvoiceSK ordered by AgingSK). 
 | `mix_date` | DATE | Document date, `PARSE_DATE('%Y%m%d', CONCAT(mihYear, mihMonth, mihDay))`. |
 | `CompanySK` | INT64 | SK of the company in dim_company. |
 | `companyID` | STRING | MAC5 company code. |
-| `mihDay` | INT64 | Day of the document date (MAC5 mih). |
-| `mihMonth` | INT64 | Month of the document date. |
-| `mihYear` | INT64 | Year of the document date. |
-| `mihType` | STRING | MAC5 document type code (e.g. IS invoice, BS credit note, AS debit note, QS quotation, PS order). |
-| `mihCus` | STRING | Customer code (`debcode`) on the document. |
-| `mihVnos` | STRING | Document number (vnos). |
-| `mihPer` | STRING | Salesperson code on the document. |
-| `pernamet` | STRING | Salesperson name from the MAC5 `per` table (personal data). |
+| `mihDay` | INT64 | Day part of the document date. |
+| `mihMonth` | INT64 | Month part of the document date. |
+| `mihYear` | INT64 | Year part of the document date (Gregorian). |
+| `mihType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `mihCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mihVnos` | STRING | Document number, unique within company and document type. |
+| `mihPer` | STRING | Salesperson (employee) code, matching `per.percode`. |
+| `pernamet` | STRING | Employee name in Thai (first name, surname and nickname in parentheses). |
 | `per_sale1` | FLOAT64 | Sales share (%) of the first salesperson parsed from MAC5 mih2 `mih2perpc`; 100 when the invoice is not split. |
 | `mih2per2` | STRING | Code of the second salesperson on a split invoice (mih2per2); '0' when not split. |
 | `per_sale2` | FLOAT64 | Sales share (%) of the second salesperson; 0 when not split. |
-| `mihStatus` | INT64 | Status code of the document (joined to ar_s/ap_s for the name). |
+| `mihStatus` | INT64 | Document status code; meaning in `ar_s` for sales types and `ap_s` for purchase types (e.g. 26 = approved sales order, 30 = VAT sale, 32 = cancelled tax invoice). |
 | `StatusDesc` | STRING | Status name from MAC5 ar_s (sales document types) or ap_s (purchase types). |
-| `mihCancel` | INT64 | Cancel flag (-1 = cancelled in MAC5, 0 = active). Cancelled invoices can survive dim_invoice branches and this view does not filter them. |
-| `mihRef1` | STRING | Reference 1 on the document (for invoices, the order number it references). |
-| `mihRef2` | STRING | Reference 2 on the document. |
-| `mihDep` | STRING | Department code on the document (join to channel DepCode). |
-| `mihJob` | STRING | Job code on the document. |
+| `mihCancel` | INT64 | Cancellation flag (-1 = cancelled, 0 = active). |
+| `mihRef1` | STRING | Reference document number 1 for the source quotation or sales order. |
+| `mihRef2` | STRING | Customer purchase-order or external order reference number. |
+| `mihDep` | STRING | Department code of the document, used as the sales channel code. |
+| `mihJob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
 | `InvoiceSalesFlag` | STRING | 'Yes' when the invoice is split between salespeople (per_sale1 <> 100), else 'No'. |
-| `milLinkVcno` | STRING | Linked document number from the invoice lines (curated_mil `milLinkVcno`); for IS this is the source order number. |
-| `mihNotes` | STRING | Free-text notes on the document. |
-| `mihDesc` | STRING | Description text on the document. |
-| `mihMec` | STRING | Branch (mec) code on the document; joined to mec for `mecdesc`. |
+| `milLinkVcno` | STRING | Number of the source document this line was created from (e.g. the sales order of an invoice line). |
+| `mihNotes` | STRING | Free-text notes such as delivery instructions or site details. |
+| `mihDesc` | STRING | Free-text document description. |
+| `mihMec` | STRING | Memo-card code of the document, matching `mec.meccode` (holds the shop or branch name for chain-store customers). |
 | `RefOrder` | STRING | Order number the invoice came from: `milLinkVcno` of the invoice, or for BS/AS the `milLinkVcno` of the original IS invoice it links to. |
 | `FlagSCG` | STRING | Result of `fn_flag_scg(RefOrder, mihCus)`: marks SCG-related invoices; NULL otherwise (function definition is in function_dataset). |
 | `CRCShopName` | STRING | Shop name for chain customers (SCG, Siam Global House, HomePro pattern), extracted from `mihNotes` by `#D/S`-style patterns, after the MDS CRC rename; NULL for other customers. |
-| `mecdesc` | STRING | Branch name from `mec.mecdesc` (joined by company + `mihMec = meccode`). |
+| `mecdesc` | STRING | Card title, used as the shop or branch name of chain-store customers in invoice reporting. |
 | `CustomerReportName` | STRING | Final shop name for reports: MDS nickname if set, else rule-based name (branch name for SCG/GB/HomePro, CRC shop name, or cleaned customer name), then MDS CRC rename applied. |
 
 # How it is built

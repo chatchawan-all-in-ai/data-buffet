@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "fact_quotation"
-description: "Quotation detail aggregates by quotation, customer, project, company and matched ProductSK; retained barcode versions can repeat quoted quantities and totals."
+description: "One row = the quoted totals of one stock code on one quotation (company, Running, customer, project) per matched ProductSK; retained barcode versions repeat the quoted quantities and totals."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_quotation&page=table"
 project_id: databuffet-nonprd
 dataset_id: fact_table
@@ -45,7 +45,7 @@ One row per `FactQuotationSK` (ROW_NUMBER over CompanySK, Running, StkCode). The
 | `Running` | STRING | Quotation running number (document number); equals `curated_mih.mihRef1` on linked orders (join in fact_order). |
 | `StkCode` | STRING | Product code on the quotation line (`tbook_quodetail.stkcode`). |
 | `CustomerId` | STRING | Customer code of the quotation (matches `dim_customer.debcode`). |
-| `ProjectCode` | INT64 | Project code from dim_quotation; meaning not documented in the repo. |
+| `ProjectCode` | INT64 | Numeric project code parsed from the quotation Project text in dim_quotation; joins dim_project.projectCode. |
 | `StkDesc` | STRING | Product description: MAX(stkdesc) over the group. |
 | `Price` | FLOAT64 | Unit price: AVG(price) over the group. |
 | `Quantity` | FLOAT64 | Quoted quantity: SUM(quantity). |

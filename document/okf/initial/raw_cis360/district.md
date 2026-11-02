@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "district"
-description: "One row = one record of source table `district` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one district, a record of source table `district` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_cis360&t=district&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_cis360
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/cis360/district/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `district` table from CIS360; nothing is cleaned or deduplicated here. Used by: [validated_cis360.district](/validated/validated_cis360/district.md).
+External table over AVRO files in `gs://file-raw-data/cis360/district/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `district` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Lookup of Thai districts (amphoe/khet) used in CIS360 addresses. Used by: [validated_cis360.district](/validated/validated_cis360/district.md).
 
 # Grain and key
 
@@ -30,17 +30,17 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `district_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `district_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `district_name_en` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `province_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Primary key of the district lookup. |
+| `district_code` | STRING | 4-digit Thai district (amphoe/khet) code. |
+| `district_name` | STRING | District name in Thai. |
+| `district_name_en` | STRING | District name in English (currently holds the Thai name). |
+| `province_id` | INT64 | Identifier of the parent province (`province.id`). |
+| `create_date` | STRING | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | STRING | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

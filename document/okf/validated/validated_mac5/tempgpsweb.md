@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tempgpsweb"
-description: "One row = one cleaned source record of `tempgpsweb` (no declared key; append-style, not deduplicated)."
+description: "One row = one delivered item on one delivery document from source table `tempgpsweb` (no declared key; append-style, not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tempgpsweb&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tempgpsweb`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: GPS web temp. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `tempgpsweb`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Delivery tracking rows from the GPS web app: document, vehicle, item, quantity and loading/release/receipt status.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,18 +35,18 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `fdocument` | STRING | Meaning not documented in the repo. |
-| `fserial_no` | STRING | Meaning not documented in the repo. |
-| `fcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `fvehicle` | STRING | Meaning not documented in the repo. |
-| `fitem` | STRING | Meaning not documented in the repo. |
-| `fitem2` | STRING | Meaning not documented in the repo. |
-| `qty2` | INT64 | Meaning not documented in the repo. |
-| `s1` | STRING | Meaning not documented in the repo. |
-| `s2` | STRING | Meaning not documented in the repo. |
-| `s3` | STRING | Meaning not documented in the repo. |
-| `stt` | STRING | Meaning not documented in the repo. |
-| `username` | STRING | Meaning not documented in the repo. |
+| `fdocument` | STRING | Document number of the delivery (e.g. invoice number). |
+| `fserial_no` | STRING | Serial or reference document number of the delivery. |
+| `fcode` | STRING | Delivery job code. |
+| `fvehicle` | STRING | Registration plate of the delivery vehicle. |
+| `fitem` | STRING | Product code or barcode of the delivered item. |
+| `fitem2` | STRING | Alternate product code or barcode of the delivered item. |
+| `qty2` | INT64 | Quantity of the item delivered. |
+| `s1` | STRING | Loading status text in Thai (goods loaded onto the truck). |
+| `s2` | STRING | Truck release status text in Thai (truck released or not released). |
+| `s3` | STRING | Receipt status text in Thai (goods received or not yet delivered). |
+| `stt` | STRING | Status code of the delivery row (1, 2). |
+| `username` | STRING | User code of the person who recorded the row. |
 
 # How it is built
 

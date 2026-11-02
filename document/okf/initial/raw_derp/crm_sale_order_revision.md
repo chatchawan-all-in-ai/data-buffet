@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_revision"
-description: "One row = one record of source table `crm_sale_order_revision` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one saved revision of a sale order, a record of source table `crm_sale_order_revision` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_sale_order_revision&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_revision/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_revision` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_sale_order_revision](/validated/validated_derp/crm_sale_order_revision.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_revision/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_revision` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Revisions of DERP sale orders, each with a JSON snapshot of the whole order. Used by: [validated_derp.crm_sale_order_revision](/validated/validated_derp/crm_sale_order_revision.md).
 
 # Grain and key
 
@@ -30,17 +30,17 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_revision_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_order_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `so_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `so_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rev_no` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `snapshot_data` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `action_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `action_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `sale_order_revision_id` | STRING | Unique identifier of the sale order revision. |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `so_no` | STRING | Sale order number of the parent sale order (e.g. `A2610000106`). |
+| `so_date` | STRING | Date and time of the parent sale order. |
+| `rev_no` | INT64 | Revision number of the sale order captured in this snapshot. |
+| `snapshot_data` | STRING | JSON snapshot of the whole sale order at this revision (header, lines, deliveries, deposits, payments, sales persons, attachments). |
+| `action_by` | STRING | Identifier of the user who saved the revision. |
+| `updated_at` | STRING | Timestamp when the revision was saved. |
+| `action_by_name` | STRING | Display name of the user who saved the revision. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "ap_s"
-description: "One row = one record of source table `ap_s` (MAC5 for company `ac02`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one AP document status, a record of source table `ap_s` (MAC5 for company `ac02`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ac02&t=ap_s&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ac02
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ac02/ap_s/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `ap_s` table from MAC5 for company `ac02`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.ap_s](/validated/validated_mac5/ap_s.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ac02/ap_s/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `ap_s` table from MAC5 for company `ac02`; nothing is cleaned or deduplicated here. Table meaning: Status codes and display names (with colours) for purchase-side documents, referenced by `mihstatus`. Used by: [validated_mac5.ap_s](/validated/validated_mac5/ap_s.md).
 
 # Grain and key
 
@@ -30,12 +30,12 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `ap_scode` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ap_snamet` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ap_snamee` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ap_scolf` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ap_scolb` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rowguid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `ap_scode` | INT64 | AP (purchase) document status code, referenced by `mihstatus` of purchase documents. |
+| `ap_snamet` | STRING | Thai status name. |
+| `ap_snamee` | STRING | English status name (often the same Thai text). |
+| `ap_scolf` | INT64 | Foreground (text) colour of the status in the ERP, as a Windows RGB integer. |
+| `ap_scolb` | INT64 | Background colour of the status in the ERP, as a Windows RGB integer. |
+| `rowguid` | STRING | Row GUID assigned to the record by the source database. |
 
 # How it is built
 

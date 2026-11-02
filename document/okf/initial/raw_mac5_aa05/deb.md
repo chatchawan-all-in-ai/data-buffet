@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "deb"
-description: "One row = one record of source table `deb` (MAC5 for company `aa05`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one customer (debtor), a record of source table `deb` (MAC5 for company `aa05`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_aa05&t=deb&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_aa05
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_aa05/deb/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `deb` table from MAC5 for company `aa05`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.deb](/validated/validated_mac5/deb.md).
+External table over AVRO files in `gs://file-raw-data/mac5_aa05/deb/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `deb` table from MAC5 for company `aa05`; nothing is cleaned or deduplicated here. Table meaning: Customer master of the MAC5 ERP: names, addresses, tax ID, group, grade, salesperson, credit limit and terms. Used by: [validated_mac5.deb](/validated/validated_mac5/deb.md).
 
 # Grain and key
 
@@ -30,78 +30,78 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `debcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debgroup` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debnamet` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debnamee` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debcontactt` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debcontacte` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debadd1at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debadd2at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debadd3at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debadd1ae` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debadd2ae` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debadd3ae` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debtel` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debtaxnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debzone` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debgrade` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `deblimit` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debtaxclass` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debgoodsdef` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debcreditterm` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debpaytype` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debpayday` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debpayon1` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debpayon2` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debpayon3` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debpayon4` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debpayon5` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debpayn1` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debpayn2` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debbgrtype` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debbgrday` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debbgron1` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debbgron2` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debbgron3` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debbgron4` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debbgron5` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debhide` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debfax` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debemail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debtarget` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debmemo` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debac` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `deblock` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `deboname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debcm1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debcm2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debcm3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debcm4` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debcm5` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debcm6` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debcm7` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debcm8` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debcm9` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debcm10` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debprice` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debeditlk` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debrefwe` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debbillad` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debsortnt` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debsortne` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debeditdt` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debeditmf` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debinex` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debsalesp` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debbranch` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debxxxx` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debbusinesstype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debbusinessdesc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debactive` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debstatus` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `debexpiredate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `debcode` | STRING | Customer (debtor) code. |
+| `debgroup` | STRING | Customer group code (e.g. HP, TW, BT, GB, MH, DOHOME); drives channel matching in the sale-rep rules. |
+| `debnamet` | STRING | Customer name in Thai. |
+| `debnamee` | STRING | Customer name in English. |
+| `debcontactt` | STRING | Contact person name in Thai. |
+| `debcontacte` | STRING | Contact person name in English. |
+| `debadd1at` | STRING | Thai address line 1 of the customer. |
+| `debadd2at` | STRING | Thai address line 2 of the customer. |
+| `debadd3at` | STRING | Thai address line 3 of the customer. |
+| `debadd1ae` | STRING | English address line 1 of the customer. |
+| `debadd2ae` | STRING | English address line 2 of the customer. |
+| `debadd3ae` | STRING | English address line 3 of the customer. |
+| `debtel` | STRING | Phone number(s) of the customer. |
+| `debtaxnos` | STRING | 13-digit tax ID of the customer. |
+| `debzone` | STRING | Sales zone code of the customer (e.g. `001`, `D-001`). |
+| `debgrade` | STRING | Customer grade code. |
+| `deblimit` | FLOAT64 | Credit limit of the customer in baht. |
+| `debtaxclass` | FLOAT64 | VAT rate applied to the customer in percent (7 or 0). |
+| `debgoodsdef` | FLOAT64 | Default goods discount of the customer. |
+| `debcreditterm` | INT64 | Credit term in days. |
+| `debpaytype` | INT64 | Payment schedule type code (1, 2). |
+| `debpayday` | INT64 | Payment day setting of the payment schedule. |
+| `debpayon1` | INT64 | Payment day 1 of the payment schedule. |
+| `debpayon2` | INT64 | Payment day 2 of the payment schedule. |
+| `debpayon3` | INT64 | Payment day 3 of the payment schedule. |
+| `debpayon4` | INT64 | Payment day 4 of the payment schedule. |
+| `debpayon5` | INT64 | Payment day 5 of the payment schedule. |
+| `debpayn1` | INT64 | Payment schedule parameter 1. |
+| `debpayn2` | INT64 | Payment schedule parameter 2. |
+| `debbgrtype` | INT64 | Billing schedule type code. |
+| `debbgrday` | INT64 | Billing day setting of the billing schedule. |
+| `debbgron1` | INT64 | Billing day 1 of the billing schedule. |
+| `debbgron2` | INT64 | Billing day 2 of the billing schedule. |
+| `debbgron3` | INT64 | Billing day 3 of the billing schedule. |
+| `debbgron4` | INT64 | Billing day 4 of the billing schedule. |
+| `debbgron5` | INT64 | Billing day 5 of the billing schedule. |
+| `debdate` | STRING | Date the customer record was created. |
+| `debhide` | INT64 | Hidden flag (-1 = hidden from pick lists, 0 = shown). |
+| `debfax` | STRING | Fax number of the customer. |
+| `debemail` | STRING | Email address of the customer. |
+| `debtarget` | FLOAT64 | Sales target of the customer. |
+| `debmemo` | STRING | Free-text memo on the customer. |
+| `debac` | STRING | AR GL account code of the customer (e.g. `112200`). |
+| `deblock` | INT64 | Lock flag (-1 = locked against editing, 0 = unlocked). |
+| `deboname` | STRING | Other name of the customer (e.g. branch label). |
+| `debcm1` | STRING | Comment field 1 of the customer. |
+| `debcm2` | STRING | Comment field 2 of the customer. |
+| `debcm3` | STRING | Comment field 3 of the customer. |
+| `debcm4` | STRING | Comment field 4 of the customer. |
+| `debcm5` | STRING | Comment field 5 of the customer. |
+| `debcm6` | STRING | Comment field 6 of the customer. |
+| `debcm7` | STRING | Comment field 7 of the customer. |
+| `debcm8` | STRING | Comment field 8 of the customer. |
+| `debcm9` | STRING | Comment field 9 of the customer. |
+| `debcm10` | STRING | Comment field 10 of the customer. |
+| `debprice` | STRING | Default price level code of the customer. |
+| `debeditlk` | STRING | Date and time the record was locked for editing. |
+| `debrefwe` | STRING | External reference code of the record. |
+| `debbillad` | INT64 | Billing-address flag of the customer. |
+| `debsortnt` | STRING | Thai sort key of the customer (usually the Thai name). |
+| `debsortne` | STRING | English sort key of the customer. |
+| `debeditdt` | STRING | Date and time the record was last edited. |
+| `debeditmf` | STRING | User code of the person who last edited the record. |
+| `debinex` | INT64 | VAT include/exclude flag of the customer's prices (`1`, `0`). |
+| `debsalesp` | STRING | Salesperson code assigned to the customer (joins `per.percode`). |
+| `debbranch` | STRING | Tax branch number of the customer (`00000` = head office). |
+| `debxxxx` | STRING | Secondary salesperson (employee) code of the customer. |
+| `debbusinesstype` | STRING | Business type code of the customer. |
+| `debbusinessdesc` | STRING | Business type description of the customer. |
+| `debactive` | INT64 | Active flag of the customer. |
+| `debstatus` | INT64 | Status code of the customer (0 = normal). |
+| `debexpiredate` | STRING | Expiry date of the customer record. |
 
 # How it is built
 

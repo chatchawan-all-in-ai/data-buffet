@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tbook_quodetail"
-description: "One row = one record of source table `tbook_quodetail` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one quotation detail line, a record of source table `tbook_quodetail` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=tbook_quodetail&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbook_quodetail/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbook_quodetail` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.tbook_quodetail](/validated/validated_mac5/tbook_quodetail.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbook_quodetail/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbook_quodetail` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Item lines of quotations: stock code, quantity, list price, discounts, net price, total and line type; source of fact_quotation. Used by: [validated_mac5.tbook_quodetail](/validated/validated_mac5/tbook_quodetail.md).
 
 # Grain and key
 
@@ -30,54 +30,54 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `linkid` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `stkcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `stkdesc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quantity` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `lp` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `nd` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sd1` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sd2` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sd3` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dispercent` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `crc` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `price` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `total` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `priceforag` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `com` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `setcb` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sent` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `datepart` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fg` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pic` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `productcp` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pricecp` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uupdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dupdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `giveaway` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `givestk` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bgcount` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `orderno` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `lat` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `long` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mapnote` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fileupload` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `city` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rdosend` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ctel` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `caddress` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `checknote` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `textnote` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ref_quodetail` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `productgrade` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fobprice` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `isshow` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Quotation detail line identifier. |
+| `linkid` | INT64 | Quotation identifier (`tbook_quotation.id`) the line belongs to. |
+| `stkcode` | STRING | MAC5 stock code of the item. |
+| `stkdesc` | STRING | Item description. |
+| `quantity` | FLOAT64 | Quoted quantity. |
+| `lp` | FLOAT64 | List price per unit. |
+| `nd` | FLOAT64 | Normal discount percent applied to the list price. |
+| `sd1` | FLOAT64 | Step discount 1 percent. |
+| `sd2` | FLOAT64 | Step discount 2 percent. |
+| `sd3` | FLOAT64 | Step discount 3 percent. |
+| `dispercent` | FLOAT64 | Discount amount of the line (negative value). |
+| `crc` | FLOAT64 | CRC rate percent of the line. |
+| `price` | FLOAT64 | Net unit price. |
+| `total` | FLOAT64 | Line total amount. |
+| `priceforag` | FLOAT64 | Unit price for the dealer (agent). |
+| `com` | FLOAT64 | Commission amount of the line. |
+| `setcb` | INT64 | Number of sets in the combo line. |
+| `type` | STRING | Line type (`ขาย` = sale, `แถม` = free item, `แถมจากโปรโมชั่น` = promotion giveaway, `ข้อมูล Comboset` = combo-set component, `ชุดข้อมูลสี` = colour set). |
+| `status` | STRING | Line status label (e.g. `ขายได้`, `ทำสลพ`, `แถมจากโปรโมชั่น`, `ข้อมูล Comboset`). |
+| `sent` | STRING | Delivery date of the line (text). |
+| `datepart` | STRING | Delivery time slot (`เช้า` = morning, `บ่าย` = afternoon). |
+| `fg` | STRING | Factory or warehouse code that supplies the item (e.g. `KTB`, `HY`, `LP`, `KK`, `PK`, `UB`). |
+| `pic` | STRING | Image file name attached to the line. |
+| `productcp` | STRING | Competitor product or brand quoted against (e.g. `WAVE`, `BUDDY`). |
+| `pricecp` | FLOAT64 | Competitor price. |
+| `uinsert` | STRING | Employee code of the user who created the row. |
+| `uupdate` | STRING | Employee code of the user who last updated the row. |
+| `dinsert` | STRING | Date and time the row was created (text). |
+| `dupdate` | STRING | Date and time the row was last updated (text). |
+| `giveaway` | STRING | Giveaway flag of the line. |
+| `givestk` | STRING | Stock code of the giveaway item. |
+| `bgcount` | STRING | Count value of the line. |
+| `orderno` | INT64 | Order number of the line. |
+| `lat` | STRING | Latitude of the delivery location. |
+| `long` | STRING | Longitude of the delivery location. |
+| `mapnote` | STRING | Map note for the delivery location. |
+| `fileupload` | STRING | Uploaded file name. |
+| `city` | STRING | Province of the delivery address. |
+| `rdosend` | INT64 | Delivery method option code. |
+| `cname` | STRING | Customer contact name. |
+| `ctel` | STRING | Customer contact phone number. |
+| `caddress` | STRING | Customer delivery address. |
+| `checknote` | STRING | Delivery checklist note. |
+| `textnote` | STRING | Free-text note of the line, such as a paint colour formula. |
+| `ref_quodetail` | INT64 | Parent quotation detail line in the same quotation (`tbook_quodetail.id`). |
+| `productgrade` | INT64 | Product grade code (0, 1, 2). |
+| `fobprice` | STRING | FOB price of the line. |
+| `isshow` | INT64 | Show-on-quotation flag (1 = shown). |
 
 # How it is built
 

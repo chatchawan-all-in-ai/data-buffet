@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "turnover_brand"
-description: "One row = one cleaned copy of the source table `turnover_brand`, unique on (vendor_id, mch3, brand, class_stock)."
+description: "One row = one merchandise category, brand and stock class on one snapshot date from source table `turnover_brand`, unique on (vendor_id, mch3, brand, class_stock)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_saleout_mdt&t=turnover_brand&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_saleout_mdt
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of SALEOUT_MDT `turnover_brand`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of SALEOUT_MDT `turnover_brand`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Stock turnover by brand and stock class from Boonthavorn (BT) for the company products.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,15 +34,15 @@ One row per `vendor_id`, `mch3`, `brand`, `class_stock`. The key is declared twi
 
 | Column | Type | Description |
 |---|---|---|
-| `vendor_id` | STRING | Meaning not documented in the repo. |
-| `vendor_name` | STRING | Meaning not documented in the repo. |
-| `mch3` | STRING | Meaning not documented in the repo. |
-| `brand` | STRING | Meaning not documented in the repo. |
-| `class_stock` | STRING | Meaning not documented in the repo. |
-| `ur_cost_amt` | FLOAT64 | Meaning not documented in the repo. |
-| `t_o` | FLOAT64 | Meaning not documented in the repo. |
-| `start_date` | DATE | Meaning not documented in the repo. |
-| `end_date` | DATE | Meaning not documented in the repo. |
+| `vendor_id` | STRING | Boonthavorn vendor code of the supplier (the company), e.g. `10009`. |
+| `vendor_name` | STRING | Supplier (vendor) name as registered at Boonthavorn. |
+| `mch3` | STRING | Boonthavorn merchandise category, top level (department). |
+| `brand` | STRING | Product brand. |
+| `class_stock` | STRING | Boonthavorn stock class (`B3G Class A`, `B3G Class B`, `B3G Class C`, `B3G New`, `B3G Dead`). |
+| `ur_cost_amt` | FLOAT64 | Value of the unrestricted stock at cost for the category, brand and stock class. |
+| `t_o` | FLOAT64 | Stock turnover (T/O) of the category, brand and stock class, in days. |
+| `start_date` | DATE | Stock snapshot date (same as `end_date`). |
+| `end_date` | DATE | Stock snapshot date. |
 | `ASATDATE` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

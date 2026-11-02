@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sales_employee"
-description: "One row = one cleaned copy of the source table `sales_employee`, unique on (employee_id)."
+description: "One row = one employee from source table `sales_employee`, unique on (employee_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=sales_employee&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `sales_employee`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `sales_employee`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Sales-side employees of the DERP system (salespeople, managers, credit staff) with employee number, role group and status.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,25 +34,25 @@ One row per `employee_id`. The key is declared twice in the definition (`uniqueK
 
 | Column | Type | Description |
 |---|---|---|
-| `employee_id` | STRING | Meaning not documented in the repo. |
-| `employee_no` | STRING | Meaning not documented in the repo. |
-| `first_name` | STRING | Meaning not documented in the repo. |
-| `last_name` | STRING | Meaning not documented in the repo. |
-| `nickname` | STRING | Meaning not documented in the repo. |
-| `employee_group` | STRING | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `remarks` | STRING | Meaning not documented in the repo. |
-| `company_code` | STRING | Meaning not documented in the repo. |
-| `organization_code` | STRING | Meaning not documented in the repo. |
-| `user_id` | STRING | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `position` | STRING | Meaning not documented in the repo. |
-| `phone_number` | STRING | Meaning not documented in the repo. |
+| `employee_id` | STRING | UUID of the employee. |
+| `employee_no` | STRING | Employee number. |
+| `first_name` | STRING | Employee first name. |
+| `last_name` | STRING | Employee last name. |
+| `nickname` | STRING | Employee nickname. |
+| `employee_group` | STRING | Employee role group (e.g. `sale`, `SALE_TA`, `SALE_MANAGER`, `manager`, `BUSINESS_UNIT_MANAGER`, `credit`). |
+| `status` | STRING | Employee status (`ACTIVE` or `DELETED`). |
+| `remarks` | STRING | Free-text remarks about the employee. |
+| `company_code` | STRING | Code of the company the employee belongs to (e.g. `DHITETA`, `TM`). |
+| `organization_code` | STRING | Code of the organization the employee belongs to (e.g. `TM`). |
+| `user_id` | STRING | UUID of the system user account linked to the employee. |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `position` | STRING | Job position of the employee. |
+| `phone_number` | STRING | Employee phone number. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

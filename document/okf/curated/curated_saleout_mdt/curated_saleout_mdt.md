@@ -40,7 +40,7 @@ One row per `sale_date`, `store_code`, `branch_code`, `product_code`, `doc_type`
 | `sale_qty` | INT64 | Quantity sold; negative for returns. For BT up to 2026-10-07 it is the difference of consecutive month-to-date quantities. |
 | `sale_amount` | FLOAT64 | Sales amount in baht (for BT the NET_INC_TAX amount including VAT); negative for returns. |
 | `doc_type` | STRING | SALE or RETURN. Sent by the chain for GB; derived by us for others (HP from the return flag, BT/TW/lastyear from the sign of the amount, DH from the return flag). |
-| `doc_type_source` | STRING | SOURCE when the chain sent the document type (GB), DERIVED when we inferred it. |
+| `doc_type_source` | STRING | SOURCE when the chain sent the document type (GB), DERIVED when the build derived it. |
 | `days_covered` | INT64 | Number of days the row's figure covers: 1 for exact daily rows; for BT up to 2026-10-07 the gap in days since the previous snapshot of the file. |
 | `date_is_estimated` | BOOL | TRUE when days_covered > 1 (BT multi-day span, actual sale day unknown); FALSE otherwise. |
 | `asatdate` | DATE | Latest raw load date of the rows merged (for DH it is the last sale day in the file, not the DAG run date). |

@@ -34,35 +34,35 @@ One row per `OrderSK` (QUALIFY ROW_NUMBER over OrderSK ordered by mih2pos DESC, 
 | `CompanySK` | INT64 | SK of the company in dim_company. |
 | `companyID` | STRING | MAC5 company code. |
 | `mix_date` | DATE | Document date, `PARSE_DATE('%Y%m%d', CONCAT(mihYear, mihMonth, mihDay))`. |
-| `mihYear` | INT64 | Year of the document date. |
-| `mihMonth` | INT64 | Month of the document date. |
-| `mihDay` | INT64 | Day of the document date (MAC5 mih). |
-| `mihType` | STRING | MAC5 document type code (e.g. IS invoice, BS credit note, AS debit note, QS quotation, PS order). |
-| `mihVnos` | STRING | Document number (vnos). |
-| `mihCus` | STRING | Customer code (`debcode`) on the document. |
-| `mihJob` | STRING | Job code on the document. |
-| `mihRef1` | STRING | Reference 1 on the document (for invoices, the order number it references). |
-| `mihRef2` | STRING | Reference 2 on the document. |
-| `mihRef3` | STRING | Reference 3 on the order document. |
-| `mihCancel` | INT64 | Cancel flag on the order (STRING in this table; -1 style values as in MAC5). |
-| `mihStatus` | INT64 | Status code of the document (joined to ar_s/ap_s for the name). |
-| `StatusName` | STRING | Status name from MAC5 ar_s (`ar_snamet`) for `mihStatus`. |
-| `memoExtract` | STRING | Memo-extract text on the order (curated_mih `memoExtract`). |
-| `mihMemoNew` | STRING | New-memo text on the order (curated_mih `mihMemoNew`). |
+| `mihYear` | INT64 | Year part of the document date (Gregorian). |
+| `mihMonth` | INT64 | Month part of the document date. |
+| `mihDay` | INT64 | Day part of the document date. |
+| `mihType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `mihVnos` | STRING | Document number, unique within company and document type. |
+| `mihCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mihJob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
+| `mihRef1` | STRING | Reference document number 1 for the source quotation or sales order. |
+| `mihRef2` | STRING | Customer purchase-order or external order reference number. |
+| `mihRef3` | STRING | Free-text reference 3 of the document. |
+| `mihCancel` | INT64 | Cancellation flag (-1 = cancelled, 0 = active). |
+| `mihStatus` | INT64 | Document status code; meaning in `ar_s` for sales types and `ap_s` for purchase types (e.g. 26 = approved sales order, 30 = VAT sale, 32 = cancelled tax invoice). |
+| `StatusName` | STRING | Thai status name. |
+| `memoExtract` | STRING | Tag extracted from the document memo, defaulting to `฿00฿` and matched to `dim_payment.CodeMemo`. |
+| `mihMemoNew` | STRING | Document memo with the tag enclosed in `฿` signs removed, or NULL when no text remains. |
 | `mihStatusDesc` | STRING | Status description text from the mih row (`mihstatus_desc`). |
 | `OrderStatus` | STRING | Fulfilment status computed in dim_order from PS vs IS quantities per item: 'In Process' if any item partly delivered, else 'On Order' if any item undelivered, else 'Complete'. |
-| `mihNotes` | STRING | Free-text notes on the document. |
-| `mihDesc` | STRING | Description text on the document. |
-| `mihKeydate` | DATETIME | Date/time the order was keyed in. |
-| `mihDelvdate` | DATETIME | Requested delivery date/time. |
-| `mihClearum` | INT64 | Clear-sum value from mih (MAC5 `mihClearum`); meaning not documented beyond the name. |
-| `mihExtrasum` | FLOAT64 | Extra-sum amount from mih (MAC5 `mihExtrasum`); meaning not documented beyond the name. |
-| `mihPer` | STRING | Salesperson code on the document. |
-| `pernamet` | STRING | Salesperson name from the MAC5 `per` table (personal data). |
-| `mihBl` | INT64 | MAC5 `mihBl` flag on the order; Meaning not documented in the repo. |
-| `StatusColorBg` | INT64 | Background colour code of the status from MAC5 ar_s (`ar_scolb`). |
+| `mihNotes` | STRING | Free-text notes such as delivery instructions or site details. |
+| `mihDesc` | STRING | Free-text document description. |
+| `mihKeydate` | DATETIME | Date and time the document was keyed. |
+| `mihDelvdate` | DATETIME | Requested delivery date. |
+| `mihClearum` | INT64 | Flag: outstanding quantities of the document cleared (0 = still open). |
+| `mihExtrasum` | FLOAT64 | Deposit amount deducted on the document, excluding VAT. |
+| `mihPer` | STRING | Salesperson (employee) code, matching `per.percode`. |
+| `pernamet` | STRING | Employee name in Thai (first name, surname and nickname in parentheses). |
+| `mihBl` | INT64 | Billing-note flag of the document. |
+| `StatusColorBg` | INT64 | Background colour of the status in the ERP, as a Windows RGB integer. |
 | `OrderType` | STRING | Order type derived by `fn_order_type(mihref2)`. |
-| `CustomerShipTo` | STRING | Ship-to code `mih2pos` from MAC5 mih2 matched on the order's date, type, customer and number (greatest value if several). |
+| `CustomerShipTo` | STRING | Ship-to location of the order (customer branch, plot or house). |
 | `FlagExpire` | STRING | 'Yes' when order age in days (today - mix_date) exceeds the MDS `ExpireDays` for the document prefix; 'No' otherwise or when no rule exists. |
 
 # How it is built

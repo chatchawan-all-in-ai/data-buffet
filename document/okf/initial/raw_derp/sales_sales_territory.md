@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sales_sales_territory"
-description: "One row = one record of source table `sales_sales_territory` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one sales territory node, a record of source table `sales_sales_territory` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=sales_sales_territory&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/sales_sales_territory/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sales_sales_territory` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.sales_sales_territory](/validated/validated_derp/sales_sales_territory.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/sales_sales_territory/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sales_sales_territory` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Hierarchy of sales territories (up to four levels) with code, name and validity dates. Used by: [validated_derp.sales_sales_territory](/validated/validated_derp/sales_sales_territory.md).
 
 # Grain and key
 
@@ -30,28 +30,28 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_territory_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `description` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `level` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `parent_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `valid_from` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `valid_to` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `company_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `company_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `organization_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `organization_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `sale_territory_id` | STRING | UUID of the sales territory. |
+| `code` | STRING | Sales territory code (e.g. `SV13_0_TA_01`). |
+| `name` | STRING | Sales territory name. |
+| `description` | STRING | Description of the sales territory. |
+| `level` | INT64 | Depth of the node in the hierarchy (1 = top level). |
+| `parent_id` | STRING | UUID of the parent node in the same hierarchy (NULL at the top level). |
+| `path_id` | STRING | Chain of territory UUIDs from the top level down to this territory, separated by `/`. |
+| `path_code` | STRING | Chain of territory codes from the top level down to this territory, separated by `/` (e.g. `SV/SV_13/SV13_0/SV13_0_TA_01/`). |
+| `path_name` | STRING | Chain of territory names from the top level down to this territory, separated by `/`. |
+| `valid_from` | STRING | Date from which the territory is valid. |
+| `valid_to` | STRING | Date until which the territory is valid (NULL = open-ended). |
+| `company_id` | STRING | UUID of the company that owns the record. |
+| `company_code` | STRING | Code of the company that owns the record. |
+| `organization_id` | STRING | UUID of the organization that owns the record. |
+| `organization_code` | STRING | Code of the organization that owns the record. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

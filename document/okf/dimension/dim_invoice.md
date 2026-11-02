@@ -37,29 +37,29 @@ One row per (`CompanySK`, `mihYear`, `mihMonth`, `mihDay`, `mihVnos`, `mihCus`, 
 | `mix_date` | DATE | Document date built from `mihYear`/`mihMonth`/`mihDay`. |
 | `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md). |
 | `companyID` | STRING | MAC5 company code. |
-| `mihDay` | INT64 | Day part of the document date (pass-through of `curated_mih.mihDay`). |
+| `mihDay` | INT64 | Day part of the document date. |
 | `mihMonth` | INT64 | Month part of the document date. |
-| `mihYear` | INT64 | Year part of the document date. |
-| `mihType` | STRING | Document type: IS invoice, BS credit note, AS debit note, QS (only these four are kept). |
-| `mihCus` | STRING | Customer code on the document (joins to `dim_customer.debcode`). |
-| `mihVnos` | STRING | Document number (`mihVnos`). |
-| `mihPer` | STRING | Salesperson code on the document header. |
-| `pernamet` | STRING | Salesperson Thai name from `validated_mac5.per` (join `mihPer = percode`, company). |
+| `mihYear` | INT64 | Year part of the document date (Gregorian). |
+| `mihType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `mihCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mihVnos` | STRING | Document number, unique within company and document type. |
+| `mihPer` | STRING | Salesperson (employee) code, matching `per.percode`. |
+| `pernamet` | STRING | Employee name in Thai (first name, surname and nickname in parentheses). |
 | `per_sale1` | FLOAT64 | Sale-split percent for the first salesperson (parsed from `mih2perpc`, ag01 only); 100 when the invoice has no split row. |
 | `mih2per2` | STRING | Second salesperson code from `mih2.mih2per2` when the invoice's order has a split; '0' otherwise. |
 | `per_sale2` | FLOAT64 | Sale-split percent for the second salesperson (parsed from `mih2per2pc`); 0 when no split. |
-| `mihStatus` | INT64 | Status code of the document (`curated_mih.mihStatus`). |
+| `mihStatus` | INT64 | Document status code; meaning in `ar_s` for sales types and `ap_s` for purchase types (e.g. 26 = approved sales order, 30 = VAT sale, 32 = cancelled tax invoice). |
 | `StatusDesc` | STRING | Status description looked up in `ar_s.ar_snamet` for sales types (QS/PS/IS/AS/BS/VS/RS) or `ap_s.ap_snamet` for purchase types. |
-| `mihCancel` | INT64 | Cancel flag; -1 means cancelled, 0 active. Rows with -1 are excluded for the IS-with-split branch but other branches can still carry them. |
-| `mihRef1` | STRING | Reference number 1 of the header (for invoices, the sales order PS number used to find `mih2` splits). |
-| `mihRef2` | STRING | Reference number 2 of the header (pass-through). |
-| `mihDep` | STRING | Department/area code of the document header (pass-through). |
-| `mihJob` | STRING | Job code of the header (pass-through; likely a job/project code, inferred). |
+| `mihCancel` | INT64 | Cancellation flag (-1 = cancelled, 0 = active). |
+| `mihRef1` | STRING | Reference document number 1 for the source quotation or sales order. |
+| `mihRef2` | STRING | Customer purchase-order or external order reference number. |
+| `mihDep` | STRING | Department code of the document, used as the sales channel code. |
+| `mihJob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
 | `InvoiceSalesFlag` | STRING | 'Yes' when the invoice has a split (`per_sale1 <> 100`), else 'No'. |
-| `milLinkVcno` | STRING | Linked document number from the line (`curated_mil.milLinkVcno`), normally the sales order (PS) the invoice fulfils; for credit/debit notes the invoice they reference. Part of the key. |
-| `mihNotes` | STRING | Free-text notes of the header. |
-| `mihDesc` | STRING | Free-text description of the header. |
-| `mihMec` | STRING | Branch/dispatch code of the header (joined to `mec.meccode` in `view_dim_invoice` to get the shipping branch name). |
+| `milLinkVcno` | STRING | Number of the source document this line was created from (e.g. the sales order of an invoice line). |
+| `mihNotes` | STRING | Free-text notes such as delivery instructions or site details. |
+| `mihDesc` | STRING | Free-text document description. |
+| `mihMec` | STRING | Memo-card code of the document, matching `mec.meccode` (holds the shop or branch name for chain-store customers). |
 
 # How it is built
 

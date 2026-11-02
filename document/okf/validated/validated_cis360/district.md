@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "district"
-description: "One row = one cleaned copy of the source table `district`, unique on (id)."
+description: "One row = one district from source table `district`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_cis360&t=district&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_cis360
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of CIS360 `district`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of CIS360 `district`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Lookup of Thai districts (amphoe/khet) used in CIS360 addresses.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,17 +34,17 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `district_code` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `district_name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `district_name_en` | STRING | Meaning not documented in the repo. |
-| `province_id` | INT64 | Meaning not documented in the repo. |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
-| `create_by` | STRING | Meaning not documented in the repo. |
-| `create_by_platform` | STRING | Meaning not documented in the repo. |
-| `update_by_platform` | STRING | Meaning not documented in the repo. |
-| `update_date` | DATETIME | Meaning not documented in the repo. |
-| `update_by` | STRING | Meaning not documented in the repo. |
+| `id` | INT64 | Primary key of the district lookup. |
+| `district_code` | STRING | 4-digit Thai district (amphoe/khet) code. |
+| `district_name` | STRING | District name in Thai. |
+| `district_name_en` | STRING | District name in English (currently holds the Thai name). |
+| `province_id` | INT64 | Identifier of the parent province (`province.id`). |
+| `create_date` | DATETIME | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | DATETIME | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

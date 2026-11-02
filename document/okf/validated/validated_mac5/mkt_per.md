@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mkt_per"
-description: "One row = one marketing personnel, unique on (company_id, percode)."
+description: "One row = one salesperson in the marketing roster (per company), unique on (company_id, percode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mkt_per&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `mkt_per`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: marketing personnel. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `mkt_per`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Salesperson roster used by marketing, with name, zone and assignment period.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,13 +35,13 @@ One row per `company_id`, `percode`. The key is declared twice in the definition
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `percode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `pername` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `perstart` | DATETIME | Meaning not documented in the repo. |
-| `perend` | DATETIME | Meaning not documented in the repo. |
-| `perzone` | STRING | Meaning not documented in the repo. |
-| `persector` | STRING | Meaning not documented in the repo. |
-| `zseq` | INT64 | Meaning not documented in the repo. |
+| `percode` | STRING | Salesperson (employee) code. |
+| `pername` | STRING | Salesperson name. |
+| `perstart` | DATETIME | Start date of the salesperson's marketing assignment. |
+| `perend` | DATETIME | End date of the salesperson's marketing assignment. |
+| `perzone` | STRING | Sales zone of the salesperson (e.g. `M/T`, Northeast in Thai). |
+| `persector` | STRING | Sales sector of the salesperson. |
+| `zseq` | INT64 | Sequence number of the assignment. |
 
 # How it is built
 

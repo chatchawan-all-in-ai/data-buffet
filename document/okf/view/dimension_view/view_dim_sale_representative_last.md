@@ -47,8 +47,8 @@ One row per SaleRepSK of the `_last` dim; the department join is on DepartmentSK
 | `DepCode` | STRING | Department/channel code used to map to channel dimensions ([view_dim_channel](/view/dimension_view/view_dim_channel.md) `DepCode`). |
 | `CostChannelID` | STRING | Cost channel code of the representative (pass-through from the dimension). |
 | `ProvinceID` | STRING | Province code of the representative (pass-through from the dimension). |
-| `ChangeSectionFlag` | STRING | Flag from the dimension marking a representative who changed section (pass-through; exact values not documented in the repo). |
-| `CustomerFlag` | STRING | Flag from the dimension (pass-through; exact meaning not documented in the repo, likely marks customer-owning representatives, inferred from the name). |
+| `ChangeSectionFlag` | STRING | Section-change flag from the dimension: `Yes` on change-of-section rows, NULL otherwise. |
+| `CustomerFlag` | STRING | List of customer codes, joined by the pipe character, that the representative rule also applies to; NULL when the rule is not limited to customers. |
 | `DepartmentName` | STRING | Department name, joined from the department dimension. |
 | `Sort` | STRING | Two-digit running number (`FORMAT('%02d', ROW_NUMBER())`) per RegionSK, ordered by DepartmentID then EmployeeID; added for report sorting. |
 

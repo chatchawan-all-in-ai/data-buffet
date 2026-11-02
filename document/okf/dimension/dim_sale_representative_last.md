@@ -46,10 +46,10 @@ Built in three CTEs. `raw`: rows of dim_sale_representative with DepartmentID no
 | `EmployeeName` | STRING | Given name (MDS or parsed from the MAC5 ledger name; the MERGE refreshes names on matching ledger rows). |
 | `EmployeeSurname` | STRING | Surname (same source as EmployeeName). |
 | `EmployeeNickname` | STRING | Nickname (same source). |
-| `DepCode` | STRING | MAC5 department code(s) of the rule (possibly several joined by '\|'); NULL on normal and ledger rows. |
+| `DepCode` | STRING | MAC5 department code(s) of the rule, several codes joined by the pipe character when the rule covers more than one; NULL on normal and ledger rows. |
 | `CostChannelID` | STRING | Cost channel code of the rule; NULL when unused. |
 | `ProvinceID` | STRING | Province code of the rule; NULL when unused. |
-| `ChangeSectionFlag` | STRING | Section-change flag copied from dim_sale_representative (exact values not documented in the repo). |
+| `ChangeSectionFlag` | STRING | Section-change flag copied from dim_sale_representative: `Yes` on change-of-section rows, NULL otherwise. |
 | `CustomerFlag` | STRING | '\|' separated customer list copied from dim_sale_representative; NULL on ledger rows. |
 | `StartDate` | DATE | Start of the kept validity interval; NULL on ledger rows. |
 | `EndDate` | DATE | End of the kept validity interval; NULL on ledger rows. |

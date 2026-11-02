@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mie"
-description: "One row = one record of source table `mie` (MAC5 for company `ag01`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one document's payment and withholding details, a record of source table `mie` (MAC5 for company `ag01`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=mie&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/mie/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `mie` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.mie](/validated/validated_mac5/mie.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/mie/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `mie` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Per-document payment details: instalment payment terms, cash and cheque amounts received or paid, and withholding tax entries (PND3 / PND53). Used by: [validated_mac5.mie](/validated/validated_mac5/mie.md).
 
 # Grain and key
 
@@ -30,46 +30,46 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `mieday` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miemonth` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mieyear` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mietype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mievnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miecus` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mierecdt3` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mierecdt53` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mierecdrnd` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mierecdexg` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mierecdcsh` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mierecdoth` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mierecplus` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miereccash` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miereccqrd` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miectermcx` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miectermpx` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miectermax` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miectermdx` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mietag` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miebasedt3` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miebasedt53` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miedescdt3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miedescdt53` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miecondt3` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miecondt53` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mierecfc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mierecdt32` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mierecdt532` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miebasedt32` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miebasedt532` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miedescdt32` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miedescdt532` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miecondt32` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miecondt532` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mieperdt3` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mieperdt32` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mieperdt53` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mieperdt532` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mietaxpayno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `mieday` | INT64 | Day part of the document date. |
+| `miemonth` | INT64 | Month part of the document date. |
+| `mieyear` | INT64 | Year part of the document date (Gregorian). |
+| `mietype` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP). |
+| `mievnos` | STRING | Document number, matching `mihvnos` of the same document type. |
+| `miecus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mierecdt3` | FLOAT64 | Withholding tax amount, first PND3 (individual) entry. |
+| `mierecdt53` | FLOAT64 | Withholding tax amount, first PND53 (juristic person) entry. |
+| `mierecdrnd` | FLOAT64 | Rounding difference on the receipt or payment. |
+| `mierecdexg` | FLOAT64 | Exchange-rate difference on the receipt or payment. |
+| `mierecdcsh` | FLOAT64 | Cash discount deducted on the receipt or payment. |
+| `mierecdoth` | FLOAT64 | Other deductions on the receipt or payment, such as bank fees. |
+| `mierecplus` | FLOAT64 | Additional amount added on the receipt or payment. |
+| `miereccash` | FLOAT64 | Amount received or paid in cash or transfer. |
+| `miereccqrd` | FLOAT64 | Amount received or paid by cheque. |
+| `miectermcx` | STRING | Payment-term days per instalment, as a delimited text list (e.g. `60`). |
+| `miectermpx` | STRING | Payment-term percentage per instalment, as a delimited text list (e.g. `100`). |
+| `miectermax` | STRING | Payment-term amount per instalment, as a delimited text list. |
+| `miectermdx` | STRING | Payment-term due date per instalment (`dd/mm/yyyy`), as a delimited text list. |
+| `mietag` | INT64 | Tag marker of the record. |
+| `miebasedt3` | FLOAT64 | Withholding tax base amount, first PND3 (individual) entry. |
+| `miebasedt53` | FLOAT64 | Withholding tax base amount, first PND53 (juristic person) entry. |
+| `miedescdt3` | STRING | Income type description of the first PND3 withholding entry (e.g. service fee, transport fee). |
+| `miedescdt53` | STRING | Income type description of the first PND53 withholding entry (e.g. service fee, transport fee). |
+| `miecondt3` | INT64 | Withholding condition code of the first PND3 entry (1 = withheld at source). |
+| `miecondt53` | INT64 | Withholding condition code of the first PND53 entry (1 = withheld at source). |
+| `mierecfc` | STRING | Amount in foreign currency on the receipt or payment. |
+| `mierecdt32` | FLOAT64 | Withholding tax amount, second PND3 (individual) entry. |
+| `mierecdt532` | FLOAT64 | Withholding tax amount, second PND53 (juristic person) entry. |
+| `miebasedt32` | FLOAT64 | Withholding tax base amount, second PND3 (individual) entry. |
+| `miebasedt532` | FLOAT64 | Withholding tax base amount, second PND53 (juristic person) entry. |
+| `miedescdt32` | STRING | Income type description of the second PND3 withholding entry. |
+| `miedescdt532` | STRING | Income type description of the second PND53 withholding entry. |
+| `miecondt32` | INT64 | Withholding condition code of the second PND3 entry (1 = withheld at source). |
+| `miecondt532` | INT64 | Withholding condition code of the second PND53 entry (1 = withheld at source). |
+| `mieperdt3` | FLOAT64 | Withholding tax rate in percent, first PND3 entry. |
+| `mieperdt32` | FLOAT64 | Withholding tax rate in percent, second PND3 entry. |
+| `mieperdt53` | FLOAT64 | Withholding tax rate in percent, first PND53 entry. |
+| `mieperdt532` | FLOAT64 | Withholding tax rate in percent, second PND53 entry. |
+| `mietaxpayno` | STRING | Tax identification number of the withholding taxpayer. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

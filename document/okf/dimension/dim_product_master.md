@@ -38,26 +38,26 @@ One row per (`CompanySK`, `ProductCode`, `Barcode`) (a missing barcode is matche
 | `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md). |
 | `companyID` | STRING | MAC5 company code of the stock row. |
 | `ProductCode` | STRING | MAC5 stock code (`stk.stkcode`); matches `milStk` on lines, but can occur in multiple barcode versions within a company. The dummy codes (OTHERS-style and WAITING999) exist for ag01 only. |
-| `ProductCode1` | STRING | Secondary stock code from MAC5 (`stk.stkcode2`). |
+| `ProductCode1` | STRING | Secondary product code or short model name. |
 | `ProductMac5Description` | STRING | Thai stock description from MAC5 (`stk.stkdesct1`); the fixed Thai text 'special code, product without MDT code' for the dummy codes. |
-| `ProductGroupMAC5` | STRING | MAC5 stock group code (`stg.stgcode`, joined from `stk.STKgroup`). |
-| `ProductGroupMac5Description` | STRING | Thai stock-group name (`stg.stgdesct`). |
-| `ProductGroupMAC5Type` | STRING | Stock-group English description/type (`stg.stgdesce`). |
-| `ProductGroupACC` | STRING | Accounting group code (`stg.gacccode`). |
-| `ProductGroupACCName` | STRING | Accounting group name (`stg.gaccname`). |
-| `ProductName` | STRING | Product name from MASTERSKU `product_detail.pd_product_name`, joined by barcode; NULL if the barcode has no MASTERSKU row. |
-| `ProductDescription` | STRING | Product description from MASTERSKU `product.prd_description`. |
-| `ProductDimension1` | STRING | Product dimension attribute 1 from MASTERSKU (`prd_dimension1`); unit/meaning not documented in the repo. |
-| `ProductDimension2` | STRING | Product dimension attribute 2 from MASTERSKU (`prd_dimension2`). |
-| `ProductDimension3` | STRING | Product dimension attribute 3 from MASTERSKU (`prd_dimension3`). |
-| `ProductDimension4` | STRING | Product dimension attribute 4 from MASTERSKU (`prd_dimension4`). |
-| `ProductGarantee` | STRING | Guarantee/warranty text from MASTERSKU (`pd_garantee`; spelled 'garantee' in the source). |
-| `ProductGaranteeDetail` | STRING | Guarantee detail from MASTERSKU (`pd_garantee_detail`). |
+| `ProductGroupMAC5` | STRING | Stock group code. |
+| `ProductGroupMac5Description` | STRING | Thai name of the stock group. |
+| `ProductGroupMAC5Type` | STRING | English name or type label of the stock group. |
+| `ProductGroupACC` | STRING | Accounting product group code of the stock group (from `stgacc`). |
+| `ProductGroupACCName` | STRING | Accounting product group name of the stock group (from `stgacc`). |
+| `ProductName` | STRING | Full product name. |
+| `ProductDescription` | STRING | Product name/description. |
+| `ProductDimension1` | STRING | Value of variant dimension 1 of the product (label set by its product group `pg_dimension1`). |
+| `ProductDimension2` | STRING | Value of variant dimension 2 of the product (label set by its product group `pg_dimension2`). |
+| `ProductDimension3` | STRING | Value of variant dimension 3 of the product (label set by its product group `pg_dimension3`). |
+| `ProductDimension4` | STRING | Value of variant dimension 4 of the product (label set by its product group `pg_dimension4`). |
+| `ProductGarantee` | STRING | Warranty period of the product (e.g. `1Y`, `20 Y`). |
+| `ProductGaranteeDetail` | STRING | Warranty terms and conditions text. |
 | `ThaiIndustrialStandardFlag` | STRING | 'Yes' when MASTERSKU `pd_certificate` is non-empty and not a placeholder ('โปรดระบุ', '-', 'None', 'No'), else 'No' (TIS certification flag). |
-| `ThaiIndustrialSatandardDetail` | STRING | Certificate text from MASTERSKU (`pd_certificate`); the column name has the typo 'Satandard'. |
-| `BrandID` | STRING | Brand id from MASTERSKU `product.prd_brand_id`. |
-| `VendorID` | STRING | Vendor id from MASTERSKU `product.prd_vendor_id`. |
-| `WarehouseID` | STRING | Default warehouse/store code from MAC5 `stk.stksto`. |
+| `ThaiIndustrialSatandardDetail` | STRING | Thai Industrial Standard (TIS) certificate of the product (e.g. `TIS.982-2556`). |
+| `BrandID` | STRING | Brand of the product (FK to `brand.bra_id`). |
+| `VendorID` | STRING | Vendor (supplier) of the product (FK to `vendor.vd_id`). |
+| `WarehouseID` | STRING | Default warehouse code of the item (joins `sto.stocode`). |
 | `Barcode` | STRING | Barcode `stk.STKcode885`; join key to MASTERSKU and part of the MERGE key. Not updated after insert. |
 
 # How it is built

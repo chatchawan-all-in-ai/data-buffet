@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "cst"
-description: "One row = one record of source table `cst` (MAC5 for company `ag01`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one cost line of one stock document line, a record of source table `cst` (MAC5 for company `ag01`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=cst&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/cst/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `cst` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.cst](/validated/validated_mac5/cst.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/cst/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `cst` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Cost-of-goods lines per document line (invoices, sales orders), with quantity, warehouse, salesperson and COGS. Used by: [validated_mac5.cst](/validated/validated_mac5/cst.md).
 
 # Grain and key
 
@@ -30,31 +30,31 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `cstdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `csttype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstvnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstcus` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cststk` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstjob` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstdep` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstper` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstdoc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstmec` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cststo` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstquan` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstquanp2` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstcogsp` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstexpdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstlinkvc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstlinkvcid` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstio` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstiozw` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstlist` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstcosta` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstcostf` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cstcostl` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rowguid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
+| `cstdate` | STRING | Document date. |
+| `csttype` | STRING | Document type code (IS = invoice, PS = sales order). |
+| `cstvnos` | STRING | Document number. |
+| `cstcus` | STRING | Customer code (joins `deb.debcode`). |
+| `cststk` | STRING | Stock code of the line (joins `stk.stkcode`). |
+| `cstjob` | STRING | Job code of the line. |
+| `cstdep` | STRING | Department code of the line. |
+| `cstper` | STRING | Salesperson code of the line (joins `per.percode`). |
+| `cstdoc` | STRING | Document reference code of the line. |
+| `cstmec` | STRING | Branch (mec) code of the document. |
+| `cststo` | STRING | Warehouse code of the line (joins `sto.stocode`). |
+| `cstquan` | FLOAT64 | Quantity in the base unit. |
+| `cstquanp2` | FLOAT64 | Quantity in the second unit. |
+| `cstcogsp` | FLOAT64 | Cost of goods sold of the line in baht. |
+| `cstexpdate` | STRING | Expiry date of the item on the line. |
+| `cstlinkvc` | STRING | Document type code of the linked source document (e.g. `PS` = sales order). |
+| `cstlinkvcid` | INT64 | Line ID of the linked source document line. |
+| `cstio` | INT64 | Stock in/out direction code (0, 2). |
+| `cstiozw` | INT64 | Stock movement kind code (0, 5). |
+| `cstlist` | INT64 | Line number within the document. |
+| `cstcosta` | FLOAT64 | Average-cost flag of the line (-1 = yes, 0 = no). |
+| `cstcostf` | FLOAT64 | FIFO-cost flag of the line (-1 = yes, 0 = no). |
+| `cstcostl` | FLOAT64 | LIFO-cost flag of the line (-1 = yes, 0 = no). |
+| `rowguid` | STRING | Row GUID that uniquely identifies the record in the source database. |
+| `ASATDATE` | STRING | Extract (snapshot) date of the source file, taken from the `ASATDATE` partition. |
 
 # How it is built
 

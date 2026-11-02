@@ -33,7 +33,7 @@ One row per (`sale_date`, `store_code`, `branch_code`, `product_code`, `doc_type
 | Column | Type | Description |
 |---|---|---|
 | `sale_date` | DATE | Date of the sale (partition column). For BT, spread evenly over the covered range when the feed gives a date range. |
-| `store_code` | STRING | Retail-chain (store) code as sent by the chain (e.g. HP/MH/BT/GB/TW/DH, inferred from curated docs); joins dim_region.RegionID for the region sets. |
+| `store_code` | STRING | Retail-chain (store) code: HP, MH, BT, GB, TW or DH, set per chain feed in the curated_saleout_mdt build; joins dim_region.RegionID for the region sets. |
 | `branch_sk` | INT64 | Surrogate key `BranchMdtSK` of [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md) (match on store code + branch code); -1 when the branch is not in the dimension. |
 | `zone_sk` | INT64 | Surrogate key `ZoneMdtSK` of the branch's zone, taken from dim_sales_branch_mdt; -1 when unmatched. |
 | `product_mdt_sk` | INT64 | Surrogate key `ProductMdtSK` of [dim_product_mdt](/dimension/dim_product_mdt.md) (match on product code with leading zeros removed); -1 when the product is unknown. |
@@ -44,7 +44,7 @@ One row per (`sale_date`, `store_code`, `branch_code`, `product_code`, `doc_type
 | `region_manager_sk` | INT64 | `RegionManagerSK` of [dim_region_manager](/dimension/dim_region_manager.md) valid on the row date (not current); -1 if none. |
 | `director_sk` | INT64 | `DirectorSK` of [dim_director](/dimension/dim_director.md) valid on the row date, reached via dim_region.DirectorID; -1 if none. |
 | `doc_type` | STRING | 'SALE' or 'RETURN' (from the chain, or derived from the sign/flag). |
-| `doc_type_source` | STRING | 'SOURCE' when the chain sent the type, 'DERIVED' when we inferred it (from curated_saleout_mdt). |
+| `doc_type_source` | STRING | 'SOURCE' when the chain sent the document type, 'DERIVED' when the build derived it (from curated_saleout_mdt). |
 | `sale_qty` | INT64 | Quantity sold (negative or flagged return when doc_type RETURN), from curated_saleout_mdt. |
 | `sale_amount` | FLOAT64 | Sales amount, from curated_saleout_mdt (currency THB; sign negative on returns). |
 | `days_covered` | INT64 | Number of days the source row covered (1 = exact day; >1 when the chain sent a range that was spread, e.g. BT). |

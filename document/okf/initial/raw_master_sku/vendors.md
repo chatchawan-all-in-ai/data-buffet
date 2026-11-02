@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "vendors"
-description: "One row = one record of source table `vendors` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one vendor, a record of source table `vendors` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_master_sku&t=vendors&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_master_sku
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/master_sku/vendors/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `vendors` table from MASTER_SKU; nothing is cleaned or deduplicated here. Used by: [validated_master_sku.vendors](/validated/validated_master_sku/vendors.md).
+External table over AVRO files in `gs://file-raw-data/master_sku/vendors/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `vendors` table from MASTER_SKU; nothing is cleaned or deduplicated here. Table meaning: Vendors (suppliers registered via the Allkons platform) of the master_sku 3.0 product master, with registration, address and KYC status. Used by: [validated_master_sku.vendors](/validated/validated_master_sku/vendors.md).
 
 # Grain and key
 
@@ -30,30 +30,30 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `allkons_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `auth_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `legal_entity_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `phone_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `country_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `province_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `district_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sub_district_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `postal_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `email` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `address` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `company_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `business_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `document_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_dbd` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `account_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `kyc_status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | STRING | Unique identifier (UUID) of the vendor. |
+| `allkons_id` | STRING | Identifier of the vendor in the Allkons platform (32-character encoded ID). |
+| `auth_id` | STRING | Identifier of the vendor login account. |
+| `name` | STRING | Vendor (company) name. |
+| `legal_entity_no` | STRING | Juristic person (company tax) registration number, 13 digits. |
+| `phone_no` | STRING | Vendor phone number. |
+| `country_name` | STRING | Country of the vendor address. |
+| `province_name` | STRING | Province of the vendor address. |
+| `district_name` | STRING | District of the vendor address. |
+| `sub_district_name` | STRING | Sub-district of the vendor address. |
+| `postal_code` | STRING | Postal code of the vendor address. |
+| `email` | STRING | Vendor email address. |
+| `address` | STRING | Street address of the vendor. |
+| `company_type` | STRING | Legal entity type of the vendor (e.g. limited company, limited partnership). |
+| `business_type` | STRING | Business type code of the vendor. |
+| `document_id` | STRING | Identifier of the vendor registration document. |
+| `is_dbd` | BOOL | Flag marking the vendor as verified with the Department of Business Development (DBD) registry. |
+| `account_type` | STRING | Account type of the vendor (`Organization`). |
+| `kyc_status` | STRING | KYC approval status of the vendor (`Approved`, `NotApproved`, `WaitApprove`, `NotSendApprove`, `RequestDocument`). |
+| `status` | STRING | Record status (`Active`, `Inactive`, `Deleted`). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

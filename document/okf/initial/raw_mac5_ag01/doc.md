@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "doc"
-description: "One row = one record of source table `doc` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one document type, a record of source table `doc` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=doc&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/doc/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `doc` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.doc](/validated/validated_mac5/doc.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/doc/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `doc` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Document type master of the MAC5 ERP: code, Thai/English name, group and default GL account. Used by: [validated_mac5.doc](/validated/validated_mac5/doc.md).
 
 # Grain and key
 
@@ -30,18 +30,18 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `DOCcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `DOCgroup` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `DOCdescT` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `DOCdescE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `DOClock` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `DOCacc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `DOCdebit` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `DOCrefWE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `DOChide` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `DOCeditDT` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `DOCeditMF` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rowguid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `DOCcode` | STRING | Document type code (e.g. `PO`, `POL`, `FR`). |
+| `DOCgroup` | STRING | Document group code (e.g. `A`, `P`, `S`, `AR`, `AK`). |
+| `DOCdescT` | STRING | Thai name of the document type. |
+| `DOCdescE` | STRING | English name of the document type. |
+| `DOClock` | INT64 | Lock flag (-1 = locked against editing, 0 = unlocked). |
+| `DOCacc` | STRING | Default GL account code of the document type (e.g. `110100`). |
+| `DOCdebit` | INT64 | Debit-side flag of the document type (-1 = debit, 0 = not). |
+| `DOCrefWE` | STRING | External reference code of the record. |
+| `DOChide` | INT64 | Hidden flag (-1 = hidden from pick lists, 0 = shown). |
+| `DOCeditDT` | STRING | Date and time the record was last edited. |
+| `DOCeditMF` | STRING | User code of the person who last edited the record. |
+| `rowguid` | STRING | Row GUID that uniquely identifies the record in the source database. |
 
 # How it is built
 

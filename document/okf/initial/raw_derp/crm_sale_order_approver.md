@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_approver"
-description: "One row = one record of source table `crm_sale_order_approver` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one approver assigned to a sale order revision, a record of source table `crm_sale_order_approver` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_sale_order_approver&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_approver/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_approver` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_sale_order_approver](/validated/validated_derp/crm_sale_order_approver.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_approver/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_approver` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Approvers assigned to each DERP sale order revision, with role, level and approval scope. Used by: [validated_derp.crm_sale_order_approver](/validated/validated_derp/crm_sale_order_approver.md).
 
 # Grain and key
 
@@ -30,22 +30,22 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_approver_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_order_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rev_no` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `employee_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `user_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `employee_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `approver_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `alternate_level` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `approver_role` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_primary` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `approval_scope_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `approval_scope_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `approval_scope_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `sale_order_approver_id` | STRING | Unique identifier of the approver assignment. |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `rev_no` | INT64 | Sale order revision number this record belongs to. |
+| `employee_id` | STRING | Identifier of the approver's employee record. |
+| `user_id` | STRING | Identifier of the approver's user account. |
+| `employee_no` | STRING | Employee code of the approver. |
+| `approver_name` | STRING | Name of the approver. |
+| `alternate_level` | INT64 | Approver level in the approval chain, starting at 1. |
+| `approver_role` | STRING | Approver role (`MANAGER` or `ALTERNATE`). |
+| `is_primary` | BOOL | TRUE for the primary approver. |
+| `approval_scope_id` | STRING | Identifier of the approval scope (sales team or territory). |
+| `approval_scope_code` | STRING | Code of the approval scope (sales team or territory). |
+| `approval_scope_name` | STRING | Name of the approval scope (sales team or territory). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

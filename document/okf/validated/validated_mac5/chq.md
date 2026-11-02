@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "chq"
-description: "One row = one cheque / payment instrument, unique on (company_id, chqno, chqbank, chqdatec, chqtag)."
+description: "One row = one cheque (per company), unique on (company_id, chqno, chqbank, chqdatec, chqtag)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=chq&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `chq` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: cheque / payment instrument. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `chq` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Cheques received from customers and issued to suppliers, with bank, dates, amount, status and memo-derived payment splits.
 Used by: [fact_table.fact_chq](/fact/fact_chq.md), [fact_view.view_aging_ri](/view/fact_view/view_aging_ri.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
 
 # Grain and key
@@ -35,40 +35,40 @@ One row per `company_id`, `chqno`, `chqbank`, `chqdatec`, `chqtag`. The key is d
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `chqno` | STRING | Meaning not documented in the repo. |
-| `chqbank` | STRING | Meaning not documented in the repo. |
-| `chqacode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `chqcus` | STRING | Likely customer code (inferred from the column name only; not documented in the repo). |
-| `chqdatec` | DATETIME | Meaning not documented in the repo. |
-| `chqdater` | DATETIME | Meaning not documented in the repo. |
-| `chqdatep` | DATETIME | Meaning not documented in the repo. |
-| `chqtype` | INT64 | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `chqstatus` | INT64 | Likely status code (inferred from the column name only; not documented in the repo). |
-| `chqtotal` | FLOAT64 | Likely total amount (inferred from the column name only; not documented in the repo). |
-| `chqgl` | INT64 | Meaning not documented in the repo. |
-| `chqmi` | INT64 | Meaning not documented in the repo. |
-| `chqown` | INT64 | Meaning not documented in the repo. |
-| `chqtag` | INT64 | Meaning not documented in the repo. |
-| `chqstatusn` | INT64 | Meaning not documented in the repo. |
-| `chqlock` | INT64 | Meaning not documented in the repo. |
-| `chqpassgl` | INT64 | Meaning not documented in the repo. |
-| `chqjob` | STRING | Meaning not documented in the repo. |
-| `chqdep` | STRING | Meaning not documented in the repo. |
-| `chqper` | STRING | Meaning not documented in the repo. |
-| `chqzon` | STRING | Meaning not documented in the repo. |
-| `chqrcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `chqeditlk` | DATETIME | Meaning not documented in the repo. |
-| `chqkeyuser` | STRING | Meaning not documented in the repo. |
-| `chqkeydate` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `chqdeduct` | FLOAT64 | Meaning not documented in the repo. |
-| `chqecode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `chqbranch` | STRING | Meaning not documented in the repo. |
-| `chqmec` | STRING | Meaning not documented in the repo. |
-| `chqdatev` | DATETIME | Meaning not documented in the repo. |
-| `chqmemo_raw` | STRING | Meaning not documented in the repo. |
-| `chqmemo` | STRING | Meaning not documented in the repo. |
-| `extract_text` | STRING | Meaning not documented in the repo. |
-| `extract_value` | ARRAY<STRUCT<extract_date DATE, extract_amount FLOAT64>> | Meaning not documented in the repo. |
+| `chqno` | STRING | Cheque number. |
+| `chqbank` | STRING | Bank code of the cheque (e.g. `BBL`, `KBANK`, `SCB`). |
+| `chqacode` | STRING | General-ledger account code of the cheque; sampled MAC5 records show 112001 for received cheques and 211101, 212000, 212400, and 214201 for issued cheques. |
+| `chqcus` | STRING | Customer code (supplier code for issued cheques), matching `deb.debcode`. |
+| `chqdatec` | DATETIME | Date written on the cheque. |
+| `chqdater` | DATETIME | Date the cheque was received or issued. |
+| `chqdatep` | DATETIME | Date the cheque was passed (cleared) at the bank. |
+| `chqtype` | INT64 | Cheque direction (1 = received from customer, 2 = issued to supplier). |
+| `chqstatus` | INT64 | Cheque status (1 = cleared, 2 = bounced, 3 = due). |
+| `chqtotal` | FLOAT64 | Cheque amount. |
+| `chqgl` | INT64 | Flag: cheque posted to the general ledger (1 = posted). |
+| `chqmi` | INT64 | Cheque handling mode code (0, 1, 2). |
+| `chqown` | INT64 | Cheque ownership code (1 = own cheque, 2 = third-party cheque). |
+| `chqtag` | INT64 | Tag marker of the cheque. |
+| `chqstatusn` | INT64 | Cheque posting status (1 = POST, 2 = PASS, 3 = cleared, 4 = not cleared, 5 = adjusted, 6 = voucher cancelled). |
+| `chqlock` | INT64 | Flag: cheque locked against editing. |
+| `chqpassgl` | INT64 | Flag: cheque clearing posted to the general ledger (-1 = posted). |
+| `chqjob` | STRING | Job code of the cheque (sales job or project category). |
+| `chqdep` | STRING | Department code of the cheque, used as the sales channel code. |
+| `chqper` | STRING | Salesperson (employee) code of the cheque. |
+| `chqzon` | STRING | Zone code of the cheque. |
+| `chqrcode` | STRING | General-ledger account code of the bank account the cheque is deposited to or paid from. |
+| `chqeditlk` | DATETIME | Timestamp of the current edit lock on the cheque. |
+| `chqkeyuser` | STRING | User code of the person who keyed the cheque. |
+| `chqkeydate` | DATETIME | Date and time the cheque was keyed. |
+| `chqdeduct` | FLOAT64 | Amount deducted from the cheque, such as bank fees. |
+| `chqecode` | STRING | External code of the cheque. |
+| `chqbranch` | STRING | Bank branch of the cheque. |
+| `chqmec` | STRING | Memo-card code of the cheque, matching `mec.meccode`. |
+| `chqdatev` | DATETIME | Voucher date of the cheque. |
+| `chqmemo_raw` | STRING | Full cheque memo as entered, including transfer and payment-split notes. |
+| `chqmemo` | STRING | Cheque memo prefix before the transfer or payment-split notes. |
+| `extract_text` | STRING | Free text left from the memo's payment-split notes after dates and amounts are removed. |
+| `extract_value` | ARRAY<STRUCT<extract_date DATE, extract_amount FLOAT64>> | Payment splits parsed from the memo, as an array of (`extract_date`, `extract_amount`). |
 
 # How it is built
 

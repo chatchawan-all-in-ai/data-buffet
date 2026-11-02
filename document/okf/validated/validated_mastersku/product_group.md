@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "product_group"
-description: "One row = one cleaned copy of the source table `product_group`, unique on (pg_id)."
+description: "One row = one product group from source table `product_group`, unique on (pg_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mastersku&t=product_group&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mastersku
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MASTERSKU `product_group`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MASTERSKU `product_group`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Product groups (families of variant SKUs) of MASTERSKU with their variant dimension labels, brand and vendor.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,33 +34,33 @@ One row per `pg_id`. The key is declared twice in the definition (`uniqueKey` an
 
 | Column | Type | Description |
 |---|---|---|
-| `pg_id` | STRING | Meaning not documented in the repo. |
-| `pg_description` | STRING | Meaning not documented in the repo. |
-| `pg_dimension1` | STRING | Meaning not documented in the repo. |
-| `pg_dimension2` | STRING | Meaning not documented in the repo. |
-| `pg_dimension3` | STRING | Meaning not documented in the repo. |
-| `pg_dimension4` | STRING | Meaning not documented in the repo. |
-| `pg_dimension_d365_1` | STRING | Meaning not documented in the repo. |
-| `pg_dimension_d365_2` | STRING | Meaning not documented in the repo. |
-| `pg_dimension_d365_3` | STRING | Meaning not documented in the repo. |
-| `pg_dimension_d365_4` | STRING | Meaning not documented in the repo. |
-| `pg_vendor_id` | STRING | Meaning not documented in the repo. |
-| `pg_is_system` | BOOL | Meaning not documented in the repo. |
-| `pg_is_active` | BOOL | Meaning not documented in the repo. |
-| `pg_is_use` | BOOL | Meaning not documented in the repo. |
-| `pg_created_date` | DATETIME | Meaning not documented in the repo. |
-| `pg_created_by` | STRING | Meaning not documented in the repo. |
-| `pg_updated_date` | DATETIME | Meaning not documented in the repo. |
-| `pg_updated_by` | STRING | Meaning not documented in the repo. |
-| `pg_brand_id` | STRING | Meaning not documented in the repo. |
-| `pg_code` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `pg_name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `pg_sku` | STRING | Meaning not documented in the repo. |
-| `pg_barcode` | STRING | Meaning not documented in the repo. |
-| `pg_er_source` | STRING | Meaning not documented in the repo. |
-| `pg_tag` | STRING | Meaning not documented in the repo. |
-| `pg_file_name` | STRING | Meaning not documented in the repo. |
-| `pg_cg_id` | STRING | Meaning not documented in the repo. |
+| `pg_id` | STRING | Unique identifier (UUID) of the product group. |
+| `pg_description` | STRING | Description of the product group. |
+| `pg_dimension1` | STRING | Label of variant dimension 1 used by products in the group (e.g. Size, Color, Model). |
+| `pg_dimension2` | STRING | Label of variant dimension 2 used by products in the group (e.g. Size, Color, Model). |
+| `pg_dimension3` | STRING | Label of variant dimension 3 used by products in the group (e.g. Size, Color, Model). |
+| `pg_dimension4` | STRING | Label of variant dimension 4 used by products in the group (e.g. Size, Color, Model). |
+| `pg_dimension_d365_1` | STRING | Dynamics 365 dimension mapped to variant dimension 1. |
+| `pg_dimension_d365_2` | STRING | Dynamics 365 dimension mapped to variant dimension 2. |
+| `pg_dimension_d365_3` | STRING | Dynamics 365 dimension mapped to variant dimension 3. |
+| `pg_dimension_d365_4` | STRING | Dynamics 365 dimension mapped to variant dimension 4. |
+| `pg_vendor_id` | STRING | Vendor that owns the product group (FK to `vendor.vd_id`). |
+| `pg_is_system` | BOOL | System flag of the product group. |
+| `pg_is_active` | BOOL | Active flag of the record. |
+| `pg_is_use` | BOOL | In-use flag of the record (FALSE = retired from use). |
+| `pg_created_date` | DATETIME | Timestamp when the record was created. |
+| `pg_created_by` | STRING | Identifier of the user who created the record. |
+| `pg_updated_date` | DATETIME | Timestamp when the record was last updated. |
+| `pg_updated_by` | STRING | Identifier of the user who last updated the record. |
+| `pg_brand_id` | STRING | Brand of the product group (FK to `brand.bra_id`). |
+| `pg_code` | STRING | Product group code. |
+| `pg_name` | STRING | Product group name. |
+| `pg_sku` | STRING | SKU code of the product group. |
+| `pg_barcode` | STRING | Barcode of the product group. |
+| `pg_er_source` | STRING | Comma-separated attribute labels from the source group definition (e.g. grade, size, color). |
+| `pg_tag` | STRING | Search tags of the group as JSON (`{"group_tag":[...]}`). |
+| `pg_file_name` | STRING | File name of the product group image. |
+| `pg_cg_id` | STRING | Cost group of the product group. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

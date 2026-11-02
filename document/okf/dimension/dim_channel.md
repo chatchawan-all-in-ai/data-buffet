@@ -34,9 +34,9 @@ One row per (company, DepCode) among active mds rows. Key: `ChannelSK` (surrogat
 | `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), found by a LEFT JOIN on `companyID`; NULL when the mds company code has no match in dim_company. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `DepCode` | STRING | Department/cost-centre code from the ledger (`DepCode`); the natural key with companyID and the join key from sales documents. |
-| `DepGroup` | STRING | Pass-through of mds `DepGroup`, cleaned with `cleanString` (empty string becomes NULL). Department group code. |
-| `DepDesct` | STRING | Pass-through of mds `DepDesct`, cleaned with `cleanString` (empty string becomes NULL). Thai department description (likely, `t` suffix). |
-| `DepDesce` | STRING | Pass-through of mds `DepDesce`, cleaned with `cleanString` (empty string becomes NULL). English department description (likely, `e` suffix). |
+| `DepGroup` | STRING | Pass-through of mds `DepGroup`, cleaned with `cleanString` (empty string becomes NULL). Department group code, e.g. `M35`, `MK4`, `HY`, `UB`. |
+| `DepDesct` | STRING | Pass-through of mds `DepDesct`, cleaned with `cleanString` (empty string becomes NULL). Department description in Thai. |
+| `DepDesce` | STRING | Pass-through of mds `DepDesce`, cleaned with `cleanString` (empty string becomes NULL). Department description in English (often NULL). |
 | `ChannelGroup` | STRING | Pass-through of mds `ChannelGroup`, cleaned with `cleanString` (empty string becomes NULL). Top level of the sales-channel hierarchy. |
 | `ChannelSubGroupName1` | STRING | Pass-through of mds `ChannelSubGroupName1`, cleaned with `cleanString` (empty string becomes NULL). Sales-channel hierarchy level 1 below ChannelGroup. |
 | `ChannelSubGroupName2` | STRING | Pass-through of mds `ChannelSubGroupName2`, cleaned with `cleanString` (empty string becomes NULL). Sales-channel hierarchy level 2. |
@@ -51,11 +51,11 @@ One row per (company, DepCode) among active mds rows. Key: `ChannelSK` (surrogat
 | `ChannelSubGroupFinance3` | STRING | Pass-through of mds `ChannelSubGroupFinance3`, cleaned with `cleanString` (empty string becomes NULL). Finance-channel hierarchy level 3. |
 | `ChannelIDFinance` | STRING | Pass-through of mds `ChannelIDFinance`, cleaned with `cleanString` (empty string becomes NULL). Finance channel code; joins to [dim_channel_finance](/dimension/dim_channel_finance.md).ChannelIDFinance. |
 | `ChannelNameFinance` | STRING | Pass-through of mds `ChannelNameFinance`, cleaned with `cleanString` (empty string becomes NULL). Finance channel name. |
-| `ChannelDSite01` | STRING | Pass-through of mds `ChannelDSite01`, cleaned with `cleanString` (empty string becomes NULL). Dimension-style channel level 1 (Site); the D-prefixed 01-04 columns look like a site/department/division/sub-division hierarchy (inferred from the names). |
+| `ChannelDSite01` | STRING | Pass-through of mds `ChannelDSite01`, cleaned with `cleanString` (empty string becomes NULL). Level 1 (site) of the D-channel hierarchy site > department > division > sub-division, e.g. `HO1`, `HY1`, `KTB`, `Other`. |
 | `ChannelDDepartment02` | STRING | Pass-through of mds `ChannelDDepartment02`, cleaned with `cleanString` (empty string becomes NULL). Dimension-style channel level 2 (Department). |
 | `ChannelDDivision03` | STRING | Pass-through of mds `ChannelDDivision03`, cleaned with `cleanString` (empty string becomes NULL). Dimension-style channel level 3 (Division). |
 | `ChannelDSubDivision04` | STRING | Pass-through of mds `ChannelDSubDivision04`, cleaned with `cleanString` (empty string becomes NULL). Dimension-style channel level 4 (Sub-division). |
-| `DummyChannel` | STRING | Pass-through of mds `DummyChannel`, cleaned with `cleanString` (empty string becomes NULL). Meaning of the flag/value is not documented in the repo. |
+| `DummyChannel` | STRING | Pass-through of mds `DummyChannel`, cleaned with `cleanString` (empty string becomes NULL). Dummy employee id (e.g. `9999991`, `9999994`) that fact_transcation uses in place of the line salesperson when matching sales representatives; `not calculated` when the department has none. |
 | `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. |
 
 # How it is built

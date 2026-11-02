@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_customer_stores"
-description: "One row = one cleaned copy of the source table `crm_customer_stores`, unique on (customer_stores_id)."
+description: "One row = one customer store from source table `crm_customer_stores`, unique on (customer_stores_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_customer_stores&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_customer_stores`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_customer_stores`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Stores (branches) of CRM customers, with the store code and name.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,26 +34,26 @@ One row per `customer_stores_id`. The key is declared twice in the definition (`
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_stores_id` | STRING | Meaning not documented in the repo. |
-| `customer_master_id` | STRING | Meaning not documented in the repo. |
-| `store_id` | STRING | Meaning not documented in the repo. |
-| `store_code` | STRING | Meaning not documented in the repo. |
-| `store_name` | STRING | Meaning not documented in the repo. |
-| `employee_id` | STRING | Meaning not documented in the repo. |
-| `employee_code` | STRING | Meaning not documented in the repo. |
-| `employee_name` | STRING | Meaning not documented in the repo. |
-| `user_id` | STRING | Meaning not documented in the repo. |
-| `user_code` | STRING | Meaning not documented in the repo. |
-| `user_name` | STRING | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `is_sync` | BOOL | Meaning not documented in the repo. |
-| `customer_code` | STRING | Meaning not documented in the repo. |
+| `customer_stores_id` | STRING | UUID of the customer store record. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `store_id` | STRING | UUID of the store. |
+| `store_code` | STRING | Store (branch) code of the customer. |
+| `store_name` | STRING | Store (branch) name. |
+| `employee_id` | STRING | UUID of the employee responsible for the store. |
+| `employee_code` | STRING | Employee number of the employee responsible for the store. |
+| `employee_name` | STRING | Name of the employee responsible for the store. |
+| `user_id` | STRING | UUID of the system user responsible for the store. |
+| `user_code` | STRING | Code of the system user responsible for the store. |
+| `user_name` | STRING | Name of the system user responsible for the store. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

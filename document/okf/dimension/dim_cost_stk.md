@@ -33,7 +33,7 @@ One row per (company, MilStk, GaccID, ChannelCostID, StartDate, EndDate) among a
 | `CostStkSK` | INT64 | `CostStkSK` is `ROW_NUMBER() OVER(ORDER BY companyID, MilStk, GaccID, ChannelCostID, StartDate, EndDate)` over the active mds rows; it regenerates on every daily run. |
 | `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), found by a LEFT JOIN on `companyID`; NULL when the mds company code has no match in dim_company. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
-| `MilStk` | STRING | Pass-through of mds `MilStk`, cleaned with `cleanString` (empty string becomes NULL). Product code as on the sales line (`milstk`); product-level key. |
+| `MilStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
 | `GaccID` | STRING | Pass-through of mds `GaccID`, cleaned with `cleanString` (empty string becomes NULL). Product group account code (lower-case `acc` here versus `GAccID` in dim_cost_group). |
 | `GAccName` | STRING | Pass-through of mds `GAccName`, cleaned with `cleanString` (empty string becomes NULL). Product group account name. |
 | `ChannelCostID` | STRING | Pass-through of mds `ChannelCostID`, cleaned with `cleanString` (empty string becomes NULL). Cost channel code, see [dim_channel_cost](/dimension/dim_channel_cost.md). |

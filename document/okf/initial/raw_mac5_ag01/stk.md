@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "stk"
-description: "One row = one record of source table `stk` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one product (stock item), a record of source table `stk` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=stk&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/stk/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `stk` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.stk](/validated/validated_mac5/stk.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/stk/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `stk` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Product master of the MAC5 ERP: codes, barcodes, descriptions, units, VAT, GL accounts, default warehouse and sales grouping. Used by: [validated_mac5.stk](/validated/validated_mac5/stk.md).
 
 # Grain and key
 
@@ -30,87 +30,87 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `STKcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKgroup` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKcode2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKdescT1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKdescT2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKdescT3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKdescE1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKdescE2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKdescE3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKmax` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKmin` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKunit1` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKunit2` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKconv1` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKconv2` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKsnsv` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKuname0` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKuname1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKuname2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKuname3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKuname4` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKuname5` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqU1` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqU2` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqU3` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqU4` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqU5` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqE1` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqE2` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqE3` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqE4` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqE5` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqN1` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqN2` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqN3` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqN4` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKqN5` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKvat` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKexpire` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKhide` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKuse2` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKu2name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKfx` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKacP` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKacS` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKacC` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKlock` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKmemo` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKacC1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKacC2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKeditLK` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKrefWE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKbarC1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKbarC2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKbarC3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKsortNT` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKsortNE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKeditDT` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKstatus` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKsto` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKeditMF` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rowguid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKcode885` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKtype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKSaleGrp` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKSaleType` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKSaleSup` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKSaleGrpS1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKSaleGrpS2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `StkSub1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `StkSub2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `StkSub3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `StkBrand` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `StkExpand` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `StkLgGrp` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKgroup_DGE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKgroup1_DGE_Report` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKgroup2_DGE_Report` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STKgroup3_DGE_Report` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Part_DGE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `StkFPASS` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `STKcode` | STRING | Product (stock item) code. |
+| `STKgroup` | STRING | Stock group code (joins `stg.stgcode`). |
+| `STKcode2` | STRING | Secondary product code or short model name. |
+| `STKdescT1` | STRING | Thai product description, line 1. |
+| `STKdescT2` | STRING | Thai product description, line 2. |
+| `STKdescT3` | STRING | Thai product description, line 3. |
+| `STKdescE1` | STRING | English product description, line 1. |
+| `STKdescE2` | STRING | English product description, line 2. |
+| `STKdescE3` | STRING | English product description, line 3. |
+| `STKmax` | FLOAT64 | Maximum stock level of the item. |
+| `STKmin` | FLOAT64 | Minimum (reorder) stock level of the item. |
+| `STKunit1` | INT64 | Unit number of the first alternate unit. |
+| `STKunit2` | INT64 | Unit number of the second alternate unit. |
+| `STKconv1` | FLOAT64 | Conversion factor of the first alternate unit to the base unit. |
+| `STKconv2` | FLOAT64 | Conversion factor of the second alternate unit to the base unit. |
+| `STKsnsv` | INT64 | Stock-or-service type code of the item (`1`, `3`). |
+| `STKuname0` | STRING | Name of unit 0 of the item (e.g. set, piece, kg). |
+| `STKuname1` | STRING | Name of unit 1 of the item (e.g. set, piece, kg). |
+| `STKuname2` | STRING | Name of unit 2 of the item (e.g. set, piece, kg). |
+| `STKuname3` | STRING | Name of unit 3 of the item (e.g. set, piece, kg). |
+| `STKuname4` | STRING | Name of unit 4 of the item (e.g. set, piece, kg). |
+| `STKuname5` | STRING | Name of unit 5 of the item (e.g. set, piece, kg). |
+| `STKqU1` | FLOAT64 | Quantity of unit 1 in the unit-conversion table. |
+| `STKqU2` | FLOAT64 | Quantity of unit 2 in the unit-conversion table. |
+| `STKqU3` | FLOAT64 | Quantity of unit 3 in the unit-conversion table. |
+| `STKqU4` | FLOAT64 | Quantity of unit 4 in the unit-conversion table. |
+| `STKqU5` | FLOAT64 | Quantity of unit 5 in the unit-conversion table. |
+| `STKqE1` | FLOAT64 | Equivalent base-unit quantity of unit 1 in the unit-conversion table. |
+| `STKqE2` | FLOAT64 | Equivalent base-unit quantity of unit 2 in the unit-conversion table. |
+| `STKqE3` | FLOAT64 | Equivalent base-unit quantity of unit 3 in the unit-conversion table. |
+| `STKqE4` | FLOAT64 | Equivalent base-unit quantity of unit 4 in the unit-conversion table. |
+| `STKqE5` | FLOAT64 | Equivalent base-unit quantity of unit 5 in the unit-conversion table. |
+| `STKqN1` | INT64 | Unit number of entry 1 in the unit-conversion table. |
+| `STKqN2` | INT64 | Unit number of entry 2 in the unit-conversion table. |
+| `STKqN3` | INT64 | Unit number of entry 3 in the unit-conversion table. |
+| `STKqN4` | INT64 | Unit number of entry 4 in the unit-conversion table. |
+| `STKqN5` | INT64 | Unit number of entry 5 in the unit-conversion table. |
+| `STKvat` | FLOAT64 | VAT rate of the item in percent (e.g. 7). |
+| `STKexpire` | INT64 | Expiry-date tracking flag of the item (0 = not tracked). |
+| `STKhide` | INT64 | Hidden flag (-1 = hidden from pick lists, 0 = shown). |
+| `STKuse2` | INT64 | Flag whether the second unit is used for the item (1 = used, 0 = not). |
+| `STKu2name` | STRING | Name of the second unit of the item. |
+| `STKfx` | INT64 | Numeric setting code of the item (values 0 to 6). |
+| `STKacP` | STRING | Purchase GL account code of the item (e.g. `511101`). |
+| `STKacS` | STRING | Sales GL account code of the item (e.g. `411104`). |
+| `STKacC` | STRING | GL account code of the item. |
+| `STKlock` | INT64 | Lock flag (-1 = locked against editing, 0 = unlocked). |
+| `STKmemo` | STRING | Free-text memo on the item. |
+| `STKacC1` | STRING | Additional GL account code 1 of the item. |
+| `STKacC2` | STRING | Additional GL account code 2 of the item. |
+| `STKeditLK` | STRING | Date and time the record was locked for editing. |
+| `STKrefWE` | STRING | External reference code of the record. |
+| `STKbarC1` | STRING | Barcode 1 of the item. |
+| `STKbarC2` | STRING | Barcode 2 of the item. |
+| `STKbarC3` | STRING | Barcode 3 of the item. |
+| `STKsortNT` | STRING | Thai sort key of the item (usually the Thai description). |
+| `STKsortNE` | STRING | English sort key of the item. |
+| `STKeditDT` | STRING | Date and time the record was last edited. |
+| `STKstatus` | INT64 | Status code of the item (0 = normal). |
+| `STKsto` | STRING | Default warehouse code of the item (joins `sto.stocode`). |
+| `STKeditMF` | STRING | User code of the person who last edited the record. |
+| `rowguid` | STRING | Row GUID that uniquely identifies the record in the source database. |
+| `STKcode885` | STRING | EAN-13 barcode of the item (joins Master SKU `prd_barcode`). |
+| `STKtype` | STRING | Product type name in Thai (e.g. ROTO above-ground water tank, BLOW water tank). |
+| `STKSaleGrp` | STRING | Sales product group name (e.g. PE water tank, grease trap). |
+| `STKSaleType` | STRING | Sales type of the item. |
+| `STKSaleSup` | STRING | Sales supplier of the item. |
+| `STKSaleGrpS1` | STRING | Sales sub-group 1 of the item. |
+| `STKSaleGrpS2` | STRING | Sales sub-group 2 of the item. |
+| `StkSub1` | STRING | Product sub-category 1 of the item. |
+| `StkSub2` | STRING | Product sub-category 2 of the item. |
+| `StkSub3` | STRING | Product sub-category 3 of the item. |
+| `StkBrand` | STRING | Brand of the item. |
+| `StkExpand` | STRING | Extended description of the item. |
+| `StkLgGrp` | STRING | Logistics product group of the item (e.g. BLOW, HY, Accessorie). |
+| `STKgroup_DGE` | STRING | DGE product group code of the item (e.g. `001`). |
+| `STKgroup1_DGE_Report` | STRING | DGE report product group, level 1. |
+| `STKgroup2_DGE_Report` | STRING | DGE report product group, level 2. |
+| `STKgroup3_DGE_Report` | STRING | DGE report product group, level 3. |
+| `Part_DGE` | STRING | DGE part code of the item. |
+| `StkFPASS` | STRING | Pass flag of the item (1 = passed, 0 = not). |
 
 # How it is built
 

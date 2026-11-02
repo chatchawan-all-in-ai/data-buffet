@@ -43,9 +43,9 @@ One row per active MDS row, SK ordered by companyID, Year, Month, MarketingGroup
 | `SubMarketingName` | STRING | Name of the sub marketing group. |
 | `SegmentID` | STRING | Segment code. |
 | `SegmentName` | STRING | Segment name. |
-| `ChannelTargetGroup` | STRING | Sales channel group the target belongs to (meaning of values not documented in the repo). |
+| `ChannelTargetGroup` | STRING | Sales channel group the target belongs to, e.g. `AGENT`, `MDT`, `PS1`, `PS2`, `IMP`, `ASIAN`, `HO`, `Non TargetID`; `MDT` rows feed view_fact_target_product_group_mdt. |
 | `TargetID` | STRING | Target code; the join key to `dim_rate_target.TargetID` (with CompanySK, Year, Month). |
-| `Amt` | FLOAT64 | Target amount (FLOAT64 via `castFloat64`, currency amount; assumed THB, not stated in the code). |
+| `Amt` | FLOAT64 | Target sales amount in THB for the month (FLOAT64 via `castFloat64`). |
 | `Qty` | FLOAT64 | Target quantity (FLOAT64 via `castFloat64`). |
 | `MdsId` | STRING | `id` of the source row in `mds_data_sales_target_by_product_group_master` (selected as MdsID in SQL); trace column. Dropped by dim_target_product_group_by_sale. |
 

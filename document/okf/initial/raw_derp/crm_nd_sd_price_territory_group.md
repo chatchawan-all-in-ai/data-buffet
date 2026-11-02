@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_nd_sd_price_territory_group"
-description: "One row = one record of source table `crm_nd_sd_price_territory_group` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one link between an ND/SD price and a sales territory group, a record of source table `crm_nd_sd_price_territory_group` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_nd_sd_price_territory_group&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_nd_sd_price_territory_group/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_nd_sd_price_territory_group` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_nd_sd_price_territory_group](/validated/validated_derp/crm_nd_sd_price_territory_group.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_nd_sd_price_territory_group/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_nd_sd_price_territory_group` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Sales territory groups (regions) each ND/SD price applies to. Used by: [validated_derp.crm_nd_sd_price_territory_group](/validated/validated_derp/crm_nd_sd_price_territory_group.md).
 
 # Grain and key
 
@@ -30,17 +30,17 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `nd_sd_price_territory_group_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `nd_sd_price_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_territory_group_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `group_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `group_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `nd_sd_price_territory_group_id` | STRING | UUID of the price-to-territory-group link. |
+| `nd_sd_price_id` | STRING | UUID of the ND/SD price record in `crm_nd_sd_price`. |
+| `sales_territory_group_id` | STRING | UUID of the sales territory group the price applies to. |
+| `group_code` | STRING | Sales territory group code (e.g. `NORTH`, `METRO`, `SOUTH`). |
+| `group_name` | STRING | Sales territory group name. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

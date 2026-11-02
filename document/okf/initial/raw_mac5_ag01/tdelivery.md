@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tdelivery"
-description: "One row = one record of source table `tdelivery` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one delivery confirmation of a document on a trip, a record of source table `tdelivery` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=tdelivery&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_gps/tdelivery/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tdelivery` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.tdelivery](/validated/validated_mac5/tdelivery.md).
+External table over AVRO files in `gs://file-raw-data/mac5_gps/tdelivery/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tdelivery` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Delivery confirmations of MAC5 delivery documents on trips, with GPS position, place name and zone. Used by: [validated_mac5.tdelivery](/validated/validated_mac5/tdelivery.md).
 
 # Grain and key
 
@@ -30,19 +30,19 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `frun` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fmaster` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fserial_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fdatetime` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `flattitude` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `flongtitude` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fpoi` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fzone` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fvat` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `freceive` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fdocument` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `flatd` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `flongd` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `frun` | STRING | Delivery record identifier. |
+| `fmaster` | STRING | Trip identifier (`ttrip.frun`). |
+| `fserial_no` | STRING | MAC5 delivery document number confirmed as delivered (matches `mil.milvnos`). |
+| `fdatetime` | STRING | Date and time of the delivery confirmation (`yyyyMMddHHmmss`). |
+| `flattitude` | STRING | Latitude of the delivery point. |
+| `flongtitude` | STRING | Longitude of the delivery point. |
+| `fpoi` | STRING | Place name of the delivery point from reverse geocoding. |
+| `fzone` | STRING | Delivery zone name (e.g. `ZONE สีส้ม`). |
+| `fvat` | STRING | VAT flag of the delivery. |
+| `freceive` | STRING | Received flag of the delivery. |
+| `fdocument` | STRING | Document number of the delivery. |
+| `flatd` | STRING | Latitude of the delivery point as digits without the decimal point. |
+| `flongd` | STRING | Longitude of the delivery point as digits without the decimal point. |
 
 # How it is built
 

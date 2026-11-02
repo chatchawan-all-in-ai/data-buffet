@@ -37,19 +37,19 @@ Each ag01 `stk` row with a non-empty `STKcode885` barcode joins every `dim_produ
 | `SeriesSK` | INT64 | SK of `dim_product_series` for the product's series name; products whose series is missing or not in the dim fall to the `OTHERS` series. |
 | `SeriesCode` | STRING | Code of that series (`dim_product_series.SeriesCode`). |
 | `companyID` | STRING | Company code; always `ag01` (the view filters `company_id = 'ag01'`). |
-| `ProductCode` | STRING | MAC5 stock code (`validated_mac5.stk.stkcode`). |
-| `ProductColor` | STRING | Colour from MASTERSKU (`product.prd_color`), found by barcode `stkcode885 = prd_barcode`. |
-| `ProductShape` | STRING | Shape from MASTERSKU `product_detail.pd_shape`. |
-| `ProductGrossWeight` | FLOAT64 | Gross weight from `product_detail.pd_gross_weight`; unit not documented in the repo. |
-| `ProductNetWeight` | FLOAT64 | Net weight from `product_detail.pd_net_weight`; unit not documented. |
-| `ProductSeries` | STRING | Series name from `product_detail.pd_series` (free text; may differ from the dim series). |
-| `ProductSize` | STRING | Size text from `product.prd_size`. |
-| `ProductSizeHight` | FLOAT64 | Height from `product_detail.pd_size_hight` (typo `Hight` is the real column name); unit not documented. |
-| `ProductSizeLong` | FLOAT64 | Length from `product_detail.pd_size_long`. |
-| `ProductSizeWide` | FLOAT64 | Width from `product_detail.pd_size_wide`. |
-| `ProductUnit` | STRING | Sale unit from `product_detail.pd_sale_unit`. |
-| `ProductMaterials` | STRING | Material from `product_detail.pd_material`. |
-| `ProductModel` | STRING | Model from `product_detail.pd_model`. |
+| `ProductCode` | STRING | Product (stock item) code. |
+| `ProductColor` | STRING | Color of the product. |
+| `ProductShape` | STRING | Packaging shape of the product (e.g. box, gallon, length). |
+| `ProductGrossWeight` | FLOAT64 | Gross (packed) weight of the product. |
+| `ProductNetWeight` | FLOAT64 | Net weight of the product. |
+| `ProductSeries` | STRING | Product series name. |
+| `ProductSize` | STRING | Size of the product. |
+| `ProductSizeHight` | FLOAT64 | Product height. |
+| `ProductSizeLong` | FLOAT64 | Product length (depth). |
+| `ProductSizeWide` | FLOAT64 | Product width. |
+| `ProductUnit` | STRING | Sales unit of the product (e.g. `EA`). |
+| `ProductMaterials` | STRING | Main material of the product (e.g. PE). |
+| `ProductModel` | STRING | Product model. |
 
 # How it is built
 

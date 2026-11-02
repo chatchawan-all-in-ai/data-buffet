@@ -38,8 +38,8 @@ One row per (company, CustomerCode, BankName) among active mds rows. Key: `Guara
 | `CustomerName` | STRING | Pass-through of mds `CustomerName`, cleaned with `cleanString` (empty string becomes NULL). Customer name as typed in MDS. |
 | `ExpiryDate` | DATE | Expiry date of the guarantee (mds `ExpiryDate`, DATE passed through). |
 | `BankName` | STRING | Pass-through of mds `BankName`, cleaned with `cleanString` (empty string becomes NULL). Name of the issuing bank; part of the row key. |
-| `BG_Limit` | FLOAT64 | Guarantee amount limit (`castFloat64` of mds `BG_Limit`; currency not documented in the repo, presumably THB). |
-| `Renewal` | STRING | Pass-through of mds `Renewal`, cleaned with `cleanString` (empty string becomes NULL). Renewal status/remark text; code values not documented in the repo. |
+| `BG_Limit` | FLOAT64 | Bank guarantee amount in THB (`castFloat64` of mds `BG_Limit`), e.g. 100000 or 500000. |
+| `Renewal` | STRING | Pass-through of mds `Renewal`, cleaned with `cleanString` (empty string becomes NULL). Status of the guarantee in Thai: `ไม่ส่ง` (not sent), `คืน` (returned), `เคลม` (claimed), `รอเครม` (awaiting claim), `ยกเลิก` (cancelled). |
 | `Remarks` | STRING | Pass-through of mds `Remarks`, cleaned with `cleanString` (empty string becomes NULL). Free-text remark. |
 | `Address` | STRING | Pass-through of mds `Address`, cleaned with `cleanString` (empty string becomes NULL). Address text of the customer/guarantee (personal data; not shown here). |
 | `PhoneNumber` | STRING | Pass-through of mds `PhoneNumber`, cleaned with `cleanString` (empty string becomes NULL). Phone number text (personal data). |

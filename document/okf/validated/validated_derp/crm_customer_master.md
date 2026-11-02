@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_customer_master"
-description: "One row = one cleaned copy of the source table `crm_customer_master`, unique on (customer_master_id)."
+description: "One row = one customer from source table `crm_customer_master`, unique on (customer_master_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_customer_master&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_customer_master`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_customer_master`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Customer master records of the DERP CRM: codes (CRM, MAC5, ERP party), names, tax ID, accounts, tax and currency settings, and approval status.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,60 +34,60 @@ One row per `customer_master_id`. The key is declared twice in the definition (`
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_master_id` | STRING | Meaning not documented in the repo. |
-| `customer_code` | STRING | Meaning not documented in the repo. |
-| `mac5_code` | STRING | Meaning not documented in the repo. |
-| `d365_party_id` | STRING | Meaning not documented in the repo. |
-| `party_type` | STRING | Meaning not documented in the repo. |
-| `party_type_raw` | STRING | Meaning not documented in the repo. |
-| `tax_id` | STRING | Meaning not documented in the repo. |
-| `organization_name_th` | STRING | Meaning not documented in the repo. |
-| `organization_name_en` | STRING | Meaning not documented in the repo. |
-| `short_name_th` | STRING | Meaning not documented in the repo. |
-| `short_name_en` | STRING | Meaning not documented in the repo. |
-| `acronym_th` | STRING | Meaning not documented in the repo. |
-| `acronym_en` | STRING | Meaning not documented in the repo. |
-| `search_name` | STRING | Meaning not documented in the repo. |
-| `prefix_name` | STRING | Meaning not documented in the repo. |
-| `first_name_th` | STRING | Meaning not documented in the repo. |
-| `last_name_th` | STRING | Meaning not documented in the repo. |
-| `middle_name_th` | STRING | Meaning not documented in the repo. |
-| `first_name_en` | STRING | Meaning not documented in the repo. |
-| `last_name_en` | STRING | Meaning not documented in the repo. |
-| `middle_name_en` | STRING | Meaning not documented in the repo. |
-| `branch_code` | STRING | Meaning not documented in the repo. |
-| `branch_name` | STRING | Meaning not documented in the repo. |
-| `is_one_time` | BOOL | Meaning not documented in the repo. |
-| `invoice_account` | STRING | Meaning not documented in the repo. |
-| `order_account` | STRING | Meaning not documented in the repo. |
-| `delivery_account` | STRING | Meaning not documented in the repo. |
-| `withholding_tax_code` | STRING | Meaning not documented in the repo. |
-| `withholding_tax_rate` | FLOAT64 | Meaning not documented in the repo. |
-| `vat_code` | STRING | Meaning not documented in the repo. |
-| `vat_rate` | FLOAT64 | Meaning not documented in the repo. |
-| `sales_tax_group` | STRING | Meaning not documented in the repo. |
-| `currency` | STRING | Meaning not documented in the repo. |
-| `language` | STRING | Meaning not documented in the repo. |
-| `website` | STRING | Meaning not documented in the repo. |
-| `grade` | STRING | Meaning not documented in the repo. |
-| `book3_color` | STRING | Meaning not documented in the repo. |
-| `store_code` | STRING | Meaning not documented in the repo. |
-| `store_name` | STRING | Meaning not documented in the repo. |
-| `sales_remark` | STRING | Meaning not documented in the repo. |
-| `account_remark` | STRING | Meaning not documented in the repo. |
-| `marketing_remark` | STRING | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `full_text_search` | STRING | Meaning not documented in the repo. |
-| `is_new_customer` | BOOL | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `is_sync` | BOOL | Meaning not documented in the repo. |
-| `require_po` | BOOL | Meaning not documented in the repo. |
-| `customer_known_as` | STRING | Meaning not documented in the repo. |
+| `customer_master_id` | STRING | UUID of the customer master record. |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
+| `mac5_code` | STRING | Customer code in MAC5 (9-digit customer number). |
+| `d365_party_id` | STRING | Party ID of the customer in the ERP (Dynamics 365). |
+| `party_type` | STRING | Party type (`Organization` or `Person`). |
+| `party_type_raw` | STRING | Party type as received from the source system. |
+| `tax_id` | STRING | Tax identification number (13 digits). |
+| `organization_name_th` | STRING | Organization name in Thai. |
+| `organization_name_en` | STRING | Organization name in English. |
+| `short_name_th` | STRING | Short name in Thai. |
+| `short_name_en` | STRING | Short name in English. |
+| `acronym_th` | STRING | Acronym in Thai. |
+| `acronym_en` | STRING | Acronym in English. |
+| `search_name` | STRING | Search name of the customer. |
+| `prefix_name` | STRING | Name prefix (title) of a person customer. |
+| `first_name_th` | STRING | First name in Thai (person customers). |
+| `last_name_th` | STRING | Last name in Thai (person customers). |
+| `middle_name_th` | STRING | Middle name in Thai (person customers). |
+| `first_name_en` | STRING | First name in English (person customers). |
+| `last_name_en` | STRING | Last name in English (person customers). |
+| `middle_name_en` | STRING | Middle name in English (person customers). |
+| `branch_code` | STRING | Branch code of the customer for tax invoices. |
+| `branch_name` | STRING | Branch name of the customer for tax invoices. |
+| `is_one_time` | BOOL | Flag marking a one-time customer. |
+| `invoice_account` | STRING | Customer code of the invoice (bill-to) account. |
+| `order_account` | STRING | Customer code of the order account. |
+| `delivery_account` | STRING | Customer code of the delivery (ship-to) account. |
+| `withholding_tax_code` | STRING | Withholding tax code (e.g. `WHTAR`). |
+| `withholding_tax_rate` | FLOAT64 | Withholding tax rate in percent. |
+| `vat_code` | STRING | VAT code of the customer. |
+| `vat_rate` | FLOAT64 | VAT rate in percent (e.g. 7). |
+| `sales_tax_group` | STRING | Sales tax group (`DOM` = domestic, `OVS` = overseas). |
+| `currency` | STRING | Currency code (e.g. `THB`). |
+| `language` | STRING | Language code of the customer (e.g. `th`, `en-US`). |
+| `website` | STRING | Customer website URL. |
+| `grade` | STRING | Customer grade. |
+| `book3_color` | STRING | Book-3 color classification of the customer. |
+| `store_code` | STRING | Store code of the customer. |
+| `store_name` | STRING | Store name of the customer. |
+| `sales_remark` | STRING | Remark from the sales team. |
+| `account_remark` | STRING | Remark from the accounting team. |
+| `marketing_remark` | STRING | Remark from the marketing team. |
+| `status` | STRING | Customer approval status (e.g. `CUST_APPROVED`). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `full_text_search` | STRING | Concatenated text of the customer's codes and names used for full-text search. |
+| `is_new_customer` | BOOL | Flag marking a customer newly created in the CRM. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
+| `require_po` | BOOL | Flag showing the customer requires a purchase order on sales. |
+| `customer_known_as` | STRING | Alias or code the customer is known by. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

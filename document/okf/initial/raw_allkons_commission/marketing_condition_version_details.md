@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "marketing_condition_version_details"
-description: "One row = one record of source table `marketing_condition_version_details` (ALLKONS_COMMISSION) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one version of a commission condition, a record of source table `marketing_condition_version_details` (ALLKONS_COMMISSION) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_allkons_commission&t=marketing_condition_version_details&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_allkons_commission
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/allkons_commission/marketing_condition_version_details/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `marketing_condition_version_details` table from ALLKONS_COMMISSION; nothing is cleaned or deduplicated here.
+External table over AVRO files in `gs://file-raw-data/allkons_commission/marketing_condition_version_details/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `marketing_condition_version_details` table from ALLKONS_COMMISSION; nothing is cleaned or deduplicated here. Table meaning: Versioned commission and incentive conditions: calculation method, eligible positions, channels and territories, date ranges and rule definition.
 
 # Grain and key
 
@@ -30,29 +30,29 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `marketing_condition_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `version_no` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `condition_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_positions` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_channels` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `territories` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `commission_payment_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `content_changed_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `accounting_period_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `accounting_period_value` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `invoice_start_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `invoice_end_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `order_start_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `order_end_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `additional_commission_conditions` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `data` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `code` | STRING | Commission condition code (e.g. `MC548`). |
+| `id` | STRING | Unique identifier (UUID) of the condition version. |
+| `marketing_condition_id` | STRING | Commission condition this version belongs to. |
+| `version_no` | INT64 | Version number of the condition (0 = first version). |
+| `condition_type` | STRING | Commission calculation method (`PER_ITEM`, `TIER_DISCOUNT`, `MARGIN`, `TARGET_ACHIEVEMENT`). |
+| `name` | STRING | Name of the commission condition. |
+| `type` | STRING | Kind of payout (`COMMISSION`, `INCENTIVE`). |
+| `status` | STRING | Condition status (`ACTIVE`, `INACTIVE`). |
+| `sales_positions` | STRING | JSON array of sales positions the condition applies to (e.g. TA, PC). |
+| `sales_channels` | STRING | JSON array of sales channels the condition applies to. |
+| `territories` | STRING | JSON array of territories the condition applies to (type `COUNTRY`, `REGION` or `PROVINCE`). |
+| `commission_payment_type` | STRING | When commission becomes payable (`PAYMENT_SUCCESSFUL` = after customer payment, `NONE`). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `content_changed_at` | STRING | Timestamp when the condition content last changed. |
+| `accounting_period_type` | STRING | Accounting period unit (`DAILY`, `MONTHLY`, `QUARTERLY`, `YEARLY`). |
+| `accounting_period_value` | STRING | Number of accounting period units. |
+| `invoice_start_date` | STRING | Start of the invoice date range covered by the condition (UTC). |
+| `invoice_end_date` | STRING | End of the invoice date range covered by the condition (UTC). |
+| `order_start_date` | STRING | Start of the order date range covered by the condition (UTC). |
+| `order_end_date` | STRING | End of the order date range covered by the condition (UTC). |
+| `additional_commission_conditions` | STRING | JSON array of extra calculation rules (e.g. `FROM_FIRST_AMOUNT`, `SPLIT_AMOUNT_BETWEEN_PC_AND_TA`, `IF_NO_PC_THEN_TA_SELL_DIRECTLY`). |
+| `data` | STRING | JSON definition of the condition rules (products, product groups, margin ranges, rates). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

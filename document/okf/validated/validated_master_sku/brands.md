@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "brands"
-description: "One row = one cleaned copy of the source table `brands`, unique on (id)."
+description: "One row = one brand from source table `brands`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_master_sku&t=brands&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_master_sku
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MASTER_SKU `brands`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MASTER_SKU `brands`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Product brands of the master_sku 3.0 product master.
 Used by: [curated_master_sku.product_for_aisearch_v3](/curated/curated_master_sku/product_for_aisearch_v3.md).
 
 # Grain and key
@@ -34,14 +34,14 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Surrogate identifier from the source system (the primary key). |
-| `name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `detail` | STRING | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
+| `id` | STRING | Unique identifier (UUID) of the brand. |
+| `name` | STRING | Brand name. |
+| `detail` | STRING | Brand description. |
+| `status` | STRING | Record status (`Active`, `Inactive`, `Deleted`). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

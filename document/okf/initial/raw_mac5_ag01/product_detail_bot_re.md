@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "product_detail_bot_re"
-description: "One row = one record of source table `product_detail_bot_re` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one component of a developer article, a record of source table `product_detail_bot_re` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=product_detail_bot_re&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/product_detail_bot_re/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `product_detail_bot_re` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.product_detail_bot_re](/validated/validated_mac5/product_detail_bot_re.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/product_detail_bot_re/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `product_detail_bot_re` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: MAC5 stock items and quantities that make up each developer article of the real-estate PO bot. Used by: [validated_mac5.product_detail_bot_re](/validated/validated_mac5/product_detail_bot_re.md).
 
 # Grain and key
 
@@ -30,12 +30,12 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `product_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sku_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qty` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `channel` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Row identifier of the component line. |
+| `product_id` | INT64 | Identifier of the developer article this component belongs to (`product_bot_re.id`). |
+| `sku_id` | STRING | MAC5 stock code of the component product. |
+| `qty` | FLOAT64 | Quantity of the component per article. |
+| `channel` | STRING | Developer group of the article (e.g. `AP`, `SANSIRI`, `Frasers`, `QH`). |
+| `create_date` | STRING | Date and time the row was created. |
 
 # How it is built
 

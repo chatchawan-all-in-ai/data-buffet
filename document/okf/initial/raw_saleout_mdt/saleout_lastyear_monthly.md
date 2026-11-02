@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "saleout_lastyear_monthly"
-description: "One row = one record of source table `saleout_lastyear_monthly` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one product, branch and month, a record of source table `saleout_lastyear_monthly` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=saleout_lastyear_monthly&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_saleout_mdt
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over CSV files in `gs://file-raw-data/saleout_mdt/lastyear_monthly/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `saleout_lastyear_monthly` table from SALEOUT_MDT; nothing is cleaned or deduplicated here.
+External table over CSV files in `gs://file-raw-data/saleout_mdt/lastyear_monthly/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `saleout_lastyear_monthly` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Monthly sell-out history of all modern-trade chains from 2022-01 to 2026-07, a backup copy of `onetime.saleout_lastyear_monthly`.
 
 # Grain and key
 
@@ -30,14 +30,14 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `month_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `store_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `branch_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `branch_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `product_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `product_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_qty` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_amount` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `month_date` | STRING | Month of the sales, as the last day of the month. |
+| `store_code` | STRING | Retail chain code (`HP`, `MH`, `GB`, `TW`, `DH`, `BT`). |
+| `branch_code` | STRING | Branch code at the retail chain. |
+| `branch_name` | STRING | Branch name. |
+| `product_code` | STRING | Product code at the retail chain. |
+| `product_name` | STRING | Product name. |
+| `sale_qty` | STRING | Sales quantity for the month. |
+| `sale_amount` | STRING | Sales amount for the month (THB). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

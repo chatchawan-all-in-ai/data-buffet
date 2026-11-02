@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "customer_profile_tag"
-description: "One row = one cleaned copy of the source table `customer_profile_tag`, unique on (id)."
+description: "One row = one tag assigned to a customer profile from source table `customer_profile_tag`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_cis360&t=customer_profile_tag&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_cis360
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of CIS360 `customer_profile_tag`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of CIS360 `customer_profile_tag`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Tags assigned to CIS360 customer profiles.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,13 +34,13 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Surrogate identifier from the source system (the primary key). |
-| `customer_profile_id` | STRING | Meaning not documented in the repo. |
-| `tag_id` | INT64 | Meaning not documented in the repo. |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
-| `create_by` | STRING | Meaning not documented in the repo. |
-| `update_date` | DATETIME | Meaning not documented in the repo. |
-| `update_by` | STRING | Meaning not documented in the repo. |
+| `id` | STRING | Unique identifier (UUID) of the link record. |
+| `customer_profile_id` | STRING | Customer profile the link belongs to (`customer_profile.id`). |
+| `tag_id` | INT64 | Identifier of the tag assigned to the customer profile (values 1, 2). |
+| `create_date` | DATETIME | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `update_date` | DATETIME | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

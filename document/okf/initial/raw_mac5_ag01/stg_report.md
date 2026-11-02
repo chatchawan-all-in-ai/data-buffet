@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "stg_report"
-description: "One row = one record of source table `stg_report` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one product group, a record of source table `stg_report` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=stg_report&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_report/stg/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `stg_report` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.stg_report](/validated/validated_mac5/stg_report.md).
+External table over AVRO files in `gs://file-raw-data/mac5_report/stg/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `stg_report` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Product (stock) groups used for reporting, with Thai and English names. Used by: [validated_mac5.stg_report](/validated/validated_mac5/stg_report.md).
 
 # Grain and key
 
@@ -30,11 +30,11 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `STGcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STGdescT` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STGdescE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `stgacccode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `comratepc` | STRUCT<double_value FLOAT64, string_value STRING> | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `STGcode` | STRING | Product (stock) group code. |
+| `STGdescT` | STRING | Product group name in Thai. |
+| `STGdescE` | STRING | Product group name in English. |
+| `stgacccode` | STRING | Account code of the product group. |
+| `comratepc` | STRUCT<double_value FLOAT64, string_value STRING> | Commission rate (percent) of the product group. |
 
 # How it is built
 

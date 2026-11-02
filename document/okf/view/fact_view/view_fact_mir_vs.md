@@ -43,25 +43,25 @@ One row per `BillingSK` (the key of [fact_mir_vs](/fact/fact_mir_vs.md)); natura
 | `CompanySK` | INT64 | SK of `dim_company` (match `company_id`); stable across days. |
 | `duedate` | DATE | Due date of the billed invoice: `PARSE_DATE('%d/%m/%Y', SUBSTR(mie.miectermdx, 1, 10))` from validated `mie`, joined on invoice number + customer + company. NULL when no `mie` row matches. |
 | `company_id` | STRING | Company code (ag01/aa05/ab01/ac02/ak02), pass-through of `validated_mac5.mir.company_id`. Joins to `dim_company.companyID`. |
-| `mirday` | INT64 | Day of month of the receipt/billing document date (`validated_mac5.mir.mirday`). Combine with `miryear`/`mirmonth` to get the date. |
-| `mirmonth` | INT64 | Month of the document date (`validated_mac5.mir.mirmonth`). |
-| `miryear` | INT64 | Year of the document date (`validated_mac5.mir.miryear`). |
-| `mirtype` | STRING | Document type of the `mir` row; always `'VS'` here (fact_mir_vs keeps only mirtype = 'VS' rows of non-cancelled documents). |
-| `mirvnos` | STRING | Document number of the MAC5 `mir` document itself (voucher number); pass-through of `validated_mac5.mir.mirvnos`. Joins to `curated_mih.mihvnos` with `mirtype`. |
-| `mircus` | STRING | Customer code on the document (`validated_mac5.mir.mircus`); matches `dim_customer.debcode`. |
-| `mirlistno` | INT64 | Line number within the `mir` document (`validated_mac5.mir.mirlistno`). |
-| `mirbinvno` | STRING | Number of the invoice (`mih` document) that this line pays or bills; matches `cfsVnosID` in `dim_aging` and `mihVnos` in `dim_invoice`. |
-| `mirbinvdate` | DATETIME | Date of that invoice (`validated_mac5.mir.mirbinvdate`, DATETIME). |
-| `mirbinvtype` | STRING | Document type of that invoice (`validated_mac5.mir.mirbinvtype`), e.g. IS/BS/AS. |
-| `mirdesc` | STRING | Free-text line description from MAC5 (`validated_mac5.mir.mirdesc`). |
-| `mircog` | FLOAT64 | Pass-through of `validated_mac5.mir.mircog` (FLOAT64). Meaning not documented in the repo (likely a cost/gross amount, inferred from the name). |
-| `mirvat` | FLOAT64 | VAT amount of the line, pass-through of `validated_mac5.mir.mirvat` (inferred from the name). |
-| `mirsum` | FLOAT64 | Line amount (`validated_mac5.mir.mirsum`); this is the amount `SUM`med by `view_aging_ri` / `dim_aging` as the paid amount for RS rows. |
-| `mircurc` | INT64 | Currency code of the line (`validated_mac5.mir.mircurc`); meaning of the codes not documented in the repo. |
-| `mirexchg` | FLOAT64 | Exchange rate of the line (`validated_mac5.mir.mirexchg`). |
-| `mirtag` | INT64 | Pass-through of `validated_mac5.mir.mirtag`. Meaning not documented in the repo. |
-| `mirnotes` | STRING | Free-text notes on the line (`validated_mac5.mir.mirnotes`). |
-| `miraccount` | STRING | Account code on the line (`validated_mac5.mir.miraccount`); meaning not further documented in the repo. |
+| `mirday` | INT64 | Day part of the document date. |
+| `mirmonth` | INT64 | Month part of the document date. |
+| `miryear` | INT64 | Year part of the document date (Gregorian). |
+| `mirtype` | STRING | Document type code (RS = sales receipt, VS = sales billing statement; RP / VP on the purchase side). |
+| `mirvnos` | STRING | Receipt or billing-statement document number. |
+| `mircus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mirlistno` | INT64 | Line number within the receipt or billing statement. |
+| `mirbinvno` | STRING | Number of the invoice (or debit/credit note) settled or billed by this line. |
+| `mirbinvdate` | DATETIME | Date of the invoice settled or billed by this line. |
+| `mirbinvtype` | STRING | Document type of the invoice settled or billed by this line (IS, AS, BS). |
+| `mirdesc` | STRING | Description copied from the referenced invoice. |
+| `mircog` | FLOAT64 | Line amount excluding VAT. |
+| `mirvat` | FLOAT64 | VAT amount of the line. |
+| `mirsum` | FLOAT64 | Line amount including VAT (amount received or billed). |
+| `mircurc` | INT64 | Currency code (0 = Thai baht). |
+| `mirexchg` | FLOAT64 | Exchange rate to Thai baht (1 for baht documents). |
+| `mirtag` | INT64 | Tag marker of the line. |
+| `mirnotes` | STRING | Notes copied from the referenced invoice. |
+| `miraccount` | STRING | Account code of the line. |
 | `asatdate` | DATE | Load date (ASATDATE partition value) of the source `validated_mac5.mir` row; not a business date. |
 
 # How it is built

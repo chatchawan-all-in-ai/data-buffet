@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "nature_business"
-description: "One row = one cleaned copy of the source table `nature_business`, unique on (id)."
+description: "One row = one nature of business from source table `nature_business`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_cis360&t=nature_business&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_cis360
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of CIS360 `nature_business`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of CIS360 `nature_business`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Lookup of CIS360 nature-of-business values.
 Used by: [dimension_table.dim_customer](/dimension/dim_customer.md).
 
 # Grain and key
@@ -34,20 +34,20 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `nature_business_name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `nature_business_name_en` | STRING | Meaning not documented in the repo. |
-| `nature_business_code` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `nature_business_order` | INT64 | Meaning not documented in the repo. |
-| `is_constant` | BOOL | Meaning not documented in the repo. |
-| `active_status` | BOOL | Meaning not documented in the repo. |
-| `is_delete` | BOOL | Meaning not documented in the repo. |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
-| `create_by` | STRING | Meaning not documented in the repo. |
-| `create_by_platform` | STRING | Meaning not documented in the repo. |
-| `update_by_platform` | STRING | Meaning not documented in the repo. |
-| `update_date` | DATETIME | Meaning not documented in the repo. |
-| `update_by` | STRING | Meaning not documented in the repo. |
+| `id` | INT64 | Primary key of the nature of business lookup. |
+| `nature_business_name` | STRING | Nature of business name in Thai. |
+| `nature_business_name_en` | STRING | Nature of business name in English. |
+| `nature_business_code` | STRING | Nature of business code (e.g. `WHOLESALE_BUSINESS`, `FINANCIAL_BUSINESS`, `LOGISTICS_BUSINESS`, `HRR`). |
+| `nature_business_order` | INT64 | Display sort order of the nature of business. |
+| `is_constant` | BOOL | Whether the nature of business is a fixed system-defined value. |
+| `active_status` | BOOL | Whether the nature of business is active. |
+| `is_delete` | BOOL | Soft-delete flag (TRUE = record deleted). |
+| `create_date` | DATETIME | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | DATETIME | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

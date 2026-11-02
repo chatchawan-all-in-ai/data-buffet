@@ -36,7 +36,7 @@ One row per `CustomerReportInfoSK` (company + report name key). All SKs are uniq
 | `CompanyID` | STRING | MAC5 company code. |
 | `CustomerReportName` | STRING | Report shop name (from MDS Customer_Report_Master / invoice names; matches view_dim_invoice `CustomerReportName`). |
 | `FlagPC` | STRING | 'Yes' if the shop is a PC (flag in MDS), else 'No' (NULL becomes 'No'). |
-| `ShopOnline` | STRING | Online-shop indicator text from MDS (pass-through; values not documented in the repo). |
+| `ShopOnline` | STRING | Online-shop indicator text from the MDS customer report master (NULL for names that come only from invoices). |
 | `OnlinePercent` | STRING | Online share as text with '%' appended (e.g. '80%'); NULL if no value. |
 | `SegmentSource` | STRING | How the segment was assigned: 'MDS' (tier found), 'CHANNEL' (by channel), or 'DEFAULT'. |
 | `SegmentDebcode` | STRING | Customer code used to look up the segment (pass-through). |
@@ -52,7 +52,7 @@ One row per `CustomerReportInfoSK` (company + report name key). All SKs are uniq
 | `TADebcode` | STRING | Customer code used to find the TA (kept to check shops whose TA is empty). |
 | `SaleRepSK` | INT64 | SK of the TA employee in dim_sale_representative_last. |
 | `ReportDebcode` | STRING | Representative customer code of the report name: COALESCE(SegmentDebcode, TADebcode). |
-| `DEBcreditTerm` | INT64 | Credit term in days of the representative customer (pass-through). |
+| `DEBcreditTerm` | INT64 | Credit term in days. |
 | `InvoiceProvinceSK` | INT64 | SK of the invoice-address province of the representative customer. |
 | `InvoiceDistrictSK` | INT64 | SK of the invoice-address district. |
 | `InvoiceSubDistrictSK` | INT64 | SK of the invoice-address sub-district. |

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "stg_report"
-description: "One row = one stock group report, unique on (company_id, stgcode)."
+description: "One row = one product group (per company), unique on (company_id, stgcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=stg_report&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `stg_report`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: stock group report. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `stg_report`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Product (stock) groups used for reporting, with Thai and English names.
 Used by: [validated_mac5.stg](/validated/validated_mac5/stg.md).
 
 # Grain and key
@@ -35,10 +35,10 @@ One row per `company_id`, `stgcode`. The key is declared twice in the definition
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `stgcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `stgdesct` | STRING | Meaning not documented in the repo. |
-| `stgdesce` | STRING | Meaning not documented in the repo. |
-| `stgacccode` | STRING | Meaning not documented in the repo. |
+| `stgcode` | STRING | Product (stock) group code. |
+| `stgdesct` | STRING | Product group name in Thai. |
+| `stgdesce` | STRING | Product group name in English. |
+| `stgacccode` | STRING | Account code of the product group. |
 
 # How it is built
 

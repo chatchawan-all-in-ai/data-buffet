@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "product_detail"
-description: "One row = one record of source table `product_detail` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one product detail record, a record of source table `product_detail` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mastersku&t=product_detail&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mastersku
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mastersku/product_detail/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `product_detail` table from MASTERSKU; nothing is cleaned or deduplicated here. Used by: [validated_mastersku.product_detail](/validated/validated_mastersku/product_detail.md).
+External table over AVRO files in `gs://file-raw-data/mastersku/product_detail/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `product_detail` table from MASTERSKU; nothing is cleaned or deduplicated here. Table meaning: Extended attributes of each MASTERSKU product: name, series, model, material, sizes, package dimensions, weights with units, warranty, TIS certificate and usage texts. Used by: [validated_mastersku.product_detail](/validated/validated_mastersku/product_detail.md).
 
 # Grain and key
 
@@ -30,56 +30,56 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `pd_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_prd_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_url_video` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_detail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_series` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_model` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_material` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_certificate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_garantee` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_garantee_detail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_shape` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_supplier_country` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_package_wide` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_package_long` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_package_hight` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_size_wide` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_size_long` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_sl_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_size_hight` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_sh_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_net_weight` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_gross_weight` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_uw_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_ul_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_uh_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_sw_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_net_unit_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_gross_unit_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_how_to` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_how_to_url` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_how_to_path` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_suggest` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_suggest_url` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_suggest_path` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_caution` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_caution_url` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_caution_path` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_file_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_file_path` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_is_system` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_created_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_updated_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_product_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_vendor_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_barcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_sale_unit` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_spacific_fields` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pd_remark_inactive` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `pd_id` | STRING | Unique identifier (UUID) of the product detail record. |
+| `pd_prd_id` | STRING | Product this detail belongs to (FK to `product.prd_id`). |
+| `pd_url_video` | STRING | URL of the product video. |
+| `pd_detail` | STRING | Product description text (HTML). |
+| `pd_series` | STRING | Product series name. |
+| `pd_model` | STRING | Product model. |
+| `pd_material` | STRING | Main material of the product (e.g. PE). |
+| `pd_certificate` | STRING | Thai Industrial Standard (TIS) certificate of the product (e.g. `TIS.982-2556`). |
+| `pd_garantee` | STRING | Warranty period of the product (e.g. `1Y`, `20 Y`). |
+| `pd_garantee_detail` | STRING | Warranty terms and conditions text. |
+| `pd_shape` | STRING | Packaging shape of the product (e.g. box, gallon, length). |
+| `pd_supplier_country` | STRING | Country of the supplier (country of origin). |
+| `pd_package_wide` | FLOAT64 | Package width. |
+| `pd_package_long` | FLOAT64 | Package length. |
+| `pd_package_hight` | FLOAT64 | Package height. |
+| `pd_size_wide` | FLOAT64 | Product width. |
+| `pd_size_long` | FLOAT64 | Product length (depth). |
+| `pd_sl_id` | STRING | Unit of the product length `pd_size_long` (FK to `unit.unit_id`). |
+| `pd_size_hight` | FLOAT64 | Product height. |
+| `pd_sh_id` | STRING | Unit of the product height `pd_size_hight` (FK to `unit.unit_id`). |
+| `pd_net_weight` | FLOAT64 | Net weight of the product. |
+| `pd_gross_weight` | FLOAT64 | Gross (packed) weight of the product. |
+| `pd_uw_id` | STRING | Unit of the package width `pd_package_wide` (FK to `unit.unit_id`). |
+| `pd_ul_id` | STRING | Unit of the package length `pd_package_long` (FK to `unit.unit_id`). |
+| `pd_uh_id` | STRING | Unit of the package height `pd_package_hight` (FK to `unit.unit_id`). |
+| `pd_sw_id` | STRING | Unit of the product width `pd_size_wide` (FK to `unit.unit_id`). |
+| `pd_net_unit_id` | STRING | Unit of the net weight (FK to `unit.unit_id`). |
+| `pd_gross_unit_id` | STRING | Unit of the gross weight (FK to `unit.unit_id`). |
+| `pd_how_to` | STRING | How-to-use text of the product (HTML). |
+| `pd_how_to_url` | STRING | URL of the how-to-use document or media. |
+| `pd_how_to_path` | STRING | Storage path of the how-to-use file. |
+| `pd_suggest` | STRING | Usage recommendation text of the product (HTML). |
+| `pd_suggest_url` | STRING | URL of the recommendation document or media. |
+| `pd_suggest_path` | STRING | Storage path of the recommendation file. |
+| `pd_caution` | STRING | Caution/warning text of the product (HTML). |
+| `pd_caution_url` | STRING | URL of the caution document or media. |
+| `pd_caution_path` | STRING | Storage path of the caution file. |
+| `pd_file_name` | STRING | File name of the product image. |
+| `pd_file_path` | STRING | Storage path of the product image file. |
+| `pd_is_system` | BOOL | System flag of the product detail; TRUE together with the product active and in-use flags marks the product as approved. |
+| `pd_created_date` | STRING | Timestamp when the record was created. |
+| `pd_created_by` | STRING | Identifier of the user who created the record. |
+| `pd_updated_date` | STRING | Timestamp when the record was last updated. |
+| `pd_updated_by` | STRING | Identifier of the user who last updated the record. |
+| `pd_product_name` | STRING | Full product name. |
+| `pd_vendor_code` | STRING | Vendor own item code of the product. |
+| `pd_barcode` | STRING | Barcode of the product. |
+| `pd_sale_unit` | STRING | Sales unit of the product (e.g. `EA`). |
+| `pd_spacific_fields` | STRING | Product-specific fields as JSON (`{"SpeciFeild":[{"label","value"}]}`). |
+| `pd_remark_inactive` | STRING | Reason the product was made inactive (e.g. sale cancelled, duplicate). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

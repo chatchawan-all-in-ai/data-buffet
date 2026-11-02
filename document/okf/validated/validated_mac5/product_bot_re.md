@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "product_bot_re"
-description: "One row = one BOT-RE product, unique on (company_id, id)."
+description: "One row = one developer article (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=product_bot_re&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `product_bot_re`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: BOT-RE product. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `product_bot_re`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Developer article (SKU) codes used on real-estate purchase orders, with type, price and developer group, for the real-estate PO bot.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,13 +35,13 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `sku_id` | STRING | Meaning not documented in the repo. |
-| `qty` | FLOAT64 | Likely quantity (inferred from the column name only; not documented in the repo). |
-| `price` | FLOAT64 | Likely price (inferred from the column name only; not documented in the repo). |
-| `channel` | STRING | Meaning not documented in the repo. |
-| `type_product` | STRING | Meaning not documented in the repo. |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
+| `id` | INT64 | Row identifier of the developer product. |
+| `sku_id` | STRING | Developer article (SKU) code as printed on its purchase orders. |
+| `qty` | FLOAT64 | Quantity per article. |
+| `price` | FLOAT64 | Agreed price of the article. |
+| `channel` | STRING | Developer group of the article (e.g. `AP`, `SANSIRI`, `SC`, `Frasers`, `QH`). |
+| `type_product` | STRING | Article type (`NORMAL` = single product, `COMBOSET` = set of several MAC5 products). |
+| `create_date` | DATETIME | Date and time the row was created. |
 
 # How it is built
 

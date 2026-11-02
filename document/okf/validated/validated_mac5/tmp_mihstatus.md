@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tmp_mihstatus"
-description: "One row = one cleaned source record of `tmp_mihstatus` (no declared key; append-style, not deduplicated)."
+description: "One row = one sales document status snapshot from source table `tmp_mihstatus` (no declared key; append-style, not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tmp_mihstatus&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tmp_mihstatus`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: temporary document status. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `tmp_mihstatus`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Status codes of MAC5 sales documents with the time each status was recorded.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,9 +35,9 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `mihvnos` | STRING | Likely document number (inferred from the column name only; not documented in the repo). |
-| `mihstatus` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `sdate` | STRING | Likely date (inferred from the column name only; not documented in the repo). |
+| `mihvnos` | STRING | Document number, unique within company and document type. |
+| `mihstatus` | STRING | Document status code; meaning in `ar_s` for sales types and `ap_s` for purchase types (e.g. 26 = approved sales order, 30 = VAT sale, 32 = cancelled tax invoice). |
+| `sdate` | STRING | Date and time the status was recorded (text such as `Nov 25 2025  9:49PM`). |
 
 # How it is built
 

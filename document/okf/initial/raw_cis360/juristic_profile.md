@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "juristic_profile"
-description: "One row = one record of source table `juristic_profile` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one juristic profile of a customer, a record of source table `juristic_profile` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_cis360&t=juristic_profile&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_cis360
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/cis360/juristic_profile/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `juristic_profile` table from CIS360; nothing is cleaned or deduplicated here. Used by: [validated_cis360.juristic_profile](/validated/validated_cis360/juristic_profile.md).
+External table over AVRO files in `gs://file-raw-data/cis360/juristic_profile/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `juristic_profile` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Company details of juristic-person customers in CIS360: head office or branch, juristic entity type, highest authority and contact person. Used by: [validated_cis360.juristic_profile](/validated/validated_cis360/juristic_profile.md).
 
 # Grain and key
 
@@ -30,28 +30,28 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_profile_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `organize_type_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `juristic_type_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `juristic_type_remark` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `nature_business_remark` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `branch_number` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `highest_authority_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `highest_authority_position` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `highest_authority_phone_number` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `highest_authority_email` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `contact_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `contact_phone_number` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `contact_email` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `contact_shown_highest_authority` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_delete` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | STRING | Unique identifier (UUID) of the juristic profile. |
+| `customer_profile_id` | STRING | Customer profile this juristic detail belongs to (`customer_profile.id`). |
+| `organize_type_id` | INT64 | Organization type (`organize_type.id`: 1 = HEAD_OFFICE, 2 = BRANCH). |
+| `juristic_type_id` | INT64 | Juristic entity type (`juristic_type.id`). |
+| `juristic_type_remark` | STRING | Free-text remark on the juristic entity type. |
+| `nature_business_remark` | STRING | Free-text remark on the nature of business. |
+| `branch_number` | STRING | Branch number of the juristic person. |
+| `highest_authority_name` | STRING | Name of the highest authority (e.g. managing director) of the juristic person. |
+| `highest_authority_position` | STRING | Position title of the highest authority. |
+| `highest_authority_phone_number` | STRING | Whether a phone number of the highest authority is recorded. |
+| `highest_authority_email` | STRING | Whether an email of the highest authority is recorded. |
+| `contact_name` | STRING | Name of the contact person of the juristic person. |
+| `contact_phone_number` | STRING | Whether a contact phone number is recorded. |
+| `contact_email` | STRING | Whether a contact email is recorded. |
+| `contact_shown_highest_authority` | BOOL | Whether the contact person is the highest authority. |
+| `is_delete` | BOOL | Soft-delete flag (TRUE = record deleted). |
+| `create_date` | STRING | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | STRING | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

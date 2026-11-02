@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "comboset"
-description: "One row = one record of source table `comboset` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one item in a combo set, a record of source table `comboset` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=comboset&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/comboset/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `comboset` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.comboset](/validated/validated_mac5/comboset.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/comboset/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `comboset` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Items that make up each combo set, with quantity and list price. Used by: [validated_mac5.comboset](/validated/validated_mac5/comboset.md).
 
 # Grain and key
 
@@ -30,16 +30,16 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `combostk` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `stkcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uupdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quantity` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `price` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `lp` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Running ID of the combo set line row. |
+| `combostk` | STRING | Combo set code the line belongs to (joins `combostk.combostk`). |
+| `stkcode` | STRING | Stock code of the item in the combo set. |
+| `date` | STRING | Date and time the row was created. |
+| `uinsert` | STRING | User code of the person who created the record. |
+| `uupdate` | STRING | User code of the person who last updated the record. |
+| `status` | INT64 | Status code of the combo set line (1 = active). |
+| `quantity` | INT64 | Quantity of the item in the combo set. |
+| `price` | FLOAT64 | Price of the item in the combo set. |
+| `lp` | FLOAT64 | List price of the item. |
 
 # How it is built
 

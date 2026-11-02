@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "match_customer"
-description: "One row = one customer matching map, unique on (company_id, id)."
+description: "One row = one Allkons customer to MAC5 customer mapping (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=match_customer&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `match_customer`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: customer matching map. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `match_customer`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Mapping of Allkons (CIS360) customer codes to MAC5 customer (debtor) codes, used by dim_customer to attach Customer 360 profiles.
 Used by: [dimension_table.dim_customer](/dimension/dim_customer.md).
 
 # Grain and key
@@ -35,11 +35,11 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `customer_allkon` | STRING | Meaning not documented in the repo. |
-| `customer_mac5` | STRING | Meaning not documented in the repo. |
-| `mihjob` | STRING | Meaning not documented in the repo. |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
+| `id` | INT64 | Row identifier of the mapping. |
+| `customer_allkon` | STRING | Allkons (CIS360) customer code, such as `C0003552`. |
+| `customer_mac5` | STRING | MAC5 customer (debtor) code mapped to the Allkons customer. |
+| `mihjob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
+| `create_date` | DATETIME | Date and time the mapping was created. |
 
 # How it is built
 

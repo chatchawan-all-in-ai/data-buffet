@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tmp_mihstatus"
-description: "One row = one record of source table `tmp_mihstatus` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one sales document status snapshot, a record of source table `tmp_mihstatus` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=tmp_mihstatus&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/tmp_mihstatus/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tmp_mihstatus` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.tmp_mihstatus](/validated/validated_mac5/tmp_mihstatus.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/tmp_mihstatus/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tmp_mihstatus` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Status codes of MAC5 sales documents with the time each status was recorded. Used by: [validated_mac5.tmp_mihstatus](/validated/validated_mac5/tmp_mihstatus.md).
 
 # Grain and key
 
@@ -30,9 +30,9 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `mihvnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mihstatus` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `mihvnos` | STRING | Document number, unique within company and document type. |
+| `mihstatus` | STRING | Document status code; meaning in `ar_s` for sales types and `ap_s` for purchase types (e.g. 26 = approved sales order, 30 = VAT sale, 32 = cancelled tax invoice). |
+| `sdate` | STRING | Date and time the status was recorded (text such as `Nov 25 2025  9:49PM`). |
 
 # How it is built
 

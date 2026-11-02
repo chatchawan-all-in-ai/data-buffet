@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "stock_by_branch"
-description: "One row = one record of source table `stock_by_branch` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one article stock snapshot at one Boonthavorn branch, a record of source table `stock_by_branch` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=stock_by_branch&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_saleout_mdt
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/stock_by_branch/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `stock_by_branch` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Used by: [validated_saleout_mdt.stock_by_branch](/validated/validated_saleout_mdt/stock_by_branch.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/stock_by_branch/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `stock_by_branch` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Daily on-hand stock (quantity and cost value) of the company products at each Boonthavorn (BT) branch. Used by: [validated_saleout_mdt.stock_by_branch](/validated/validated_saleout_mdt/stock_by_branch.md).
 
 # Grain and key
 
@@ -30,17 +30,17 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `VENDOR_ID` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `VENDOR_NAME` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `BRANCH` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MCH3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ARTICLE_ID` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ARTICLE_NAME_TH` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ITEM_FLAG` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `UR_QTY` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `UR_COST_AMT` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `START_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `END_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `VENDOR_ID` | STRING | Boonthavorn vendor code of the supplier (the company), e.g. `10009`. |
+| `VENDOR_NAME` | STRING | Supplier (vendor) name as registered at Boonthavorn. |
+| `BRANCH` | STRING | Boonthavorn branch name in Thai, used as the branch code. |
+| `MCH3` | STRING | Boonthavorn merchandise category, top level (department). |
+| `ARTICLE_ID` | STRING | Boonthavorn article (product) code. |
+| `ARTICLE_NAME_TH` | STRING | Product name in Thai. |
+| `ITEM_FLAG` | STRING | Item movement flag (`REGULAR`, `FAST`, `DISCON` = discontinued). |
+| `UR_QTY` | INT64 | Unrestricted (available) stock quantity on hand. |
+| `UR_COST_AMT` | FLOAT64 | Value of the unrestricted stock at cost (THB). |
+| `START_DATE` | STRING | Stock snapshot date (same as `end_date`). |
+| `END_DATE` | STRING | Stock snapshot date. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

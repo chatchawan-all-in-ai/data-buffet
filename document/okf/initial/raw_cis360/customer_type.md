@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "customer_type"
-description: "One row = one record of source table `customer_type` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one customer type, a record of source table `customer_type` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_cis360&t=customer_type&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_cis360
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/cis360/customer_type/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_type` table from CIS360; nothing is cleaned or deduplicated here. Used by: [validated_cis360.customer_type](/validated/validated_cis360/customer_type.md).
+External table over AVRO files in `gs://file-raw-data/cis360/customer_type/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_type` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Lookup of CIS360 customer types (personal, juristic). Used by: [validated_cis360.customer_type](/validated/validated_cis360/customer_type.md).
 
 # Grain and key
 
@@ -30,20 +30,20 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_type_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_type_name_en` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_type_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_type_order` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_constant` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `active_status` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_delete` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Primary key of the customer type lookup. |
+| `customer_type_name` | STRING | Customer type name in Thai. |
+| `customer_type_name_en` | STRING | Customer type name in English. |
+| `customer_type_code` | STRING | Customer type code (`PERSONAL` = individual, `JURISTIC` = juristic person). |
+| `customer_type_order` | INT64 | Display sort order of the customer type. |
+| `is_constant` | BOOL | Whether the customer type is a fixed system-defined value. |
+| `active_status` | BOOL | Whether the customer type is active. |
+| `is_delete` | BOOL | Soft-delete flag (TRUE = record deleted). |
+| `create_date` | STRING | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | STRING | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

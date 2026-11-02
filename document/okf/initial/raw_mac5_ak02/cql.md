@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "cql"
-description: "One row = one record of source table `cql` (MAC5 for company `ak02`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one cheque ledger entry, a record of source table `cql` (MAC5 for company `ak02`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ak02&t=cql&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ak02
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ak02/cql/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `cql` table from MAC5 for company `ak02`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.cql](/validated/validated_mac5/cql.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ak02/cql/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `cql` table from MAC5 for company `ak02`; nothing is cleaned or deduplicated here. Table meaning: Cheque and bank-book ledger entries linking each cheque to the receipt or payment document it settles. Used by: [validated_mac5.cql](/validated/validated_mac5/cql.md).
 
 # Grain and key
 
@@ -30,20 +30,20 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `cqldate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cqlbank` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cqlno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cqlsys` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cqlday` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cqlmonth` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cqlyear` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cqlbook` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cqlvnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cqlsuml` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cqlmivt` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cqlcus` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cqltag` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `cqlautono` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `cqldate` | STRING | Date of the cheque ledger entry. |
+| `cqlbank` | STRING | Bank code of the cheque (e.g. `BBL`, `KBANK`). |
+| `cqlno` | STRING | Cheque number, matching `chq.chqno`. |
+| `cqlsys` | INT64 | Source system of the entry (1 = bank book, 2 = receipt or payment document). |
+| `cqlday` | INT64 | Day part of the entry date. |
+| `cqlmonth` | INT64 | Month part of the entry date. |
+| `cqlyear` | INT64 | Year part of the entry date (Gregorian). |
+| `cqlbook` | INT64 | Bank book number (0 = entry linked to a receipt or payment document). |
+| `cqlvnos` | STRING | Number of the receipt or payment document the cheque settles (e.g. `RI-...`). |
+| `cqlsuml` | FLOAT64 | Cheque amount of the entry. |
+| `cqlmivt` | STRING | Document type of the linked document (RS = receipt, RP = payment, `--` = none). |
+| `cqlcus` | STRING | Customer code (supplier code for payments), matching `deb.debcode`. |
+| `cqltag` | INT64 | Tag marker of the entry. |
+| `cqlautono` | INT64 | Auto-increment ID of the entry. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

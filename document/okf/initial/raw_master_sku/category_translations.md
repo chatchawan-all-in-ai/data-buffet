@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "category_translations"
-description: "One row = one record of source table `category_translations` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one category name in one language, a record of source table `category_translations` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_master_sku&t=category_translations&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_master_sku
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/master_sku/category_translations/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `category_translations` table from MASTER_SKU; nothing is cleaned or deduplicated here. Used by: [validated_master_sku.category_translations](/validated/validated_master_sku/category_translations.md).
+External table over AVRO files in `gs://file-raw-data/master_sku/category_translations/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `category_translations` table from MASTER_SKU; nothing is cleaned or deduplicated here. Table meaning: Translated (Thai/English) names and descriptions of master_sku categories. Used by: [validated_master_sku.category_translations](/validated/validated_master_sku/category_translations.md).
 
 # Grain and key
 
@@ -30,14 +30,14 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `category_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `language_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `detail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `category_id` | STRING | Category being translated (FK to `categories.id`). |
+| `language_id` | STRING | Language of the translation (FK to `common_codes.id` of type `language`: `en` or `th`). |
+| `name` | STRING | Category name in this language. |
+| `detail` | STRING | Category description in this language. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

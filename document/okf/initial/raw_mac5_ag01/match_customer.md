@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "match_customer"
-description: "One row = one record of source table `match_customer` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one Allkons customer to MAC5 customer mapping, a record of source table `match_customer` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=match_customer&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/match_customer/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `match_customer` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.match_customer](/validated/validated_mac5/match_customer.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/match_customer/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `match_customer` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Mapping of Allkons (CIS360) customer codes to MAC5 customer (debtor) codes, used by dim_customer to attach Customer 360 profiles. Used by: [validated_mac5.match_customer](/validated/validated_mac5/match_customer.md).
 
 # Grain and key
 
@@ -30,11 +30,11 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_allkon` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_mac5` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mihjob` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Row identifier of the mapping. |
+| `customer_allkon` | STRING | Allkons (CIS360) customer code, such as `C0003552`. |
+| `customer_mac5` | STRING | MAC5 customer (debtor) code mapped to the Allkons customer. |
+| `mihjob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
+| `create_date` | STRING | Date and time the mapping was created. |
 
 # How it is built
 

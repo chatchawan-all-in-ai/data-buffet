@@ -30,75 +30,75 @@ One row per `company_id` + `Running` (quotation code). Duplicates across revisio
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code; part of the key. |
-| `ID` | INT64 | Numeric row id of the quotation in the source (tbook_quotation.id); joined to tbook_quodetail.linkid for detail lines; larger id wins a tie on Rev. |
-| `Running` | STRING | Quotation code (running number), part of the key; NULL becomes ''. Matches curated_mih.mihRef1 of the sales orders created from the quotation. |
-| `Atten` | STRING | Attention / contact text of the quotation (free text; dim_quotation parses a customer id from the part before a backslash). |
-| `Address` | STRING | Address text of the quotation. |
+| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `ID` | INT64 | Quotation identifier, referenced by `tbook_quodetail.linkid`. |
+| `Running` | STRING | Quotation number referenced by orders, with missing source numbers represented as an empty string. |
+| `Atten` | STRING | Attention or contact text of the quotation, including a customer code before a backslash when supplied. |
+| `Address` | STRING | Customer address text. |
 | `SDate` | DATE | Quotation date. |
-| `Project` | STRING | Project text of the quotation (dim_quotation splits it on a backslash to extract a customer id or a numeric project code). |
-| `TelePhone` | BOOL | Telephone of the contact (typed BOOL in the table). |
-| `Sale` | BOOL | Sales person field (typed BOOL in the table). |
-| `PriceValidity` | STRING | Price validity text (pass-through of price_validity). |
+| `Project` | STRING | Project text of the quotation, including a project or customer code before a backslash when supplied. |
+| `TelePhone` | BOOL | Flag indicating whether to show the telephone number, TRUE when the source marker is nonblank. |
+| `Sale` | BOOL | Flag indicating whether to show the salesperson, TRUE when the source marker is nonblank. |
+| `PriceValidity` | STRING | Price validity text. |
 | `TermDelivery` | STRING | Delivery terms text. |
-| `TermPayment` | STRING | Payment terms text. |
-| `UInsert` | STRING | User who inserted the row (pass-through of uinsert). |
-| `DInsert` | STRING | Insert datetime-like text (pass-through of dinsert); the channel logic in dim_customer_report_info orders by it. |
-| `UUpdate` | STRING | User who last updated the row. |
-| `Dupdate` | STRING | Last update datetime-like text. |
-| `Agent1` | STRING | First agent field; the first non-empty word is used as the customer debcode in the segment-by-channel logic of dim_customer_report_info. |
-| `Agent2` | STRING | Second agent field; meaning not documented in the repo. |
-| `Period` | STRING | Meaning not documented in the repo |
-| `Position` | STRING | Meaning not documented in the repo |
-| `Vat` | INT64 | VAT field of the quotation (pass-through of vat; likely VAT rate or flag). |
-| `Disc` | INT64 | Discount field of the quotation (pass-through of disc). |
-| `ExtraSum` | INT64 | Extra amount field (pass-through of extrasum). |
-| `ExtraDesc` | STRING | Meaning not documented in the repo |
-| `DateStart1` | STRING | Meaning not documented in the repo |
-| `DateEnd1` | STRING | Meaning not documented in the repo |
-| `DateStart2` | STRING | Meaning not documented in the repo |
-| `DateEnd2` | STRING | Meaning not documented in the repo |
-| `CashStatus` | INT64 | Cash status code (pass-through of cashstatus; also a cluster column). |
-| `Note` | STRING | Free-text note. |
-| `NoteForApp` | STRING | Meaning not documented in the repo |
-| `MemoForApp` | STRING | Meaning not documented in the repo |
-| `Rev` | INT64 | Revision number of the quotation; the row with the highest Rev (then highest ID) is kept per (company_id, Running). |
-| `TypeCus` | INT64 | Meaning not documented in the repo |
-| `Channel` | STRING | Sales channel code of the quotation (e.g. TT/DC/DA/DG/DD/DT/DR are the values the channel-segment logic uses). |
-| `Channel2` | STRING | Meaning not documented in the repo |
-| `TypePrice` | INT64 | Meaning not documented in the repo |
-| `FOB` | INT64 | Meaning not documented in the repo |
-| `Cancel` | INT64 | Cancel flag of the quotation (pass-through of cancel; also a cluster column). |
-| `AppType` | INT64 | Meaning not documented in the repo |
-| `TypeDeb` | STRING | Meaning not documented in the repo |
-| `SaleDep` | STRING | Meaning not documented in the repo |
-| `TypeProject` | STRING | Meaning not documented in the repo |
-| `SelectStatus` | INT64 | Meaning not documented in the repo |
-| `ConpoStatus` | INT64 | Meaning not documented in the repo |
-| `Lat` | STRING | Latitude text (pass-through of lat). |
-| `Long` | STRING | Longitude text (pass-through of long). |
-| `MapNote` | STRING | Meaning not documented in the repo |
-| `FileUpload` | STRING | Meaning not documented in the repo |
-| `City` | STRING | City text. |
-| `RdoSend` | INT64 | Meaning not documented in the repo |
-| `CustomerName` | BOOL | Customer name field (typed BOOL in the table). |
-| `CustomerTelePhone` | BOOL | Customer telephone field (typed BOOL in the table). |
-| `CustomerAddress` | STRING | Customer address text. |
-| `CheckNote` | STRING | Meaning not documented in the repo |
-| `TextNote` | STRING | Meaning not documented in the repo |
-| `StatusSpread` | INT64 | Meaning not documented in the repo |
-| `ChkBox` | INT64 | Meaning not documented in the repo |
-| `FobStt` | INT64 | Meaning not documented in the repo |
-| `QuotationRef` | INT64 | Pass-through of quotation_ref; meaning not documented in the repo. |
-| `CustomerId` | INT64 | Pass-through of customer_id (numeric); meaning not documented in the repo. |
-| `CustomerGroup` | INT64 | Meaning not documented in the repo |
-| `QuotationId` | INT64 | Pass-through of quotation_id; meaning not documented in the repo. |
-| `EStatus` | INT64 | Meaning not documented in the repo |
-| `Area` | STRING | Area text. |
-| `District` | STRING | District text. |
-| `PostCode` | STRING | Postal code text. |
-| `QtStepPrice` | INT64 | Meaning not documented in the repo |
-| `ExtraDis` | STRING | Meaning not documented in the repo |
+| `TermPayment` | STRING | Payment terms text (e.g. credit 30 days). |
+| `UInsert` | STRING | Employee code of the user who created the row. |
+| `DInsert` | STRING | Date and time the row was created (text). |
+| `UUpdate` | STRING | Employee code of the user who last updated the row. |
+| `Dupdate` | STRING | Date and time the row was last updated (text). |
+| `Agent1` | STRING | Customer (dealer) code and name the quotation is issued to; the first word is the MAC5 debtor code. |
+| `Agent2` | STRING | Second customer (dealer) code and name. |
+| `Period` | STRING | Period text of the quotation. |
+| `Position` | STRING | Position of the contact person (e.g. purchasing, project manager). |
+| `Vat` | INT64 | VAT flag (1 = prices include VAT). |
+| `Disc` | INT64 | Discount flag (1 = discount shown). |
+| `ExtraSum` | INT64 | Extra amount flag (1 = extra amount applies). |
+| `ExtraDesc` | STRING | Extra amount or discount text of the quotation. |
+| `DateStart1` | STRING | Start date of price period 1. |
+| `DateEnd1` | STRING | End date of price period 1. |
+| `DateStart2` | STRING | Start date of price period 2. |
+| `DateEnd2` | STRING | End date of price period 2. |
+| `CashStatus` | INT64 | Cash sale flag (1 = cash). |
+| `Note` | STRING | Free-text note of the quotation. |
+| `NoteForApp` | STRING | Note to the approver with matching telephone numbers replaced by xxx-xxx-xxxx. |
+| `MemoForApp` | STRING | Memo to the approver. |
+| `Rev` | INT64 | Revision number of the quotation (0 = original). |
+| `TypeCus` | INT64 | Customer type code (0, 1, 2). |
+| `Channel` | STRING | Sales channel code (e.g. `TT`, `DT`, `DC`, `PS1`, `DD`, `PS2-1`, `DG`, `EX`). |
+| `Channel2` | STRING | Order channel group code (e.g. `AR`, `CRC`, `A`, `PS1`, `PS2-1`, `EX`). |
+| `TypePrice` | INT64 | Price type code (1, 2). |
+| `FOB` | INT64 | FOB flag. |
+| `Cancel` | INT64 | Cancel flag (1 = cancelled). |
+| `AppType` | INT64 | Approval type identifier (`tbook_apptype.id`). |
+| `TypeDeb` | STRING | Customer type text. |
+| `SaleDep` | STRING | Sales department. |
+| `TypeProject` | STRING | Project type. |
+| `SelectStatus` | INT64 | Selection status code (0, 1, 2). |
+| `ConpoStatus` | INT64 | Confirmed-PO status flag. |
+| `Lat` | STRING | Latitude of the delivery location. |
+| `Long` | STRING | Longitude of the delivery location. |
+| `MapNote` | STRING | Map note for the delivery location. |
+| `FileUpload` | STRING | Uploaded map image file name. |
+| `City` | STRING | Province of the delivery address. |
+| `RdoSend` | INT64 | Delivery method option code (0 to 3). |
+| `CustomerName` | BOOL | Flag indicating whether to show the customer name, TRUE when the source marker is nonblank. |
+| `CustomerTelePhone` | BOOL | Flag indicating whether to show the customer telephone number, TRUE when the source marker is nonblank. |
+| `CustomerAddress` | STRING | Customer delivery address. |
+| `CheckNote` | STRING | Delivery checklist note. |
+| `TextNote` | STRING | Free-text delivery note. |
+| `StatusSpread` | INT64 | Spread status flag (1 = spread into orders). |
+| `ChkBox` | INT64 | Checkbox flag. |
+| `FobStt` | INT64 | FOB status code (0, 2). |
+| `QuotationRef` | INT64 | Reference quotation identifier. |
+| `CustomerId` | INT64 | Customer identifier. |
+| `CustomerGroup` | INT64 | Customer group identifier. |
+| `QuotationId` | INT64 | Quotation identifier from a linked system. |
+| `EStatus` | INT64 | E-status code. |
+| `Area` | STRING | District (amphoe) of the delivery address. |
+| `District` | STRING | Sub-district (tambon) of the delivery address. |
+| `PostCode` | STRING | Postal code of the delivery address. |
+| `QtStepPrice` | INT64 | Step-price quotation flag. |
+| `ExtraDis` | STRING | Extra discount percent (e.g. 3, 4, 5). |
 
 # How it is built
 

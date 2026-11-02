@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tbook_apptype"
-description: "One row = one record of source table `tbook_apptype` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one product-line approval type, a record of source table `tbook_apptype` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=tbook_apptype&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbook_apptype/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbook_apptype` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.tbook_apptype](/validated/validated_mac5/tbook_apptype.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbook_apptype/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbook_apptype` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Product-line approval types of the quotation app, with the approver, position and signature image. Used by: [validated_mac5.tbook_apptype](/validated/validated_mac5/tbook_apptype.md).
 
 # Grain and key
 
@@ -30,12 +30,12 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `iddesc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `idcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dep` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pic` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Approval type identifier, referenced by `tbook_quotation.apptype`. |
+| `iddesc` | STRING | Product-line code of the approval type (e.g. `PE`, `PUMP`, `RP`, `LYNN`, `CL`, `AIR`). |
+| `idcode` | STRING | Employee code of the approver for the product line. |
+| `name` | STRING | Name of the approver for the product line. |
+| `dep` | STRING | Position title of the approver. |
+| `pic` | STRING | Path of the approver signature image. |
 
 # How it is built
 

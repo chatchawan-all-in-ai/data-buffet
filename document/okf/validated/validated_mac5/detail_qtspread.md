@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "detail_qtspread"
-description: "One row = one quotation spread (detail), unique on (company_id, id)."
+description: "One row = one item line of a quotation spread (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=detail_qtspread&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `detail_qtspread`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: quotation spread (detail). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `detail_qtspread`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Item lines of quotation spreads: stock code and quantity taken from a quotation detail line into one order.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,23 +35,23 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `ref_id` | INT64 | Meaning not documented in the repo. |
-| `qtid` | INT64 | Meaning not documented in the repo. |
-| `quodeid` | STRING | Meaning not documented in the repo. |
-| `stkcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `quantity` | FLOAT64 | Meaning not documented in the repo. |
-| `price` | FLOAT64 | Likely price (inferred from the column name only; not documented in the repo). |
-| `total` | STRING | Likely total amount (inferred from the column name only; not documented in the repo). |
-| `uinsert` | STRING | Meaning not documented in the repo. |
-| `uupdate` | STRING | Likely date (inferred from the column name only; not documented in the repo). |
-| `dinsert` | DATETIME | Meaning not documented in the repo. |
-| `dupdate` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `link` | STRING | Meaning not documented in the repo. |
-| `type` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `fandex` | STRING | Meaning not documented in the repo. |
-| `itemsize` | STRING | Meaning not documented in the repo. |
+| `id` | INT64 | Row identifier of the spread line. |
+| `ref_id` | INT64 | Quotation spread identifier (`main_qtspread.id`). |
+| `qtid` | INT64 | Quotation identifier (`tbook_quotation.id`). |
+| `quodeid` | STRING | Quotation detail line identifier (`tbook_quodetail.id`). |
+| `stkcode` | STRING | MAC5 stock code of the item. |
+| `quantity` | FLOAT64 | Quantity of the item spread into this order. |
+| `price` | FLOAT64 | Unit price of the item. |
+| `total` | STRING | Line total of the item. |
+| `uinsert` | STRING | Employee code of the user who created the row. |
+| `uupdate` | STRING | Employee code of the user who last updated the row. |
+| `dinsert` | DATETIME | Date and time the row was created. |
+| `dupdate` | DATETIME | Date and time the row was last updated. |
+| `status` | STRING | Status code of the spread line (1 = active, 3 = cancelled). |
+| `link` | STRING | Link reference of the spread line. |
+| `type` | STRING | Line type of the spread line. |
+| `fandex` | STRING | FANDEX reference of the spread line. |
+| `itemsize` | STRING | Item size of the spread line. |
 
 # How it is built
 

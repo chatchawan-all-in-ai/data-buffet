@@ -46,20 +46,20 @@ One row per `AgingSK` (QUALIFY ROW_NUMBER over AgingSK ordered by ReceiptAgeDays
 | `invoiceDate` | DATE | Invoice date. |
 | `cfsVnosID` | STRING | Invoice document number (cfs vnos / mih `mihVnos`); with companyID and cfsTypeID it is the natural key of an aging row. |
 | `cfsTypeID` | STRING | Invoice document type (MAC5 mih type of the aging document). |
-| `cfsJob` | STRING | Job code (`mihJob`) of the invoice. |
-| `cfsDep` | STRING | Department code (`mihDep`) of the invoice; joined to channel `DepCode`. |
-| `cfsPer` | STRING | Salesperson code (`mihPer`) of the invoice. |
-| `debCode` | STRING | Customer code (`debcode`) of the invoice. |
+| `cfsJob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
+| `cfsDep` | STRING | Department code of the document, used as the sales channel code. |
+| `cfsPer` | STRING | Salesperson (employee) code, matching `per.percode`. |
+| `debCode` | STRING | Customer (debtor) code. |
 | `debName` | STRING | Customer name (`debnamet` from dim_customer). Personal/company data - describe only. |
 | `calCreditTerm` | INT64 | Credit term in days used for the aging calculation (equals the invoice's `mihstanding`, same value as transCreditTerm). |
-| `debCreditTerm` | INT64 | Credit term in days on the customer master (`DEBcreditTerm` in dim_customer). |
+| `debCreditTerm` | INT64 | Credit term in days. |
 | `transCreditTerm` | INT64 | Credit term in days stored on the invoice transaction (`mihstanding`). |
-| `debLimit` | FLOAT64 | Customer credit limit (`debLimit` in dim_customer). |
-| `debMemo` | STRING | Customer memo text from dim_customer. |
+| `debLimit` | FLOAT64 | Credit limit of the customer in baht. |
+| `debMemo` | STRING | Free-text memo on the customer. |
 | `channel` | STRING | Always NULL in dim_aging (`CAST(NULL AS STRING)`); kept for report compatibility. |
-| `mihRef2` | STRING | Always NULL in dim_aging (`CAST(NULL AS STRING)`); kept for report compatibility. |
-| `mihNote` | STRING | Invoice notes (`mihNotes`). |
-| `mihRef1` | STRING | Invoice reference (`InvoiceRef`, the mih ref1 of the aging document). |
+| `mihRef2` | STRING | Always NULL as an aging-schema placeholder. |
+| `mihNote` | STRING | Free-text notes such as delivery instructions or site details. |
+| `mihRef1` | STRING | Distinct linked document numbers separated by pipes: credit/debit notes for IS rows and referenced invoices for BS/AS rows, with links in the closed-invoice exclusion list omitted. |
 | `TotalAmount` | FLOAT64 | Invoice total amount of the IS document, rounded to 2 decimals. |
 | `PaymentAmount` | FLOAT64 | Amount received against the invoice (dim_aging `RiAmount`): the full TotalAmount when the receipt is marked complete, else the sum of receipts. |
 | `CreditNoteAmount` | FLOAT64 | Sum of credit notes (BS documents) linked to the invoice and not yet received (dim_aging `CnAmount`). |

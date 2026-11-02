@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "specifications"
-description: "One row = one cleaned copy of the source table `specifications`, unique on (group_id, attribute_id)."
+description: "One row = one attribute assigned to one specification group from source table `specifications`, unique on (group_id, attribute_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_master_sku&t=specifications&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_master_sku
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MASTER_SKU `specifications`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MASTER_SKU `specifications`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Attributes assigned to each master_sku specification group, with display order and required/variant flags.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,17 +34,17 @@ One row per `group_id`, `attribute_id`. The key is declared twice in the definit
 
 | Column | Type | Description |
 |---|---|---|
-| `group_id` | STRING | Meaning not documented in the repo. |
-| `attribute_id` | STRING | Meaning not documented in the repo. |
-| `sort_order` | INT64 | Meaning not documented in the repo. |
-| `is_displayed` | BOOL | Meaning not documented in the repo. |
-| `is_required` | BOOL | Meaning not documented in the repo. |
-| `is_variant` | BOOL | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
+| `group_id` | STRING | Specification group (FK to `spec_groups.id`). |
+| `attribute_id` | STRING | Specification attribute (FK to `spec_attributes.id`). |
+| `sort_order` | INT64 | Display order of the attribute within the group. |
+| `is_displayed` | BOOL | Flag marking the attribute as shown on the product. |
+| `is_required` | BOOL | Flag marking the attribute as mandatory for products in the group. |
+| `is_variant` | BOOL | Flag marking the attribute as a variant dimension that distinguishes SKUs in the group. |
+| `status` | STRING | Record status (`Active`, `Inactive`, `Deleted`). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

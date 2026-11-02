@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "pro_crc"
-description: "One row = one record of source table `pro_crc` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one product in a CRC-channel promotion, a record of source table `pro_crc` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=pro_crc&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/pro_crc/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `pro_crc` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.pro_crc](/validated/validated_mac5/pro_crc.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/pro_crc/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `pro_crc` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Products included in CRC-channel promotions of the MAC5 ERP, with promotion set code, period and region. Used by: [validated_mac5.pro_crc](/validated/validated_mac5/pro_crc.md).
 
 # Grain and key
 
@@ -30,14 +30,14 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `procrcstkcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `procrcsttcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `procrcstt` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `procrcstrdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `procrcenddate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `procrcregion` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Running ID of the promotion item row. |
+| `procrcstkcode` | STRING | Stock (product) code included in the promotion. |
+| `procrcsttcode` | STRING | Promotion set code the product belongs to (numeric, e.g. `80164`). |
+| `procrcstt` | STRING | Promotion item status flag (`y` = active). |
+| `procrcstrdate` | STRING | Start date of the promotion period. |
+| `procrcenddate` | STRING | End date of the promotion period. |
+| `procrcregion` | STRING | Region the promotion applies to (`ALL` = all regions). |
+| `dinsert` | STRING | Date and time the row was inserted. |
 
 # How it is built
 

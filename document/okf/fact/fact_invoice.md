@@ -42,18 +42,18 @@ One row per `FactInvoiceSK` (ROW_NUMBER over CompanySK, milYear, milMonth, milDa
 | `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md). |
 | `companyID` | STRING | MAC5 company code. |
 | `mix_date` | DATE | Business date of the invoice (PARSE_DATE of year/month/day). |
-| `milYear` | INT64 | Year of the document (curated_mil). |
-| `milMonth` | INT64 | Month of the document (curated_mil). |
-| `milDay` | INT64 | Day of the document (curated_mil). |
-| `milType` | STRING | Document type: IS, BS, AS or QS. |
-| `milvnos` | STRING | Invoice document number. |
-| `milCus` | STRING | Customer code. |
-| `milStk` | STRING | Product code on the line. |
-| `milLinkVcno` | STRING | Link document number from curated_mil; part of the join to view_dim_invoice (NULL treated as ''). Exact business meaning not documented here (likely the linked order/original document, inferred from the name). |
+| `milYear` | INT64 | Year part of the document date (Gregorian). |
+| `milMonth` | INT64 | Month part of the document date. |
+| `milDay` | INT64 | Day part of the document date. |
+| `milType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `milvnos` | STRING | Document number of the line, matching `mihvnos` of the header. |
+| `milCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `milStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
+| `milLinkVcno` | STRING | Number of the source document this line was created from (e.g. the sales order of an invoice line). |
 | `milQuan` | FLOAT64 | Quantity: SUM of `curated_mil.milQuan` over the grain. |
-| `milAdisc` | FLOAT64 | SUM of `curated_mil.milAdisc` (additional/line discount amount; exact meaning not documented in the repo, inferred from the name). |
+| `milAdisc` | FLOAT64 | SUM of `curated_mil.milAdisc`: the document-level discount allocated to the lines. |
 | `milCog` | FLOAT64 | SUM of `curated_mil.milCog`: gross line amount excluding VAT, with salesperson shares already applied to split-sale lines. |
-| `milDisca` | FLOAT64 | SUM of `curated_mil.milDisca` (discount amount; inferred from the name). |
+| `milDisca` | FLOAT64 | SUM of `curated_mil.milDisca`: line discount amount excluding VAT. |
 | `milSum` | FLOAT64 | SUM of `curated_mil.milSum`, the line net amount in THB (a `milSum = 0` line is treated as free-of-charge in the store facts). |
 | `asatdate` | DATE | Build date, CURRENT_DATE('Asia/Bangkok'); the partition column. |
 

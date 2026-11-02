@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_payment"
-description: "One row = one record of source table `crm_sale_order_payment` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one payment plan of a sale order, a record of source table `crm_sale_order_payment` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_sale_order_payment&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_payment/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_payment` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_sale_order_payment](/validated/validated_derp/crm_sale_order_payment.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_payment/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_payment` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Payment plans of DERP sale orders: payment method, term, condition and amount. Used by: [validated_derp.crm_sale_order_payment](/validated/validated_derp/crm_sale_order_payment.md).
 
 # Grain and key
 
@@ -30,31 +30,31 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_payment_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_order_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `so_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_seq` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_method_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_method_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_method_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_term_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_term_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_term_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_term_other` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_condition_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_condition_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_condition_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `payment_condition_other` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `percent` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `detail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `order_sort` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `sale_order_payment_id` | STRING | Unique identifier of the sale order payment plan. |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `so_no` | STRING | Sale order number of the parent sale order (e.g. `A2610000106`). |
+| `payment_seq` | INT64 | Sequence number of the payment plan within the sale order. |
+| `payment_method_id` | STRING | Identifier of the payment method. |
+| `payment_method_code` | STRING | Payment method code (e.g. `BANK_TRANSFER`, `CASH`, `CHEQUE`, `CREDIT_LIMIT`, `BILL_PAYMENT`, `OTHER_FINANCE`). |
+| `payment_method_name` | STRING | Payment method name in Thai. |
+| `payment_term_id` | STRING | Identifier of the payment term. |
+| `payment_term_code` | STRING | Payment term code (`N000`/`N030`/`N060` = pay 0/30/60 days after delivery, `N888` = no term). |
+| `payment_term_name` | STRING | Payment term description in Thai (e.g. pay 60 days after delivery). |
+| `payment_term_other` | STRING | Free-text payment term entered when no standard term applies. |
+| `payment_condition_id` | STRING | Identifier of the payment condition. |
+| `payment_condition_code` | STRING | Payment condition code (e.g. `BP_CRM` = by billing cycle, `BFF_LMS` = before delivery, `NOW_LMS` = on delivery, `AFT_LMS` = after delivery, `OTHER`). |
+| `payment_condition_name` | STRING | Payment condition description in Thai. |
+| `payment_condition_other` | STRING | Free-text payment condition entered when no standard condition applies. |
+| `amount` | FLOAT64 | Amount covered by the payment plan (THB). |
+| `percent` | FLOAT64 | Share of the order amount covered by the payment plan, in percent. |
+| `detail` | STRING | Free-text description of the payment plan. |
+| `order_sort` | INT64 | Display order of the row within its sale order, starting at 0. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

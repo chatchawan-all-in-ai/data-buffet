@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sales_employee"
-description: "One row = one record of source table `sales_employee` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one employee, a record of source table `sales_employee` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=sales_employee&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/sales_employee/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sales_employee` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.sales_employee](/validated/validated_derp/sales_employee.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/sales_employee/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sales_employee` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Sales-side employees of the DERP system (salespeople, managers, credit staff) with employee number, role group and status. Used by: [validated_derp.sales_employee](/validated/validated_derp/sales_employee.md).
 
 # Grain and key
 
@@ -30,25 +30,25 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `employee_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `employee_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `first_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `last_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `nickname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `employee_group` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `remarks` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `company_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `organization_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `user_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `position` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `phone_number` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `employee_id` | STRING | UUID of the employee. |
+| `employee_no` | STRING | Employee number. |
+| `first_name` | STRING | Employee first name. |
+| `last_name` | STRING | Employee last name. |
+| `nickname` | STRING | Employee nickname. |
+| `employee_group` | STRING | Employee role group (e.g. `sale`, `SALE_TA`, `SALE_MANAGER`, `manager`, `BUSINESS_UNIT_MANAGER`, `credit`). |
+| `status` | STRING | Employee status (`ACTIVE` or `DELETED`). |
+| `remarks` | STRING | Free-text remarks about the employee. |
+| `company_code` | STRING | Code of the company the employee belongs to (e.g. `DHITETA`, `TM`). |
+| `organization_code` | STRING | Code of the organization the employee belongs to (e.g. `TM`). |
+| `user_id` | STRING | UUID of the system user account linked to the employee. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `position` | STRING | Job position of the employee. |
+| `phone_number` | STRING | Employee phone number. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

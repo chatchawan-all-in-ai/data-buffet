@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mac5_sales_areas"
-description: "One row = one record of source table `mac5_sales_areas` (ALLKONS_COMMISSION) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one MAC5 sales area within a sales channel, a record of source table `mac5_sales_areas` (ALLKONS_COMMISSION) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_allkons_commission&t=mac5_sales_areas&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_allkons_commission
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/allkons_commission/mac5_sales_areas/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `mac5_sales_areas` table from ALLKONS_COMMISSION; nothing is cleaned or deduplicated here.
+External table over AVRO files in `gs://file-raw-data/allkons_commission/mac5_sales_areas/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `mac5_sales_areas` table from ALLKONS_COMMISSION; nothing is cleaned or deduplicated here. Table meaning: Sales areas of the Allkons commission app, each linked to a MAC5 sales channel.
 
 # Grain and key
 
@@ -30,12 +30,12 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `desc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mac5_sales_channel_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | STRING | Unique identifier (UUID) of the sales area record. |
+| `code` | STRING | MAC5 sales area code (e.g. `A_BK1`, `ALL_M`). |
+| `desc` | STRING | Sales area name. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `mac5_sales_channel_id` | STRING | MAC5 sales channel the area belongs to (`mac5_sales_channels.id`). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

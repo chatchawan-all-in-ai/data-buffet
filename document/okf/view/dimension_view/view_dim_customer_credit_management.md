@@ -34,10 +34,10 @@ One row per CustomerSK. dim_customer_grade is reduced to one row per CustomerSK 
 | `CustomerSK` | INT64 | Stable SK of the customer in dim_customer. |
 | `CompanySK` | INT64 | SK of the company in dim_company. |
 | `companyID` | STRING | MAC5 company code. |
-| `debcode` | STRING | Customer code in MAC5. |
-| `deblimit` | FLOAT64 | Credit limit from dim_customer. |
-| `debcreditterm` | INT64 | Credit term in days from dim_customer (`DEBcreditTerm`). |
-| `debmemo` | STRING | Customer memo from dim_customer. |
+| `debcode` | STRING | Customer (debtor) code. |
+| `deblimit` | FLOAT64 | Credit limit of the customer in baht. |
+| `debcreditterm` | INT64 | Credit term in days. |
+| `debmemo` | STRING | Free-text memo on the customer. |
 | `Invoice_Customer_CM_Grade` | STRING | Credit-management grade based on invoicing behaviour (`InvoiceGrade` in dim_customer_grade). |
 | `Due_Customer_CM_Grade` | STRING | Credit-management grade based on due/overdue behaviour (`DueGrade` in dim_customer_grade). |
 

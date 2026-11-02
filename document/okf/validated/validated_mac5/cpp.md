@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "cpp"
-description: "One row = one reference code table (cpp), unique on (company_id, rowguid)."
+description: "One row = one outstanding purchase order line (per company), unique on (company_id, rowguid)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=cpp&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `cpp`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: reference code table (cpp). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `cpp`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Outstanding purchase order lines: ordered versus received quantity and amount, with clearing flags.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,33 +35,33 @@ One row per `company_id`, `rowguid`. The key is declared twice in the definition
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `rowguid` | STRING | Meaning not documented in the repo. |
-| `cppstkid` | STRING | Meaning not documented in the repo. |
-| `cpplinkid` | INT64 | Meaning not documented in the repo. |
-| `cppvnosid` | STRING | Meaning not documented in the repo. |
-| `cppdateid` | DATETIME | Meaning not documented in the repo. |
-| `cppcusid` | STRING | Meaning not documented in the repo. |
-| `cppjob` | STRING | Meaning not documented in the repo. |
-| `cppdep` | STRING | Meaning not documented in the repo. |
-| `cppper` | STRING | Meaning not documented in the repo. |
-| `cppdoc` | STRING | Meaning not documented in the repo. |
-| `cppmec` | STRING | Meaning not documented in the repo. |
-| `cppsto` | STRING | Meaning not documented in the repo. |
-| `cppstkreq` | FLOAT64 | Meaning not documented in the repo. |
-| `cppstkcut1` | FLOAT64 | Meaning not documented in the repo. |
-| `cppstkcut2` | FLOAT64 | Meaning not documented in the repo. |
-| `cppsumreq` | FLOAT64 | Meaning not documented in the repo. |
-| `cppsumcut1` | FLOAT64 | Meaning not documented in the repo. |
-| `cppsumcut2` | FLOAT64 | Meaning not documented in the repo. |
-| `cppclearstk` | INT64 | Meaning not documented in the repo. |
-| `cppclearsum` | INT64 | Meaning not documented in the repo. |
-| `cppclearuser` | INT64 | Meaning not documented in the repo. |
-| `cppclearall` | INT64 | Meaning not documented in the repo. |
-| `cppcurc` | INT64 | Meaning not documented in the repo. |
-| `cppexchg` | FLOAT64 | Meaning not documented in the repo. |
-| `cppcut` | INT64 | Meaning not documented in the repo. |
-| `cppdelvdate` | DATETIME | Meaning not documented in the repo. |
-| `cpplistno` | INT64 | Meaning not documented in the repo. |
+| `rowguid` | STRING | Row GUID assigned to the record by the source database. |
+| `cppstkid` | STRING | Product (stock) code of the outstanding purchase line, matching `stk.stkcode`. |
+| `cpplinkid` | INT64 | Internal ID linking the outstanding record to its document line. |
+| `cppvnosid` | STRING | Number of the purchase order document that has the outstanding line (e.g. a `POF...` purchase order). |
+| `cppdateid` | DATETIME | Date of the purchase order document. |
+| `cppcusid` | STRING | Supplier code of the document, matching `cre.crecode`. |
+| `cppjob` | STRING | Job code of the document (sales job or project category). |
+| `cppdep` | STRING | Department code of the document, used as the sales channel code. |
+| `cppper` | STRING | Purchaser (employee) code of the document. |
+| `cppdoc` | STRING | Document reference code. |
+| `cppmec` | STRING | Memo-card code of the document, matching `mec.meccode`. |
+| `cppsto` | STRING | Warehouse (store) code the line is received into. |
+| `cppstkreq` | FLOAT64 | Quantity ordered on the purchase line. |
+| `cppstkcut1` | FLOAT64 | Quantity already received against the purchase line. |
+| `cppstkcut2` | FLOAT64 | Quantity cut against the line by adjustment documents. |
+| `cppsumreq` | FLOAT64 | Amount ordered on the line. |
+| `cppsumcut1` | FLOAT64 | Amount already received or invoiced against the purchase line. |
+| `cppsumcut2` | FLOAT64 | Amount cut against the line by adjustment documents. |
+| `cppclearstk` | INT64 | Flag: outstanding quantity cleared (-1 = cleared). |
+| `cppclearsum` | INT64 | Flag: outstanding amount cleared (-1 = cleared). |
+| `cppclearuser` | INT64 | Flag: line cleared manually by a user (-1 = yes). |
+| `cppclearall` | INT64 | Flag: line fully cleared (-1 = cleared). |
+| `cppcurc` | INT64 | Currency code (0 = Thai baht). |
+| `cppexchg` | FLOAT64 | Exchange rate to Thai baht (1 for baht documents). |
+| `cppcut` | INT64 | Flag: line deducts stock (-1 = yes). |
+| `cppdelvdate` | DATETIME | Expected delivery date of the purchase line. |
+| `cpplistno` | INT64 | Line number within the document. |
 
 # How it is built
 

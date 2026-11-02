@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_customer_address"
-description: "One row = one record of source table `crm_customer_address` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one customer address, a record of source table `crm_customer_address` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_customer_address&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_address/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_address` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_customer_address](/validated/validated_derp/crm_customer_address.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_address/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_address` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Business, delivery and invoice addresses of CRM customers, with Thai administrative codes and coordinates. Used by: [validated_derp.crm_customer_address](/validated/validated_derp/crm_customer_address.md).
 
 # Grain and key
 
@@ -30,35 +30,35 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_address_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_master_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `address_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `address_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `address_full` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `address_detail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `location` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sub_district` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sub_district_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `district` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `district_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `province` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `province_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `postal_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `country_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `latitude` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `longitude` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `delivery_note` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_primary` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `map_url` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_sync` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `customer_address_id` | STRING | UUID of the customer address record. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
+| `address_type` | STRING | Address purpose (`Business`, `Delivery`, `Invoice`). |
+| `address_name` | STRING | Name or label of the address. |
+| `address_full` | STRING | Full address as one text string. |
+| `address_detail` | STRING | Address detail line (house number, building, street). |
+| `location` | STRING | Location (address) ID of the address in the ERP. |
+| `sub_district` | STRING | Sub-district (tambon or khwaeng) name. |
+| `sub_district_code` | STRING | Sub-district code (6-digit Thai administrative code). |
+| `district` | STRING | District (amphoe or khet) name. |
+| `district_code` | STRING | District code (4-digit Thai administrative code). |
+| `province` | STRING | Province name. |
+| `province_code` | STRING | Province code (2-digit Thai administrative code). |
+| `postal_code` | STRING | Postal code. |
+| `country_code` | STRING | Country code (ISO 3166 alpha-3, e.g. `THA`). |
+| `latitude` | FLOAT64 | Latitude of the location in decimal degrees. |
+| `longitude` | FLOAT64 | Longitude of the location in decimal degrees. |
+| `delivery_note` | STRING | Delivery instructions for the address. |
+| `is_primary` | BOOL | Flag marking the customer's primary address of this type. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `map_url` | STRING | Map link (e.g. Google Maps URL) of the location. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

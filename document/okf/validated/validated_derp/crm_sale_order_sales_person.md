@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_sales_person"
-description: "One row = one cleaned copy of the source table `crm_sale_order_sales_person`, unique on (sale_order_sales_person_id)."
+description: "One row = one salesperson assigned to a sale order from source table `crm_sale_order_sales_person`, unique on (sale_order_sales_person_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_sale_order_sales_person&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_sale_order_sales_person`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_sale_order_sales_person`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Salespeople credited on DERP sale orders with their sales and commission shares.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,27 +34,27 @@ One row per `sale_order_sales_person_id`. The key is declared twice in the defin
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_sales_person_id` | STRING | Meaning not documented in the repo. |
-| `sale_order_id` | STRING | Meaning not documented in the repo. |
-| `so_no` | STRING | Meaning not documented in the repo. |
-| `so_date` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `sales_seq` | INT64 | Meaning not documented in the repo. |
-| `sales_id` | STRING | Meaning not documented in the repo. |
-| `sales_code` | STRING | Meaning not documented in the repo. |
-| `sales_name` | STRING | Meaning not documented in the repo. |
-| `sales_amount` | FLOAT64 | Meaning not documented in the repo. |
-| `sales_amount_pct` | FLOAT64 | Meaning not documented in the repo. |
-| `commission_pct` | FLOAT64 | Meaning not documented in the repo. |
-| `order_sort` | INT64 | Meaning not documented in the repo. |
-| `path_id` | STRING | Meaning not documented in the repo. |
-| `path_code` | STRING | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
+| `sale_order_sales_person_id` | STRING | Unique identifier of the salesperson assignment. |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `so_no` | STRING | Sale order number of the parent sale order (e.g. `A2610000106`). |
+| `so_date` | DATETIME | Date and time of the parent sale order. |
+| `sales_seq` | INT64 | Sequence number of the salesperson on the order, starting at 1. |
+| `sales_id` | STRING | Identifier of the salesperson. |
+| `sales_code` | STRING | Employee code of the salesperson. |
+| `sales_name` | STRING | Name of the salesperson. |
+| `sales_amount` | FLOAT64 | Sales amount credited to the salesperson (THB). |
+| `sales_amount_pct` | FLOAT64 | Share of the order sales amount credited to the salesperson, in percent. |
+| `commission_pct` | FLOAT64 | Share of the commission paid to the salesperson, in percent. |
+| `order_sort` | INT64 | Display order of the salesperson within its sale order, starting at 0. |
+| `path_id` | STRING | Identifier of the sales channel path of the salesperson. |
+| `path_code` | STRING | Code of the sales channel path of the salesperson. |
+| `status` | STRING | Status of the salesperson assignment. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

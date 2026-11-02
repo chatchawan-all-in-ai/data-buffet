@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "doc"
-description: "One row = one document type reference, unique on (company_id, doccode)."
+description: "One row = one document type (per company), unique on (company_id, doccode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=doc&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `doc`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: document type reference. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `doc`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Document type master of the MAC5 ERP: code, Thai/English name, group and default GL account.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,17 +35,17 @@ One row per `company_id`, `doccode`. The key is declared twice in the definition
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `doccode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `docgroup` | STRING | Meaning not documented in the repo. |
-| `docdesct` | STRING | Meaning not documented in the repo. |
-| `docdesce` | STRING | Meaning not documented in the repo. |
-| `doclock` | INT64 | Meaning not documented in the repo. |
-| `docacc` | STRING | Meaning not documented in the repo. |
-| `docdebit` | INT64 | Meaning not documented in the repo. |
-| `docrefwe` | STRING | Meaning not documented in the repo. |
-| `dochide` | INT64 | Meaning not documented in the repo. |
-| `doceditdt` | DATETIME | Meaning not documented in the repo. |
-| `doceditmf` | STRING | Meaning not documented in the repo. |
+| `doccode` | STRING | Document type code (e.g. `PO`, `POL`, `FR`). |
+| `docgroup` | STRING | Document group code (e.g. `A`, `P`, `S`, `AR`, `AK`). |
+| `docdesct` | STRING | Thai name of the document type. |
+| `docdesce` | STRING | English name of the document type. |
+| `doclock` | INT64 | Lock flag (-1 = locked against editing, 0 = unlocked). |
+| `docacc` | STRING | Default GL account code of the document type (e.g. `110100`). |
+| `docdebit` | INT64 | Debit-side flag of the document type (-1 = debit, 0 = not). |
+| `docrefwe` | STRING | External reference code of the record. |
+| `dochide` | INT64 | Hidden flag (-1 = hidden from pick lists, 0 = shown). |
+| `doceditdt` | DATETIME | Date and time the record was last edited. |
+| `doceditmf` | STRING | User code of the person who last edited the record. |
 
 # How it is built
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "unit"
-description: "One row = one record of source table `unit` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one measurement unit, a record of source table `unit` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mastersku&t=unit&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mastersku
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mastersku/unit/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `unit` table from MASTERSKU; nothing is cleaned or deduplicated here. Used by: [validated_mastersku.unit](/validated/validated_mastersku/unit.md).
+External table over AVRO files in `gs://file-raw-data/mastersku/unit/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `unit` table from MASTERSKU; nothing is cleaned or deduplicated here. Table meaning: Lookup of length and weight/volume units used for MASTERSKU product dimensions and weights. Used by: [validated_mastersku.unit](/validated/validated_mastersku/unit.md).
 
 # Grain and key
 
@@ -30,12 +30,12 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `unit_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `unit_type_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `unit_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `unit_is_use` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `unit_created_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `unit_updated_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `unit_id` | STRING | Unique identifier (UUID) of the measurement unit. |
+| `unit_type_name` | STRING | Unit type in Thai (`ความยาว` = length, `น้ำหนัก` = weight/volume). |
+| `unit_name` | STRING | Unit symbol (e.g. `mm`, `cm`, `m`, `inch`, `ft`, `kg`, `g`, `lt`, `ml`). |
+| `unit_is_use` | BOOL | In-use flag of the record (FALSE = retired from use). |
+| `unit_created_date` | STRING | Timestamp when the record was created. |
+| `unit_updated_date` | STRING | Timestamp when the record was last updated. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

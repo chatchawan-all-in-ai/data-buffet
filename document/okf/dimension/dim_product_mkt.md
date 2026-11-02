@@ -41,7 +41,7 @@ One row per (company, TypeMarketingID, MarketingGroupID, SubMarketingID, Segment
 | `SubMarketing` | STRING | Pass-through of mds `SubMarketing`, cleaned with `cleanString` (empty string becomes NULL). Sub-marketing name. |
 | `SegmentID` | STRING | Pass-through of mds `SegmentID`, cleaned with `cleanString` (empty string becomes NULL). Segment id (level 4). |
 | `Segment` | STRING | Pass-through of mds `Segment`, cleaned with `cleanString` (empty string becomes NULL). Segment name. |
-| `SubMarketingWH` | STRING | Pass-through of mds `SubMarketingWH`, cleaned with `cleanString` (empty string becomes NULL). Warehouse-side sub-marketing label (meaning inferred from the `WH` suffix; not documented in the repo). |
+| `SubMarketingWH` | STRING | Pass-through of mds `SubMarketingWH`, cleaned with `cleanString` (empty string becomes NULL). Warehouse reporting group of the sub-marketing group, a coarser grouping such as `DIY`, `ROTO`, `BLOW`, `LITE TITE` or `OTHERS`. |
 | `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. |
 
 # How it is built

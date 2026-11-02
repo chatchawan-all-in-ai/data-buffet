@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "apilog"
-description: "One row = one API call log, unique on (company_id, logid)."
+description: "One row = one API job run (per company), unique on (company_id, logid)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=apilog&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `apilog`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: API call log. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `apilog`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Run log of the API job that processes Allkons orders, with start and end time, success flag, message and processed orders.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,12 +35,12 @@ One row per `company_id`, `logid`. The key is declared twice in the definition (
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `logid` | INT64 | Meaning not documented in the repo. |
-| `runat` | DATETIME | Meaning not documented in the repo. |
-| `completedat` | DATETIME | Meaning not documented in the repo. |
-| `issuccess` | INT64 | Meaning not documented in the repo. |
-| `errormessage` | STRING | Meaning not documented in the repo. |
-| `resultjson` | STRING | Meaning not documented in the repo. |
+| `logid` | INT64 | Run identifier of the API job. |
+| `runat` | DATETIME | Date and time the API run started. |
+| `completedat` | DATETIME | Date and time the API run finished. |
+| `issuccess` | INT64 | Success flag of the run (1 = success, 0 = failed). |
+| `errormessage` | STRING | Error or status message of the run (e.g. `Batch is null - no orders to process.`). |
+| `resultjson` | STRING | JSON array of the orders processed in the run, keyed by Allkons billing number. |
 
 # How it is built
 

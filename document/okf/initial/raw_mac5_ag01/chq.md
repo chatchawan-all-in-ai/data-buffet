@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "chq"
-description: "One row = one record of source table `chq` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one cheque, a record of source table `chq` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=chq&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/chq/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `chq` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.chq](/validated/validated_mac5/chq.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/chq/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `chq` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Cheques received from customers and issued to suppliers, with bank, dates, amount, status and memo-derived payment splits. Used by: [validated_mac5.chq](/validated/validated_mac5/chq.md).
 
 # Grain and key
 
@@ -30,37 +30,37 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `chqno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqbank` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqacode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqcus` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqdatec` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqdater` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqdatep` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqtype` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqstatus` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqtotal` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqmemo` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqgl` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqmi` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqown` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqtag` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqstatusn` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqlock` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqpassgl` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqjob` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqdep` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqper` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqzon` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqrcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqeditlk` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqkeyuser` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqkeydate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqdeduct` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqecode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqbranch` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqmec` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `chqdatev` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `chqno` | STRING | Cheque number. |
+| `chqbank` | STRING | Bank code of the cheque (e.g. `BBL`, `KBANK`, `SCB`). |
+| `chqacode` | STRING | General-ledger account code of the cheque; sampled MAC5 records show 112001 for received cheques and 211101, 212000, 212400, and 214201 for issued cheques. |
+| `chqcus` | STRING | Customer code (supplier code for issued cheques), matching `deb.debcode`. |
+| `chqdatec` | STRING | Date written on the cheque. |
+| `chqdater` | STRING | Date the cheque was received or issued. |
+| `chqdatep` | STRING | Date the cheque was passed (cleared) at the bank. |
+| `chqtype` | INT64 | Cheque direction (1 = received from customer, 2 = issued to supplier). |
+| `chqstatus` | INT64 | Cheque status (1 = cleared, 2 = bounced, 3 = due). |
+| `chqtotal` | FLOAT64 | Cheque amount. |
+| `chqmemo` | STRING | Full cheque memo as entered, including transfer and payment-split notes. |
+| `chqgl` | INT64 | Flag: cheque posted to the general ledger (1 = posted). |
+| `chqmi` | INT64 | Cheque handling mode code (0, 1, 2). |
+| `chqown` | INT64 | Cheque ownership code (1 = own cheque, 2 = third-party cheque). |
+| `chqtag` | INT64 | Tag marker of the cheque. |
+| `chqstatusn` | INT64 | Cheque posting status (1 = POST, 2 = PASS, 3 = cleared, 4 = not cleared, 5 = adjusted, 6 = voucher cancelled). |
+| `chqlock` | INT64 | Flag: cheque locked against editing. |
+| `chqpassgl` | INT64 | Flag: cheque clearing posted to the general ledger (-1 = posted). |
+| `chqjob` | STRING | Job code of the cheque (sales job or project category). |
+| `chqdep` | STRING | Department code of the cheque, used as the sales channel code. |
+| `chqper` | STRING | Salesperson (employee) code of the cheque. |
+| `chqzon` | STRING | Zone code of the cheque. |
+| `chqrcode` | STRING | General-ledger account code of the bank account the cheque is deposited to or paid from. |
+| `chqeditlk` | STRING | Timestamp of the current edit lock on the cheque. |
+| `chqkeyuser` | STRING | User code of the person who keyed the cheque. |
+| `chqkeydate` | STRING | Date and time the cheque was keyed. |
+| `chqdeduct` | FLOAT64 | Amount deducted from the cheque, such as bank fees. |
+| `chqecode` | STRING | External code of the cheque. |
+| `chqbranch` | STRING | Bank branch of the cheque. |
+| `chqmec` | STRING | Memo-card code of the cheque, matching `mec.meccode`. |
+| `chqdatev` | STRING | Voucher date of the cheque. |
 
 # How it is built
 

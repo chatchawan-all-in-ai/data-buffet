@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_delivery_line"
-description: "One row = one cleaned copy of the source table `crm_sale_order_delivery_line`, unique on (sale_order_delivery_line_id)."
+description: "One row = one product line within a delivery round from source table `crm_sale_order_delivery_line`, unique on (sale_order_delivery_line_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_sale_order_delivery_line&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_sale_order_delivery_line`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_sale_order_delivery_line`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Products and quantities scheduled in each delivery round of a DERP sale order.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,25 +34,25 @@ One row per `sale_order_delivery_line_id`. The key is declared twice in the defi
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_delivery_line_id` | STRING | Meaning not documented in the repo. |
-| `sale_order_delivery_id` | STRING | Meaning not documented in the repo. |
-| `sale_order_id` | STRING | Meaning not documented in the repo. |
-| `sale_order_line_id` | STRING | Meaning not documented in the repo. |
-| `product_id` | STRING | Meaning not documented in the repo. |
-| `product_code` | STRING | Meaning not documented in the repo. |
-| `unit` | STRING | Meaning not documented in the repo. |
-| `qty` | FLOAT64 | Likely quantity (inferred from the column name only; not documented in the repo). |
-| `order_sort` | INT64 | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `site_id` | STRING | Meaning not documented in the repo. |
-| `site_code` | STRING | Meaning not documented in the repo. |
-| `combo_set_id` | STRING | Meaning not documented in the repo. |
-| `combo_set_code` | STRING | Meaning not documented in the repo. |
+| `sale_order_delivery_line_id` | STRING | Unique identifier of the delivery line. |
+| `sale_order_delivery_id` | STRING | Identifier of the sale order delivery round (`crm_sale_order_delivery.sale_order_delivery_id`). |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `sale_order_line_id` | STRING | Identifier of the sale order line (`crm_sale_order_line.sale_order_line_id`). |
+| `product_id` | STRING | Identifier of the product. |
+| `product_code` | STRING | Product code (SKU, e.g. `OWT_GNT`). |
+| `unit` | STRING | Sales unit of the product (e.g. `EA`, `SET`, or a Thai unit name). |
+| `qty` | FLOAT64 | Quantity of the product in this delivery round. |
+| `order_sort` | INT64 | Display order of the row within its sale order, starting at 0. |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `site_id` | STRING | Identifier of the shipping site (plant or warehouse). |
+| `site_code` | STRING | Code of the shipping site (plant or warehouse, e.g. `KTB`, `KK1`, `LP1`). |
+| `combo_set_id` | STRING | Identifier of the combo set (product bundle) the line belongs to. |
+| `combo_set_code` | STRING | Code of the combo set (product bundle) the line belongs to (e.g. `COMBOSET00006`). |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

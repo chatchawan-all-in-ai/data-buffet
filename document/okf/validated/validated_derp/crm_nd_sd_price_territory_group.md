@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_nd_sd_price_territory_group"
-description: "One row = one cleaned copy of the source table `crm_nd_sd_price_territory_group`, unique on (nd_sd_price_territory_group_id)."
+description: "One row = one link between an ND/SD price and a sales territory group from source table `crm_nd_sd_price_territory_group`, unique on (nd_sd_price_territory_group_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_nd_sd_price_territory_group&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_nd_sd_price_territory_group`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_nd_sd_price_territory_group`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Sales territory groups (regions) each ND/SD price applies to.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,17 +34,17 @@ One row per `nd_sd_price_territory_group_id`. The key is declared twice in the d
 
 | Column | Type | Description |
 |---|---|---|
-| `nd_sd_price_territory_group_id` | STRING | Meaning not documented in the repo. |
-| `nd_sd_price_id` | STRING | Meaning not documented in the repo. |
-| `sales_territory_group_id` | STRING | Meaning not documented in the repo. |
-| `group_code` | STRING | Meaning not documented in the repo. |
-| `group_name` | STRING | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
+| `nd_sd_price_territory_group_id` | STRING | UUID of the price-to-territory-group link. |
+| `nd_sd_price_id` | STRING | UUID of the ND/SD price record in `crm_nd_sd_price`. |
+| `sales_territory_group_id` | STRING | UUID of the sales territory group the price applies to. |
+| `group_code` | STRING | Sales territory group code (e.g. `NORTH`, `METRO`, `SOUTH`). |
+| `group_name` | STRING | Sales territory group name. |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

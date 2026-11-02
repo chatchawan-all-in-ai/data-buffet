@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "supcontract"
-description: "One row = one record of source table `supcontract` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one main contractor to subcontractor link, a record of source table `supcontract` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=supcontract&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/supcontract/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `supcontract` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.supcontract](/validated/validated_mac5/supcontract.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/supcontract/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `supcontract` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Subcontractors linked to each main contractor, both identified by MAC5 customer codes. Used by: [validated_mac5.supcontract](/validated/validated_mac5/supcontract.md).
 
 # Grain and key
 
@@ -30,12 +30,12 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mcontractid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `scontractid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dateinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Row identifier of the subcontractor link. |
+| `mcontractid` | STRING | MAC5 customer (debtor) code of the main contractor (developer). |
+| `scontractid` | STRING | MAC5 customer (debtor) code of the subcontractor linked to the main contractor. |
+| `dateinsert` | STRING | Date and time the row was created. |
+| `status` | INT64 | Active flag (1 = active, 0 = inactive). |
+| `uinsert` | STRING | Employee code of the user who created the row. |
 
 # How it is built
 

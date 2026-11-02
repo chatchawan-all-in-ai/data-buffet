@@ -31,83 +31,83 @@ One row per document: `company_id` + `mihType` + `mihVnos` (the `uniqueKey`; doc
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02); part of the key. |
-| `mihDay` | INT64 | Day part of the document date (pass-through of mihday); combine with mihYear and mihMonth (`PARSE_DATE('%Y%m%d', CONCAT(mihYear, LPAD(mihMonth,2,'0'), LPAD(mihDay,2,'0')))`, as dim_order does) to get the business date. |
-| `mihMonth` | INT64 | Month part of the document date (pass-through of mihmonth). |
-| `mihYear` | INT64 | Year part of the document date (pass-through of mihyear). |
-| `mihType` | STRING | Document type code, part of the key. Sales-side types seen in the code: QS, PS (sales order, used by dim_order/fact_order_store), IS (invoice, used by fact_invoice_store), AS, BS, VS, RS (meanings of QS/AS/BS/VS/RS not documented in the repo); purchase-side types QP, PP, IP, AP, BP, VP, RP. |
-| `mihVnos` | STRING | Document number, part of the key (documents with an empty number are dropped by this table). |
-| `mihCus` | STRING | Customer code (joins to validated_mac5.deb.debcode / mir.mircus / mil.milCus in downstream code). |
-| `mihJob` | STRING | Pass-through of validated_mac5.mih.mihjob; carried into dim_order; meaning not documented in the repo (likely job/project code). |
-| `mihDep` | STRING | Department / area code of the document (pass-through of mihdep); dim_customer_report_info matches it against the pipe-separated `DepCode` of the sales-unit master to pick the TA. |
-| `mihPer` | STRING | Salesperson code (pass-through of mihper): joined to validated_mac5.per.percode for the name (`pernamet`) and matched to deb.debsalesp. |
-| `mihDoc` | STRING | Meaning not documented in the repo |
-| `mihMec` | STRING | Meaning not documented in the repo |
-| `mihVatno` | STRING | Meaning not documented in the repo |
-| `mihDesc` | STRING | Document description (pass-through of mihdesc; carried into dim_order); free text. |
-| `mihMemo` | STRING | Free-text memo (pass-through of mihmemo). |
-| `mihNotes` | STRING | Free-text notes (pass-through of mihnotes; carried into dim_order). |
-| `mihRef1` | STRING | Reference number 1 (pass-through of mihref1). It is the join key to validated_mac5.mih2.mih2vnos for the split-sale percentages (ag01 only). |
-| `mihRef2` | STRING | Reference number 2 (pass-through of mihref2; carried into dim_order); meaning not documented in the repo. |
-| `mihRef3` | STRING | Reference number 3 (pass-through of mihref3; carried into dim_order); meaning not documented in the repo. |
-| `mihDischt1` | STRING | Document-level discount field (pass-through of validated_mac5.mih.mihdischt1); exact semantics (text vs. amount) not documented in the repo |
-| `mihDischt2` | STRING | Document-level discount field (pass-through of validated_mac5.mih.mihdischt2); exact semantics (text vs. amount) not documented in the repo |
-| `mihDelvsite` | STRING | Meaning not documented in the repo |
-| `mihDelvdate` | DATETIME | Delivery date of the document (pass-through of mihdelvdate; dim_order carries it as the order delivery date). Asia/Bangkok local datetime. |
-| `mihStanding` | INT64 | Meaning not documented in the repo |
-| `mihLinkgl` | INT64 | Meaning not documented in the repo |
-| `mihNouplink` | INT64 | Meaning not documented in the repo |
-| `mihNolist` | INT64 | Meaning not documented in the repo |
-| `mihCurc` | INT64 | Meaning not documented in the repo |
-| `mihVatinlist` | INT64 | Meaning not documented in the repo |
-| `mihLock` | INT64 | Meaning not documented in the repo |
-| `mihPrintn` | INT64 | Meaning not documented in the repo |
-| `mihCheque` | INT64 | Meaning not documented in the repo |
-| `mihCancel` | INT64 | Cancel flag (pass-through of mihcancel). 0 = active; -1 = cancelled. Some downstream paths filter cancellations, but dim_invoice/view_dim_invoice and Transaction_Data_Mart can retain them. |
-| `mihStatus` | INT64 | Status code of the document (pass-through of mihstatus). Looked up in validated_mac5.ar_s (sales types) or ap_s (purchase types); status description in mihstatus_desc. |
-| `mihClearum` | INT64 | Pass-through of mihclearum; carried into dim_order; meaning not documented in the repo. |
-| `mihCtermno` | INT64 | Meaning not documented in the repo |
-| `mihCog` | FLOAT64 | Meaning not documented in the repo |
-| `mihVatsum` | FLOAT64 | VAT amount of the document (likely, inferred from the name; pass-through of mihvatsum). |
-| `mihNetsum` | FLOAT64 | Net total amount of the document (likely, inferred from the name; pass-through of mihnetsum). |
-| `mihDisclst` | FLOAT64 | Document-level discount field (pass-through of validated_mac5.mih.mihdisclst); exact semantics (text vs. amount) not documented in the repo |
-| `mihDischf1` | FLOAT64 | Document-level discount field (pass-through of validated_mac5.mih.mihdischf1); exact semantics (text vs. amount) not documented in the repo |
-| `mihDischf2` | FLOAT64 | Document-level discount field (pass-through of validated_mac5.mih.mihdischf2); exact semantics (text vs. amount) not documented in the repo |
-| `mihExchg` | FLOAT64 | Meaning not documented in the repo |
-| `mihExtrasum` | FLOAT64 | Extra amount on the document (pass-through of mihextrasum; carried into dim_order); meaning not documented in the repo. |
-| `mihExtravat` | FLOAT64 | Meaning not documented in the repo |
-| `mihExtracut` | INT64 | Meaning not documented in the repo |
-| `mihExtramem` | STRING | Meaning not documented in the repo |
-| `mihRecno` | STRING | Meaning not documented in the repo |
-| `mihRecdate` | DATETIME | Meaning not documented in the repo |
-| `mihSavetag` | STRING | Meaning not documented in the repo |
-| `mihKeyuser` | STRING | Likely the user who keyed the document in (inferred from the name; pass-through of mihkeyuser). |
-| `mihKeydate` | DATETIME | Likely the date the document was keyed in (inferred from the name; pass-through of mihkeydate; carried into dim_order). |
-| `mihDocrunno` | STRING | Meaning not documented in the repo |
-| `mihDategl` | DATETIME | Meaning not documented in the repo |
-| `mihDuepo` | DATETIME | Meaning not documented in the repo |
-| `mihEditlk` | DATETIME | Meaning not documented in the repo |
-| `mihIscf` | INT64 | Meaning not documented in the repo |
-| `mihIssp` | INT64 | Meaning not documented in the repo |
-| `mihDates1` | DATETIME | Meaning not documented in the repo |
-| `mihDates2` | DATETIME | Meaning not documented in the repo |
-| `mihNumsi` | INT64 | Meaning not documented in the repo |
-| `mihNumsc` | FLOAT64 | Meaning not documented in the repo |
-| `mihVatpc` | FLOAT64 | Meaning not documented in the repo |
-| `mihIncluded` | INT64 | Meaning not documented in the repo |
-| `mihTaxvnos` | STRING | Meaning not documented in the repo |
-| `mihTaxdate` | DATETIME | Meaning not documented in the repo |
-| `mihTaxsum` | FLOAT64 | Meaning not documented in the repo |
-| `mihLoad` | INT64 | Meaning not documented in the repo |
-| `mihPaiddate` | DATETIME | Meaning not documented in the repo |
-| `mihBookordernum` | STRING | Meaning not documented in the repo |
-| `mihSenddate` | DATETIME | Meaning not documented in the repo |
-| `mihBl` | INT64 | Pass-through of mihbl; carried into dim_order; meaning not documented in the repo. |
-| `mihRpv` | INT64 | Meaning not documented in the repo |
-| `mihClearcut` | INT64 | Meaning not documented in the repo |
-| `mihSettlecut` | INT64 | Meaning not documented in the repo |
-| `moddate` | DATETIME | Likely last-modified datetime of the source row (inferred from the name; pass-through of moddate). |
-| `mihMemoNew` | STRING | Pass-through of mihmemo_new (newer memo text); carried into dim_order; meaning not documented in the repo. |
-| `memoExtract` | STRING | Pass-through of memo_extract; carried into dim_order; meaning not documented in the repo (likely a value extracted from the memo text). |
+| `mihDay` | INT64 | Day part of the document date. |
+| `mihMonth` | INT64 | Month part of the document date. |
+| `mihYear` | INT64 | Year part of the document date (Gregorian). |
+| `mihType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `mihVnos` | STRING | Document number, unique within company and document type. |
+| `mihCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mihJob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
+| `mihDep` | STRING | Department code of the document, used as the sales channel code. |
+| `mihPer` | STRING | Salesperson (employee) code, matching `per.percode`. |
+| `mihDoc` | STRING | Document print-form code of the header from the MAC5 `doc` master. |
+| `mihMec` | STRING | Memo-card code of the document, matching `mec.meccode` (holds the shop or branch name for chain-store customers). |
+| `mihVatno` | STRING | Tax invoice number of the document. |
+| `mihDesc` | STRING | Free-text document description. |
+| `mihMemo` | STRING | Free-text document memo with an optional tag enclosed in `฿` signs. |
+| `mihNotes` | STRING | Free-text notes such as delivery instructions or site details. |
+| `mihRef1` | STRING | Reference document number 1 for the source quotation or sales order. |
+| `mihRef2` | STRING | Customer purchase-order or external order reference number. |
+| `mihRef3` | STRING | Free-text reference 3 of the document. |
+| `mihDischt1` | STRING | Header discount 1 as entered (percentage or amount text). |
+| `mihDischt2` | STRING | Header discount 2 as entered (percentage or amount text). |
+| `mihDelvsite` | STRING | Delivery site code (e.g. `0002`). |
+| `mihDelvdate` | DATETIME | Requested delivery date. |
+| `mihStanding` | INT64 | Credit term in days; due date = document date + this value. |
+| `mihLinkgl` | INT64 | General-ledger posting link status (0 = not posted). |
+| `mihNouplink` | INT64 | Code controlling updates to linked documents. |
+| `mihNolist` | INT64 | Number of line items on the document. |
+| `mihCurc` | INT64 | Currency code (0 = Thai baht). |
+| `mihVatinlist` | INT64 | Flag indicating VAT-inclusive line prices (-1 = yes, 0 = no). |
+| `mihLock` | INT64 | Flag: document locked against editing (-1 = locked). |
+| `mihPrintn` | INT64 | Number of times the document has been printed. |
+| `mihCheque` | INT64 | Flag: document settled by cheque. |
+| `mihCancel` | INT64 | Cancellation flag (-1 = cancelled, 0 = active). |
+| `mihStatus` | INT64 | Document status code; meaning in `ar_s` for sales types and `ap_s` for purchase types (e.g. 26 = approved sales order, 30 = VAT sale, 32 = cancelled tax invoice). |
+| `mihClearum` | INT64 | Flag: outstanding quantities of the document cleared (0 = still open). |
+| `mihCtermno` | INT64 | Payment-term number of the document. |
+| `mihCog` | FLOAT64 | Gross document amount before discounts, excluding VAT; negative for credit notes (`BS`). |
+| `mihVatsum` | FLOAT64 | VAT amount of the document; negative for credit notes (`BS`). |
+| `mihNetsum` | FLOAT64 | Net document total including VAT, after all discounts; negative for credit notes (`BS`). |
+| `mihDisclst` | FLOAT64 | Total of line-level discounts on the document; negative for credit notes (`BS`). |
+| `mihDischf1` | FLOAT64 | Header discount 1 amount; negative for credit notes (`BS`). |
+| `mihDischf2` | FLOAT64 | Header discount 2 amount; negative for credit notes (`BS`). |
+| `mihExchg` | FLOAT64 | Exchange rate to Thai baht (1 for baht documents). |
+| `mihExtrasum` | FLOAT64 | Deposit amount deducted on the document, excluding VAT. |
+| `mihExtravat` | FLOAT64 | VAT on the deducted deposit amount. |
+| `mihExtracut` | INT64 | Flag indicating that a deposit deduction is applied. |
+| `mihExtramem` | STRING | Memo of the deducted deposit, listing the deposit receipt numbers and dates. |
+| `mihRecno` | STRING | Number of the related receipt or received document. |
+| `mihRecdate` | DATETIME | Date of the related receipt or received document. |
+| `mihSavetag` | STRING | Save-tag marker set by the ERP when the document is saved. |
+| `mihKeyuser` | STRING | User code of the person who keyed the document. |
+| `mihKeydate` | DATETIME | Date and time the document was keyed. |
+| `mihDocrunno` | STRING | Document running number. |
+| `mihDategl` | DATETIME | General-ledger posting date. |
+| `mihDuepo` | DATETIME | Purchase-order due date and time. |
+| `mihEditlk` | DATETIME | Timestamp of the current edit lock on the document. |
+| `mihIscf` | INT64 | Flag indicating a carry-forward (opening balance) document. |
+| `mihIssp` | INT64 | Special-document flag. |
+| `mihDates1` | DATETIME | Special date 1 of the document. |
+| `mihDates2` | DATETIME | Special date 2 of the document. |
+| `mihNumsi` | INT64 | Special integer field of the document. |
+| `mihNumsc` | FLOAT64 | Special numeric field of the document. |
+| `mihVatpc` | FLOAT64 | VAT rate in percent (e.g. 7). |
+| `mihIncluded` | INT64 | Flag indicating VAT-inclusive document amounts. |
+| `mihTaxvnos` | STRING | Separate tax invoice number issued for the document. |
+| `mihTaxdate` | DATETIME | Date of the separate tax invoice. |
+| `mihTaxsum` | FLOAT64 | Amount of the separate tax invoice. |
+| `mihLoad` | INT64 | Flag indicating goods loaded for delivery (1 = loaded). |
+| `mihPaiddate` | DATETIME | Date the document was fully paid. |
+| `mihBookordernum` | STRING | Number of the booking (order) document linked to this document. |
+| `mihSenddate` | DATETIME | Date the goods were sent. |
+| `mihBl` | INT64 | Billing-note flag of the document. |
+| `mihRpv` | INT64 | Receipt/payment-voucher flag of the document. |
+| `mihClearcut` | INT64 | Flag: outstanding amount cleared (-1 = cleared). |
+| `mihSettlecut` | INT64 | Flag: settlement completed (-1 = settled). |
+| `moddate` | DATETIME | Date and time the document was last modified (ag01 only; NULL for the other companies). |
+| `mihMemoNew` | STRING | Document memo with the tag enclosed in `฿` signs removed, or NULL when no text remains. |
+| `memoExtract` | STRING | Tag extracted from the document memo, defaulting to `฿00฿` and matched to `dim_payment.CodeMemo`. |
 | `asatdate` | DATE | Extract date of the winning row (from validated_mac5.mih); partition column. The incremental window compares against it. |
 | `mihstatus_desc` | STRING | Thai status name resolved from mihStatus: for sales types (QS, PS, IS, AS, BS, VS, RS) `ar_s.ar_snamet`, for purchase types (QP, PP, IP, AP, BP, VP, RP) `ap_s.ap_snamet`, NULL for other types (joined on company_id). |
 | `percentSale1` | STRING | Share of the document credited to sales rep 1, as a percent string like '100.00%'. For ag01 it comes from validated_mac5.mih2.mih2perpc (split-sale) matched on mihRef1 = mih2vnos and mihCus = mih2cus; when no split exists, and for every other company, it is the default '100.00%'. |

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tbpjaddacc"
-description: "One row = one record of source table `tbpjaddacc` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one contact person attached to a project, a record of source table `tbpjaddacc` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=tbpjaddacc&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbpjaddacc/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbpjaddacc` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.tbpjaddacc](/validated/validated_mac5/tbpjaddacc.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbpjaddacc/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbpjaddacc` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Contact persons attached to sales projects, with their role, decision power and personal profile fields. Used by: [validated_mac5.tbpjaddacc](/validated/validated_mac5/tbpjaddacc.md).
 
 # Grain and key
 
@@ -30,38 +30,38 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pjid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `accid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `accname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `acctype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `acctype2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `accpow` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `conid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `conname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `contel` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `condetail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `insertdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `textnote` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `nickname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `religion` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `birthdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `lineidper` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `emailper` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `idcardper` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `addressper` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `country` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `province` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `district` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sub_district` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zipcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `spousefullname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `birthdatespouse` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `numberofchildren` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `favoriteactivity` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `unfavoriteactivity` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `trait` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Running ID of the project contact row. |
+| `pjid` | STRING | Project ID the contact is attached to. |
+| `accid` | STRING | Account (organisation) code of the contact. |
+| `accname` | STRING | Account (organisation) name of the contact. |
+| `acctype` | STRING | Position or role of the contact (Thai, e.g. managing director, purchasing officer, contractor). |
+| `acctype2` | STRING | Secondary position or role of the contact. |
+| `accpow` | STRING | Decision-power flag (1 = the contact has decision power, 0 = not). |
+| `conid` | STRING | Contact ID (e.g. `ICM`-prefixed code). |
+| `conname` | STRING | Contact person name. |
+| `contel` | STRING | Phone number of the contact. |
+| `condetail` | STRING | Free-text detail about the contact. |
+| `uinsert` | STRING | User code of the person who created the record. |
+| `insertdate` | STRING | Date the record was created. |
+| `textnote` | STRING | Free-text note on the contact. |
+| `nickname` | STRING | Nickname of the contact. |
+| `religion` | STRING | Religion of the contact. |
+| `birthdate` | STRING | Birth date of the contact. |
+| `lineidper` | STRING | Personal LINE ID of the contact. |
+| `emailper` | STRING | Personal email address of the contact. |
+| `idcardper` | STRING | National ID card number of the contact. |
+| `addressper` | STRING | Personal address of the contact. |
+| `country` | STRING | Country of the contact's address. |
+| `province` | STRING | Province of the contact's address. |
+| `district` | STRING | District of the contact's address. |
+| `sub_district` | STRING | Sub-district of the contact's address. |
+| `zipcode` | STRING | Postal code of the contact's address. |
+| `spousefullname` | STRING | Full name of the contact's spouse. |
+| `birthdatespouse` | STRING | Birth date of the contact's spouse. |
+| `numberofchildren` | STRING | Number of children of the contact. |
+| `favoriteactivity` | STRING | Activities the contact likes. |
+| `unfavoriteactivity` | STRING | Activities the contact dislikes. |
+| `trait` | STRING | Personality traits of the contact. |
 
 # How it is built
 

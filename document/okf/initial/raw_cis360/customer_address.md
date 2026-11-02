@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "customer_address"
-description: "One row = one record of source table `customer_address` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one customer address, a record of source table `customer_address` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_cis360&t=customer_address&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_cis360
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/cis360/customer_address/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_address` table from CIS360; nothing is cleaned or deduplicated here. Used by: [validated_cis360.customer_address](/validated/validated_cis360/customer_address.md).
+External table over AVRO files in `gs://file-raw-data/cis360/customer_address/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_address` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Addresses of CIS360 customers by type (official, shipping, billing, KYC, work site, etc.) with Thai administrative areas, tax-invoice details and coordinates. Used by: [validated_cis360.customer_address](/validated/validated_cis360/customer_address.md).
 
 # Grain and key
 
@@ -30,46 +30,46 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_profile_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `address_type_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `platform_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `contact_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `contact_phone_number` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `contact_email` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `address_detail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `address_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `branch` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `tax_invoice_juristic_type` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `tax_invoice_juristic_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `tax_invoice_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `tax_invoice_customer_type` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `tax_invoice_tax_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `parent` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `address_info` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `street` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `country_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `province_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `district_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sub_district_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zipcode_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `country_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `province_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `district_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sub_district_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zipcode_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `latitude` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `longitude` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `active_status` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_default` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_kyc_document` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_delete` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | STRING | Unique identifier (UUID) of the address record. |
+| `customer_profile_id` | STRING | Customer profile the address belongs to (`customer_profile.id`). |
+| `address_type_id` | INT64 | Address type (`address_type.id`: 1 = official, 2 = shipping, 3 = contact, 4 = billing, 5 = default, 6 = KYC, 7 = work site, 8 = document delivery, 9 = warehouse). |
+| `platform_id` | INT64 | Platform the address came from (1 = ALLKONS_M_BUYER, 2 = ALLKONS_M_SELLER, 4 = ALLKONS_ID, 6 = ALLKONS_AMRP, 8 = CIS360, 14 = D365). |
+| `contact_name` | STRING | Name of the contact person at this address. |
+| `contact_phone_number` | STRING | Whether a contact phone number is recorded for the address. |
+| `contact_email` | STRING | Whether a contact email is recorded for the address. |
+| `address_detail` | STRING | Additional free-text address details. |
+| `address_name` | STRING | Label given to the address (e.g. site or branch name). |
+| `branch` | INT64 | Tax-invoice branch number of the address. |
+| `tax_invoice_juristic_type` | INT64 | Juristic entity type used on the tax invoice (`juristic_type.id`). |
+| `tax_invoice_juristic_name` | STRING | Name printed on the tax invoice for this address. |
+| `tax_invoice_type` | STRING | Identity document type used for the tax invoice (`ID_CARD`, `PASSPORT`, `NOT_SPECIFIED`). |
+| `tax_invoice_customer_type` | INT64 | Customer type used on the tax invoice (`customer_type.id`: 1 = PERSONAL, 2 = JURISTIC). |
+| `tax_invoice_tax_id` | STRING | Tax identification number printed on the tax invoice. |
+| `parent` | STRING | Identifier of the parent address record this address was derived from (`customer_address.id`). |
+| `address_info` | STRING | Address text line (house number, building, village). |
+| `street` | STRING | Street (thanon) name of the address. |
+| `country_id` | INT64 | Country of the address (`country.id`). |
+| `province_id` | INT64 | Province of the address (`province.id`). |
+| `district_id` | INT64 | District of the address (`district.id`). |
+| `sub_district_id` | INT64 | Sub-district of the address (`sub_district.id`). |
+| `zipcode_id` | INT64 | Postal code of the address (`zipcode.id`). |
+| `country_name` | STRING | Country name of the address. |
+| `province_name` | STRING | Province name of the address. |
+| `district_name` | STRING | District name of the address. |
+| `sub_district_name` | STRING | Sub-district name of the address. |
+| `zipcode_name` | STRING | 5-digit postal code of the address. |
+| `latitude` | STRING | Latitude of the address location. |
+| `longitude` | STRING | Longitude of the address location. |
+| `active_status` | BOOL | Whether the address is active. |
+| `is_default` | BOOL | Whether this is the customer's default address. |
+| `is_kyc_document` | BOOL | Whether the address comes from a KYC identity document. |
+| `is_delete` | BOOL | Soft-delete flag (TRUE = record deleted). |
+| `create_date` | STRING | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | STRING | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

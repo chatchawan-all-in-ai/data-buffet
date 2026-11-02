@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tbpjaddacc"
-description: "One row = one project additional account, unique on (company_id, id)."
+description: "One row = one contact person attached to a project (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tbpjaddacc&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tbpjaddacc`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: project additional account. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `tbpjaddacc`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Contact persons attached to sales projects, with their role, decision power and personal profile fields.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,38 +35,38 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `pjid` | STRING | Meaning not documented in the repo. |
-| `accid` | STRING | Meaning not documented in the repo. |
-| `accname` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `acctype` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `acctype2` | STRING | Meaning not documented in the repo. |
-| `accpow` | STRING | Meaning not documented in the repo. |
-| `conid` | STRING | Meaning not documented in the repo. |
-| `conname` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `contel` | STRING | Meaning not documented in the repo. |
-| `condetail` | STRING | Meaning not documented in the repo. |
-| `uinsert` | STRING | Meaning not documented in the repo. |
-| `insertdate` | DATE | Meaning not documented in the repo. |
-| `textnote` | STRING | Meaning not documented in the repo. |
-| `nickname` | STRING | Meaning not documented in the repo. |
-| `religion` | STRING | Meaning not documented in the repo. |
-| `birthdate` | DATE | Meaning not documented in the repo. |
-| `lineidper` | STRING | Meaning not documented in the repo. |
-| `emailper` | STRING | Meaning not documented in the repo. |
-| `idcardper` | STRING | Meaning not documented in the repo. |
-| `addressper` | STRING | Meaning not documented in the repo. |
-| `country` | STRING | Meaning not documented in the repo. |
-| `province` | STRING | Meaning not documented in the repo. |
-| `district` | STRING | Meaning not documented in the repo. |
-| `sub_district` | STRING | Meaning not documented in the repo. |
-| `zipcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `spousefullname` | STRING | Meaning not documented in the repo. |
-| `birthdatespouse` | DATE | Meaning not documented in the repo. |
-| `numberofchildren` | STRING | Meaning not documented in the repo. |
-| `favoriteactivity` | STRING | Meaning not documented in the repo. |
-| `unfavoriteactivity` | STRING | Meaning not documented in the repo. |
-| `trait` | STRING | Meaning not documented in the repo. |
+| `id` | INT64 | Running ID of the project contact row. |
+| `pjid` | STRING | Project ID the contact is attached to. |
+| `accid` | STRING | Account (organisation) code of the contact. |
+| `accname` | STRING | Account (organisation) name of the contact. |
+| `acctype` | STRING | Position or role of the contact (Thai, e.g. managing director, purchasing officer, contractor). |
+| `acctype2` | STRING | Secondary position or role of the contact. |
+| `accpow` | STRING | Decision-power flag (1 = the contact has decision power, 0 = not). |
+| `conid` | STRING | Contact ID (e.g. `ICM`-prefixed code). |
+| `conname` | STRING | Contact person name. |
+| `contel` | STRING | Phone number of the contact. |
+| `condetail` | STRING | Free-text detail about the contact. |
+| `uinsert` | STRING | User code of the person who created the record. |
+| `insertdate` | DATE | Date the record was created. |
+| `textnote` | STRING | Free-text note on the contact. |
+| `nickname` | STRING | Nickname of the contact. |
+| `religion` | STRING | Religion of the contact. |
+| `birthdate` | DATE | Birth date of the contact. |
+| `lineidper` | STRING | Personal LINE ID of the contact. |
+| `emailper` | STRING | Personal email address of the contact. |
+| `idcardper` | STRING | National ID card number of the contact. |
+| `addressper` | STRING | Personal address of the contact. |
+| `country` | STRING | Country of the contact's address. |
+| `province` | STRING | Province of the contact's address. |
+| `district` | STRING | District of the contact's address. |
+| `sub_district` | STRING | Sub-district of the contact's address. |
+| `zipcode` | STRING | Postal code of the contact's address. |
+| `spousefullname` | STRING | Full name of the contact's spouse. |
+| `birthdatespouse` | DATE | Birth date of the contact's spouse. |
+| `numberofchildren` | STRING | Number of children of the contact. |
+| `favoriteactivity` | STRING | Activities the contact likes. |
+| `unfavoriteactivity` | STRING | Activities the contact dislikes. |
+| `trait` | STRING | Personality traits of the contact. |
 
 # How it is built
 

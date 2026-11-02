@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "eom_bt_sale_by_branch_detail"
-description: "One row = one record of source table `eom_bt_sale_by_branch_detail` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one article, branch and sales channel in one month-end report, a record of source table `eom_bt_sale_by_branch_detail` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=eom_bt_sale_by_branch_detail&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_saleout_mdt
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/so_mdt_eom/bt/sale_by_branch_detail/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `eom_bt_sale_by_branch_detail` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Used by: [curated_saleout_mdt.curated_eom_bt](/curated/curated_saleout_mdt/curated_eom_bt.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/so_mdt_eom/bt/sale_by_branch_detail/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `eom_bt_sale_by_branch_detail` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Month-end closing sales of the company products sent by Boonthavorn (BT) per branch, article and channel. Used by: [curated_saleout_mdt.curated_eom_bt](/curated/curated_saleout_mdt/curated_eom_bt.md).
 
 # Grain and key
 
@@ -30,24 +30,24 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `VENDOR_ID` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `VENDOR_NAME` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `YEAR_DATE_ID` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MONTH_DATE_ID` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `BRANCH` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `DISTRIBUTION_CHANNEL` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ARTICLE_ID` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ARTICLE_NAME_TH` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `BRAND` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `FLAG_PROJECT` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ITEM_FLAG` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MCH3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `MCH2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `NET_INC_TAX` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `SALE_QTY` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `SALE_SQM` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `START_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `END_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `VENDOR_ID` | STRING | Boonthavorn vendor code of the supplier (the company), e.g. `10009`. |
+| `VENDOR_NAME` | STRING | Supplier (vendor) name as registered at Boonthavorn. |
+| `YEAR_DATE_ID` | INT64 | Year of the report period. |
+| `MONTH_DATE_ID` | STRING | Month name of the report period in English (e.g. `July`). |
+| `BRANCH` | STRING | Boonthavorn branch name in Thai, used as the branch code. |
+| `DISTRIBUTION_CHANNEL` | STRING | Sales channel at Boonthavorn (`Showroom`, `Anyhome`, `Web`). |
+| `ARTICLE_ID` | STRING | Boonthavorn article (product) code. |
+| `ARTICLE_NAME_TH` | STRING | Product name in Thai. |
+| `BRAND` | STRING | Product brand. |
+| `FLAG_PROJECT` | STRING | Project-sale flag (`Y`/`N`; daily file sends `Project`/`Non-Project`). |
+| `ITEM_FLAG` | STRING | Item movement flag (`REGULAR`, `FAST`, `DISCON` = discontinued). |
+| `MCH3` | STRING | Boonthavorn merchandise category, top level (department). |
+| `MCH2` | STRING | Boonthavorn merchandise category, second level. |
+| `NET_INC_TAX` | FLOAT64 | Net sales amount for the month including VAT (THB). |
+| `SALE_QTY` | INT64 | Sales quantity for the month. |
+| `SALE_SQM` | FLOAT64 | Sales in square metres for the month. |
+| `START_DATE` | STRING | First day of the reporting period. |
+| `END_DATE` | STRING | Last day covered by the report (figures are counted up to this date). |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

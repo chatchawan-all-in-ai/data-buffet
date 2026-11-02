@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mip"
-description: "One row = one record of source table `mip` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one file attached to a document, a record of source table `mip` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=mip&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/mip/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `mip` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.mip](/validated/validated_mac5/mip.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/mip/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `mip` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Files attached to ERP documents (purchase orders, maps, BOQs, quotations), one row per document, file number and revision. Used by: [validated_mac5.mip](/validated/validated_mac5/mip.md).
 
 # Grain and key
 
@@ -30,13 +30,13 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `mipvnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mipfileno` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miprev` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mippath` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miptype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mipcrdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mipupdatedate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `mipvnos` | STRING | Number of the document the file is attached to. |
+| `mipfileno` | INT64 | Sequence number of the attached file within the document. |
+| `miprev` | INT64 | Revision number of the attachment. |
+| `mippath` | STRING | File path or file name of the attachment. |
+| `miptype` | STRING | Attachment type code (e.g. `POD`, `MAP`, `BOQ`, `QOD`, `ETC`). |
+| `mipcrdate` | STRING | Date and time the attachment was created. |
+| `mipupdatedate` | STRING | Date and time the attachment was last updated. |
 
 # How it is built
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sto"
-description: "One row = one record of source table `sto` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one warehouse, a record of source table `sto` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=sto&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/sto/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `sto` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.sto](/validated/validated_mac5/sto.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/sto/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `sto` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Warehouse master of the MAC5 ERP: code, group (FG, WIP, RM...) and Thai/English name. Used by: [validated_mac5.sto](/validated/validated_mac5/sto.md).
 
 # Grain and key
 
@@ -30,15 +30,15 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `STOcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STOgroup` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STOdescT` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STOdescE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STOlock` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STOhide` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STOeditDT` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `STOeditMF` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `rowguid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `STOcode` | STRING | Warehouse code. |
+| `STOgroup` | STRING | Warehouse group code (FG = finished goods, WIP, RM = raw material, SP, TM, CRC). |
+| `STOdescT` | STRING | Thai name of the warehouse. |
+| `STOdescE` | STRING | English name of the warehouse. |
+| `STOlock` | INT64 | Lock flag (-1 = locked against editing, 0 = unlocked). |
+| `STOhide` | INT64 | Hidden flag (-1 = hidden from pick lists, 0 = shown). |
+| `STOeditDT` | STRING | Date and time the record was last edited. |
+| `STOeditMF` | STRING | User code of the person who last edited the record. |
+| `rowguid` | STRING | Row GUID that uniquely identifies the record in the source database. |
 
 # How it is built
 

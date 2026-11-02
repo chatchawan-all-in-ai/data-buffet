@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "cst"
-description: "One row = one cost/stock transaction, unique on (company_id, CSTdate, CSTtype, CSTvnos, CSTcus, CSTstk, CSTsto, CSTio, CSTlist)."
+description: "One row = one cost line of one stock document line (per company), unique on (company_id, CSTdate, CSTtype, CSTvnos, CSTcus, CSTstk, CSTsto, CSTio, CSTlist)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=cst&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `cst`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: cost/stock transaction. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `cst`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Cost-of-goods lines per document line (invoices, sales orders), with quantity, warehouse, salesperson and COGS.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,30 +35,30 @@ One row per `company_id`, `CSTdate`, `CSTtype`, `CSTvnos`, `CSTcus`, `CSTstk`, `
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `cstdate` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `csttype` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `cstvnos` | STRING | Likely document number (inferred from the column name only; not documented in the repo). |
-| `cstcus` | STRING | Likely customer code (inferred from the column name only; not documented in the repo). |
-| `cststk` | STRING | Likely stock (SKU) code (inferred from the column name only; not documented in the repo). |
-| `cstjob` | STRING | Meaning not documented in the repo. |
-| `cstdep` | STRING | Meaning not documented in the repo. |
-| `cstper` | STRING | Meaning not documented in the repo. |
-| `cstdoc` | STRING | Meaning not documented in the repo. |
-| `cstmec` | STRING | Meaning not documented in the repo. |
-| `cststo` | STRING | Meaning not documented in the repo. |
-| `cstquan` | FLOAT64 | Meaning not documented in the repo. |
-| `cstquanp2` | FLOAT64 | Meaning not documented in the repo. |
-| `cstcogsp` | FLOAT64 | Meaning not documented in the repo. |
-| `cstexpdate` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `cstlinkvc` | STRING | Meaning not documented in the repo. |
-| `cstlinkvcid` | INT64 | Meaning not documented in the repo. |
-| `cstio` | INT64 | Meaning not documented in the repo. |
-| `cstiozw` | INT64 | Meaning not documented in the repo. |
-| `cstlist` | INT64 | Meaning not documented in the repo. |
-| `cstcosta` | FLOAT64 | Meaning not documented in the repo. |
-| `cstcostf` | FLOAT64 | Meaning not documented in the repo. |
-| `cstcostl` | FLOAT64 | Meaning not documented in the repo. |
-| `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
+| `cstdate` | DATETIME | Document date. |
+| `csttype` | STRING | Document type code (IS = invoice, PS = sales order). |
+| `cstvnos` | STRING | Document number. |
+| `cstcus` | STRING | Customer code (joins `deb.debcode`). |
+| `cststk` | STRING | Stock code of the line (joins `stk.stkcode`). |
+| `cstjob` | STRING | Job code of the line. |
+| `cstdep` | STRING | Department code of the line. |
+| `cstper` | STRING | Salesperson code of the line (joins `per.percode`). |
+| `cstdoc` | STRING | Document reference code of the line. |
+| `cstmec` | STRING | Branch (mec) code of the document. |
+| `cststo` | STRING | Warehouse code of the line (joins `sto.stocode`). |
+| `cstquan` | FLOAT64 | Quantity in the base unit. |
+| `cstquanp2` | FLOAT64 | Quantity in the second unit. |
+| `cstcogsp` | FLOAT64 | Cost of goods sold of the line in baht. |
+| `cstexpdate` | DATETIME | Expiry date of the item on the line. |
+| `cstlinkvc` | STRING | Document type code of the linked source document (e.g. `PS` = sales order). |
+| `cstlinkvcid` | INT64 | Line ID of the linked source document line. |
+| `cstio` | INT64 | Stock in/out direction code (0, 2). |
+| `cstiozw` | INT64 | Stock movement kind code (0, 5). |
+| `cstlist` | INT64 | Line number within the document. |
+| `cstcosta` | FLOAT64 | Average-cost flag of the line (-1 = yes, 0 = no). |
+| `cstcostf` | FLOAT64 | FIFO-cost flag of the line (-1 = yes, 0 = no). |
+| `cstcostl` | FLOAT64 | LIFO-cost flag of the line (-1 = yes, 0 = no). |
+| `asatdate` | DATE | Extract (snapshot) date of the source file, taken from the `ASATDATE` partition. |
 
 # How it is built
 

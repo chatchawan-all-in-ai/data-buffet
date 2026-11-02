@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_payment_allocation"
-description: "One row = one record of source table `crm_sale_order_payment_allocation` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one allocation of a payment receipt to a deposit installment, a record of source table `crm_sale_order_payment_allocation` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_sale_order_payment_allocation&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_payment_allocation/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_payment_allocation` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_sale_order_payment_allocation](/validated/validated_derp/crm_sale_order_payment_allocation.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_payment_allocation/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_payment_allocation` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Allocations of received payments to the deposit installments of DERP sale orders. Used by: [validated_derp.crm_sale_order_payment_allocation](/validated/validated_derp/crm_sale_order_payment_allocation.md).
 
 # Grain and key
 
@@ -30,16 +30,16 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_payment_allocation_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `receipt_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_order_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `installment_seq` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_order_deposit_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `note` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `sale_order_payment_allocation_id` | STRING | Unique identifier of the payment allocation. |
+| `receipt_id` | STRING | Identifier of the payment receipt being allocated (`crm_sale_order_payment_receipt`). |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `installment_seq` | INT64 | Deposit installment number the amount is allocated to. |
+| `sale_order_deposit_id` | STRING | Identifier of the deposit installment (`crm_sale_order_deposit.sale_order_deposit_id`). |
+| `amount` | FLOAT64 | Amount of the receipt allocated to the deposit installment (THB). |
+| `note` | STRING | Free-text note. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

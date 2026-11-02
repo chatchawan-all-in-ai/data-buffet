@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tdelivery"
-description: "One row = one delivery (logistics/GPS), unique on (company_id, frun)."
+description: "One row = one delivery confirmation of a document on a trip (per company), unique on (company_id, frun)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tdelivery&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tdelivery`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: delivery (logistics/GPS). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `tdelivery`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Delivery confirmations of MAC5 delivery documents on trips, with GPS position, place name and zone.
 Used by: [dimension_table.dim_delivery](/dimension/dim_delivery.md), [fact_table.fact_delivery](/fact/fact_delivery.md).
 
 # Grain and key
@@ -35,19 +35,19 @@ One row per `company_id`, `frun`. The key is declared twice in the definition (`
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `frun` | STRING | Meaning not documented in the repo. |
-| `fmaster` | STRING | Meaning not documented in the repo. |
-| `fserial_no` | STRING | Meaning not documented in the repo. |
-| `fdatetime` | STRING | Meaning not documented in the repo. |
-| `flattitude` | STRING | Meaning not documented in the repo. |
-| `flongtitude` | STRING | Meaning not documented in the repo. |
-| `fpoi` | STRING | Meaning not documented in the repo. |
-| `fzone` | STRING | Meaning not documented in the repo. |
-| `fvat` | STRING | Meaning not documented in the repo. |
-| `freceive` | STRING | Meaning not documented in the repo. |
-| `fdocument` | STRING | Meaning not documented in the repo. |
-| `flatd` | STRING | Meaning not documented in the repo. |
-| `flongd` | STRING | Meaning not documented in the repo. |
+| `frun` | STRING | Delivery record identifier. |
+| `fmaster` | STRING | Trip identifier (`ttrip.frun`). |
+| `fserial_no` | STRING | MAC5 delivery document number confirmed as delivered (matches `mil.milvnos`). |
+| `fdatetime` | STRING | Date and time of the delivery confirmation (`yyyyMMddHHmmss`). |
+| `flattitude` | STRING | Latitude of the delivery point. |
+| `flongtitude` | STRING | Longitude of the delivery point. |
+| `fpoi` | STRING | Place name of the delivery point from reverse geocoding. |
+| `fzone` | STRING | Delivery zone name (e.g. `ZONE สีส้ม`). |
+| `fvat` | STRING | VAT flag of the delivery. |
+| `freceive` | STRING | Received flag of the delivery. |
+| `fdocument` | STRING | Document number of the delivery. |
+| `flatd` | STRING | Latitude of the delivery point as digits without the decimal point. |
+| `flongd` | STRING | Longitude of the delivery point as digits without the decimal point. |
 
 # How it is built
 

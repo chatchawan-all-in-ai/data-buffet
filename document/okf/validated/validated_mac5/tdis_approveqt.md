@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tdis_approveqt"
-description: "One row = one quotation approval (distribution), unique on (company_id, docno, stktype)."
+description: "One row = one quotation approval request per product line (per company), unique on (company_id, docno, stktype)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tdis_approveqt&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tdis_approveqt`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: quotation approval (distribution). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `tdis_approveqt`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Approval requests of quotations per product-line approval type, with approval results, users, dates and notes per level.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,23 +35,23 @@ One row per `company_id`, `docno`, `stktype`. The key is declared twice in the d
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `docno` | STRING | Meaning not documented in the repo. |
-| `lv1` | STRING | Meaning not documented in the repo. |
-| `lv2` | STRING | Meaning not documented in the repo. |
-| `lv3` | STRING | Meaning not documented in the repo. |
-| `note1` | STRING | Meaning not documented in the repo. |
-| `note2` | STRING | Meaning not documented in the repo. |
-| `note3` | STRING | Meaning not documented in the repo. |
-| `u1` | STRING | Meaning not documented in the repo. |
-| `u2` | STRING | Meaning not documented in the repo. |
-| `u3` | STRING | Meaning not documented in the repo. |
-| `d1` | STRING | Meaning not documented in the repo. |
-| `d2` | STRING | Meaning not documented in the repo. |
-| `d3` | STRING | Meaning not documented in the repo. |
-| `sendto` | STRING | Meaning not documented in the repo. |
-| `sendtime` | STRING | Meaning not documented in the repo. |
-| `comment` | STRING | Meaning not documented in the repo. |
-| `stktype` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
+| `docno` | STRING | Quotation identifier (`tbook_quotation.id`) sent for approval. |
+| `lv1` | STRING | Level-1 approval result code. |
+| `lv2` | STRING | Level-2 approval result code. |
+| `lv3` | STRING | Level-3 approval result code (1, 2, 0). |
+| `note1` | STRING | Level-1 approval note. |
+| `note2` | STRING | Level-2 approval note. |
+| `note3` | STRING | Level-3 approval note. |
+| `u1` | STRING | User who acted at approval level 1. |
+| `u2` | STRING | User who acted at approval level 2. |
+| `u3` | STRING | Employee code of the user who acted at approval level 3. |
+| `d1` | STRING | Date and time of the level-1 approval (text). |
+| `d2` | STRING | Date and time of the level-2 approval (text). |
+| `d3` | STRING | Date and time of the level-3 approval (text). |
+| `sendto` | STRING | Sent-for-approval flag (1 = sent). |
+| `sendtime` | STRING | Date the quotation was sent for approval (text). |
+| `comment` | STRING | Sales comment attached to the approval request, such as delivery instructions. |
+| `stktype` | STRING | Product-line approval type code (`tbook_apptype.iddesc`, e.g. `PE`, `PUMP`, `RP`). |
 
 # How it is built
 

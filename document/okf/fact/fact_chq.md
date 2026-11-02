@@ -36,20 +36,20 @@ One row per `FactChqSK` (a `ROW_NUMBER()` over `company_id, chqno, cqlcus, cqlvn
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md) via `chqcus = debcode` and company; NULL if unmatched. |
 | `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md) via `company_id`. |
 | `company_id` | STRING | MAC5 company code. Pass-through of validated `chq.company_id`. |
-| `chqno` | STRING | Cheque number. Pass-through of validated `chq.chqno`; joins `cql.cqlno`. |
-| `chqbank` | STRING | Bank code/name of the cheque. Pass-through of `chq.chqbank` (meaning inferred from the name). |
-| `chqacode` | STRING | Account code of the cheque. Pass-through of `chq.chqacode` (meaning inferred from the name; not documented in the repo). |
-| `chqcus` | STRING | Customer code that issued the cheque; joins `dim_customer.debcode` and `cql.cqlcus`. |
-| `chqdatec` | DATETIME | Cheque date field `chqdatec`. Pass-through; exact meaning not documented in the repo (likely cheque date, inferred from the name). |
-| `chqdater` | DATETIME | Cheque date field `chqdater`. Pass-through; likely received date (inferred from the name; not documented). |
-| `chqdatep` | DATETIME | Cheque date field `chqdatep`. Pass-through; likely payment/due date (inferred from the name; not documented). |
-| `chqtype` | INT64 | Cheque type code. Pass-through of `chq.chqtype`; code values not documented in the repo. |
+| `chqno` | STRING | Cheque number. |
+| `chqbank` | STRING | Bank code of the cheque (e.g. `BBL`, `KBANK`, `SCB`). |
+| `chqacode` | STRING | General-ledger account code of the cheque; sampled MAC5 records show 112001 for received cheques and 211101, 212000, 212400, and 214201 for issued cheques. |
+| `chqcus` | STRING | Customer code (supplier code for issued cheques), matching `deb.debcode`. |
+| `chqdatec` | DATETIME | Date written on the cheque. |
+| `chqdater` | DATETIME | Date the cheque was received or issued. |
+| `chqdatep` | DATETIME | Date the cheque was passed (cleared) at the bank. |
+| `chqtype` | INT64 | Cheque direction (1 = received from customer, 2 = issued to supplier). |
 | `chqstatus` | STRING | Status label derived from `chq.chqstatus`: 1 'Cleared', 2 'Bounced', 3 'Due', otherwise NULL. |
 | `chqstatusn` | STRING | Detailed status label derived from `chq.chqstatusn`: 1 'POST', 2 'PASS', 3 cleared (Thai), 4 not yet cleared (Thai), 5 adjusted (Thai), 6 voucher cancelled (Thai), otherwise NULL. |
-| `chqtotal` | FLOAT64 | Cheque amount. Pass-through of `chq.chqtotal`; also part of the join to `cql.cqlsuml`. |
-| `chqmemo` | STRING | Free-text memo on the cheque. Pass-through of `chq.chqmemo`. |
-| `chqgl` | INT64 | General-ledger flag/code of the cheque. Pass-through of `chq.chqgl`; meaning not documented in the repo. |
-| `cqlvnos` | STRING | Receipt document number from `cql.cqlvnos`; joins `fact_mir_rs.mirvnos` (type 'RS'). |
+| `chqtotal` | FLOAT64 | Cheque amount. |
+| `chqmemo` | STRING | Cheque memo prefix before the transfer or payment-split notes. |
+| `chqgl` | INT64 | Flag: cheque posted to the general ledger (1 = posted). |
+| `cqlvnos` | STRING | Number of the receipt or payment document the cheque settles (e.g. `RI-...`). |
 
 # How it is built
 

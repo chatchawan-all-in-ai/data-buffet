@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of SALEOUT_MDT `stock_aging`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of SALEOUT_MDT `stock_aging`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Stock aging report from Boonthavorn (BT): stock quantity and value of the company products by branch, article and age band, with stock class.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,27 +34,27 @@ One row per cleaned tuple `(vendor_id, branch, article_id, aging_tier, brand, mc
 
 | Column | Type | Description |
 |---|---|---|
-| `vendor_id` | STRING | Meaning not documented in the repo. |
-| `vendor_name` | STRING | Meaning not documented in the repo. |
-| `branch` | STRING | Meaning not documented in the repo. |
-| `article_id` | STRING | Meaning not documented in the repo. |
-| `article_name_th` | STRING | Meaning not documented in the repo. |
-| `brand` | STRING | Meaning not documented in the repo. |
-| `mch3` | STRING | Meaning not documented in the repo. |
-| `mch2` | STRING | Meaning not documented in the repo. |
-| `tile_size` | FLOAT64 | Meaning not documented in the repo. |
-| `item_flag` | STRING | Meaning not documented in the repo. |
-| `aging_tier` | STRING | Meaning not documented in the repo. |
-| `class_stock` | STRING | Meaning not documented in the repo. |
-| `aging` | INT64 | Meaning not documented in the repo. |
-| `ur_amt` | FLOAT64 | Likely amount (inferred from the column name only; not documented in the repo). |
-| `ur_qty` | INT64 | Likely quantity (inferred from the column name only; not documented in the repo). |
-| `reserve_amt` | FLOAT64 | Meaning not documented in the repo. |
-| `reserve_qty` | INT64 | Meaning not documented in the repo. |
-| `remain_amt` | FLOAT64 | Meaning not documented in the repo. |
-| `remain_qty` | INT64 | Meaning not documented in the repo. |
-| `start_date` | DATE | Meaning not documented in the repo. |
-| `end_date` | DATE | Meaning not documented in the repo. |
+| `vendor_id` | STRING | Boonthavorn vendor code of the supplier (the company), e.g. `10009`. |
+| `vendor_name` | STRING | Supplier (vendor) name as registered at Boonthavorn. |
+| `branch` | STRING | Boonthavorn branch name in Thai, used as the branch code. |
+| `article_id` | STRING | Boonthavorn article (product) code. |
+| `article_name_th` | STRING | Product name in Thai. |
+| `brand` | STRING | Product brand. |
+| `mch3` | STRING | Boonthavorn merchandise category, top level (department). |
+| `mch2` | STRING | Boonthavorn merchandise category, second level. |
+| `tile_size` | FLOAT64 | Tile size of the article (tile products only). |
+| `item_flag` | STRING | Item movement flag (`REGULAR`, `FAST`, `DISCON` = discontinued). |
+| `aging_tier` | STRING | Stock age band (`1) 0 - 60 Days` to `8) >361 Days`). |
+| `class_stock` | STRING | Boonthavorn stock class (`B3G Class A`, `B3G Class B`, `B3G Class C`, `B3G New`, `B3G Dead`). |
+| `aging` | INT64 | Stock age in days. |
+| `ur_amt` | FLOAT64 | Value of the unrestricted stock in this age band (THB). |
+| `ur_qty` | INT64 | Unrestricted stock quantity in this age band. |
+| `reserve_amt` | FLOAT64 | Value of the stock reserved for orders (THB). |
+| `reserve_qty` | INT64 | Stock quantity reserved for orders. |
+| `remain_amt` | FLOAT64 | Value of the stock remaining after reservations (THB). |
+| `remain_qty` | INT64 | Stock quantity remaining after reservations. |
+| `start_date` | DATE | Stock snapshot date (same as `end_date`). |
+| `end_date` | DATE | Stock snapshot date. |
 | `ASATDATE` | DATE | Extract date (raw ASATDATE parsed to DATE); part of the deduplication tuple and the storage partition. It does not break ties within the tuple. |
 
 # How it is built

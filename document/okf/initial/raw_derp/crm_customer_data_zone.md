@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_customer_data_zone"
-description: "One row = one record of source table `crm_customer_data_zone` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one assignment of a customer to a data zone, a record of source table `crm_customer_data_zone` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_customer_data_zone&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_data_zone/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_data_zone` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_customer_data_zone](/validated/validated_derp/crm_customer_data_zone.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_data_zone/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_data_zone` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Assignments of CRM customers to data zones (three-level zone hierarchy) for main or logistics purposes. Used by: [validated_derp.crm_customer_data_zone](/validated/validated_derp/crm_customer_data_zone.md).
 
 # Grain and key
 
@@ -30,32 +30,32 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_data_zone_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_master_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `data_zone_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `level1_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `level1_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `level1_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `level2_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `level2_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `level2_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `level3_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `level3_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `level3_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `zone_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `valid_from` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `valid_to` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `customer_data_zone_id` | STRING | UUID of the customer data-zone assignment. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
+| `data_zone_id` | STRING | UUID of the assigned (lowest-level) data zone in `crm_data_zone`. |
+| `level1_id` | STRING | UUID of the level-1 data zone. |
+| `level1_code` | STRING | Code of the level-1 data zone. |
+| `level1_name` | STRING | Name of the level-1 data zone. |
+| `level2_id` | STRING | UUID of the level-2 data zone. |
+| `level2_code` | STRING | Code of the level-2 data zone. |
+| `level2_name` | STRING | Name of the level-2 data zone. |
+| `level3_id` | STRING | UUID of the level-3 data zone. |
+| `level3_code` | STRING | Code of the level-3 data zone. |
+| `level3_name` | STRING | Name of the level-3 data zone. |
+| `path_id` | STRING | Chain of data-zone UUIDs from level 1 down to the assigned zone. |
+| `path_code` | STRING | Chain of data-zone codes from level 1 down to the assigned zone. |
+| `path_name` | STRING | Chain of data-zone names from level 1 down to the assigned zone. |
+| `zone_type` | STRING | Purpose of the zone assignment (`MAIN` or `LOGISTICS`). |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `valid_from` | STRING | Date from which the assignment is valid. |
+| `valid_to` | STRING | Date until which the assignment is valid (NULL = open-ended). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

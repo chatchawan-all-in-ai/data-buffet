@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "match_product"
-description: "One row = one record of source table `match_product` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one barcode to MAC5 stock code mapping, a record of source table `match_product` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=match_product&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/match_product/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `match_product` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.match_product](/validated/validated_mac5/match_product.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/match_product/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `match_product` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Mapping of product barcodes to MAC5 stock codes. Used by: [validated_mac5.match_product](/validated/validated_mac5/match_product.md).
 
 # Grain and key
 
@@ -30,10 +30,10 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `barcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `product_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Row identifier of the mapping. |
+| `barcode` | STRING | Product barcode (EAN-13). |
+| `product_id` | STRING | MAC5 stock code mapped to the barcode. |
+| `create_date` | STRING | Date and time the mapping was created. |
 
 # How it is built
 

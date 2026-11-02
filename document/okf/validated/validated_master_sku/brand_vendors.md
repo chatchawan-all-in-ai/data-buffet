@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "brand_vendors"
-description: "One row = one cleaned copy of the source table `brand_vendors`, unique on (id)."
+description: "One row = one brand supplied by one vendor from source table `brand_vendors`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_master_sku&t=brand_vendors&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_master_sku
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MASTER_SKU `brand_vendors`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MASTER_SKU `brand_vendors`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Links between master_sku brands and the vendors that supply them; products reference this link to get their vendor.
 Used by: [curated_master_sku.curated_products](/curated/curated_master_sku/curated_products.md), [curated_master_sku.product_for_aisearch_v3](/curated/curated_master_sku/product_for_aisearch_v3.md).
 
 # Grain and key
@@ -34,16 +34,16 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Surrogate identifier from the source system (the primary key). |
-| `brand_id` | STRING | Meaning not documented in the repo. |
-| `vendor_id` | STRING | Meaning not documented in the repo. |
-| `sort_order` | INT64 | Meaning not documented in the repo. |
-| `image_name` | STRING | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
+| `id` | STRING | Unique identifier (UUID) of the brand-vendor link. |
+| `brand_id` | STRING | Brand (FK to `brands.id`). |
+| `vendor_id` | STRING | Vendor that supplies the brand (FK to `vendors.id`). |
+| `sort_order` | INT64 | Display order of the brand for the vendor. |
+| `image_name` | STRING | File name of the brand logo image for this vendor. |
+| `status` | STRING | Record status (`Active`, `Inactive`, `Deleted`). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

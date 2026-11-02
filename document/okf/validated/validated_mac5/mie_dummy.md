@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mie_dummy"
-description: "One row = one document extra line, staging variant, unique on (company_id, MIEday, MIEmonth, MIEyear, MIEtype, MIEvnos, MIEcus)."
+description: "One row = one document's payment and withholding details (per company), unique on (company_id, MIEday, MIEmonth, MIEyear, MIEtype, MIEvnos, MIEcus)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mie_dummy&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `mie_dummy`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: document extra line, staging variant. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `mie_dummy`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Per-document payment terms and withholding details from the ERP's dummy (staging) table, same layout as `mie`.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,46 +35,46 @@ One row per `company_id`, `MIEday`, `MIEmonth`, `MIEyear`, `MIEtype`, `MIEvnos`,
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `mieday` | INT64 | Likely day part of the document date (inferred from the column name only; not documented in the repo). |
-| `miemonth` | INT64 | Likely month part of the document date (inferred from the column name only; not documented in the repo). |
-| `mieyear` | INT64 | Likely year part of the document date (inferred from the column name only; not documented in the repo). |
-| `mietype` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `mievnos` | STRING | Likely document number (inferred from the column name only; not documented in the repo). |
-| `miecus` | STRING | Likely customer code (inferred from the column name only; not documented in the repo). |
-| `mierecdt3` | FLOAT64 | Meaning not documented in the repo. |
-| `mierecdt53` | FLOAT64 | Meaning not documented in the repo. |
-| `mierecdrnd` | FLOAT64 | Meaning not documented in the repo. |
-| `mierecdexg` | FLOAT64 | Meaning not documented in the repo. |
-| `mierecdcsh` | FLOAT64 | Meaning not documented in the repo. |
-| `mierecdoth` | FLOAT64 | Meaning not documented in the repo. |
-| `mierecplus` | FLOAT64 | Meaning not documented in the repo. |
-| `miereccash` | FLOAT64 | Meaning not documented in the repo. |
-| `miereccqrd` | FLOAT64 | Meaning not documented in the repo. |
-| `miectermcx` | STRING | Meaning not documented in the repo. |
-| `miectermpx` | STRING | Meaning not documented in the repo. |
-| `miectermax` | STRING | Meaning not documented in the repo. |
-| `miectermdx` | STRING | Meaning not documented in the repo. |
-| `mietag` | INT64 | Meaning not documented in the repo. |
-| `miebasedt3` | FLOAT64 | Meaning not documented in the repo. |
-| `miebasedt53` | FLOAT64 | Meaning not documented in the repo. |
-| `miedescdt3` | STRING | Meaning not documented in the repo. |
-| `miedescdt53` | STRING | Meaning not documented in the repo. |
-| `miecondt3` | INT64 | Meaning not documented in the repo. |
-| `miecondt53` | INT64 | Meaning not documented in the repo. |
-| `mierecfc` | STRING | Meaning not documented in the repo. |
-| `mierecdt32` | FLOAT64 | Meaning not documented in the repo. |
-| `mierecdt532` | FLOAT64 | Meaning not documented in the repo. |
-| `miebasedt32` | FLOAT64 | Meaning not documented in the repo. |
-| `miebasedt532` | FLOAT64 | Meaning not documented in the repo. |
-| `miedescdt32` | STRING | Meaning not documented in the repo. |
-| `miedescdt532` | STRING | Meaning not documented in the repo. |
-| `miecondt32` | INT64 | Meaning not documented in the repo. |
-| `miecondt532` | INT64 | Meaning not documented in the repo. |
-| `mieperdt3` | FLOAT64 | Meaning not documented in the repo. |
-| `mieperdt32` | FLOAT64 | Meaning not documented in the repo. |
-| `mieperdt53` | FLOAT64 | Meaning not documented in the repo. |
-| `mieperdt532` | FLOAT64 | Meaning not documented in the repo. |
-| `mietaxpayno` | STRING | Meaning not documented in the repo. |
+| `mieday` | INT64 | Day part of the document date. |
+| `miemonth` | INT64 | Month part of the document date. |
+| `mieyear` | INT64 | Year part of the document date (Gregorian). |
+| `mietype` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP). |
+| `mievnos` | STRING | Document number, matching `mihvnos` of the same document type. |
+| `miecus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mierecdt3` | FLOAT64 | Withholding tax amount, first PND3 (individual) entry. |
+| `mierecdt53` | FLOAT64 | Withholding tax amount, first PND53 (juristic person) entry. |
+| `mierecdrnd` | FLOAT64 | Rounding difference on the receipt or payment. |
+| `mierecdexg` | FLOAT64 | Exchange-rate difference on the receipt or payment. |
+| `mierecdcsh` | FLOAT64 | Cash discount deducted on the receipt or payment. |
+| `mierecdoth` | FLOAT64 | Other deductions on the receipt or payment, such as bank fees. |
+| `mierecplus` | FLOAT64 | Additional amount added on the receipt or payment. |
+| `miereccash` | FLOAT64 | Amount received or paid in cash or transfer. |
+| `miereccqrd` | FLOAT64 | Amount received or paid by cheque. |
+| `miectermcx` | STRING | Payment-term days per instalment, as a delimited text list (e.g. `60`). |
+| `miectermpx` | STRING | Payment-term percentage per instalment, as a delimited text list (e.g. `100`). |
+| `miectermax` | STRING | Payment-term amount per instalment, as a delimited text list. |
+| `miectermdx` | STRING | Payment-term due date per instalment (`dd/mm/yyyy`), as a delimited text list. |
+| `mietag` | INT64 | Tag marker of the record. |
+| `miebasedt3` | FLOAT64 | Withholding tax base amount, first PND3 (individual) entry. |
+| `miebasedt53` | FLOAT64 | Withholding tax base amount, first PND53 (juristic person) entry. |
+| `miedescdt3` | STRING | Income type description of the first PND3 withholding entry (e.g. service fee, transport fee). |
+| `miedescdt53` | STRING | Income type description of the first PND53 withholding entry (e.g. service fee, transport fee). |
+| `miecondt3` | INT64 | Withholding condition code of the first PND3 entry (1 = withheld at source). |
+| `miecondt53` | INT64 | Withholding condition code of the first PND53 entry (1 = withheld at source). |
+| `mierecfc` | STRING | Amount in foreign currency on the receipt or payment. |
+| `mierecdt32` | FLOAT64 | Withholding tax amount, second PND3 (individual) entry. |
+| `mierecdt532` | FLOAT64 | Withholding tax amount, second PND53 (juristic person) entry. |
+| `miebasedt32` | FLOAT64 | Withholding tax base amount, second PND3 (individual) entry. |
+| `miebasedt532` | FLOAT64 | Withholding tax base amount, second PND53 (juristic person) entry. |
+| `miedescdt32` | STRING | Income type description of the second PND3 withholding entry. |
+| `miedescdt532` | STRING | Income type description of the second PND53 withholding entry. |
+| `miecondt32` | INT64 | Withholding condition code of the second PND3 entry (1 = withheld at source). |
+| `miecondt532` | INT64 | Withholding condition code of the second PND53 entry (1 = withheld at source). |
+| `mieperdt3` | FLOAT64 | Withholding tax rate in percent, first PND3 entry. |
+| `mieperdt32` | FLOAT64 | Withholding tax rate in percent, second PND3 entry. |
+| `mieperdt53` | FLOAT64 | Withholding tax rate in percent, first PND53 entry. |
+| `mieperdt532` | FLOAT64 | Withholding tax rate in percent, second PND53 entry. |
+| `mietaxpayno` | STRING | Tax identification number of the withholding taxpayer. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

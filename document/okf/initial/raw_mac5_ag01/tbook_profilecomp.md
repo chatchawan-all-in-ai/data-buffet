@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tbook_profilecomp"
-description: "One row = one record of source table `tbook_profilecomp` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one project profile, a record of source table `tbook_profilecomp` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=tbook_profilecomp&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbook_profilecomp/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbook_profilecomp` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.tbook_profilecomp](/validated/validated_mac5/tbook_profilecomp.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbook_profilecomp/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbook_profilecomp` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Construction project and company profiles of the quotation app, with project dates, value, location and contacts; source of dim_project. Used by: [validated_mac5.tbook_profilecomp](/validated/validated_mac5/tbook_profilecomp.md).
 
 # Grain and key
 
@@ -30,50 +30,50 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `docno` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `projectcode` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `projectname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `statuscomp` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `compname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `register` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `addresscomp` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `province` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `district` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `country` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `capital` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `place` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `tel` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mobile` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fax` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mail` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `namedirector` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `nickname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `teldirector` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `profilecomp` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `typecomp` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `startdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `history` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pjstart` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pjend` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pjval` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pjfor` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `compgroup` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `acccode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `accname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `closedby` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `projectfrom` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ptype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ppc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `pecom` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `insertby` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uupdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dupdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `meccode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `contactdebcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `refallkon` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `docno` | INT64 | Document number of the project profile. |
+| `projectcode` | INT64 | Project code, referenced by the quotation project text. |
+| `projectname` | STRING | Project name. |
+| `statuscomp` | STRING | Project status colour (`เขียว` = green, `เหลือง` = yellow, `แดง` = red). |
+| `compname` | STRING | Company name of the project owner or contractor. |
+| `register` | STRING | Company registration (tax ID) number. |
+| `addresscomp` | STRING | Company address. |
+| `province` | STRING | Province of the project. |
+| `district` | STRING | District of the project. |
+| `country` | STRING | Country of the project. |
+| `status` | STRING | Work category of the project (e.g. residential, hotel, housing estate, school). |
+| `capital` | STRING | Registered capital of the company. |
+| `place` | STRING | Location of the project. |
+| `tel` | STRING | Company phone number. |
+| `mobile` | STRING | Contact mobile number. |
+| `fax` | STRING | Company fax number. |
+| `mail` | STRING | Contact email address. |
+| `namedirector` | STRING | Name of the company director or decision maker. |
+| `nickname` | STRING | Nickname of the contact person. |
+| `teldirector` | STRING | Phone number of the director. |
+| `profilecomp` | STRING | Project profile description (e.g. condominium, hotel). |
+| `typecomp` | STRING | Business type of the company (e.g. construction contractor, hotel). |
+| `startdate` | STRING | Date the profile was opened. |
+| `history` | STRING | Background history of the project or company. |
+| `pjstart` | STRING | Project start date (text). |
+| `pjend` | STRING | Project end date (text). |
+| `pjval` | STRING | Project value (text). |
+| `pjfor` | STRING | Expected purchase value for the project (text). |
+| `compgroup` | STRING | Company group of the project. |
+| `acccode` | STRING | Account code linked to the project (e.g. `AC958-60`). |
+| `accname` | STRING | Account name linked to the project. |
+| `closedby` | STRING | User who closed the project. |
+| `projectfrom` | STRING | Source of the project lead. |
+| `ptype` | STRING | Profile type (e.g. `Project`). |
+| `ppc` | STRING | PPC code of the project. |
+| `pecom` | STRING | PE commission value of the project. |
+| `uinsert` | STRING | Employee code of the user who created the row. |
+| `dinsert` | STRING | Date and time the row was created. |
+| `insertby` | STRING | Employee code of the user who created the profile. |
+| `uupdate` | STRING | Employee code of the user who last updated the row. |
+| `dupdate` | STRING | Date and time the row was last updated. |
+| `meccode` | STRING | Customer branch (ship-to) code, matching `mec.meccode`. |
+| `contactdebcode` | STRING | MAC5 customer (debtor) code of the contact. |
+| `refallkon` | STRING | Allkons reference code of the project. |
 
 # How it is built
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "product_admin_status"
-description: "One row = one cleaned copy of the source table `product_admin_status`, unique on (pas_id)."
+description: "One row = one admin review status from source table `product_admin_status`, unique on (pas_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mastersku&t=product_admin_status&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mastersku
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MASTERSKU `product_admin_status`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MASTERSKU `product_admin_status`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Lookup of the admin review statuses a MASTERSKU product can carry (new, edit, duplicate, open, close, delete).
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,11 +34,11 @@ One row per `pas_id`. The key is declared twice in the definition (`uniqueKey` a
 
 | Column | Type | Description |
 |---|---|---|
-| `pas_id` | STRING | Meaning not documented in the repo. |
-| `pas_name` | STRING | Meaning not documented in the repo. |
-| `pas_is_use` | BOOL | Meaning not documented in the repo. |
-| `pas_created_date` | DATETIME | Meaning not documented in the repo. |
-| `pas_updated_date` | DATETIME | Meaning not documented in the repo. |
+| `pas_id` | STRING | Unique identifier (UUID) of the admin review status. |
+| `pas_name` | STRING | Admin review status name in Thai (new, edit, duplicate, open, close, delete). |
+| `pas_is_use` | BOOL | In-use flag of the record (FALSE = retired from use). |
+| `pas_created_date` | DATETIME | Timestamp when the record was created. |
+| `pas_updated_date` | DATETIME | Timestamp when the record was last updated. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

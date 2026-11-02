@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "ttrip_document"
-description: "One row = one documents on a delivery trip, unique on (company_id, frun, fdocument, fserial_no)."
+description: "One row = one scanned item unit loaded on a delivery trip (per company), unique on (company_id, frun, fdocument, fserial_no)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=ttrip_document&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `ttrip_document`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: documents on a delivery trip. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `ttrip_document`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Item scans of delivery documents loaded on trips, linking each scanned unit to its trip and MAC5 delivery document; source of dim_delivery and fact_delivery.
 Used by: [dimension_table.dim_delivery](/dimension/dim_delivery.md), [fact_table.fact_delivery](/fact/fact_delivery.md).
 
 # Grain and key
@@ -35,29 +35,29 @@ One row per `company_id`, `frun`, `fdocument`, `fserial_no`. The key is declared
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `frun` | STRING | Meaning not documented in the repo. |
-| `fmaster` | STRING | Meaning not documented in the repo. |
-| `fdocument` | STRING | Meaning not documented in the repo. |
-| `fserial_no` | STRING | Meaning not documented in the repo. |
-| `fitem` | STRING | Meaning not documented in the repo. |
-| `fusername` | STRING | Meaning not documented in the repo. |
-| `fdatetime` | STRING | Meaning not documented in the repo. |
-| `fitem2` | STRING | Meaning not documented in the repo. |
-| `fdoc_type` | STRING | Meaning not documented in the repo. |
-| `fcancel` | STRING | Likely cancel flag (inferred from the column name only; not documented in the repo). |
-| `fref1` | STRING | Meaning not documented in the repo. |
-| `fdocument_rt` | INT64 | Meaning not documented in the repo. |
-| `fdocument_rtdate` | DATETIME | Meaning not documented in the repo. |
-| `fdocument_ac` | INT64 | Meaning not documented in the repo. |
-| `fdocument_acdate` | DATETIME | Meaning not documented in the repo. |
-| `frepro` | STRING | Meaning not documented in the repo. |
-| `fqty_order` | INT64 | Meaning not documented in the repo. |
-| `fitemdoc` | STRING | Meaning not documented in the repo. |
-| `fitem3` | STRING | Meaning not documented in the repo. |
-| `fprice` | FLOAT64 | Likely price (inferred from the column name only; not documented in the repo). |
-| `fin365` | INT64 | Meaning not documented in the repo. |
-| `im_mac` | STRING | Meaning not documented in the repo. |
-| `post` | STRING | Meaning not documented in the repo. |
+| `frun` | STRING | Scan record identifier (timestamp `yyMMddHHmmss` plus sequence). |
+| `fmaster` | STRING | Trip identifier (`ttrip.frun`). |
+| `fdocument` | STRING | MAC5 delivery document number loaded on the trip (matches `mil.milvnos` of type IS). |
+| `fserial_no` | STRING | Scanned serial or barcode of the unit. |
+| `fitem` | STRING | Stock code of the scanned item. |
+| `fusername` | STRING | Code of the user who scanned the item. |
+| `fdatetime` | STRING | Date and time the item was scanned (`yyyyMMddHHmmss`). |
+| `fitem2` | STRING | Alternative stock code of the scanned item, used when `fitem` does not match the invoice line. |
+| `fdoc_type` | STRING | Document type of `fdocument` (e.g. `IS`). |
+| `fcancel` | STRING | Customer refusal flag (0 = received, other = refused). |
+| `fref1` | STRING | Sales order number referenced by the delivery document. |
+| `fdocument_rt` | INT64 | Document returned flag. |
+| `fdocument_rtdate` | DATETIME | Date the document was returned. |
+| `fdocument_ac` | INT64 | Document received by accounting flag. |
+| `fdocument_acdate` | DATETIME | Date the document was received by accounting. |
+| `frepro` | STRING | Reprocess reference of the scan. |
+| `fqty_order` | INT64 | Ordered quantity of the item on the document. |
+| `fitemdoc` | STRING | Item reference of the document line. |
+| `fitem3` | STRING | Third stock code or barcode of the scanned item. |
+| `fprice` | FLOAT64 | Price value of the scanned item. |
+| `fin365` | INT64 | IN365 flag of the scan. |
+| `im_mac` | STRING | Device (MAC) identifier of the scanner. |
+| `post` | STRING | Posting flag of the scan. |
 
 # How it is built
 

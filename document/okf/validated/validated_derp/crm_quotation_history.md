@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_quotation_history"
-description: "One row = one cleaned copy of the source table `crm_quotation_history`, unique on (quotation_history_id)."
+description: "One row = one snapshot of a quotation at a revision from source table `crm_quotation_history`, unique on (quotation_history_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_quotation_history&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_quotation_history`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_quotation_history`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Revision history of sales quotations, holding a JSON snapshot of the quotation for each saved revision.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,18 +34,18 @@ One row per `quotation_history_id`. The key is declared twice in the definition 
 
 | Column | Type | Description |
 |---|---|---|
-| `quotation_history_id` | STRING | Meaning not documented in the repo. |
-| `quotation_id` | STRING | Meaning not documented in the repo. |
-| `quotation_date` | DATE | Meaning not documented in the repo. |
-| `revision_no` | INT64 | Meaning not documented in the repo. |
-| `snapshot_data` | STRING | Meaning not documented in the repo. |
-| `action_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
+| `quotation_history_id` | STRING | UUID of the quotation history snapshot. |
+| `quotation_id` | STRING | UUID of the quotation in `crm_quotation`. |
+| `quotation_date` | DATE | Quotation document date. |
+| `revision_no` | INT64 | Quotation revision number the snapshot was taken for. |
+| `snapshot_data` | STRING | JSON snapshot of the quotation header and lines at that revision. |
+| `action_by` | STRING | Identifier of the user whose action produced the snapshot. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_at` | DATETIME | Timestamp when the record was created. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

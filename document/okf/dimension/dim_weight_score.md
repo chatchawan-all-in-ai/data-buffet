@@ -37,7 +37,7 @@ One row per active MDS row, ordered and SK-numbered by CompanyID, Typeeng, Typet
 | `CompanyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `Typeeng` | STRING | Score type name in English. |
 | `Typethai` | STRING | Score type name in Thai. |
-| `weight` | FLOAT64 | Weight of the score type (FLOAT64 via `castFloat64`, fails the run on non-numeric input); how it is combined is not documented in the repo. |
+| `weight` | FLOAT64 | Weight in points of the score type in the customer-grade score (e.g. 20 for AverageCollectionday, 10 for Contactyear); FLOAT64 via `castFloat64`. |
 | `Remark` | STRING | Free-text remark from MDS. |
 | `StartDate` | DATE | First date the weight applies (MDS DATE). |
 | `EndDate` | DATE | Last date the weight applies (MDS DATE). |

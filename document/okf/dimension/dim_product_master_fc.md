@@ -49,12 +49,12 @@ One row per (company, Barcode) among active mds rows (the SK ordering key; uniqu
 | `ProductNumber` | STRING | Pass-through of mds `ProductNumber`, cleaned with `cleanString` (empty string becomes NULL). D365 product number (base item before variants). |
 | `ProductDescription` | STRING | Pass-through of mds `ProductDescription`, cleaned with `cleanString` (empty string becomes NULL). Product description. |
 | `Unit` | STRING | Pass-through of mds `Unit`, cleaned with `cleanString` (empty string becomes NULL). Base unit of measure. |
-| `NetWeight` | STRING | Pass-through of mds `NetWeight`, cleaned with `cleanString` (empty string becomes NULL). Net weight, kept as STRING (not cast to a number; unit not documented). |
-| `GrossWeight` | STRING | Pass-through of mds `GrossWeight`, cleaned with `cleanString` (empty string becomes NULL). Gross weight, STRING (unit not documented). |
+| `NetWeight` | STRING | Pass-through of mds `NetWeight`, cleaned with `cleanString` (empty string becomes NULL). Net weight of the product as text, usually a number such as `4.2`, sometimes the placeholder `โปรดระบุ` (please specify). |
+| `GrossWeight` | STRING | Pass-through of mds `GrossWeight`, cleaned with `cleanString` (empty string becomes NULL). Gross weight of the product as text, usually a number such as `19`, sometimes the placeholder `โปรดระบุ` (please specify). |
 | `DeepMM` | STRING | Pass-through of mds `DeepMM`, cleaned with `cleanString` (empty string becomes NULL). Depth in millimetres (STRING). |
 | `WideMM` | STRING | Pass-through of mds `WideMM`, cleaned with `cleanString` (empty string becomes NULL). Width in millimetres (STRING). |
 | `HeightMM` | STRING | Pass-through of mds `HeightMM`, cleaned with `cleanString` (empty string becomes NULL). Height in millimetres (STRING). |
-| `DoNotStackOverLayer` | INT64 | `castInt64` of mds `DoNotStackOverLayer`; maximum stacking layers or a do-not-stack flag (exact meaning not documented in the repo). |
+| `DoNotStackOverLayer` | INT64 | `castInt64` of mds `DoNotStackOverLayer`: maximum number of layers the product may be stacked (values 1 to 10). |
 | `Barcode` | STRING | Pass-through of mds `Barcode`, cleaned with `cleanString` (empty string becomes NULL). Product barcode; the row-order key (with companyID) for the SK. |
 | `ItemGroup` | STRING | Pass-through of mds `ItemGroup`, cleaned with `cleanString` (empty string becomes NULL). Item group code. |
 | `ItemGroupName` | STRING | Pass-through of mds `ItemGroupName`, cleaned with `cleanString` (empty string becomes NULL). Item group name. |

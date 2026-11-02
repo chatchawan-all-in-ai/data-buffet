@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sbl"
-description: "One row = one reference code table (sbl), unique on (company_id, sblstk, sblsto)."
+description: "One row = one stock balance for one item in one warehouse (per company), unique on (company_id, sblstk, sblsto)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=sbl&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `sbl`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: reference code table (sbl). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `sbl`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Stock balances per item and warehouse.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,10 +35,10 @@ One row per `company_id`, `sblstk`, `sblsto`. The key is declared twice in the d
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `sblstk` | STRING | Likely stock (SKU) code (inferred from the column name only; not documented in the repo). |
-| `sblsto` | STRING | Meaning not documented in the repo. |
-| `sblquan` | FLOAT64 | Meaning not documented in the repo. |
-| `sblquanp2` | FLOAT64 | Meaning not documented in the repo. |
+| `sblstk` | STRING | Stock code of the balance row. |
+| `sblsto` | STRING | Warehouse code of the balance row (joins `sto.stocode`). |
+| `sblquan` | FLOAT64 | Stock balance quantity in the base unit. |
+| `sblquanp2` | FLOAT64 | Stock balance quantity in the second unit. |
 
 # How it is built
 

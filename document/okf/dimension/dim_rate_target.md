@@ -43,8 +43,8 @@ One row per active MDS row, SK ordered by companyID, Year, Month, ProductGroupID
 | `ProductGroupName` | STRING | Name of that group. |
 | `TargetID` | STRING | Target code; joins to `dim_target_product_group.TargetID` (with CompanySK). |
 | `TargetName` | STRING | Name of the target. |
-| `TargetDepartmentID` | STRING | Department code the target is set for (inferred from the name; used only in the SK ordering). |
-| `TargetDepartmentName` | STRING | Name of that target department (inferred). |
+| `TargetDepartmentID` | STRING | Code of the department group the rate rule is set for (e.g. `BT`); used only in the SK ordering. |
+| `TargetDepartmentName` | STRING | Name of the target department; empty in current data. |
 | `DepartmentID` | STRING | Department of the employee receiving the share; joins to dim_department_last / dim_department.DepartmentID. |
 | `EmployeeID` | STRING | Employee (sales person) code receiving the share. |
 | `EmployeeName` | STRING | Employee name as entered in MDS. |

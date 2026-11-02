@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tab"
-description: "One row = one cleaned copy of the source table `tab`, unique on (company_id, tabvnosid, tabdateid, tabcusid, tabtypeid, tablistno)."
+description: "One row = one link between a document line and its source document line from source table `tab`, unique on (company_id, tabvnosid, tabdateid, tabcusid, tabtypeid, tablistno)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tab&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tab`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of MAC5 `tab`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Links from invoice lines to the sales-order lines they were drawn from, with quantity and amount taken.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,23 +35,23 @@ One row per `company_id`, `tabvnosid`, `tabdateid`, `tabcusid`, `tabtypeid`, `ta
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `tabvnosid` | STRING | Meaning not documented in the repo. |
-| `tabdateid` | DATETIME | Meaning not documented in the repo. |
-| `tabcusid` | STRING | Meaning not documented in the repo. |
-| `tabtypeid` | STRING | Meaning not documented in the repo. |
-| `tablinktype` | STRING | Meaning not documented in the repo. |
-| `tablinkvno` | STRING | Meaning not documented in the repo. |
-| `tablinkvdate` | DATETIME | Meaning not documented in the repo. |
-| `tablinkvcus` | STRING | Meaning not documented in the repo. |
-| `tablinkvtype` | STRING | Meaning not documented in the repo. |
-| `tablinkvid` | INT64 | Meaning not documented in the repo. |
-| `tabstk` | STRING | Likely stock (SKU) code (inferred from the column name only; not documented in the repo). |
-| `tabquan` | FLOAT64 | Meaning not documented in the repo. |
-| `tabquanp2` | FLOAT64 | Meaning not documented in the repo. |
-| `tabsum` | FLOAT64 | Meaning not documented in the repo. |
-| `tabcurc` | INT64 | Meaning not documented in the repo. |
-| `tabexchg` | FLOAT64 | Meaning not documented in the repo. |
-| `tablistno` | INT64 | Meaning not documented in the repo. |
+| `tabvnosid` | STRING | Document number of the document (e.g. invoice number). |
+| `tabdateid` | DATETIME | Document date. |
+| `tabcusid` | STRING | Customer code of the document. |
+| `tabtypeid` | STRING | Document type code (e.g. `IS` = invoice). |
+| `tablinktype` | STRING | Link type code of the row. |
+| `tablinkvno` | STRING | Document number of the linked source document (e.g. sales order). |
+| `tablinkvdate` | DATETIME | Date of the linked source document. |
+| `tablinkvcus` | STRING | Customer code of the linked source document. |
+| `tablinkvtype` | STRING | Document type code of the linked source document (e.g. `PS` = sales order). |
+| `tablinkvid` | INT64 | Line ID of the linked source document line. |
+| `tabstk` | STRING | Stock code of the linked line. |
+| `tabquan` | FLOAT64 | Quantity taken from the linked line. |
+| `tabquanp2` | FLOAT64 | Quantity taken from the linked line, in the second unit. |
+| `tabsum` | FLOAT64 | Amount taken from the linked line. |
+| `tabcurc` | INT64 | Currency code (0 = baht). |
+| `tabexchg` | FLOAT64 | Exchange rate (1.0 = baht). |
+| `tablistno` | INT64 | Line number within the document. |
 
 # How it is built
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mil"
-description: "One row = one record of source table `mil` (MAC5 for company `ac02`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one document line, a record of source table `mil` (MAC5 for company `ac02`) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ac02&t=mil&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ac02
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ac02/mil/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `mil` table from MAC5 for company `ac02`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.mil](/validated/validated_mac5/mil.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ac02/mil/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `mil` table from MAC5 for company `ac02`; nothing is cleaned or deduplicated here. Table meaning: Line items of all MAC5 trading documents (product, quantity, prices, discounts, link to the source document), one row per company, document type, document number and line number. Used by: [validated_mac5.mil](/validated/validated_mac5/mil.md).
 
 # Grain and key
 
@@ -30,64 +30,64 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `milday` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milmonth` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milyear` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miltype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milvnos` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milcus` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milstk` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miljob` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mildep` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milper` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mildoc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milmec` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milsto` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milstomt` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `millistno` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milquan` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milquanp2` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miladisc` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milcog` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milconv` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mildisca` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mildisct` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milvat` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milsum` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milcut` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milstype` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miluname` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mildesc` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milvcol1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milvcol2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milvcol3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milvcol4` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milcurc` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milexchg` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milacost` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milpqm` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milpmfrom` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milpmto` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miltag` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `millinkvcno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `millinkvcdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `millinkvctype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `millinkvcdeposit` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `millinkvcid` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milclearum` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milexpdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milnotes` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milnotkl` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mildelvdt` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `mildatesp` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milnumcsp` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milnumisp` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milcost` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milucost` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `miluprice` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milusequanp` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milvcol5` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `milfitem` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `milday` | INT64 | Day part of the document date. |
+| `milmonth` | INT64 | Month part of the document date. |
+| `milyear` | INT64 | Year part of the document date (Gregorian). |
+| `miltype` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `milvnos` | STRING | Document number of the line, matching `mihvnos` of the header. |
+| `milcus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `milstk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
+| `miljob` | STRING | Job code of the line (sales job or project category such as `TT`, `SHOP`, or a project number). |
+| `mildep` | STRING | Department code of the line, used as the sales channel code. |
+| `milper` | STRING | Salesperson (employee) code of the line. |
+| `mildoc` | STRING | Document print-form code of the line from the MAC5 `doc` master. |
+| `milmec` | STRING | Memo-card code of the line, matching `mec.meccode`. |
+| `milsto` | STRING | Warehouse (store) code the line is issued from, matching `sto` store codes. |
+| `milstomt` | STRING | Destination warehouse code for transfer lines. |
+| `millistno` | INT64 | Line number within the document. |
+| `milquan` | FLOAT64 | Quantity in the line's unit, as recorded at source. |
+| `milquanp2` | FLOAT64 | Quantity in the secondary unit. |
+| `miladisc` | FLOAT64 | Header discount amount allocated to the line, as recorded at source. |
+| `milcog` | FLOAT64 | Line gross amount (quantity times unit price) before discounts, excluding VAT, as recorded at source. |
+| `milconv` | FLOAT64 | Unit conversion factor of the line (1 when no conversion). |
+| `mildisca` | FLOAT64 | Line discount amount, as recorded at source. |
+| `mildisct` | STRING | Line discount as entered (a percentage such as `35`, or a formula text). |
+| `milvat` | FLOAT64 | VAT amount of the line, as recorded at source. |
+| `milsum` | FLOAT64 | Line net amount excluding VAT after the line discount, before the allocated header discount, as recorded at source. |
+| `milcut` | INT64 | Flag: line deducts stock (-1 = yes). |
+| `milstype` | INT64 | Line item type (1 = item, 2 = serial-tracked item, 3 = service). |
+| `miluname` | STRING | Unit name of the line (e.g. `SET`, `ชุด`, `Pcs.`). |
+| `mildesc` | STRING | Free-text line description. |
+| `milvcol1` | STRING | User-defined text column 1 of the line. |
+| `milvcol2` | STRING | User-defined text column 2 of the line. |
+| `milvcol3` | STRING | User-defined text column 3 of the line. |
+| `milvcol4` | STRING | User-defined text column 4 of the line. |
+| `milcurc` | INT64 | Currency code (0 = Thai baht). |
+| `milexchg` | FLOAT64 | Exchange rate to Thai baht (1 for baht documents). |
+| `milacost` | FLOAT64 | Average cost of the line. |
+| `milpqm` | INT64 | Price-quantity mode of the line. |
+| `milpmfrom` | INT64 | Start of the line-number range the line belongs to (equals `millistno` for ordinary lines). |
+| `milpmto` | INT64 | End of the line-number range the line belongs to (equals `millistno` for ordinary lines). |
+| `miltag` | INT64 | Tag marker of the line. |
+| `millinkvcno` | STRING | Number of the source document this line was created from (e.g. the sales order of an invoice line). |
+| `millinkvcdate` | STRING | Date of the linked source document. |
+| `millinkvctype` | STRING | Document type of the linked source document (e.g. `PS`, `PP`). |
+| `millinkvcdeposit` | STRING | Deposit amount and VAT deducted from the linked document, stored as `amount/VAT` text. |
+| `millinkvcid` | INT64 | Internal ID of the linked source-document line. |
+| `milclearum` | INT64 | Flag: outstanding quantity of the line cleared (0 = still open). |
+| `milexpdate` | STRING | Expiry date of the line item. |
+| `milnotes` | STRING | Free-text line notes. |
+| `milnotkl` | INT64 | Flag indicating that the line is excluded from stock reservation. |
+| `mildelvdt` | STRING | Requested delivery date of the line. |
+| `mildatesp` | STRING | Special date of the line. |
+| `milnumcsp` | FLOAT64 | Special numeric field of the line. |
+| `milnumisp` | INT64 | Special integer field of the line. |
+| `milcost` | FLOAT64 | Cost amount of the line. |
+| `milucost` | FLOAT64 | Unit cost of the line. |
+| `miluprice` | FLOAT64 | Unit price of the line, excluding VAT. |
+| `milusequanp` | INT64 | Flag indicating use of the secondary-unit quantity (1 = yes). |
+| `milvcol5` | STRING | User-defined text column 5 of the line. |
+| `milfitem` | INT64 | Free-item flag of the line. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

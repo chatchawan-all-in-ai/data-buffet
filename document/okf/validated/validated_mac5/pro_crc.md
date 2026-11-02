@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "pro_crc"
-description: "One row = one promotion (CRC), unique on (company_id, id, procrcstkcode)."
+description: "One row = one product in a CRC-channel promotion (per company), unique on (company_id, id, procrcstkcode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=pro_crc&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `pro_crc`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: promotion (CRC). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `pro_crc`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Products included in CRC-channel promotions of the MAC5 ERP, with promotion set code, period and region.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,14 +35,14 @@ One row per `company_id`, `id`, `procrcstkcode`. The key is declared twice in th
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `procrcstkcode` | STRING | Meaning not documented in the repo. |
-| `procrcsttcode` | STRING | Meaning not documented in the repo. |
-| `procrcstt` | STRING | Meaning not documented in the repo. |
-| `procrcstrdate` | DATE | Meaning not documented in the repo. |
-| `procrcenddate` | DATE | Meaning not documented in the repo. |
-| `procrcregion` | STRING | Meaning not documented in the repo. |
-| `dinsert` | DATETIME | Meaning not documented in the repo. |
+| `id` | INT64 | Running ID of the promotion item row. |
+| `procrcstkcode` | STRING | Stock (product) code included in the promotion. |
+| `procrcsttcode` | STRING | Promotion set code the product belongs to (numeric, e.g. `80164`). |
+| `procrcstt` | STRING | Promotion item status flag (`y` = active). |
+| `procrcstrdate` | DATE | Start date of the promotion period. |
+| `procrcenddate` | DATE | End date of the promotion period. |
+| `procrcregion` | STRING | Region the promotion applies to (`ALL` = all regions). |
+| `dinsert` | DATETIME | Date and time the row was inserted. |
 
 # How it is built
 

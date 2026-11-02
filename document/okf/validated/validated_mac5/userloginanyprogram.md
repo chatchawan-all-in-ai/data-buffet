@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "userloginanyprogram"
-description: "One row = one user login log, unique on (company_id, id)."
+description: "One row = one login account for one web application (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=userloginanyprogram&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `userloginanyprogram`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: user login log. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `userloginanyprogram`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Login accounts for the MAC5 companion web applications (pay-in, bill payment, billing, promotion master), with user department and permission level.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,18 +35,18 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `username` | STRING | Meaning not documented in the repo. |
-| `password` | STRING | Meaning not documented in the repo. |
-| `actionapp` | STRING | Meaning not documented in the repo. |
-| `name` | STRING | Likely name (inferred from the column name only; not documented in the repo). |
-| `notes` | STRING | Meaning not documented in the repo. |
-| `department` | STRING | Meaning not documented in the repo. |
-| `levelaction` | STRING | Meaning not documented in the repo. |
-| `email` | STRING | Meaning not documented in the repo. |
-| `token` | STRING | Meaning not documented in the repo. |
-| `tokenexpiry` | DATETIME | Meaning not documented in the repo. |
-| `istokenvalid` | INT64 | Meaning not documented in the repo. |
+| `id` | INT64 | Running ID of the login account row. |
+| `username` | STRING | Login user name (usually the employee code). |
+| `password` | STRING | Account password, stored as a bcrypt hash or as plain text. |
+| `actionapp` | STRING | Web application the login is for (PayinOnline, Billpayment, BillingOnline, MasterPromotion, ManagementTAOut). |
+| `name` | STRING | Full name of the user. |
+| `notes` | STRING | Free-text note on the user's section or role (e.g. general accounting, credit). |
+| `department` | STRING | Department of the user (e.g. Account, Admin, Marketing, IT). |
+| `levelaction` | STRING | Extra permission level in the application (e.g. `printBilling`, `CheckPayment`). |
+| `email` | STRING | Email address of the user. |
+| `token` | STRING | Access or reset token issued to the account. |
+| `tokenexpiry` | DATETIME | Expiry date and time of `token`. |
+| `istokenvalid` | INT64 | Flag whether `token` is still valid (1 = valid, 0 = not). |
 
 # How it is built
 

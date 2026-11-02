@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "vendor"
-description: "One row = one record of source table `vendor` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one vendor, a record of source table `vendor` (MASTERSKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mastersku&t=vendor&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mastersku
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mastersku/vendor/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `vendor` table from MASTERSKU; nothing is cleaned or deduplicated here. Used by: [validated_mastersku.vendor](/validated/validated_mastersku/vendor.md).
+External table over AVRO files in `gs://file-raw-data/mastersku/vendor/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `vendor` table from MASTERSKU; nothing is cleaned or deduplicated here. Table meaning: Vendors (suppliers registered via the Allkons platform) of the old product master MASTERSKU, with registration, address and KYC status. Used by: [validated_mastersku.vendor](/validated/validated_mastersku/vendor.md).
 
 # Grain and key
 
@@ -30,30 +30,30 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `vd_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_api_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_coporate_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_tel` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_country_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_province_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_district_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_sub_district_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_zipcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_email` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_address` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_organize_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_business_type_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_document_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_document_path` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_is_dbd` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_account_type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_kyc_status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_is_active` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_is_use` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_created_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `vd_updated_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `vd_id` | STRING | Unique identifier (UUID) of the vendor. |
+| `vd_api_id` | STRING | Identifier of the vendor in the Allkons platform API (32-character encoded ID). |
+| `vd_code` | STRING | Vendor code. |
+| `vd_name` | STRING | Vendor (company) name. |
+| `vd_coporate_no` | STRING | Juristic person (company tax) registration number, 13 digits. |
+| `vd_tel` | STRING | Vendor phone number. |
+| `vd_country_name` | STRING | Country of the vendor address. |
+| `vd_province_name` | STRING | Province of the vendor address. |
+| `vd_district_name` | STRING | District of the vendor address. |
+| `vd_sub_district_name` | STRING | Sub-district of the vendor address. |
+| `vd_zipcode` | STRING | Postal code of the vendor address. |
+| `vd_email` | STRING | Vendor email address. |
+| `vd_address` | STRING | Street address of the vendor. |
+| `vd_organize_name` | STRING | Legal entity type of the vendor (e.g. limited company, limited partnership). |
+| `vd_business_type_name` | STRING | Business type code of the vendor. |
+| `vd_document_id` | STRING | Identifier of the vendor registration document. |
+| `vd_document_path` | STRING | Storage path of the vendor registration document. |
+| `vd_is_dbd` | BOOL | Flag marking the vendor as verified with the Department of Business Development (DBD) registry. |
+| `vd_account_type` | STRING | Account type of the vendor (`Organization`). |
+| `vd_kyc_status` | STRING | KYC approval status of the vendor (`Approved`, `NotApproved`, `WaitApprove`, `NotSendApprove`, `RequestDocument`). |
+| `vd_is_active` | BOOL | Active flag of the record. |
+| `vd_is_use` | BOOL | In-use flag of the record (FALSE = retired from use). |
+| `vd_created_date` | STRING | Timestamp when the record was created. |
+| `vd_updated_date` | STRING | Timestamp when the record was last updated. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

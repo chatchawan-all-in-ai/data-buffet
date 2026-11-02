@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "saleout_dh"
-description: "One row = one record of source table `saleout_dh` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one product, branch, sale date and sale/return flag, a record of source table `saleout_dh` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=saleout_dh&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_saleout_mdt
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/dh/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `saleout_dh` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Used by: [validated_saleout_mdt.saleout_dh](/validated/validated_saleout_mdt/saleout_dh.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/dh/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `saleout_dh` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Daily sell-out of the company products at DoHome branches, from monthly SharePoint files (latest file per zone and month). Used by: [validated_saleout_mdt.saleout_dh](/validated/validated_saleout_mdt/saleout_dh.md).
 
 # Grain and key
 
@@ -30,14 +30,14 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `SALES_DATE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `BRANCH_CODE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `PRODUCT_CODE` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `PRODUCT_NAME` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `SALES_QTY` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `SALES_AMOUNT` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `SOURCE_FOLDER` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `FILE_MODIFIED` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `SALES_DATE` | STRING | Sale date. |
+| `BRANCH_CODE` | STRING | DoHome branch code (`M...` = DoHome To Go branches). |
+| `PRODUCT_CODE` | STRING | DoHome product code (not a barcode). |
+| `PRODUCT_NAME` | STRING | Product name. |
+| `SALES_QTY` | FLOAT64 | Sales quantity (negative = return). |
+| `SALES_AMOUNT` | FLOAT64 | Sales amount (THB; negative = return). |
+| `SOURCE_FOLDER` | STRING | SharePoint folder (DoHome sales zone) the file came from. |
+| `FILE_MODIFIED` | STRING | Last-modified timestamp text of the source file before validated selection of the latest file per folder and month. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

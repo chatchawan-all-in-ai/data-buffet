@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "customer_to_transaction"
-description: "One row = one cleaned copy of the source table `customer_to_transaction`, unique on (id)."
+description: "One row = one buyer-seller transaction from source table `customer_to_transaction`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_cis360&t=customer_to_transaction&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_cis360
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of CIS360 `customer_to_transaction`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of CIS360 `customer_to_transaction`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Purchase transactions between CIS360 buyer and seller profiles recorded from the Allkons M platform, with item count and total amount.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,26 +34,26 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Surrogate identifier from the source system (the primary key). |
-| `buyer_id` | STRING | Meaning not documented in the repo. |
-| `seller_id` | STRING | Meaning not documented in the repo. |
-| `transaction_type_id` | INT64 | Meaning not documented in the repo. |
-| `platform_id` | INT64 | Meaning not documented in the repo. |
-| `platform_reference_id` | INT64 | Meaning not documented in the repo. |
-| `buyer_name` | STRING | Meaning not documented in the repo. |
-| `seller_name` | STRING | Meaning not documented in the repo. |
-| `transaction_code` | STRING | Meaning not documented in the repo. |
-| `total_items` | INT64 | Meaning not documented in the repo. |
-| `total_amount` | FLOAT64 | Meaning not documented in the repo. |
-| `url_reference` | STRING | Meaning not documented in the repo. |
-| `is_delete` | BOOL | Meaning not documented in the repo. |
-| `transaction_date` | DATETIME | Meaning not documented in the repo. |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
-| `create_by` | STRING | Meaning not documented in the repo. |
-| `create_by_platform` | STRING | Meaning not documented in the repo. |
-| `update_by_platform` | STRING | Meaning not documented in the repo. |
-| `update_date` | DATETIME | Meaning not documented in the repo. |
-| `update_by` | STRING | Meaning not documented in the repo. |
+| `id` | STRING | Unique identifier (UUID) of the transaction record. |
+| `buyer_id` | STRING | Customer profile of the buyer (`customer_profile.id`). |
+| `seller_id` | STRING | Customer profile of the seller (`customer_profile.id`). |
+| `transaction_type_id` | INT64 | Transaction type code (values 1, 2; type 2 carries a `platform_reference_id`). |
+| `platform_id` | INT64 | Platform where the transaction was made (1 = ALLKONS_M_BUYER). |
+| `platform_reference_id` | INT64 | Reference identifier of the transaction on the source platform. |
+| `buyer_name` | STRING | Name of the buyer. |
+| `seller_name` | STRING | Name of the seller. |
+| `transaction_code` | STRING | Document code of the transaction on Allkons M (e.g. `QOAG-` + digits). |
+| `total_items` | INT64 | Number of items in the transaction. |
+| `total_amount` | FLOAT64 | Total amount of the transaction in THB. |
+| `url_reference` | STRING | URL reference of the transaction (not populated in current data). |
+| `is_delete` | BOOL | Soft-delete flag (TRUE = record deleted). |
+| `transaction_date` | DATETIME | Date and time of the transaction. |
+| `create_date` | DATETIME | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | DATETIME | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "stg"
-description: "One row = one record of source table `stg` (MAC5 for company `ab01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one stock group, a record of source table `stg` (MAC5 for company `ab01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ab01&t=stg&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ab01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ab01/stg/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `stg` table from MAC5 for company `ab01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.stg](/validated/validated_mac5/stg.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ab01/stg/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `stg` table from MAC5 for company `ab01`; nothing is cleaned or deduplicated here. Table meaning: Stock group master with Thai/English names and the mapped accounting product group. Used by: [validated_mac5.stg](/validated/validated_mac5/stg.md).
 
 # Grain and key
 
@@ -30,9 +30,9 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `stgcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `stgdesct` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `stgdesce` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `stgcode` | STRING | Stock group code. |
+| `stgdesct` | STRING | Thai name of the stock group. |
+| `stgdesce` | STRING | English name or type label of the stock group. |
 
 # How it is built
 

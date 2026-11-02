@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_quotation_sale"
-description: "One row = one record of source table `crm_quotation_sale` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one salesperson on a quotation, a record of source table `crm_quotation_sale` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_quotation_sale&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_quotation_sale/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_quotation_sale` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_quotation_sale](/validated/validated_derp/crm_quotation_sale.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_quotation_sale/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_quotation_sale` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Salespeople credited on each quotation with their share of the sales amount and commission rate. Used by: [validated_derp.crm_quotation_sale](/validated/validated_derp/crm_quotation_sale.md).
 
 # Grain and key
 
@@ -30,28 +30,28 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `quotation_sale_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quotation_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quotation_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quotation_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_seq` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sales_amount_pct` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `commission_pct` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `order_sort` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_code` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `path_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `quotation_sale_id` | STRING | UUID of the quotation salesperson record. |
+| `quotation_id` | STRING | UUID of the quotation in `crm_quotation`. |
+| `quotation_no` | STRING | Quotation document number (e.g. `QT2607...` or `MDT2610...`). |
+| `quotation_date` | STRING | Quotation document date. |
+| `sales_seq` | INT64 | Sequence number of the salesperson on the quotation (1 = first). |
+| `sales_id` | STRING | UUID of the salesperson (employee) record. |
+| `sales_code` | STRING | Employee number of the salesperson. |
+| `sales_name` | STRING | Name of the salesperson. |
+| `sales_amount` | FLOAT64 | Sales amount credited to the salesperson, in THB. |
+| `sales_amount_pct` | FLOAT64 | Share of the quotation amount credited to the salesperson, in percent. |
+| `commission_pct` | FLOAT64 | Commission rate of the salesperson, in percent. |
+| `order_sort` | INT64 | Display order of the row within its parent record. |
+| `path_id` | STRING | Chain of sales-territory UUIDs of the salesperson. |
+| `path_code` | STRING | Chain of sales-territory codes of the salesperson. |
+| `path_name` | STRING | Chain of sales-territory names of the salesperson. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

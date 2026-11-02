@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "customer_to_customer"
-description: "One row = one record of source table `customer_to_customer` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one relationship between two customer profiles, a record of source table `customer_to_customer` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_cis360&t=customer_to_customer&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_cis360
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/cis360/customer_to_customer/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_to_customer` table from CIS360; nothing is cleaned or deduplicated here. Used by: [validated_cis360.customer_to_customer](/validated/validated_cis360/customer_to_customer.md).
+External table over AVRO files in `gs://file-raw-data/cis360/customer_to_customer/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_to_customer` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Relationships between CIS360 customer profiles (e.g. company members, admins, partner links) with role and owner flag. Used by: [validated_cis360.customer_to_customer](/validated/validated_cis360/customer_to_customer.md).
 
 # Grain and key
 
@@ -30,20 +30,20 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_profile_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `related_customer_profile_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `relationship_type_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_relationship_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_to_customer_role` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_owner` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `is_delete` | BOOL | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by_platform` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | STRING | Unique identifier (UUID) of the relationship record. |
+| `customer_profile_id` | STRING | Customer profile on one side of the relationship (`customer_profile.id`). |
+| `related_customer_profile_id` | STRING | Related customer profile on the other side of the relationship (`customer_profile.id`). |
+| `relationship_type_id` | INT64 | Relationship type code between the two profiles (values 1 to 4). |
+| `create_relationship_date` | STRING | Date and time the relationship was established. |
+| `customer_to_customer_role` | STRING | Role within the relationship (e.g. `Super Admin`, `Admin`, `Member`, or a partner company code). |
+| `is_owner` | BOOL | Whether the profile is the owner in the relationship. |
+| `is_delete` | BOOL | Soft-delete flag (TRUE = record deleted). |
+| `create_date` | STRING | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | STRING | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

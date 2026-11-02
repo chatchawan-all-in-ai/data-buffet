@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "customer_profile_tag"
-description: "One row = one record of source table `customer_profile_tag` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one tag assigned to a customer profile, a record of source table `customer_profile_tag` (CIS360) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_cis360&t=customer_profile_tag&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_cis360
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/cis360/customer_profile_tag/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_profile_tag` table from CIS360; nothing is cleaned or deduplicated here. Used by: [validated_cis360.customer_profile_tag](/validated/validated_cis360/customer_profile_tag.md).
+External table over AVRO files in `gs://file-raw-data/cis360/customer_profile_tag/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_profile_tag` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Tags assigned to CIS360 customer profiles. Used by: [validated_cis360.customer_profile_tag](/validated/validated_cis360/customer_profile_tag.md).
 
 # Grain and key
 
@@ -30,13 +30,13 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `customer_profile_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `tag_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `create_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `update_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | STRING | Unique identifier (UUID) of the link record. |
+| `customer_profile_id` | STRING | Customer profile the link belongs to (`customer_profile.id`). |
+| `tag_id` | INT64 | Identifier of the tag assigned to the customer profile (values 1, 2). |
+| `create_date` | STRING | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `update_date` | STRING | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

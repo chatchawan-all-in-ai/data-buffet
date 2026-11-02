@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "sale_by_branch_detail"
-description: "One row = one cleaned copy of the source table `sale_by_branch_detail`, unique on (branch, article_id, distribution_channel, end_date)."
+description: "One row = one article, branch and sales channel for one report date from source table `sale_by_branch_detail`, unique on (branch, article_id, distribution_channel, end_date)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_saleout_mdt&t=sale_by_branch_detail&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_saleout_mdt
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of SALEOUT_MDT `sale_by_branch_detail`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of SALEOUT_MDT `sale_by_branch_detail`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Boonthavorn (BT) daily sell-out file up to 2026-10-07, with month-to-date sales of the company products per branch, article and channel; curated derives daily sales from the change in MTD values.
 Used by: [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md).
 
 # Grain and key
@@ -34,24 +34,24 @@ One row per `branch`, `article_id`, `distribution_channel`, `end_date`. The key 
 
 | Column | Type | Description |
 |---|---|---|
-| `branch` | STRING | Meaning not documented in the repo. |
-| `article_id` | STRING | Meaning not documented in the repo. |
-| `distribution_channel` | STRING | Meaning not documented in the repo. |
-| `start_date` | DATE | Meaning not documented in the repo. |
-| `end_date` | DATE | Meaning not documented in the repo. |
-| `net_inc_tax_mtd` | FLOAT64 | Meaning not documented in the repo. |
-| `sale_qty_mtd` | INT64 | Meaning not documented in the repo. |
-| `sale_sqm_mtd` | FLOAT64 | Meaning not documented in the repo. |
-| `article_name_th` | STRING | Meaning not documented in the repo. |
-| `brand` | STRING | Meaning not documented in the repo. |
-| `flag_project` | STRING | Meaning not documented in the repo. |
-| `item_flag` | STRING | Meaning not documented in the repo. |
-| `mch3` | STRING | Meaning not documented in the repo. |
-| `mch2` | STRING | Meaning not documented in the repo. |
-| `year_date_id` | INT64 | Meaning not documented in the repo. |
-| `month_date_id` | STRING | Meaning not documented in the repo. |
-| `vendor_id` | STRING | Meaning not documented in the repo. |
-| `vendor_name` | STRING | Meaning not documented in the repo. |
+| `branch` | STRING | Boonthavorn branch name in Thai, used as the branch code. |
+| `article_id` | STRING | Boonthavorn article (product) code. |
+| `distribution_channel` | STRING | Sales channel at Boonthavorn (`Showroom`, `Anyhome`, `Web`). |
+| `start_date` | DATE | First day of the reporting period. |
+| `end_date` | DATE | Last day covered by the report (figures are counted up to this date). |
+| `net_inc_tax_mtd` | FLOAT64 | Month-to-date net sales amount including VAT (THB), cumulative from `start_date` to `end_date`. |
+| `sale_qty_mtd` | INT64 | Month-to-date sales quantity, cumulative from `start_date` to `end_date`. |
+| `sale_sqm_mtd` | FLOAT64 | Month-to-date sales in square metres, cumulative from `start_date` to `end_date`. |
+| `article_name_th` | STRING | Product name in Thai. |
+| `brand` | STRING | Product brand. |
+| `flag_project` | STRING | Project-sale flag (`Y`/`N`; daily file sends `Project`/`Non-Project`). |
+| `item_flag` | STRING | Item movement flag (`REGULAR`, `FAST`, `DISCON` = discontinued). |
+| `mch3` | STRING | Boonthavorn merchandise category, top level (department). |
+| `mch2` | STRING | Boonthavorn merchandise category, second level. |
+| `year_date_id` | INT64 | Year of the report period. |
+| `month_date_id` | STRING | Month name of the report period in English (e.g. `July`). |
+| `vendor_id` | STRING | Boonthavorn vendor code of the supplier (the company), e.g. `10009`. |
+| `vendor_name` | STRING | Supplier (vendor) name as registered at Boonthavorn. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

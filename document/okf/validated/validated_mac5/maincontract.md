@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "maincontract"
-description: "One row = one main contract, unique on (company_id, mcontractid)."
+description: "One row = one main contractor (per company), unique on (company_id, mcontractid)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=maincontract&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `maincontract`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: main contract. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `maincontract`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Main contractors (developers), identified by their MAC5 customer code.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,10 +35,10 @@ One row per `company_id`, `mcontractid`. The key is declared twice in the defini
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `mcontractid` | STRING | Meaning not documented in the repo. |
-| `dateinsert` | DATETIME | Meaning not documented in the repo. |
-| `status` | INT64 | Likely status code (inferred from the column name only; not documented in the repo). |
-| `uinsert` | STRING | Meaning not documented in the repo. |
+| `mcontractid` | STRING | MAC5 customer (debtor) code of the main contractor (developer). |
+| `dateinsert` | DATETIME | Date and time the row was created. |
+| `status` | INT64 | Active flag (1 = active). |
+| `uinsert` | STRING | Employee code of the user who created the row. |
 
 # How it is built
 

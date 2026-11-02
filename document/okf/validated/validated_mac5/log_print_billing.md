@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "log_print_billing"
-description: "One row = one billing print log, unique on (company_id, id)."
+description: "One row = one printed bill-payment slip (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=log_print_billing&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `log_print_billing`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: billing print log. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `log_print_billing`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Log of printed billing (bill-payment) slips, with references, billing document number and amount.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,13 +35,13 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `ref1` | STRING | Meaning not documented in the repo. |
-| `ref2` | STRING | Meaning not documented in the repo. |
-| `order_no` | STRING | Meaning not documented in the repo. |
-| `amount` | FLOAT64 | Meaning not documented in the repo. |
-| `status` | INT64 | Likely status code (inferred from the column name only; not documented in the repo). |
-| `dinsert` | DATE | Meaning not documented in the repo. |
+| `id` | INT64 | Row identifier of the print log entry. |
+| `ref1` | STRING | Bill-payment reference 1, holding the MAC5 customer (debtor) code. |
+| `ref2` | STRING | Bill-payment reference 2, a 13-digit code built from the billing document number. |
+| `order_no` | STRING | Billing document number (e.g. `BAB6610247`). |
+| `amount` | FLOAT64 | Billed amount in THB. |
+| `status` | INT64 | Status flag of the print log entry (0 or 1). |
+| `dinsert` | DATE | Date the billing slip was printed. |
 
 # How it is built
 

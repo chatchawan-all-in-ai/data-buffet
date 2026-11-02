@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "detail_qtspread"
-description: "One row = one record of source table `detail_qtspread` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one item line of a quotation spread, a record of source table `detail_qtspread` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=detail_qtspread&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/detail_qtspread/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `detail_qtspread` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.detail_qtspread](/validated/validated_mac5/detail_qtspread.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/detail_qtspread/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `detail_qtspread` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Item lines of quotation spreads: stock code and quantity taken from a quotation detail line into one order. Used by: [validated_mac5.detail_qtspread](/validated/validated_mac5/detail_qtspread.md).
 
 # Grain and key
 
@@ -30,23 +30,23 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `ref_id` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `qtid` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quodeid` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `stkcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `quantity` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `price` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `total` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `uupdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dinsert` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dupdate` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `link` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `fandex` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `itemsize` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `id` | INT64 | Row identifier of the spread line. |
+| `ref_id` | INT64 | Quotation spread identifier (`main_qtspread.id`). |
+| `qtid` | INT64 | Quotation identifier (`tbook_quotation.id`). |
+| `quodeid` | STRING | Quotation detail line identifier (`tbook_quodetail.id`). |
+| `stkcode` | STRING | MAC5 stock code of the item. |
+| `quantity` | FLOAT64 | Quantity of the item spread into this order. |
+| `price` | FLOAT64 | Unit price of the item. |
+| `total` | STRING | Line total of the item. |
+| `uinsert` | STRING | Employee code of the user who created the row. |
+| `uupdate` | STRING | Employee code of the user who last updated the row. |
+| `dinsert` | STRING | Date and time the row was created. |
+| `dupdate` | STRING | Date and time the row was last updated. |
+| `status` | STRING | Status code of the spread line (1 = active, 3 = cancelled). |
+| `link` | STRING | Link reference of the spread line. |
+| `type` | STRING | Line type of the spread line. |
+| `fandex` | STRING | FANDEX reference of the spread line. |
+| `itemsize` | STRING | Item size of the spread line. |
 
 # How it is built
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tdis_approveqt"
-description: "One row = one record of source table `tdis_approveqt` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one quotation approval request per product line, a record of source table `tdis_approveqt` (MAC5 for company `ag01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ag01&t=tdis_approveqt&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ag01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/tdis_approveqt/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tdis_approveqt` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.tdis_approveqt](/validated/validated_mac5/tdis_approveqt.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/tdis_approveqt/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tdis_approveqt` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Approval requests of quotations per product-line approval type, with approval results, users, dates and notes per level. Used by: [validated_mac5.tdis_approveqt](/validated/validated_mac5/tdis_approveqt.md).
 
 # Grain and key
 
@@ -30,23 +30,23 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `docno` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `lv1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `lv2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `lv3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `note1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `note2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `note3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `u1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `u2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `u3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `d1` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `d2` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `d3` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sendto` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sendtime` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `comment` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `stktype` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `docno` | STRING | Quotation identifier (`tbook_quotation.id`) sent for approval. |
+| `lv1` | STRING | Level-1 approval result code. |
+| `lv2` | STRING | Level-2 approval result code. |
+| `lv3` | STRING | Level-3 approval result code (1, 2, 0). |
+| `note1` | STRING | Level-1 approval note. |
+| `note2` | STRING | Level-2 approval note. |
+| `note3` | STRING | Level-3 approval note. |
+| `u1` | STRING | User who acted at approval level 1. |
+| `u2` | STRING | User who acted at approval level 2. |
+| `u3` | STRING | Employee code of the user who acted at approval level 3. |
+| `d1` | STRING | Date and time of the level-1 approval (text). |
+| `d2` | STRING | Date and time of the level-2 approval (text). |
+| `d3` | STRING | Date and time of the level-3 approval (text). |
+| `sendto` | STRING | Sent-for-approval flag (1 = sent). |
+| `sendtime` | STRING | Date the quotation was sent for approval (text). |
+| `comment` | STRING | Sales comment attached to the approval request, such as delivery instructions. |
+| `stktype` | STRING | Product-line approval type code (`tbook_apptype.iddesc`, e.g. `PE`, `PUMP`, `RP`). |
 
 # How it is built
 

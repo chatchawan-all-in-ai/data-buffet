@@ -33,7 +33,7 @@ One row per (`target_date`, `branch_code`, `marketing_group_id`, `sub_marketing_
 | Column | Type | Description |
 |---|---|---|
 | `target_date` | DATE | Date the daily target applies to (partition column); rows without a date are dropped. |
-| `store_code` | STRING | Retail-chain (store) code as sent by the chain (e.g. HP/MH/BT/GB/TW/DH, inferred from curated docs); joins dim_region.RegionID for the region sets. |
+| `store_code` | STRING | Retail-chain (store) code: HP, MH, BT, GB, TW or DH, set per chain feed in the curated_saleout_mdt build; joins dim_region.RegionID for the region sets. |
 | `branch_sk` | INT64 | Surrogate key `BranchMdtSK` of [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md) carried from the target dim; -1 when unmatched. |
 | `zone_sk` | INT64 | Surrogate key `ZoneMdtSK` of the branch's zone, taken from dim_sales_branch_mdt; -1 when unmatched. |
 | `product_mkt_sk` | INT64 | `ProductMktSK` of [dim_product_mkt](/dimension/dim_product_mkt.md) for the marketing group from the target dim; -1 if none. |

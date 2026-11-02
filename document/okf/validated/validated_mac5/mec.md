@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mec"
-description: "One row = one reference code table (mec), unique on (company_id, meccode)."
+description: "One row = one memo card (per company), unique on (company_id, meccode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mec&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `mec`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: reference code table (mec). Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `mec`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Memo cards attached to documents (address, contact and shop or branch name per template), referenced by `mihmec`/`milmec`.
 Used by: [dimension_view.view_dim_invoice](/view/dimension_view/view_dim_invoice.md).
 
 # Grain and key
@@ -35,47 +35,47 @@ One row per `company_id`, `meccode`. The key is declared twice in the definition
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `meccode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `mectpl` | INT64 | Meaning not documented in the repo. |
-| `mectoctype` | INT64 | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `mectocode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `mect1` | STRING | Meaning not documented in the repo. |
-| `mect2` | STRING | Meaning not documented in the repo. |
-| `mect3` | STRING | Meaning not documented in the repo. |
-| `mect4` | STRING | Meaning not documented in the repo. |
-| `mect5` | STRING | Meaning not documented in the repo. |
-| `mecd1` | DATETIME | Meaning not documented in the repo. |
-| `mecd2` | DATETIME | Meaning not documented in the repo. |
-| `mecd3` | DATETIME | Meaning not documented in the repo. |
-| `meci1` | INT64 | Meaning not documented in the repo. |
-| `meci2` | INT64 | Meaning not documented in the repo. |
-| `mecc1` | FLOAT64 | Meaning not documented in the repo. |
-| `mecc2` | FLOAT64 | Meaning not documented in the repo. |
-| `mecc3` | FLOAT64 | Meaning not documented in the repo. |
-| `mecc4` | FLOAT64 | Meaning not documented in the repo. |
-| `mecc5` | FLOAT64 | Meaning not documented in the repo. |
-| `mecm1` | STRING | Meaning not documented in the repo. |
-| `mecm2` | STRING | Meaning not documented in the repo. |
-| `mecm3` | STRING | Meaning not documented in the repo. |
-| `mecm4` | STRING | Meaning not documented in the repo. |
-| `mecm5` | STRING | Meaning not documented in the repo. |
-| `mecm6` | STRING | Meaning not documented in the repo. |
-| `mecm7` | STRING | Meaning not documented in the repo. |
-| `mecm8` | STRING | Meaning not documented in the repo. |
-| `mecm9` | STRING | Meaning not documented in the repo. |
-| `mecdesc` | STRING | Meaning not documented in the repo. |
-| `mechide` | INT64 | Meaning not documented in the repo. |
-| `meclock` | INT64 | Meaning not documented in the repo. |
-| `meceditlk` | DATETIME | Meaning not documented in the repo. |
-| `mecrefwe` | STRING | Meaning not documented in the repo. |
-| `mecsortn` | STRING | Meaning not documented in the repo. |
-| `mect6` | STRING | Meaning not documented in the repo. |
-| `mect7` | STRING | Meaning not documented in the repo. |
-| `mect8` | STRING | Meaning not documented in the repo. |
-| `mect9` | STRING | Meaning not documented in the repo. |
-| `mect10` | STRING | Meaning not documented in the repo. |
-| `meceditdt` | DATETIME | Meaning not documented in the repo. |
-| `meceditmf` | STRING | Meaning not documented in the repo. |
+| `meccode` | STRING | Memo-card code, referenced by `mihmec` and `milmec` on documents. |
+| `mectpl` | INT64 | Template number that defines the layout of the card's text fields. |
+| `mectoctype` | INT64 | Owner type of the card (2 = card attached to a customer through `mectocode`, 11 = general card, 8 = other). |
+| `mectocode` | STRING | Code of the record the card belongs to, such as the customer code when `mectoctype` is 2. |
+| `mect1` | STRING | Text field 1 of the card (an address part, contact name or postal code, depending on the template). |
+| `mect2` | STRING | Text field 2 of the card (an address part, contact name or postal code, depending on the template). |
+| `mect3` | STRING | Text field 3 of the card (an address part, contact name or postal code, depending on the template). |
+| `mect4` | STRING | Text field 4 of the card (an address part, contact name or postal code, depending on the template). |
+| `mect5` | STRING | Text field 5 of the card (an address part, contact name or postal code, depending on the template). |
+| `mecd1` | DATETIME | Date field 1 of the card. |
+| `mecd2` | DATETIME | Date field 2 of the card. |
+| `mecd3` | DATETIME | Date field 3 of the card. |
+| `meci1` | INT64 | Integer field 1 of the card. |
+| `meci2` | INT64 | Integer field 2 of the card. |
+| `mecc1` | FLOAT64 | Numeric field 1 of the card. |
+| `mecc2` | FLOAT64 | Numeric field 2 of the card. |
+| `mecc3` | FLOAT64 | Numeric field 3 of the card. |
+| `mecc4` | FLOAT64 | Numeric field 4 of the card. |
+| `mecc5` | FLOAT64 | Numeric field 5 of the card. |
+| `mecm1` | STRING | Memo field 1 of the card. |
+| `mecm2` | STRING | Memo field 2 of the card. |
+| `mecm3` | STRING | Memo field 3 of the card. |
+| `mecm4` | STRING | Memo field 4 of the card. |
+| `mecm5` | STRING | Memo field 5 of the card. |
+| `mecm6` | STRING | Memo field 6 of the card. |
+| `mecm7` | STRING | Memo field 7 of the card. |
+| `mecm8` | STRING | Memo field 8 of the card. |
+| `mecm9` | STRING | Memo field 9 of the card. |
+| `mecdesc` | STRING | Card title, used as the shop or branch name of chain-store customers in invoice reporting. |
+| `mechide` | INT64 | Flag: card hidden from selection lists. |
+| `meclock` | INT64 | Flag: card locked against editing. |
+| `meceditlk` | DATETIME | Timestamp of the current edit lock on the card. |
+| `mecrefwe` | STRING | Web reference of the card. |
+| `mecsortn` | STRING | Sort name of the card. |
+| `mect6` | STRING | Text field 6 of the card (an address part, contact name or postal code, depending on the template). |
+| `mect7` | STRING | Text field 7 of the card (an address part, contact name or postal code, depending on the template). |
+| `mect8` | STRING | Text field 8 of the card (an address part, contact name or postal code, depending on the template). |
+| `mect9` | STRING | Text field 9 of the card (an address part, contact name or postal code, depending on the template). |
+| `mect10` | STRING | Text field 10 of the card (an address part, contact name or postal code, depending on the template). |
+| `meceditdt` | DATETIME | Date and time the card was last edited. |
+| `meceditmf` | STRING | User code of the person who last edited the card. |
 
 # How it is built
 

@@ -35,7 +35,7 @@ Built from `SELECT DISTINCT` over fact_transcation lines with `milStk` not NULL,
 | `PumpSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by lower(milstk), RegionID, FlagNewProductMKT. Regenerated every run. |
 | `CompanySK` | INT64 | Company SK copied from `fact_transcation.CompanySK`. |
 | `CompanyID` | STRING | Company code copied from `fact_transcation.CompanyID`. |
-| `milstk` | STRING | Product (stock) code of the transaction line, from `fact_transcation.milStk`; consumers compare it with LOWER(). |
+| `milstk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
 | `RegionID` | STRING | Region code of the line, from dim_region via `fact_transcation.RegionSK`; NULL when the line has no region. |
 | `FlagNewProductMKT` | BOOL | BOOL flag copied from `fact_transcation.FlagNewProductMKT`; true when the line uses the new product-market mapping (`NewProductMktSK`). |
 | `PumpSegment` | STRING | Pump segment: `dim_product_mkt.Segment` when RegionID is 'PS1' and FlagNewProductMKT is true, otherwise `view_dim_product_master.PumpSegment`. |

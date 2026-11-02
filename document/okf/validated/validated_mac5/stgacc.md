@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "stgacc"
-description: "One row = one stock group account, unique on (company_id, gacccode)."
+description: "One row = one accounting product group (per company), unique on (company_id, gacccode)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=stgacc&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `stgacc`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: stock group account. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `stgacc`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Accounting product groups (code and name) used to map stock groups to accounting groups.
 Used by: [validated_mac5.stg](/validated/validated_mac5/stg.md).
 
 # Grain and key
@@ -35,8 +35,8 @@ One row per `company_id`, `gacccode`. The key is declared twice in the definitio
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `gacccode` | STRING | Meaning not documented in the repo. |
-| `gaccname` | STRING | Meaning not documented in the repo. |
+| `gacccode` | STRING | Accounting product group code (e.g. `02BI`). |
+| `gaccname` | STRING | Accounting product group name. |
 
 # How it is built
 

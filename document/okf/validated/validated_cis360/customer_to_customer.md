@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "customer_to_customer"
-description: "One row = one cleaned copy of the source table `customer_to_customer`, unique on (id)."
+description: "One row = one relationship between two customer profiles from source table `customer_to_customer`, unique on (id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_cis360&t=customer_to_customer&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_cis360
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of CIS360 `customer_to_customer`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of CIS360 `customer_to_customer`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Relationships between CIS360 customer profiles (e.g. company members, admins, partner links) with role and owner flag.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,20 +34,20 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 | Column | Type | Description |
 |---|---|---|
-| `id` | STRING | Surrogate identifier from the source system (the primary key). |
-| `customer_profile_id` | STRING | Meaning not documented in the repo. |
-| `related_customer_profile_id` | STRING | Meaning not documented in the repo. |
-| `relationship_type_id` | INT64 | Meaning not documented in the repo. |
-| `create_relationship_date` | DATETIME | Meaning not documented in the repo. |
-| `customer_to_customer_role` | STRING | Meaning not documented in the repo. |
-| `is_owner` | BOOL | Meaning not documented in the repo. |
-| `is_delete` | BOOL | Meaning not documented in the repo. |
-| `create_date` | DATETIME | Meaning not documented in the repo. |
-| `create_by` | STRING | Meaning not documented in the repo. |
-| `create_by_platform` | STRING | Meaning not documented in the repo. |
-| `update_by_platform` | STRING | Meaning not documented in the repo. |
-| `update_date` | DATETIME | Meaning not documented in the repo. |
-| `update_by` | STRING | Meaning not documented in the repo. |
+| `id` | STRING | Unique identifier (UUID) of the relationship record. |
+| `customer_profile_id` | STRING | Customer profile on one side of the relationship (`customer_profile.id`). |
+| `related_customer_profile_id` | STRING | Related customer profile on the other side of the relationship (`customer_profile.id`). |
+| `relationship_type_id` | INT64 | Relationship type code between the two profiles (values 1 to 4). |
+| `create_relationship_date` | DATETIME | Date and time the relationship was established. |
+| `customer_to_customer_role` | STRING | Role within the relationship (e.g. `Super Admin`, `Admin`, `Member`, or a partner company code). |
+| `is_owner` | BOOL | Whether the profile is the owner in the relationship. |
+| `is_delete` | BOOL | Soft-delete flag (TRUE = record deleted). |
+| `create_date` | DATETIME | Timestamp when the record was created. |
+| `create_by` | STRING | Identifier of the user or system that created the record. |
+| `create_by_platform` | STRING | Code of the platform that created the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_by_platform` | STRING | Code of the platform that last updated the record (`D365`, `ALLKONS_AMRP`, `ALLKONS_ID`, `ALLKONS_M_SELLER`, `ALLKONS_M_BUYER`, `CIS360`, `SYSTEM`). |
+| `update_date` | DATETIME | Timestamp when the record was last updated. |
+| `update_by` | STRING | Identifier of the user or system that last updated the record. |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

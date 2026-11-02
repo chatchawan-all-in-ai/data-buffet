@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "dep"
-description: "One row = one record of source table `dep` (MAC5 for company `ab01`) as delivered in the GCS extract (raw, uncleaned)."
+description: "One row = one department, a record of source table `dep` (MAC5 for company `ab01`) as delivered in the GCS extract (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_mac5_ab01&t=dep&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_mac5_ab01
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ab01/dep/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `dep` table from MAC5 for company `ab01`; nothing is cleaned or deduplicated here. Used by: [validated_mac5.dep](/validated/validated_mac5/dep.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ab01/dep/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `dep` table from MAC5 for company `ab01`; nothing is cleaned or deduplicated here. Table meaning: Department master of the MAC5 ERP: code, group and Thai/English name. Used by: [validated_mac5.dep](/validated/validated_mac5/dep.md).
 
 # Grain and key
 
@@ -30,14 +30,14 @@ One row per source record in the files under the URI. No key is declared at this
 
 | Column | Type | Description |
 |---|---|---|
-| `depcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `depgroup` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `depdesct` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `depdesce` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `dephide` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `deplock` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `depeditdt` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `depeditmf` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `depcode` | STRING | Department code. |
+| `depgroup` | STRING | Department group code (e.g. `H`, `HY`, `F`, `CB`). |
+| `depdesct` | STRING | Thai name of the department. |
+| `depdesce` | STRING | English name of the department. |
+| `dephide` | INT64 | Hidden flag (-1 = hidden from pick lists, 0 = shown). |
+| `deplock` | INT64 | Lock flag (-1 = locked against editing, 0 = unlocked). |
+| `depeditdt` | STRING | Date and time the record was last edited. |
+| `depeditmf` | STRING | User code of the person who last edited the record. |
 
 # How it is built
 

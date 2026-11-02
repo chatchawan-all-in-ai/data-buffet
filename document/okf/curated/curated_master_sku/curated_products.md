@@ -30,19 +30,19 @@ One row per `prdSku` (= products.master_sku_code): placeholder rows without a ma
 
 | Column | Type | Description |
 |---|---|---|
-| `prdId` | STRING | Product row id (products.id, a UUID-like string) from validated_master_sku.products. |
-| `prdSku` | STRING | Master SKU code (products.master_sku_code); the business key, one row per value. |
-| `prdDescription` | STRING | Product name (products.name); for master_sku the name often ends with the old free-text sales unit in parentheses. |
-| `prdD365Sku` | STRING | Dynamics 365 item code (products.d365_code). |
+| `prdId` | STRING | Unique identifier (UUID) of the product. |
+| `prdSku` | STRING | Master SKU code of the product (`MSKU` + 10 digits). |
+| `prdDescription` | STRING | Product name. |
+| `prdD365Sku` | STRING | Item number of the product in Dynamics 365 (DERP). |
 | `prdItemText` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
-| `prdItemCode` | STRING | MAC5 item code (products.mac5_code); link to MAC5 stock codes. |
+| `prdItemCode` | STRING | Item code of the product in the MAC5 ERP. |
 | `prdStoppedSate` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent (the column name keeps the original typo) |
 | `prdMadeToOrder` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
 | `prdSaleUnite` | STRING | Sales unit name: common_codes.name of products.uom_sales_id; when that is the generic default 'ชิ้น' it is replaced by the unit in the trailing parentheses of the name (only if it is in the unit vocabulary), else by the first non-empty 'หน่วยขาย' variant value, else 'ชิ้น'. |
 | `prdTag` | STRING | JSON text `{"mypro_tag":[...]}` built from products.tags (empty array when no tags; never NULL). |
-| `prdUniversalBarcode` | STRING | Universal barcode (products.universal_barcode, e.g. EAN13); also a cluster column. |
-| `prdInternalBarcode` | STRING | Internal barcode (products.internal_barcode). |
-| `prdCatId` | STRING | Category id (products.category_id); join to validated_master_sku.categories.id. |
+| `prdUniversalBarcode` | STRING | Universal (GS1/EAN) barcode of the product. |
+| `prdInternalBarcode` | STRING | Internal barcode/code assigned to the product. |
+| `prdCatId` | STRING | Category of the product (FK to `categories.id`). |
 | `prdFilter1` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
 | `prdFilter2` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
 | `prdBrandId` | STRING | Brand id (products.brand_id, else brand_vendors.brand_id for the 52 products that only carry the brand on brand_vendors). These are master_sku ids, not the old mastersku ids; join to validated_master_sku.brands.id. |
@@ -55,21 +55,21 @@ One row per `prdSku` (= products.master_sku_code): placeholder rows without a ma
 | `prdDimension2` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
 | `prdDimension3` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
 | `prdDimension4` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
-| `prdVendorId` | STRING | Vendor id taken from brand_vendors (products has no vendor_id); join to validated_master_sku.vendors.id; cluster column. |
+| `prdVendorId` | STRING | Vendor that supplies the brand (FK to `vendors.id`). |
 | `prdIsActive` | BOOL | TRUE when products.product_status = 'Active'. |
 | `prdIsUse` | BOOL | TRUE when products.sales_status = 'Active'. |
-| `prdCreatedDate` | DATETIME | products.created_at (about 26k placeholder rows without master_sku_code carry 2000-01-01 and are excluded). |
-| `prdCreatedBy` | STRING | products.created_by. |
+| `prdCreatedDate` | DATETIME | Timestamp when the record was created. |
+| `prdCreatedBy` | STRING | Identifier of the user who created the record. |
 | `prdUpdatedDate` | DATETIME | products.updated_at, but when it is the 2000-01-01 placeholder (< 2000-01-02) the first non-null of product_status_date, sales_status_date, updated_at is used. |
-| `prdUpdatedBy` | STRING | products.updated_by. |
-| `prdPgId` | STRING | products.specification_group_id (matches the old product-group id; product_group_id does not). |
+| `prdUpdatedBy` | STRING | Identifier of the user who last updated the record. |
+| `prdPgId` | STRING | Specification group (product family) of the product (FK to `spec_groups.id`); equals the old MASTERSKU product group id. |
 | `prdPsId` | STRING | Constant id of the old product-status lookup: 5430ac8c-... (On) when product_status = 'Active', else 7f5ac89b-... (Off). |
 | `prdIdSource` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
 | `prdMcId` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
 | `prdDiminsionData` | STRING | JSON text `{"dimFeild":[{"label":..., "value":...}]}` built from products.specification_attributes in array order (the column name and the keys keep the source typos on purpose). |
 | `prdPasId` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
-| `prdBarcode` | STRING | Same as prdUniversalBarcode (products.universal_barcode). |
-| `prdRejectRemark` | STRING | products.product_status_remark. |
+| `prdBarcode` | STRING | Universal (GS1/EAN) barcode of the product. |
+| `prdRejectRemark` | STRING | Remark on the latest product status change (e.g. rejection reason). |
 | `prdRefMpId` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
 | `prdIsCombo` | BOOL | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
 | `prdComboPrice` | FLOAT64 | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |

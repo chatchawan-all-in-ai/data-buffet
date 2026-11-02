@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "report_sale_subscription"
-description: "One row = one record of source table `report_sale_subscription` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one SKU at one Thai Watsadu branch in one daily file, a record of source table `report_sale_subscription` (SALEOUT_MDT) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_saleout_mdt&t=report_sale_subscription&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_saleout_mdt
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/tw/reportsalesubscription/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `report_sale_subscription` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Used by: [validated_saleout_mdt.report_sale_subscription](/validated/validated_saleout_mdt/report_sale_subscription.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/tw/reportsalesubscription/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `report_sale_subscription` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Daily Thai Watsadu (TW) sales-and-stock report for the company products: sales on the last sold date, stock on hand and on order per branch and SKU. Used by: [validated_saleout_mdt.report_sale_subscription](/validated/validated_saleout_mdt/report_sale_subscription.md).
 
 # Grain and key
 
@@ -30,20 +30,20 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `Store` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Cat` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Sub_Cat` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Brand` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `SKU` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Barcode` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Description` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Product_Type` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Sales_Amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Sales_Qty` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Stock_On_Hand` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Stock_On_Order` | INT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Last_Sold_Date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `Last_Receive_Date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `Store` | STRING | Thai Watsadu branch as code plus name (e.g. `60001-CRC Thai Watsadu ...`), used as the branch code. |
+| `Cat` | STRING | Thai Watsadu category code (e.g. `002`). |
+| `Sub_Cat` | STRING | Thai Watsadu sub-category code (e.g. `004`). |
+| `Brand` | STRING | Product brand. |
+| `SKU` | STRING | Thai Watsadu SKU (zero-padded). |
+| `Barcode` | STRING | Product barcode (EAN-13). |
+| `Description` | STRING | Product description (name). |
+| `Product_Type` | STRING | Stock location type of the row (e.g. `Branch`). |
+| `Sales_Amount` | FLOAT64 | Sales amount of the SKU at the branch (THB). |
+| `Sales_Qty` | INT64 | Sales quantity of the SKU at the branch. |
+| `Stock_On_Hand` | FLOAT64 | Stock quantity on hand at the branch. |
+| `Stock_On_Order` | INT64 | Stock quantity on open purchase orders. |
+| `Last_Sold_Date` | STRING | Date the SKU was last sold at the branch. |
+| `Last_Receive_Date` | STRING | Date the SKU was last received at the branch. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

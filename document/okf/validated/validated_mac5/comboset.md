@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "comboset"
-description: "One row = one product combo set, unique on (company_id, id)."
+description: "One row = one item in a combo set (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=comboset&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `comboset`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: product combo set. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `comboset`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Items that make up each combo set, with quantity and list price.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,16 +35,16 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `combostk` | STRING | Meaning not documented in the repo. |
-| `stkcode` | STRING | Likely code (inferred from the column name only; not documented in the repo). |
-| `date` | DATETIME | Likely date (inferred from the column name only; not documented in the repo). |
-| `uinsert` | STRING | Meaning not documented in the repo. |
-| `uupdate` | STRING | Likely date (inferred from the column name only; not documented in the repo). |
-| `status` | INT64 | Likely status code (inferred from the column name only; not documented in the repo). |
-| `quantity` | INT64 | Meaning not documented in the repo. |
-| `price` | FLOAT64 | Likely price (inferred from the column name only; not documented in the repo). |
-| `lp` | FLOAT64 | Meaning not documented in the repo. |
+| `id` | INT64 | Running ID of the combo set line row. |
+| `combostk` | STRING | Combo set code the line belongs to (joins `combostk.combostk`). |
+| `stkcode` | STRING | Stock code of the item in the combo set. |
+| `date` | DATETIME | Date and time the row was created. |
+| `uinsert` | STRING | User code of the person who created the record. |
+| `uupdate` | STRING | User code of the person who last updated the record. |
+| `status` | INT64 | Status code of the combo set line (1 = active). |
+| `quantity` | INT64 | Quantity of the item in the combo set. |
+| `price` | FLOAT64 | Price of the item in the combo set. |
+| `lp` | FLOAT64 | List price of the item. |
 
 # How it is built
 

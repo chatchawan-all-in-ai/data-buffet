@@ -33,7 +33,7 @@ One row per `company_id` + `debcode` (the declared `uniqueKey`). Only customers 
 | `company_id` | STRING | MAC5 company code of the customer (validated_mac5.deb.company_id). |
 | `debcode` | STRING | Customer (debtor) code (validated_mac5.deb.debcode). |
 | `raw_address` | STRING | Trimmed concatenation of debadd1at, debadd2at and debadd3at separated by spaces: the exact text sent to the model. |
-| `info` | STRUCT<DistrictEN STRING, DistrictTH STRING, ProvinceEN STRING, ProvinceTH STRING, SubDistrictEN STRING, SubDistrictTH STRING, full_response JSON, status STRING> | STRUCT returned by AI.GENERATE for the output schema: SubDistrictTH, SubDistrictEN, DistrictTH, DistrictEN, ProvinceTH, ProvinceEN (names without prefixes such as จ., อ., ต.; misspellings corrected; English is standard romanisation; postal code is validated against the province), plus the service fields full_response (JSON of the raw model response) and status (service status field, likely empty on success and an error text otherwise; not documented in the repo). AI output: validate before treating as master data. |
+| `info` | STRUCT<DistrictEN STRING, DistrictTH STRING, ProvinceEN STRING, ProvinceTH STRING, SubDistrictEN STRING, SubDistrictTH STRING, full_response JSON, status STRING> | STRUCT returned by AI.GENERATE: SubDistrictTH, SubDistrictEN, DistrictTH, DistrictEN, ProvinceTH, ProvinceEN (names without prefixes such as จ., อ., ต.; misspellings corrected; English is standard romanisation; postal code is validated against the province), plus the service fields full_response (JSON of the model response) and status (empty string on success, an error message such as a parse failure otherwise). |
 
 # How it is built
 

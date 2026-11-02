@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_customer_contact"
-description: "One row = one cleaned copy of the source table `crm_customer_contact`, unique on (customer_contact_id)."
+description: "One row = one customer contact from source table `crm_customer_contact`, unique on (customer_contact_id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_derp&t=crm_customer_contact&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_derp
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of DERP `crm_customer_contact`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer.
+Validated copy of DERP `crm_customer_contact`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Contact persons of CRM customers with phone, fax, email and LINE details.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,25 +34,25 @@ One row per `customer_contact_id`. The key is declared twice in the definition (
 
 | Column | Type | Description |
 |---|---|---|
-| `customer_contact_id` | STRING | Meaning not documented in the repo. |
-| `customer_master_id` | STRING | Meaning not documented in the repo. |
-| `customer_code` | STRING | Meaning not documented in the repo. |
-| `contact_type` | STRING | Meaning not documented in the repo. |
-| `contact_name` | STRING | Meaning not documented in the repo. |
-| `contact_position` | STRING | Meaning not documented in the repo. |
-| `phone` | STRING | Meaning not documented in the repo. |
-| `fax` | STRING | Meaning not documented in the repo. |
-| `email` | STRING | Meaning not documented in the repo. |
-| `line_id` | STRING | Meaning not documented in the repo. |
-| `is_primary` | BOOL | Meaning not documented in the repo. |
-| `status` | STRING | Likely status code (inferred from the column name only; not documented in the repo). |
-| `created_at` | DATETIME | Source row creation timestamp (inferred from the column name). |
-| `created_by` | STRING | Meaning not documented in the repo. |
-| `updated_at` | DATETIME | Source row last-update timestamp (inferred from the column name). |
-| `updated_by` | STRING | Meaning not documented in the repo. |
-| `created_by_name` | STRING | Meaning not documented in the repo. |
-| `updated_by_name` | STRING | Meaning not documented in the repo. |
-| `is_sync` | BOOL | Meaning not documented in the repo. |
+| `customer_contact_id` | STRING | UUID of the customer contact record. |
+| `customer_master_id` | STRING | UUID of the customer in `crm_customer_master`. |
+| `customer_code` | STRING | Customer code in the CRM (e.g. `C0000136`; `NCT...` for new customers). |
+| `contact_type` | STRING | Contact type (e.g. `Business`). |
+| `contact_name` | STRING | Name of the contact person. |
+| `contact_position` | STRING | Job position of the contact person. |
+| `phone` | STRING | Contact phone number. |
+| `fax` | STRING | Contact fax number. |
+| `email` | STRING | Contact email address. |
+| `line_id` | STRING | Contact LINE ID. |
+| `is_primary` | BOOL | Flag marking the customer's primary contact. |
+| `status` | STRING | Record status (`ACTIVE`, `INACTIVE` or `DELETED`). |
+| `created_at` | DATETIME | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `updated_at` | DATETIME | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `is_sync` | BOOL | Flag set when the record has been synchronized with the ERP (true for migrated customers, false for records created only in the CRM). |
 | `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "pathfilestamper"
-description: "One row = one file path stamper log, unique on (company_id, id)."
+description: "One row = one file attached to an order (per company), unique on (company_id, id)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=pathfilestamper&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `pathfilestamper`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: file path stamper log. Table meaning is inferred from column prefixes.
+Validated copy of MAC5 `pathfilestamper`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Files attached to quotation-app orders (POs, pay-in slips, maps, delivery proofs), with file share paths and payment notes.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -35,22 +35,22 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 | Column | Type | Description |
 |---|---|---|
 | `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
-| `id` | INT64 | Surrogate identifier from the source system (the primary key). |
-| `mainqtid` | INT64 | Meaning not documented in the repo. |
-| `preorderno` | STRING | Meaning not documented in the repo. |
-| `orderno` | STRING | Meaning not documented in the repo. |
-| `type` | STRING | Likely document/type code (inferred from the column name only; not documented in the repo). |
-| `path212` | STRING | Meaning not documented in the repo. |
-| `path10acc` | STRING | Meaning not documented in the repo. |
-| `path10fac` | STRING | Meaning not documented in the repo. |
-| `filename` | STRING | Meaning not documented in the repo. |
-| `uinsert` | STRING | Meaning not documented in the repo. |
-| `date` | STRING | Likely date (inferred from the column name only; not documented in the repo). |
-| `status` | INT64 | Likely status code (inferred from the column name only; not documented in the repo). |
-| `pathqtid` | STRING | Meaning not documented in the repo. |
-| `note` | STRING | Meaning not documented in the repo. |
-| `datepayinadmin` | DATE | Meaning not documented in the repo. |
-| `refpo` | STRING | Meaning not documented in the repo. |
+| `id` | INT64 | Row identifier of the file record. |
+| `mainqtid` | INT64 | Quotation spread identifier (`main_qtspread.id`). |
+| `preorderno` | STRING | Pre-order number from the quotation app (T-prefixed). |
+| `orderno` | STRING | MAC5 sales order number the file belongs to. |
+| `type` | STRING | File type (`PO`, `Payin`, `Map`, `Delivery`, `MEMO`, `BOQ`, `Other`). |
+| `path212` | STRING | Path of the file on the web upload server. |
+| `path10acc` | STRING | Path of the file on the accounting file share. |
+| `path10fac` | STRING | Path of the file on the factory admin file share. |
+| `filename` | STRING | File name (e.g. `<order>-PAYIN.pdf`). |
+| `uinsert` | STRING | Employee code of the user who uploaded the file, or `bot`. |
+| `date` | STRING | Date and time the file was uploaded (text). |
+| `status` | INT64 | Active flag (1 = active). |
+| `pathqtid` | STRING | Identifier of the quotation-app record the file was uploaded under. |
+| `note` | STRING | Payment note of the file (e.g. 100 percent transfer, 30 percent deposit). |
+| `datepayinadmin` | DATE | Date the pay-in was confirmed by the admin. |
+| `refpo` | STRING | Customer purchase order reference. |
 
 # How it is built
 

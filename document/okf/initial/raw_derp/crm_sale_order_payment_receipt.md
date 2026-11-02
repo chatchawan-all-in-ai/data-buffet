@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "crm_sale_order_payment_receipt"
-description: "One row = one record of source table `crm_sale_order_payment_receipt` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
+description: "One row = one payment received for a sale order, a record of source table `crm_sale_order_payment_receipt` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=raw_derp&t=crm_sale_order_payment_receipt&page=table"
 project_id: databuffet-nonprd
 dataset_id: raw_derp
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_payment_receipt/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_payment_receipt` table from DERP; nothing is cleaned or deduplicated here. Used by: [validated_derp.crm_sale_order_payment_receipt](/validated/validated_derp/crm_sale_order_payment_receipt.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_sale_order_payment_receipt/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_sale_order_payment_receipt` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Payments received against DERP sale orders (deposits or full payments), including voided receipts. Used by: [validated_derp.crm_sale_order_payment_receipt](/validated/validated_derp/crm_sale_order_payment_receipt.md).
 
 # Grain and key
 
@@ -30,27 +30,27 @@ One row per source record **per ASATDATE partition**: the same business record a
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_order_payment_receipt_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `sale_order_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `so_no` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `source` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `purpose` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `attachment_id` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `bank_txn_ref` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `amount` | FLOAT64 | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `paid_date` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `note` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `status` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `created_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `updated_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `void_reason` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `voided_at` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `voided_by` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
-| `voided_by_name` | STRING | Source column as delivered in the file, uncleaned (meaning not documented in the repo). |
+| `sale_order_payment_receipt_id` | STRING | Unique identifier of the payment receipt. |
+| `sale_order_id` | STRING | Identifier of the parent sale order (`crm_sale_order.sale_order_id`). |
+| `so_no` | STRING | Sale order number of the parent sale order (e.g. `A2610000106`). |
+| `source` | STRING | Source of the payment (`MANUAL`, `BANK_KBANK`, `CUSTOMER_CREDIT`, `ALLKONM`). |
+| `purpose` | STRING | Purpose of the payment (`DEPOSIT` or `FULL`). |
+| `attachment_id` | STRING | Identifier of the attached payment evidence. |
+| `bank_txn_ref` | STRING | Bank transaction reference of the payment. |
+| `amount` | FLOAT64 | Amount received (THB). |
+| `paid_date` | STRING | Date and time the payment was received. |
+| `note` | STRING | Free-text note on the payment. |
+| `status` | STRING | Status of the receipt (`ACTIVE` or `VOID`). |
+| `created_at` | STRING | Timestamp when the record was created. |
+| `created_by` | STRING | Identifier of the user who created the record. |
+| `created_by_name` | STRING | Display name of the user who created the record. |
+| `updated_at` | STRING | Timestamp when the record was last updated. |
+| `updated_by` | STRING | Identifier of the user who last updated the record. |
+| `updated_by_name` | STRING | Display name of the user who last updated the record. |
+| `void_reason` | STRING | Reason the receipt was voided. |
+| `voided_at` | STRING | Timestamp when the receipt was voided. |
+| `voided_by` | STRING | Identifier of the user who voided the receipt. |
+| `voided_by_name` | STRING | Display name of the user who voided the receipt. |
 | `ASATDATE` | STRING | Hive partition column (STRING `YYYYMMDD`): the extract date of the GCS folder the row came from. |
 
 # How it is built

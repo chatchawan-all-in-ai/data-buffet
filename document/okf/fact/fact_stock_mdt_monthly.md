@@ -35,7 +35,7 @@ One row per (`month_end`, `store_code`, `branch_code`, `product_code`) (uniqueKe
 | `month_end` | DATE | Month label: calendar month-end (LAST_DAY) for closed months; the latest snapshot date across all chains for the current month. Partition column. |
 | `snapshot_date` | DATE | Actual stock date of the chain used for this row. |
 | `is_month_end` | BOOL | TRUE when the month is closed (before the current month), FALSE for the current month (value is the latest, not month-end). |
-| `store_code` | STRING | Retail-chain (store) code as sent by the chain (e.g. HP/MH/BT/GB/TW/DH, inferred from curated docs); joins dim_region.RegionID for the region sets. |
+| `store_code` | STRING | Retail-chain (store) code: HP, MH, BT, GB, TW or DH, set per chain feed in the curated_saleout_mdt build; joins dim_region.RegionID for the region sets. |
 | `branch_sk` | INT64 | Surrogate key `BranchMdtSK` of [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md) (match on store code + branch code); -1 when the branch is not in the dimension. |
 | `zone_sk` | INT64 | Surrogate key `ZoneMdtSK` of the branch's zone, taken from dim_sales_branch_mdt; -1 when unmatched. |
 | `product_mdt_sk` | INT64 | Surrogate key `ProductMdtSK` of [dim_product_mdt](/dimension/dim_product_mdt.md) (match on product code with leading zeros removed); -1 when the product is unknown. |

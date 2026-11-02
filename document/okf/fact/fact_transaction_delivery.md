@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "fact_transaction_delivery"
-description: "IS invoice aggregates by customer, company, InvoiceSK and matched ProductSK; retained barcode versions can repeat invoiced measures."
+description: "One row = the invoiced totals of one product on one IS invoice (company, date, invoice number, customer) per matched ProductSK, for the last four years; retained barcode versions repeat the measures."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_transaction_delivery&page=table"
 project_id: databuffet-nonprd
 dataset_id: fact_table
@@ -39,17 +39,17 @@ One row per `FactTransDeliverySK` (ROW_NUMBER over CompanySK, milYear, milMonth,
 | `companyID` | STRING | MAC5 company code from dim_company. |
 | `mix_date` | DATE | Invoice business date (PARSE_DATE of year/month/day); partition column. |
 | `company_id` | STRING | MAC5 company code from curated_mil (same value as companyID). |
-| `milYear` | INT64 | Year of the invoice document. |
-| `milMonth` | INT64 | Month of the invoice document. |
-| `milDay` | INT64 | Day of the invoice document. |
-| `milType` | STRING | Document type; always 'IS' (invoice). |
-| `milvnos` | STRING | Invoice document number; matches `fact_delivery.documentID`. |
-| `milCus` | STRING | Customer code. |
-| `milStk` | STRING | Product code of the line. |
+| `milYear` | INT64 | Year part of the document date (Gregorian). |
+| `milMonth` | INT64 | Month part of the document date. |
+| `milDay` | INT64 | Day part of the document date. |
+| `milType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `milvnos` | STRING | Document number of the line, matching `mihvnos` of the header. |
+| `milCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `milStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
 | `milQuan` | FLOAT64 | SUM of `curated_mil.milQuan` over the grain. |
-| `milAdisc` | FLOAT64 | SUM of `curated_mil.milAdisc` (discount amount; inferred from the name). |
+| `milAdisc` | FLOAT64 | SUM of `curated_mil.milAdisc`: the document-level discount allocated to the lines. |
 | `milCog` | FLOAT64 | SUM of `curated_mil.milCog`: gross line amount excluding VAT, with salesperson shares already applied to split-sale lines. |
-| `milDisca` | FLOAT64 | SUM of `curated_mil.milDisca` (discount amount; inferred from the name). |
+| `milDisca` | FLOAT64 | SUM of `curated_mil.milDisca`: line discount amount excluding VAT. |
 | `milSum` | FLOAT64 | SUM of `curated_mil.milSum`, line net amount in THB. |
 | `asatdate` | DATE | Build date, CURRENT_DATE('Asia/Bangkok'). |
 

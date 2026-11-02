@@ -45,10 +45,10 @@ One row per (`CompanySK`, `CustomerCode`, `Year`). `CustomerGradeSK` is a stable
 | `CompanyID` | STRING | MAC5 company code. |
 | `Year` | INT64 | Calendar year the grade refers to (INT64). A run only computes the year of yesterday's date; earlier years keep the values from the last run in that year. |
 | `CustomerCode` | STRING | MAC5 debtor code (`debcode`); with `CompanySK` and `Year` the natural key. |
-| `CustomerName` | STRING | Customer Thai name (`dim_customer.debnamet`). |
-| `CustomerLimit` | FLOAT64 | Customer credit limit (`dim_customer.deblimit`). |
-| `CustomerCreditTerm` | INT64 | Customer credit term in days (`dim_customer.debcreditterm`). |
-| `CustomerMemo` | STRING | Customer memo text (`dim_customer.debmemo`). |
+| `CustomerName` | STRING | Customer name in Thai. |
+| `CustomerLimit` | FLOAT64 | Credit limit of the customer in baht. |
+| `CustomerCreditTerm` | INT64 | Credit term in days. |
+| `CustomerMemo` | STRING | Free-text memo on the customer. |
 | `SumPaymentReceive` | FLOAT64 | Total received (RS receipts, cheque-extract dates applied, rounded to 2 decimals) in `Year`; 0 when none. Receipts of cancelled or not-received statuses are excluded. |
 | `InvoiceDateAvgReceiveAgeDay` | FLOAT64 | Average days (rounded up) between invoice date and receipt date for receipts in `Year`, counting only late-positive differences; 0 when none. |
 | `DueDateAvgReceiveAgeDay` | FLOAT64 | Average days (rounded up) between the computed due date (`invoice date + credit term`) and receipt date, counting only positive differences (paid late); 0 when none. |
