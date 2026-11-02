@@ -33,7 +33,7 @@ VIEW         definitions/view/      Presentation views (type: "view") for Power 
 
 Side pipelines:
   CDC      definitions/cdc/       change log driven by cdc-config.json
-  PROCESS  definitions/process/   AI Thai-address parsing, gated on CDC + RLS access map (rls_customer360) + Pub/Sub export pilot
+  PROCESS  definitions/process/   AI Thai-address parsing, gated on CDC + RLS access maps (see process reference below) + Pub/Sub export pilot
 ```
 
 File counts per layer are generated from the code — see the
@@ -52,7 +52,7 @@ Per-source context (what each system is, who reads it):
 | Dimension | `dimension_table`, `dimension_view` | table rebuild (mds full rebuild + other tables) / operations MERGE (2 mds + 10 lake + `dim_customer_report_info`) / 3 other operations | [dimension/dimension-layer.md](../dimension/dimension-layer.md) |
 | Fact | `fact_table`, `fact_view` | table rebuild / operations upsert | [fact/fact-layer.md](../fact/fact-layer.md) |
 | CDC | `cdc_dataset` | operations (config-generated) | [cdc-process/cdc.md](../cdc-process/cdc.md) |
-| Process | `process_dataset` | incremental (`deb_address_data`, AI.GENERATE) + table (`rls_customer360`) + Pub/Sub export pilot (operations, tag `pub_sub`) | [cdc-process/process.md](../cdc-process/process.md) |
+| Process | `process_dataset` | incremental (`deb_address_data`, AI.GENERATE) + table (RLS access maps; see detail page) + Pub/Sub export pilot (operations, tag `pub_sub`) | [cdc-process/process.md](../cdc-process/process.md) |
 | View | `dimension_view`, `fact_view`, `onetime`, `process_dataset`, `bridge_dataset`, `pub_sub` | `type: "view"` (presentation; folder ≠ target dataset) | [view/view-layer.md](../view/view-layer.md) |
 | Pub/Sub | `pub_sub` | operations (`pub_sub_schema` creates the dataset); future shaping tables before Pub/Sub | [cdc-process/process.md](../cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
 | Org center | `org_center` | table rebuild (`dimension_daily`, after `update_sk_sale_rep_group`) + operations (`org_center_schema` creates the dataset) | [org_center/org-center.md](../org_center/org-center.md) |

@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-02
+* **Creation**: Added the `rls_ta_customer` card (process 5 cards).
+* **Update**: Added the `region_code` column to the `org_center_unit` card.
+
 ## 2026-11-01
 * **Creation**: Added the `org_center_customer_ta` card (org_center 6 cards).
 * **Creation**: Added the `org_center_exception` card (org_center 7 cards); updated the `org_center_flags` card for the EXCEPTION_NO_EMPLOYEE rule.

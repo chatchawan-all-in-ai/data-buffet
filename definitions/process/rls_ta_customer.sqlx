@@ -1,0 +1,185 @@
+config {
+    type: "table",
+    schema: databuffet.PROCESS_DATASET,
+    dependencies: [
+                    "org_center_unit", "org_center_member",
+                    "org_center_customer_ta", "org_center_exception",
+                    "dim_company"
+                  ],
+    tags: [databuffet.TAG_DIM_DAILY],
+    uniqueKey: ["employee_id", "customer_company_id", "customer_code", "marketing_group_id", "sub_marketing_id", "segment_id"],
+    bigquery: {
+        clusterBy: ["employee_id", "customer_company_id"]
+    },
+}
+
+js {
+    const OrgCenterUnitTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_unit`;
+    const OrgCenterMemberTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_member`;
+    const OrgCenterCustomerTaTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_customer_ta`;
+    const OrgCenterExceptionTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_exception`;
+    const DimCompanyTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_company`;
+}
+
+-- 1 แถว = คนที่ดู (employee_id) x ลูกค้า (customer_company_id + customer_code หรือ 'ALL') x ขอบเขตสินค้า (กลุ่ม/กลุ่มย่อย/segment หรือ 'ALL') ณ วันนี้ (Asia/Bangkok)
+-- ใช้เฉพาะแถวที่มีผลวันนี้ · unit/member = BETWEEN valid_from AND valid_to · พอร์ต = [valid_from, valid_to)
+-- กฎกรอง mart ครบทุกขอบเขตและตัวอย่าง EXISTS: document/okf/process/rls_ta_customer.md#examples
+WITH today AS (
+  SELECT CURRENT_DATE('Asia/Bangkok') AS d
+
+), unit AS (
+  SELECT u.*
+  FROM `${OrgCenterUnitTableRef}` AS u, today
+  WHERE today.d BETWEEN u.valid_from AND u.valid_to
+
+), section_tree AS (
+  -- 1 แถว = SECTION x หน่วยที่อยู่เหนือมัน 1 ชั้น (ตัวเอง, ภาค, ฝ่าย, บริษัท) · ผังคงที่ 4 ชั้น = join 3 ครั้ง ไม่ต้อง recursive
+  -- LEFT JOIN: หน่วยแม่ที่ไม่มีผลวันนี้ไม่ทำให้ส่วนหายไปจากผู้จัดการชั้นที่ยังต่อกันอยู่
+  SELECT
+    s.company_id,
+    s.unit_id AS section_unit_id,
+    s.unit_code AS section_code,
+    r.region_code,
+    d.unit_code AS director_code,
+    anc AS ancestor_unit_id
+  FROM unit AS s
+  LEFT JOIN unit AS r
+    ON r.company_id = s.company_id AND r.unit_id = s.parent_unit_id
+  LEFT JOIN unit AS d
+    ON d.company_id = s.company_id AND d.unit_id = r.parent_unit_id
+  CROSS JOIN UNNEST([s.unit_id, r.unit_id, d.unit_id, CONCAT('CO-', s.company_id)]) AS anc
+  WHERE s.unit_level = 'SECTION'
+    AND anc IS NOT NULL
+
+), member AS (
+  SELECT m.*
+  FROM `${OrgCenterMemberTableRef}` AS m, today
+  WHERE today.d BETWEEN m.valid_from AND m.valid_to
+    AND m.employee_id IS NOT NULL
+
+), ta AS (
+  -- ที่นั่ง TA วันนี้ (TA ที่ดูแลหลายส่วน = 1 แถวต่อส่วน)
+  SELECT DISTINCT company_id, employee_id, unit_id
+  FROM member
+  WHERE position_code = 'TA'
+
+), portfolio AS (
+  -- พอร์ตที่มีผลวันนี้ เฉพาะ TA ที่ยังมีที่นั่ง TA · ลูกค้าดูแลร่วมกัน 2 คน ได้ทั้งคู่ (ไม่ใช้ share_percent)
+  SELECT DISTINCT
+    p.company_id AS customer_company_id,
+    p.customer_code,
+    p.ta_employee_id
+  FROM `${OrgCenterCustomerTaTableRef}` AS p, today
+  WHERE today.d >= p.valid_from AND today.d < p.valid_to
+    AND p.company_id IS NOT NULL
+    AND p.customer_code IS NOT NULL
+    AND EXISTS (SELECT 1 FROM ta WHERE ta.employee_id = p.ta_employee_id)
+
+), section_customer AS (
+  SELECT
+    ta.company_id,
+    ta.unit_id AS section_unit_id,
+    portfolio.customer_company_id,
+    portfolio.customer_code
+  FROM ta
+  JOIN portfolio
+    ON portfolio.ta_employee_id = ta.employee_id
+
+), org_grant AS (
+  SELECT
+    ta_employee_id AS employee_id,
+    customer_company_id,
+    customer_code,
+    'TA' AS access_source
+  FROM portfolio
+
+  UNION ALL
+  SELECT DISTINCT
+    m.employee_id,
+    c.customer_company_id,
+    c.customer_code,
+    m.position_code AS access_source
+  FROM member AS m
+  JOIN section_tree AS st
+    ON st.company_id = m.company_id AND st.ancestor_unit_id = m.unit_id
+  JOIN section_customer AS c
+    ON c.company_id = st.company_id AND c.section_unit_id = st.section_unit_id
+  WHERE m.position_code IN ('SECTION_MGR', 'REGION_MGR', 'DIRECTOR', 'CEO')
+
+), exception_company AS (
+  -- สิทธิ์พิเศษ: company_code 'ALL' = ทุกบริษัทใน dim_company · ข้ามแถวที่ไม่มี employee_id
+  SELECT e.*, co AS customer_company_id
+  FROM `${OrgCenterExceptionTableRef}` AS e
+  CROSS JOIN UNNEST(IF(e.company_code = 'ALL', (SELECT ARRAY_AGG(CompanyID) FROM `${DimCompanyTableRef}`), [e.company_code])) AS co
+  WHERE e.employee_id IS NOT NULL
+
+), exception_grant AS (
+  -- ทั้งบริษัท: ไม่ใช่รายลูกค้า หรือ ฝ่าย/ภาค/ส่วน เป็น ALL ทั้ง 3 ช่อง -> customer_code 'ALL'
+  SELECT DISTINCT
+    employee_id,
+    customer_company_id,
+    'ALL' AS customer_code,
+    marketing_group_id,
+    sub_marketing_id,
+    segment_id
+  FROM exception_company
+  WHERE NOT flag_customer
+    OR ('ALL' IN UNNEST(director_codes) AND 'ALL' IN UNNEST(region_codes) AND 'ALL' IN UNNEST(section_codes))
+
+  UNION ALL
+  -- ตามหน่วย: SECTION ที่ตรงทุกช่องที่ไม่ใช่ ALL (ฝ่าย = unit_code, ภาค = region_code, ส่วน = unit_code) -> ลูกค้าในพอร์ตของ TA ในส่วนนั้น เฉพาะบริษัทในขอบเขต
+  SELECT DISTINCT
+    e.employee_id,
+    c.customer_company_id,
+    c.customer_code,
+    e.marketing_group_id,
+    e.sub_marketing_id,
+    e.segment_id
+  FROM exception_company AS e
+  JOIN (
+    SELECT DISTINCT company_id, section_unit_id, section_code, region_code, director_code
+    FROM section_tree
+  ) AS st
+    ON ('ALL' IN UNNEST(e.director_codes) OR st.director_code IN UNNEST(e.director_codes))
+   AND ('ALL' IN UNNEST(e.region_codes) OR st.region_code IN UNNEST(e.region_codes))
+   AND ('ALL' IN UNNEST(e.section_codes) OR st.section_code IN UNNEST(e.section_codes))
+  JOIN section_customer AS c
+    ON c.company_id = st.company_id
+   AND c.section_unit_id = st.section_unit_id
+   AND c.customer_company_id = e.customer_company_id
+  WHERE e.flag_customer
+    AND NOT ('ALL' IN UNNEST(e.director_codes) AND 'ALL' IN UNNEST(e.region_codes) AND 'ALL' IN UNNEST(e.section_codes))
+
+), all_grant AS (
+  SELECT
+    employee_id,
+    customer_company_id,
+    customer_code,
+    'ALL' AS marketing_group_id,
+    'ALL' AS sub_marketing_id,
+    'ALL' AS segment_id,
+    access_source
+  FROM org_grant
+
+  UNION ALL
+  SELECT
+    employee_id,
+    customer_company_id,
+    customer_code,
+    marketing_group_id,
+    sub_marketing_id,
+    segment_id,
+    'EXCEPTION' AS access_source
+  FROM exception_grant
+)
+  SELECT
+    employee_id,
+    customer_company_id,
+    customer_code,
+    marketing_group_id,
+    sub_marketing_id,
+    segment_id,
+    -- ได้สิทธิ์หลายทาง: เก็บทางแรกตามลำดับ TA, SECTION_MGR, REGION_MGR, DIRECTOR, CEO, EXCEPTION
+    ARRAY_AGG(access_source ORDER BY CASE access_source WHEN 'TA' THEN 1 WHEN 'SECTION_MGR' THEN 2 WHEN 'REGION_MGR' THEN 3 WHEN 'DIRECTOR' THEN 4 WHEN 'CEO' THEN 5 ELSE 6 END LIMIT 1)[OFFSET(0)] AS access_source
+  FROM all_grant
+  GROUP BY employee_id, customer_company_id, customer_code, marketing_group_id, sub_marketing_id, segment_id

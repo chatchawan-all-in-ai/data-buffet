@@ -78,7 +78,8 @@ WITH company_source AS (
     CONCAT('CO-', ${databuffet.functionData.cleanString("dir.companyID")}) AS parent_unit_id,
     dir.StartDate AS valid_from,
     dir.EndDate AS valid_to,
-    ${databuffet.functionData.cleanString("dir.DirectorID")} AS plan_code
+    ${databuffet.functionData.cleanString("dir.DirectorID")} AS plan_code,
+    CAST(NULL AS STRING) AS region_code
   FROM `${DimDirectorLastTableRef}` AS dir
 
 ), region AS (
@@ -94,7 +95,9 @@ WITH company_source AS (
     reg.StartDate AS valid_from,
     reg.EndDate AS valid_to,
     -- แผนใช้ RegionID: PS1-1..PS1-5 รวมเป็น PS1 · ภาคอื่น RegionID = SubRegionID
-    ${databuffet.functionData.cleanString("reg.RegionID")} AS plan_code
+    ${databuffet.functionData.cleanString("reg.RegionID")} AS plan_code,
+    -- RegionID ของ dim: PS1-1..PS1-5 รวมเป็น PS1 · ใช้จับคู่สิทธิ์พิเศษที่ระบุภาค (org_center_exception.region_codes)
+    ${databuffet.functionData.cleanString("reg.RegionID")} AS region_code
   FROM `${DimRegionLastTableRef}` AS reg
   LEFT JOIN `${DimDirectorLastTableRef}` AS dir
     ON reg.DirectorSK = dir.DirectorSK
@@ -110,7 +113,8 @@ WITH company_source AS (
     CONCAT('REG-', ${databuffet.functionData.cleanString("reg.SubRegionID")}) AS parent_unit_id,
     sec.StartDate AS valid_from,
     sec.EndDate AS valid_to,
-    CAST(NULL AS STRING) AS plan_code
+    CAST(NULL AS STRING) AS plan_code,
+    CAST(NULL AS STRING) AS region_code
   FROM `${DimSectionLastTableRef}` AS sec
   LEFT JOIN `${DimRegionLastTableRef}` AS reg
     ON sec.RegionSK = reg.RegionSK
@@ -140,6 +144,7 @@ WITH company_source AS (
     unit.valid_from,
     unit.valid_to,
     IF(unit.unit_level = 'SECTION', ${planSectionCase}, unit.plan_code) AS plan_code,
+    unit.region_code,
     company.company_name
   FROM unit
   LEFT JOIN company
@@ -157,6 +162,7 @@ WITH company_source AS (
     DATE '2000-01-01' AS valid_from,
     DATE '2066-12-31' AS valid_to,
     CAST(NULL AS STRING) AS plan_code,
+    CAST(NULL AS STRING) AS region_code,
     company_name
   FROM company_source
 

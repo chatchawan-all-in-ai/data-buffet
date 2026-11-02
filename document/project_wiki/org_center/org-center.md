@@ -3,7 +3,8 @@
 > **LLM context**: Dataset `org_center` (`databuffet.ORG_CENTER`), folder
 > `definitions/org_center/`, added 2026-10-29 for the TA AI Assistant. It is the single
 > source of **who sits in which unit and position, TA customer portfolios, and special access exceptions**; Power BI RLS, the TA app and other
-> systems build their own access rules from it later. All seven tables are `type: "table"`,
+> systems consume it; TA customer access is precomputed by
+> [`rls_ta_customer`](../cdc-process/process.md#rls_ta_customersqlx--ta-customer-access-who-sees-which-customer). All seven tables are `type: "table"`,
 > tag `dimension_daily`, rebuilt every night (`org_center_unit` and `org_center_member` after
 > `update_sk_sale_rep_group`; `org_center_person` after `org_center_member`). For PC → TA assignments, see the
 > [table contract](../../okf/org_center/org_center_link.md).
@@ -65,6 +66,9 @@ Key: `company_id` + `unit_id`.
 | `valid_from` / `valid_to` | DATE | COMPANY: `2000-01-01` / `2066-12-31`; otherwise `StartDate` / `EndDate` of the `_last` row (`2066-12-31` = still active) |
 | `plan_code` | STRING | the unit's code in `Org_Mock_Master_Plan_v4.xlsx` (below); `unit_id` / `unit_code` are unchanged |
 | `company_name` | STRING | COMPANY: cleaned MDS `CompanyNameTH`; otherwise `dim_company.CompanyNameTH` by `company_id` (NULL if absent) |
+
+For the `region_code` column used by TA customer access, see the authoritative
+[`org_center_unit` schema](../../okf/org_center/org_center_unit.md#schema).
 
 **`plan_code`** (added 2026-10-30; the plan file's codes differ from the live codes in two places):
 

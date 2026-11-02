@@ -40,6 +40,7 @@ One row per `company_id` + `unit_id` (`unit_id` = prefix `CO-`/`DIR-`/`REG-`/`SE
 | `valid_from` | DATE | StartDate of the latest `_last` dim row for the unit. |
 | `valid_to` | DATE | EndDate of the `_last` dim row; 2066-12-31 means still active. |
 | `plan_code` | STRING | The unit's code in the org plan file Org_Mock_Master_Plan_v4.xlsx: DIVISION = DirectorID; REGION = RegionID (the five PS1-n sub-regions all map to PS1); SECTION = unit_code except 7 dummy sections named by a fixed list in the SQL (e.g. Dummy999994 to HO, Dummy999993 to Imboon, Dummy999991 to Online). |
+| `region_code` | STRING | REGION rows only: dim_region_last.RegionID (the five PS1-n sub-regions all map to PS1; other regions equal `unit_code`); NULL for COMPANY, DIVISION and SECTION rows. Matches the region codes of [org_center_exception](/org_center/org_center_exception.md). |
 | `company_name` | STRING | dim_company.CompanyNameTH by company_id; NULL if the company is not in the dim. |
 
 # How it is built

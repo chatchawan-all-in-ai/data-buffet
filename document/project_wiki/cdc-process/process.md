@@ -3,6 +3,7 @@
 > **LLM context**: 2 files with tag `process`, plus the Pub/Sub export pilot
 > (2 `.sqlx` here, plus `definitions/pub_sub/pub_sub_schema.sqlx` and the export view
 > in `definitions/view/pub_sub/`; tag `pub_sub`, run by hand — see the last section).
+> TA customer access is also built in this folder; see [`rls_ta_customer`](#rls_ta_customersqlx--ta-customer-access-who-sees-which-customer).
 > 1. **`deb_address_data.sqlx`** — AI-powered Thai address parsing, gated on CDC so only
 >    *changed* addresses are re-parsed each day. Writes to `process_dataset.deb_address_data`;
 >    the companion view `process_dataset.view_deb_address_data` is what `fact_transcation`
@@ -230,3 +231,12 @@ existing config row, the memory and the sent state. No workflow configuration ca
 `pub_sub`. Do not use tag `view` for this: it deploys every view and skips the two
 tables. Then set up GCP and test per
 [setup-pubsub-export.md — ส่วน A](../../how-to/setup-pubsub-export.md#ส่วน-a--deploy-และทดสอบ-pilot).
+
+---
+
+## `rls_ta_customer.sqlx` — TA customer access (who sees which customer)
+
+Precomputed customer access for the TA app (via Pub/Sub later) and the AI Advisor.
+The authoritative [table contract](../../okf/process/rls_ta_customer.md) owns the schema,
+refresh cadence, grant expansion rules and safe mart filtering example. This table
+is separate from the Customer360 / Power BI access map described above.
