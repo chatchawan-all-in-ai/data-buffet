@@ -4,7 +4,8 @@
 > `definitions/org_center/`, added 2026-10-29 for the TA AI Assistant. It is the single
 > source of **who sits in which unit and position, TA customer portfolios, and special access exceptions**; Power BI RLS, the TA app and other
 > systems consume it; TA customer access is precomputed by
-> [`rls_ta_customer`](../cdc-process/process.md#rls_ta_customersqlx--ta-customer-access-who-sees-which-customer). All seven tables are `type: "table"`,
+> [`rls_ta_customer`](../cdc-process/process.md#rls_ta_customersqlx--ta-customer-access-who-sees-which-customer)
+> and TA sales access by [`rls_ta_sale`](../cdc-process/process.md#rls_ta_salesqlx--ta-sales-access-who-sees-which-sales). All seven tables are `type: "table"`,
 > tag `dimension_daily`, rebuilt every night (`org_center_unit` and `org_center_member` after
 > `update_sk_sale_rep_group`; `org_center_person` after `org_center_member`). For PC → TA assignments, see the
 > [table contract](../../okf/org_center/org_center_link.md).

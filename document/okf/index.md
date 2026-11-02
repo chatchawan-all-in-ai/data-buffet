@@ -13,6 +13,6 @@ One card per BigQuery table or view built by this repository's Dataform definiti
 * [Dimension](dimension/) - Star-schema dimensions in `dimension_table` (surrogate keys, mds and lake sourced). (71 cards)
 * [Fact](fact/) - Star-schema facts in `fact_table` plus the AR chain. (18 cards)
 * [View](view/) - BI/reporting views over dimensions, facts and curated tables. (41 cards)
-* [Process](process/) - AI address parsing, RLS access map and the Pub/Sub export tables. (5 cards)
+* [Process](process/) - AI address parsing, RLS access maps and the Pub/Sub export tables. (6 cards)
 * [CDC](cdc/) - Change-data-capture log generated from `cdc-config.json`. (1 cards)
 * [Org Center](org_center/) - Organisation structure (units, members, people, links, customer portfolios, exceptions, data-quality flags). (7 cards)

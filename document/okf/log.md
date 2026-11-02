@@ -1,6 +1,7 @@
 # Directory Update Log
 
 ## 2026-11-02
+* **Creation**: Added the `rls_ta_sale` card (process 6 cards).
 * **Creation**: Added the `rls_ta_customer` card (process 5 cards).
 * **Update**: Added the `region_code` column to the `org_center_unit` card.
 

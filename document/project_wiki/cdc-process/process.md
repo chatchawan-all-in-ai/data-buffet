@@ -3,7 +3,8 @@
 > **LLM context**: 2 files with tag `process`, plus the Pub/Sub export pilot
 > (2 `.sqlx` here, plus `definitions/pub_sub/pub_sub_schema.sqlx` and the export view
 > in `definitions/view/pub_sub/`; tag `pub_sub`, run by hand — see the last section).
-> TA customer access is also built in this folder; see [`rls_ta_customer`](#rls_ta_customersqlx--ta-customer-access-who-sees-which-customer).
+> TA customer access and TA sales access are also built in this folder; see [`rls_ta_customer`](#rls_ta_customersqlx--ta-customer-access-who-sees-which-customer)
+> and [`rls_ta_sale`](#rls_ta_salesqlx--ta-sales-access-who-sees-which-sales).
 > 1. **`deb_address_data.sqlx`** — AI-powered Thai address parsing, gated on CDC so only
 >    *changed* addresses are re-parsed each day. Writes to `process_dataset.deb_address_data`;
 >    the companion view `process_dataset.view_deb_address_data` is what `fact_transcation`
@@ -240,3 +241,20 @@ Precomputed customer access for the TA app (via Pub/Sub later) and the AI Adviso
 The authoritative [table contract](../../okf/process/rls_ta_customer.md) owns the schema,
 refresh cadence, grant expansion rules and safe mart filtering example. This table
 is separate from the Customer360 / Power BI access map described above.
+
+---
+
+## `rls_ta_sale.sqlx` — TA sales access (who sees which sales)
+
+Precomputed sales access for the TA AI Assistant, counted by seller: a sales line of
+`fact_view.view_fact_transcation` belongs to its seller (`SaleRepSKLast`) and to the
+section, region and division reached through `ChangeSectionSKLast`, the same path
+Power BI uses. TA (the department level) sees own sales; section, region and division
+managers see their own unit. Each seat expands through `view_dim_company` to every
+physical `CompanyID` sharing its `CompanyReportID`, so both `ag01` and `ab01` seats
+grant both companies. Special-access exceptions map onto the same columns, with
+`ALL` where unrestricted; only exceptions grant company-wide access. Key = `employee_id`, never email.
+The authoritative [table contract](../../okf/process/rls_ta_sale.md) owns the schema,
+the code each column carries, the grant rules and the `EXISTS` matching rule. It is
+built from the same org center tables as `rls_ta_customer` and rebuilt nightly
+(`dimension_daily`).

@@ -1,0 +1,146 @@
+config {
+    type: "table",
+    schema: databuffet.PROCESS_DATASET,
+    dependencies: [
+                    "org_center_unit", "org_center_member",
+                    "org_center_exception", "dim_company"
+                  ],
+    tags: [databuffet.TAG_DIM_DAILY],
+    uniqueKey: ["employee_id", "company_id", "director_id", "region_id", "section_id", "sale_employee_id", "marketing_group_id", "sub_marketing_id", "segment_id"],
+    bigquery: {
+        clusterBy: ["employee_id", "company_id"]
+    },
+}
+
+js {
+    const OrgCenterUnitTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_unit`;
+    const OrgCenterMemberTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_member`;
+    const OrgCenterExceptionTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_exception`;
+    // view อ่านได้ทันทีหลัง dim_company รันเสร็จ (กฎ Run order: dependencies ใส่ตารางหลัง view)
+    const ViewDimCompanyTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_VIEW}.view_dim_company`;
+}
+
+-- 1 แถว = คนที่ดู (employee_id) x บริษัท x ขอบเขตผู้ขาย (ฝ่าย/ภาค/ส่วน/TA ผู้ขาย หรือ 'ALL') x ขอบเขตสินค้า (กลุ่ม/กลุ่มย่อย/segment หรือ 'ALL') ณ วันนี้ (Asia/Bangkok)
+-- นับยอดขายตามคนขาย: รหัสทุกช่องเป็นรหัสที่บรรทัดขายมีจริง (ฝ่าย = DirectorID, ภาค = SubRegionID, ส่วน = SectionID, ผู้ขาย = EmployeeID)
+-- unit/member ใช้เฉพาะแถวที่ BETWEEN valid_from AND valid_to วันนี้
+-- กฎกรองบรรทัดขายและตัวอย่าง EXISTS: document/okf/process/rls_ta_sale.md#examples
+WITH today AS (
+  SELECT CURRENT_DATE('Asia/Bangkok') AS d
+
+), unit AS (
+  SELECT u.*
+  FROM `${OrgCenterUnitTableRef}` AS u, today
+  WHERE today.d BETWEEN u.valid_from AND u.valid_to
+
+), member AS (
+  SELECT m.*
+  FROM `${OrgCenterMemberTableRef}` AS m, today
+  WHERE today.d BETWEEN m.valid_from AND m.valid_to
+    AND m.employee_id IS NOT NULL
+
+), org_grant AS (
+  -- TA (= ระดับ Department) เห็นยอดที่ตัวเองขาย · ผู้จัดการเห็นทั้งหน่วยของตัวเอง (หน่วยต้องมีผลวันนี้)
+  SELECT DISTINCT
+    m.employee_id,
+    c.CompanyID AS company_id,
+    IF(m.position_code = 'DIRECTOR', u.unit_code, 'ALL') AS director_id,
+    IF(m.position_code = 'REGION_MGR', u.unit_code, 'ALL') AS region_id,
+    IF(m.position_code = 'SECTION_MGR', u.unit_code, 'ALL') AS section_id,
+    IF(m.position_code = 'TA', m.employee_id, 'ALL') AS sale_employee_id,
+    m.position_code AS access_source
+  FROM member AS m
+  JOIN `${ViewDimCompanyTableRef}` AS seat_company
+    ON seat_company.CompanyID = m.company_id
+  JOIN `${ViewDimCompanyTableRef}` AS c
+    ON c.CompanyReportID = seat_company.CompanyReportID
+  LEFT JOIN unit AS u
+    ON u.company_id = m.company_id AND u.unit_id = m.unit_id
+  WHERE m.position_code = 'TA'
+    OR (m.position_code IN ('SECTION_MGR', 'REGION_MGR', 'DIRECTOR') AND u.unit_id IS NOT NULL)
+
+), exception_normalized AS (
+  SELECT e.* REPLACE (
+    IF(UPPER(e.company_code) = 'ALL', 'ALL', e.company_code) AS company_code,
+    IF(UPPER(e.marketing_group_id) = 'ALL', 'ALL', e.marketing_group_id) AS marketing_group_id,
+    IF(UPPER(e.sub_marketing_id) = 'ALL', 'ALL', e.sub_marketing_id) AS sub_marketing_id,
+    IF(UPPER(e.segment_id) = 'ALL', 'ALL', e.segment_id) AS segment_id,
+    ARRAY(SELECT IF(UPPER(code) = 'ALL', 'ALL', code) FROM UNNEST(e.director_codes) AS code WITH OFFSET o ORDER BY o) AS director_codes,
+    ARRAY(SELECT IF(UPPER(code) = 'ALL', 'ALL', code) FROM UNNEST(e.region_codes) AS code WITH OFFSET o ORDER BY o) AS region_codes,
+    ARRAY(SELECT IF(UPPER(code) = 'ALL', 'ALL', code) FROM UNNEST(e.section_codes) AS code WITH OFFSET o ORDER BY o) AS section_codes
+  )
+  FROM `${OrgCenterExceptionTableRef}` AS e
+
+), exception_company AS (
+  -- สิทธิ์พิเศษ: company_code มาจาก companyreport ของ MDS = CompanyReportID (ag01 รวม ab01) · 'ALL' = ทุกบริษัท
+  -- แตกเป็น CompanyID ทุกตัวที่อยู่ใต้รหัสนั้น · ข้ามแถวที่ไม่มี employee_id
+  SELECT e.*, c.CompanyID AS company_id
+  FROM exception_normalized AS e
+  JOIN `${ViewDimCompanyTableRef}` AS c
+    ON UPPER(e.company_code) IN ('ALL', UPPER(c.CompanyReportID), UPPER(c.CompanyID))
+  WHERE e.employee_id IS NOT NULL
+
+), exception_grant AS (
+  -- 1 แถวต่อ ฝ่าย x ภาค x ส่วน ที่ระบุ · ไม่จำกัดผู้ขาย (คอลัมน์ department ของ MDS ไม่ใช้ เหมือน Power BI)
+  -- ภาคในสิทธิ์พิเศษเป็น RegionID (PS1) แต่บรรทัดขายมี SubRegionID (PS1-1..PS1-5): แปลงเป็นภาคย่อยทุกภาคของบริษัทนั้น · รหัสที่ไม่ตรงหน่วยไหนเก็บตามเดิม
+  SELECT DISTINCT
+    e.employee_id,
+    e.company_id,
+    director_id,
+    IFNULL(u.unit_code, region_code) AS region_id,
+    section_id,
+    'ALL' AS sale_employee_id,
+    e.marketing_group_id,
+    e.sub_marketing_id,
+    e.segment_id
+  FROM exception_company AS e
+  CROSS JOIN UNNEST(e.director_codes) AS director_id
+  CROSS JOIN UNNEST(e.region_codes) AS region_code
+  CROSS JOIN UNNEST(e.section_codes) AS section_id
+  LEFT JOIN unit AS u
+    ON u.company_id = e.company_id
+   AND u.unit_level = 'REGION'
+   AND region_code != 'ALL'
+   AND region_code IN (u.region_code, u.unit_code)
+
+), all_grant AS (
+  SELECT
+    employee_id,
+    company_id,
+    director_id,
+    region_id,
+    section_id,
+    sale_employee_id,
+    'ALL' AS marketing_group_id,
+    'ALL' AS sub_marketing_id,
+    'ALL' AS segment_id,
+    access_source
+  FROM org_grant
+
+  UNION ALL
+  SELECT
+    employee_id,
+    company_id,
+    director_id,
+    region_id,
+    section_id,
+    sale_employee_id,
+    marketing_group_id,
+    sub_marketing_id,
+    segment_id,
+    'EXCEPTION' AS access_source
+  FROM exception_grant
+)
+  SELECT
+    employee_id,
+    company_id,
+    director_id,
+    region_id,
+    section_id,
+    sale_employee_id,
+    marketing_group_id,
+    sub_marketing_id,
+    segment_id,
+    -- ได้สิทธิ์หลายทาง: เก็บทางแรกตามลำดับ TA, SECTION_MGR, REGION_MGR, DIRECTOR, EXCEPTION
+    ARRAY_AGG(access_source ORDER BY CASE access_source WHEN 'TA' THEN 1 WHEN 'SECTION_MGR' THEN 2 WHEN 'REGION_MGR' THEN 3 WHEN 'DIRECTOR' THEN 4 ELSE 5 END LIMIT 1)[OFFSET(0)] AS access_source
+  FROM all_grant
+  GROUP BY employee_id, company_id, director_id, region_id, section_id, sale_employee_id, marketing_group_id, sub_marketing_id, segment_id
