@@ -5,8 +5,8 @@
 > source of **who sits in which unit and position, TA customer portfolios, and special access exceptions**; Power BI RLS, the TA app and other
 > systems build their own access rules from it later. All seven tables are `type: "table"`,
 > tag `dimension_daily`, rebuilt every night (`org_center_unit` and `org_center_member` after
-> `update_sk_sale_rep_group`; `org_center_person` after `org_center_member`). `org_center_link` (PC → TA) reads
-> `mds_dataset.mds_data_pc_ta` and has 0 rows while that MDS table is empty.
+> `update_sk_sale_rep_group`; `org_center_person` after `org_center_member`). For PC → TA assignments, see the
+> [table contract](../../okf/org_center/org_center_link.md).
 > For TA customer portfolios, see the [table contract](../../okf/org_center/org_center_customer_ta.md).
 > They carry **business codes, not SKs**, so consumers can keep them across days.
 
@@ -18,7 +18,7 @@
 | `org_center_unit.sqlx` | table | 1 row = 1 unit (company / division / region / section) |
 | `org_center_member.sqlx` | table | 1 row = 1 person in one position at one unit for a date range |
 | `org_center_person.sqlx` | table | 1 row = 1 person (across companies), built from `org_center_member` |
-| `org_center_link.sqlx` | table | 1 row = 1 PC linked to 1 TA at 1 branch for a date range, from `mds_data_pc_ta` (0 rows while MDS is empty) |
+| `org_center_link.sqlx` | table | PC-to-TA assignments — [table contract](../../okf/org_center/org_center_link.md) |
 | `org_center_customer_ta.sqlx` | table | TA customer portfolios — [table contract](../../okf/org_center/org_center_customer_ta.md) |
 | `org_center_exception.sqlx` | table | 1 row = 1 person x company x product scope of a special access exception, from `mds_data_org_rls_special` (see [`org_center_exception`](#org_center_exception)) |
 | `org_center_flags.sqlx` | table | 1 row = 1 data-quality problem; checked tables and MDS sources are listed in the [flags card](../../okf/org_center/org_center_flags.md#how-it-is-built) (rules below under [`org_center_flags`](#org_center_flags)) |
@@ -166,27 +166,7 @@ Checks before the first build (2026-10-29, read-only SELECT): 206 rows = 206 dis
 
 ## `org_center_link`
 
-Key: `company_id` + `pc_employee_id` + `branch_type` + `branch_code` + `valid_from` (the MDS key). Mirrors the
-TA app's `member_links` with `link_type = 'PC_TA'`: from = PC, to = TA, site = `branch_code`.
-
-Rows = `mds_dataset.mds_data_pc_ta` with `is_active = TRUE`, values **as entered** (no trim, case change,
-dedupe or filtering of unknown codes; wrong codes are fixed in MDS, not here). **0 rows while the MDS table is
-empty.**
-
-| Column | Type | Source |
-|---|---|---|
-| `company_id` | STRING | `companyID` |
-| `link_type` | STRING | always `PC_TA` |
-| `pc_employee_id` | STRING | `PCEmployeeID` |
-| `pc_type` | STRING | `mds_data_mdt_sales_pc_master.employee_type`: NULL or empty string → `PC_MDT`, `พันธมิตร` → `PC_AGENT`; other value or PC not in the active master → NULL; master row selected as described under PC member rows |
-| `branch_code` | STRING | `BranchCode` |
-| `branch_type` | STRING | `BranchType` |
-| `ta_employee_id` | STRING | `TAEmployeeID` |
-| `valid_from` / `valid_to` | DATE | `StartDate` / `EndDate`; `EndDate` is the first day the TA is **no longer** responsible (exclusive); empty = `2066-12-31` |
-| `company_name` | STRING | `dim_company.CompanyNameTH` by `company_id` |
-
-Source rule (checked by the MDS team on load): one valid row per
-`(companyID, PCEmployeeID, BranchType, BranchCode)` per day — periods never overlap.
+See the [table card](../../okf/org_center/org_center_link.md) for the source, grain, schema, pass-through and overlap constraints, rebuild behavior and date-filter example.
 
 ## `org_center_customer_ta`
 
@@ -232,7 +212,7 @@ LINE UUID (comes from the app login), "more than 1 current team assignment" (a T
 Checks before the CEO/company-level change (2026-10-30, read-only SELECT of the compiled queries against the live tables): units
 164 = 164 and members 604 = 604 with zero differing rows on the old columns; `plan_code` / `company_name` never NULL;
 flags returned 2 rows, both `UNIT_NO_MANAGER` (`ag01` `REG-Other`, `ag01` `SEC-PS1-5`). The link and phone rules returned 0 because
-`mds_data_pc_ta` and `mds_data_employee_info` are still empty.
+`mds_data_pc_ta` (the PC assignment source at that time) and `mds_data_employee_info` were empty.
 
 COMPANY units are excluded from `UNIT_NO_MANAGER`; missing CEOs are covered by `COMPANY_NO_CEO`. With current empty CEO values, the expected result after this change is 169 units (164 existing + 5 COMPANY), 604 members, 206 people, and only 5 additional flags, all `COMPANY_NO_CEO`.
 

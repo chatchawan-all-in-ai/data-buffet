@@ -15,7 +15,7 @@ js {
     const MdsDataPcTaTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
-        name: "mds_data_pc_ta",
+        name: "mds_data_ta_pc",
     };
     const MdsDataPcTaTableRef = `${MdsDataPcTaTable.database}.${MdsDataPcTaTable.schema}.${MdsDataPcTaTable.name}`;
 

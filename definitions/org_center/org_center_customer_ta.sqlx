@@ -15,7 +15,7 @@ js {
     const MdsDataCustomerTaTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
-        name: "mds_data_customer_ta",
+        name: "mds_data_ta_customer",
     };
     const MdsDataCustomerTaTableRef = `${MdsDataCustomerTaTable.database}.${MdsDataCustomerTaTable.schema}.${MdsDataCustomerTaTable.name}`;
 }

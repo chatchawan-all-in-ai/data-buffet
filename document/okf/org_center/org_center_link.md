@@ -20,17 +20,17 @@ status: draft
 
 # What it is
 
-PC-to-TA assignment table of the org center (the TA app's member_links with link_type 'PC_TA'): from = PC (promoter, employee type MDT or partner agent), to = TA, site = branch. Rows mirror mds_dataset.mds_data_pc_ta (active rows) as entered. [org_center_member](/org_center/org_center_member.md) uses it to create the PC_MDT and PC_AGENT member rows, and [org_center_flags](/org_center/org_center_flags.md) checks it. The table currently has 0 rows (the MDS source table is empty).
+PC-to-TA assignment table of the org center (the TA app's member_links with link_type 'PC_TA'): from = PC (promoter, employee type MDT or partner agent), to = TA, site = branch. Rows mirror the source listed under How it is built (active rows) as entered. [org_center_member](/org_center/org_center_member.md) uses it to create the PC_MDT and PC_AGENT member rows, and [org_center_flags](/org_center/org_center_flags.md) checks it.
 
 # Grain and key
 
-One row per `company_id` + `pc_employee_id` + `branch_type` + `branch_code` + `valid_from` (the MDS key; the MDS team guarantees one valid row per (company, PC, branch type, branch) per day, so periods do not overlap). Values are passed through untouched: no trim, no case change, no filtering of unknown codes (wrong codes are fixed in MDS).
+One row per `company_id` + `pc_employee_id` + `branch_type` + `branch_code` + `valid_from` (the MDS key; the MDS team guarantees one valid row per (company, PC, branch type, branch) per day, so periods do not overlap). Values are passed through untouched: no trim, no case change, no deduplication, no filtering of unknown codes (wrong codes are fixed in MDS).
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (companyID of mds_data_pc_ta). |
+| `company_id` | STRING | Company code (`companyID` of the assignment source). |
 | `link_type` | STRING | Constant 'PC_TA'. |
 | `pc_employee_id` | STRING | PC employee code (PCEmployeeID). |
 | `pc_type` | STRING | PC type from the active mds_data_mdt_sales_pc_master row (latest end_date, start_date, updated_at, lowest id): NULL or empty employee_type gives PC_MDT, 'พันธมิตร' gives PC_AGENT; any other value, or a PC missing from the active master, gives NULL. |
@@ -46,8 +46,8 @@ One row per `company_id` + `pc_employee_id` + `branch_type` + `branch_code` + `v
 - Definition: `definitions/org_center/org_center_link.sqlx` (`type: "table"`, tags `dimension_daily`).
 - `uniqueKey`: `company_id`, `pc_employee_id`, `branch_type`, `branch_code`, `valid_from`.
 - Storage options: `{"clusterBy": ["company_id", "pc_employee_id"]}`.
-- Reads: `mds_dataset.mds_data_mdt_sales_pc_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md), `mds_dataset.mds_data_pc_ta` (master data loaded outside this repo).
-- Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Depends on `org_center_schema` and `dim_company`; reads mds_data_pc_ta and mds_data_mdt_sales_pc_master (master data loaded outside this repo). 0 rows while the MDS table is empty.
+- Reads: `mds_dataset.mds_data_mdt_sales_pc_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md), `mds_dataset.mds_data_ta_pc` (master data loaded outside this repo).
+- Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Depends on `org_center_schema` and `dim_company`.
 - Approximate size (BigQuery metadata, 2026-10-31): 0 rows, 0 B.
 
 # Examples

@@ -168,7 +168,7 @@ WITH today AS (
 ), link_pc AS (
   SELECT l.company_id, 'LINK' AS entity,
          TO_JSON_STRING([l.company_id, l.pc_employee_id, l.branch_type, l.branch_code, CAST(l.valid_from AS STRING)]) AS entity_key,
-         'PC_TA_UNKNOWN_PC' AS rule_code, 'PC ใน mds_data_pc_ta ไม่มีใน mds_data_mdt_sales_pc_master' AS rule_description
+         'PC_TA_UNKNOWN_PC' AS rule_code, 'PC ใน mds_data_ta_pc ไม่มีใน mds_data_mdt_sales_pc_master' AS rule_description
   FROM `${OrgCenterLinkTableRef}` AS l
   WHERE NOT EXISTS (
     SELECT 1
@@ -180,7 +180,7 @@ WITH today AS (
 ), link_ta AS (
   SELECT l.company_id, 'LINK' AS entity,
          TO_JSON_STRING([l.company_id, l.pc_employee_id, l.branch_type, l.branch_code, CAST(l.valid_from AS STRING)]) AS entity_key,
-         'PC_TA_UNKNOWN_TA' AS rule_code, 'TA ใน mds_data_pc_ta ไม่มีตำแหน่ง TA ของบริษัทเดียวกันใน org_center_member' AS rule_description
+         'PC_TA_UNKNOWN_TA' AS rule_code, 'TA ใน mds_data_ta_pc ไม่มีตำแหน่ง TA ของบริษัทเดียวกันใน org_center_member' AS rule_description
   FROM `${OrgCenterLinkTableRef}` AS l
   WHERE NOT EXISTS (
     SELECT 1
@@ -194,7 +194,7 @@ WITH today AS (
   -- branch master มีเฉพาะสาขา MDT จึงตรวจเฉพาะ PC ของ MDT
   SELECT l.company_id, 'LINK' AS entity,
          TO_JSON_STRING([l.company_id, l.pc_employee_id, l.branch_type, l.branch_code, CAST(l.valid_from AS STRING)]) AS entity_key,
-         'PC_TA_UNKNOWN_BRANCH' AS rule_code, 'สาขาของ PC MDT ใน mds_data_pc_ta ไม่มีใน mds_data_mdt_sales_branch_master' AS rule_description
+         'PC_TA_UNKNOWN_BRANCH' AS rule_code, 'สาขาของ PC MDT ใน mds_data_ta_pc ไม่มีใน mds_data_mdt_sales_branch_master' AS rule_description
   FROM `${OrgCenterLinkTableRef}` AS l
   WHERE l.pc_type = 'PC_MDT'
     AND NOT EXISTS (

@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-Customer portfolio of each TA: which customer (by company and customer code) a TA is responsible for, with the share of the customer and the date range. Rows mirror the active rows of mds_dataset.mds_data_customer_ta.
+Customer portfolio of each TA: which customer (by company and customer code) a TA is responsible for, with the share of the customer and the date range. Rows mirror the active rows of the source listed under How it is built.
 
 # Grain and key
 
@@ -37,15 +37,15 @@ One row per `company_id` + `customer_code` + `ta_employee_id` + `valid_from` (th
 | `valid_from` | DATE | StartDate of the assignment. |
 | `valid_to` | DATE | EndDate of the assignment, EXCLUSIVE (the first day the TA is no longer responsible); empty EndDate becomes 2066-12-31. |
 | `customer_name` | STRING | Customer name as entered in MDS (CustomerName), trimmed; empty becomes NULL. |
-| `source_row_id` | STRING | `id` of the MDS row, for tracing back to mds_data_customer_ta. |
+| `source_row_id` | STRING | `id` of the MDS row, for tracing back to the portfolio source. |
 
 # How it is built
 
 - Definition: `definitions/org_center/org_center_customer_ta.sqlx`.
 - `uniqueKey`: the four columns listed under Grain and key.
 - Storage options: `{"clusterBy": ["company_id", "customer_code"]}`.
-- Reads: `mds_dataset.mds_data_customer_ta` (master data loaded outside this repo), active rows only (`is_active = TRUE`).
-- Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Depends on `org_center_schema`. 0 rows while the MDS table is empty.
+- Reads: `mds_dataset.mds_data_ta_customer` (master data loaded outside this repo), active rows only (`is_active = TRUE`).
+- Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Depends on `org_center_schema`.
 
 # Examples
 
