@@ -3,7 +3,7 @@ config {
     schema: databuffet.ORG_CENTER,
     dependencies: [
                     "org_center_schema",
-                    "org_center_unit", "org_center_member", "org_center_person", "org_center_link"
+                    "org_center_unit", "org_center_member", "org_center_person", "org_center_link", "org_center_exception"
                   ],
     tags: [databuffet.TAG_DIM_DAILY],
     bigquery: {
@@ -39,6 +39,13 @@ js {
         name: "org_center_link",
     };
     const OrgCenterLinkTableRef = `${OrgCenterLinkTable.database}.${OrgCenterLinkTable.schema}.${OrgCenterLinkTable.name}`;
+
+    const OrgCenterExceptionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.ORG_CENTER,
+        name: "org_center_exception",
+    };
+    const OrgCenterExceptionTableRef = `${OrgCenterExceptionTable.database}.${OrgCenterExceptionTable.schema}.${OrgCenterExceptionTable.name}`;
 
     const MdsDataCompanyMasterTable = {
         database: databuffet.DATABASE,
@@ -215,6 +222,13 @@ WITH today AS (
       AND (a.valid_from, a.ta_employee_id) != (b.valid_from, b.ta_employee_id)
   )
 
+), exception_no_employee AS (
+  SELECT e.company_code AS company_id, 'EXCEPTION' AS entity,
+         TO_JSON_STRING([e.source_row_id, e.company_code, e.marketing_group_id, e.sub_marketing_id, e.segment_id]) AS entity_key,
+         'EXCEPTION_NO_EMPLOYEE' AS rule_code, 'แถวสิทธิ์พิเศษใน org_center_exception ไม่มี employee_id' AS rule_description
+  FROM `${OrgCenterExceptionTableRef}` AS e
+  WHERE e.employee_id IS NULL
+
 ), phone_format AS (
   -- เบอร์เก็บตามที่กรอก ไม่แก้ · รูปแบบที่รับ 0xx-xxx-xxxx หรือ +66
   SELECT CAST(NULL AS STRING) AS company_id, 'PERSON' AS entity, TO_JSON_STRING([employee_id]) AS entity_key,
@@ -245,6 +259,7 @@ WITH today AS (
   UNION ALL SELECT * FROM link_ta
   UNION ALL SELECT * FROM link_branch
   UNION ALL SELECT * FROM link_overlap
+  UNION ALL SELECT * FROM exception_no_employee
   UNION ALL SELECT * FROM phone_format
   UNION ALL SELECT * FROM phone_dup
 

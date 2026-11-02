@@ -1,0 +1,81 @@
+config {
+    type: "table",
+    schema: databuffet.ORG_CENTER,
+    dependencies: [
+                    "org_center_schema"
+                  ],
+    tags: [databuffet.TAG_DIM_DAILY],
+    uniqueKey: ["source_row_id", "company_code", "marketing_group_id", "sub_marketing_id", "segment_id"],
+    bigquery: {
+        clusterBy: ["employee_id", "company_code"]
+    },
+}
+
+js {
+    const MdsDataOrgRlsSpecialTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_org_rls_special",
+    };
+    const MdsDataOrgRlsSpecialTableRef = `${MdsDataOrgRlsSpecialTable.database}.${MdsDataOrgRlsSpecialTable.schema}.${MdsDataOrgRlsSpecialTable.name}`;
+
+    // 'a|b|c' -> ARRAY ['a','b','c'] (trim แต่ละตัว ตัดตัวว่างทิ้ง) · ว่างทั้งช่อง = ['ALL']
+    const toCodeArray = (col) => `IF(
+      ARRAY_LENGTH(ARRAY(SELECT t FROM UNNEST(SPLIT(${col}, '|')) AS e, UNNEST([NULLIF(TRIM(e), '')]) AS t WHERE t IS NOT NULL)) = 0,
+      ['ALL'],
+      ARRAY(SELECT t FROM UNNEST(SPLIT(${col}, '|')) AS e WITH OFFSET o, UNNEST([NULLIF(TRIM(e), '')]) AS t WHERE t IS NOT NULL ORDER BY o)
+    )`;
+}
+
+-- 1 แถว = คน 1 คน x บริษัท x ขอบเขตสินค้า 1 ชุด (กลุ่ม + กลุ่มย่อย + segment) จากสิทธิ์พิเศษใน MDS
+-- 'ALL' = ไม่จำกัด · ค่าว่างใน MDS = 'ALL' · แยก '|' และจับคู่กลุ่ม/กลุ่มย่อย/segment ตามตำแหน่งเหมือน view_rls_special_data · ไม่ใช้คอลัมน์ department
+-- input = output: แถวที่ไม่มี employeeid ยังอยู่ครบ (employee_id = NULL) · org_center_flags รายงานแถวเหล่านี้
+WITH mds_data AS (
+  SELECT
+    id AS source_row_id,
+    ${databuffet.functionData.cleanString("employeeid")} AS employee_id,
+    IFNULL(${databuffet.functionData.cleanString("companyreport")}, 'ALL') AS company,
+    IFNULL(${databuffet.functionData.cleanString("director")}, 'ALL') AS director,
+    IFNULL(${databuffet.functionData.cleanString("region")}, 'ALL') AS region,
+    IFNULL(${databuffet.functionData.cleanString("section")}, 'ALL') AS section,
+    IFNULL(${databuffet.functionData.cleanString("mktgroupid")}, 'ALL') AS mkt_group,
+    IFNULL(${databuffet.functionData.cleanString("mktsubgroupid")}, 'ALL') AS mkt_sub_group,
+    IFNULL(${databuffet.functionData.cleanString("mktsegmentid")}, 'ALL') AS mkt_segment,
+    IFNULL(flagcustomer, FALSE) AS flag_customer
+  FROM `${MdsDataOrgRlsSpecialTableRef}`
+  WHERE is_active = TRUE
+
+), mds_arrays AS (
+  SELECT
+    *,
+    SPLIT(mkt_group, '|') AS g,
+    SPLIT(mkt_sub_group, '|') AS sub,
+    SPLIT(mkt_segment, '|') AS seg
+  FROM mds_data
+
+), mds_indexed AS (
+  SELECT
+    *,
+    GREATEST(ARRAY_LENGTH(g), ARRAY_LENGTH(sub), ARRAY_LENGTH(seg)) AS max_len
+  FROM mds_arrays
+)
+  SELECT
+    employee_id,
+    IFNULL(NULLIF(TRIM(company_value), ''), 'ALL') AS company_code,
+    ${toCodeArray("director")} AS director_codes,
+    ${toCodeArray("region")} AS region_codes,
+    ${toCodeArray("section")} AS section_codes,
+    IFNULL(NULLIF(TRIM(COALESCE(g[SAFE_OFFSET(idx)], g[SAFE_OFFSET(0)])), ''), 'ALL') AS marketing_group_id,
+    IFNULL(NULLIF(TRIM(COALESCE(sub[SAFE_OFFSET(idx)], sub[SAFE_OFFSET(0)])), ''), 'ALL') AS sub_marketing_id,
+    IFNULL(NULLIF(TRIM(COALESCE(seg[SAFE_OFFSET(idx)], seg[SAFE_OFFSET(0)])), ''), 'ALL') AS segment_id,
+    flag_customer,
+    source_row_id
+  FROM mds_indexed,
+  UNNEST(SPLIT(company, '|')) AS company_value,
+  UNNEST(GENERATE_ARRAY(0, max_len - 1)) AS idx
+
+pre_operations {
+}
+
+post_operations {
+}

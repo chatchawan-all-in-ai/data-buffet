@@ -1,9 +1,9 @@
-# Org Center — `org_center_unit` / `org_center_member` / `org_center_person` / `org_center_link` / `org_center_customer_ta` / `org_center_flags`
+# Org Center — `org_center_unit` / `org_center_member` / `org_center_person` / `org_center_link` / `org_center_customer_ta` / `org_center_exception` / `org_center_flags`
 
 > **LLM context**: Dataset `org_center` (`databuffet.ORG_CENTER`), folder
 > `definitions/org_center/`, added 2026-10-29 for the TA AI Assistant. It is the single
-> source of **who sits in which unit and position, and TA customer portfolios**; Power BI RLS, the TA app and other
-> systems build their own access rules from it later. All six tables are `type: "table"`,
+> source of **who sits in which unit and position, TA customer portfolios, and special access exceptions**; Power BI RLS, the TA app and other
+> systems build their own access rules from it later. All seven tables are `type: "table"`,
 > tag `dimension_daily`, rebuilt every night (`org_center_unit` and `org_center_member` after
 > `update_sk_sale_rep_group`; `org_center_person` after `org_center_member`). `org_center_link` (PC → TA) reads
 > `mds_dataset.mds_data_pc_ta` and has 0 rows while that MDS table is empty.
@@ -20,14 +20,15 @@
 | `org_center_person.sqlx` | table | 1 row = 1 person (across companies), built from `org_center_member` |
 | `org_center_link.sqlx` | table | 1 row = 1 PC linked to 1 TA at 1 branch for a date range, from `mds_data_pc_ta` (0 rows while MDS is empty) |
 | `org_center_customer_ta.sqlx` | table | TA customer portfolios — [table contract](../../okf/org_center/org_center_customer_ta.md) |
-| `org_center_flags.sqlx` | table | 1 row = 1 data-quality problem found in `org_center_unit`, `org_center_member`, `org_center_person`, `org_center_link` or their MDS sources (see [`org_center_flags`](#org_center_flags)) |
+| `org_center_exception.sqlx` | table | 1 row = 1 person x company x product scope of a special access exception, from `mds_data_org_rls_special` (see [`org_center_exception`](#org_center_exception)) |
+| `org_center_flags.sqlx` | table | 1 row = 1 data-quality problem; checked tables and MDS sources are listed in the [flags card](../../okf/org_center/org_center_flags.md#how-it-is-built) (rules below under [`org_center_flags`](#org_center_flags)) |
 
 `org_center_unit` and `org_center_member` depend on `org_center_schema`, the `dim_*_last` tables they read, and
 `update_sk_sale_rep_group` — the `_last` tables are built with NULL `DirectorSK` /
 `RegionSK` / `SectionSK`, and that step fills them
 ([special-cases](../dimension/special-cases.md#update_sk_sale_rep_group--imperative-update-step)).
 `org_center_person` depends on `org_center_schema` and `org_center_member` only.
-`org_center_link` depends on `org_center_schema` and `dim_company`. `org_center_unit`, `org_center_member` also depend on `dim_company` (company name). `org_center_flags` depends on `org_center_unit`, `org_center_member`, `org_center_person` and `org_center_link`. `org_center_member` also depends on `org_center_link` (PC rows).
+`org_center_link` depends on `org_center_schema` and `dim_company`. `org_center_unit`, `org_center_member` also depend on `dim_company` (company name). Exception and flags build dependencies are listed in their [exception](../../okf/org_center/org_center_exception.md#how-it-is-built) and [flags](../../okf/org_center/org_center_flags.md#how-it-is-built) cards. `org_center_member` also depends on `org_center_link` (PC rows).
 
 ## Org levels (4)
 
@@ -191,6 +192,12 @@ Source rule (checked by the MDS team on load): one valid row per
 
 See the [table card](../../okf/org_center/org_center_customer_ta.md) for the source, grain, schema, rebuild behavior and date-filter example.
 
+## `org_center_exception`
+
+The [OKF card](../../okf/org_center/org_center_exception.md) owns the grain, schema, source filtering, list expansion and rebuild contract. Missing-employee checks are described under [`org_center_flags`](#org_center_flags).
+
+Checked read-only on 2026-11-01: 26 active source rows give 37 rows (rows with a `|` list expand: `1067315` 6, `1045001` 4, `1046005`/`1038004`/`1053036` 2 each); 5 rows have no `employee_id`.
+
 ## `org_center_flags`
 
 1 row = 1 problem, rebuilt every night. Report only (input = output): nothing in the other tables is
@@ -201,8 +208,8 @@ LINE UUID (comes from the app login), "more than 1 current team assignment" (a T
 | Column | Type | Meaning |
 |---|---|---|
 | `company_id` | STRING | NULL for person-level rules |
-| `entity` | STRING | `UNIT` / `MEMBER` / `PERSON` / `LINK` / `COMPANY` |
-| `entity_key` | STRING | JSON array of the entity's key components, preserving NULL as JSON null (company: company_id · unit: company, unit_id · member: its 5 key columns · person: employee_id · link: its 5 key columns; dates are ISO strings) |
+| `entity` | STRING | `UNIT` / `MEMBER` / `PERSON` / `LINK` / `COMPANY` / `EXCEPTION` |
+| `entity_key` | STRING | JSON array of the entity's key components, preserving NULL as JSON null (company: company_id · unit: company, unit_id · member: its 5 key columns · person: employee_id · link: its 5 key columns · exception: source_row_id, company_code, marketing_group_id, sub_marketing_id, segment_id; dates are ISO strings) |
 | `rule_code` | STRING | see below |
 | `rule_description` | STRING | Thai description |
 
@@ -218,6 +225,7 @@ LINE UUID (comes from the app login), "more than 1 current team assignment" (a T
 | `PC_TA_UNKNOWN_TA` | LINK | `ta_employee_id` has no `TA` member row in that company |
 | `PC_TA_UNKNOWN_BRANCH` | LINK | `PC_MDT` link whose `branch_code` is not in active `mds_data_mdt_sales_branch_master` (the master is MDT only) |
 | `PC_TA_OVERLAP` | LINK | another row of the same company + PC + `branch_type` + `branch_code` overlaps in `[valid_from, valid_to)` with different TAs or start dates — one flag per affected link row, regardless of how many counterparts overlap |
+| `EXCEPTION_NO_EMPLOYEE` | EXCEPTION | a row of `org_center_exception` has no `employee_id`; one flag per expanded company and product scope |
 | `PHONE_FORMAT` | PERSON | non-NULL `mobile_phone` matches neither `0xx-xxx-xxxx` nor `+66` followed by 1–2 digits, 3 digits, and 4 digits, with an optional space or hyphen between each group (including after `+66`) |
 | `PHONE_DUPLICATE` | PERSON | the same `mobile_phone` belongs to more than one person |
 

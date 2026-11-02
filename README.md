@@ -75,7 +75,7 @@ JavaScript-generated actions are outside that diagram's scope.
 | **View** | `definitions/view/` | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset`, `pub_sub` (Pub/Sub export views) |
 | **CDC** | `definitions/cdc/` | Config-driven change log over validated tables |
 | **Pub/Sub** | `definitions/pub_sub/` | `pub_sub_schema` creates the `pub_sub` dataset; future shaping tables before Pub/Sub (export views live in `definitions/view/pub_sub/`) |
-| **Org center** | `definitions/org_center/` | Who sits in which unit and position, plus TA customer portfolios, rebuilt nightly (`dimension_daily`); see the [Org Center reference](document/project_wiki/org_center/org-center.md) for tables, sources, PC → TA links, plan codes, company names, and data-quality flags |
+| **Org center** | `definitions/org_center/` | Who sits in which unit and position, plus TA customer portfolios and special access exceptions, rebuilt nightly (`dimension_daily`); see the [Org Center reference](document/project_wiki/org_center/org-center.md) for tables, sources, PC → TA links, plan codes, company names, and data-quality flags |
 | **Process** | `definitions/process/` | AI address parsing + row-level security (`rls_customer360`) + [Pub/Sub export pilot](document/project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
 
 The Pub/Sub pilot covers `dim_company`: Dataform objects here, plus the publishing
