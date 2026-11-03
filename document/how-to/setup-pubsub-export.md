@@ -530,9 +530,8 @@ serialize ทุกการเขียนต่อ `(table, primary_key)` เ�
 (SA `sa-pull-tf-prd`) · วิธี key (SA ฝั่งเรา) จึง **ไม่ใส่ `--team-sa`**:
 
 1. รัน tag `pub_sub` ตาม [ขั้น deploy](../project_wiki/cdc-process/process.md#deploy) — สร้าง 12 view,
-   เพิ่มคอลัมน์ `trigger_scheduler` (ลำดับ 7), `seeded_at` (ลำดับ 8) และเพิ่ม 12 แถว config
-   ที่ `seeded_at` เป็น NULL โดยยังไม่ seed หรือเขียนไฟล์ · ตารางที่มี sent state อยู่แล้ว เช่น
-   dim_company ตั้ง `seeded_at` จาก MIN(sent_at) โดยไม่เปลี่ยน checkpoint หรือ claim เดิม
+   และเพิ่ม 12 แถว config ที่ `seeded_at` เป็น NULL โดยยังไม่ seed หรือเขียนไฟล์ ·
+   การสร้างตาราง config และ backfill ดู [config reference](../okf/process/mart_export_config.md#how-it-is-built)
    `setup.sh` ตรวจว่ามีคอลัมน์ `task_group`, `group_claimed_at`, `recovery_started_at`, `recovery_until` และมี `task_group` ครบทุกแถวและหยุดถ้ายังไม่ได้รัน tag `pub_sub`
 2. `bash pubsub/scripts/setup.sh` — สร้าง 12 topic + dead-letter topic + record subscription, ให้สิทธิ์ publisher อ่าน 12 view
    (authorized view บน `validated_mac5` และ `dimension_table`) และ deploy job ตรวจ/job ส่งที่รู้จัก `trigger_scheduler`

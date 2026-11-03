@@ -227,8 +227,8 @@ Dataform compilation fails when one has none.
 **A new export table starts unseeded.** The config MERGE sets
 `last_invocation_id`, `last_invocation_end`, `claimed_at` and `seeded_at` to NULL.
 `seeded_at` is the durable initialization marker, independent of expiring claims.
-Tag `pub_sub` appends it (and `task_group`) after `trigger_scheduler` and backfills only this marker from
-MIN(sent_at) for tables with existing sent state, preserving dim_company's checkpoint and claim.
+Table creation and backfill behavior are described in the
+[config reference](../../okf/process/mart_export_config.md#how-it-is-built).
 Tag `pub_sub`, setup, merge and deployment never seed sent state or write first-load files.
 The publisher returns `not seeded: waiting for the first-load export` before any Dataform
 or BigQuery call for an unseeded table; it cannot advance, claim or publish that table.

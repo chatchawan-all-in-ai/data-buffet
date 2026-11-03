@@ -31,15 +31,12 @@ CREATE TABLE IF NOT EXISTS ${self()} (
   last_invocation_end TIMESTAMP,
   claimed_at TIMESTAMP,
   trigger_scheduler STRING,
-  seeded_at TIMESTAMP
+  seeded_at TIMESTAMP,
+  task_group STRING,
+  group_claimed_at TIMESTAMP,
+  recovery_started_at TIMESTAMP,
+  recovery_until TIMESTAMP
 );
--- Added after the pilot; the publisher reads columns by name.
-ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS trigger_scheduler STRING;
-ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS seeded_at TIMESTAMP;
-ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS task_group STRING;
-ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS group_claimed_at TIMESTAMP;
-ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS recovery_started_at TIMESTAMP;
-ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS recovery_until TIMESTAMP;
 
 UPDATE ${self()} AS c
 SET seeded_at = (SELECT MIN(s.sent_at) FROM ${ref("mart_sent_state")} AS s WHERE s.table_name = c.table_name)
@@ -48,7 +45,7 @@ WHERE c.seeded_at IS NULL
 
 -- MERGE: a new table is inserted; an existing row gets its task_group updated and nothing else
 -- (never topic, source_view, trigger_scheduler, last_invocation_*, claimed_at or seeded_at), so the
--- publisher's memory and every table already being sent stay as they are. The migration above
+-- publisher's memory and every table already being sent stay as they are. The UPDATE above
 -- only backfills seeded_at for tables that already have sent state.
 -- resolve() adds no dependency, so compile does not catch a config row naming a missing view;
 -- pubsub/scripts/setup.sh stops when an export view does not exist.
