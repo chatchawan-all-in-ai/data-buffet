@@ -55,6 +55,7 @@
 
     "RAW_DERP": "raw_derp",
     "VALIDATED_DERP": "validated_derp",
+    "CURATED_DERP": "curated_derp",
 
     "DIMENSION_TABLE" : "dimension_table",
     "DIMENSION_VIEW" : "dimension_view",

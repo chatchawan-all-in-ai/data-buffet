@@ -1,0 +1,64 @@
+config {
+    type: "table",
+    schema: databuffet.CURATED_DERP,
+    dependencies: ["curated_schema_derp"],
+    tags: [databuffet.TAG_CURATED],
+    bigquery: {
+        clusterBy: ["matchStatus", "mihVnos"],
+    },
+}
+
+-- rebuild ทั้งตาราง (ไม่ใช่ incremental): journal กลับรายการเข้ามาหลังวันขายได้ ยอด invoice เก่าจึงเปลี่ยนย้อนหลัง
+WITH header AS (
+    SELECT
+        journal_number,
+        description,
+        is_posted,
+        posted_datetime,
+        -- ตัวอักษรนำหน้าเป็นส่วนของเลขเอกสาร (K6910000328 ≠ 6910000328) ห้ามตัดเหลือแต่ตัวเลข
+        REGEXP_EXTRACT(description, r'^\s*((?:[A-Za-z]+(?:-[A-Za-z]+)?)?\d{6,})') AS doc_no
+    FROM ${ref(databuffet.VALIDATED_DERP, "inventory_movement_journal_headers")}
+    WHERE journal_name_id = 'IM-MAC-01'
+),
+
+entry AS (
+    SELECT
+        journal_number,
+        -SUM(cost_amount) AS journal_cost,
+        COUNT(*) AS journal_lines
+    FROM ${ref(databuffet.VALIDATED_DERP, "inventory_movement_journal_entries")}
+    GROUP BY journal_number
+),
+
+invoice AS (
+    SELECT
+        mihVnos,
+        ANY_VALUE(company_id) AS company_id,
+        ANY_VALUE(mihType) AS mihType,
+        COUNT(*) AS doc_count
+    FROM ${ref(databuffet.CURATED_MAC5, "curated_mih")}
+    GROUP BY mihVnos
+)
+
+SELECT
+    header.journal_number AS journalNumber,
+    header.description AS journalDescription,
+    header.doc_no AS docNo,
+    CASE
+        WHEN header.doc_no IS NULL THEN 'NO_DOC_NO'
+        WHEN invoice.mihVnos IS NULL THEN 'NOT_IN_MAC5'
+        WHEN invoice.doc_count > 1 THEN 'AMBIGUOUS'
+        ELSE 'MATCHED'
+    END AS matchStatus,
+    IF(invoice.doc_count = 1, invoice.company_id, NULL) AS company_id,
+    IF(invoice.doc_count = 1, invoice.mihType, NULL) AS mihType,
+    IF(invoice.doc_count = 1, invoice.mihVnos, NULL) AS mihVnos,
+    header.is_posted AS isPosted,
+    header.posted_datetime AS postedDatetime,
+    entry.journal_cost AS journalCost,
+    IFNULL(entry.journal_lines, 0) AS journalLines
+FROM header
+LEFT JOIN entry
+    ON entry.journal_number = header.journal_number
+LEFT JOIN invoice
+    ON invoice.mihVnos = header.doc_no

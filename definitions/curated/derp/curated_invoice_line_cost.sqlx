@@ -1,0 +1,73 @@
+config {
+    type: "table",
+    schema: databuffet.CURATED_DERP,
+    dependencies: ["curated_schema_derp"],
+    tags: [databuffet.TAG_CURATED],
+    bigquery: {
+        clusterBy: ["company_id", "milVnos", "milType"],
+    },
+}
+
+-- rebuild ทั้งตาราง (ไม่ใช่ incremental): ยอด invoice เปลี่ยนย้อนหลังเมื่อมี journal กลับรายการ
+WITH invoice_cost AS (
+    -- รวมทุก journal ที่ post แล้ว ให้รายการกลับหักล้างกันเหลือยอดสุทธิ
+    SELECT
+        company_id,
+        mihType AS milType,
+        mihVnos AS milVnos,
+        SUM(journalCost) AS invoice_cost,
+        COUNT(*) AS journal_count
+    FROM ${ref(databuffet.CURATED_DERP, "curated_journal_invoice")}
+    WHERE matchStatus = 'MATCHED'
+        AND isPosted
+        AND journalCost IS NOT NULL
+    GROUP BY company_id, mihType, mihVnos
+),
+
+line AS (
+    SELECT
+        mil.company_id,
+        mil.milType,
+        mil.milVnos,
+        mil.milListno,
+        mil.milPer,
+        mil.milStk,
+        mil.milQuan,
+        mil.milSum,
+        invoice_cost.invoice_cost,
+        invoice_cost.journal_count,
+        SUM(mil.milSum) OVER invoice_window AS invoice_sum,
+        SUM(mil.milQuan) OVER invoice_window AS invoice_quan,
+        COUNT(*) OVER invoice_window AS invoice_lines
+    FROM ${ref(databuffet.CURATED_MAC5, "curated_mil")} AS mil
+    INNER JOIN invoice_cost
+        ON invoice_cost.company_id = mil.company_id
+        AND invoice_cost.milType = mil.milType
+        AND invoice_cost.milVnos = mil.milVnos
+    WINDOW invoice_window AS (PARTITION BY mil.company_id, mil.milType, mil.milVnos)
+)
+
+SELECT
+    company_id,
+    milType,
+    milVnos,
+    milListno,
+    -- ag01 แตกบรรทัดตาม split-sale ใน curated_mil → แถวต่อ (บรรทัด, พนักงานขาย)
+    milPer,
+    milStk,
+    milQuan,
+    milSum,
+    -- ใบที่ยอดขายรวม = 0 (ส่วนใหญ่ SS/TS) แบ่งตามยอดเงินไม่ได้ → ใช้จำนวนชิ้น แล้วค่อยแบ่งเท่ากัน
+    CASE
+        WHEN invoice_sum != 0 THEN 'MILSUM'
+        WHEN invoice_quan != 0 THEN 'MILQUAN'
+        ELSE 'EQUAL'
+    END AS allocationBasis,
+    CASE
+        WHEN invoice_sum != 0 THEN invoice_cost * milSum / invoice_sum
+        WHEN invoice_quan != 0 THEN invoice_cost * milQuan / invoice_quan
+        ELSE invoice_cost / invoice_lines
+    END AS costDerp,
+    invoice_cost AS invoiceCostDerp,
+    journal_count AS journalCount
+FROM line
