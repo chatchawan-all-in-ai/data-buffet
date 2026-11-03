@@ -1,0 +1,52 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "fact_delivery"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of fact_table.fact_delivery: the columns of the sample sent to the AI team (the AI team package of 2026-10-26), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_delivery`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- AI team sample table fact_table.fact_delivery (the AI team package of 2026-10-26): the sample's columns, names and order,
+-- read from the same source for the whole table (the sample filters are not applied).
+-- Natural key = companyID, documentID, item + occurrence.
+-- No unique business key: rows are identified by the key columns plus `occurrence`, the position of the row among
+-- the rows with the same key ordered by their data JSON, so exact duplicate lines get distinct, repeatable keys.
+WITH src AS (
+  SELECT
+    FactTransDeliverySK,
+    milCus,
+    DeliveryDate,
+    Vehicle,
+    Zone,
+    Point,
+    documentStatus_2,
+    deliveryStatus_2,
+    shipmentStatus_2,
+    companyID,
+    documentID,
+    item,
+    ROW_NUMBER() OVER (
+      PARTITION BY companyID, documentID, item
+      ORDER BY TO_JSON_STRING(STRUCT(FactTransDeliverySK, milCus, DeliveryDate, Vehicle, Zone, Point, documentStatus_2, deliveryStatus_2, shipmentStatus_2))
+    ) AS occurrence
+  FROM `${SourceTableRef}`
+)
+SELECT
+  s.FactTransDeliverySK,
+  s.milCus,
+  s.DeliveryDate,
+  s.Vehicle,
+  s.Zone,
+  s.Point,
+  s.documentStatus_2,
+  s.deliveryStatus_2,
+  s.shipmentStatus_2,
+  TO_JSON_STRING(STRUCT(s.companyID, s.documentID, s.item, s.occurrence)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(s.FactTransDeliverySK, s.milCus, s.DeliveryDate, s.Vehicle, s.Zone, s.Point, s.documentStatus_2, s.deliveryStatus_2, s.shipmentStatus_2))) AS row_hash
+FROM src AS s

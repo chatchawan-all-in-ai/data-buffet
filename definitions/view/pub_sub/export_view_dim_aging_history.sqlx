@@ -1,0 +1,60 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "view_dim_aging_history"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of dimension_view.view_dim_aging_history: the columns of the sample sent to the AI team (the AI team package of 2026-10-26), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_VIEW}.view_dim_aging_history`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- AI team sample table dimension_view.view_dim_aging_history (the AI team package of 2026-10-26): the sample's columns, names and order,
+-- read from the same source for the whole table (the sample filters are not applied).
+-- Natural key = asatdate, companyID, cfsVnosID.
+WITH src AS (
+  SELECT
+    asatdate,
+    CustomerSK,
+    InvoiceSK,
+    CompanySK,
+    ChannelSK,
+    AgingRangSK,
+    transCreditTerm,
+    dueDate,
+    realDueDate,
+    cfsVnosID,
+    TotalAmount,
+    CreditNoteAmount,
+    DebitNoteAmount,
+    OutStanding,
+    flagComplete,
+    GroupFlagComplete,
+    DayRange,
+    companyID
+  FROM `${SourceTableRef}`
+)
+SELECT
+  s.asatdate,
+  s.CustomerSK,
+  s.InvoiceSK,
+  s.CompanySK,
+  s.ChannelSK,
+  s.AgingRangSK,
+  s.transCreditTerm,
+  s.dueDate,
+  s.realDueDate,
+  s.cfsVnosID,
+  s.TotalAmount,
+  s.CreditNoteAmount,
+  s.DebitNoteAmount,
+  s.OutStanding,
+  s.flagComplete,
+  s.GroupFlagComplete,
+  s.DayRange,
+  TO_JSON_STRING(STRUCT(s.asatdate, s.companyID, s.cfsVnosID)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(s.asatdate, s.CustomerSK, s.InvoiceSK, s.CompanySK, s.ChannelSK, s.AgingRangSK, s.transCreditTerm, s.dueDate, s.realDueDate, s.cfsVnosID, s.TotalAmount, s.CreditNoteAmount, s.DebitNoteAmount, s.OutStanding, s.flagComplete, s.GroupFlagComplete, s.DayRange))) AS row_hash
+FROM src AS s

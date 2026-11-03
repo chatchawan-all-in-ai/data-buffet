@@ -1,0 +1,52 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "fact_quotation"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of fact_table.fact_quotation: the columns of the sample sent to the AI team (the AI team package of 2026-10-26), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_quotation`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- AI team sample table fact_table.fact_quotation (the AI team package of 2026-10-26): the sample's columns, names and order,
+-- read from the same source for the whole table (the sample filters are not applied).
+-- Natural key = companyID, Running, StkCode + occurrence.
+-- No unique business key: rows are identified by the key columns plus `occurrence`, the position of the row among
+-- the rows with the same key ordered by their data JSON, so exact duplicate lines get distinct, repeatable keys.
+WITH src AS (
+  SELECT
+    FactQuotationSK,
+    QuotationSK,
+    SDate,
+    ProductSK,
+    CompanySK,
+    CustomerSK,
+    Total,
+    Quantity,
+    Price,
+    companyID,
+    Running,
+    StkCode,
+    ROW_NUMBER() OVER (
+      PARTITION BY companyID, Running, StkCode
+      ORDER BY TO_JSON_STRING(STRUCT(FactQuotationSK, QuotationSK, SDate, ProductSK, CompanySK, CustomerSK, Total, Quantity, Price))
+    ) AS occurrence
+  FROM `${SourceTableRef}`
+)
+SELECT
+  s.FactQuotationSK,
+  s.QuotationSK,
+  s.SDate,
+  s.ProductSK,
+  s.CompanySK,
+  s.CustomerSK,
+  s.Total,
+  s.Quantity,
+  s.Price,
+  TO_JSON_STRING(STRUCT(s.companyID, s.Running, s.StkCode, s.occurrence)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(s.FactQuotationSK, s.QuotationSK, s.SDate, s.ProductSK, s.CompanySK, s.CustomerSK, s.Total, s.Quantity, s.Price))) AS row_hash
+FROM src AS s

@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-03 (AI team sample tables Pub/Sub export)
+* **Creation**: Added 33 cards for the export views of the AI team sample tables in `pub_sub` (export_dim_aging_rang, export_dim_calendar, export_dim_customer_segment, export_dim_doctype, export_dim_payment, export_dim_product_master_fc, export_dim_product_series, export_dim_project, export_dim_pump_information, export_dim_quotation, export_dim_section_last, export_dim_target_product_group_by_sale_dayofwork, export_view_dim_aging_history, export_view_dim_channel, export_view_dim_company, export_view_dim_customer, export_view_dim_customer_report_info, export_view_dim_invoice, export_view_dim_order, export_view_dim_product_master, export_view_dim_product_mkt, export_view_dim_sale_representative_last, export_fact_delivery, export_fact_order, export_fact_quotation, export_fact_transaction_delivery, export_view_fact_transcation, export_mds_data_org_ols_center, export_product_attribute, export_view_rls_sale_data, export_brand, export_rls_ta_customer, export_mds_data_ta_dashboard_display_control; pub_sub 55 cards, view 95 cards).
+* **Update**: `mart_export_config` card: 55 rows (dim_company, 12 commission sets, 9 TA org sets, 33 AI team sample tables).
+
 ## 2026-11-02 (TA org Pub/Sub export)
 * **Creation**: Added 9 cards for the TA app org export views in `pub_sub` (export_org_levels, export_org_units, export_positions, export_employees, export_memberships, export_appointments, export_member_links, export_access_exceptions, export_customer_ta_assignments; pub_sub 22 cards, view 62 cards).
 * **Update**: `mart_export_config` card: 22 rows (dim_company, 12 commission sets, 9 TA org sets).

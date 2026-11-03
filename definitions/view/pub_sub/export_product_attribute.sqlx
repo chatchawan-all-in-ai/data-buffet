@@ -1,0 +1,59 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "Product_Attribute"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of onetime.Product_Attribute: the columns of the sample sent to the AI team (the AI team package of 2026-10-26), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.ONETIME}.Product_Attribute`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- AI team sample table onetime.Product_Attribute (the AI team package of 2026-10-26): the sample's columns, names and order,
+-- read from the same source for the whole table (the sample filters are not applied).
+-- Natural key = ProductSK + occurrence.
+-- No unique business key: rows are identified by the key columns plus `occurrence`, the position of the row among
+-- the rows with the same key ordered by their data JSON, so exact duplicate lines get distinct, repeatable keys.
+WITH src AS (
+  SELECT
+    ProductSK,
+    ProductCode,
+    ProductSeries,
+    ProductSize,
+    ProductUnit,
+    ProductModel,
+    ProductMaterials,
+    ProductColor,
+    ProductShape,
+    ProductGrossWeight,
+    ProductNetWeight,
+    ProductSizeHight,
+    ProductSizeLong,
+    ProductSizeWide,
+    ROW_NUMBER() OVER (
+      PARTITION BY ProductSK
+      ORDER BY TO_JSON_STRING(STRUCT(ProductSK, ProductCode, ProductSeries, ProductSize, ProductUnit, ProductModel, ProductMaterials, ProductColor, ProductShape, ProductGrossWeight, ProductNetWeight, ProductSizeHight, ProductSizeLong, ProductSizeWide))
+    ) AS occurrence
+  FROM `${SourceTableRef}`
+)
+SELECT
+  s.ProductSK,
+  s.ProductCode,
+  s.ProductSeries,
+  s.ProductSize,
+  s.ProductUnit,
+  s.ProductModel,
+  s.ProductMaterials,
+  s.ProductColor,
+  s.ProductShape,
+  s.ProductGrossWeight,
+  s.ProductNetWeight,
+  s.ProductSizeHight,
+  s.ProductSizeLong,
+  s.ProductSizeWide,
+  TO_JSON_STRING(STRUCT(s.ProductSK, s.occurrence)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(s.ProductSK, s.ProductCode, s.ProductSeries, s.ProductSize, s.ProductUnit, s.ProductModel, s.ProductMaterials, s.ProductColor, s.ProductShape, s.ProductGrossWeight, s.ProductNetWeight, s.ProductSizeHight, s.ProductSizeLong, s.ProductSizeWide))) AS row_hash
+FROM src AS s

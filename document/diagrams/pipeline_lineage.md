@@ -7,7 +7,7 @@
 > inline `ref(...)` + `tags: [...]`), so the views — and `topic_flows.md` — always
 > match the repo.
 
-**Objects: 403** — initial 21 · validated 196 · curated 19 · dimension 71 · fact 18 · view 62 · cdc 2 · process 5 · pub_sub 1 · org_center 8
+**Objects: 436** — initial 21 · validated 196 · curated 19 · dimension 71 · fact 18 · view 95 · cdc 2 · process 5 · pub_sub 1 · org_center 8
 
 **Paused (config commented out):** —
 
@@ -29,7 +29,7 @@ flowchart LR
   C["curated (19)<br/>business joins"]
   D["dimension (71)<br/>SK + SCD"]
   F["fact (18)<br/>star-schema"]
-  VW["view (62)<br/>BI/reporting views"]
+  VW["view (95)<br/>BI/reporting views"]
   CDC["cdc (2)"]
   P["process (5)<br/>AI address parse + RLS map"]
   raw --> I --> V --> C
@@ -84,7 +84,7 @@ dashed = a prerequisite from another cadence.
 flowchart TB
   subgraph boot["Manual setup / view deployment"]
     I["initial | 17 objects<br/>external tables + validated DROPs<br/>tag: initial - destructive"]
-    Vw["view | 63<br/>BI/reporting views<br/>tag: view - manual deployment"]
+    Vw["view | 96<br/>BI/reporting views<br/>tag: view - manual deployment"]
   end
 
   subgraph nightly["daily_process - daily 06:00 Asia/Bangkok (top to bottom = run order)"]
@@ -868,7 +868,7 @@ flowchart LR
     curated_mil["curated_mil"]
     curated_tbook_quotation["curated_tbook_quotation"]
   end
-  subgraph dimension["dimension (50)"]
+  subgraph dimension["dimension (54)"]
     dim_aging["dim_aging"]
     dim_aging_rang["dim_aging_rang"]
     dim_calendar["dim_calendar"]
@@ -883,6 +883,7 @@ flowchart LR
     dim_customer["dim_customer"]
     dim_customer_grade["dim_customer_grade"]
     dim_customer_report_info["dim_customer_report_info"]
+    dim_customer_segment["dim_customer_segment"]
     dim_department["dim_department"]
     dim_department_last["dim_department_last"]
     dim_director["dim_director"]
@@ -895,10 +896,13 @@ flowchart LR
     dim_payment["dim_payment"]
     dim_pc["dim_pc"]
     dim_product_master["dim_product_master"]
+    dim_product_master_fc["dim_product_master_fc"]
     dim_product_mkt["dim_product_mkt"]
     dim_product_mkt_director["dim_product_mkt_director"]
     dim_product_series["dim_product_series"]
+    dim_project["dim_project"]
     dim_pump_information["dim_pump_information"]
+    dim_quotation["dim_quotation"]
     dim_rate_target["dim_rate_target"]
     dim_rebate["dim_rebate"]
     dim_region["dim_region"]
@@ -920,18 +924,21 @@ flowchart LR
     dim_target_product_group_by_sale_dayofwork["dim_target_product_group_by_sale_dayofwork"]
     dim_waterpac["dim_waterpac"]
   end
-  subgraph fact["fact (9)"]
+  subgraph fact["fact (12)"]
+    fact_delivery["fact_delivery"]
     fact_invoice["fact_invoice"]
     fact_mir_rs["fact_mir_rs"]
     fact_mir_vs["fact_mir_vs"]
     fact_order["fact_order"]
+    fact_quotation["fact_quotation"]
     fact_saleout_mdt["fact_saleout_mdt"]
     fact_saleout_monthly_mdt["fact_saleout_monthly_mdt"]
     fact_stock_mdt["fact_stock_mdt"]
     fact_target_saleout_mdt["fact_target_saleout_mdt"]
+    fact_transaction_delivery["fact_transaction_delivery"]
     fact_transcation["fact_transcation"]
   end
-  subgraph view["view (62)"]
+  subgraph view["view (95)"]
     GroupCustomerSK_CustomerSK["GroupCustomerSK_CustomerSK"]
     Model_Invoice_Transaction["Model_Invoice_Transaction"]
     Model_Target_DayOfWork["Model_Target_DayOfWork"]
@@ -940,25 +947,58 @@ flowchart LR
     Transaction_Data_Mart["Transaction_Data_Mart"]
     export_access_exceptions["export_access_exceptions"]
     export_appointments["export_appointments"]
+    export_brand["export_brand"]
     export_chqri["export_chqri"]
     export_company["export_company"]
     export_company_source["export_company_source"]
     export_credit_note["export_credit_note"]
     export_customer_ta_assignments["export_customer_ta_assignments"]
     export_debit_note["export_debit_note"]
+    export_dim_aging_rang["export_dim_aging_rang"]
+    export_dim_calendar["export_dim_calendar"]
     export_dim_company["export_dim_company"]
+    export_dim_customer_segment["export_dim_customer_segment"]
+    export_dim_doctype["export_dim_doctype"]
+    export_dim_payment["export_dim_payment"]
+    export_dim_product_master_fc["export_dim_product_master_fc"]
+    export_dim_product_series["export_dim_product_series"]
+    export_dim_project["export_dim_project"]
+    export_dim_pump_information["export_dim_pump_information"]
+    export_dim_quotation["export_dim_quotation"]
+    export_dim_section_last["export_dim_section_last"]
+    export_dim_target_product_group_by_sale_dayofwork["export_dim_target_product_group_by_sale_dayofwork"]
     export_employees["export_employees"]
+    export_fact_delivery["export_fact_delivery"]
+    export_fact_order["export_fact_order"]
+    export_fact_quotation["export_fact_quotation"]
+    export_fact_transaction_delivery["export_fact_transaction_delivery"]
     export_invoice["export_invoice"]
+    export_mds_data_org_ols_center["export_mds_data_org_ols_center"]
+    export_mds_data_ta_dashboard_display_control["export_mds_data_ta_dashboard_display_control"]
     export_member_links["export_member_links"]
     export_memberships["export_memberships"]
     export_order["export_order"]
     export_org_levels["export_org_levels"]
     export_org_units["export_org_units"]
     export_positions["export_positions"]
+    export_product_attribute["export_product_attribute"]
     export_receipt["export_receipt"]
+    export_rls_ta_customer["export_rls_ta_customer"]
     export_sell["export_sell"]
     export_status["export_status"]
     export_stk["export_stk"]
+    export_view_dim_aging_history["export_view_dim_aging_history"]
+    export_view_dim_channel["export_view_dim_channel"]
+    export_view_dim_company["export_view_dim_company"]
+    export_view_dim_customer["export_view_dim_customer"]
+    export_view_dim_customer_report_info["export_view_dim_customer_report_info"]
+    export_view_dim_invoice["export_view_dim_invoice"]
+    export_view_dim_order["export_view_dim_order"]
+    export_view_dim_product_master["export_view_dim_product_master"]
+    export_view_dim_product_mkt["export_view_dim_product_mkt"]
+    export_view_dim_sale_representative_last["export_view_dim_sale_representative_last"]
+    export_view_fact_transcation["export_view_fact_transcation"]
+    export_view_rls_sale_data["export_view_rls_sale_data"]
     export_warehouse["export_warehouse"]
     view_aging_ri["view_aging_ri"]
     view_deb_address_data["view_deb_address_data"]
@@ -995,9 +1035,10 @@ flowchart LR
     view_rls_special_data["view_rls_special_data"]
     view_sales_representative_last["view_sales_representative_last"]
   end
-  subgraph process["process (2)"]
+  subgraph process["process (3)"]
     deb_address_data["deb_address_data"]
     rls_customer360["rls_customer360"]
+    rls_ta_customer["rls_ta_customer"]
   end
   subgraph org_center["org_center (6)"]
     org_center_customer_ta["org_center_customer_ta"]
@@ -1008,6 +1049,7 @@ flowchart LR
     org_center_unit["org_center_unit"]
   end
   Product_Attribute --> Product_Master_ALL
+  Product_Attribute --> export_product_attribute
   ar_s --> export_credit_note
   ar_s --> export_debit_note
   ar_s --> export_receipt
@@ -1015,6 +1057,7 @@ flowchart LR
   ar_s --> view_aging_ri
   ar_s --> view_fact_mir_rs
   brand --> Product_Attribute
+  brand --> export_brand
   chq --> export_chqri
   chq --> export_receipt
   chq --> view_aging_ri
@@ -1034,8 +1077,10 @@ flowchart LR
   dim_aging --> view_dim_invoice
   dim_aging --> view_fact_mir_rs
   dim_aging --> view_fact_mir_vs
+  dim_aging_rang --> export_dim_aging_rang
   dim_aging_rang --> view_aging_ri
   dim_aging_rang --> view_dim_aging
+  dim_calendar --> export_dim_calendar
   dim_calendar --> view_dim_calendar
   dim_calendar --> view_dim_target_by_agent_dayofwork
   dim_calendar --> view_fact_transcation
@@ -1063,6 +1108,7 @@ flowchart LR
   dim_customer_grade --> view_dim_customer_credit_management
   dim_customer_report_info --> view_dim_customer_report_info
   dim_customer_report_info --> view_fact_transcation
+  dim_customer_segment --> export_dim_customer_segment
   dim_department --> view_dim_sale_representative
   dim_department --> view_dim_target_by_agent_dayofwork
   dim_department_last --> Model_Invoice_Transaction
@@ -1081,6 +1127,7 @@ flowchart LR
   dim_director_last --> view_fact_transcation
   dim_director_last --> view_rls_data
   dim_doctype --> Model_Invoice_Transaction
+  dim_doctype --> export_dim_doctype
   dim_group_customer --> GroupCustomerSK_CustomerSK
   dim_group_customer --> view_dim_customer
   dim_guarantee --> view_dim_guarantee
@@ -1092,6 +1139,7 @@ flowchart LR
   dim_order --> view_dim_order
   dim_order --> view_fact_transcation
   dim_payment --> Model_Invoice_Transaction
+  dim_payment --> export_dim_payment
   dim_pc --> view_fact_saleout_pc_mdt
   dim_pc --> view_fact_target_pc_mdt
   dim_product_master --> Model_Invoice_Transaction
@@ -1099,6 +1147,7 @@ flowchart LR
   dim_product_master --> Product_Master_ALL
   dim_product_master --> view_dim_product_master
   dim_product_master --> view_fact_transcation
+  dim_product_master_fc --> export_dim_product_master_fc
   dim_product_mkt --> Model_Invoice_Transaction
   dim_product_mkt --> Model_Target_DayOfWork
   dim_product_mkt --> view_dim_product_master
@@ -1108,7 +1157,11 @@ flowchart LR
   dim_product_mkt_director --> Product_Master_ALL
   dim_product_mkt_director --> view_dim_product_mkt
   dim_product_series --> Product_Attribute
+  dim_product_series --> export_dim_product_series
+  dim_project --> export_dim_project
+  dim_pump_information --> export_dim_pump_information
   dim_pump_information --> view_fact_transcation
+  dim_quotation --> export_dim_quotation
   dim_rate_target --> view_dim_target_by_agent
   dim_rebate --> view_dim_product_master
   dim_rebate --> view_fact_transcation
@@ -1148,6 +1201,7 @@ flowchart LR
   dim_section --> view_fact_transcation
   dim_section_last --> Model_Invoice_Transaction
   dim_section_last --> Model_Target_DayOfWork
+  dim_section_last --> export_dim_section_last
   dim_section_last --> view_dim_customer_report_info
   dim_section_last --> view_dim_target_by_agent
   dim_section_last --> view_fact_transcation
@@ -1166,19 +1220,24 @@ flowchart LR
   dim_target_product_group --> view_dim_target_by_agent
   dim_target_product_group_by_sale --> view_dim_target_by_agent_dayofwork
   dim_target_product_group_by_sale_dayofwork --> Model_Target_DayOfWork
+  dim_target_product_group_by_sale_dayofwork --> export_dim_target_product_group_by_sale_dayofwork
   dim_target_product_group_by_sale_dayofwork --> view_fact_target_product_group_mdt
   dim_waterpac --> view_dim_product_master
+  fact_delivery --> export_fact_delivery
   fact_invoice --> view_fact_transcation
   fact_mir_rs --> view_fact_mir_rs
   fact_mir_vs --> view_aging_ri
   fact_mir_vs --> view_dim_aging_history
   fact_mir_vs --> view_fact_mir_vs
+  fact_order --> export_fact_order
   fact_order --> view_fact_transcation
+  fact_quotation --> export_fact_quotation
   fact_saleout_mdt --> view_fact_stock_nonmove_mdt
   fact_saleout_monthly_mdt --> view_fact_saleout_pc_mdt
   fact_stock_mdt --> view_fact_stock_nonmove_mdt
   fact_target_saleout_mdt --> view_fact_target_pc_mdt
   fact_target_saleout_mdt --> view_fact_target_section_mdt
+  fact_transaction_delivery --> export_fact_transaction_delivery
   fact_transcation --> view_fact_salein_mdt
   fact_transcation --> view_fact_transcation
   mec --> view_dim_invoice
@@ -1212,6 +1271,7 @@ flowchart LR
   product_detail --> Product_Attribute
   rls_customer360 --> view_rls_sale_data
   rls_customer360 --> view_rls_special_data
+  rls_ta_customer --> export_rls_ta_customer
   stg --> Product_Attribute
   stk --> Product_Attribute
   stk --> Transaction_Data_Mart
@@ -1225,17 +1285,29 @@ flowchart LR
   view_deb_address_data --> Transaction_Data_Mart
   view_dim_aging --> view_aging_ri
   view_dim_aging --> view_fact_transcation
+  view_dim_aging_history --> export_view_dim_aging_history
+  view_dim_channel --> export_view_dim_channel
   view_dim_channel --> view_dim_aging
   view_dim_channel --> view_dim_aging_history
+  view_dim_company --> export_view_dim_company
   view_dim_company --> view_rls_data
   view_dim_customer --> Model_Invoice_Transaction
+  view_dim_customer --> export_view_dim_customer
   view_dim_customer --> view_dim_invoice
+  view_dim_customer_report_info --> export_view_dim_customer_report_info
+  view_dim_invoice --> export_view_dim_invoice
   view_dim_invoice --> view_fact_transcation
+  view_dim_order --> export_view_dim_order
+  view_dim_product_master --> export_view_dim_product_master
   view_dim_product_mkt --> Product_Master_ALL
+  view_dim_product_mkt --> export_view_dim_product_mkt
+  view_dim_sale_representative_last --> export_view_dim_sale_representative_last
   view_dim_sale_representative_last --> view_sales_representative_last
   view_fact_transcation --> Model_Invoice_Transaction
+  view_fact_transcation --> export_view_fact_transcation
   view_fact_transcation --> view_fact_salein_director_mdt
   view_rls_data --> view_rls_sale_data
+  view_rls_sale_data --> export_view_rls_sale_data
   classDef validated fill:#cfe8ff,stroke:#4a90d9,color:#111;
   classDef curated fill:#a8d5ff,stroke:#2f6fb0,color:#111;
   classDef dimension fill:#ffe0b3,stroke:#d98f2f,color:#111;
@@ -1246,9 +1318,9 @@ flowchart LR
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
   class ar_s,brand,chq,cql,deb,mec,mie,mih,mih2,mil,mir,per,product,product_detail,stg,stk,sto,vendor validated;
   class curated_mih,curated_mil,curated_tbook_quotation curated;
-  class dim_aging,dim_aging_rang,dim_calendar,dim_change_district,dim_channel,dim_channel_cost,dim_channel_finance,dim_channel_sales,dim_company,dim_cost_group,dim_cost_stk,dim_customer,dim_customer_grade,dim_customer_report_info,dim_department,dim_department_last,dim_director,dim_director_last,dim_doctype,dim_group_customer,dim_guarantee,dim_invoice,dim_order,dim_payment,dim_pc,dim_product_master,dim_product_mkt,dim_product_mkt_director,dim_product_series,dim_pump_information,dim_rate_target,dim_rebate,dim_region,dim_region_last,dim_region_manager,dim_region_manager_last,dim_report,dim_sale_representative,dim_sale_representative_last,dim_sales_branch_mdt,dim_section,dim_section_last,dim_section_manager,dim_section_manager_last,dim_status_not_receive,dim_stk_mkt,dim_target_product_group,dim_target_product_group_by_sale,dim_target_product_group_by_sale_dayofwork,dim_waterpac dimension;
-  class fact_invoice,fact_mir_rs,fact_mir_vs,fact_order,fact_saleout_mdt,fact_saleout_monthly_mdt,fact_stock_mdt,fact_target_saleout_mdt,fact_transcation fact;
-  class GroupCustomerSK_CustomerSK,Model_Invoice_Transaction,Model_Target_DayOfWork,Product_Attribute,Product_Master_ALL,Transaction_Data_Mart,export_access_exceptions,export_appointments,export_chqri,export_company,export_company_source,export_credit_note,export_customer_ta_assignments,export_debit_note,export_dim_company,export_employees,export_invoice,export_member_links,export_memberships,export_order,export_org_levels,export_org_units,export_positions,export_receipt,export_sell,export_status,export_stk,export_warehouse,view_aging_ri,view_deb_address_data,view_dim_aging,view_dim_aging_history,view_dim_calendar,view_dim_channel,view_dim_company,view_dim_customer,view_dim_customer_credit_management,view_dim_customer_report_info,view_dim_guarantee,view_dim_invoice,view_dim_order,view_dim_product_master,view_dim_product_mkt,view_dim_sale_representative,view_dim_sale_representative_last,view_dim_target_by_agent,view_dim_target_by_agent_dayofwork,view_fact_mir_rs,view_fact_mir_vs,view_fact_salein_director_mdt,view_fact_salein_mdt,view_fact_saleout_pc_mdt,view_fact_stock_nonmove_mdt,view_fact_target_pc_mdt,view_fact_target_product_group_mdt,view_fact_target_section_mdt,view_fact_transcation,view_mih_address_data,view_rls_data,view_rls_sale_data,view_rls_special_data,view_sales_representative_last view;
-  class deb_address_data,rls_customer360 process;
+  class dim_aging,dim_aging_rang,dim_calendar,dim_change_district,dim_channel,dim_channel_cost,dim_channel_finance,dim_channel_sales,dim_company,dim_cost_group,dim_cost_stk,dim_customer,dim_customer_grade,dim_customer_report_info,dim_customer_segment,dim_department,dim_department_last,dim_director,dim_director_last,dim_doctype,dim_group_customer,dim_guarantee,dim_invoice,dim_order,dim_payment,dim_pc,dim_product_master,dim_product_master_fc,dim_product_mkt,dim_product_mkt_director,dim_product_series,dim_project,dim_pump_information,dim_quotation,dim_rate_target,dim_rebate,dim_region,dim_region_last,dim_region_manager,dim_region_manager_last,dim_report,dim_sale_representative,dim_sale_representative_last,dim_sales_branch_mdt,dim_section,dim_section_last,dim_section_manager,dim_section_manager_last,dim_status_not_receive,dim_stk_mkt,dim_target_product_group,dim_target_product_group_by_sale,dim_target_product_group_by_sale_dayofwork,dim_waterpac dimension;
+  class fact_delivery,fact_invoice,fact_mir_rs,fact_mir_vs,fact_order,fact_quotation,fact_saleout_mdt,fact_saleout_monthly_mdt,fact_stock_mdt,fact_target_saleout_mdt,fact_transaction_delivery,fact_transcation fact;
+  class GroupCustomerSK_CustomerSK,Model_Invoice_Transaction,Model_Target_DayOfWork,Product_Attribute,Product_Master_ALL,Transaction_Data_Mart,export_access_exceptions,export_appointments,export_brand,export_chqri,export_company,export_company_source,export_credit_note,export_customer_ta_assignments,export_debit_note,export_dim_aging_rang,export_dim_calendar,export_dim_company,export_dim_customer_segment,export_dim_doctype,export_dim_payment,export_dim_product_master_fc,export_dim_product_series,export_dim_project,export_dim_pump_information,export_dim_quotation,export_dim_section_last,export_dim_target_product_group_by_sale_dayofwork,export_employees,export_fact_delivery,export_fact_order,export_fact_quotation,export_fact_transaction_delivery,export_invoice,export_mds_data_org_ols_center,export_mds_data_ta_dashboard_display_control,export_member_links,export_memberships,export_order,export_org_levels,export_org_units,export_positions,export_product_attribute,export_receipt,export_rls_ta_customer,export_sell,export_status,export_stk,export_view_dim_aging_history,export_view_dim_channel,export_view_dim_company,export_view_dim_customer,export_view_dim_customer_report_info,export_view_dim_invoice,export_view_dim_order,export_view_dim_product_master,export_view_dim_product_mkt,export_view_dim_sale_representative_last,export_view_fact_transcation,export_view_rls_sale_data,export_warehouse,view_aging_ri,view_deb_address_data,view_dim_aging,view_dim_aging_history,view_dim_calendar,view_dim_channel,view_dim_company,view_dim_customer,view_dim_customer_credit_management,view_dim_customer_report_info,view_dim_guarantee,view_dim_invoice,view_dim_order,view_dim_product_master,view_dim_product_mkt,view_dim_sale_representative,view_dim_sale_representative_last,view_dim_target_by_agent,view_dim_target_by_agent_dayofwork,view_fact_mir_rs,view_fact_mir_vs,view_fact_salein_director_mdt,view_fact_salein_mdt,view_fact_saleout_pc_mdt,view_fact_stock_nonmove_mdt,view_fact_target_pc_mdt,view_fact_target_product_group_mdt,view_fact_target_section_mdt,view_fact_transcation,view_mih_address_data,view_rls_data,view_rls_sale_data,view_rls_special_data,view_sales_representative_last view;
+  class deb_address_data,rls_customer360,rls_ta_customer process;
   class org_center_customer_ta,org_center_exception,org_center_link,org_center_member,org_center_person,org_center_unit org_center;
 ```

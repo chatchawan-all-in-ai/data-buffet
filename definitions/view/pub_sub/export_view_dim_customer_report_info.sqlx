@@ -1,0 +1,71 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "view_dim_customer_report_info"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of dimension_view.view_dim_customer_report_info: the columns of the sample sent to the AI team (the AI team package of 2026-10-26), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_VIEW}.view_dim_customer_report_info`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- AI team sample table dimension_view.view_dim_customer_report_info (the AI team package of 2026-10-26): the sample's columns, names and order,
+-- read from the same source for the whole table (the sample filters are not applied).
+-- Natural key = CustomerReportInfoSK.
+WITH src AS (
+  SELECT
+    CustomerReportInfoSK,
+    CustomerSegmentSK,
+    CustomerReportName,
+    ShopOnline,
+    FlagPC,
+    TAEmployeeID,
+    TAEmployeeName,
+    TADepartmentID,
+    TADepartmentName,
+    TASectionID,
+    TASectionName,
+    TASectionManagerID,
+    TASectionManagerName,
+    TARegionID,
+    TARegionName,
+    TARegionManagerID,
+    TARegionManagerName,
+    TADirectorID,
+    TADirectorName,
+    SubDistrict,
+    District,
+    Province,
+    DEBcreditTerm
+  FROM `${SourceTableRef}`
+)
+SELECT
+  s.CustomerReportInfoSK,
+  s.CustomerSegmentSK,
+  s.CustomerReportName,
+  s.ShopOnline,
+  s.FlagPC,
+  s.TAEmployeeID,
+  s.TAEmployeeName,
+  s.TADepartmentID,
+  s.TADepartmentName,
+  s.TASectionID,
+  s.TASectionName,
+  s.TASectionManagerID,
+  s.TASectionManagerName,
+  s.TARegionID,
+  s.TARegionName,
+  s.TARegionManagerID,
+  s.TARegionManagerName,
+  s.TADirectorID,
+  s.TADirectorName,
+  s.SubDistrict,
+  s.District,
+  s.Province,
+  s.DEBcreditTerm,
+  TO_JSON_STRING(STRUCT(s.CustomerReportInfoSK)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(s.CustomerReportInfoSK, s.CustomerSegmentSK, s.CustomerReportName, s.ShopOnline, s.FlagPC, s.TAEmployeeID, s.TAEmployeeName, s.TADepartmentID, s.TADepartmentName, s.TASectionID, s.TASectionName, s.TASectionManagerID, s.TASectionManagerName, s.TARegionID, s.TARegionName, s.TARegionManagerID, s.TARegionManagerName, s.TADirectorID, s.TADirectorName, s.SubDistrict, s.District, s.Province, s.DEBcreditTerm))) AS row_hash
+FROM src AS s

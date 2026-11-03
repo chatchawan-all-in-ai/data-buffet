@@ -1,0 +1,47 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of mds_dataset.mds_data_ta_dashboard_display_control: the columns of the sample sent to the AI team (the P1 dashboard display control sample), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_ta_dashboard_display_control`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- AI team sample table mds_dataset.mds_data_ta_dashboard_display_control (the P1 dashboard display control sample): the sample's columns, names and order,
+-- read from the same source for the whole table (the sample filters are not applied).
+-- Natural key = companyID, ControlKey, SectionID, ItemType, ItemCode.
+WITH src AS (
+  SELECT
+    companyID,
+    ControlKey,
+    SectionID,
+    ItemType,
+    ItemCode,
+    ItemName,
+    SortOrder,
+    BreakdownBy,
+    StartDate,
+    EndDate,
+    is_active
+  FROM `${SourceTableRef}`
+)
+SELECT
+  s.companyID,
+  s.ControlKey,
+  s.SectionID,
+  s.ItemType,
+  s.ItemCode,
+  s.ItemName,
+  s.SortOrder,
+  s.BreakdownBy,
+  s.StartDate,
+  s.EndDate,
+  s.is_active,
+  TO_JSON_STRING(STRUCT(s.companyID, s.ControlKey, s.SectionID, s.ItemType, s.ItemCode)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(s.companyID, s.ControlKey, s.SectionID, s.ItemType, s.ItemCode, s.ItemName, s.SortOrder, s.BreakdownBy, s.StartDate, s.EndDate, s.is_active))) AS row_hash
+FROM src AS s

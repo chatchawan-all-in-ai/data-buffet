@@ -127,6 +127,7 @@ runs** — see "Deploy" below:
 | `pub_sub/pub_sub_schema.sqlx` | dataset `pub_sub` (tags `view` + `pub_sub`) | `CREATE SCHEMA IF NOT EXISTS ... OPTIONS(location=REGION)`, the same bootstrap as `validated_schema_*` / `cdc_schema`. `definitions/pub_sub/` is the layer folder for future shaping tables before Pub/Sub |
 | `view/pub_sub/export_dim_company.sqlx` | `pub_sub.export_dim_company` (view, tags `view` + `pub_sub`) | `CompanyID`, `CompanyCode`, `CompanyNameTH`, `CompanyNameEN` as in `dim_company`, `row_key`, `row_hash` — no `CompanySK`, no `MdsId` |
 | `view/pub_sub/export_<table>.sqlx` × 9 | `pub_sub.export_<table>` (views, tags `view` + `pub_sub`) | TA app org tables for the AI team (below): the columns of the org sample sent 2026-11-02, `row_key`, `row_hash` |
+| `view/pub_sub/export_<table>.sqlx` × 33 | `pub_sub.export_<table>` (views, tags `view` + `pub_sub`) | AI team sample tables (below): the columns of the sample CSVs sent 2026-10-26 / 2026-11-02, `row_key`, `row_hash` |
 | `view/pub_sub/export_<set>.sqlx` × 12 | `pub_sub.export_<set>` (views, tags `view` + `pub_sub`) | Commission sets for TF (below): the columns of the sample sent to TF on 2026-10-14, `row_key`, `row_hash` |
 
 **Commission sets for the TF team** (company ag01, documents of 2026; added 2026-11-02).
@@ -174,6 +175,38 @@ the next successful `daily_process` run.
 | `member_links` | `export_member_links` | `company_id`, `link_type`, `from_membership_id`, `to_membership_id`, `site_id`, `valid_from` | `org_center_link` |
 | `access_exceptions` | `export_access_exceptions` | `source_row_id` + every scope column | `org_center_exception`, arrays split |
 | `customer_ta_assignments` | `export_customer_ta_assignments` | `company_id`, `customer_id`, `membership_id`, `valid_from` | `org_center_customer_ta`; extra column `membership_company_id` (the company of the TA membership the row points to) |
+
+### AI team sample tables
+
+Added 2026-11-03. One export view per table already sent to the AI team as
+sample data: the 31 tables of the 2026-10-26 package, `rls_ta_customer` (rls sample) and
+`mds_data_ta_dashboard_display_control` (dashboard display control). `table_name` = the BigQuery table name in
+lower case. Topic routing and triggers are owned by
+[`mart-export-config.json`](../../../includes/controller/mart-export-config.json). Columns, names and order are the
+sample CSV header, read from the same source for the whole table (the sample filters are not applied), so they
+keep the SK columns of the sample: SKs of the full-rebuild dims and facts regenerate every run and move
+rows whose data did not change otherwise. Where a table has no unique business key the key is the business
+columns plus `occurrence` (position of the row among rows with the same key, ordered by their data JSON).
+`view_dim_company` has its own view because its sample columns differ from `export_dim_company`.
+
+The [OKF export index](../../okf/view/pub_sub/index.md) links to each view's authoritative
+schema, source, key and recorded row count. Deployment is deferred until the AI team has tested
+the samples; the stopping point and future activation procedure are owned by
+[setup guide, section E](../../how-to/setup-pubsub-export.md#ส่วน-e--ตารางตัวอย่างของทีม-ai-33-ตาราง).
+
+Measured 2026-11-02 against the publisher limits (about 41,000 rows per workflow execution shared by every
+table, 50 rows per page; first loads go through GCS files): daily changed rows (NEW + UPDATE + DELETE, two
+consecutive nights, time travel of the base tables) are a few hundred or fewer for the dims and `rls`/`mds` tables,
+about 20,000 for `view_fact_transcation`, 13,000-29,000 for `dim_pump_information`, about 53,000 for
+`view_dim_aging_history` (a new as-at snapshot of about 27,000 rows each night and the previous day's snapshot
+deleted), and 0.7-2.7 million for `fact_order`, `fact_delivery` and `fact_transaction_delivery` (their SKs are
+`ROW_NUMBER()` over the whole table); `fact_quotation` shifts the same way (67 of 1,624 sample rows still match
+8 days later). Row counts and key uniqueness were checked on the compiled views; each sample is contained in its view on the
+sample columns except where an SK was regenerated since the sample was cut.
+
+Before activation, decide how to deliver the high-change tables: do not seed `fact_order`,
+`fact_delivery`, `fact_transaction_delivery`, `fact_quotation`, `view_dim_aging_history` or
+`dim_pump_information` until their delivery approach is resolved against the shared publisher limit.
 
 The authoritative table schemas and writer contracts are in the OKF cards for
 [`mart_export_config`](../../okf/process/mart_export_config.md#schema) and
@@ -242,15 +275,17 @@ rules in the [message guide](../../how-to/setup-pubsub-export.md).
 **Export view contract** (every export view):
 
 - data columns first, under the **source table's column names** (no renaming, no
-  `company_source_id`) — except the commission and TA app sets, which keep the names
-  agreed in their respective samples; no SK of any dimension or incidental daily value
-  that makes unchanged rows look changed. Date-driven membership status is intentional;
+  `company_source_id`) — except the commission, TA app and AI team sample sets, which keep the names
+  agreed in their respective samples. The AI team sample sets retain their sample SK columns,
+  including regenerated SKs; other exports exclude dimension SKs and incidental daily values
+  that make unchanged rows look changed. Date-driven membership status is intentional;
   its transition rules are owned by the
   [`export_memberships` schema](../../okf/view/pub_sub/export_memberships.md#schema);
 - no cleaning helpers when the source is a dim/fact: it was cleaned when it was built.
   Round decimals to a fixed scale before they reach the hash if the source does not;
-- `row_key = TO_JSON_STRING(STRUCT(<natural key>))` — the natural key of the source,
-  becomes `primary_key`, unique and never NULL;
+- `row_key = TO_JSON_STRING(STRUCT(<key columns>))` becomes `primary_key`, unique and
+  never NULL. Each view's OKF card owns its key definition; this may use an SK or include
+  `occurrence` to distinguish repeated business keys in the AI team sample sets;
 - `row_hash = FARM_FINGERPRINT(TO_JSON_STRING(<all data columns>))` — the fingerprint of
   exactly the message `data`, so it changes only when something sent changes.
 

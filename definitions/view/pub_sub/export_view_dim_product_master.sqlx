@@ -1,0 +1,41 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "view_dim_product_master"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of dimension_view.view_dim_product_master: the columns of the sample sent to the AI team (the AI team package of 2026-10-26), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_VIEW}.view_dim_product_master`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- AI team sample table dimension_view.view_dim_product_master (the AI team package of 2026-10-26): the sample's columns, names and order,
+-- read from the same source for the whole table (the sample filters are not applied).
+-- Natural key = ProductSK.
+WITH src AS (
+  SELECT
+    ProductSK,
+    ProductCode,
+    ProductCode1,
+    ProductName,
+    ProductDescription,
+    ProductMac5Description,
+    PumpSegment,
+    BrandID
+  FROM `${SourceTableRef}`
+)
+SELECT
+  s.ProductSK,
+  s.ProductCode,
+  s.ProductCode1,
+  s.ProductName,
+  s.ProductDescription,
+  s.ProductMac5Description,
+  s.PumpSegment,
+  s.BrandID,
+  TO_JSON_STRING(STRUCT(s.ProductSK)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(s.ProductSK, s.ProductCode, s.ProductCode1, s.ProductName, s.ProductDescription, s.ProductMac5Description, s.PumpSegment, s.BrandID))) AS row_hash
+FROM src AS s

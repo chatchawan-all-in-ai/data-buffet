@@ -68,6 +68,42 @@ declare -A SOURCE_TABLES=(
   [member_links]="org_center.org_center_link"
   [access_exceptions]="org_center.org_center_exception"
   [customer_ta_assignments]="org_center.org_center_customer_ta org_center.org_center_member"
+  # AI team sample tables (2026-10-26 package, rls sample and dashboard display control): one topic per sample table.
+  # The first object is the table or view the export view reads; the others are one object per upstream dataset
+  # that view reads through, so the export view is authorized on every dataset of the chain.
+  [dim_aging_rang]="dimension_table.dim_aging_rang"
+  [dim_calendar]="dimension_table.dim_calendar"
+  [dim_customer_segment]="dimension_table.dim_customer_segment"
+  [dim_doctype]="dimension_table.dim_doctype"
+  [dim_payment]="dimension_table.dim_payment"
+  [dim_product_master_fc]="dimension_table.dim_product_master_fc"
+  [dim_product_series]="dimension_table.dim_product_series"
+  [dim_project]="dimension_table.dim_project"
+  [dim_pump_information]="dimension_table.dim_pump_information"
+  [dim_quotation]="dimension_table.dim_quotation"
+  [dim_section_last]="dimension_table.dim_section_last"
+  [dim_target_product_group_by_sale_dayofwork]="dimension_table.dim_target_product_group_by_sale_dayofwork"
+  [view_dim_aging_history]="dimension_view.view_dim_aging_history dimension_table.dim_aging fact_table.fact_mir_vs"
+  [view_dim_channel]="dimension_view.view_dim_channel dimension_table.dim_channel"
+  [view_dim_company]="dimension_view.view_dim_company dimension_table.dim_company"
+  [view_dim_customer]="dimension_view.view_dim_customer dimension_table.dim_customer mds_dataset.mds_data_customernickname_master"
+  [view_dim_customer_report_info]="dimension_view.view_dim_customer_report_info dimension_table.dim_customer_report_info"
+  [view_dim_invoice]="dimension_view.view_dim_invoice dimension_table.dim_aging function_dataset.clean_company_prefix mds_dataset.mds_data_crc_shop_name_rename validated_mac5.mec"
+  [view_dim_order]="dimension_view.view_dim_order dimension_table.dim_order function_dataset.fn_order_type mds_dataset.mds_data_document_expire_rule_master validated_mac5.mih2"
+  [view_dim_product_master]="dimension_view.view_dim_product_master dimension_table.dim_product_master"
+  [view_dim_product_mkt]="dimension_view.view_dim_product_mkt dimension_table.dim_product_mkt"
+  [view_dim_sale_representative_last]="dimension_view.view_dim_sale_representative_last dimension_table.dim_department_last"
+  [fact_delivery]="fact_table.fact_delivery"
+  [fact_order]="fact_table.fact_order"
+  [fact_quotation]="fact_table.fact_quotation"
+  [fact_transaction_delivery]="fact_table.fact_transaction_delivery"
+  [view_fact_transcation]="fact_view.view_fact_transcation dimension_table.dim_aging dimension_view.view_dim_aging fact_table.fact_invoice function_dataset.clean_company_prefix mds_dataset.mds_data_crc_shop_name_rename onetime.mapping_invoice validated_mac5.deb"
+  [mds_data_org_ols_center]="mds_dataset.mds_data_org_ols_center"
+  [product_attribute]="onetime.Product_Attribute dimension_table.dim_company validated_mac5.stg validated_mastersku.product"
+  [view_rls_sale_data]="process_dataset.view_rls_sale_data dimension_table.dim_company dimension_view.view_dim_company mds_dataset.mds_data_org_employee_mapping_center"
+  [brand]="validated_mastersku.brand"
+  [rls_ta_customer]="process_dataset.rls_ta_customer"
+  [mds_data_ta_dashboard_display_control]="mds_dataset.mds_data_ta_dashboard_display_control"
 )
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -286,6 +322,8 @@ for dataset_view in "${!view_datasets[@]}"; do
 done
 while IFS=$'\t' read -r table_name _source_view _topic; do
   for base in ${SOURCE_TABLES[$table_name]}; do
+    # Routines (function_dataset) have no table IAM policy: only tables and views carry an old grant to remove.
+    bq_table_exists "$base" || continue
     revoke_bq "$base" roles/bigquery.dataViewer
   done
 done <<< "$export_tables"

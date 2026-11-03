@@ -1,0 +1,41 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "dim_quotation"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of dimension_table.dim_quotation: the columns of the sample sent to the AI team (the AI team package of 2026-10-26), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_quotation`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- AI team sample table dimension_table.dim_quotation (the AI team package of 2026-10-26): the sample's columns, names and order,
+-- read from the same source for the whole table (the sample filters are not applied).
+-- Natural key = QuotationSK.
+WITH src AS (
+  SELECT
+    QuotationSK,
+    Running,
+    ProjectSK,
+    OrderStatus,
+    Project,
+    PriceValidity,
+    TermPayment,
+    Atten
+  FROM `${SourceTableRef}`
+)
+SELECT
+  s.QuotationSK,
+  s.Running,
+  s.ProjectSK,
+  s.OrderStatus,
+  s.Project,
+  s.PriceValidity,
+  s.TermPayment,
+  s.Atten,
+  TO_JSON_STRING(STRUCT(s.QuotationSK)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(s.QuotationSK, s.Running, s.ProjectSK, s.OrderStatus, s.Project, s.PriceValidity, s.TermPayment, s.Atten))) AS row_hash
+FROM src AS s

@@ -1,0 +1,49 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "fact_order"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of fact_table.fact_order: the columns of the sample sent to the AI team (the AI team package of 2026-10-26), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_order`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- AI team sample table fact_table.fact_order (the AI team package of 2026-10-26): the sample's columns, names and order,
+-- read from the same source for the whole table (the sample filters are not applied).
+-- Natural key = companyID, milType, milvnos, milStk + occurrence.
+-- No unique business key: rows are identified by the key columns plus `occurrence`, the position of the row among
+-- the rows with the same key ordered by their data JSON, so exact duplicate lines get distinct, repeatable keys.
+WITH src AS (
+  SELECT
+    FactOrderSk,
+    OrderSK,
+    ProductSK,
+    CompanySK,
+    CustomerSK,
+    FactQuotationSK,
+    milSum,
+    companyID,
+    milType,
+    milvnos,
+    milStk,
+    ROW_NUMBER() OVER (
+      PARTITION BY companyID, milType, milvnos, milStk
+      ORDER BY TO_JSON_STRING(STRUCT(FactOrderSk, OrderSK, ProductSK, CompanySK, CustomerSK, FactQuotationSK, milSum))
+    ) AS occurrence
+  FROM `${SourceTableRef}`
+)
+SELECT
+  s.FactOrderSk,
+  s.OrderSK,
+  s.ProductSK,
+  s.CompanySK,
+  s.CustomerSK,
+  s.FactQuotationSK,
+  s.milSum,
+  TO_JSON_STRING(STRUCT(s.companyID, s.milType, s.milvnos, s.milStk, s.occurrence)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(s.FactOrderSk, s.OrderSK, s.ProductSK, s.CompanySK, s.CustomerSK, s.FactQuotationSK, s.milSum))) AS row_hash
+FROM src AS s

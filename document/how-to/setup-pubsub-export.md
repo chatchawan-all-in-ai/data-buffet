@@ -10,6 +10,8 @@
 > ดู [ส่วน C](#ส่วน-c--ชุด-commission-ของทีม-tf)) — **ยังไม่ได้ทำฝั่ง GCP** ทำตามส่วน C หลัง PR merge
 > · 2026-11-02: เพิ่มชุดตารางองค์กรของแอป TA 9 ชุดให้ทีม AI ใน repo แล้ว (topic `export-ta-<ตาราง>` ดู
 > [ส่วน D](#ส่วน-d--ตารางองค์กรของแอป-ta-ให้ทีม-ai)) — **ยังไม่ได้ทำฝั่ง GCP**
+> · 2026-11-03: เพิ่มตารางตัวอย่างที่ส่งทีม AI แล้วอีก 33 ตาราง (topic `export-ta-<ตาราง>` ดู
+> [ส่วน E](#ส่วน-e--ตารางตัวอย่างของทีม-ai-33-ตาราง)) — **ยังไม่ได้ทำฝั่ง GCP**
 > รายละเอียด repo และวิธีเพิ่มตารางอยู่ที่
 > [process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
 
@@ -110,7 +112,7 @@ bash infra/pubsub/setup.sh
    (และ Dataform / BigQuery ที่เปิดอยู่แล้ว)
 3. สร้าง service accounts `datamart-publish-trigger` และ `datamart-publisher` — **ไม่สร้าง key**
 4. ต่อทุกตารางใน [`mart-export-config.json`](../../includes/controller/mart-export-config.json):
-   topic (`export-ta-dim_company`, `export-commission-<ชุด>` 12 topic และ `export-ta-<ตาราง>` 9 topic), dead-letter topic (`<topic>-dead-letter`) และสิทธิ์ publisher
+   topic (`export-ta-dim_company`, `export-commission-<ชุด>` 12 topic และ `export-ta-<ตาราง>` 9 + 33 topic), dead-letter topic (`<topic>-dead-letter`) และสิทธิ์ publisher
    ของ Pub/Sub service agent บน dead-letter topic · ไม่สร้าง subscription ทดสอบ
    - dead-letter topic รับ dead letter ของทุก subscription ของทีมบน topic นั้น — subscription
      ของทีมและ `dlq.<ทีม>.<topic>` ที่เก็บ dead letter สร้างตอนต่อทีมด้วย `add-consumer.sh` (ส่วน B)
@@ -557,3 +559,30 @@ topic: `export-ta-org_levels`, `export-ta-org_units`, `export-ta-positions`, `ex
 - [ ] ในวัน first-load ที่กัปตันกำหนด หลังมี subscription แล้ว รันจาก Cloud Shell เท่านั้น `export-snapshot.sh <ทีม> <topic>` ทีละ topic รอให้สคริปต์ seek และรอ 90 วินาทีก่อนเขียน manifest เสร็จ แล้วส่ง folder + export time ให้ทีม · ทีมรอ manifest และโหลดไฟล์ครบก่อนเริ่ม pull (ขั้น 3)
 - [ ] ตั้ง alert backlog + dead letter และส่ง handover package ครบ (ขั้น 4–5)
 - [ ] ชุด commission ของทีม TF: ทำตามส่วน C(a) แล้วรอกัปตันกำหนดวันทำ C(b)
+
+---
+
+## ส่วน E — ตารางตัวอย่างของทีม AI (33 ตาราง)
+
+เพิ่ม 2026-11-03 · ทุกตารางที่ส่งให้ทีม AI เป็นตัวอย่างแล้ว (ชุด 26 ต.ค. 31 ตาราง, `rls_ta_customer`,
+`mds_data_ta_dashboard_display_control`) · 1 topic ต่อ 1 ตาราง · คอลัมน์ = หัว CSV ของตัวอย่าง ชื่อและลำดับเดิม
+อ่านจากตารางเดียวกัน ทั้งตาราง (ไม่ใช้ตัวกรองของตัวอย่าง) · เมื่อเปิดใช้งานจะส่งหลังรอบ `daily_process` ที่สำเร็จ ·
+รายชื่อ view และรายละเอียด schema, key และจำนวนแถวอยู่ใน
+[OKF export cards](../okf/view/pub_sub/index.md)
+
+รายชื่อ topic อยู่ใน [`mart-export-config.json`](../../includes/controller/mart-export-config.json) ·
+ข้อจำกัดด้านปริมาณการเปลี่ยนแปลงและเพดาน publisher อยู่ใน
+[process reference](../project_wiki/cdc-process/process.md#ai-team-sample-tables)
+
+### E(a). หลังทีม AI ทดสอบตัวอย่างเสร็จและอนุมัติเปิดใช้งาน
+
+**รอบนี้ส่งมอบเฉพาะโค้ด view, config, setup และเอกสาร** · ทีม AI ทดสอบกับตัวอย่างก่อน
+และอาจปรับ view ตามผลทดสอบ · การ merge ไม่ใช่คำสั่ง deploy: ยังไม่รัน Dataform หรือเปลี่ยน GCP/BigQuery,
+ไม่สร้าง topic หรือ consumer และไม่ส่งข้อมูล · ขั้นตอนต่อไปนี้ใช้ภายหลังได้รับอนุมัติเปิดใช้งานเท่านั้น
+และ code ถึง `nonprod` แล้ว:
+
+1. รัน tag `pub_sub` ตาม [ขั้น deploy](../project_wiki/cdc-process/process.md#deploy) — สร้าง 33 view และเพิ่ม 33 แถว config ที่ `seeded_at` เป็น NULL
+2. `bash infra/pubsub/setup.sh` — สร้าง 33 topic + dead-letter topic, ให้สิทธิ์ publisher อ่าน 33 view
+   (authorized view บนทุก dataset ในสายของ view นั้น) แล้ว dry-run `SELECT` ของแต่ละ export view ในนาม publisher
+3. ต่อทีม AI ด้วย `add-consumer.sh <ทีม> <topic>...` และโหลดครั้งแรกด้วย `export-snapshot.sh` ในวันที่กัปตันกำหนด
+   (ส่วน B) — จนกว่าจะ seed publisher ข้ามทุก topic

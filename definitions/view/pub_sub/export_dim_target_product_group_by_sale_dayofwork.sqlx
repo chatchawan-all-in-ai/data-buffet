@@ -1,0 +1,53 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "dim_target_product_group_by_sale_dayofwork"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of dimension_table.dim_target_product_group_by_sale_dayofwork: the columns of the sample sent to the AI team (the AI team package of 2026-10-26), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_target_product_group_by_sale_dayofwork`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- AI team sample table dimension_table.dim_target_product_group_by_sale_dayofwork (the AI team package of 2026-10-26): the sample's columns, names and order,
+-- read from the same source for the whole table (the sample filters are not applied).
+-- Natural key = companyID, Date, EmployeeID, DepartmentID, TargetID, MarketingGroupID, SubMarketingID, SegmentID, ChannelTargetGroup, StartDate.
+WITH src AS (
+  SELECT
+    Year,
+    Month,
+    Day,
+    SaleRepSKLast,
+    SectionSKLast,
+    ProductMktSK,
+    CompanySK,
+    Amt_New,
+    Qty_New,
+    companyID,
+    Date,
+    EmployeeID,
+    DepartmentID,
+    TargetID,
+    MarketingGroupID,
+    SubMarketingID,
+    SegmentID,
+    ChannelTargetGroup,
+    StartDate
+  FROM `${SourceTableRef}`
+)
+SELECT
+  s.Year,
+  s.Month,
+  s.Day,
+  s.SaleRepSKLast,
+  s.SectionSKLast,
+  s.ProductMktSK,
+  s.CompanySK,
+  s.Amt_New,
+  s.Qty_New,
+  TO_JSON_STRING(STRUCT(s.companyID, s.Date, s.EmployeeID, s.DepartmentID, s.TargetID, s.MarketingGroupID, s.SubMarketingID, s.SegmentID, s.ChannelTargetGroup, s.StartDate)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(s.Year, s.Month, s.Day, s.SaleRepSKLast, s.SectionSKLast, s.ProductMktSK, s.CompanySK, s.Amt_New, s.Qty_New))) AS row_hash
+FROM src AS s

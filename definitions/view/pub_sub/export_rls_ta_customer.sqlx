@@ -1,0 +1,39 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "rls_ta_customer"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of process_dataset.rls_ta_customer: the columns of the sample sent to the AI team (the rls sample of 2026-11-02), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.PROCESS_DATASET}.rls_ta_customer`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- AI team sample table process_dataset.rls_ta_customer (the rls sample of 2026-11-02): the sample's columns, names and order,
+-- read from the same source for the whole table (the sample filters are not applied).
+-- Natural key = employee_id, customer_company_id, customer_code, marketing_group_id, sub_marketing_id, segment_id, access_source.
+WITH src AS (
+  SELECT
+    employee_id,
+    customer_company_id,
+    customer_code,
+    marketing_group_id,
+    sub_marketing_id,
+    segment_id,
+    access_source
+  FROM `${SourceTableRef}`
+)
+SELECT
+  s.employee_id,
+  s.customer_company_id,
+  s.customer_code,
+  s.marketing_group_id,
+  s.sub_marketing_id,
+  s.segment_id,
+  s.access_source,
+  TO_JSON_STRING(STRUCT(s.employee_id, s.customer_company_id, s.customer_code, s.marketing_group_id, s.sub_marketing_id, s.segment_id, s.access_source)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(s.employee_id, s.customer_company_id, s.customer_code, s.marketing_group_id, s.sub_marketing_id, s.segment_id, s.access_source))) AS row_hash
+FROM src AS s

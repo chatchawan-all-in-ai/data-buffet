@@ -154,6 +154,204 @@
       "source_view": "export_customer_ta_assignments",
       "topic": "export-ta-customer_ta_assignments",
       "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "dim_aging_rang",
+      "source_view": "export_dim_aging_rang",
+      "topic": "export-ta-dim_aging_rang",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "dim_calendar",
+      "source_view": "export_dim_calendar",
+      "topic": "export-ta-dim_calendar",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "dim_customer_segment",
+      "source_view": "export_dim_customer_segment",
+      "topic": "export-ta-dim_customer_segment",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "dim_doctype",
+      "source_view": "export_dim_doctype",
+      "topic": "export-ta-dim_doctype",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "dim_payment",
+      "source_view": "export_dim_payment",
+      "topic": "export-ta-dim_payment",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "dim_product_master_fc",
+      "source_view": "export_dim_product_master_fc",
+      "topic": "export-ta-dim_product_master_fc",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "dim_product_series",
+      "source_view": "export_dim_product_series",
+      "topic": "export-ta-dim_product_series",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "dim_project",
+      "source_view": "export_dim_project",
+      "topic": "export-ta-dim_project",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "dim_pump_information",
+      "source_view": "export_dim_pump_information",
+      "topic": "export-ta-dim_pump_information",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "dim_quotation",
+      "source_view": "export_dim_quotation",
+      "topic": "export-ta-dim_quotation",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "dim_section_last",
+      "source_view": "export_dim_section_last",
+      "topic": "export-ta-dim_section_last",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "dim_target_product_group_by_sale_dayofwork",
+      "source_view": "export_dim_target_product_group_by_sale_dayofwork",
+      "topic": "export-ta-dim_target_product_group_by_sale_dayofwork",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "view_dim_aging_history",
+      "source_view": "export_view_dim_aging_history",
+      "topic": "export-ta-view_dim_aging_history",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "view_dim_channel",
+      "source_view": "export_view_dim_channel",
+      "topic": "export-ta-view_dim_channel",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "view_dim_company",
+      "source_view": "export_view_dim_company",
+      "topic": "export-ta-view_dim_company",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "view_dim_customer",
+      "source_view": "export_view_dim_customer",
+      "topic": "export-ta-view_dim_customer",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "view_dim_customer_report_info",
+      "source_view": "export_view_dim_customer_report_info",
+      "topic": "export-ta-view_dim_customer_report_info",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "view_dim_invoice",
+      "source_view": "export_view_dim_invoice",
+      "topic": "export-ta-view_dim_invoice",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "view_dim_order",
+      "source_view": "export_view_dim_order",
+      "topic": "export-ta-view_dim_order",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "view_dim_product_master",
+      "source_view": "export_view_dim_product_master",
+      "topic": "export-ta-view_dim_product_master",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "view_dim_product_mkt",
+      "source_view": "export_view_dim_product_mkt",
+      "topic": "export-ta-view_dim_product_mkt",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "view_dim_sale_representative_last",
+      "source_view": "export_view_dim_sale_representative_last",
+      "topic": "export-ta-view_dim_sale_representative_last",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "fact_delivery",
+      "source_view": "export_fact_delivery",
+      "topic": "export-ta-fact_delivery",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "fact_order",
+      "source_view": "export_fact_order",
+      "topic": "export-ta-fact_order",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "fact_quotation",
+      "source_view": "export_fact_quotation",
+      "topic": "export-ta-fact_quotation",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "fact_transaction_delivery",
+      "source_view": "export_fact_transaction_delivery",
+      "topic": "export-ta-fact_transaction_delivery",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "view_fact_transcation",
+      "source_view": "export_view_fact_transcation",
+      "topic": "export-ta-view_fact_transcation",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "mds_data_org_ols_center",
+      "source_view": "export_mds_data_org_ols_center",
+      "topic": "export-ta-mds_data_org_ols_center",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "product_attribute",
+      "source_view": "export_product_attribute",
+      "topic": "export-ta-product_attribute",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "view_rls_sale_data",
+      "source_view": "export_view_rls_sale_data",
+      "topic": "export-ta-view_rls_sale_data",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "brand",
+      "source_view": "export_brand",
+      "topic": "export-ta-brand",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "rls_ta_customer",
+      "source_view": "export_rls_ta_customer",
+      "topic": "export-ta-rls_ta_customer",
+      "trigger_scheduler": "daily_process"
+    },
+    {
+      "table_name": "mds_data_ta_dashboard_display_control",
+      "source_view": "export_mds_data_ta_dashboard_display_control",
+      "topic": "export-ta-mds_data_ta_dashboard_display_control",
+      "trigger_scheduler": "daily_process"
     }
   ]
 }

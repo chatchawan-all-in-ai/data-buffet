@@ -1,0 +1,31 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "view_rls_sale_data"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of process_dataset.view_rls_sale_data: the columns of the sample sent to the AI team (the AI team package of 2026-10-26), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.PROCESS_DATASET}.view_rls_sale_data`;
+}
+
+-- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
+-- AI team sample table process_dataset.view_rls_sale_data (the AI team package of 2026-10-26): the sample's columns, names and order,
+-- read from the same source for the whole table (the sample filters are not applied).
+-- Natural key = EmployeeEmail, LevelName, LevelValue.
+WITH src AS (
+  SELECT
+    EmployeeEmail,
+    LevelName,
+    LevelValue
+  FROM `${SourceTableRef}`
+)
+SELECT
+  s.EmployeeEmail,
+  s.LevelName,
+  s.LevelValue,
+  TO_JSON_STRING(STRUCT(s.EmployeeEmail, s.LevelName, s.LevelValue)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(s.EmployeeEmail, s.LevelName, s.LevelValue))) AS row_hash
+FROM src AS s
