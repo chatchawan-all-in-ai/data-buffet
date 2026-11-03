@@ -10,7 +10,9 @@ js {
     const cfg = databuffet.martExportConfig;
     const sql = s => `'${s.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
     const opt = s => (s === undefined || s === null ? "CAST(NULL AS STRING)" : sql(s));
-    const viewOf = t => ref(databuffet.PUB_SUB, t.source_view);
+    // resolve(), not ref(): ref() would make this action depend on every export view, and Dataform
+    // allows at most 50 dependencies per action.
+    const viewOf = t => resolve(databuffet.PUB_SUB, t.source_view);
     // task_group is required: the send job takes work group by group, a table without one cannot be sent.
     cfg.tables.forEach(t => {
         if (typeof t.task_group !== "string" || t.task_group.trim() === "") {
@@ -48,7 +50,8 @@ WHERE c.seeded_at IS NULL
 -- (never topic, source_view, trigger_scheduler, last_invocation_*, claimed_at or seeded_at), so the
 -- publisher's memory and every table already being sent stay as they are. The migration above
 -- only backfills seeded_at for tables that already have sent state.
--- ref() records the view as a dependency, so a config row naming a missing view fails compile.
+-- resolve() adds no dependency, so compile does not catch a config row naming a missing view;
+-- pubsub/scripts/setup.sh stops when an export view does not exist.
 MERGE ${self()} AS t
 USING (
   SELECT *

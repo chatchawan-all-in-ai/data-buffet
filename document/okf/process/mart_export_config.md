@@ -31,7 +31,7 @@ One row per `table_name` (the exported table = the message `table`). Dataform in
 | Column | Type | Description |
 |---|---|---|
 | `table_name` | STRING | Exported table name = the Pub/Sub message `table` (e.g. dim_company, order); without trigger_scheduler also the Dataform action whose successful run triggers the export. Key of the table. |
-| `source_view` | STRING | Full name of the export view in dataset pub_sub (databuffet-nonprd.pub_sub.export_<table>), resolved by ref() at compile time. |
+| `source_view` | STRING | Full name of the export view in dataset pub_sub (databuffet-nonprd.pub_sub.export_<table>); see name resolution below. |
 | `topic` | STRING | Pub/Sub topic the changed rows are published to. |
 | `task_group` | STRING | Name of the group of tables one send task works through (e.g. fact_order, commission, master); the groups are taken in the order of the config JSON and a task claims the next group that still has a table to send. Ninth column, added by ALTER TABLE ADD COLUMN IF NOT EXISTS; refreshed from the JSON on every Dataform run. |
 | `group_claimed_at` | TIMESTAMP | Group ownership marker, set atomically across every member only when no member has a live group or table claim. Released after the group; expires after 35 minutes if the task dies. |
@@ -46,7 +46,8 @@ One row per `table_name` (the exported table = the message `table`). Dataform in
 # How it is built
 
 - Definition: `definitions/process/mart_export_config.sqlx` (`type: "operations"`, tags `pub_sub`); the operation owns this table.
-- Dependencies: every export view in dataset [pub_sub](/view/pub_sub/index.md), resolved by ref(), and [mart_sent_state](/process/mart_sent_state.md), read to backfill seeded_at. The operation does not read view data or write sent state.
+- Dependencies: [mart_sent_state](/process/mart_sent_state.md), read to backfill seeded_at. The operation does not read view data or write sent state.
+- Export-view names use `resolve()` without adding dependencies, keeping this action within Dataform's 50-dependency limit. Compilation does not validate that these views exist. [`pubsub/scripts/setup.sh`](../../../pubsub/scripts/setup.sh) checks every configured export view exists in BigQuery and stops if one is missing; deployment prerequisites are in [setup guide A](../../how-to/setup-pubsub-export.md#ส่วน-a--deploy-และทดสอบ-pilot).
 - Operations: `CREATE TABLE IF NOT EXISTS`, append `trigger_scheduler`, `seeded_at`, `task_group`, `group_claimed_at`, `recovery_started_at` and `recovery_until` with ALTER, backfill seeded_at from MIN(sent_at) for existing sent state, then MERGE from JSON: a new row has NULL last_invocation_id/end, claimed_at and seeded_at; an existing row only gets task_group updated, so its checkpoints and claims are preserved. Compilation fails when a JSON entry has no task_group. The publisher skips tables with seeded_at NULL. First-load execution and retry rules are in [setup guide B3](../../how-to/setup-pubsub-export.md#3-โหลดครั้งแรกด้วยไฟล์-ครั้งแรกที่ทีมต่อ-topic-นั้นเท่านั้น).
 - Approximate size (BigQuery metadata, 2026-11-03): 13 rows (the tables deployed so far).
 

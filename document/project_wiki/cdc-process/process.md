@@ -237,8 +237,8 @@ The first-load execution, transaction, claim cleanup and retry procedure are own
 the TF rollout date and sequence are in [section C](../../how-to/setup-pubsub-export.md#ส่วน-c--ชุด-commission-ของทีม-tf).
 
 Changing an existing export table's
-view/topic or removing it is a deliberate manual change. `ref()` to each export view
-keeps a config row naming a missing view a compile error.
+view/topic or removing it is a deliberate manual change. Export-view name resolution
+and validation are described in the [config reference](../../okf/process/mart_export_config.md#how-it-is-built).
 
 **Check job** (every 5 minutes, `main.py check`, 1 vCPU / 512 MiB, one task, service account
 `datamart-publish-checker`). It reads `mart_export_config` by column name, then for each row
