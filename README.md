@@ -79,8 +79,8 @@ JavaScript-generated actions are outside that diagram's scope.
 | **Process** | `definitions/process/` | AI address parsing + row-level security (see the [process reference](document/project_wiki/cdc-process/process.md), including TA customer access) + [Pub/Sub export pilot](document/project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
 
 The Pub/Sub export includes the `dim_company` pilot, commission datasets for TF, the nine org-center tables of the TA app and 33 sample tables for the AI team.
-Dataform objects live here, with the publishing Cloud Workflow and its idempotent
-GCP setup script in `infra/pubsub/`, deployed by hand.
+Dataform objects live here, with the publishing Cloud Run jobs (check + send) and their idempotent
+GCP setup script in `pubsub/`, deployed by hand.
 See the [setup and message guide](document/how-to/setup-pubsub-export.md).
 
 **Validated by source:** MAC5, CIS360, MASTERSKU, MASTER_SKU (3.0),
@@ -132,10 +132,12 @@ includes/
     ├── variables.json            # Dataset names & tag constants
     ├── function-data.js          # Reusable SQL-generating helpers
     ├── cdc-config.json           # Which source tables participate in CDC
-    └── mart-export-config.json   # Pub/Sub export selection (see the process reference)
+    └── mart-export-config.json   # Pub/Sub export selection + task groups (see the process reference)
 
-infra/
-└── pubsub/           # Cloud Workflow datamart-publish + setup.sh (Pub/Sub export, GCP side)
+pubsub/               # Pub/Sub export, GCP side (not Dataform)
+├── publisher/        # Cloud Run publisher: main.py (check / send modes), requirements.txt, Dockerfile
+├── sql/              # diff.sql - the diff query shared by the publisher and export-snapshot.sh
+└── scripts/          # setup.sh, add-consumer.sh, export-snapshot.sh
 
 document/
 ├── getting-started/  architecture/  coding-standards/  how-to/  operations/   (Thai)

@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of commission set `chqri` for the TF team (company ag01): one ag01 received cheque (chqtype 1) per receipt (RS) payment line dated 2026. Its columns, names, order and JSON types are those of the commission sample sent to TF on 2026-10-14 (`commission_tf_ag01_2026`). The Cloud Workflow `datamart-publish` compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `chqri` to topic `export-commission-chqri`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files are split into date folders by `cqldate` (`snapshot_date` in the export config).
+The Pub/Sub export view of commission set `chqri` for the TF team (company ag01): one ag01 received cheque (chqtype 1) per receipt (RS) payment line dated 2026. Its columns, names, order and JSON types are those of the commission sample sent to TF on 2026-10-14 (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `chqri` to topic `export-commission-chqri`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files are split into date folders by `cqldate` (`snapshot_date` in the export config).
 
 # Grain and key
 

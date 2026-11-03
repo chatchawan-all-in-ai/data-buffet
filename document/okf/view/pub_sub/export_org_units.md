@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of the TA app table `org_units`: the units of [org_center_unit](/org_center/org_center_unit.md) except the COMPANY rows. `id` is the org center `unit_id`, which is not unique across companies (DIR-00002, REG-PS1-2, SEC-PS1-2 and others exist in ab01 and ag01), so every reference to a unit pairs it with `company_id`. The Cloud Workflow `datamart-publish` compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `org_units` to topic `export-ta-org_units`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of the TA app table `org_units`: the units of [org_center_unit](/org_center/org_center_unit.md) except the COMPANY rows. `id` is the org center `unit_id`, which is not unique across companies (DIR-00002, REG-PS1-2, SEC-PS1-2 and others exist in ab01 and ag01), so every reference to a unit pairs it with `company_id`. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `org_units` to topic `export-ta-org_units`. It is registered in [mart_export_config](/process/mart_export_config.md).
 
 # Grain and key
 

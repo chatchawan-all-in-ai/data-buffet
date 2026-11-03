@@ -3,7 +3,7 @@ config {
     schema: databuffet.PROCESS_DATASET,
     hasOutput: true,
     tags: [databuffet.TAG_PUB_SUB],
-    description: "One row per table exported to Pub/Sub: the config from includes/controller/mart-export-config.json (trigger_scheduler = the Dataform workflow configuration whose successful run triggers the export, NULL = a successful run of action table_name) plus the publish workflow's memory of the last Dataform workflow invocation it handled (last_invocation_id / last_invocation_end) and its being-processed marker (claimed_at). A new table has seeded_at NULL until its first manual Cloud Shell snapshot seeds mart_sent_state and writes first-load files together; deployment never seeds rows",
+    description: "One row per table exported to Pub/Sub: the config from includes/controller/mart-export-config.json (trigger_scheduler = the Dataform workflow configuration whose successful run triggers the export, NULL = a successful run of action table_name) plus its task_group (the group of tables one send task works through) and the publisher's memory of the last Dataform workflow invocation it handled (last_invocation_id / last_invocation_end) and its being-processed marker (claimed_at). A new table has seeded_at NULL until its first manual Cloud Shell snapshot seeds mart_sent_state and writes first-load files together; deployment never seeds rows",
 }
 
 js {
@@ -11,9 +11,15 @@ js {
     const sql = s => `'${s.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
     const opt = s => (s === undefined || s === null ? "CAST(NULL AS STRING)" : sql(s));
     const viewOf = t => ref(databuffet.PUB_SUB, t.source_view);
+    // task_group is required: the send job takes work group by group, a table without one cannot be sent.
+    cfg.tables.forEach(t => {
+        if (typeof t.task_group !== "string" || t.task_group.trim() === "") {
+            throw new Error(`mart-export-config.json: table ${t.table_name} has no task_group`);
+        }
+    });
 }
 
--- Created once, never rebuilt: the publish workflow keeps its memory in last_invocation_* and
+-- Created once, never rebuilt: the publisher keeps its memory in last_invocation_* and
 -- claimed_at. Times are UTC; convert to Asia/Bangkok when reading.
 CREATE TABLE IF NOT EXISTS ${self()} (
   table_name STRING NOT NULL,
@@ -25,26 +31,34 @@ CREATE TABLE IF NOT EXISTS ${self()} (
   trigger_scheduler STRING,
   seeded_at TIMESTAMP
 );
--- Added after the pilot in this order because the workflow reads columns by position.
+-- Added after the pilot; the publisher reads columns by name.
 ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS trigger_scheduler STRING;
 ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS seeded_at TIMESTAMP;
+ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS task_group STRING;
+ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS group_claimed_at TIMESTAMP;
+ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS recovery_started_at TIMESTAMP;
+ALTER TABLE ${self()} ADD COLUMN IF NOT EXISTS recovery_until TIMESTAMP;
 
 UPDATE ${self()} AS c
 SET seeded_at = (SELECT MIN(s.sent_at) FROM ${ref("mart_sent_state")} AS s WHERE s.table_name = c.table_name)
 WHERE c.seeded_at IS NULL
   AND EXISTS (SELECT 1 FROM ${ref("mart_sent_state")} AS s WHERE s.table_name = c.table_name);
 
--- Insert-only MERGE: preserves existing config and workflow memory; the migration above
+-- MERGE: a new table is inserted; an existing row gets its task_group updated and nothing else
+-- (never topic, source_view, trigger_scheduler, last_invocation_*, claimed_at or seeded_at), so the
+-- publisher's memory and every table already being sent stay as they are. The migration above
 -- only backfills seeded_at for tables that already have sent state.
 -- ref() records the view as a dependency, so a config row naming a missing view fails compile.
 MERGE ${self()} AS t
 USING (
   SELECT *
-  FROM UNNEST(ARRAY<STRUCT<table_name STRING, source_view STRING, topic STRING, trigger_scheduler STRING>>[
-    ${cfg.tables.map(t => `(${sql(t.table_name)}, ${sql(viewOf(t).replace(/`/g, ""))}, ${sql(t.topic)}, ${opt(t.trigger_scheduler)})`).join(",\n    ")}
+  FROM UNNEST(ARRAY<STRUCT<table_name STRING, source_view STRING, topic STRING, trigger_scheduler STRING, task_group STRING>>[
+    ${cfg.tables.map(t => `(${sql(t.table_name)}, ${sql(viewOf(t).replace(/`/g, ""))}, ${sql(t.topic)}, ${opt(t.trigger_scheduler)}, ${sql(t.task_group)})`).join(",\n    ")}
   ])
 ) AS s
 ON t.table_name = s.table_name
+WHEN MATCHED THEN
+  UPDATE SET task_group = s.task_group
 WHEN NOT MATCHED THEN
-  INSERT (table_name, source_view, topic, trigger_scheduler, last_invocation_id, last_invocation_end, claimed_at, seeded_at)
-  VALUES (s.table_name, s.source_view, s.topic, s.trigger_scheduler, NULL, NULL, NULL, NULL);
+  INSERT (table_name, source_view, topic, trigger_scheduler, task_group, last_invocation_id, last_invocation_end, claimed_at, seeded_at)
+  VALUES (s.table_name, s.source_view, s.topic, s.trigger_scheduler, s.task_group, NULL, NULL, NULL, NULL);

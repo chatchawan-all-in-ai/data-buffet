@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of the TA app table `customer_ta_assignments`: one row per [org_center_customer_ta](/org_center/org_center_customer_ta.md) row. `company_id` is the customer's company; `membership_company_id` is the company of the membership the TA already has: the customer's company when the TA has a membership there, otherwise the company of the TA's seat (TA position first, then company_id), e.g. ag01 for ac02 customers served by a TA who sits in ag01. The Cloud Workflow `datamart-publish` compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `customer_ta_assignments` to topic `export-ta-customer_ta_assignments`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of the TA app table `customer_ta_assignments`: one row per [org_center_customer_ta](/org_center/org_center_customer_ta.md) row. `company_id` is the customer's company; `membership_company_id` is the company of the membership the TA already has: the customer's company when the TA has a membership there, otherwise the company of the TA's seat (TA position first, then company_id), e.g. ag01 for ac02 customers served by a TA who sits in ag01. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `customer_ta_assignments` to topic `export-ta-customer_ta_assignments`. It is registered in [mart_export_config](/process/mart_export_config.md).
 
 # Grain and key
 

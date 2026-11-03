@@ -4,12 +4,12 @@
 #
 # Writes every current row of the topic's export view to
 #   gs://<bucket>/<team>/<topic>/<export time>/<YYYY>/<MM>/<DD>/data-<n>.json + manifest.json
-# as newline-delimited JSON: each line is exactly the Pub/Sub message the publish workflow
+# as newline-delimited JSON: each line is exactly the Pub/Sub message the publisher
 # would send for that row as NEW. <YYYY>/<MM>/<DD> is the row's document date, read from the
 # message data column named by `snapshot_date` of the topic's entry in mart-export-config.json
 # ({"column", "format"} for PARSE_DATETIME); an entry without it (master data) puts every row
-# under the export date (Asia/Bangkok). The query is the workflow's own diff query
-# (datamart-publish.workflows.yaml, step `diff`) with an empty sent state, so the envelope and
+# under the export date (Asia/Bangkok). The query is the publisher's own diff query
+# (pubsub/sql/diff.sql) with an empty sent state, so the envelope and
 # the JSON of every value cannot drift from the messages. BigQuery exports it as CSV (date
 # folder + one quoted message column); the shards are unquoted and split into the date folders
 # on the way back into the team folder, and every line is checked.
@@ -20,8 +20,8 @@
 # Prerequisites: setup.sh and add-consumer.sh already run; gcloud + bq logged in as a project
 # owner in Google Cloud Shell (CLOUD_SHELL=true); python3/python.
 #
-# Usage: bash infra/pubsub/export-snapshot.sh <team> <topic>
-#   e.g. bash infra/pubsub/export-snapshot.sh ai-dev export-ta-dim_company
+# Usage: bash pubsub/scripts/export-snapshot.sh <team> <topic>
+#   e.g. bash pubsub/scripts/export-snapshot.sh ai-dev export-ta-dim_company
 set -euo pipefail
 
 PROJECT=databuffet-nonprd
@@ -34,13 +34,14 @@ FILE_ROWS=100000                                       # lines per data file in 
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$here/../.." && pwd)"
+# The single copy of the export config stays in includes/ (Dataform reads it from there).
 config_json="$repo_root/includes/controller/mart-export-config.json"
-workflow_yaml="$here/datamart-publish.workflows.yaml"
+diff_sql="$here/../sql/diff.sql"
 
 log() { printf '\n== %s\n' "$*"; }
 die() { printf 'export-snapshot.sh: %s\n' "$*" >&2; exit 1; }
 
-[ $# -eq 2 ] || die "usage: bash infra/pubsub/export-snapshot.sh <team> <topic>"
+[ $# -eq 2 ] || die "usage: bash pubsub/scripts/export-snapshot.sh <team> <topic>"
 team="$1"
 topic="$2"
 [[ "$team" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]] ||
@@ -63,7 +64,7 @@ pick_python() {
 log "Checking prerequisites"
 command -v gcloud >/dev/null || die "gcloud not found"
 command -v bq >/dev/null || die "bq not found"
-[ -f "$workflow_yaml" ] || die "missing $workflow_yaml"
+[ -f "$diff_sql" ] || die "missing $diff_sql"
 python_bin="$(pick_python)"
 
 # table_name<TAB>source_view<TAB>date column<TAB>date format of the topic's entry in the config
@@ -96,24 +97,12 @@ gcloud storage buckets describe "gs://$SNAPSHOT_BUCKET" >/dev/null 2>&1 ||
   die "bucket gs://$SNAPSHOT_BUCKET not found - run setup.sh first"
 echo "  $topic = $table_name from $EXPORT_DATASET.$source_view; $sub exists; folders by $date_note"
 
-# The workflow's diff query, unchanged except: mart_sent_state is replaced by an empty
-# relation (every row of the view becomes NEW) and only the message column is kept.
-query="$("$python_bin" - "$workflow_yaml" "$PROJECT.$BQ_DATASET" "$PROJECT.$EXPORT_DATASET.$source_view" <<'PY'
-import sys, textwrap
-yaml_path, dataset, source_view = sys.argv[1:4]
-lines = open(yaml_path, encoding="utf-8").read().splitlines()
-try:
-    step = next(i for i, l in enumerate(lines) if l.strip() == "- diff:")
-    key = next(i for i in range(step, len(lines)) if lines[i].strip() == "sql: |")
-except StopIteration:
-    sys.exit("export-snapshot.sh: no `- diff:` step with `sql: |` in " + yaml_path)
-indent = len(lines[key]) - len(lines[key].lstrip())
-block = []
-for l in lines[key + 1:]:
-    if l.strip() and len(l) - len(l.lstrip()) <= indent:
-        break
-    block.append(l)
-sql = textwrap.dedent("\n".join(block)).strip()
+# The publisher's diff query (pubsub/sql/diff.sql), unchanged except: mart_sent_state is replaced
+# by an empty relation (every row of the view becomes NEW) and only the message column is kept.
+query="$("$python_bin" - "$diff_sql" "$PROJECT.$BQ_DATASET" "$PROJECT.$EXPORT_DATASET.$source_view" <<'PY'
+import sys
+sql_path, dataset, source_view = sys.argv[1:4]
+sql = open(sql_path, encoding="utf-8").read().strip()
 sent_state = "`{{dataset}}.mart_sent_state`"
 if sql.count(sent_state) != 1:
     sys.exit("export-snapshot.sh: the diff query no longer reads " + sent_state + " exactly once")
@@ -150,7 +139,7 @@ cleanup() {
      SET claimed_at = NULL
      WHERE table_name = @table_name AND claimed_at = TIMESTAMP(@claim)"; then
     if [ -n "$manifest_written" ]; then
-      printf 'export-snapshot.sh: export succeeded; publisher claim release failed; the claim expires automatically after 30 minutes\n' >&2
+      printf 'export-snapshot.sh: export succeeded; publisher claim release failed; the claim expires automatically after 35 minutes\n' >&2
       status=0
     else
       printf 'export-snapshot.sh: could not release the publisher claim; the claim must be cleared before retrying\n' >&2
@@ -181,6 +170,9 @@ claimed="$(bq --project_id="$PROJECT" --location="$BQ_LOCATION" --format=json qu
   "$python_bin" -c 'import json, sys; print(json.load(sys.stdin)[-1][0]["claimed"])')"
 [ "$claimed" -eq 1 ] || die "publisher claim unavailable for $table_name; the claim must be cleared before retrying"
 
+# The publisher's claim is valid for 35 minutes (CLAIM_TIMEOUT_MINUTES in publisher/main.py). The
+# 30-minute assertion below is deliberately shorter: this script fails before the publisher can
+# take over an expired claim, so the two never export the same table at once.
 log "Checking publisher catch-up and exporting $EXPORT_DATASET.$source_view (BigQuery job $job_id)"
 job_facts="$(bq --project_id="$PROJECT" --location="$BQ_LOCATION" --format=json query --use_legacy_sql=false \
   --job_id="$job_id" --parameter="table_name::$table_name" --parameter="claim::$claim" --parameter="seed_mode:BOOL:$seed_mode" \

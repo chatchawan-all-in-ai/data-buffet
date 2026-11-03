@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of the TA app table `access_exceptions`: [org_center_exception](/org_center/org_center_exception.md) with director, region and section code arrays split to one value per row (cross product). Rows without an employee_id are kept. The Cloud Workflow `datamart-publish` compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `access_exceptions` to topic `export-ta-access_exceptions`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of the TA app table `access_exceptions`: [org_center_exception](/org_center/org_center_exception.md) with director, region and section code arrays split to one value per row (cross product). Rows without an employee_id are kept. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `access_exceptions` to topic `export-ta-access_exceptions`. It is registered in [mart_export_config](/process/mart_export_config.md).
 
 # Grain and key
 

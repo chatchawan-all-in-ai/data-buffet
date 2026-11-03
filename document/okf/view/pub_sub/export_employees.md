@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of the TA app table `employees`: people of [org_center_person](/org_center/org_center_person.md) plus the people of [org_center_exception](/org_center/org_center_exception.md) who are not in it. The latter are named from the MDS employee mapping center (first word = first name, the rest = last name; no nickname, no phone). The Cloud Workflow `datamart-publish` compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `employees` to topic `export-ta-employees`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of the TA app table `employees`: people of [org_center_person](/org_center/org_center_person.md) plus the people of [org_center_exception](/org_center/org_center_exception.md) who are not in it. The latter are named from the MDS employee mapping center (first word = first name, the rest = last name; no nickname, no phone). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `employees` to topic `export-ta-employees`. It is registered in [mart_export_config](/process/mart_export_config.md).
 
 # Grain and key
 

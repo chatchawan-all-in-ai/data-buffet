@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-Sent-state ledger of the Data Mart to Pub/Sub export: it holds, per export table, every row the receivers currently hold. The publish workflow `datamart-publish` diffs the export view (for dim_company: [export_dim_company](/view/pub_sub/export_dim_company.md)) against this table: a key absent here is NEW, a different `row_hash` is UPDATE, a key only here is DELETE. Writers are the publisher after successful delivery and the first-load exporter for an unseeded table (invocation_id 'seed'). Initialization status lives in [mart_export_config](/process/mart_export_config.md); the manual first-load and retry procedure is owned by [setup guide B3](../../how-to/setup-pubsub-export.md#3-โหลดครั้งแรกด้วยไฟล์-ครั้งแรกที่ทีมต่อ-topic-นั้นเท่านั้น).
+Sent-state ledger of the Data Mart to Pub/Sub export: it holds, per export table, every row the receivers currently hold. The Cloud Run publisher (send job `datamart-publish-send`) diffs the export view (for dim_company: [export_dim_company](/view/pub_sub/export_dim_company.md)) against this table: a key absent here is NEW, a different `row_hash` is UPDATE, a key only here is DELETE. Writers are the publisher after successful delivery and the first-load exporter for an unseeded table (invocation_id 'seed'). Initialization status lives in [mart_export_config](/process/mart_export_config.md); the manual first-load and retry procedure is owned by [setup guide B3](../../how-to/setup-pubsub-export.md#3-โหลดครั้งแรกด้วยไฟล์-ครั้งแรกที่ทีมต่อ-topic-นั้นเท่านั้น).
 
 # Grain and key
 
@@ -39,9 +39,9 @@ One row per `table_name` + `row_key` (neither NULL). `row_key` is `TO_JSON_STRIN
 # How it is built
 
 - Definition: `definitions/process/mart_sent_state.sqlx` (`type: "operations"`, tags `pub_sub`); the operation owns this table.
-- Reads: no other table; written by the publish workflow and, once per new export table, by the manual Cloud Shell `export-snapshot.sh` run for an unseeded table; never by tag pub_sub, setup, merge or deploy.
-- Operations (`type: "operations"`, tag `pub_sub`, no scheduler runs it; deployed manually from `production` with dependencies off). `CREATE TABLE IF NOT EXISTS` only, never rebuilt; the workflow MERGEs into it (on table_name + row_key) after each published page of 50 rows and deletes DELETEd keys.
-- Approximate size (BigQuery metadata, 2026-10-31): 5 rows, 500 B.
+- Reads: no other table; written by the publisher and, once per new export table, by the manual Cloud Shell `export-snapshot.sh` run for an unseeded table; never by tag pub_sub, setup, merge or deploy.
+- Operations (`type: "operations"`, tag `pub_sub`, no scheduler runs it; deployed manually from `production` with dependencies off). `CREATE TABLE IF NOT EXISTS` only, never rebuilt; the publisher MERGEs into it (on table_name + row_key) every 1,000,000 sent rows and at the end of a table, and again when it recovers a crashed run from the record subscription; DELETEd keys are removed.
+- Approximate size (BigQuery metadata, 2026-11-03): about 1.38 million rows, 156 MB.
 
 # Examples
 

@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of the TA app table `positions`: the distinct position codes that appear in [org_center_member](/org_center/org_center_member.md) per company (DIRECTOR, REGION_MGR, SECTION_MGR, TA, PC_MDT, PC_AGENT; CEO appears once someone holds it). The Cloud Workflow `datamart-publish` compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `positions` to topic `export-ta-positions`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of the TA app table `positions`: the distinct position codes that appear in [org_center_member](/org_center/org_center_member.md) per company (DIRECTOR, REGION_MGR, SECTION_MGR, TA, PC_MDT, PC_AGENT; CEO appears once someone holds it). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `positions` to topic `export-ta-positions`. It is registered in [mart_export_config](/process/mart_export_config.md).
 
 # Grain and key
 

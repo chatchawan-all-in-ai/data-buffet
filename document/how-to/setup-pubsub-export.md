@@ -1,11 +1,12 @@
 # How-to: Setup Pub/Sub สำหรับส่งออกข้อมูลจาก BigQuery
 
 > สถานะ 2026-10-26: pilot `dim_company` ใน **`databuffet-nonprd` เท่านั้น** · repo มีครบทั้ง
-> Dataform (export view + ตาราง bookkeeping), Workflow
-> [`infra/pubsub/datamart-publish.workflows.yaml`](../../infra/pubsub/datamart-publish.workflows.yaml)
-> และสคริปต์สร้าง infra [`infra/pubsub/setup.sh`](../../infra/pubsub/setup.sh) · deploy ฝั่ง GCP
-> แล้ว — หลัง PR merge รัน `setup.sh` ซ้ำตาม [ส่วน A](#ส่วน-a--deploy-และทดสอบ-pilot) เพื่อลดสิทธิ์
-> ให้เหลือเท่าที่ใช้ แล้วต่อทีมผู้รับตาม [ส่วน B](#ส่วน-b--ต่อทีมที่มาใช้ข้อมูล-ทำซ้ำทุกครั้งที่มีทีมใหม่)
+> Dataform (export view + ตาราง bookkeeping), publisher แบบ Cloud Run jobs
+> [`pubsub/publisher/main.py`](../../pubsub/publisher/main.py)
+> และสคริปต์สร้าง infra [`pubsub/scripts/setup.sh`](../../pubsub/scripts/setup.sh) · deploy ฝั่ง GCP
+> แล้วเฉพาะตัวส่ง Workflows เดิม — Cloud Run jobs ใน PR นี้ยังไม่ได้ deploy หลัง PR merge
+> ทำตาม [ส่วน A](#ส่วน-a--deploy-และทดสอบ-pilot) เพื่อติดตั้งและ cut over ตัวส่งใหม่
+> แล้วต่อทีมผู้รับตาม [ส่วน B](#ส่วน-b--ต่อทีมที่มาใช้ข้อมูล-ทำซ้ำทุกครั้งที่มีทีมใหม่)
 > · 2026-11-02: เพิ่มชุด commission 12 ชุดของ ag01 ให้ทีม TF ใน repo แล้ว (topic `export-commission-<ชุด>`
 > ดู [ส่วน C](#ส่วน-c--ชุด-commission-ของทีม-tf)) — **ยังไม่ได้ทำฝั่ง GCP** ทำตามส่วน C หลัง PR merge
 > · 2026-11-02: เพิ่มชุดตารางองค์กรของแอป TA 9 ชุดให้ทีม AI ใน repo แล้ว (topic `export-ta-<ตาราง>` ดู
@@ -17,14 +18,17 @@
 
 ## ภาพรวม
 
-ฝั่ง GCP (region `asia-southeast1`): Cloud Scheduler `datamart-publish-every-5m` เรียก Cloud
-Workflows `datamart-publish` ทุก 5 นาทีตลอดวัน (`*/5 * * * *`) เพื่อถาม **Dataform API**
+ฝั่ง GCP (region `us-central1`): Cloud Scheduler `datamart-publish-check-every-5m` เรียก Cloud Run job
+`datamart-publish-check` (1 vCPU, 1 task) ทุก 5 นาทีตลอดวัน (`*/5 * * * *`) เพื่อถาม **Dataform API**
 ว่ามีรอบ Dataform ใหม่ที่สำเร็จและรันตารางนั้นหรือไม่ — รองรับทุก scheduler และการรัน
 manual ตาม [สัญญา publisher](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
-· ถ้ามี จึงส่งเฉพาะแถวที่เปลี่ยน · ใช้ service accounts `datamart-publisher` (รัน workflow)
-และ `datamart-publish-trigger` (Scheduler → Workflows) แบบ keyless · เมื่อล้มเหลวแจ้ง Slack
+· ถ้ามี job ตรวจจึงสั่ง Cloud Run job `datamart-publish-send` (2 vCPU / 4 GiB ต่อ task, 5 task พร้อมกัน)
+ซึ่งส่งเฉพาะแถวที่เปลี่ยน: แต่ละ task หยิบ `task_group` ถัดไปตามลำดับใน config ที่ยังมีตารางรอส่ง
+(กลุ่มใหญ่ 5 กลุ่มอยู่บนสุด) · job ส่งหยุดเองที่ 25 นาที บันทึกที่ส่งแล้ว แล้วรอบตรวจถัดไปส่งส่วนที่เหลือต่อ
+· ใช้ service accounts `datamart-publisher` (รัน job ส่ง), `datamart-publish-checker` (รัน job ตรวจ)
+และ `datamart-publish-trigger` (Scheduler → job ตรวจ) แบบ keyless · เมื่อล้มเหลวแจ้ง Slack
 ผ่าน incoming webhook ที่เก็บใน Secret Manager ชื่อ `slack-datamart-dataform`
-ไม่มี Cloud Logging trigger
+· log เป็น JSON บน stdout ไปที่ Cloud Logging · ไม่มี Cloud Logging trigger
 
 รายการตาราง, source view และ topic ที่ต้องสร้างอ่านจาก
 [`mart-export-config.json`](../../includes/controller/mart-export-config.json)
@@ -79,10 +83,12 @@ DATETIME = `"2026-01-30T09:10:00"`, ตัวเลขไม่มี `.0` เ�
 
 | ไฟล์ | หน้าที่ |
 |---|---|
-| [`infra/pubsub/datamart-publish.workflows.yaml`](../../infra/pubsub/datamart-publish.workflows.yaml) | Workflow 9 ขั้นตาม [สัญญา publisher](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) — generic ทุกแถวใน `mart_export_config` |
-| [`infra/pubsub/setup.sh`](../../infra/pubsub/setup.sh) | สร้าง/อัปเดต infra ทั้งหมด แบบ idempotent (รันซ้ำได้) |
-| [`infra/pubsub/add-consumer.sh`](../../infra/pubsub/add-consumer.sh) | ต่อทีมผู้รับแบบ pull (ส่วน B) แบบ idempotent |
-| [`infra/pubsub/export-snapshot.sh`](../../infra/pubsub/export-snapshot.sh) | export ไฟล์โหลดครั้งแรกของทีมใหม่ (ส่วน B ขั้น 3) |
+| [`pubsub/publisher/main.py`](../../pubsub/publisher/main.py) | โปรแกรม publisher (โหมด `check` / `send`) ตาม [สัญญา publisher](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) — generic ทุกแถวใน `mart_export_config` · `requirements.txt` และ `Dockerfile` อยู่ข้างกัน |
+| [`pubsub/sql/diff.sql`](../../pubsub/sql/diff.sql) | diff query ตัวเดียว ใช้ร่วมกันโดย publisher และ `export-snapshot.sh` |
+| [`pubsub/scripts/setup.sh`](../../pubsub/scripts/setup.sh) | สร้าง/อัปเดต infra ทั้งหมด แบบ idempotent (รันซ้ำได้) · `--enable-scheduler` เปิด Scheduler · `--cleanup-old` ลบตัวส่ง Cloud Workflows เดิม |
+| [`pubsub/scripts/add-consumer.sh`](../../pubsub/scripts/add-consumer.sh) | ต่อทีมผู้รับแบบ pull (ส่วน B) แบบ idempotent |
+| [`pubsub/scripts/export-snapshot.sh`](../../pubsub/scripts/export-snapshot.sh) | export ไฟล์โหลดครั้งแรกของทีมใหม่ (ส่วน B ขั้น 3) |
+| [`includes/controller/mart-export-config.json`](../../includes/controller/mart-export-config.json) | config ของทุก topic: `task_group`, `source_tables` ฯลฯ — ไฟล์เดียวที่ Dataform และสคริปต์ใน `pubsub/` อ่าน (อยู่ใน `includes/` เพราะ Dataform `require` จากที่นี่) |
 
 ### A1. สร้างตาราง bookkeeping และ export view
 
@@ -97,45 +103,62 @@ publisher ข้ามตารางที่ `seeded_at` เป็น NULL จ
 ### A2. ตรวจ secret ของ Slack
 
 Webhook ของ Slack เก็บไว้แล้วใน Secret Manager ชื่อ **`slack-datamart-dataform`** (ไม่ต้องสร้างใหม่)
-· ห้ามพิมพ์หรือ log ค่าของ secret · workflow อ่านค่าเฉพาะตอนต้องแจ้งความล้มเหลว
+· ห้ามพิมพ์หรือ log ค่าของ secret · publisher อ่านค่าเฉพาะตอนต้องแจ้งความล้มเหลว
 
 ### A3. รัน `setup.sh`
 
 ```bash
-bash infra/pubsub/setup.sh
+bash pubsub/scripts/setup.sh
 ```
 
 สคริปต์ทำตามลำดับ (ทุกขั้นเช็คก่อนสร้าง หรือ apply ซ้ำได้ไม่เสียหาย):
 
 1. ตรวจ prerequisite ของ A1–A2
-2. เปิด API: Workflows, Workflow Executions, Cloud Scheduler, Pub/Sub, Secret Manager, Cloud Storage
-   (และ Dataform / BigQuery ที่เปิดอยู่แล้ว)
-3. สร้าง service accounts `datamart-publish-trigger` และ `datamart-publisher` — **ไม่สร้าง key**
+2. เปิด API: Cloud Run, Cloud Build, Artifact Registry, Cloud Scheduler, Pub/Sub, Secret Manager,
+   BigQuery Storage, Monitoring, Cloud Storage (และ Dataform / BigQuery ที่เปิดอยู่แล้ว)
+3. สร้าง service accounts `datamart-publish-trigger`, `datamart-publish-checker` และ
+   `datamart-publisher` — **ไม่สร้าง key**
 4. ต่อทุกตารางใน [`mart-export-config.json`](../../includes/controller/mart-export-config.json):
    topic (`export-ta-dim_company`, `export-commission-<ชุด>` 12 topic และ `export-ta-<ตาราง>` 9 + 33 topic), dead-letter topic (`<topic>-dead-letter`) และสิทธิ์ publisher
-   ของ Pub/Sub service agent บน dead-letter topic · ไม่สร้าง subscription ทดสอบ
+   ของ Pub/Sub service agent บน dead-letter topic · ไม่สร้าง subscription ทดสอบ · ตารางที่ไม่มี
+   `task_group` หรือ `source_tables` ใน config ทำให้สคริปต์หยุด
    - dead-letter topic รับ dead letter ของทุก subscription ของทีมบน topic นั้น — subscription
      ของทีมและ `dlq.<ทีม>.<topic>` ที่เก็บ dead letter สร้างตอนต่อทีมด้วย `add-consumer.sh` (ส่วน B)
-5. ให้สิทธิ์แบบ least privilege กับ `datamart-publisher` (สิทธิ์เท่าที่ใช้จริงเท่านั้น):
+   - dataset staging `pubsub_staging` (ตารางหมดอายุใน 1 วัน เก็บผล diff ของแต่ละตาราง) และ dataset
+     `pubsub_record` ที่มีตาราง `messages` (partition ตาม `publish_time`, เก็บ 14 วัน) · ต่อ topic
+     ละ 1 **record subscription** `rec.datamart.<topic>` ชนิด BigQuery เขียนลงตารางเดียวกัน
+     (write metadata, ไม่มี dead-letter) — ต้องมีก่อน job ส่งส่งข้อความแรก เพราะ subscription แบบ
+     BigQuery บันทึกเฉพาะข้อความหลังสร้าง · ใช้กู้สถานะเมื่อรอบก่อนล่ม
+5. ให้สิทธิ์แบบ least privilege กับ `datamart-publisher` (job ส่ง — สิทธิ์เท่าที่ใช้จริงเท่านั้น):
 
    | Role | ขอบเขต | ใช้ทำ |
    |---|---|---|
    | custom role `datamartPublishDataformReader` (`dataform.workflowInvocations.list`, `dataform.workflowInvocations.query`) | Dataform repository `data-buffet` (`us-central1`) เท่านั้น | list workflow invocations + query actions |
    | `roles/bigquery.jobUser` | project (role นี้ให้ได้แค่ระดับ project) | รัน query/DML |
-   | `roles/logging.logWriter` | project (role นี้ให้ได้แค่ระดับ project) | `sys.log` ของ workflow |
-   | `roles/bigquery.dataEditor` | ตาราง `mart_export_config`, `mart_sent_state` เท่านั้น | อ่าน config (tabledata.list), claim, MERGE sent state |
-   | `roles/bigquery.dataViewer` | export view แต่ละตัวใน config (`pub_sub.export_<ตาราง>`) เท่านั้น | diff query — view เป็น **authorized view** บน dataset ของตารางต้นทาง (`dimension_table`, `validated_mac5` ตาม `SOURCE_TABLES` ใน `setup.sh`) จึงอ่านได้เฉพาะคอลัมน์ที่ export โดยไม่มีสิทธิ์บนตารางต้นทาง |
+   | `roles/bigquery.readSessionUser` | project | เปิด Storage Read session อ่านตาราง staging |
+   | `roles/monitoring.viewer` | project | ดู backlog ของ record subscription ก่อนกู้สถานะ |
+   | `roles/pubsub.viewer` | record subscription แต่ละตัว | อ่าน message retention เพื่อตรวจว่าข้อความที่ต้องกู้ยังไม่หมดอายุ |
+   | `roles/bigquery.dataEditor` | ตาราง `mart_export_config`, `mart_sent_state` และ dataset `pubsub_staging` เท่านั้น | อ่าน config, claim, MERGE sent state, สร้างตาราง staging |
+   | `roles/bigquery.dataViewer` | export view แต่ละตัวใน config (`pub_sub.export_<ตาราง>`) และตาราง `pubsub_record.messages` | diff query — view เป็น **authorized view** บน dataset ของตารางต้นทาง (ตาม `source_tables` ใน config) จึงอ่านได้เฉพาะคอลัมน์ที่ export โดยไม่มีสิทธิ์บนตารางต้นทาง · อ่านตารางบันทึก |
    | `roles/pubsub.publisher` | topic ของแต่ละชุดเท่านั้น | publish |
    | `roles/secretmanager.secretAccessor` | secret `slack-datamart-dataform` เท่านั้น | อ่าน webhook |
 
-   `datamart-publish-trigger` ได้ custom role `datamartPublishTrigger` (`workflows.executions.create`
-   อย่างเดียว) เป็น role เดียวของมัน — ระดับ project เพราะ Workflows ไม่มี IAM รายตัวและ IAM
-   Conditions ไม่รองรับ resource ของ Workflows
-   · สิทธิ์ที่กว้างกว่าซึ่งสคริปต์รุ่นก่อนให้ไว้ (`roles/dataform.viewer` และ `roles/workflows.invoker`
-   ระดับ project, `roles/bigquery.dataViewer` บนตารางต้นทาง) ถูกถอดออกทุกครั้งที่รัน ถ้ายังมีอยู่
-6. deploy workflow `datamart-publish` (`asia-southeast1`) ให้รันเป็น `datamart-publisher`
-7. สร้าง/อัปเดต Scheduler job `datamart-publish-every-5m` (`*/5 * * * *`, Asia/Bangkok)
-   ที่ POST ไป Workflow Executions API ด้วย OAuth ของ `datamart-publish-trigger`
+   job ส่งเขียน log ลง stdout จึงไม่ต้องมี `roles/logging.logWriter`
+6. สิทธิ์ของ `datamart-publish-checker` (job ตรวจ): `roles/bigquery.jobUser` (project), custom role Dataform
+   ข้างบน (repository เท่านั้น), `roles/bigquery.dataEditor` บน `mart_export_config` (ขยับ checkpoint),
+   `roles/secretmanager.secretAccessor` บน secret Slack, และ `roles/run.invoker` + `roles/run.viewer`
+   บน job `datamart-publish-send` เท่านั้น (สั่งรัน + ดูว่ายังมี execution ค้างอยู่ไหม — ไม่สั่งซ้อน)
+   · `datamart-publish-trigger` ได้ `roles/run.invoker` บน job `datamart-publish-check` เท่านั้น · Pub/Sub
+   service agent ได้ `roles/bigquery.dataEditor` บนตาราง `pubsub_record.messages`
+   · สิทธิ์ที่กว้างกว่าซึ่งสคริปต์รุ่นก่อนให้ไว้ (`roles/dataform.viewer` ระดับ project,
+   `roles/bigquery.dataViewer` บนตารางต้นทาง) ถูกถอดออกทุกครั้งที่รัน ถ้ายังมีอยู่
+7. build image ด้วย Cloud Build เข้า Artifact Registry repository `cloud-run-source-deploy` ที่มีอยู่แล้ว
+   (ไม่สร้าง repository ใหม่ ไม่มี IAM เพิ่ม · tag = hash ของไฟล์ ถ้าโค้ดไม่เปลี่ยนไม่ build ซ้ำ) แล้ว deploy
+   job `datamart-publish-send` (5 task, parallelism 5, timeout 30 นาที, retry 0, 2 vCPU / 4 GiB)
+   และ `datamart-publish-check` (1 task, timeout 5 นาที, retry 0, 1 vCPU / 512 MiB) ใน `us-central1`
+   แล้วสร้าง/อัปเดต Scheduler job `datamart-publish-check-every-5m` (`*/5 * * * *`, Asia/Bangkok)
+   ที่เรียก job ตรวจด้วย OAuth ของ `datamart-publish-trigger` · Scheduler ที่สร้างใหม่จะ **หยุดไว้ (paused)**
+   จนกว่าจะรัน `setup.sh --enable-scheduler` — เปิดหลังลบ Scheduler ของตัวส่งเดิมเท่านั้น
 8. สร้าง bucket `databuffet-nonprd-datamart-snapshot` สำหรับไฟล์โหลดครั้งแรก (ส่วน B ขั้น 3)
    ใน `us-central1` ที่เดียวกับ dataset `pub_sub` (สคริปต์หยุดถ้าไม่ตรง) · uniform bucket-level
    access + public access prevention · ถอด convenience bindings ของ `projectViewer` และ
@@ -151,21 +174,30 @@ bash infra/pubsub/setup.sh
 จากการ deploy
 
 1. รอ Scheduler รอบถัดไป (ไม่เกิน 5 นาที) หรือสั่งเองทันที:
-   `gcloud workflows run datamart-publish --location=asia-southeast1 --project=databuffet-nonprd`
-   ดู execution ใน **Workflows → datamart-publish → Executions** · สำหรับ pilot ที่ seed แล้ว
-   ผลอาจเป็น `no new invocation`, `advanced to ...` หรือ `dim_company: sent <n> rows for <invocation id>`
-   ตามรอบ Dataform และข้อมูลที่เปลี่ยน · ตารางที่ยังไม่ seed ต้องคืน `not seeded: waiting for the first-load export`
-2. ตรวจ `process_dataset.mart_sent_state` และ checkpoint ของ pilot เทียบกับ execution;
+   `gcloud run jobs execute datamart-publish-check --region=us-central1 --project=databuffet-nonprd`
+   ดู log ของ job ตรวจและ job ส่งใน **Cloud Run → Jobs → <job> → Logs** (JSON: `nothing to send`,
+   `send job started`, `group taken`, `sent`, `advanced, nothing to export`) · ตารางที่ยังไม่ seed
+   ถูกข้ามโดยไม่มี log ของตาราง
+2. ตรวจ `process_dataset.mart_sent_state` และ checkpoint ของ pilot เทียบกับ log;
    หลัง publish สำเร็จ `mart_export_config.claimed_at` ต้องเป็น `NULL`
-3. สั่ง workflow อีกครั้งโดยไม่มี invocation ใหม่ → sent state ต้องไม่เปลี่ยน · หลัง
-   `daily_process` รอบถัดไปที่สำเร็จ ผล pilot คือ `sent 0 rows` ถ้าข้อมูลไม่เปลี่ยน
-4. ตรวจการแจ้ง Slack จาก execution ที่ล้มเหลวถ้ามี · ไม่ต้องสร้างความล้มเหลวเอง
+3. สั่ง job ตรวจอีกครั้งโดยไม่มี invocation ใหม่ → sent state ต้องไม่เปลี่ยน · หลัง
+   `daily_process` รอบถัดไปที่สำเร็จ ผล pilot คือ `sent` 0 แถวถ้าข้อมูลไม่เปลี่ยน
+4. ตรวจการแจ้ง Slack จากรอบที่ล้มเหลวถ้ามี · ไม่ต้องสร้างความล้มเหลวเอง
 
 รายละเอียดการเลือก invocation และ checkpoint อยู่ใน
 [สัญญา publisher](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
 
-ถ้า export ล้มเหลว `last_invocation_*` ไม่ขยับ และ `claimed_at` ค้างไว้จนครบ 30 นาที
-แล้ว Scheduler รอบถัดไปจะทำซ้ำเอง (ข้อความที่ publish ไปแล้วแต่ยังไม่บันทึกอาจถูกส่งซ้ำ)
+การกู้สถานะหลังล้มเหลว เงื่อนไข retention และ backlog ที่ต้องผ่านก่อนส่งต่อ
+รวมถึงการบันทึกงานบางส่วนเมื่อหมดเวลา อยู่ใน
+[สัญญา publisher: Send job และ Time limit](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
+
+### A5. ลบตัวส่งเดิม (Cloud Workflows) หลังตรวจคืนแรกผ่าน
+
+เปลี่ยนจาก Workflows มา Cloud Run ตามลำดับนี้ (ทำช่วงกลางวัน ห่างจาก `daily_process`):
+ลบ Scheduler job `datamart-publish-every-5m` (`asia-southeast1`) → `bash pubsub/scripts/setup.sh --enable-scheduler`
+→ ตรวจคืนแรก → `bash pubsub/scripts/setup.sh --cleanup-old` (ลบ workflow `datamart-publish`, custom role
+`datamartPublishTrigger` และ binding, `roles/logging.logWriter` ของ publisher, ปิด API Workflows ถ้าไม่มี workflow อื่น)
+· `--cleanup-old` ไม่รันเป็นค่าเริ่มต้น · ตัวส่งเดิมและตัวใหม่ใช้ `claimed_at` ร่วมกัน
 
 ---
 
@@ -192,9 +224,9 @@ customer ID ของ organization เรา) จึงให้สิทธิ�
 
 ```bash
 # วิธี key
-bash infra/pubsub/add-consumer.sh ai-dev export-ta-dim_company
+bash pubsub/scripts/add-consumer.sh ai-dev export-ta-dim_company
 # วิธี SA ของทีมเอง — ใส่ email ของ runtime service account ที่ทีมแจ้งมา
-bash infra/pubsub/add-consumer.sh --team-sa consumer-run@ai-prod.iam.gserviceaccount.com ai-prod export-ta-dim_company
+bash pubsub/scripts/add-consumer.sh --team-sa consumer-run@ai-prod.iam.gserviceaccount.com ai-prod export-ta-dim_company
 ```
 
 `--team-sa` รับเฉพาะ email ของ service account (`<ชื่อ>@<project>.iam.gserviceaccount.com`,
@@ -268,7 +300,7 @@ subscription ของทีม ทีมยังอ่านไฟล์ใน
 ทุกแถวปัจจุบันของ export view ของ topic นั้นลง folder ของทีม ทีละ topic:
 
 ```bash
-bash infra/pubsub/export-snapshot.sh ai-dev export-ta-dim_company
+bash pubsub/scripts/export-snapshot.sh ai-dev export-ta-dim_company
 ```
 
 สคริปต์พิมพ์ folder และ **export time** (UTC) แล้วส่งทั้งสองค่าให้ทีม · ใช้ path ของ folder
@@ -279,8 +311,8 @@ bash infra/pubsub/export-snapshot.sh ai-dev export-ta-dim_company
   `snapshot_date` ของตารางนั้นใน export config เช่น `Order_Date` ของ `order`) · ตารางที่ไม่มี
   `snapshot_date` (master เช่น `stk`, `company`, `dim_company`) อยู่ใต้วันที่ export (Asia/Bangkok)
   folder เดียว · ไฟล์ละไม่เกิน 100,000 บรรทัด — newline-delimited JSON หนึ่งบรรทัดต่อแถว
-  แต่ละบรรทัด **ตรงทุก byte** กับข้อความที่ workflow publish ให้แถวนั้นเป็น `NEW` (สร้างจาก diff
-  query ตัวเดียวกับใน workflow) ทีมจึงโหลดด้วยโค้ดเดียวกับ consumer
+  แต่ละบรรทัด **ตรงทุก byte** กับข้อความที่ publisher publish ให้แถวนั้นเป็น `NEW` (สร้างจาก diff
+  query ตัวเดียวกัน `pubsub/sql/diff.sql`) ทีมจึงโหลดด้วยโค้ดเดียวกับ consumer
 - `manifest.json` — `table`, `topic`, `team`, `export_time`, `row_count`, `files` · เขียนเป็นไฟล์
   สุดท้ายหลัง seek สำเร็จและรอ 90 วินาทีแล้ว folder ที่ไม่มี manifest คือ export ที่ไม่เสร็จ
   ห้ามโหลดหรือเริ่ม pull
@@ -311,11 +343,11 @@ folder ตามวันที่ (ต้องมีพื้นที่ว�
 สคริปต์พยายามคืน claim เป็น NULL ด้วย token ของตัวเองเมื่อจบ รวมกรณีล้มเหลว · ถ้า seed ยังไม่ commit
 `seeded_at` ยังคง NULL ทำให้ publisher ข้ามตาราง แม้ Cloud Shell หยุดกะทันหันหรือ claim หมดอายุ
 ตารางที่ seed แล้วอ่าน sent state
-อย่างเดียวและไม่เปลี่ยน `last_invocation_*` · ไม่เปลี่ยน workflow
+อย่างเดียวและไม่เปลี่ยน `last_invocation_*` · ไม่เปลี่ยน publisher
 และไม่ส่งอะไรเข้า Pub/Sub — ห้ามล้าง sent state ที่ใช้ร่วมกันเพื่อเริ่มต้นให้ทีมใหม่
 
 ถ้าเขียน manifest สำเร็จแล้วแต่คืน claim ไม่สำเร็จ สคริปต์แจ้งว่า export สำเร็จและจบด้วย exit 0
-ไฟล์พร้อมใช้งานตามเดิม ส่วน claim หมดอายุเองตาม timeout 30 นาทีของ publisher ·
+ไฟล์พร้อมใช้งานตามเดิม ส่วน claim หมดอายุเองหลัง 35 นาที (claim ของ publisher; สคริปต์นี้ assert ที่ 30 นาที จึงล้มก่อนที่ publisher จะแย่ง claim ได้) ·
 ไม่ต้องรัน export ซ้ำเพื่อคืน claim เพราะจะ seek subscription ไปที่ cut ใหม่
 
 ฝั่งทีม ตามลำดับนี้:
@@ -501,11 +533,11 @@ serialize ทุกการเขียนต่อ `(table, primary_key)` เ�
    เพิ่มคอลัมน์ `trigger_scheduler` (ลำดับ 7), `seeded_at` (ลำดับ 8) และเพิ่ม 12 แถว config
    ที่ `seeded_at` เป็น NULL โดยยังไม่ seed หรือเขียนไฟล์ · ตารางที่มี sent state อยู่แล้ว เช่น
    dim_company ตั้ง `seeded_at` จาก MIN(sent_at) โดยไม่เปลี่ยน checkpoint หรือ claim เดิม
-   `setup.sh` ตรวจลำดับทั้งสองคอลัมน์และหยุดถ้ายังไม่ได้รัน tag `pub_sub`
-2. `bash infra/pubsub/setup.sh` — สร้าง 12 topic + dead-letter topic, ให้สิทธิ์ publisher อ่าน 12 view
-   (authorized view บน `validated_mac5` และ `dimension_table`) และ deploy workflow ที่รู้จัก `trigger_scheduler`
+   `setup.sh` ตรวจว่ามีคอลัมน์ `task_group`, `group_claimed_at`, `recovery_started_at`, `recovery_until` และมี `task_group` ครบทุกแถวและหยุดถ้ายังไม่ได้รัน tag `pub_sub`
+2. `bash pubsub/scripts/setup.sh` — สร้าง 12 topic + dead-letter topic + record subscription, ให้สิทธิ์ publisher อ่าน 12 view
+   (authorized view บน `validated_mac5` และ `dimension_table`) และ deploy job ตรวจ/job ส่งที่รู้จัก `trigger_scheduler`
 3. ```bash
-   bash infra/pubsub/add-consumer.sh tf-prd export-commission-order export-commission-invoice export-commission-credit_note export-commission-debit_note export-commission-receipt export-commission-chqri export-commission-status export-commission-company export-commission-sell export-commission-warehouse export-commission-stk export-commission-company_source
+   bash pubsub/scripts/add-consumer.sh tf-prd export-commission-order export-commission-invoice export-commission-credit_note export-commission-debit_note export-commission-receipt export-commission-chqri export-commission-status export-commission-company export-commission-sell export-commission-warehouse export-commission-stk export-commission-company_source
    ```
 4. สร้าง key ด้วยมือนอก repo แล้วส่งเป็น zip ใส่รหัสผ่าน (ส่วน B ขั้น 2):
    `gcloud iam service-accounts keys create "$HOME/sa-pull-tf-prd.json" --iam-account=sa-pull-tf-prd@databuffet-nonprd.iam.gserviceaccount.com --project=databuffet-nonprd`
@@ -520,7 +552,7 @@ serialize ทุกการเขียนต่อ `(table, primary_key)` เ�
 2. รันทีละ topic (ส่วน B ขั้น 3) เพื่อ seed sent state และเขียนไฟล์จาก snapshot เดียวกัน:
    ```bash
    for s in order invoice credit_note debit_note receipt chqri status company sell warehouse stk company_source; do
-     bash infra/pubsub/export-snapshot.sh tf-prd "export-commission-$s" || break
+     bash pubsub/scripts/export-snapshot.sh tf-prd "export-commission-$s" || break
    done
    ```
    ส่ง path ของ folder และ export time ของแต่ละชุดให้ TF — ไฟล์อยู่ที่
@@ -544,7 +576,7 @@ topic: `export-ta-org_levels`, `export-ta-org_units`, `export-ta-positions`, `ex
 
 1. รัน tag `pub_sub` ตาม [ขั้น deploy](../project_wiki/cdc-process/process.md#deploy) — สร้าง 9 view และเพิ่ม 9 แถว config
    ที่ `seeded_at` เป็น NULL (ไม่ต้องรัน `org_center_unit` ใหม่: คอลัมน์ `region_code` มีอยู่แล้ว)
-2. `bash infra/pubsub/setup.sh` — สร้าง 9 topic + dead-letter topic, ให้สิทธิ์ publisher อ่าน 9 view
+2. `bash pubsub/scripts/setup.sh` — สร้าง 9 topic + dead-letter topic, ให้สิทธิ์ publisher อ่าน 9 view
    (authorized view บน dataset `org_center` และ `mds_dataset` สำหรับ `export_employees`)
 3. ต่อทีม AI ด้วย `add-consumer.sh <ทีม> <topic>...` และโหลดครั้งแรกด้วย `export-snapshot.sh` ในวันที่กัปตันกำหนด
    (ส่วน B) — จนกว่าจะ seed publisher ข้ามทั้ง 9 topic
@@ -552,7 +584,7 @@ topic: `export-ta-org_levels`, `export-ta-org_units`, `export-ta-positions`, `ex
 ## Checklist ก่อนเปิดใช้งานจริง (หลัง merge)
 
 - [ ] ทำตาม [ขั้น deploy ของ pilot](../project_wiki/cdc-process/process.md#deploy) รวมการตรวจ live compilation ก่อนรันด้วยมือ; การเพิ่ม เปลี่ยน หรือเอาตาราง export ออกให้ยึด lifecycle ใน process reference เดียวกัน
-- [ ] รัน `infra/pubsub/setup.sh` ตามส่วน A (A1–A3)
+- [ ] รัน `pubsub/scripts/setup.sh` ตามส่วน A (A1–A3)
 - [ ] ตรวจ execution และ sent state ตาม A4: ตารางที่ยังไม่ seed ถูกข้าม; pilot ที่ seed แล้วส่งเฉพาะแถวที่เปลี่ยน
 - [ ] ต่อทีมใหม่: รัน `add-consumer.sh [--team-sa <email>] <ทีม> <topic>...` เฉพาะชุดที่ทีมได้รับ (ขั้น 1)
 - [ ] วิธี key เท่านั้น: สร้าง JSON key ด้วยมือนอก repo แล้วส่งเป็น zip ใส่รหัสผ่านผ่านช่องทางที่ปลอดภัย และนัดรอบ rotate ทุก 90 วัน (ขั้น 2)
@@ -582,7 +614,7 @@ topic: `export-ta-org_levels`, `export-ta-org_units`, `export-ta-positions`, `ex
 และ code ถึง `nonprod` แล้ว:
 
 1. รัน tag `pub_sub` ตาม [ขั้น deploy](../project_wiki/cdc-process/process.md#deploy) — สร้าง 33 view และเพิ่ม 33 แถว config ที่ `seeded_at` เป็น NULL
-2. `bash infra/pubsub/setup.sh` — สร้าง 33 topic + dead-letter topic, ให้สิทธิ์ publisher อ่าน 33 view
+2. `bash pubsub/scripts/setup.sh` — สร้าง 33 topic + dead-letter topic, ให้สิทธิ์ publisher อ่าน 33 view
    (authorized view บนทุก dataset ในสายของ view นั้น) แล้ว dry-run `SELECT` ของแต่ละ export view ในนาม publisher
 3. ต่อทีม AI ด้วย `add-consumer.sh <ทีม> <topic>...` และโหลดครั้งแรกด้วย `export-snapshot.sh` ในวันที่กัปตันกำหนด
    (ส่วน B) — จนกว่าจะ seed publisher ข้ามทุก topic

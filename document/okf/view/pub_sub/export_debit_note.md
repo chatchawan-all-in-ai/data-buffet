@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of commission set `debit_note` for the TF team (company ag01): one line of an ag01 debit note (AS) of 2026, not cancelled. Its columns, names, order and JSON types are those of the commission sample sent to TF on 2026-10-14 (`commission_tf_ag01_2026`). The Cloud Workflow `datamart-publish` compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `debit_note` to topic `export-commission-debit_note`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files are split into date folders by `DN_Date` (`snapshot_date` in the export config).
+The Pub/Sub export view of commission set `debit_note` for the TF team (company ag01): one line of an ag01 debit note (AS) of 2026, not cancelled. Its columns, names, order and JSON types are those of the commission sample sent to TF on 2026-10-14 (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `debit_note` to topic `export-commission-debit_note`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files are split into date folders by `DN_Date` (`snapshot_date` in the export config).
 
 # Grain and key
 

@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of [process_dataset.view_rls_sale_data](/view/process_dataset/view_rls_sale_data.md), with the columns, names and order of the sample table sent to the AI team, for the whole table. The Cloud Workflow `datamart-publish` compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `view_rls_sale_data` to topic `export-ta-view_rls_sale_data`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of [process_dataset.view_rls_sale_data](/view/process_dataset/view_rls_sale_data.md), with the columns, names and order of the sample table sent to the AI team, for the whole table. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `view_rls_sale_data` to topic `export-ta-view_rls_sale_data`. It is registered in [mart_export_config](/process/mart_export_config.md).
 
 # Grain and key
 

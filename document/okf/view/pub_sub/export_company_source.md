@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of commission set `company_source` for the TF team (company ag01): the Data Mart company ag01 that owns the data. Its columns, names, order and JSON types are those of the commission sample sent to TF on 2026-10-14 (`commission_tf_ag01_2026`). The Cloud Workflow `datamart-publish` compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `company_source` to topic `export-commission-company_source`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files of this set go under the export date (no `snapshot_date`).
+The Pub/Sub export view of commission set `company_source` for the TF team (company ag01): the Data Mart company ag01 that owns the data. Its columns, names, order and JSON types are those of the commission sample sent to TF on 2026-10-14 (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `company_source` to topic `export-commission-company_source`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files of this set go under the export date (no `snapshot_date`).
 
 # Grain and key
 

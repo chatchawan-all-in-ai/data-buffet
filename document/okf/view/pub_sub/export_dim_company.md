@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of [dim_company](/dimension/dim_company.md), part of the 'Data Mart to Pub/Sub' feed. It exposes the four business columns of the company dimension under their dim names (no surrogate key, no MdsId), plus `row_key` (the message `primary_key` as JSON) and `row_hash` (fingerprint of the message data). The Cloud Workflow `datamart-publish` (`document/how-to/setup-pubsub-export.md` in the repo) compares `row_hash` with the sent state in [mart_sent_state](/process/mart_sent_state.md) and publishes NEW/UPDATE/DELETE messages for changed rows. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of [dim_company](/dimension/dim_company.md), part of the 'Data Mart to Pub/Sub' feed. It exposes the four business columns of the company dimension under their dim names (no surrogate key, no MdsId), plus `row_key` (the message `primary_key` as JSON) and `row_hash` (fingerprint of the message data). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`, `document/how-to/setup-pubsub-export.md` in the repo) compares `row_hash` with the sent state in [mart_sent_state](/process/mart_sent_state.md) and publishes NEW/UPDATE/DELETE messages for changed rows. It is registered in [mart_export_config](/process/mart_export_config.md).
 
 Used by [process_dataset.mart_export_config](/process/mart_export_config.md).
 

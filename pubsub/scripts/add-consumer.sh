@@ -19,9 +19,9 @@
 # Prerequisites: setup.sh already run (topics + dead-letter topics exist); gcloud logged in as a
 # project owner.
 #
-# Usage: bash infra/pubsub/add-consumer.sh [--team-sa <email>] <team> <topic>...
-#   e.g. bash infra/pubsub/add-consumer.sh ai-dev export-ta-dim_company
-#        bash infra/pubsub/add-consumer.sh --team-sa consumer-run@ai-prod.iam.gserviceaccount.com ai-prod export-ta-dim_company
+# Usage: bash pubsub/scripts/add-consumer.sh [--team-sa <email>] <team> <topic>...
+#   e.g. bash pubsub/scripts/add-consumer.sh ai-dev export-ta-dim_company
+#        bash pubsub/scripts/add-consumer.sh --team-sa consumer-run@ai-prod.iam.gserviceaccount.com ai-prod export-ta-dim_company
 set -euo pipefail
 
 PROJECT=databuffet-nonprd
@@ -33,7 +33,7 @@ SNAPSHOT_GET_ROLE_ID=datamartSnapshotGet
 log() { printf '\n== %s\n' "$*"; }
 die() { printf 'add-consumer.sh: %s\n' "$*" >&2; exit 1; }
 
-usage="usage: bash infra/pubsub/add-consumer.sh [--team-sa <email>] <team> <topic>..."
+usage="usage: bash pubsub/scripts/add-consumer.sh [--team-sa <email>] <team> <topic>..."
 own_sa=""
 if [ "${1:-}" = --team-sa ]; then
   [ $# -ge 2 ] || die "$usage"

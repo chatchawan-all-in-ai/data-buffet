@@ -11,7 +11,7 @@
 > 2. **`rls_customer360.sqlx`** — per-customer access map for **row-level security**
 >    on Customer360 (see the section at the bottom). Plain `type: "table"`, no AI.
 >
-> The Pub/Sub publisher itself is a Cloud Workflow kept in `infra/pubsub/` (not Dataform).
+> The Pub/Sub publisher itself is a pair of Cloud Run jobs kept in `pubsub/` (not Dataform).
 
 ## Config
 
@@ -87,11 +87,14 @@ Dataform materializes it from the `config` block. RLS is also referenced in
 ## Pub/Sub export pilot — `dim_company` (2026-10-24)
 
 "Data Mart → Pub/Sub": Dataform keeps an export view per exported table plus two
-bookkeeping tables. The Cloud Workflow `datamart-publish`
-([`infra/pubsub/datamart-publish.workflows.yaml`](../../../infra/pubsub/datamart-publish.workflows.yaml),
-run every 5 minutes by Cloud Scheduler `datamart-publish-every-5m`, both in
-`asia-southeast1`) reads run status from the **Dataform API**, compares each export view
-with the sent state and publishes changed rows. GCP setup ([`infra/pubsub/setup.sh`](../../../infra/pubsub/setup.sh)),
+bookkeeping tables. The publisher is two Cloud Run jobs in `us-central1`, one program
+([`pubsub/publisher/main.py`](../../../pubsub/publisher/main.py), modes `check` and `send`):
+Cloud Scheduler `datamart-publish-check-every-5m` runs the **check job** `datamart-publish-check`
+every 5 minutes; it reads run status from the **Dataform API** and, when a table has a new
+run to export, starts the **send job** `datamart-publish-send`, which compares each export view
+with the sent state and publishes the changed rows. The diff query is
+[`pubsub/sql/diff.sql`](../../../pubsub/sql/diff.sql), shared with the first-load script.
+GCP setup ([`pubsub/scripts/setup.sh`](../../../pubsub/scripts/setup.sh)),
 deploy/test steps and the message format are owned by
 [setup-pubsub-export.md](../../how-to/setup-pubsub-export.md).
 Exports are configured in `databuffet-nonprd` only. The inventory is listed below;
@@ -102,7 +105,7 @@ deployment status is owned by that guide.
 discovers scheduled and manual runs with `workflowInvocations.list`. Each
 [`WorkflowInvocation`](https://docs.cloud.google.com/dataform/reference/rest/v1/projects.locations.repositories.workflowInvocations)
 provides `workflowConfig` (a resource name ending in `workflowConfigs/<scheduler>`;
-unset = manual), `state`, and `invocationTiming.startTime` / `endTime`. The workflow lists
+unset = manual), `state`, and `invocationTiming.startTime` / `endTime`. The publisher lists
 with `filter=invocation_timing.end_time > "<checkpoint>"` and a `fields` mask, and follows
 `nextPageToken` (pages can be empty while a token remains); `orderBy` on the timing fields
 is rejected by the API.
@@ -112,7 +115,7 @@ when present; target-selected and whole-workflow runs need not have tags. Use
 [`workflowInvocations.query`](https://docs.cloud.google.com/dataform/reference/rest/v1/projects.locations.repositories.workflowInvocations/query)
 to check actual action targets and their states — always with the `fields` mask
 `workflowInvocationActions(target/name,state),nextPageToken`: the full response of a
-`daily_process` run is ~2 MB (every action's SQL), the Workflows HTTP response limit.
+`daily_process` run is ~2 MB (every action's SQL).
 Adding a scheduler or running by hand needs no change in Dataform or in the Dataform UI.
 
 Bookkeeping tables live in `process_dataset`; every view read by Pub/Sub lives in its
@@ -122,7 +125,7 @@ runs** — see "Deploy" below:
 
 | File | Builds | What |
 |---|---|---|
-| `mart_export_config.sqlx` | `process_dataset.mart_export_config` | One row per exported table. `CREATE TABLE IF NOT EXISTS`, then an insert-only `MERGE` from `includes/controller/mart-export-config.json`. Schema in its OKF card (linked below) |
+| `mart_export_config.sqlx` | `process_dataset.mart_export_config` | One row per exported table. `CREATE TABLE IF NOT EXISTS`, then a `MERGE` from `includes/controller/mart-export-config.json` (inserts new tables, updates `task_group` of existing ones). Schema in its OKF card (linked below) |
 | `mart_sent_state.sqlx` | `process_dataset.mart_sent_state` | One row per data row sent. `CREATE TABLE IF NOT EXISTS`, cluster `table_name, row_key`. Schema and writers in its OKF card (linked below) |
 | `pub_sub/pub_sub_schema.sqlx` | dataset `pub_sub` (tags `view` + `pub_sub`) | `CREATE SCHEMA IF NOT EXISTS ... OPTIONS(location=REGION)`, the same bootstrap as `validated_schema_*` / `cdc_schema`. `definitions/pub_sub/` is the layer folder for future shaping tables before Pub/Sub |
 | `view/pub_sub/export_dim_company.sqlx` | `pub_sub.export_dim_company` (view, tags `view` + `pub_sub`) | `CompanyID`, `CompanyCode`, `CompanyNameTH`, `CompanyNameEN` as in `dim_company`, `row_key`, `row_hash` — no `CompanySK`, no `MdsId` |
@@ -194,8 +197,8 @@ schema, source, key and recorded row count. Deployment is deferred until the AI 
 the samples; the stopping point and future activation procedure are owned by
 [setup guide, section E](../../how-to/setup-pubsub-export.md#ส่วน-e--ตารางตัวอย่างของทีม-ai-33-ตาราง).
 
-Measured 2026-11-02 against the publisher limits (about 41,000 rows per workflow execution shared by every
-table, 50 rows per page; first loads go through GCS files): daily changed rows (NEW + UPDATE + DELETE, two
+Measured 2026-11-02 against the limits of the Cloud Workflows publisher the Cloud Run jobs replace (about
+41,000 rows per execution shared by every table; first loads go through GCS files): daily changed rows (NEW + UPDATE + DELETE, two
 consecutive nights, time travel of the base tables) are a few hundred or fewer for the dims and `rls`/`mds` tables,
 about 20,000 for `view_fact_transcation`, 13,000-29,000 for `dim_pump_information`, about 53,000 for
 `view_dim_aging_history` (a new as-at snapshot of about 27,000 rows each night and the previous day's snapshot
@@ -204,23 +207,27 @@ deleted), and 0.7-2.7 million for `fact_order`, `fact_delivery` and `fact_transa
 8 days later). Row counts and key uniqueness were checked on the compiled views; each sample is contained in its view on the
 sample columns except where an SK was regenerated since the sample was cut.
 
-Before activation, decide how to deliver the high-change tables: do not seed `fact_order`,
-`fact_delivery`, `fact_transaction_delivery`, `fact_quotation`, `view_dim_aging_history` or
-`dim_pump_information` until their delivery approach is resolved against the shared publisher limit.
+The send job is sized for these volumes: about 7.9 million messages in a normal night (the fact tables
+and `dim_pump_information`), up to about 20 million in the worst night (when the SKs of
+`dim_target_product_group_by_sale_dayofwork`, 12.7 million rows, all move). A night that does not
+finish within the time limit of one send run is finished by the following check runs (see "Send job").
+Deploying the 42 export views still held back follows the cutover to the Cloud Run publisher.
 
 The authoritative table schemas and writer contracts are in the OKF cards for
 [`mart_export_config`](../../okf/process/mart_export_config.md#schema) and
-[`mart_sent_state`](../../okf/process/mart_sent_state.md#schema). The workflow reads config
-columns by position; preserve the order in the SQLX definition.
+[`mart_sent_state`](../../okf/process/mart_sent_state.md#schema). The publisher reads config
+columns by name.
 
-The `MERGE` only inserts new export tables. Every existing row is preserved, including
-`source_view`, `topic`, `trigger_scheduler`, `last_invocation_id`, `last_invocation_end` and
-`claimed_at`, even if its JSON entry changes or is removed.
+The `MERGE` inserts new export tables and, for an existing table, updates `task_group` only.
+Every other column of an existing row is preserved, including `source_view`, `topic`,
+`trigger_scheduler`, `last_invocation_id`, `last_invocation_end`, `claimed_at` and `seeded_at`,
+even if its JSON entry changes or is removed. `task_group` is required for every JSON entry:
+Dataform compilation fails when one has none.
 
-**A new export table starts unseeded.** The insert-only config MERGE sets
+**A new export table starts unseeded.** The config MERGE sets
 `last_invocation_id`, `last_invocation_end`, `claimed_at` and `seeded_at` to NULL.
 `seeded_at` is the durable initialization marker, independent of expiring claims.
-Tag `pub_sub` appends it after `trigger_scheduler` and backfills only this marker from
+Tag `pub_sub` appends it (and `task_group`) after `trigger_scheduler` and backfills only this marker from
 MIN(sent_at) for tables with existing sent state, preserving dim_company's checkpoint and claim.
 Tag `pub_sub`, setup, merge and deployment never seed sent state or write first-load files.
 The publisher returns `not seeded: waiting for the first-load export` before any Dataform
@@ -233,44 +240,100 @@ Changing an existing export table's
 view/topic or removing it is a deliberate manual change. `ref()` to each export view
 keeps a config row naming a missing view a compile error.
 
-**Duplicate guard** (what `datamart-publish` does every 5 minutes). It reads
-`mart_export_config` with `tabledata.list` (no query cost), then for each row (returning immediately if seeded_at is NULL):
+**Check job** (every 5 minutes, `main.py check`, 1 vCPU / 512 MiB, one task, service account
+`datamart-publish-checker`). It reads `mart_export_config` by column name, then for each row
+(skipping a row whose seeded_at is NULL before any Dataform or BigQuery call):
 
 1. List the invocations that ended after `last_invocation_end` (the last 48 hours while it
-   is `NULL`), excluding `last_invocation_id`. None → stop for this table, no BigQuery
-   query at all. The newest `SUCCEEDED` invocation that triggers the table is the export
+   is `NULL`), excluding `last_invocation_id`. None → nothing for this table. The newest
+   `SUCCEEDED` invocation that triggers the table is the export
    invocation: with `trigger_scheduler` set, one whose `workflowConfig` is that
    configuration (no actions query; manual runs never trigger); without it, one whose
    action `table_name` is `SUCCEEDED` (its actions are queried). None of them qualifies
    (failed, or did not trigger the table) → only advance `last_invocation_*` to the newest
-   ended invocation and stop. The scheduler id from `workflowConfig` (unset = `manual`)
-   is logged with the invocation id.
+   ended invocation, guarded like the claim below.
+2. A table with an export invocation and no live claim is to be sent. When at least one is,
+   the check job starts the send job - never while an execution of it is still running.
+   A failure posts to Slack (webhook in Secret Manager secret `slack-datamart-dataform`).
+
+**Send job** (`main.py send`, 5 tasks in parallel, 2 vCPU / 4 GiB each, task timeout 30 minutes,
+no retries, service account `datamart-publisher`). Tables are grouped by `task_group`; the order
+of the groups is the order of the first entry of each group in `mart-export-config.json`, with
+the five large ones (`fact_order`, `fact_transaction_delivery`, `fact_delivery`, `fact_quotation`,
+`target`) at the top. Every task takes the next group, in that order, that still has a table to
+send and works through its tables one after another, then takes the next group, until none is
+left. The task atomically sets `group_claimed_at` on every row in the group only if no
+member has a live group or table claim; competing tasks skip that group. It releases the group
+after processing its members, and a crashed task's group claim expires after 35 minutes.
+The JSON must supply every table and its required group; missing or mismatched entries fail
+clearly without alternate ordering. Per table:
+
+1. Resolve the export invocation exactly as the check job does.
 2. Claim the row atomically: `UPDATE mart_export_config SET claimed_at = <now>
-   WHERE table_name = ... AND (claimed_at IS NULL OR claimed_at < now - 30 minutes)
+   WHERE table_name = ... AND (claimed_at IS NULL OR claimed_at < now - 35 minutes)
    AND (last_invocation_end IS NULL OR last_invocation_end < <end_time>)`. 0 rows
-   updated → another run holds it or already handled this or a newer invocation → stop.
-   The advance-only update in step 1 carries the same claim and end-time guards.
-3. Diff the export view with `mart_sent_state` in one query, reading only `row_key`,
-   `row_hash` `WHERE table_name = ...`: absent key = `NEW`, different hash = `UPDATE`,
-   key only in state = `DELETE`; equal hash = not sent. The same query builds each
-   message (`primary_key` = `row_key` text, `data` = `TO_JSON_STRING` of the data columns,
-   `null` for `DELETE`).
-4. Publish one message per changed row to `topic`, 50 rows per page; after each page
-   `MERGE` exactly those rows of that `table_name` into `mart_sent_state`
-   (`invocation_id` = the invocation, `sent_at` = now) and delete the `DELETE`d keys.
-5. Set `last_invocation_id`, `last_invocation_end` and `claimed_at = NULL`, only while
-   `claimed_at` still holds this run's claim (lost claim → failure). Any failure posts to
-   Slack (webhook in Secret Manager secret `slack-datamart-dataform`) and leaves the
-   memory unchanged; the claim expires after 30 minutes and the next run retries. Rows
-   already recorded in `mart_sent_state` are not sent again.
+   updated → another task or the first-load script holds it, or this or a newer invocation
+   was already handled → skip. (The first-load script keeps its own 30-minute assertion, shorter
+   than the claim, so it never exports a table the publisher may already have taken over.)
+3. **Recovery** - only when the row's claim was expired rather than empty, i.e. the previous
+   run on this table died. What Pub/Sub accepted is what the **record subscription**
+   `rec.datamart.<topic>` (BigQuery type, one per topic, all writing
+   `pubsub_record.messages`, partitioned by `publish_time`, kept 14 days, no dead-letter)
+   wrote. The task waits until the backlog of that subscription is 0, takes the messages
+   published since the dead claim started, de-duplicates them by `message_id` (the record is
+   at-least-once), keeps the newest message per `row_key` and MERGEs `row_key` / the
+   fingerprint of the message `data` text (NULL for DELETE) into `mart_sent_state`. If the
+   recovery fails, the durable `recovery_started_at` retains the earliest unresolved dead
+   claim across subsequent reclaims. `recovery_until` retains the latest dead claim plus the
+   30-minute task limit. Recovery requires two distinct zero-backlog samples newer than that
+   bound and at most two minutes old; missing or stale metrics fail closed. Both recovery
+   fields are cleared only after the recovered state has been merged. Recovery checks the record
+   table's actual partition retention first, including the two-minute lookback and UTC day
+   boundary, and reads the record subscription's actual message retention (default seven days).
+   The sender has `roles/pubsub.viewer` on each record subscription for this metadata read.
+   An interval expired in either storage layer, or expiring before this task finishes, fails
+   closed without clearing recovery or publishing a new diff.
+4. Diff the export view with `mart_sent_state` (`pubsub/sql/diff.sql`, one query, reading only
+   `row_key`, `row_hash` `WHERE table_name = ...`) into a staging table
+   `pubsub_staging.stg_<table>` (tables expire after 1 day): absent key = `NEW`,
+   different hash = `UPDATE`, key only in state = `DELETE`; equal hash = not sent. The same
+   query builds each message (`primary_key` = `row_key` text, `data` = `TO_JSON_STRING` of the
+   data columns, `null` for `DELETE`; no attributes; `run_date` = the date of the diff in
+   Asia/Bangkok).
+5. Read the staging table with the Storage Read API (views cannot be read that way, hence the
+   staging table) and publish batches of 1,000 messages with concurrency. Every 1,000,000 sent rows,
+   and at the end, MERGE exactly the rows Pub/Sub accepted into `mart_sent_state`
+   (`invocation_id` = the invocation, `sent_at` = now; DELETE removes the key).
+6. Set `last_invocation_id`, `last_invocation_end` and `claimed_at = NULL`, only while
+   `claimed_at` still holds this run's claim (lost claim → failure).
+
+**Time limit.** A task stops by itself at 25 minutes: no new batch starts, the rows already
+sent are recorded, the claim is released, Slack is told - and `last_invocation_*` is **not**
+moved. Query, load, Storage Read, HTTP and publish-backpressure waits use the remaining
+task budget. Publishing drains until minute 26, recording finishes by minute 28, and the
+remaining minute is reserved for cleanup and release before the task's minute-29 deadline.
+A failed drain or record keeps the table claim for recovery. The next check run (within 5 minutes) sees the same invocation again and the send
+job continues with the rest (a new diff). The send task reports accumulated failures once to
+Slack, including recovery timeouts, resolve/advance, configuration and group ownership failures.
+A failed table leaves the memory and
+the claim as they are: the claim expires after 35 minutes and the next run recovers from the
+record subscription (step 3).
 
 Several new invocations since the last one are handled as one: the diff compares the
 current view, so only the newest matters. Invocation end times carry nanoseconds; the
-workflow cuts them to microseconds before they reach a BigQuery `TIMESTAMP`.
+publisher cuts them to microseconds before they reach a BigQuery `TIMESTAMP`.
 
-Publishing and recording sent state are separate operations: a failure between
-them can resend a row on retry. Receivers must follow the idempotency and delivery
-rules in the [message guide](../../how-to/setup-pubsub-export.md).
+**Duplicates.** Publishing and recording sent state are separate operations. A crash between
+them is repaired by step 3, which keeps `NEW` messages from being sent twice. What can still
+arrive twice is an `UPDATE` (or `DELETE`) of the same row, and a message Pub/Sub itself
+redelivers (same `publish_time`); receivers must follow the idempotency and delivery rules in
+the [message guide](../../how-to/setup-pubsub-export.md). Exactly-once delivery is not enabled
+on team subscriptions: it does not remove duplicates created on the publish side, only
+redeliveries after an acknowledgement.
+
+**Group order is read at build time.** `setup.sh` copies `mart-export-config.json` into the
+image (the required group and table order is read from it), so a new group takes effect when
+`setup.sh` has been run; which group a table belongs to is read from `mart_export_config.task_group`.
 
 **Export view contract** (every export view):
 
@@ -297,15 +360,19 @@ rules in the [message guide](../../how-to/setup-pubsub-export.md).
 `definitions/view/pub_sub/` (schema `databuffet.PUB_SUB`, tags `TAG_VIEW` +
 `TAG_PUB_SUB`, `dependencies` including `pub_sub_schema`) following the contract, then
 one entry under `tables` in `mart-export-config.json` (`table_name` = the message
-`table`, `source_view`, `topic`; `trigger_scheduler` = the Dataform workflow configuration
+`table`, `source_view`, `topic`, `task_group` = the name of its group (required; an existing group
+or a new one), `source_tables` = the base tables the view reads, the first being the table or view
+the export view reads and the others one object per upstream dataset it reads through;
+`trigger_scheduler` = the Dataform workflow configuration
 whose successful run triggers it, or omit it to trigger on the action named `table_name`;
 optional `snapshot_date` = `{"column", "format"}` of the document date that splits the
-first-load files into date folders), then run tag `pub_sub` once as below — it leaves seeded_at NULL for the
-new table until its first manual Cloud Shell snapshot seeds state and writes files together. The workflow needs no change. Add the view's base tables
-to `SOURCE_TABLES` in `infra/pubsub/setup.sh` and re-run it: it creates the topic and
-its dead-letter topic, grants the publisher read on the view only and authorizes the view on
-its base tables' datasets. Consumer teams get the new topic through `infra/pubsub/add-consumer.sh`.
-For existing exports, the insert-only config lifecycle above applies.
+first-load files into date folders), then run tag `pub_sub` once as below - it leaves seeded_at NULL for the
+new table until its first manual Cloud Shell snapshot seeds state and writes files together. The publisher
+needs no change. Re-run `pubsub/scripts/setup.sh`: it creates the topic, its dead-letter topic and its
+record subscription, grants the publisher read on the view only, authorizes the view on
+its base tables' datasets (from `source_tables`) and rebuilds the image so a new group is in
+the order. Consumer teams get the new topic through `pubsub/scripts/add-consumer.sh`.
+For existing exports, the config lifecycle above applies (only `task_group` follows the JSON).
 
 ### Deploy
 
@@ -322,8 +389,9 @@ Manual execution uses the release's live compilation result
 ([Dataform compilation reference](https://docs.cloud.google.com/dataform/docs/configure-compilation#trigger-execution-release-configuration)).
 The run creates the `pub_sub` dataset (in `databuffet.REGION`), the export views and
 the two tables, and adds missing export config rows (unseeded until their first manual
-Cloud Shell snapshot). Re-running preserves config values, checkpoints, claims and sent
-state; the migration only backfills `seeded_at` for tables with existing sent state. No workflow configuration carries
+Cloud Shell snapshot). Re-running follows the config lifecycle described above, including
+refreshing `task_group` from the JSON while preserving checkpoints, claims and sent state.
+No Dataform workflow configuration carries
 `pub_sub`. Do not use tag `view` for this: it deploys every view and skips the two
 tables. Then set up GCP and test per
 [setup-pubsub-export.md — ส่วน A](../../how-to/setup-pubsub-export.md#ส่วน-a--deploy-และทดสอบ-pilot).

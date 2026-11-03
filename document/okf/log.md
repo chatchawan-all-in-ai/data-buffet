@@ -1,5 +1,10 @@
 # Directory Update Log
 
+## 2026-11-03 (Cloud Run publisher)
+* **Update**: `mart_export_config` card: new column `task_group` (ninth), the config MERGE now also refreshes it, claim expiry 30 -> 35 minutes, publisher is the Cloud Run jobs instead of the Cloud Workflow.
+* **Update**: `mart_sent_state` card: writer is the Cloud Run send job (every 1,000,000 sent rows and at the end of a table); size corrected to about 1.38 million rows, 156 MB.
+* **Update**: the 55 `pub_sub` export view cards: the publisher named in the description is the Cloud Run publisher.
+
 ## 2026-11-03 (AI team sample tables Pub/Sub export)
 * **Creation**: Added 33 cards for the export views of the AI team sample tables in `pub_sub` (export_dim_aging_rang, export_dim_calendar, export_dim_customer_segment, export_dim_doctype, export_dim_payment, export_dim_product_master_fc, export_dim_product_series, export_dim_project, export_dim_pump_information, export_dim_quotation, export_dim_section_last, export_dim_target_product_group_by_sale_dayofwork, export_view_dim_aging_history, export_view_dim_channel, export_view_dim_company, export_view_dim_customer, export_view_dim_customer_report_info, export_view_dim_invoice, export_view_dim_order, export_view_dim_product_master, export_view_dim_product_mkt, export_view_dim_sale_representative_last, export_fact_delivery, export_fact_order, export_fact_quotation, export_fact_transaction_delivery, export_view_fact_transcation, export_mds_data_org_ols_center, export_product_attribute, export_view_rls_sale_data, export_brand, export_rls_ta_customer, export_mds_data_ta_dashboard_display_control; pub_sub 55 cards, view 95 cards).
 * **Update**: `mart_export_config` card: 55 rows (dim_company, 12 commission sets, 9 TA org sets, 33 AI team sample tables).

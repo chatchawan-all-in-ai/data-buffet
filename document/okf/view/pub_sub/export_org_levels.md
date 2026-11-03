@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of the TA app table `org_levels`: one row per company and depth 1 (ฝ่าย), 2 (ภาค) or 3 (ส่วน) that has units in org center. There is no depth 4: TAs sit at the section and carry a zone on appointments. The Cloud Workflow `datamart-publish` compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `org_levels` to topic `export-ta-org_levels`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of the TA app table `org_levels`: one row per company and depth 1 (ฝ่าย), 2 (ภาค) or 3 (ส่วน) that has units in org center. There is no depth 4: TAs sit at the section and carry a zone on appointments. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `org_levels` to topic `export-ta-org_levels`. It is registered in [mart_export_config](/process/mart_export_config.md).
 
 # Grain and key
 
