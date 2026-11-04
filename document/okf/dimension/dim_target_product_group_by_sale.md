@@ -73,7 +73,6 @@ Three allocation branches are combined with UNION ALL: (1) year-wide rate rows (
 - Storage options: `{"clusterBy": ["TargetBySaleSK"]}`.
 - Reads: [dimension_table.dim_target_product_group](/dimension/dim_target_product_group.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_report](/dimension/dim_report.md), [dimension_table.dim_rate_target](/dimension/dim_rate_target.md), [dimension_table.dim_sale_representative_last](/dimension/dim_sale_representative_last.md), [dimension_table.dim_department_last](/dimension/dim_department_last.md), [dimension_table.dim_region_last](/dimension/dim_region_last.md), [dimension_table.dim_section_last](/dimension/dim_section_last.md), [dimension_table.dim_region_manager_last](/dimension/dim_region_manager_last.md), [dimension_table.dim_section_manager_last](/dimension/dim_section_manager_last.md).
 - Full daily rebuild (`type: "table"`), tag `dimension_daily`; depends on dim_product_mkt, dim_report, dim_rate_target, dim_target_product_group, `update_sk_sale_rep_group` and all the `*_last` dims.
-- Approximate size (BigQuery metadata, 2026-10-31): 419,268 rows, 118.9 MB.
 
 # Examples
 

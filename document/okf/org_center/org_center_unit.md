@@ -50,7 +50,6 @@ One row per `company_id` + `unit_id` (`unit_id` = prefix `CO-`/`DIR-`/`REG-`/`SE
 - Storage options: `{"clusterBy": ["company_id", "unit_id"]}`.
 - Reads: [dimension_table.dim_director_last](/dimension/dim_director_last.md), [dimension_table.dim_region_last](/dimension/dim_region_last.md), [dimension_table.dim_section_last](/dimension/dim_section_last.md), [dimension_table.dim_company](/dimension/dim_company.md), `mds_dataset.mds_data_company_master` (master data loaded outside this repo).
 - Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Runs after `update_sk_sale_rep_group` (which fills the NULL DirectorSK/RegionSK/SectionSK of the `_last` dims), `dim_company` and the `dim_*_last` tables it reads.
-- Approximate size (BigQuery metadata, 2026-10-31): 164 rows, 25.6 KB.
 
 # Examples
 

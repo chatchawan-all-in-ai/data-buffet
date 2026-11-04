@@ -55,7 +55,6 @@ One row per (`month_end`, `store_code`, `branch_code`, `product_code`) (uniqueKe
 - Storage options: `{"partitionBy": "month_end", "clusterBy": ["store_code", "branch_sk", "product_mdt_sk"]}`.
 - Reads: [fact_table.fact_stock_mdt](/fact/fact_stock_mdt.md).
 - Refresh: full daily rebuild (`type: "table"`, tags `fact_daily` and `saleout_daily`, partition `month_end`, cluster `store_code, branch_sk, product_mdt_sk`), reads `fact_stock_mdt` (not curated), which runs first.
-- Approximate size (BigQuery metadata, 2026-10-31): 56,519 rows, 7.8 MB.
 
 # Examples
 

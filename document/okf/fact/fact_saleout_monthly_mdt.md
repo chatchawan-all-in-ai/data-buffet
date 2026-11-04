@@ -58,7 +58,6 @@ Uniqueness key: (`month_date`, `store_code`, `branch_code`, `sales_channel`, `pr
 - Storage options: `{"partitionBy": "month_date", "clusterBy": ["store_code", "branch_sk", "product_mdt_sk"]}`.
 - Reads: [dimension_table.dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_report](/dimension/dim_report.md), [dimension_table.dim_product_mdt](/dimension/dim_product_mdt.md), [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_region_manager](/dimension/dim_region_manager.md), [dimension_table.dim_director](/dimension/dim_director.md), [curated_saleout_mdt.curated_saleout_monthly_mdt](/curated/curated_saleout_mdt/curated_saleout_monthly_mdt.md).
 - Refresh: full daily rebuild (`type: "table"`, tags `fact_daily` and `saleout_daily`, partition `month_date`, cluster `store_code, branch_sk, product_mdt_sk`) because the curated source changes daily; after the MDT dims; re-run in `saleout_morning`.
-- Approximate size (BigQuery metadata, 2026-10-31): 373,203 rows, 78.9 MB.
 
 # Examples
 

@@ -41,7 +41,6 @@ One row per `table_name` + `row_key` (neither NULL). `row_key` is `TO_JSON_STRIN
 - Definition: `definitions/process/mart_sent_state.sqlx` (`type: "operations"`, tags `pub_sub`); the operation owns this table.
 - Reads: no other table; written by the publisher and, once per new export table, by the manual Cloud Shell `export-snapshot.sh` run for an unseeded table; never by tag pub_sub, setup, merge or deploy.
 - Operations (`type: "operations"`, tag `pub_sub`, no scheduler runs it; deployed manually from `production` with dependencies off). `CREATE TABLE IF NOT EXISTS` only, never rebuilt; the publisher MERGEs into it (on table_name + row_key) every 1,000,000 sent rows and at the end of a table, and again when it recovers a crashed run from the record subscription; DELETEd keys are removed.
-- Approximate size (BigQuery metadata, 2026-11-03): about 1.38 million rows, 156 MB.
 
 # Examples
 

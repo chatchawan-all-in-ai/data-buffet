@@ -2,7 +2,7 @@ config {
     type: "table",
     schema: databuffet.ORG_CENTER,
     dependencies: [
-                    "org_center_schema", "org_center_link", "dim_company",
+                    "org_center_schema", "org_center_link",
                     "dim_director_last", "dim_region_manager_last", "dim_section_manager_last",
                     "dim_sale_representative_last", "dim_section_last",
                     "update_sk_sale_rep_group"
@@ -84,13 +84,6 @@ js {
         name: "dim_section_last",
     };
     const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
-
-    const DimCompanyTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_company",
-    };
-    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 }
 
 -- unit_id ต้องตรงกับ org_center_unit · ไม่กรองแถวหมดอายุ
@@ -113,7 +106,7 @@ WITH emp_email AS (
     CAST(NULL AS STRING) AS nickname,
     'DIRECTOR' AS position_code,
     CONCAT('DIR-', ${databuffet.functionData.cleanString("DirectorID")}) AS unit_id,
-    CAST([] AS ARRAY<STRING>) AS department_ids,
+    CAST([] AS ARRAY<STRING>) AS department_id,
     StartDate AS valid_from,
     EndDate AS valid_to
   FROM `${DimDirectorLastTableRef}`
@@ -139,7 +132,7 @@ WITH emp_email AS (
     CAST(NULL AS STRING) AS nickname,
     'CEO' AS position_code,
     CONCAT('CO-', c.company_id) AS unit_id,
-    CAST([] AS ARRAY<STRING>) AS department_ids,
+    CAST([] AS ARRAY<STRING>) AS department_id,
     DATE '2000-01-01' AS valid_from,
     DATE '2066-12-31' AS valid_to
   FROM ceo_source AS c
@@ -154,7 +147,7 @@ WITH emp_email AS (
     ${databuffet.functionData.cleanString("RegionManagerNickname")} AS nickname,
     'REGION_MGR' AS position_code,
     CONCAT('REG-', ${databuffet.functionData.cleanString("SubRegionID")}) AS unit_id,
-    CAST([] AS ARRAY<STRING>) AS department_ids,
+    CAST([] AS ARRAY<STRING>) AS department_id,
     StartDate AS valid_from,
     EndDate AS valid_to
   FROM `${DimRegionManagerLastTableRef}`
@@ -168,7 +161,7 @@ WITH emp_email AS (
     ${databuffet.functionData.cleanString("SectionManagerNickname")} AS nickname,
     'SECTION_MGR' AS position_code,
     CONCAT('SEC-', ${databuffet.functionData.cleanString("SectionID")}) AS unit_id,
-    CAST([] AS ARRAY<STRING>) AS department_ids,
+    CAST([] AS ARRAY<STRING>) AS department_id,
     StartDate AS valid_from,
     EndDate AS valid_to
   FROM `${DimSectionManagerLastTableRef}`
@@ -197,7 +190,7 @@ WITH emp_email AS (
     employee_id,
     unit_id,
     ARRAY_AGG(STRUCT(first_name, last_name, nickname) ORDER BY EndDate DESC, StartDate DESC LIMIT 1)[OFFSET(0)] AS latest,
-    ARRAY_AGG(DISTINCT department_id IGNORE NULLS ORDER BY department_id) AS department_ids,
+    ARRAY_AGG(DISTINCT department_id IGNORE NULLS ORDER BY department_id) AS department_id,
     MIN(StartDate) AS valid_from,
     MAX(EndDate) AS valid_to
   FROM ta_base
@@ -212,7 +205,7 @@ WITH emp_email AS (
     latest.nickname,
     'TA' AS position_code,
     unit_id,
-    department_ids,
+    department_id,
     valid_from,
     valid_to
   FROM ta_agg
@@ -234,7 +227,7 @@ WITH emp_email AS (
     l.pc_type AS position_code,
     l.branch_code,
     ta.unit_id,
-    ta.department_ids,
+    ta.department_id,
     GREATEST(l.valid_from, ta.valid_from) AS valid_from,
     LEAST(IF(l.valid_to = DATE '2066-12-31', l.valid_to, DATE_SUB(l.valid_to, INTERVAL 1 DAY)), ta.valid_to) AS valid_to,
     COUNT(*) OVER (PARTITION BY l.company_id, l.pc_employee_id, l.branch_type, l.branch_code, l.valid_from) AS ta_unit_count
@@ -258,7 +251,7 @@ WITH emp_email AS (
   JOIN `${MdsDataMdtSalesBranchMasterTableRef}` AS br
     ON br.is_active = TRUE
    AND br.branch_code = o.branch_code
-  CROSS JOIN UNNEST(o.department_ids) AS dept
+  CROSS JOIN UNNEST(o.department_id) AS dept
   WHERE br.zone_id IN UNNEST(SPLIT(dept, '_'))
 
 ), pc_link AS (
@@ -323,18 +316,12 @@ WITH emp_email AS (
     CAST(NULL AS STRING) AS nickname,
     pl.position_code,
     pl.unit_id,
-    CAST([] AS ARRAY<STRING>) AS department_ids,
+    CAST([] AS ARRAY<STRING>) AS department_id,
     pl.valid_from,
     pl.valid_to
   FROM pc_period AS pl
   LEFT JOIN pc_name AS n
     ON pl.employee_id = n.employee_id
-
-), company AS (
-  SELECT
-    ${databuffet.functionData.cleanString("CompanyID")} AS company_id,
-    ${databuffet.functionData.cleanString("CompanyNameTH")} AS company_name
-  FROM `${DimCompanyTableRef}`
 
 ), member AS (
   SELECT * FROM ceo
@@ -359,15 +346,12 @@ WITH emp_email AS (
     em.email,
     m.position_code,
     m.unit_id,
-    m.department_ids,
+    m.department_id,
     m.valid_from,
-    m.valid_to,
-    co.company_name
+    m.valid_to
   FROM member AS m
   LEFT JOIN emp_email AS em
     ON m.employee_id = em.employee_id
-  LEFT JOIN company AS co
-    ON m.company_id = co.company_id
   WHERE m.employee_id IS NOT NULL
 
 pre_operations {

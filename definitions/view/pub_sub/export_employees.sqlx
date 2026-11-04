@@ -4,7 +4,7 @@ config {
     dependencies: ["pub_sub_schema", "org_center_person", "org_center_exception"],
     // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
     tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
-    description: "Pub/Sub export of the TA app table employees: one row = one person of org_center_person plus the people of org_center_exception who are not in it (names from MDS); columns of the 2026-11-02 org sample plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+    description: "Pub/Sub export of the TA app table employees: one row = one person of org_center_person (with phone and line_uuid from MDS employee info) plus the people of org_center_exception who are not in it (names from MDS); columns of the 2026-11-02 org sample plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
 }
 
 js {
@@ -21,7 +21,7 @@ js {
 -- Natural key = person_key (MDS EmployeeID, never NULL).
 -- Two sources: org_center_person (people with a seat) and the people with a special access row who have
 -- no seat (captain decision 2026-11-02: add them), named from the MDS employee mapping center that
--- org_center_member already reads. They have no phone in MDS employee info, so phone stays NULL.
+-- org_center_member already reads. They have no phone or LINE UUID in MDS employee info, so both stay NULL.
 WITH mds_mapping AS (
   SELECT
     ${databuffet.functionData.cleanString("employeeid")} AS employee_id,
@@ -39,7 +39,8 @@ WITH mds_mapping AS (
     last_name,
     nickname,
     email,
-    mobile_phone AS phone
+    mobile_phone AS phone,
+    line_uuid
   FROM `${OrgCenterPersonTableRef}`
 
 ), unseated AS (
@@ -50,7 +51,8 @@ WITH mds_mapping AS (
     REGEXP_EXTRACT(mp.employee_name, r'^\S+\s+(.+)$') AS last_name,
     CAST(NULL AS STRING) AS nickname,
     mp.email AS email,
-    CAST(NULL AS STRING) AS phone
+    CAST(NULL AS STRING) AS phone,
+    CAST(NULL AS STRING) AS line_uuid
   FROM (
     SELECT DISTINCT employee_id
     FROM `${OrgCenterExceptionTableRef}`
@@ -77,7 +79,8 @@ WITH mds_mapping AS (
     nickname,
     email,
     phone,
-    IF(phone IS NULL, CAST(NULL AS STRING), 'mds') AS phone_source
+    IF(phone IS NULL, CAST(NULL AS STRING), 'mds') AS phone_source,
+    line_uuid
   FROM employee
 )
 SELECT

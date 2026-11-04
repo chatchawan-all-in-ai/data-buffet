@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_table.dim_customer_segment](/dimension/dim
 
 # Grain and key
 
-One row = one customer segment: key `CompanyID`, `Segment3` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 11.
+One row = one customer segment: key `CompanyID`, `Segment3` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

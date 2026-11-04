@@ -58,7 +58,6 @@ One row per `company_id`, `cqlbank`, `cqlno`, `cqlsys`, `cqlday`, `cqlmonth`, `c
 - **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `company_id`, `cqlbank`, `cqlyear`, `cqlmonth`.
-- Approximate size (BigQuery metadata, 2026-10-31): 316,924 rows, 36.7 MB.
 
 # Examples
 

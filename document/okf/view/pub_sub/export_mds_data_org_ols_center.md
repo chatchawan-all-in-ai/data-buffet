@@ -24,7 +24,7 @@ The Pub/Sub export view of `mds_dataset.mds_data_org_ols_center`, with the colum
 
 # Grain and key
 
-One row = one user row of the MDS table org_ols_center (access flags for viewing target, cost margin and commission): key `employeeemail` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 55.
+One row = one user row of the MDS table org_ols_center (access flags for viewing target, cost margin and commission): key `employeeemail` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

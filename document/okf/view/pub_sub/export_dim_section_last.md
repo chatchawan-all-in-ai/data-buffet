@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_table.dim_section_last](/dimension/dim_sec
 
 # Grain and key
 
-One row = one sales section in its latest period: key `companyID`, `SectionID` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 127.
+One row = one sales section in its latest period: key `companyID`, `SectionID` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

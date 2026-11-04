@@ -24,7 +24,7 @@ The Pub/Sub export view of commission set `sell` for the TF team (company ag01):
 
 # Grain and key
 
-One ag01 salesperson, hidden ones included: key `company_source_id, id` (unique). `row_key` is the JSON of that key. Rows on 2026-11-02: 1,659.
+One ag01 salesperson, hidden ones included: key `company_source_id, id` (unique). `row_key` is the JSON of that key.
 
 # Schema
 

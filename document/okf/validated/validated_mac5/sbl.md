@@ -46,7 +46,6 @@ One row per `company_id`, `sblstk`, `sblsto`. The key is declared twice in the d
 - Reads: [raw_mac5_ag01.sbl](/initial/raw_mac5_ag01/sbl.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Storage: partition by `(none)`, cluster by `company_id`, `sblstk`, `sblsto`.
-- Approximate size (BigQuery metadata, 2026-10-31): 116,487 rows, 4.7 MB.
 
 # Examples
 

@@ -58,7 +58,6 @@ One row per `FactChqSK` (a `ROW_NUMBER()` over `company_id, chqno, cqlcus, cqlvn
 - Storage options: `{"clusterBy": ["FactChqSK"]}`.
 - Reads: [validated_mac5.chq](/validated/validated_mac5/chq.md), [validated_mac5.cql](/validated/validated_mac5/cql.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`), runs after `dim_customer` and `dim_company` (dependencies[]). Runs before `fact_mir_rs`. `FactChqSK` regenerates every run.
-- Approximate size (BigQuery metadata, 2026-10-31): 135,394 rows, 18.8 MB.
 
 # Examples
 

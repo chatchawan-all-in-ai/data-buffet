@@ -48,7 +48,6 @@ One row per `company_id`, `stfcode`, `stflist`. The key is declared twice in the
 - Reads: [raw_mac5_ag01.stf](/initial/raw_mac5_ag01/stf.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Storage: partition by `(none)`, cluster by `company_id`, `stfcode`, `stflist`.
-- Approximate size (BigQuery metadata, 2026-10-31): 95,687 rows, 5.6 MB.
 
 # Examples
 

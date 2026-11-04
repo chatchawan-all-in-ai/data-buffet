@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_table.dim_calendar](/dimension/dim_calenda
 
 # Grain and key
 
-One row = one calendar day with its weekend and holiday flags: key `Date` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 2,557.
+One row = one calendar day with its weekend and holiday flags: key `Date` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

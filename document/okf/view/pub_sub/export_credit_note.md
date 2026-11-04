@@ -24,7 +24,7 @@ The Pub/Sub export view of commission set `credit_note` for the TF team (company
 
 # Grain and key
 
-One line of an ag01 credit note (BS) of 2026, not cancelled: key `company_source_id, CN_id, no` (unique). `row_key` is the JSON of that key. Rows on 2026-11-02: 2,749.
+One line of an ag01 credit note (BS) of 2026, not cancelled: key `company_source_id, CN_id, no` (unique). `row_key` is the JSON of that key.
 
 # Schema
 

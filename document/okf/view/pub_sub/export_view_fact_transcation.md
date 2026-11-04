@@ -24,7 +24,7 @@ The Pub/Sub export view of [fact_view.view_fact_transcation](/view/fact_view/vie
 
 # Grain and key
 
-One row = one sales transaction line: key `companyID`, `milType`, `milVnos`, `milListno` plus `occurrence` (the position of the row among rows with the same key, ordered by their data JSON); `row_key` is the JSON of that key. Rows on 2026-11-02: 2,719,389.
+One row = one sales transaction line: key `companyID`, `milType`, `milVnos`, `milListno` plus `occurrence` (the position of the row among rows with the same key, ordered by their data JSON); `row_key` is the JSON of that key.
 
 # Schema
 

@@ -120,7 +120,6 @@ One row per document: `company_id` + `mihType` + `mihVnos` (the `uniqueKey`; doc
 - Storage options: `{"partitionBy": "asatdate", "clusterBy": ["company_id", "mihVnos", "mihType"]}`.
 - Reads: [validated_mac5.mih](/validated/validated_mac5/mih.md), [validated_mac5.ar_s](/validated/validated_mac5/ar_s.md), [validated_mac5.ap_s](/validated/validated_mac5/ap_s.md), [validated_mac5.mih2](/validated/validated_mac5/mih2.md).
 - Incremental MERGE on `uniqueKey` (tag `curated`, built after `validated_mac5.mih`, `ar_s`, `ap_s`, `mih2`); each run re-reads only validated rows with `asatdate` within the last `BACKFILL_DAYS` days (currently 1, Asia/Bangkok) and replaces those documents. No pre/post operations (unlike curated_mil).
-- Approximate size (BigQuery metadata, 2026-10-31): 3,965,212 rows, 2.9 GB.
 
 # Examples
 

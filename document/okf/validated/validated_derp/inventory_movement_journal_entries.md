@@ -79,7 +79,6 @@ One row per `journal_number`, `line_number`. The key is declared twice in the de
 - **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY updated_datetime DESC, created_datetime DESC, asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `journal_number`, `line_number`.
-- Approximate size (BigQuery metadata, 2026-10-31): 1,306,518 rows, 393.9 MB.
 
 # Examples
 

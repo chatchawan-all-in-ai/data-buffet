@@ -42,7 +42,6 @@ One row per `SeriesCode` among active mds rows; duplicates on the trimmed code a
 - Storage options: `{"clusterBy": ["SeriesSK"]}`.
 - Reads: `mds_dataset.mds_data_mdt_product_series_master` (master data loaded outside this repo).
 - Full daily rebuild (`type: "table"`, tags `dimension_daily` and the saleout daily tag) from active mds rows with a QUALIFY dedup on trimmed `SeriesCode`; no dim_company dependency. Clustered by `SeriesSK`.
-- Approximate size (BigQuery metadata, 2026-10-31): 2 rows, 123 B.
 
 # Examples
 

@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_table.dim_pump_information](/dimension/dim
 
 # Grain and key
 
-One row = one pump segment per company, product code, region and new-product flag: key `CompanyID`, `milstk`, `RegionID`, `FlagNewProductMKT` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 35,607.
+One row = one pump segment per company, product code, region and new-product flag: key `CompanyID`, `milstk`, `RegionID`, `FlagNewProductMKT` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

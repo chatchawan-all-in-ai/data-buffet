@@ -51,7 +51,6 @@ One row per `(CompanyID, SectionID)`: the row with the greatest EndDate (ties by
 - Storage options: `{"clusterBy": ["SectionSK"]}`.
 - Reads: [dimension_table.dim_section](/dimension/dim_section.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`) from dim_section + dim_company, tag `dimension_daily`; the four hierarchy SKs are filled afterwards by the operation `update_sk_sale_rep_group`. `dim_sales_branch_mdt` and `dim_target_product_group_by_sale` depend on it.
-- Approximate size (BigQuery metadata, 2026-10-31): 127 rows, 13.0 KB.
 
 # Examples
 

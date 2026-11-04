@@ -51,7 +51,6 @@ One row per `category_id`, `language_id`. The key is declared twice in the defin
 - **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC, updated_at DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `category_id`, `language_id`.
-- Approximate size (BigQuery metadata, 2026-10-31): 215 rows, 31.0 KB.
 
 # Examples
 

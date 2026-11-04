@@ -24,7 +24,7 @@ The Pub/Sub export view of the TA app table `access_exceptions`: [org_center_exc
 
 # Grain and key
 
-One special-access scope: key `source_row_id, company_code, director_code, region_code, section_code, mkt_group_id, mkt_subgroup_id, mkt_segment_id` (unique). `row_key` is the JSON of the natural key. Rows on 2026-11-02: 37.
+One special-access scope: key `source_row_id, company_code, director_code, region_code, section_code, mkt_group_id, mkt_subgroup_id, mkt_segment_id` (unique). `row_key` is the JSON of the natural key.
 
 # Schema
 

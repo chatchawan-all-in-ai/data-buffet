@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_view.view_dim_aging_history](/view/dimensi
 
 # Grain and key
 
-One row = one invoice of one company on one as-at date of the receivables aging snapshot: key `asatdate`, `companyID`, `cfsVnosID` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 1,103,941.
+One row = one invoice of one company on one as-at date of the receivables aging snapshot: key `asatdate`, `companyID`, `cfsVnosID` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

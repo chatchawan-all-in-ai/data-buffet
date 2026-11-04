@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_table.dim_product_master_fc](/dimension/di
 
 # Grain and key
 
-One row = one product of the finance product master, by barcode: key `Barcode` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 12,119.
+One row = one product of the finance product master, by barcode: key `Barcode` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

@@ -52,7 +52,6 @@ One row per `sale_date`, `branch_code`, `product_code`, `is_return`. The key is 
 - Reads: [raw_saleout_mdt.saleout_dh](/initial/raw_saleout_mdt/saleout_dh.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Storage: partition by `asatdate`, cluster by `branch_code`, `product_code`.
-- Approximate size (BigQuery metadata, 2026-10-31): 2,839 rows, 435.9 KB.
 
 # Examples
 

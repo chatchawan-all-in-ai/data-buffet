@@ -24,7 +24,7 @@ The Pub/Sub export view of commission set `warehouse` for the TF team (company a
 
 # Grain and key
 
-One ag01 warehouse: key `company_source_id, id` (unique). `row_key` is the JSON of that key. Rows on 2026-11-02: 601.
+One ag01 warehouse: key `company_source_id, id` (unique). `row_key` is the JSON of that key.
 
 # Schema
 

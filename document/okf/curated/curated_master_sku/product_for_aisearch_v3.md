@@ -39,7 +39,6 @@ One row per `id` (master SKU code) per `asatdate` (run date). Only products whos
 - Definition: `definitions/curated/master_sku/product_for_aisearch_v3.sqlx` (`type: "operations"`, tags `curated`); the operation owns this table.
 - Reads: [validated_master_sku.products](/validated/validated_master_sku/products.md), [validated_master_sku.common_codes](/validated/validated_master_sku/common_codes.md), [validated_master_sku.brands](/validated/validated_master_sku/brands.md), [validated_master_sku.categories](/validated/validated_master_sku/categories.md), [validated_master_sku.brand_vendors](/validated/validated_master_sku/brand_vendors.md), [validated_master_sku.vendors](/validated/validated_master_sku/vendors.md).
 - Operations action (`type: "operations"`, tag `curated`, after `curated_schema_master_sku`): builds TEMP tables, creates the target on first run (`CREATE TABLE IF NOT EXISTS`, partition `asatdate`, cluster `id`), then in one transaction DELETEs the current run date's partition and INSERTs the new rows (atomic; if the INSERT fails the old partition stays).
-- Approximate size (BigQuery metadata, 2026-10-31): 104,552 rows, 146.8 MB.
 
 # Examples
 

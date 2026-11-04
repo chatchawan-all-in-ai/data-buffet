@@ -83,7 +83,6 @@ One row per `company_id`, `crecode`. The key is declared twice in the definition
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY crenamet desc, crenamee desc, credate desc) = 1`.
 - Storage: partition by `(none)`, cluster by `company_id`, `crecode`.
-- Approximate size (BigQuery metadata, 2026-10-31): 15,492 rows, 6.3 MB.
 
 # Examples
 

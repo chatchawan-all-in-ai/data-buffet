@@ -59,7 +59,6 @@ One row per `FactBacklogStoreSK` (ROW_NUMBER over CompanySK, date parts, cpsVnos
 - Storage options: `{"partitionBy": "sDate", "clusterBy": ["FactBacklogStoreSK"]}`.
 - Reads: [validated_mac5.cps](/validated/validated_mac5/cps.md), [dimension_table.dim_order](/dimension/dim_order.md), `mds_dataset.mds_data_status_control_master` (master data loaded outside this repo), [dimension_table.dim_product_master](/dimension/dim_product_master.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_store](/dimension/dim_store.md).
 - Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `FactBacklogStoreSK`, partition `sDate`, cluster `FactBacklogStoreSK`), after `dim_order`, `dim_customer`, `dim_product_master`, `dim_company`, `dim_store`; reads the newest cps snapshot, so it reflects the state at the last validated cps load.
-- Approximate size (BigQuery metadata, 2026-10-31): 303,756 rows, 45.9 MB.
 
 # Examples
 

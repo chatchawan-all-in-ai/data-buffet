@@ -61,7 +61,6 @@ One row per `FactOrderStoreSK` (ROW_NUMBER over CompanySK, mihYear, mihMonth, mi
 - Storage options: `{"partitionBy": "mix_date", "clusterBy": ["FactOrderStoreSK"]}`.
 - Reads: [dimension_table.dim_order](/dimension/dim_order.md), `mds_dataset.mds_data_status_control_master` (master data loaded outside this repo), [dimension_table.dim_product_master](/dimension/dim_product_master.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_store](/dimension/dim_store.md).
 - Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `FactOrderStoreSK`, partition `mix_date`, cluster `FactOrderStoreSK`), after `dim_order`, `dim_customer`, `dim_product_master`, `dim_company`, `dim_store`. Retention: rolling 4 years truncated to start-of-year.
-- Approximate size (BigQuery metadata, 2026-10-31): 2,133,988 rows, 461.7 MB.
 
 # Examples
 

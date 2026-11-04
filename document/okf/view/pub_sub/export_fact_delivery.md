@@ -24,7 +24,7 @@ The Pub/Sub export view of [fact_table.fact_delivery](/fact/fact_delivery.md), w
 
 # Grain and key
 
-One row = one delivery item of a delivery document: key `companyID`, `documentID`, `item` plus `occurrence` (the position of the row among rows with the same key, ordered by their data JSON); `row_key` is the JSON of that key. Rows on 2026-11-02: 2,000,689.
+One row = one delivery item of a delivery document: key `companyID`, `documentID`, `item` plus `occurrence` (the position of the row among rows with the same key, ordered by their data JSON); `row_key` is the JSON of that key.
 
 # Schema
 

@@ -56,7 +56,6 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 - Reads: [raw_saleout_mdt.report_sale_subscription](/initial/raw_saleout_mdt/report_sale_subscription.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Storage: partition by `asatdate`, cluster by `Store`, `SKU`, `Last_Sold_Date`.
-- Approximate size (BigQuery metadata, 2026-10-31): 1,900,208 rows, 459.3 MB.
 
 # Examples
 

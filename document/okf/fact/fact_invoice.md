@@ -64,7 +64,6 @@ One row per `FactInvoiceSK` (ROW_NUMBER over CompanySK, milYear, milMonth, milDa
 - Storage options: `{"partitionBy": "asatdate", "clusterBy": ["FactInvoiceSK"]}`.
 - Reads: [dimension_view.view_dim_invoice](/view/dimension_view/view_dim_invoice.md), [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [dimension_table.dim_company](/dimension/dim_company.md), [fact_table.fact_order](/fact/fact_order.md), [dimension_table.dim_customer](/dimension/dim_customer.md).
 - Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `FactInvoiceSK`, partition `asatdate`), after `dim_invoice`, `dim_customer`, `dim_company` and `fact_order`.
-- Approximate size (BigQuery metadata, 2026-10-31): 2,485,005 rows, 457.1 MB.
 
 # Examples
 

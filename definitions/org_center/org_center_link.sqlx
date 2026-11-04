@@ -2,7 +2,7 @@ config {
     type: "table",
     schema: databuffet.ORG_CENTER,
     dependencies: [
-                    "org_center_schema", "dim_company"
+                    "org_center_schema"
                   ],
     tags: [databuffet.TAG_DIM_DAILY],
     uniqueKey: ["company_id", "pc_employee_id", "branch_type", "branch_code", "valid_from"],
@@ -26,12 +26,6 @@ js {
     };
     const MdsDataMdtSalesPcMasterTableRef = `${MdsDataMdtSalesPcMasterTable.database}.${MdsDataMdtSalesPcMasterTable.schema}.${MdsDataMdtSalesPcMasterTable.name}`;
 
-    const DimCompanyTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_company",
-    };
-    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 }
 
 -- 1 แถว = PC 1 คน ผูกกับ TA ที่ 1 สาขา ในช่วงวันที่หนึ่ง · ค่าจาก MDS เก็บตามที่กรอก (ไม่ trim ไม่แก้รหัส)
@@ -48,11 +42,6 @@ WITH pc_type AS (
   WHERE is_active = TRUE
   QUALIFY ROW_NUMBER() OVER (PARTITION BY employee_id ORDER BY end_date DESC, start_date DESC, updated_at DESC, id) = 1
 
-), company AS (
-  SELECT
-    ${databuffet.functionData.cleanString("CompanyID")} AS company_id,
-    ${databuffet.functionData.cleanString("CompanyNameTH")} AS company_name
-  FROM `${DimCompanyTableRef}`
 )
   SELECT
     pt.companyID AS company_id,
@@ -63,13 +52,10 @@ WITH pc_type AS (
     pt.BranchType AS branch_type,
     pt.TAEmployeeID AS ta_employee_id,
     pt.StartDate AS valid_from,
-    IFNULL(pt.EndDate, DATE '2066-12-31') AS valid_to,
-    co.company_name
+    IFNULL(pt.EndDate, DATE '2066-12-31') AS valid_to
   FROM `${MdsDataPcTaTableRef}` AS pt
   LEFT JOIN pc_type AS ty
     ON pt.PCEmployeeID = ty.employee_id
-  LEFT JOIN company AS co
-    ON pt.companyID = co.company_id
   WHERE pt.is_active = TRUE
 
 pre_operations {

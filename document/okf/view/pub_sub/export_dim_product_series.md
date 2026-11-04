@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_table.dim_product_series](/dimension/dim_p
 
 # Grain and key
 
-One row = one product series: key `SeriesCode` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 2.
+One row = one product series: key `SeriesCode` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

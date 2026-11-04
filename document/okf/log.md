@@ -1,5 +1,12 @@
 # Directory Update Log
 
+## 2026-11-03 (org center field changes)
+* **Update**: `org_center_person` card: new column `line_uuid` (MDS EMPLOYEE_INFO LineUUID); `company_ids` -> `company_id`, `position_codes` -> `position_code`.
+* **Update**: `org_center_member` card: `department_ids` -> `department_id`; column `company_name` dropped. `org_center_link` card: column `company_name` dropped.
+* **Update**: `org_center_exception` card: `director_codes` -> `director_code`, `region_codes` -> `region_code`, `section_codes` -> `section_code`.
+* **Update**: `export_employees` card: new column `line_uuid`.
+* **Update**: removed the "Approximate size" line from every card that had one, and the row-count phrases from the cards that carried them (tables rebuild daily, so counts go stale).
+
 ## 2026-11-03 (Cloud Run publisher)
 * **Update**: `mart_export_config` card: new column `task_group` (ninth), the config MERGE now also refreshes it, claim expiry 30 -> 35 minutes, publisher is the Cloud Run jobs instead of the Cloud Workflow.
 * **Update**: `mart_sent_state` card: writer is the Cloud Run send job (every 1,000,000 sent rows and at the end of a table); size corrected to about 1.38 million rows, 156 MB.

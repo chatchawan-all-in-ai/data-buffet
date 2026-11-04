@@ -63,7 +63,6 @@ Built in three CTEs. `raw`: rows of dim_sale_representative with DepartmentID no
 - Storage options: `{"clusterBy": ["SaleRepSK"]}`.
 - Reads: [dimension_table.dim_sale_representative](/dimension/dim_sale_representative.md), [dimension_table.dim_company](/dimension/dim_company.md), [validated_mac5.per](/validated/validated_mac5/per.md).
 - Full daily rebuild (`type: "table"`) from dim_sale_representative + dim_company, tag `dimension_daily`, then a `post_operations` MERGE inserts the ledger employees; the hierarchy SKs are filled afterwards by `update_sk_sale_rep_group`, which depends on this table.
-- Approximate size (BigQuery metadata, 2026-10-31): 2,242 rows, 227.4 KB.
 
 # Examples
 

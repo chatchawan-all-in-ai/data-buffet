@@ -49,7 +49,6 @@ One row per (company, GAccID, ChannelCostID, StartDate, EndDate) among active md
 - Storage options: `{"clusterBy": ["CostGroupSK"]}`.
 - Reads: `mds_dataset.mds_data_standard_cost_by_product_group_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows (`is_active = TRUE`); runs after dim_company (declared dependency).
-- Approximate size (BigQuery metadata, 2026-10-31): 3,618 rows, 580.1 KB.
 
 # Examples
 

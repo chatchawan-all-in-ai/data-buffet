@@ -24,7 +24,7 @@ The Pub/Sub export view of the TA app table `org_levels`: one row per company an
 
 # Grain and key
 
-One company and depth: key `company_id, depth` (unique). `row_key` is the JSON of the natural key. Rows on 2026-11-02: 6.
+One company and depth: key `company_id, depth` (unique). `row_key` is the JSON of the natural key.
 
 # Schema
 

@@ -42,7 +42,6 @@ One row per problem: `entity` + `entity_key` + `rule_code`. No declared key. The
 - Storage options: `{"clusterBy": ["rule_code", "entity"]}`.
 - Reads: [org_center.org_center_unit](/org_center/org_center_unit.md), [org_center.org_center_member](/org_center/org_center_member.md), [org_center.org_center_person](/org_center/org_center_person.md), [org_center.org_center_link](/org_center/org_center_link.md), [org_center.org_center_exception](/org_center/org_center_exception.md), `mds_dataset.mds_data_mdt_sales_pc_master` (master data loaded outside this repo), `mds_dataset.mds_data_mdt_sales_branch_master` (master data loaded outside this repo), `mds_dataset.mds_data_company_master` (master data loaded outside this repo).
 - Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Depends on the five other org_center tables; also reads mds_data_mdt_sales_pc_master and mds_data_mdt_sales_branch_master (master data loaded outside this repo).
-- Approximate size (BigQuery metadata, 2026-10-31): 2 rows, 406 B.
 
 # Examples
 

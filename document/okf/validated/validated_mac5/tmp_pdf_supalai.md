@@ -90,7 +90,6 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 - Reads: [raw_mac5_ag01.tmp_pdf_supalai](/initial/raw_mac5_ag01/tmp_pdf_supalai.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Storage: partition by `(none)`, cluster by `company_id`, `vendorno`.
-- Approximate size (BigQuery metadata, 2026-10-31): 4 rows, 5.0 KB.
 
 # Examples
 

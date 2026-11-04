@@ -47,7 +47,6 @@ Built from `SELECT DISTINCT` over fact_transcation lines with `milStk` not NULL,
 - Storage options: `{"clusterBy": ["PumpSK"]}`.
 - Reads: [fact_table.fact_transcation](/fact/fact_transcation.md), [dimension_view.view_dim_product_master](/view/dimension_view/view_dim_product_master.md), [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md).
 - Full daily rebuild (`type: "table"`), tag `dimension_daily`, but it reads `fact_transcation` (tag `fact_daily`); config dependencies are fact_transcation, dim_product_mkt, dim_product_master and dim_region.
-- Approximate size (BigQuery metadata, 2026-10-31): 35,575 rows, 1.7 MB.
 
 # Examples
 

@@ -45,7 +45,7 @@ One row per `prdSku` (= products.master_sku_code): placeholder rows without a ma
 | `prdCatId` | STRING | Category of the product (FK to `categories.id`). |
 | `prdFilter1` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
 | `prdFilter2` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
-| `prdBrandId` | STRING | Brand id (products.brand_id, else brand_vendors.brand_id for the 52 products that only carry the brand on brand_vendors). These are master_sku ids, not the old mastersku ids; join to validated_master_sku.brands.id. |
+| `prdBrandId` | STRING | Brand id (products.brand_id, else brand_vendors.brand_id for the products that only carry the brand on brand_vendors). These are master_sku ids, not the old mastersku ids; join to validated_master_sku.brands.id. |
 | `prdSize` | STRING | Size: first non-empty variant value labelled 'ขนาด' or 'size' in products.specification_attributes, else d365_size with leading zeros removed (01000L becomes 1000L). |
 | `prdLine` | STRING | Always NULL: the column is kept for compatibility with the old catalogue layout and master_sku has no equivalent |
 | `prdColorTH` | STRING | Thai part of the colour variant ('สี' / 'color' attribute): the leading Thai-character run, NULL when the colour starts with a non-Thai word. No fallback to color_descriptor_id. |
@@ -87,7 +87,6 @@ One row per `prdSku` (= products.master_sku_code): placeholder rows without a ma
 - Storage options: `{"partitionBy": "asatdate", "clusterBy": ["prdSku", "prdUniversalBarcode", "prdVendorId", "prdBrandId"]}`.
 - Reads: [validated_master_sku.products](/validated/validated_master_sku/products.md), [validated_master_sku.common_codes](/validated/validated_master_sku/common_codes.md), [validated_master_sku.brand_vendors](/validated/validated_master_sku/brand_vendors.md).
 - Full daily rebuild (`type: "table"`, tag `curated`, after `curated_schema_master_sku` and `validated_master_sku.products`, `brand_vendors`, `common_codes`); partitioned by `asatdate`, clustered by prdSku, prdUniversalBarcode, prdVendorId, prdBrandId.
-- Approximate size (BigQuery metadata, 2026-10-31): 103,206 rows, 78.3 MB.
 
 # Examples
 

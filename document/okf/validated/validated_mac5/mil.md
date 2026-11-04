@@ -109,7 +109,6 @@ One row per `company_id`, `MILtype`, `MILvnos`, `MILlistNo`. The key is declared
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `company_id`, `miltype`, `milvnos`.
 - **Document-grain purge**: `pre_operations` builds a TEMP table of the batch and DELETEs whole documents (company_id + type + vnos) from the target before the MERGE, so lines deleted at source disappear.
-- Approximate size (BigQuery metadata, 2026-10-31): 9,365,029 rows, 4.1 GB.
 
 # Examples
 

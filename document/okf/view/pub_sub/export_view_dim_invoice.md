@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_view.view_dim_invoice](/view/dimension_vie
 
 # Grain and key
 
-One row = one invoice document: key `InvoiceSK` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 1,686,727.
+One row = one invoice document: key `InvoiceSK` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

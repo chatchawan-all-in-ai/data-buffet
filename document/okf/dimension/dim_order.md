@@ -69,7 +69,6 @@ One row per (`CompanySK`, `mihYear`, `mihMonth`, `mihDay`, `mihType` = 'PS', `mi
 - Definition: `definitions/dimension/dim_order.sqlx` (`type: "operations"`, tags `dimension_daily`); the operation owns this table.
 - Reads: [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [validated_mac5.ar_s](/validated/validated_mac5/ar_s.md), [validated_mac5.per](/validated/validated_mac5/per.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Refresh: MERGE with stable SK in a `type: "operations"` file, tag `dimension_daily`, matching on `OrderSK` found via (year, month, day, type, `mihVnos`, `mihCus`, `CompanySK`). Source is all PS headers within the last 4 years (from 1 January) with no incremental window; updates attributes, inserts new orders, no delete. Runs after `dim_company`; the target table pre-exists in BigQuery.
-- Approximate size (BigQuery metadata, 2026-10-31): 1,400,902 rows, 839.3 MB.
 
 # Examples
 

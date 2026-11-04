@@ -96,7 +96,7 @@ WITH company_source AS (
     reg.EndDate AS valid_to,
     -- แผนใช้ RegionID: PS1-1..PS1-5 รวมเป็น PS1 · ภาคอื่น RegionID = SubRegionID
     ${databuffet.functionData.cleanString("reg.RegionID")} AS plan_code,
-    -- RegionID ของ dim: PS1-1..PS1-5 รวมเป็น PS1 · ใช้จับคู่สิทธิ์พิเศษที่ระบุภาค (org_center_exception.region_codes)
+    -- RegionID ของ dim: PS1-1..PS1-5 รวมเป็น PS1 · ใช้จับคู่สิทธิ์พิเศษที่ระบุภาค (org_center_exception.region_code)
     ${databuffet.functionData.cleanString("reg.RegionID")} AS region_code
   FROM `${DimRegionLastTableRef}` AS reg
   LEFT JOIN `${DimDirectorLastTableRef}` AS dir

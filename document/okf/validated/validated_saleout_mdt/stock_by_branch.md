@@ -53,7 +53,6 @@ One row per cleaned tuple `(vendor_id, branch, article_id, end_date, asatdate)`,
 - Reads: [raw_saleout_mdt.stock_by_branch](/initial/raw_saleout_mdt/stock_by_branch.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Storage: partition by `asatdate`, cluster by `branch`, `article_id`.
-- Approximate size (BigQuery metadata, 2026-10-31): 43,495 rows, 9.7 MB.
 
 # Examples
 

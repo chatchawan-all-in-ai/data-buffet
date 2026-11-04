@@ -50,7 +50,6 @@ One row per `spec_group_id`, `language_id`. The key is declared twice in the def
 - **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC, updated_at DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `spec_group_id`, `language_id`.
-- Approximate size (BigQuery metadata, 2026-10-31): 0 rows, 0 B.
 
 # Examples
 

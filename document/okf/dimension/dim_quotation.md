@@ -57,7 +57,6 @@ One row per (`CompanySK`, `Running`) where `Running` is the quotation running nu
 - Definition: `definitions/dimension/dim_quotation.sqlx` (`type: "operations"`, tags `dimension_daily`); the operation owns this table.
 - Reads: [curated_mac5.curated_tbook_quotation](/curated/curated_mac5/curated_tbook_quotation.md), [validated_mac5.tbook_quodetail](/validated/validated_mac5/tbook_quodetail.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_project](/dimension/dim_project.md).
 - Refresh: MERGE with stable SK in a `type: "operations"` file, tag `dimension_daily`, matching on `Running` + `CompanySK`; updates all attribute columns, inserts new quotations, no delete. Reads the whole curated quotation table each run (no window). Runs after `dim_company` and `dim_project`; the target table pre-exists in BigQuery.
-- Approximate size (BigQuery metadata, 2026-10-31): 260,034 rows, 69.4 MB.
 
 # Examples
 

@@ -53,7 +53,6 @@ One row per (`companyID`, `documentID`) where `documentID` is the invoice/docume
 - Definition: `definitions/dimension/dim_delivery.sqlx` (`type: "operations"`, tags `dimension_daily`); the operation owns this table.
 - Reads: [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [validated_mac5.ttrip_document](/validated/validated_mac5/ttrip_document.md), [validated_mac5.ttrip](/validated/validated_mac5/ttrip.md), [validated_mac5.tdelivery](/validated/validated_mac5/tdelivery.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [validated_mac5.deb](/validated/validated_mac5/deb.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Refresh: MERGE with stable SK in a `type: "operations"` file, tag `dimension_daily`, matching on `companyID` + `documentID`; updates all measures, inserts new documents, no delete. Reads the full trip tables each run (no date window). Runs after `dim_company`; the target table pre-exists in BigQuery.
-- Approximate size (BigQuery metadata, 2026-10-31): 992,727 rows, 115.8 MB.
 
 # Examples
 

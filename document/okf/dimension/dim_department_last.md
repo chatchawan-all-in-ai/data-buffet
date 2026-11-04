@@ -52,7 +52,6 @@ One row per (company, DepartmentID). Key: `DepartmentSK`, regenerated as `ROW_NU
 - Storage options: `{"clusterBy": ["DepartmentSK"]}`.
 - Reads: [dimension_table.dim_department](/dimension/dim_department.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`) from [dim_department](/dimension/dim_department.md) with a QUALIFY dedup. The five FK SK columns are filled afterwards by the separate `update_sk_sale_rep_group` operation, which depends on all `_last` tables; the keys are available after that operation.
-- Approximate size (BigQuery metadata, 2026-10-31): 332 rows, 36.3 KB.
 
 # Examples
 

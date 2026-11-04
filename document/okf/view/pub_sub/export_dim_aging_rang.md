@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_table.dim_aging_rang](/dimension/dim_aging
 
 # Grain and key
 
-One row = one aging range (day band) of the receivables aging report: key `AgingRangSK` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 8.
+One row = one aging range (day band) of the receivables aging report: key `AgingRangSK` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

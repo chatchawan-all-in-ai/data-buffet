@@ -24,7 +24,7 @@ The Pub/Sub export view of the TA app table `appointments`: one row per [org_cen
 
 # Grain and key
 
-One seat: key `company_id, membership_id, org_unit_id, position_id, valid_from` (unique; the uniqueKey of org_center_member). `row_key` is the JSON of the natural key. Rows on 2026-11-02: 3,352 (441 with a zone).
+One seat: key `company_id, membership_id, org_unit_id, position_id, valid_from` (unique; the uniqueKey of org_center_member). `row_key` is the JSON of the natural key.
 
 # Schema
 

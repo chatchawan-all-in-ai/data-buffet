@@ -70,7 +70,6 @@ One row per `BillingSK` (ROW_NUMBER over company_id, mirtype, mirvnos, mirlistno
 - Storage options: `{"clusterBy": ["BillingSK", "InvoiceSK", "CustomerSK"]}`.
 - Reads: [dimension_table.dim_invoice](/dimension/dim_invoice.md), [validated_mac5.mir](/validated/validated_mac5/mir.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_collection_status](/dimension/dim_collection_status.md), [validated_mac5.mie](/validated/validated_mac5/mie.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `BillingSK`), after `dim_invoice`, `dim_customer`, `dim_collection_status`, `dim_company` and before `fact_mir_rs` and `dim_aging`. `BillingSK` regenerates daily.
-- Approximate size (BigQuery metadata, 2026-10-31): 1,263,383 rows, 733.8 MB.
 
 # Examples
 

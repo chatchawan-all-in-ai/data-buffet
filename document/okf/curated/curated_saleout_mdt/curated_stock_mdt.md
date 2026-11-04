@@ -46,7 +46,6 @@ One row per `stock_date`, `store_code` (BT or TW), `branch_code` and `product_co
 - Storage options: `{"partitionBy": "stock_date", "clusterBy": ["store_code", "branch_code", "product_code"]}`.
 - Reads: [validated_saleout_mdt.stock_by_branch](/validated/validated_saleout_mdt/stock_by_branch.md), [validated_saleout_mdt.report_sale_subscription](/validated/validated_saleout_mdt/report_sale_subscription.md).
 - Full rebuild each run (`type: "table"`, tags `curated`, `curated_full`, `saleout_daily`; depends on `curated_schema_saleout`); partitioned by `stock_date`, clustered by store_code, branch_code, product_code.
-- Approximate size (BigQuery metadata, 2026-10-31): 1,310,751 rows, 241.4 MB.
 
 # Examples
 

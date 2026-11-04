@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_view.view_dim_company](/view/dimension_vie
 
 # Grain and key
 
-One row = one company with its report id: key `CompanyID` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 5.
+One row = one company with its report id: key `CompanyID` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

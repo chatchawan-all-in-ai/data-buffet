@@ -52,7 +52,6 @@ One row per `vendor_id`, `mch3`, `brand`, `class_stock`. The key is declared twi
 - **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY ASATDATE DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `vendor_id`, `mch3`, `brand`, `class_stock`.
-- Approximate size (BigQuery metadata, 2026-10-31): 13 rows, 1.9 KB.
 
 # Examples
 

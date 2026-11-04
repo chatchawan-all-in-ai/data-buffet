@@ -48,7 +48,6 @@ One row per (company, RegionID, SectionID, DepartmentID, StartDate, EndDate) amo
 - Storage options: `{"clusterBy": ["DepartmentSK"]}`.
 - Reads: `mds_dataset.mds_data_sales_department_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows (`is_active = TRUE`); runs after dim_company (declared dependency).
-- Approximate size (BigQuery metadata, 2026-10-31): 378 rows, 41.1 KB.
 
 # Examples
 

@@ -46,7 +46,6 @@ One row per active MDS row, ordered and SK-numbered by CompanyID, StatusID. Natu
 - Storage options: `{"clusterBy": ["NotReceiveSK"]}`.
 - Reads: `mds_dataset.mds_data_payment_status_not_receive_master` (master data loaded outside this repo).
 - Full daily rebuild (`type: "table"`), tag `dimension_daily`, reads `mds_data_payment_status_not_receive_master`. `dim_aging` lists it in `dependencies`, so run it first.
-- Approximate size (BigQuery metadata, 2026-10-31): 20 rows, 2.3 KB.
 
 # Examples
 

@@ -51,7 +51,6 @@ One row per `company_id`, `id`, `procrcstkcode`. The key is declared twice in th
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY procrcenddate desc, procrcstrdate desc) = 1`.
 - Storage: partition by `(none)`, cluster by `company_id`, `id`, `procrcstkcode`.
-- Approximate size (BigQuery metadata, 2026-10-31): 250 rows, 17.9 KB.
 
 # Examples
 

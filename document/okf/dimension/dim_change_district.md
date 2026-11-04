@@ -47,7 +47,6 @@ One row per active mds change-section record (customer + period). There is no su
 - Storage options: `{"clusterBy": ["companyID", "customerCode"]}`.
 - Reads: `mds_dataset.mds_data_change_section_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`), plain SELECT from the active mds rows, no SK; clustered by `companyID, customerCode`. Runs after dim_company (declared dependency).
-- Approximate size (BigQuery metadata, 2026-10-31): 456 rows, 62.5 KB.
 
 # Examples
 

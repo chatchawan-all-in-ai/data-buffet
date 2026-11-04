@@ -51,7 +51,6 @@ One row per `(CompanyID, RegionID, SubRegionID)`: the row with the greatest EndD
 - Storage options: `{"clusterBy": ["RegionSK"]}`.
 - Reads: [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`) from dim_region + dim_company, tag `dimension_daily`. `RegionManagerSK` and `DirectorSK` are then UPDATEd in place by the operation `update_sk_sale_rep_group` (depends on all `_last` dims), the keys are available after that operation.
-- Approximate size (BigQuery metadata, 2026-10-31): 28 rows, 2.6 KB.
 
 # Examples
 

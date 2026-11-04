@@ -43,8 +43,8 @@ WITH member AS (
   FROM `${OrgCenterMemberTableRef}`
 
 ), employee_info AS (
-  -- เบอร์มือถือและอีเมลที่กรอกใน MDS เก็บตามที่กรอก · 1 แถวต่อ EmployeeID
-  SELECT EmployeeID AS employee_id, MobilePhone AS mobile_phone, Email AS email
+  -- เบอร์มือถือ อีเมล และ LINE UUID ที่กรอกใน MDS เก็บตามที่กรอก · 1 แถวต่อ EmployeeID
+  SELECT EmployeeID AS employee_id, MobilePhone AS mobile_phone, Email AS email, LineUUID AS line_uuid
   FROM `${MdsDataEmployeeInfoTableRef}`
   WHERE is_active = TRUE
   QUALIFY ROW_NUMBER() OVER (PARTITION BY EmployeeID ORDER BY updated_at DESC, id) = 1
@@ -59,7 +59,7 @@ WITH member AS (
     -- ชื่อเล่น: ค่าแรกที่ไม่ NULL ตาม pickOrder (แถว CEO และ DIRECTOR ไม่มีชื่อเล่น)
     ARRAY_AGG(nickname IGNORE NULLS ORDER BY ${pickOrder} LIMIT 1)[SAFE_OFFSET(0)] AS nickname,
     ARRAY_AGG(email IGNORE NULLS ORDER BY ${pickOrder} LIMIT 1)[SAFE_OFFSET(0)] AS email,
-    ARRAY_AGG(DISTINCT company_id ORDER BY company_id) AS company_ids,
+    ARRAY_AGG(DISTINCT company_id ORDER BY company_id) AS company_id,
     ARRAY_AGG(IF(is_valid, position_code, NULL) IGNORE NULLS) AS valid_positions,
     LOGICAL_OR(is_valid) AS is_active
   FROM member
@@ -74,13 +74,14 @@ WITH member AS (
     -- อีเมลใน Data Mart ก่อน ว่างค่อยใช้ของ EMPLOYEE_INFO
     COALESCE(person.email, ei.email) AS email,
     ei.mobile_phone,
-    company_ids,
+    ei.line_uuid,
+    company_id,
     ARRAY(
       SELECT p
       FROM UNNEST(valid_positions) AS p
       GROUP BY p
       ORDER BY ${positionRank("p")}
-    ) AS position_codes,
+    ) AS position_code,
     is_active
   FROM person
   LEFT JOIN employee_info AS ei

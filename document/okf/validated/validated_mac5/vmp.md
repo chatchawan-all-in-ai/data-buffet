@@ -129,7 +129,6 @@ One row per `company_id`, `vmmonth`, `vmyear`. The key is declared twice in the 
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY vmyear desc, vmmonth desc) = 1`.
 - Storage: partition by `(none)`, cluster by `company_id`, `vmmonth`, `vmyear`.
-- Approximate size (BigQuery metadata, 2026-10-31): 240 rows, 49.1 KB.
 
 # Examples
 

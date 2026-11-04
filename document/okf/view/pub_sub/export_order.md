@@ -24,7 +24,7 @@ The Pub/Sub export view of commission set `order` for the TF team (company ag01)
 
 # Grain and key
 
-One line of an ag01 sales document of 2026 (all document types, not cancelled): key `company_source_id, Order_Type, Order_No, No` (unique); `No` is NULL for a document without lines. `row_key` is the JSON of that key. Rows on 2026-11-02: 731,098.
+One line of an ag01 sales document of 2026 (all document types, not cancelled): key `company_source_id, Order_Type, Order_No, No` (unique); `No` is NULL for a document without lines. `row_key` is the JSON of that key.
 
 # Schema
 

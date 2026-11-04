@@ -45,7 +45,6 @@ One row per `company_id`, `gacccode`. The key is declared twice in the definitio
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY gaccname desc) = 1`.
 - Storage: partition by `(none)`, cluster by `company_id`, `gacccode`.
-- Approximate size (BigQuery metadata, 2026-10-31): 50 rows, 2.5 KB.
 
 # Examples
 

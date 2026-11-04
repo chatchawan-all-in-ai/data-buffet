@@ -48,7 +48,6 @@ Declared `uniqueKey`: `month_date`, `store_code`, `branch_code`, `product_code`.
 - Storage options: `{"partitionBy": "month_date", "clusterBy": ["store_code", "branch_code", "product_code"]}`.
 - Reads: [curated_saleout_mdt.curated_eom_gb](/curated/curated_saleout_mdt/curated_eom_gb.md), [curated_saleout_mdt.curated_eom_hp](/curated/curated_saleout_mdt/curated_eom_hp.md), [curated_saleout_mdt.curated_eom_tw](/curated/curated_saleout_mdt/curated_eom_tw.md), [curated_saleout_mdt.curated_eom_bt](/curated/curated_saleout_mdt/curated_eom_bt.md), `validated_saleout_mdt.saleout_lastyear_monthly`, [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md).
 - Full rebuild each run (`type: "table"`, tags `curated`, `curated_full`, `saleout_daily`; depends on `curated_schema_saleout`; reads the four curated_eom_* tables, curated_saleout_mdt and validated_saleout_mdt.saleout_lastyear_monthly, a table the repo does not create); partitioned by `month_date`, clustered by store_code, branch_code, product_code.
-- Approximate size (BigQuery metadata, 2026-10-31): 373,203 rows, 63.0 MB.
 
 # Examples
 

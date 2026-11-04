@@ -57,7 +57,6 @@ One row per `FactQuotationSK` (ROW_NUMBER over CompanySK, Running, StkCode). The
 - Definition: `definitions/fact/fact_quotation.sqlx` (`type: "operations"`, tags `fact_daily`); the operation owns this table.
 - Reads: [validated_mac5.tbook_quodetail](/validated/validated_mac5/tbook_quodetail.md), [dimension_table.dim_quotation](/dimension/dim_quotation.md), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md), [dimension_table.dim_customer](/dimension/dim_customer.md).
 - Refresh: full refresh each run (`type: "operations"`: DROP then `CREATE OR REPLACE TABLE ... PARTITION BY asatdate CLUSTER BY FactQuotationSK`), tag `fact_daily`, after `dim_quotation`, `dim_customer`, `dim_product_master`, `dim_company`; runs before `fact_order`.
-- Approximate size (BigQuery metadata, 2026-10-31): 737,963 rows, 142.6 MB.
 
 # Examples
 

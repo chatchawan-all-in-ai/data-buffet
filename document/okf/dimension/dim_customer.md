@@ -69,7 +69,6 @@ One row per (`CompanySK`, `debcode`) (QUALIFY keeps one row per `companyID` + `d
 - Definition: `definitions/dimension/dim_customer.sqlx` (`type: "operations"`, tags `dimension_daily`); the operation owns this table.
 - Reads: [validated_mac5.match_customer](/validated/validated_mac5/match_customer.md), [validated_cis360.customer_profile](/validated/validated_cis360/customer_profile.md), [validated_cis360.customer_status](/validated/validated_cis360/customer_status.md), [validated_cis360.customer_profile_nature_business](/validated/validated_cis360/customer_profile_nature_business.md), [validated_cis360.nature_business](/validated/validated_cis360/nature_business.md), [validated_cis360.customer_type](/validated/validated_cis360/customer_type.md), [validated_mac5.deb](/validated/validated_mac5/deb.md), [process_dataset.view_deb_address_data](/view/process_dataset/view_deb_address_data.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Refresh: MERGE with stable SK (matches on `debcode` + `CompanySK`; updates all attribute columns, inserts new customers; no delete) inside a `type: "operations"` file, tag `dimension_daily`. Reads the whole `deb` table each run (no date window). Runs after `dim_company` and the process action `deb_address_data` (declared in `dependencies[]`, which feeds `view_deb_address_data`). The target table pre-exists in BigQuery.
-- Approximate size (BigQuery metadata, 2026-10-31): 98,325 rows, 17.5 MB.
 
 # Examples
 

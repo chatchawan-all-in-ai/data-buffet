@@ -124,7 +124,7 @@ WITH today AS (
     segment_id
   FROM exception_company
   WHERE NOT flag_customer
-    OR ('ALL' IN UNNEST(director_codes) AND 'ALL' IN UNNEST(region_codes) AND 'ALL' IN UNNEST(section_codes))
+    OR ('ALL' IN UNNEST(director_code) AND 'ALL' IN UNNEST(region_code) AND 'ALL' IN UNNEST(section_code))
 
   UNION ALL
   -- ตามหน่วย: SECTION ที่ตรงทุกช่องที่ไม่ใช่ ALL (ฝ่าย = unit_code, ภาค = region_code, ส่วน = unit_code) -> ลูกค้าในพอร์ตของ TA ในส่วนนั้น เฉพาะบริษัทในขอบเขต
@@ -140,15 +140,15 @@ WITH today AS (
     SELECT DISTINCT company_id, section_unit_id, section_code, region_code, director_code
     FROM section_tree
   ) AS st
-    ON ('ALL' IN UNNEST(e.director_codes) OR st.director_code IN UNNEST(e.director_codes))
-   AND ('ALL' IN UNNEST(e.region_codes) OR st.region_code IN UNNEST(e.region_codes))
-   AND ('ALL' IN UNNEST(e.section_codes) OR st.section_code IN UNNEST(e.section_codes))
+    ON ('ALL' IN UNNEST(e.director_code) OR st.director_code IN UNNEST(e.director_code))
+   AND ('ALL' IN UNNEST(e.region_code) OR st.region_code IN UNNEST(e.region_code))
+   AND ('ALL' IN UNNEST(e.section_code) OR st.section_code IN UNNEST(e.section_code))
   JOIN section_customer AS c
     ON c.company_id = st.company_id
    AND c.section_unit_id = st.section_unit_id
    AND c.customer_company_id = e.customer_company_id
   WHERE e.flag_customer
-    AND NOT ('ALL' IN UNNEST(e.director_codes) AND 'ALL' IN UNNEST(e.region_codes) AND 'ALL' IN UNNEST(e.section_codes))
+    AND NOT ('ALL' IN UNNEST(e.director_code) AND 'ALL' IN UNNEST(e.region_code) AND 'ALL' IN UNNEST(e.section_code))
 
 ), all_grant AS (
   SELECT

@@ -24,7 +24,7 @@ The Pub/Sub export view of the TA app table `memberships`: [org_center_member](/
 
 # Grain and key
 
-One person of one company: key `company_id, employee_id` (unique). `row_key` is the JSON of the natural key. Rows on 2026-11-02: 656 (651 active, 5 inactive).
+One person of one company: key `company_id, employee_id` (unique). `row_key` is the JSON of the natural key.
 
 # Schema
 

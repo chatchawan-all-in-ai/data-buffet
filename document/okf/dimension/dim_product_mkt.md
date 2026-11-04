@@ -51,7 +51,6 @@ One row per (company, TypeMarketingID, MarketingGroupID, SubMarketingID, Segment
 - Storage options: `{"clusterBy": ["ProductMktSK"]}`.
 - Reads: `mds_dataset.mds_data_product_marketing_name_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows (`is_active = TRUE`); runs after dim_company (declared dependency).
-- Approximate size (BigQuery metadata, 2026-10-31): 232 rows, 34.2 KB.
 
 # Examples
 

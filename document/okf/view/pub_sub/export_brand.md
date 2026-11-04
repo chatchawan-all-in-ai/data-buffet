@@ -24,7 +24,7 @@ The Pub/Sub export view of [validated_mastersku.brand](/validated/validated_mast
 
 # Grain and key
 
-One row = one product brand: key `bra_id` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 1,531.
+One row = one product brand: key `bra_id` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

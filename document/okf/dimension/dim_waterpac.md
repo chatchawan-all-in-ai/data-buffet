@@ -47,7 +47,6 @@ One row per active MDS row, ordered and SK-numbered by CompanyID, WaterPacCode. 
 - Storage options: `{"clusterBy": ["WaterPacSK"]}`.
 - Reads: `mds_dataset.mds_data_waterpac_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`), tag `dimension_daily`; `CREATE OR REPLACE` each run from `mds_dataset` (loaded outside this repo). Runs after `dim_company`. Reads `mds_data_waterpac_master`; it is the reference implementation of the full-rebuild pattern (`dim_waterpac.sqlx`).
-- Approximate size (BigQuery metadata, 2026-10-31): 229 rows, 18.7 KB.
 
 # Examples
 

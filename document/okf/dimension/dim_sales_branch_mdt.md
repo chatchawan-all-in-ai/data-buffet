@@ -59,7 +59,6 @@ Three blocks UNION ALL'd. (1) `branch_master`: active MDS rows de-duplicated to 
 - Storage options: `{"clusterBy": ["BranchMdtSK"]}`.
 - Reads: [dimension_table.dim_section_last](/dimension/dim_section_last.md), [dimension_table.dim_zone_ta_mdt](/dimension/dim_zone_ta_mdt.md), `mds_dataset.mds_data_mdt_sales_branch_master` (master data loaded outside this repo), [dimension_table.dim_zone_mdt](/dimension/dim_zone_mdt.md), [dimension_table.dim_region_last](/dimension/dim_region_last.md), [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md), [curated_saleout_mdt.curated_saleout_monthly_mdt](/curated/curated_saleout_mdt/curated_saleout_monthly_mdt.md), [curated_saleout_mdt.curated_stock_mdt](/curated/curated_saleout_mdt/curated_stock_mdt.md).
 - Full daily rebuild (`type: "table"`), tags `dimension_daily` and `saleout_daily`; reads `mds_data_mdt_sales_branch_master`, dim_zone_mdt, dim_zone_ta_mdt, dim_region_last, dim_section_last and the curated saleout/stock tables (via `ref`).
-- Approximate size (BigQuery metadata, 2026-10-31): 510 rows, 112.4 KB.
 
 # Examples
 

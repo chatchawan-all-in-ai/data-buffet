@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_table.dim_target_product_group_by_sale_day
 
 # Grain and key
 
-One row = one daily sales target (amount and quantity) of a sales representative and section for a product marketing group: key `companyID`, `Date`, `EmployeeID`, `DepartmentID`, `TargetID`, `MarketingGroupID`, `SubMarketingID`, `SegmentID`, `ChannelTargetGroup`, `StartDate` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 12,745,926.
+One row = one daily sales target (amount and quantity) of a sales representative and section for a product marketing group: key `companyID`, `Date`, `EmployeeID`, `DepartmentID`, `TargetID`, `MarketingGroupID`, `SubMarketingID`, `SegmentID`, `ChannelTargetGroup`, `StartDate` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

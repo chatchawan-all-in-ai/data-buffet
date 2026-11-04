@@ -42,7 +42,6 @@ One row per holiday date among active mds rows. No SK and no `uniqueKey`; `Holid
 - Storage options: `{"clusterBy": ["HolidayDate", "LongWeekEndFlag"]}`.
 - Reads: `mds_dataset.mds_data_holiday_master` (master data loaded outside this repo).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`), plain SELECT from active mds rows, no SK, `dependencies: []` (no dim_company join). Clustered by `HolidayDate, LongWeekEndFlag` to match the pre-existing table (CREATE OR REPLACE fails if the spec changes).
-- Approximate size (BigQuery metadata, 2026-10-31): 84 rows, 16.4 KB.
 
 # Examples
 

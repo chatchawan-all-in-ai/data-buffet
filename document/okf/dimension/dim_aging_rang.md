@@ -26,7 +26,7 @@ Used by: [dimension_view.view_dim_aging](/view/dimension_view/view_dim_aging.md)
 
 # Grain and key
 
-One row per (`companyID`, `AgingDayMin`, `AgingDayMax`) bucket; `AgingRangSK` is the surrogate key (`max_sk + ROW_NUMBER()` for new rows, existing SKs never change). Rows are matched to MDS first by `MdsId` and then by the natural key (company + min + max), so editing a label keeps the SK. About 8 rows in total.
+One row per (`companyID`, `AgingDayMin`, `AgingDayMax`) bucket; `AgingRangSK` is the surrogate key (`max_sk + ROW_NUMBER()` for new rows, existing SKs never change). Rows are matched to MDS first by `MdsId` and then by the natural key (company + min + max), so editing a label keeps the SK.
 
 # Schema
 
@@ -45,7 +45,6 @@ One row per (`companyID`, `AgingDayMin`, `AgingDayMax`) bucket; `AgingRangSK` is
 - Definition: `definitions/dimension/dim_aging_rang.sqlx` (`type: "operations"`, tags `dimension_daily`); the operation owns this table.
 - Reads: `mds_dataset.mds_data_aging_rang_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Refresh: MERGE with stable SK (legacy pattern, see [merge-sk-pattern](../../project_wiki/dimension/merge-sk-pattern.md)) in a `type: "operations"` file, tag `dimension_daily`; the target table pre-exists in BigQuery. Source window is `MDS_BACKFILL_DAYS` (1 day) on `updated_at` with `is_active = TRUE`, then a tombstone DELETE of rows whose MDS row is `is_active = FALSE`. Runs after `dim_company`.
-- Approximate size (BigQuery metadata, 2026-10-31): 8 rows, 975 B.
 
 # Examples
 

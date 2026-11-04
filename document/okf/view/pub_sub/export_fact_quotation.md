@@ -24,7 +24,7 @@ The Pub/Sub export view of [fact_table.fact_quotation](/fact/fact_quotation.md),
 
 # Grain and key
 
-One row = one quotation line: key `companyID`, `Running`, `StkCode` plus `occurrence` (the position of the row among rows with the same key, ordered by their data JSON); `row_key` is the JSON of that key. Rows on 2026-11-02: 738,266.
+One row = one quotation line: key `companyID`, `Running`, `StkCode` plus `occurrence` (the position of the row among rows with the same key, ordered by their data JSON); `row_key` is the JSON of that key.
 
 # Schema
 

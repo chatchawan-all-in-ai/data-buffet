@@ -53,7 +53,6 @@ Two blocks UNION ALL'd and numbered once: (1) active MDS rows (`MdsID` set); (2)
 - Storage options: `{"clusterBy": ["StkMktSK"]}`.
 - Reads: `mds_dataset.mds_data_product_market_group_by_product_id_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md), [validated_mac5.stk](/validated/validated_mac5/stk.md).
 - Full daily rebuild (`type: "table"`), tag `dimension_daily`; reads `mds_data_product_market_group_by_product_id_master`, dim_company and `validated_mac5.stk`.
-- Approximate size (BigQuery metadata, 2026-10-31): 183,210 rows, 23.0 MB.
 
 # Examples
 

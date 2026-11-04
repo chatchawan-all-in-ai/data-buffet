@@ -188,7 +188,6 @@ One row per `quotation_id`. The key is declared twice in the definition (`unique
 - **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY updated_at DESC, asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `quotation_id`.
-- Approximate size (BigQuery metadata, 2026-10-31): 1,820 rows, 4.5 MB.
 
 # Examples
 

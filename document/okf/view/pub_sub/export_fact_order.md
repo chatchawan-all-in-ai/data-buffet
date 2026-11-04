@@ -24,7 +24,7 @@ The Pub/Sub export view of [fact_table.fact_order](/fact/fact_order.md), with th
 
 # Grain and key
 
-One row = one order line: key `companyID`, `milType`, `milvnos`, `milStk` plus `occurrence` (the position of the row among rows with the same key, ordered by their data JSON); `row_key` is the JSON of that key. Rows on 2026-11-02: 2,748,218.
+One row = one order line: key `companyID`, `milType`, `milvnos`, `milStk` plus `occurrence` (the position of the row among rows with the same key, ordered by their data JSON); `row_key` is the JSON of that key.
 
 # Schema
 

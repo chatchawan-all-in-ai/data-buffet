@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_table.dim_project](/dimension/dim_project.
 
 # Grain and key
 
-One row = one project profile: key `ProjectSK` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 8,778.
+One row = one project profile: key `ProjectSK` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

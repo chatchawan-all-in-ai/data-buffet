@@ -42,7 +42,6 @@ One row per `milCus` (customer code in the fact; it does not carry company_id, s
 - Definition: `definitions/process/rls_customer360.sqlx` (`type: "table"`, tags `process`).
 - Reads: [fact_table.fact_transcation](/fact/fact_transcation.md), [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_section](/dimension/dim_section.md), [dimension_table.dim_director](/dimension/dim_director.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md).
 - Full daily rebuild (`type: "table"`, tag `process`; dependencies fact_transcation, dim_region, dim_section, dim_director, dim_product_mkt, so it runs after the fact and dimensions). It inherits the coverage of fact_transcation (about 4 years rolling).
-- Approximate size (BigQuery metadata, 2026-10-31): 29,715 rows, 2.7 MB.
 
 # Examples
 

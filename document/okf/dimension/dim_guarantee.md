@@ -53,7 +53,6 @@ One row per (company, CustomerCode, BankName) among active mds rows. Key: `Guara
 - Storage options: `{"clusterBy": ["GuaranteeSK"]}`.
 - Reads: `mds_dataset.mds_data_guarantee_document_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows (`is_active = TRUE`); runs after dim_company (declared dependency).
-- Approximate size (BigQuery metadata, 2026-10-31): 355 rows, 181.1 KB.
 
 # Examples
 

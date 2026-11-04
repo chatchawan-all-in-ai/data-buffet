@@ -25,9 +25,9 @@ WITH access_exception AS (
     x.company_code,
     CAST(NULL AS STRING) AS report_id,
     CAST(NULL AS STRING) AS report_name,
-    director_code,
-    region_code,
-    section_code,
+    director_value AS director_code,
+    region_value AS region_code,
+    section_value AS section_code,
     CAST(NULL AS STRING) AS department_code,
     x.marketing_group_id AS mkt_group_id,
     x.sub_marketing_id AS mkt_subgroup_id,
@@ -35,9 +35,9 @@ WITH access_exception AS (
     x.flag_customer,
     x.source_row_id
   FROM `${OrgCenterExceptionTableRef}` AS x,
-  UNNEST(x.director_codes) AS director_code,
-  UNNEST(x.region_codes) AS region_code,
-  UNNEST(x.section_codes) AS section_code
+  UNNEST(x.director_code) AS director_value,
+  UNNEST(x.region_code) AS region_value,
+  UNNEST(x.section_code) AS section_value
 )
 SELECT
   a.*,

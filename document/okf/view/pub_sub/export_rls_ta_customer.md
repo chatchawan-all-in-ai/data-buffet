@@ -24,7 +24,7 @@ The Pub/Sub export view of [process_dataset.rls_ta_customer](/process/rls_ta_cus
 
 # Grain and key
 
-One row = one customer access grant of one TA employee: key `employee_id`, `customer_company_id`, `customer_code`, `marketing_group_id`, `sub_marketing_id`, `segment_id`, `access_source` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 92,563.
+One row = one customer access grant of one TA employee: key `employee_id`, `customer_company_id`, `customer_code`, `marketing_group_id`, `sub_marketing_id`, `segment_id`, `access_source` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

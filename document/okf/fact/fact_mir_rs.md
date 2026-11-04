@@ -72,7 +72,6 @@ One row per `ReceiveSK` (ROW_NUMBER over BillingSK, FactChqSK, company_id, mirty
 - Storage options: `{"clusterBy": ["ReceiveSK", "FactChqSK", "InvoiceSK"]}`.
 - Reads: [dimension_table.dim_invoice](/dimension/dim_invoice.md), [validated_mac5.mir](/validated/validated_mac5/mir.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_collection_status](/dimension/dim_collection_status.md), [validated_mac5.mie](/validated/validated_mac5/mie.md), [dimension_table.dim_company](/dimension/dim_company.md), [fact_table.fact_mir_vs](/fact/fact_mir_vs.md), [fact_table.fact_chq](/fact/fact_chq.md).
 - Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `ReceiveSK`), after `fact_mir_vs` and `fact_chq` plus the dims (dependencies[]). `ReceiveSK` regenerates daily.
-- Approximate size (BigQuery metadata, 2026-10-31): 1,772,772 rows, 992.8 MB.
 
 # Examples
 

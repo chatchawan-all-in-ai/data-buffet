@@ -24,7 +24,7 @@ Configuration and state table of the Data Mart to Pub/Sub export: dim_company (p
 
 # Grain and key
 
-One row per `table_name` (the exported table = the message `table`). Dataform inserts new rows with a MERGE, updates only task_group of existing rows and backfills only seeded_at for existing sent state; it preserves every other existing config value, checkpoint and claim. 55 rows: dim_company, the 12 commission sets, the 9 TA org sets and the 33 AI team sample tables.
+One row per `table_name` (the exported table = the message `table`). Dataform inserts new rows with a MERGE, updates only task_group of existing rows and backfills only seeded_at for existing sent state; it preserves every other existing config value, checkpoint and claim. Rows cover dim_company, the commission sets, the TA org sets and the AI team sample tables.
 
 # Schema
 
@@ -50,7 +50,6 @@ One row per `table_name` (the exported table = the message `table`). Dataform in
 - Dependencies: [mart_sent_state](/process/mart_sent_state.md), read to backfill seeded_at. The operation does not read view data or write sent state.
 - Export-view names use `resolve()` without adding dependencies, keeping this action within Dataform's 50-dependency limit. Compilation does not validate that these views exist. [`pubsub/scripts/setup.sh`](../../../pubsub/scripts/setup.sh) checks every configured export view exists in BigQuery and stops if one is missing; deployment prerequisites are in [setup guide A](../../how-to/setup-pubsub-export.md#ส่วน-a--deploy-และทดสอบ-pilot).
 - Operations: `CREATE TABLE IF NOT EXISTS` with all 12 columns, backfill seeded_at from MIN(sent_at) for existing sent state, then MERGE from JSON: a new row has NULL last_invocation_id/end, claimed_at and seeded_at; an existing row only gets task_group updated, so its checkpoints and claims are preserved. Compilation fails when a JSON entry has no task_group. The publisher skips tables with seeded_at NULL. First-load execution and retry rules are in [setup guide B3](../../how-to/setup-pubsub-export.md#3-โหลดครั้งแรกด้วยไฟล์-ครั้งแรกที่ทีมต่อ-topic-นั้นเท่านั้น).
-- Approximate size (BigQuery metadata, 2026-11-03): 13 rows (the tables deployed so far).
 
 # Examples
 

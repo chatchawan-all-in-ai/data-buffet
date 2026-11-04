@@ -24,7 +24,7 @@ The Pub/Sub export view of [process_dataset.view_rls_sale_data](/view/process_da
 
 # Grain and key
 
-One row = one row-level-security access level of one user: key `EmployeeEmail`, `LevelName`, `LevelValue` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 48,260.
+One row = one row-level-security access level of one user: key `EmployeeEmail`, `LevelName`, `LevelValue` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

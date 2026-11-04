@@ -29,6 +29,7 @@ dataset กลางตาม [registry reference](../project_wiki/includes/vari
 | validated (mastersku) | prefix `prd_*` snake_case | `prd_id` |
 | curated | camelCase | `mihVnos`, `prdSku` |
 | dimension/fact | PascalCase | `CompanyID`, `WaterPacName` |
+| org_center | snake_case, ชื่อเอกพจน์เสมอ แม้เป็นคอลัมน์ list (ARRAY) — ไม่ใช้ `_ids` / `_codes` | `company_id`, `department_id`, `section_code` |
 | Surrogate key | `<Entity>SK` PascalCase | `CompanySK`, `SaleRepSK`, `FactOrderSK` |
 | mds row id ใน dim | `MdsID` | |
 | คอลัมน์ก่อนปรับเครื่องหมาย | `<ชื่อ>_raw` | `mihnetsum_raw` |

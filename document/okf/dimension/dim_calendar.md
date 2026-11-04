@@ -26,7 +26,7 @@ Used by: [dimension_table.dim_target_product_group_by_sale_dayofwork](/dimension
 
 # Grain and key
 
-One row per calendar `Date` (natural key; there is no surrogate key column). The table holds about 2,557 dates, roughly 7 years. Each yearly run regenerates dates from 1 January of next year to 31 December of (current year + 2) and replaces those dates; earlier years are kept untouched.
+One row per calendar `Date` (natural key; there is no surrogate key column). The table holds the dates of several years. Each yearly run regenerates dates from 1 January of next year to 31 December of (current year + 2) and replaces those dates; earlier years are kept untouched.
 
 # Schema
 
@@ -58,7 +58,6 @@ One row per calendar `Date` (natural key; there is no surrogate key column). The
 - Definition: `definitions/dimension/dim_calendar.sqlx` (`type: "operations"`, tags `dimension_yearly`); the operation owns this table.
 - Reads: [dimension_table.dim_holiday](/dimension/dim_holiday.md).
 - Refresh: yearly `type: "operations"` (tag `dimension_yearly`, the only file with that tag): builds a TEMP table for next year start through end of current year + 2, then DELETE of matching dates and INSERT (idempotent). Target table pre-exists in BigQuery. Runs after `dim_holiday`.
-- Approximate size (BigQuery metadata, 2026-10-31): 2,557 rows, 414.0 KB.
 
 # Examples
 

@@ -76,7 +76,6 @@ One row per `FactDeliverySK` (ROW_NUMBER over CompanySK, documentID, DeliveryDat
 - Definition: `definitions/fact/fact_delivery.sqlx` (`type: "operations"`, tags `fact_daily`); the operation owns this table.
 - Reads: [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [validated_mac5.ttrip_document](/validated/validated_mac5/ttrip_document.md), [validated_mac5.ttrip](/validated/validated_mac5/ttrip.md), [validated_mac5.tdelivery](/validated/validated_mac5/tdelivery.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [validated_mac5.deb](/validated/validated_mac5/deb.md), [fact_table.fact_transaction_delivery](/fact/fact_transaction_delivery.md), [dimension_table.dim_delivery](/dimension/dim_delivery.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Refresh: full refresh each run (`type: "operations"`: `CREATE OR REPLACE TABLE ... CLUSTER BY FactDeliverySK`, no partition), tag `fact_daily`, after `dim_delivery`, `fact_transaction_delivery`, `dim_company`.
-- Approximate size (BigQuery metadata, 2026-10-31): 1,998,858 rows, 1.0 GB.
 
 # Examples
 

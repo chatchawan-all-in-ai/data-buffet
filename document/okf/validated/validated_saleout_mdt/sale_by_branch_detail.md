@@ -61,7 +61,6 @@ One row per `branch`, `article_id`, `distribution_channel`, `end_date`. The key 
 - **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY ASATDATE DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `branch`, `article_id`, `end_date`.
-- Approximate size (BigQuery metadata, 2026-10-31): 14,493 rows, 4.2 MB.
 
 # Examples
 

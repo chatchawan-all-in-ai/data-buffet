@@ -51,7 +51,6 @@ One row per `(CompanyID, SectionID)`: the row with the greatest EndDate (ties by
 - Storage options: `{"clusterBy": ["SectionManagerSK"]}`.
 - Reads: [dimension_table.dim_section_manager](/dimension/dim_section_manager.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`) from dim_section_manager + dim_company, tag `dimension_daily`; runs before `update_sk_sale_rep_group` and `dim_target_product_group_by_sale`.
-- Approximate size (BigQuery metadata, 2026-10-31): 127 rows, 18.0 KB.
 
 # Examples
 

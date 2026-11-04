@@ -39,16 +39,14 @@ One row per `company_id` + `pc_employee_id` + `branch_type` + `branch_code` + `v
 | `ta_employee_id` | STRING | TA employee code (TAEmployeeID) responsible for the PC at that branch. |
 | `valid_from` | DATE | StartDate of the assignment. |
 | `valid_to` | DATE | EndDate of the assignment, EXCLUSIVE (the first day the TA is no longer responsible); empty EndDate becomes 2066-12-31. |
-| `company_name` | STRING | dim_company.CompanyNameTH by company_id. |
 
 # How it is built
 
 - Definition: `definitions/org_center/org_center_link.sqlx` (`type: "table"`, tags `dimension_daily`).
 - `uniqueKey`: `company_id`, `pc_employee_id`, `branch_type`, `branch_code`, `valid_from`.
 - Storage options: `{"clusterBy": ["company_id", "pc_employee_id"]}`.
-- Reads: `mds_dataset.mds_data_mdt_sales_pc_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md), `mds_dataset.mds_data_ta_pc` (master data loaded outside this repo).
-- Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Depends on `org_center_schema` and `dim_company`.
-- Approximate size (BigQuery metadata, 2026-10-31): 0 rows, 0 B.
+- Reads: `mds_dataset.mds_data_mdt_sales_pc_master` (master data loaded outside this repo), `mds_dataset.mds_data_ta_pc` (master data loaded outside this repo).
+- Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Depends on `org_center_schema`.
 
 # Examples
 

@@ -24,7 +24,7 @@ The Pub/Sub export view of commission set `receipt` for the TF team (company ag0
 
 # Grain and key
 
-One line of an ag01 receipt (RS) of 2026 per cheque line paying it, document not cancelled: key `company_source_id, mirvnos, mirlistno, cqlno, cqlbank, cqlautono, chqbank, chqdatec, chqtag` (unique); the cheque columns are NULL for a cash receipt; a receipt line paid by several cheques gives several rows and repeats Payment_AmtInVat. `row_key` is the JSON of that key. Rows on 2026-11-02: 162,510.
+One line of an ag01 receipt (RS) of 2026 per cheque line paying it, document not cancelled: key `company_source_id, mirvnos, mirlistno, cqlno, cqlbank, cqlautono, chqbank, chqdatec, chqtag` (unique); the cheque columns are NULL for a cash receipt; a receipt line paid by several cheques gives several rows and repeats Payment_AmtInVat. `row_key` is the JSON of that key.
 
 # Schema
 

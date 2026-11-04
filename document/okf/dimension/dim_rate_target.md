@@ -58,7 +58,6 @@ One row per active MDS row, SK ordered by companyID, Year, Month, ProductGroupID
 - Storage options: `{"clusterBy": ["RateTargetSK"]}`.
 - Reads: `mds_dataset.mds_data_target_rate_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_department_last](/dimension/dim_department_last.md), [dimension_table.dim_director_last](/dimension/dim_director_last.md).
 - Full daily rebuild (`type: "table"`), tag `dimension_daily`, reads `mds_data_target_rate_master`; a `post_operations` block then recalculates `Percent` for MDT departments. Config dependencies: dim_company, dim_department_last, dim_director_last and `update_sk_sale_rep_group` (the post-step follows the DirectorSK backfill).
-- Approximate size (BigQuery metadata, 2026-10-31): 5,216 rows, 808.9 KB.
 
 # Examples
 

@@ -47,7 +47,6 @@ One row per (company, DirectorID). Key: `DirectorSK`, `ROW_NUMBER() OVER (ORDER 
 - Storage options: `{"clusterBy": ["DirectorSK"]}`.
 - Reads: [dimension_table.dim_director](/dimension/dim_director.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`) from [dim_director](/dimension/dim_director.md) with a QUALIFY dedup. The `update_sk_sale_rep_group` step later backfills `dim_department_last.DirectorSK` from this table (it depends on all `_last` tables).
-- Approximate size (BigQuery metadata, 2026-10-31): 9 rows, 944 B.
 
 # Examples
 

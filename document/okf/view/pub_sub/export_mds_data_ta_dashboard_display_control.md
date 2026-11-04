@@ -24,7 +24,7 @@ The Pub/Sub export view of `mds_dataset.mds_data_ta_dashboard_display_control`, 
 
 # Grain and key
 
-One row = one row of the MDS dashboard display control (what the TA dashboard shows and in which order): key `companyID`, `ControlKey`, `SectionID`, `ItemType`, `ItemCode` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 11.
+One row = one row of the MDS dashboard display control (what the TA dashboard shows and in which order): key `companyID`, `ControlKey`, `SectionID`, `ItemType`, `ItemCode` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

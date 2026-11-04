@@ -24,7 +24,7 @@ The Pub/Sub export view of commission set `invoice` for the TF team (company ag0
 
 # Grain and key
 
-One line of an ag01 invoice (IS) of 2026, not cancelled: key `company_source_id, Invoice_No, No` (unique). `row_key` is the JSON of that key. Rows on 2026-11-02: 316,898.
+One line of an ag01 invoice (IS) of 2026, not cancelled: key `company_source_id, Invoice_No, No` (unique). `row_key` is the JSON of that key.
 
 # Schema
 

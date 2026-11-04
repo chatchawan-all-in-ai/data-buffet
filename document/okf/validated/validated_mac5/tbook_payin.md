@@ -46,7 +46,6 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 - Reads: [raw_mac5_ag01.tbook_payin](/initial/raw_mac5_ag01/tbook_payin.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Storage: partition by `(none)`, cluster by `company_id`, `orderno`.
-- Approximate size (BigQuery metadata, 2026-10-31): 169,782 rows, 6.6 MB.
 
 # Examples
 

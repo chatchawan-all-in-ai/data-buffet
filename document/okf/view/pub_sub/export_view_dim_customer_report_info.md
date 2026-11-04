@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_view.view_dim_customer_report_info](/view/
 
 # Grain and key
 
-One row = one customer report name with its segment and TA assignment: key `CustomerReportInfoSK` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 41,785.
+One row = one customer report name with its segment and TA assignment: key `CustomerReportInfoSK` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

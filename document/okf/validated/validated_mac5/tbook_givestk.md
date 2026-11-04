@@ -53,7 +53,6 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY datetimekey desc) = 1`.
 - Storage: partition by `(none)`, cluster by `company_id`, `id`.
-- Approximate size (BigQuery metadata, 2026-10-31): 203,200 rows, 19.0 MB.
 
 # Examples
 

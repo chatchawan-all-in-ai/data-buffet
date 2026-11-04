@@ -24,7 +24,7 @@ The Pub/Sub export view of the TA app table `member_links`: one row per [org_cen
 
 # Grain and key
 
-One link: key `company_id, link_type, from_membership_id, to_membership_id, site_id, valid_from` (unique). `row_key` is the JSON of the natural key. Rows on 2026-11-02: 490.
+One link: key `company_id, link_type, from_membership_id, to_membership_id, site_id, valid_from` (unique). `row_key` is the JSON of the natural key.
 
 # Schema
 

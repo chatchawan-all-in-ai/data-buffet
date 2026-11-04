@@ -128,7 +128,6 @@ One row per `company_id`, `MIHtype`, `MIHvnos`. The key is declared twice in the
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `company_id`, `MIHtype`, `MIHvnos`.
 - Same document-grain purge pattern as `mil`/`mir`; for `mih` (one row per document) it is effectively a no-op.
-- Approximate size (BigQuery metadata, 2026-10-31): 3,965,212 rows, 2.9 GB.
 
 # Examples
 

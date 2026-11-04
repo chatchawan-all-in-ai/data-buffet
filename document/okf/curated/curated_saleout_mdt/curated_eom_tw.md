@@ -47,7 +47,6 @@ One row per `month_date` (first day of the period, from the PERIOD column read f
 - Storage options: `{"partitionBy": "month_date", "clusterBy": ["branch_code", "product_code"]}`.
 - Reads: [raw_saleout_mdt.eom_tw](/initial/raw_saleout_mdt/eom_tw.md).
 - Full rebuild each run (`type: "table"`, tags `curated`, `curated_full`, `saleout_daily`; depends on `curated_schema_saleout` and `create_all_table_raw_saleout_mdt`); partitioned by `month_date`, clustered by branch_code, product_code. Reads raw `eom_tw` directly.
-- Approximate size (BigQuery metadata, 2026-10-31): 4,352 rows, 868.6 KB.
 
 # Examples
 

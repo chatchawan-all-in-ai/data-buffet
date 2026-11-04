@@ -53,7 +53,6 @@ One row per detected change per source record per day (`cdc_record_id` is a rand
 - Definition: `definitions/cdc/cdc_change_log.sqlx` (`type: "operations"`, tags `cdc`, `cdc_incremental`); the operation owns this table.
 - Reads: [raw_mac5_ag01.deb](/initial/raw_mac5_ag01/deb.md), [validated_mac5.deb](/validated/validated_mac5/deb.md).
 - Refresh: daily, `type: "operations"` script (tags `cdc`, `cdc_incremental`) generated at compile time from `includes/controller/cdc-config.json`: `CREATE TABLE IF NOT EXISTS` (partitioned, 7-day expiry), `DELETE` today's partition (idempotent rerun), then one INSERT per enabled table inside its own `BEGIN ... EXCEPTION` block; the run raises an error at the end if any table failed. Depends on `cdc_schema`. Tables with `partition_field = null` (like `deb`) are compared as full dumps; tables with a partition field read yesterday's raw partition and the latest validated version per key.
-- Approximate size (BigQuery metadata, 2026-10-31): 89 rows, 82.3 KB.
 
 # Examples
 

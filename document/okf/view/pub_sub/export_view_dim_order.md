@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_view.view_dim_order](/view/dimension_view/
 
 # Grain and key
 
-One row = one order document: key `OrderSK` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 1,401,836.
+One row = one order document: key `OrderSK` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

@@ -48,7 +48,6 @@ One row per active MDS source record, including its StartDate/EndDate interval. 
 - Storage options: `{"clusterBy": ["ProductMktDirectorSK"]}`.
 - Reads: `mds_dataset.mds_data_product_marketing_director_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows (`is_active = TRUE`); runs after dim_company (declared dependency).
-- Approximate size (BigQuery metadata, 2026-10-31): 10 rows, 1.3 KB.
 
 # Examples
 

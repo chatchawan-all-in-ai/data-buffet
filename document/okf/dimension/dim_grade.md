@@ -47,7 +47,6 @@ One row per (company, Percentmin, Percentmax, StartDate, EndDate) band from mds.
 - Storage options: `{"clusterBy": ["GradeSK"]}`.
 - Reads: `mds_dataset.mds_data_custgrade_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows; runs after dim_company. dim_customer_grade lists it as a dependency and refreshes its stored `*GradeSK` values from it.
-- Approximate size (BigQuery metadata, 2026-10-31): 30 rows, 2.8 KB.
 
 # Examples
 

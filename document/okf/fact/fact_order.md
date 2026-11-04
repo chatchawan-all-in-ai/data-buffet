@@ -62,7 +62,6 @@ One row per `FactOrderSk` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay,
 - Storage options: `{"partitionBy": "asatdate", "clusterBy": ["FactOrderSk"]}`.
 - Reads: [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [dimension_table.dim_order](/dimension/dim_order.md), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md), [fact_table.fact_quotation](/fact/fact_quotation.md), [dimension_table.dim_customer](/dimension/dim_customer.md).
 - Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `FactOrderSk`, partition `asatdate`, cluster `FactOrderSk`), after `dim_order`, `dim_customer`, `dim_product_master`, `dim_company` and `fact_quotation`. `FactOrderSk` regenerates daily; `fact_invoice` and `view_fact_transcation` rebuild after it.
-- Approximate size (BigQuery metadata, 2026-10-31): 2,746,136 rows, 451.0 MB.
 
 # Examples
 

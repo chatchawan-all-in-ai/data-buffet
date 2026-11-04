@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_view.view_dim_product_master](/view/dimens
 
 # Grain and key
 
-One row = one product: key `ProductSK` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 119,527.
+One row = one product: key `ProductSK` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

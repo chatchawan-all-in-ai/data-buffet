@@ -20,11 +20,11 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of the TA app table `employees`: people of [org_center_person](/org_center/org_center_person.md) plus the people of [org_center_exception](/org_center/org_center_exception.md) who are not in it. The latter are named from the MDS employee mapping center (first word = first name, the rest = last name; no nickname, no phone). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `employees` to topic `export-ta-employees`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of the TA app table `employees`: people of [org_center_person](/org_center/org_center_person.md) plus the people of [org_center_exception](/org_center/org_center_exception.md) who are not in it. The latter are named from the MDS employee mapping center (first word = first name, the rest = last name; no nickname, no phone, no line_uuid). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `employees` to topic `export-ta-employees`. It is registered in [mart_export_config](/process/mart_export_config.md).
 
 # Grain and key
 
-One person: key `person_key` (MDS EmployeeID, unique, never NULL). `row_key` is the JSON of the natural key. Rows on 2026-11-02: 663 (648 with a seat + 15 without).
+One person: key `person_key` (MDS EmployeeID, unique, never NULL). `row_key` is the JSON of the natural key.
 
 # Schema
 
@@ -38,6 +38,7 @@ One person: key `person_key` (MDS EmployeeID, unique, never NULL). `row_key` is 
 | `email` | STRING | Email from org center / MDS. |
 | `phone` | STRING | Mobile phone from MDS employee info; NULL when none. |
 | `phone_source` | STRING | 'mds' when phone is set, otherwise NULL. |
+| `line_uuid` | STRING | LINE UUID from MDS employee info (org_center_person.line_uuid); NULL for people named from the mapping center or when none. |
 | `row_key` | STRING | `TO_JSON_STRING(STRUCT(<natural key>))`: JSON of the natural key, used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
 | `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
 

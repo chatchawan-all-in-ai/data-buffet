@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_table.dim_payment](/dimension/dim_payment.
 
 # Grain and key
 
-One row = one payment method code of a company: key `companyID`, `CodeMemo` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 15.
+One row = one payment method code of a company: key `companyID`, `CodeMemo` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

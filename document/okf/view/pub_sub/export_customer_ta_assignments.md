@@ -24,7 +24,7 @@ The Pub/Sub export view of the TA app table `customer_ta_assignments`: one row p
 
 # Grain and key
 
-One customer of one TA from one start date: key `company_id, customer_id, membership_id, valid_from` (unique). `row_key` is the JSON of the natural key. Rows on 2026-11-02: 20,755 (128 point to another company than the customer).
+One customer of one TA from one start date: key `company_id, customer_id, membership_id, valid_from` (unique). `row_key` is the JSON of the natural key.
 
 # Schema
 

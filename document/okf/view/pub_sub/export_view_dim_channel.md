@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_view.view_dim_channel](/view/dimension_vie
 
 # Grain and key
 
-One row = one sales channel of a company: key `companyID`, `DepCode` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 723.
+One row = one sales channel of a company: key `companyID`, `DepCode` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

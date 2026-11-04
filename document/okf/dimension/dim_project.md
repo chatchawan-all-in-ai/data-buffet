@@ -57,7 +57,6 @@ One row per (`CompanySK`, `projectCode`). `ProjectSK` is a stable surrogate key 
 - Definition: `definitions/dimension/dim_project.sqlx` (`type: "operations"`, tags `dimension_daily`); the operation owns this table.
 - Reads: [validated_mac5.tbook_profilecomp](/validated/validated_mac5/tbook_profilecomp.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Refresh: MERGE with stable SK in a `type: "operations"` file, tag `dimension_daily`, matching on `projectCode` + `CompanySK`; updates attribute columns, inserts new projects, no delete. Reads the whole `tbook_profilecomp` each run. Runs after `dim_company`; the target table pre-exists in BigQuery.
-- Approximate size (BigQuery metadata, 2026-10-31): 8,777 rows, 2.5 MB.
 
 # Examples
 

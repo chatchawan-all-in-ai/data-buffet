@@ -86,7 +86,6 @@ One row per `(TargetBySaleSK, Date)` after the DISTINCT (dates come from `dim_ca
 - Storage options: `{"clusterBy": ["TargetBySaleDayofworkSK"]}`.
 - Reads: [dimension_table.dim_calendar](/dimension/dim_calendar.md), [dimension_table.dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md), [dimension_table.dim_sale_representative](/dimension/dim_sale_representative.md), [dimension_table.dim_department](/dimension/dim_department.md), [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_director](/dimension/dim_director.md), [dimension_table.dim_section](/dimension/dim_section.md), [dimension_table.dim_region_manager](/dimension/dim_region_manager.md), [dimension_table.dim_section_manager](/dimension/dim_section_manager.md), [dimension_table.dim_rate_target](/dimension/dim_rate_target.md).
 - Full daily rebuild (`type: "table"`), tag `dimension_daily`; depends on dim_calendar, dim_rate_target, dim_target_product_group_by_sale and the non-`_last` dims dim_sale_representative, dim_department, dim_director, dim_region, dim_region_manager, dim_section, dim_section_manager, all of which renumber their SKs each night.
-- Approximate size (BigQuery metadata, 2026-10-31): 12,745,926 rows, 4.6 GB.
 
 # Examples
 

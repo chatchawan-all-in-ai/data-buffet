@@ -47,7 +47,6 @@ One row per (company, BouncedChequeMin, BouncedChequeMax, StartDate, EndDate) ba
 - Storage options: `{"clusterBy": ["BounceChequeSK"]}`.
 - Reads: `mds_dataset.mds_data_custgrade_cheque_score_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows; runs after dim_company.
-- Approximate size (BigQuery metadata, 2026-10-31): 25 rows, 2.4 KB.
 
 # Examples
 

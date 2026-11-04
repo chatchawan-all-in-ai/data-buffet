@@ -24,7 +24,7 @@ Org-center membership table: who sits where. Positions are CEO (from `mds_data_c
 
 # Grain and key
 
-One row per `company_id` + `employee_id` + `position_code` + `unit_id` + `valid_from` (the declared key). A TA whose departments sit in several sections gets one row per section, with `department_ids` listing the merged departments; PC rows merge overlapping or adjacent periods across branches and TAs into one contiguous interval per company, person, PC type and unit, while disjoint periods stay as separate rows. Rows with NULL `employee_id` are dropped.
+One row per `company_id` + `employee_id` + `position_code` + `unit_id` + `valid_from` (the declared key). A TA whose departments sit in several sections gets one row per section, with `department_id` listing the merged departments; PC rows merge overlapping or adjacent periods across branches and TAs into one contiguous interval per company, person, PC type and unit, while disjoint periods stay as separate rows. Rows with NULL `employee_id` are dropped.
 
 # Schema
 
@@ -37,20 +37,18 @@ One row per `company_id` + `employee_id` + `position_code` + `unit_id` + `valid_
 | `nickname` | STRING | Nickname from the dim; NULL for DIRECTOR and PC rows. |
 | `email` | STRING | Email from mds_data_org_employee_mapping_center (active rows, a non-NULL email first, then latest updated_at); NULL when the person is not in that table. |
 | `position_code` | STRING | CEO, DIRECTOR, REGION_MGR, SECTION_MGR, TA, PC_MDT or PC_AGENT. |
-| `unit_id` | STRING | Unit held at (join to org_center_unit.unit_id for the same company): DIR-/REG-/SEC- keys. TA rows: the section of the TA's department; PC rows: the unit of the linked TA's overlapping TA row (disambiguated by the branch's zone_id when the TA has several units; no match means no member row). |
-| `department_ids` | ARRAY<STRING> | TA departments merged into the row (ARRAY of department ids); empty for managers and PCs. |
-| `valid_from` | DATE | Start of the inclusive membership interval (dim StartDate; for a TA the earliest start over merged departments; for PCs the overlap with the link period). |
-| `valid_to` | DATE | End of the inclusive interval (dim EndDate; latest end for a TA; 2066-12-31 = still active; for PCs the link's exclusive valid_to minus one day unless 2066-12-31). |
-| `company_name` | STRING | dim_company.CompanyNameTH by company_id. |
+| `unit_id` | STRING | Unit held at (join to org_center_unit.unit_id for the same company): CO-/DIR-/REG-/SEC- keys. TA rows: the section of the TA's department; PC rows: the unit of the linked TA's overlapping TA row (disambiguated by the branch's zone_id when the TA has several units; no match means no member row). |
+| `department_id` | ARRAY<STRING> | TA departments merged into the row (ARRAY of department ids); empty for managers and PCs. |
+| `valid_from` | DATE | Start of the inclusive membership interval (CEO: 2000-01-01; otherwise dim StartDate; for a TA the earliest start over merged departments; for PCs the overlap with the link period). |
+| `valid_to` | DATE | End of the inclusive interval (CEO: 2066-12-31; otherwise dim EndDate; latest end for a TA; 2066-12-31 = still active; for PCs the link's exclusive valid_to minus one day unless 2066-12-31). |
 
 # How it is built
 
 - Definition: `definitions/org_center/org_center_member.sqlx` (`type: "table"`, tags `dimension_daily`).
 - `uniqueKey`: `company_id`, `employee_id`, `position_code`, `unit_id`, `valid_from`.
 - Storage options: `{"clusterBy": ["company_id", "employee_id"]}`.
-- Reads: `mds_dataset.mds_data_org_employee_mapping_center` (master data loaded outside this repo), [dimension_table.dim_director_last](/dimension/dim_director_last.md), [dimension_table.dim_region_manager_last](/dimension/dim_region_manager_last.md), [dimension_table.dim_section_manager_last](/dimension/dim_section_manager_last.md), [dimension_table.dim_sale_representative_last](/dimension/dim_sale_representative_last.md), [dimension_table.dim_section_last](/dimension/dim_section_last.md), `mds_dataset.mds_data_mdt_sales_pc_master` (master data loaded outside this repo), [org_center.org_center_link](/org_center/org_center_link.md), `mds_dataset.mds_data_mdt_sales_branch_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md), `mds_dataset.mds_data_company_master` (master data loaded outside this repo).
-- Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Runs after `update_sk_sale_rep_group`, `dim_company`, `org_center_link` and the dim_*_last tables (director, region manager, section manager, sale representative) and reads mds_data_org_employee_mapping_center, mds_data_mdt_sales_pc_master and mds_data_mdt_sales_branch_master.
-- Approximate size (BigQuery metadata, 2026-10-31): 604 rows, 106.4 KB.
+- Reads: `mds_dataset.mds_data_org_employee_mapping_center` (master data loaded outside this repo), [dimension_table.dim_director_last](/dimension/dim_director_last.md), [dimension_table.dim_region_manager_last](/dimension/dim_region_manager_last.md), [dimension_table.dim_section_manager_last](/dimension/dim_section_manager_last.md), [dimension_table.dim_sale_representative_last](/dimension/dim_sale_representative_last.md), [dimension_table.dim_section_last](/dimension/dim_section_last.md), `mds_dataset.mds_data_mdt_sales_pc_master` (master data loaded outside this repo), [org_center.org_center_link](/org_center/org_center_link.md), `mds_dataset.mds_data_mdt_sales_branch_master` (master data loaded outside this repo), `mds_dataset.mds_data_company_master` (master data loaded outside this repo).
+- Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Runs after `update_sk_sale_rep_group`, `org_center_link` and the dim_*_last tables (director, region manager, section manager, sale representative) and reads mds_data_org_employee_mapping_center, mds_data_mdt_sales_pc_master and mds_data_mdt_sales_branch_master.
 
 # Examples
 

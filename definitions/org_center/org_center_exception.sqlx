@@ -62,9 +62,9 @@ WITH mds_data AS (
   SELECT
     employee_id,
     IFNULL(NULLIF(TRIM(company_value), ''), 'ALL') AS company_code,
-    ${toCodeArray("director")} AS director_codes,
-    ${toCodeArray("region")} AS region_codes,
-    ${toCodeArray("section")} AS section_codes,
+    ${toCodeArray("director")} AS director_code,
+    ${toCodeArray("region")} AS region_code,
+    ${toCodeArray("section")} AS section_code,
     IFNULL(NULLIF(TRIM(COALESCE(g[SAFE_OFFSET(idx)], g[SAFE_OFFSET(0)])), ''), 'ALL') AS marketing_group_id,
     IFNULL(NULLIF(TRIM(COALESCE(sub[SAFE_OFFSET(idx)], sub[SAFE_OFFSET(0)])), ''), 'ALL') AS sub_marketing_id,
     IFNULL(NULLIF(TRIM(COALESCE(seg[SAFE_OFFSET(idx)], seg[SAFE_OFFSET(0)])), ''), 'ALL') AS segment_id,

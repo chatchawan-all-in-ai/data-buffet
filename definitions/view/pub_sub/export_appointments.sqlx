@@ -31,7 +31,7 @@ WITH appointment AS (
     CAST(NULL AS BOOL) AS is_primary,
     'mds' AS source,
     CAST(NULL AS STRING) AS source_row_id,
-    NULLIF(ARRAY_TO_STRING(department_ids, '|'), '') AS zone
+    NULLIF(ARRAY_TO_STRING(department_id, '|'), '') AS zone
   FROM `${OrgCenterMemberTableRef}`
 )
 SELECT

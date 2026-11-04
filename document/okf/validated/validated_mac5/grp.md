@@ -46,7 +46,6 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 - Reads: [raw_mac5_ag01.grp](/initial/raw_mac5_ag01/grp.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Storage: partition by `(none)`, cluster by `company_id`, `grpstatus`, `grpid`.
-- Approximate size (BigQuery metadata, 2026-10-31): 31 rows, 4.7 KB.
 
 # Examples
 

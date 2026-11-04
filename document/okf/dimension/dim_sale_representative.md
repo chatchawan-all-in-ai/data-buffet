@@ -58,7 +58,6 @@ UNION ALL of two sources with one `ROW_NUMBER()`. (a) `mds_rep`: active MDS rows
 - Storage options: `{"clusterBy": ["SaleRepSK"]}`.
 - Reads: `mds_dataset.mds_data_sales_representative_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md), [validated_mac5.per](/validated/validated_mac5/per.md).
 - Full daily rebuild (`type: "table"`), tag `dimension_daily`; reads `mds_data_sales_representative_master`, dim_company and `validated_mac5.per` (via `ref`). Finishes before `dim_sale_representative_last`.
-- Approximate size (BigQuery metadata, 2026-10-31): 2,371 rows, 271.4 KB.
 
 # Examples
 

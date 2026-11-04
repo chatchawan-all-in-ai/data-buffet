@@ -24,7 +24,7 @@ The Pub/Sub export view of [onetime.Product_Attribute](/view/onetime/Product_Att
 
 # Grain and key
 
-One row = one product attribute row: key `ProductSK` plus `occurrence` (the position of the row among rows with the same key, ordered by their data JSON); `row_key` is the JSON of that key. Rows on 2026-11-02: 27,237.
+One row = one product attribute row: key `ProductSK` plus `occurrence` (the position of the row among rows with the same key, ordered by their data JSON); `row_key` is the JSON of that key.
 
 # Schema
 

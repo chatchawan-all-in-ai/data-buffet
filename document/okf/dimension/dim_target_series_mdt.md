@@ -54,7 +54,6 @@ Monthly MDS rows de-duplicated per `(BranchCode, SeriesCode, Year, Month)` (late
 - Storage options: `{"partitionBy": "TargetDate", "clusterBy": ["BranchMdtSK", "SeriesSK"]}`.
 - Reads: `mds_dataset.mds_data_mdt_sales_target_by_series` (master data loaded outside this repo), [dimension_table.dim_product_series](/dimension/dim_product_series.md), [dimension_table.dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md).
 - Full daily rebuild (`type: "table"`), tags `dimension_daily` and `saleout_daily`; partitioned by TargetDate, clustered by BranchMdtSK, SeriesSK. Reads `mds_data_mdt_sales_target_by_series`, dim_sales_branch_mdt and dim_product_series.
-- Approximate size (BigQuery metadata, 2026-10-31): 42,217 rows, 5.7 MB.
 
 # Examples
 

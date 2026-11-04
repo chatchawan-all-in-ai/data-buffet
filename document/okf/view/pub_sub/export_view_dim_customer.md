@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_view.view_dim_customer](/view/dimension_vi
 
 # Grain and key
 
-One row = one customer: key `CustomerSK` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 98,339.
+One row = one customer: key `CustomerSK` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

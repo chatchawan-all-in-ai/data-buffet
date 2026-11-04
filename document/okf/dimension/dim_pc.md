@@ -51,7 +51,6 @@ One row per assignment: unique per (EmployeeID, BranchCodeMdt, MarketingGroupID)
 - Storage options: `{"clusterBy": ["PcSK", "BranchMdtSK", "MarketingGroupID"]}`.
 - Reads: `mds_dataset.mds_data_mdt_sales_pc_master` (master data loaded outside this repo), [dimension_table.dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md).
 - Full daily rebuild (`type: "table"`, tags `dimension_daily` and the saleout daily tag): CTE `pc_source` (active mds rows, QUALIFY dedup on employee_id + branch_code + marketinggroupid keeping latest `updated_at`), `pc_master` (SK + branch SK) UNION ALL the literal `unknown_pc` row. Depends on `dim_sales_branch_mdt`; clustered by `PcSK, BranchMdtSK, MarketingGroupID`.
-- Approximate size (BigQuery metadata, 2026-10-31): 579 rows, 87.5 KB.
 
 # Examples
 

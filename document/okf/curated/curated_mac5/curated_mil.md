@@ -106,7 +106,6 @@ Declared `uniqueKey`: `company_id` + `milType` + `milVnos` + `milListno` (docume
 - Storage options: `{"partitionBy": "asatdate", "clusterBy": ["company_id", "milVnos", "milType"]}`.
 - Reads: [validated_mac5.mil](/validated/validated_mac5/mil.md), [validated_mac5.mih2](/validated/validated_mac5/mih2.md).
 - Incremental on `uniqueKey` (tag `curated`, after `validated_mac5.mil` and `mih2`). `pre_operations` builds a TEMP table of the last `BACKFILL_DAYS` day(s) of validated lines (percent_sale hard-coded '100.00%') and DELETEs whole documents (company_id + milType + milVnos) from the table, so lines deleted at source disappear; the body then inserts that temp. `post_operations` rebuilds all ag01 rows from the full validated_mac5.mil (no window): applies the split-sale rule, deletes the documents at document grain and re-inserts (this is the expensive part).
-- Approximate size (BigQuery metadata, 2026-10-31): 9,370,397 rows, 4.3 GB.
 
 # Examples
 

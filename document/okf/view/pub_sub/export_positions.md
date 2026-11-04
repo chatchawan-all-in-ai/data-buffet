@@ -24,7 +24,7 @@ The Pub/Sub export view of the TA app table `positions`: the distinct position c
 
 # Grain and key
 
-One position of one company: key `company_id, code` (unique). `row_key` is the JSON of the natural key. Rows on 2026-11-02: 10.
+One position of one company: key `company_id, code` (unique). `row_key` is the JSON of the natural key.
 
 # Schema
 

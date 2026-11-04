@@ -48,7 +48,6 @@ One row per (company, CodeMemo) among active mds rows. Key: `PaymentSK` (surroga
 - Storage options: `{"clusterBy": ["PaymentSK"]}`.
 - Reads: `mds_dataset.mds_data_payment_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows (`is_active = TRUE`); runs after dim_company (declared dependency).
-- Approximate size (BigQuery metadata, 2026-10-31): 15 rows, 2.5 KB.
 
 # Examples
 

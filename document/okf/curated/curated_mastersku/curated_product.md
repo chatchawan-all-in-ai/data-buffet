@@ -88,7 +88,6 @@ One row per `prdSku` (the MERGE `uniqueKey`); dedup is `ROW_NUMBER() OVER (PARTI
 - Storage options: `{"partitionBy": "asatdate", "clusterBy": ["prdSku", "prdUniversalBarcode", "prdVendorId", "prdBrandId"], "updatePartitionFilter": "asatdate >= CURRENT_DATE('Asia/Bangkok')-7"}`.
 - Reads: [validated_mastersku.product](/validated/validated_mastersku/product.md), [validated_mastersku.product_detail](/validated/validated_mastersku/product_detail.md).
 - Incremental MERGE on `prdSku` (tag `curated`; no dependency declared beyond ref() to `validated_mastersku.product`); reads only the last `BACKFILL_DAYS` day(s) of validated rows; `updatePartitionFilter` limits the MERGE to the last 7 days of partitions. A `post_operations` UPDATE then fills `prdColorTH`, `prdColorEN`, `prdSize` for the same window from `product_detail` and the JSON in `prdDiminsionData` (`$.dimFeild`) and `pd_spacific_fields` (`$.SpeciFeild`).
-- Approximate size (BigQuery metadata, 2026-10-31): 110,121 rows, 93.3 MB.
 
 # Examples
 

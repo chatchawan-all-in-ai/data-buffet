@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "org_center_person"
-description: "One row = one person (across all companies) in the org center, with name, contact, companies, current positions and an active flag."
+description: "One row = one person (across all companies) in the org center, with name, contact, LINE UUID, companies, current positions and an active flag."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=org_center&t=org_center_person&page=table"
 project_id: databuffet-nonprd
 dataset_id: org_center
@@ -20,11 +20,11 @@ status: draft
 
 # What it is
 
-The who-is-who list of the org center (the TA app's 'employees'), built from [org_center_member](/org_center/org_center_member.md) plus contact data from MDS (mds_data_employee_info). Where org_center_member says where a person sits and when, this table gives one deterministic row per person. It is checked by [org_center_flags](/org_center/org_center_flags.md) (phone format and duplicates).
+The who-is-who list of the org center (the TA app's 'employees'), built from [org_center_member](/org_center/org_center_member.md) plus contact data from MDS (mds_data_employee_info: email, mobile phone, LINE UUID). Where org_center_member says where a person sits and when, this table gives one deterministic row per person. It is checked by [org_center_flags](/org_center/org_center_flags.md) (phone format and duplicates).
 
 # Grain and key
 
-One row per `employee_id` (never NULL), even when the person works in two companies (8 people in ab01 + ag01 on 2026-10-29). Contact-only employees (in MDS but without a member row) do not create person rows. Placeholder managers (Non Director, 9999990 to 9999999) get a row like anyone else.
+One row per `employee_id` (never NULL), even when the person works in two companies. Contact-only employees (in MDS but without a member row) do not create person rows. Placeholder managers (Non Director, 9999990 to 9999999) get a row like anyone else.
 
 # Schema
 
@@ -34,10 +34,11 @@ One row per `employee_id` (never NULL), even when the person works in two compan
 | `first_name` | STRING | First name picked from the person's member rows: the first row that is not CEO or DIRECTOR in the pick order (a person with only DIRECTOR/CEO rows gets the DIRECTOR name, then the CEO name, split at the first space). Personal data. |
 | `last_name` | STRING | Surname picked by the same rule. Personal data. |
 | `nickname` | STRING | First non-NULL nickname in the pick order (CEO and DIRECTOR rows have none). |
-| `email` | STRING | First non-NULL member email in the pick order; only when no non-NULL member email exists falls back to mds_data_employee_info.Email. An empty string is non-NULL and blocks that fallback. NULL for most people (171 of 206 on 2026-10-29). |
+| `email` | STRING | First non-NULL member email in the pick order; only when no non-NULL member email exists falls back to mds_data_employee_info.Email. An empty string is non-NULL and blocks that fallback. |
 | `mobile_phone` | STRING | mds_data_employee_info.MobilePhone by EmployeeID (active rows, latest updated_at then lowest id), as entered with no cleaning; NULL when absent. |
-| `company_ids` | ARRAY<STRING> | Sorted ARRAY of every company_id found in the person's member rows. |
-| `position_codes` | ARRAY<STRING> | ARRAY of distinct positions with a member row valid today, ordered CEO, DIRECTOR, REGION_MGR, SECTION_MGR, TA, PC_MDT, PC_AGENT; empty when none is valid. |
+| `line_uuid` | STRING | mds_data_employee_info.LineUUID by EmployeeID (same active row as mobile_phone), as entered with no cleaning; NULL when absent. |
+| `company_id` | ARRAY<STRING> | Sorted ARRAY of every company_id found in the person's member rows. |
+| `position_code` | ARRAY<STRING> | ARRAY of distinct positions with a member row valid today, ordered CEO, DIRECTOR, REGION_MGR, SECTION_MGR, TA, PC_MDT, PC_AGENT; empty when none is valid. |
 | `is_active` | BOOL | TRUE when the person has at least one member row valid today (CURRENT_DATE in Asia/Bangkok between valid_from and valid_to). |
 
 # How it is built
@@ -47,22 +48,21 @@ One row per `employee_id` (never NULL), even when the person works in two compan
 - Storage options: `{"clusterBy": ["employee_id"]}`.
 - Reads: [org_center.org_center_member](/org_center/org_center_member.md), `mds_dataset.mds_data_employee_info` (master data loaded outside this repo).
 - Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Runs after `org_center_schema` and `org_center_member`; also reads mds_data_employee_info (master data loaded outside this repo).
-- Approximate size (BigQuery metadata, 2026-10-31): 206 rows, 17.3 KB.
 
 # Examples
 
 Active people holding the TA position.
 
 ```sql
-SELECT employee_id, company_ids, position_codes
+SELECT employee_id, company_id, position_code
 FROM `databuffet-nonprd.org_center.org_center_person`
-WHERE is_active AND 'TA' IN UNNEST(position_codes)
+WHERE is_active AND 'TA' IN UNNEST(position_code)
 ```
 
 People who work in more than one company.
 
 ```sql
-SELECT employee_id, company_ids
+SELECT employee_id, company_id
 FROM `databuffet-nonprd.org_center.org_center_person`
-WHERE ARRAY_LENGTH(company_ids) > 1
+WHERE ARRAY_LENGTH(company_id) > 1
 ```

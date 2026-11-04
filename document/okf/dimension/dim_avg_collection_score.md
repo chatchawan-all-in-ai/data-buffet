@@ -47,7 +47,6 @@ One row per (company, min, max, StartDate, EndDate) band from mds. Key: `AvgColl
 - Storage options: `{"clusterBy": ["AvgCollectSK"]}`.
 - Reads: `mds_dataset.mds_data_custgrade_score_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows; runs after dim_company.
-- Approximate size (BigQuery metadata, 2026-10-31): 50 rows, 4.9 KB.
 
 # Examples
 

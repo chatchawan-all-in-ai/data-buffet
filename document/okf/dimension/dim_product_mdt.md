@@ -47,7 +47,6 @@ One row per MDT product code (`ProductCode`, the integer MDT code as text). Mds 
 - Storage options: `{"clusterBy": ["ProductMdtSK"]}`.
 - Reads: [dimension_table.dim_product_master](/dimension/dim_product_master.md), [dimension_table.dim_stk_mkt](/dimension/dim_stk_mkt.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), `mds_dataset.mds_data_mdt_product_master` (master data loaded outside this repo), [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md), [curated_saleout_mdt.curated_saleout_monthly_mdt](/curated/curated_saleout_mdt/curated_saleout_monthly_mdt.md), [curated_saleout_mdt.curated_stock_mdt](/curated/curated_saleout_mdt/curated_stock_mdt.md).
 - Full daily rebuild (`type: "table"`, tags `dimension_daily` and the saleout daily tag): CTEs `product_master` (mds), `new_product` (feed-only codes), `unknown_product` UNION ALL'd. Depends on `dim_product_master`, `dim_stk_mkt`, `dim_product_mkt` and reads the three `curated_saleout_mdt` tables via `ref()`.
-- Approximate size (BigQuery metadata, 2026-10-31): 2,526 rows, 446.7 KB.
 
 # Examples
 

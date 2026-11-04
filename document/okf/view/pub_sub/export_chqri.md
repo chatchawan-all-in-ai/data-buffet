@@ -24,7 +24,7 @@ The Pub/Sub export view of commission set `chqri` for the TF team (company ag01)
 
 # Grain and key
 
-One ag01 received cheque (chqtype 1) per receipt (RS) payment line dated 2026: key `company_source_id, chqno, chqbank, chqdatec, chqtag, cqlvnos, cqlbank, cqlautono, cqlsys` (unique). `row_key` is the JSON of that key. Rows on 2026-11-02: 4,571.
+One ag01 received cheque (chqtype 1) per receipt (RS) payment line dated 2026: key `company_source_id, chqno, chqbank, chqdatec, chqtag, cqlvnos, cqlbank, cqlautono, cqlsys` (unique). `row_key` is the JSON of that key.
 
 # Schema
 

@@ -48,7 +48,6 @@ One row per `(company_id, stocode)` of `validated_mac5.sto`, restricted to compa
 - Storage options: `{"clusterBy": ["StoreSK"]}`.
 - Reads: [validated_mac5.sto](/validated/validated_mac5/sto.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`), tag `dimension_daily`; reads `validated_mac5.sto` and dim_company. Hand-written -1 row is UNION ALL'd in the same statement.
-- Approximate size (BigQuery metadata, 2026-10-31): 602 rows, 70.4 KB.
 
 # Examples
 

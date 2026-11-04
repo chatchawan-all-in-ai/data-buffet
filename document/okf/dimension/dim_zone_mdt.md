@@ -46,7 +46,6 @@ One row per distinct trimmed `zone_id`: duplicates are collapsed keeping the row
 - Storage options: `{"clusterBy": ["ZoneMdtSK"]}`.
 - Reads: `mds_dataset.mds_data_mdt_sales_zone_master` (master data loaded outside this repo).
 - Full daily rebuild (`type: "table"`), tags `dimension_daily` and `saleout_daily`; reads `mds_data_mdt_sales_zone_master` only (no dependencies). Runs before `dim_zone_ta_mdt` and `dim_sales_branch_mdt`.
-- Approximate size (BigQuery metadata, 2026-10-31): 16 rows, 1.4 KB.
 
 # Examples
 

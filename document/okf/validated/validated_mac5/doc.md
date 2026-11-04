@@ -54,7 +54,6 @@ One row per `company_id`, `doccode`. The key is declared twice in the definition
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY doceditdt desc) = 1`.
 - Storage: partition by `(none)`, cluster by `company_id`, `doccode`.
-- Approximate size (BigQuery metadata, 2026-10-31): 26 rows, 3.0 KB.
 
 # Examples
 

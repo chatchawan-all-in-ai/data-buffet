@@ -44,7 +44,6 @@ One row per (company, ChannelID) among active mds rows. Key: `ChannelSaleSK` (su
 - Storage options: `{"clusterBy": ["ChannelSaleSK"]}`.
 - Reads: `mds_dataset.mds_data_channel_sales_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows (`is_active = TRUE`); runs after dim_company (declared dependency).
-- Approximate size (BigQuery metadata, 2026-10-31): 593 rows, 66.8 KB.
 
 # Examples
 

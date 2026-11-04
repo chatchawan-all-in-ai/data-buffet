@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_view.view_dim_product_mkt](/view/dimension
 
 # Grain and key
 
-One row = one marketing group, sub group, segment and type combination of a company: key `CompanyID`, `MarketingGroupID`, `SubMarketingID`, `SegmentID`, `TypeMarketingID` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 232.
+One row = one marketing group, sub group, segment and type combination of a company: key `CompanyID`, `MarketingGroupID`, `SubMarketingID`, `SegmentID`, `TypeMarketingID` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

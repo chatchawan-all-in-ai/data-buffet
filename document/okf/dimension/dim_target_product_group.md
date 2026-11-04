@@ -56,7 +56,6 @@ One row per active MDS row, SK ordered by companyID, Year, Month, MarketingGroup
 - Storage options: `{"clusterBy": ["TargetProductGroupSK"]}`.
 - Reads: `mds_dataset.mds_data_sales_target_by_product_group_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`), tag `dimension_daily`; `CREATE OR REPLACE` each run from `mds_dataset` (loaded outside this repo). Runs after `dim_company`. Reads `mds_data_sales_target_by_product_group_master`.
-- Approximate size (BigQuery metadata, 2026-10-31): 54,564 rows, 11.4 MB.
 
 # Examples
 

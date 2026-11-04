@@ -24,7 +24,7 @@ The Pub/Sub export view of commission set `company_source` for the TF team (comp
 
 # Grain and key
 
-The Data Mart company ag01 that owns the data: key `company_source_id` (unique). `row_key` is the JSON of that key. Rows on 2026-11-02: 1.
+The Data Mart company ag01 that owns the data: key `company_source_id` (unique). `row_key` is the JSON of that key.
 
 # Schema
 

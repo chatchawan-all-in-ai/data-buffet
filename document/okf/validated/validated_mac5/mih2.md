@@ -200,7 +200,6 @@ One row per `company_id`, `MIH2day`, `MIH2month`, `MIH2year`, `MIH2type`, `MIH2v
 - **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `company_id`, `mih2type`, `mih2vnos`, `mih2cus`.
-- Approximate size (BigQuery metadata, 2026-10-31): 794,499 rows, 170.5 MB.
 
 # Examples
 

@@ -123,7 +123,6 @@ One row per `company_id`, `stkcode`. The key is declared twice in the definition
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY stkcode885 desc, stkeditdt desc, stkdesct1 desc, stkdesct2 desc) = 1`.
 - Storage: partition by `(none)`, cluster by `company_id`, `stkcode`.
-- Approximate size (BigQuery metadata, 2026-10-31): 118,828 rows, 51.9 MB.
 
 # Examples
 

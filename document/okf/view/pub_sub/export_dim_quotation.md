@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_table.dim_quotation](/dimension/dim_quotat
 
 # Grain and key
 
-One row = one quotation: key `QuotationSK` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 260,165.
+One row = one quotation: key `QuotationSK` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

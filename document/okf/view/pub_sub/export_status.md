@@ -24,7 +24,7 @@ The Pub/Sub export view of commission set `status` for the TF team (company ag01
 
 # Grain and key
 
-One ag01 document status code: key `company_source_id, id` (unique). `row_key` is the JSON of that key. Rows on 2026-11-02: 91.
+One ag01 document status code: key `company_source_id, id` (unique). `row_key` is the JSON of that key.
 
 # Schema
 

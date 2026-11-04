@@ -60,7 +60,6 @@ One row per (`sale_date`, `store_code`, `branch_code`, `product_code`, `doc_type
 - Storage options: `{"partitionBy": "sale_date", "clusterBy": ["store_code", "branch_sk", "product_mdt_sk"]}`.
 - Reads: [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_report](/dimension/dim_report.md), [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_region_manager](/dimension/dim_region_manager.md), [dimension_table.dim_director](/dimension/dim_director.md), [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md), [dimension_table.dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [dimension_table.dim_product_mdt](/dimension/dim_product_mdt.md).
 - Refresh: full daily rebuild (`type: "table"`, tags `fact_daily` and `saleout_daily`, uniqueKey above, partition `sale_date`, cluster `store_code, branch_sk, product_mdt_sk`), after the MDT dims (`dim_sales_branch_mdt`, `dim_product_mdt`, `dim_product_mkt`, `dim_report`, `dim_region`, `dim_region_manager`, `dim_director`); also re-run in workflow `saleout_morning` 08:55.
-- Approximate size (BigQuery metadata, 2026-10-31): 455,531 rows, 70.1 MB.
 
 # Examples
 

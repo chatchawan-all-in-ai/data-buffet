@@ -39,7 +39,6 @@ One row per `id` (prdSku) per `asatdate` (run date). Only products whose curated
 - Definition: `definitions/curated/mastersku/product_for_aisearch.sqlx` (`type: "operations"`, tags `curated`); the operation owns this table.
 - Reads: [curated_mastersku.curated_product](/curated/curated_mastersku/curated_product.md), [validated_mastersku.product_detail](/validated/validated_mastersku/product_detail.md), [validated_mastersku.brand](/validated/validated_mastersku/brand.md), [validated_mastersku.category](/validated/validated_mastersku/category.md), [validated_mastersku.vendor](/validated/validated_mastersku/vendor.md), [validated_mastersku.unit](/validated/validated_mastersku/unit.md).
 - Operations action (`type: "operations"`, tag `curated`; target table pre-exists in BigQuery, created outside this definition): builds a TEMP table, DELETEs `asatdate = run_date`, then INSERTs the new rows (not wrapped in a transaction). Runs after `curated_product`.
-- Approximate size (BigQuery metadata, 2026-10-31): 218,161 rows, 450.0 MB.
 
 # Examples
 

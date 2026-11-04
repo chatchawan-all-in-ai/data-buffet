@@ -58,7 +58,6 @@ One row per `FactTransDeliverySK` (ROW_NUMBER over CompanySK, milYear, milMonth,
 - Definition: `definitions/fact/fact_transaction_delivery.sqlx` (`type: "operations"`, tags `fact_daily`); the operation owns this table.
 - Reads: [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Refresh: full refresh each run (`type: "operations"`: `CREATE OR REPLACE TABLE ... PARTITION BY mix_date CLUSTER BY FactTransDeliverySK`), tag `fact_daily`, after `dim_invoice`, `dim_product_master`, `dim_company`; runs before `fact_delivery`.
-- Approximate size (BigQuery metadata, 2026-10-31): 2,499,203 rows, 391.6 MB.
 
 # Examples
 

@@ -26,7 +26,7 @@ Used by: [dimension_table.dim_avg_collection_score](/dimension/dim_avg_collectio
 
 # Grain and key
 
-One row per (`CompanyID`, `CompanyCode`); `CompanySK` is a stable surrogate key (`max_sk + ROW_NUMBER()` for new rows, existing SKs never change). About 5 rows. Matched to MDS first by `MdsId`, then by the natural key.
+One row per (`CompanyID`, `CompanyCode`); `CompanySK` is a stable surrogate key (`max_sk + ROW_NUMBER()` for new rows, existing SKs never change). Matched to MDS first by `MdsId`, then by the natural key.
 
 # Schema
 
@@ -44,7 +44,6 @@ One row per (`CompanyID`, `CompanyCode`); `CompanySK` is a stable surrogate key 
 - Definition: `definitions/dimension/dim_company.sqlx` (`type: "operations"`, tags `dimension_daily`); the operation owns this table.
 - Reads: `mds_dataset.mds_data_company_master` (master data loaded outside this repo).
 - Refresh: MERGE with stable SK (legacy pattern, see [merge-sk-pattern](../../project_wiki/dimension/merge-sk-pattern.md)) in a `type: "operations"` file, tag `dimension_daily`, `dependencies: []`; the target table pre-exists in BigQuery. Source window is `MDS_BACKFILL_DAYS` (1 day) on `updated_at` with `is_active = TRUE`, then a tombstone DELETE of rows whose MDS row is `is_active = FALSE`. Runs first among dimensions.
-- Approximate size (BigQuery metadata, 2026-10-31): 5 rows, 899 B.
 
 # Examples
 

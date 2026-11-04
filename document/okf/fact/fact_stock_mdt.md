@@ -53,7 +53,6 @@ One row per (`stock_date`, `store_code`, `branch_code`, `product_code`) (the uni
 - Storage options: `{"partitionBy": "stock_date", "clusterBy": ["store_code", "branch_sk", "product_mdt_sk"]}`.
 - Reads: [curated_saleout_mdt.curated_stock_mdt](/curated/curated_saleout_mdt/curated_stock_mdt.md), [dimension_table.dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [dimension_table.dim_product_mdt](/dimension/dim_product_mdt.md).
 - Refresh: full daily rebuild (`type: "table"`, tags `fact_daily` and `saleout_daily`, partition `stock_date`, cluster `store_code, branch_sk, product_mdt_sk`), after `dim_sales_branch_mdt` and `dim_product_mdt`; re-run in `saleout_morning`.
-- Approximate size (BigQuery metadata, 2026-10-31): 1,310,751 rows, 170.3 MB.
 
 # Examples
 

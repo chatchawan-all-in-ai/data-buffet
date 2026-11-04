@@ -66,7 +66,6 @@ One row per `company_id`, `frun`, `fcode`. The key is declared twice in the defi
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY fdate desc) = 1`.
 - Storage: partition by `(none)`, cluster by `company_id`, `frun`, `fcode`.
-- Approximate size (BigQuery metadata, 2026-10-31): 293,139 rows, 42.6 MB.
 
 # Examples
 

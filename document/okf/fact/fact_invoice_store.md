@@ -64,7 +64,6 @@ One row per `FactInvoiceStoreSK` (ROW_NUMBER over CompanySK, date parts, milType
 - Storage options: `{"partitionBy": "mix_date", "clusterBy": ["FactInvoiceStoreSK"]}`.
 - Reads: [dimension_table.dim_order](/dimension/dim_order.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md), [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_store](/dimension/dim_store.md).
 - Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `FactInvoiceStoreSK`, partition `mix_date`), after `dim_order`, `dim_invoice`, `dim_customer`, `dim_product_master`, `dim_company`, `dim_store`.
-- Approximate size (BigQuery metadata, 2026-10-31): 2,230,430 rows, 539.9 MB.
 
 # Examples
 

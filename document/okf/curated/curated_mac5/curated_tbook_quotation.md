@@ -107,7 +107,6 @@ One row per `company_id` + `Running` (quotation code). Duplicates across revisio
 - Storage options: `{"clusterBy": ["company_id", "running", "cashstatus", "cancel"]}`.
 - Reads: [validated_mac5.tbook_quotation](/validated/validated_mac5/tbook_quotation.md).
 - Declared `type: "incremental"` (tag `curated`, after `validated_mac5.tbook_quotation`) with MERGE on `uniqueKey`, but the partition and the incremental window filter are commented out, so every run reads the whole validated table and behaves like a full rebuild.
-- Approximate size (BigQuery metadata, 2026-10-31): 260,034 rows, 211.4 MB.
 
 # Examples
 

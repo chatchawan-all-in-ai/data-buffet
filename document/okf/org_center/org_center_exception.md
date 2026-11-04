@@ -32,9 +32,9 @@ One row per `source_row_id` (the MDS row id) + `company_code` + `marketing_group
 |---|---|---|
 | `employee_id` | STRING | Employee code (employeeid); NULL when the MDS row has none. |
 | `company_code` | STRING | One company code from companyreport split on '\|', trimmed; empty = 'ALL'. |
-| `director_codes` | ARRAY&lt;STRING&gt; | Director codes (director split on '\|', trimmed, empty items dropped, source order preserved); ['ALL'] when empty. |
-| `region_codes` | ARRAY&lt;STRING&gt; | Region codes (region split on '\|', normalized as director_codes); ['ALL'] when empty. |
-| `section_codes` | ARRAY&lt;STRING&gt; | Section codes (section split on '\|', normalized as director_codes); ['ALL'] when empty. |
+| `director_code` | ARRAY&lt;STRING&gt; | Director codes (director split on '\|', trimmed, empty items dropped, source order preserved); ['ALL'] when empty. |
+| `region_code` | ARRAY&lt;STRING&gt; | Region codes (region split on '\|', normalized as director_code); ['ALL'] when empty. |
+| `section_code` | ARRAY&lt;STRING&gt; | Section codes (section split on '\|', normalized as director_code); ['ALL'] when empty. |
 | `marketing_group_id` | STRING | One marketing group code from mktgroupid; empty = 'ALL'. |
 | `sub_marketing_id` | STRING | Marketing sub group paired by position with the group (mktsubgroupid); empty = 'ALL'. |
 | `segment_id` | STRING | Marketing segment paired by position with the group (mktsegmentid); empty = 'ALL'. |
@@ -54,7 +54,7 @@ One row per `source_row_id` (the MDS row id) + `company_code` + `marketing_group
 Exceptions of one person.
 
 ```sql
-SELECT company_code, director_codes, marketing_group_id, sub_marketing_id, segment_id, flag_customer
+SELECT company_code, director_code, marketing_group_id, sub_marketing_id, segment_id, flag_customer
 FROM `databuffet-nonprd.org_center.org_center_exception`
 WHERE employee_id = '1045001'
 ```

@@ -50,7 +50,6 @@ One row per active MDS row, ordered and SK-numbered by CompanyID, Typeeng, Typet
 - Storage options: `{"clusterBy": ["WeightSK"]}`.
 - Reads: `mds_dataset.mds_data_custgrade_weight_score_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`), tag `dimension_daily`; `CREATE OR REPLACE` each run from `mds_dataset` (loaded outside this repo). Runs after `dim_company`. Reads `mds_data_custgrade_weight_score_master`.
-- Approximate size (BigQuery metadata, 2026-10-31): 5 rows, 747 B.
 
 # Examples
 

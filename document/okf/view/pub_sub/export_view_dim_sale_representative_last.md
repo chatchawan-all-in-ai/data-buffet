@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_view.view_dim_sale_representative_last](/v
 
 # Grain and key
 
-One row = one sales representative record in its latest period: key `companyID`, `DepartmentID`, `EmployeeID`, `DepCode`, `CostChannelID`, `ProvinceID`, `OrderStartDate`, `OrderEndDate` (unique); `row_key` is the JSON of that key. Rows on 2026-11-02: 2,243.
+One row = one sales representative record in its latest period: key `companyID`, `DepartmentID`, `EmployeeID`, `DepCode`, `CostChannelID`, `ProvinceID`, `OrderStartDate`, `OrderEndDate` (unique); `row_key` is the JSON of that key.
 
 # Schema
 

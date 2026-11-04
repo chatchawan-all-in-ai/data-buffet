@@ -51,7 +51,6 @@ One row per active MDS row (no de-duplication), ordered by zone_id then employee
 - Storage options: `{"clusterBy": ["ZoneTaMdtSK"]}`.
 - Reads: `mds_dataset.mds_data_mdt_sales_zone_ta_master` (master data loaded outside this repo), [dimension_table.dim_zone_mdt](/dimension/dim_zone_mdt.md).
 - Full daily rebuild (`type: "table"`), tags `dimension_daily` and `saleout_daily`; reads `mds_data_mdt_sales_zone_ta_master` and dim_zone_mdt (listed in `dependencies`).
-- Approximate size (BigQuery metadata, 2026-10-31): 16 rows, 2.6 KB.
 
 # Examples
 

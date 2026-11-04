@@ -42,7 +42,6 @@ One row per (`CompanySK`, `debgroup`) where `debgroup = IFNULL(dim_customer.debg
 - Definition: `definitions/dimension/dim_group_customer.sqlx` (`type: "operations"`, tags `dimension_daily`); the operation owns this table.
 - Reads: [dimension_table.dim_customer](/dimension/dim_customer.md).
 - Refresh: MERGE with stable SK on `GroupCustomerSK` (new groups appended, existing updated; no delete) in a `type: "operations"` file, tag `dimension_daily`. Reads all of `dim_customer` each run (no date window), it runs after `dim_customer`. The target table pre-exists in BigQuery.
-- Approximate size (BigQuery metadata, 2026-10-31): 77,551 rows, 2.5 MB.
 
 # Examples
 

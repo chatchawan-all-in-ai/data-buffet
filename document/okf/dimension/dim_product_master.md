@@ -65,7 +65,6 @@ One row per (`CompanySK`, `ProductCode`, `Barcode`) (a missing barcode is matche
 - Definition: `definitions/dimension/dim_product_master.sqlx` (`type: "operations"`, tags `dimension_daily`); the operation owns this table.
 - Reads: [validated_mac5.stk](/validated/validated_mac5/stk.md), [validated_mac5.stg](/validated/validated_mac5/stg.md), [validated_mastersku.product](/validated/validated_mastersku/product.md), [validated_mastersku.product_detail](/validated/validated_mastersku/product_detail.md), [dimension_table.dim_stk_mkt](/dimension/dim_stk_mkt.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Refresh: MERGE with stable SK on the natural key (`ProductCode` + `Barcode` + `CompanySK`) in a `type: "operations"` file, tag `dimension_daily`; updates all attributes, inserts new products with `max_sk + ROW_NUMBER()`, no delete. Reads all of `stk` each run. Runs after `dim_company`, `dim_stk_mkt` and `dim_product_mkt`; target table pre-exists in BigQuery.
-- Approximate size (BigQuery metadata, 2026-10-31): 119,486 rows, 28.6 MB.
 
 # Examples
 

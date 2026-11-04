@@ -24,7 +24,7 @@ The Pub/Sub export view of the TA app table `org_units`: the units of [org_cente
 
 # Grain and key
 
-One unit of one company: key `company_id, id` (unique). `row_key` is the JSON of the natural key. Rows on 2026-11-02: 164.
+One unit of one company: key `company_id, id` (unique). `row_key` is the JSON of the natural key.
 
 # Schema
 

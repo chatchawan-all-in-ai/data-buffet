@@ -57,7 +57,6 @@ One row per (`target_date`, `branch_code`, `series_code`) (uniqueKey). Monthly t
 - Storage options: `{"partitionBy": "target_date", "clusterBy": ["store_code", "branch_sk", "series_sk"]}`.
 - Reads: [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_region_manager](/dimension/dim_region_manager.md), [dimension_table.dim_director](/dimension/dim_director.md), [dimension_table.dim_target_series_mdt](/dimension/dim_target_series_mdt.md), [dimension_table.dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md).
 - Refresh: full daily rebuild (`type: "table"`, tags `fact_daily` and `saleout_daily`, partition `target_date`, cluster `store_code, branch_sk, series_sk`), after `dim_target_series_mdt`, `dim_sales_branch_mdt`, `dim_region`, `dim_region_manager`, `dim_director`.
-- Approximate size (BigQuery metadata, 2026-10-31): 42,216 rows, 6.6 MB.
 
 # Examples
 

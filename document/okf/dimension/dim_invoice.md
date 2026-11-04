@@ -66,7 +66,6 @@ One row per (`CompanySK`, `mihYear`, `mihMonth`, `mihDay`, `mihVnos`, `mihCus`, 
 - Definition: `definitions/dimension/dim_invoice.sqlx` (`type: "operations"`, tags `dimension_daily`); the operation owns this table.
 - Reads: [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [validated_mac5.ar_s](/validated/validated_mac5/ar_s.md), [validated_mac5.ap_s](/validated/validated_mac5/ap_s.md), [validated_mac5.mih2](/validated/validated_mac5/mih2.md), [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_order](/dimension/dim_order.md), [validated_mac5.per](/validated/validated_mac5/per.md).
 - Refresh: MERGE with stable SK in a `type: "operations"` file, tag `dimension_daily`, matching on `InvoiceSK` found via (year, month, day, `mihVnos`, `mihCus`, `milLinkVcno`, `CompanySK`). Source rows are limited to curated_mih documents with `asatdate >= yesterday` (incremental window) and dated within the last 4 years (from 1 Jan); updates attributes, inserts new combos, no delete. Runs after `dim_company` and `dim_order`. The target table pre-exists in BigQuery.
-- Approximate size (BigQuery metadata, 2026-10-31): 1,685,454 rows, 1.1 GB.
 
 # Examples
 

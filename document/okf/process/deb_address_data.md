@@ -42,7 +42,6 @@ One row per `company_id` + `debcode` (the declared `uniqueKey`). Only customers 
 - Storage options: `{"clusterBy": ["company_id", "debcode"]}`.
 - Reads: [validated_mac5.deb](/validated/validated_mac5/deb.md), [cdc_dataset.cdc_change_log](/cdc/cdc_change_log.md).
 - Incremental MERGE on `uniqueKey` (`type: "incremental"`, tag `process`; clustered by company_id, debcode; partition commented out). It declares no dependencies but is functionally gated on `cdc_dataset.cdc_change_log`: the SELECT keeps only `deb` rows whose key appears in cdc_change_log for source mac5 / validated_mac5 / deb with `asatdate = CURRENT_DATE('Asia/Bangkok')`, so `cdc` (cdc_change_log) runs first on the same day.
-- Approximate size (BigQuery metadata, 2026-10-31): 7,188 rows, 6.9 MB.
 
 # Examples
 

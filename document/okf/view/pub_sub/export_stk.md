@@ -24,7 +24,7 @@ The Pub/Sub export view of commission set `stk` for the TF team (company ag01): 
 
 # Grain and key
 
-One ag01 product: key `company_source_id, stkcode` (unique). `row_key` is the JSON of that key. Rows on 2026-11-02: 85,168.
+One ag01 product: key `company_source_id, stkcode` (unique). `row_key` is the JSON of that key.
 
 # Schema
 

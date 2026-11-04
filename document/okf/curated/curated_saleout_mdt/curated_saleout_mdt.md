@@ -52,7 +52,6 @@ One row per `sale_date`, `store_code`, `branch_code`, `product_code`, `doc_type`
 - Storage options: `{"partitionBy": "sale_date", "clusterBy": ["store_code", "branch_code", "product_code"]}`.
 - Reads: [validated_saleout_mdt.saleout_hp](/validated/validated_saleout_mdt/saleout_hp.md), [validated_saleout_mdt.sale_by_branch_detail](/validated/validated_saleout_mdt/sale_by_branch_detail.md), [validated_saleout_mdt.detail_sales_daily](/validated/validated_saleout_mdt/detail_sales_daily.md), [validated_saleout_mdt.saleout_gb](/validated/validated_saleout_mdt/saleout_gb.md), [validated_saleout_mdt.report_sale_subscription](/validated/validated_saleout_mdt/report_sale_subscription.md), [validated_saleout_mdt.saleout_dh](/validated/validated_saleout_mdt/saleout_dh.md), `validated_saleout_mdt.saleout_lastyear`.
 - Incremental MERGE on `uniqueKey` (tags `curated`, `curated_incremental`, `saleout_daily`; depends on `curated_schema_saleout`). `pre_operations` builds a TEMP table from every chain CTE and, on incremental runs, DELETEs all existing rows of each (store_code, sale_date) present in it before the merge, so changed documents (e.g. SALE turned into RETURN) leave no stale rows. Only HP filters `asatdate` by `BACKFILL_DAYS`; the other chains read their validated tables in full every run. Partitioned by `sale_date`, clustered by store_code, branch_code, product_code.
-- Approximate size (BigQuery metadata, 2026-10-31): 455,531 rows, 89.8 MB.
 
 # Examples
 

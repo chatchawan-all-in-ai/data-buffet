@@ -46,7 +46,6 @@ One row per `month_date` (first day of the period), `branch_code` (Thai branch n
 - Storage options: `{"partitionBy": "month_date", "clusterBy": ["branch_code", "product_code"]}`.
 - Reads: [raw_saleout_mdt.eom_bt_sale_by_branch_detail](/initial/raw_saleout_mdt/eom_bt_sale_by_branch_detail.md).
 - Full rebuild each run (`type: "table"`, tags `curated`, `curated_full`, `saleout_daily`; depends on `curated_schema_saleout` and `create_all_table_raw_saleout_mdt`); partitioned by `month_date`, clustered by branch_code, product_code. Reads the raw external table directly (no validated table).
-- Approximate size (BigQuery metadata, 2026-10-31): 279 rows, 36.7 KB.
 
 # Examples
 

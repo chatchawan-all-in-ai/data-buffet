@@ -44,7 +44,6 @@ One row per (company, AccountCategory, Code) among active mds rows. No SK and no
 - Storage options: `{"clusterBy": ["AccountCategory", "Code"]}`.
 - Reads: `mds_dataset.mds_data_document_type_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`), plain SELECT from active mds rows with no SK; clustered by `AccountCategory, Code` to match the existing table (CREATE OR REPLACE requires the same clustering spec). Runs after dim_company.
-- Approximate size (BigQuery metadata, 2026-10-31): 21 rows, 2.4 KB.
 
 # Examples
 

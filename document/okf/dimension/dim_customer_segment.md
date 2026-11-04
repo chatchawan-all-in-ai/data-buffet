@@ -48,7 +48,6 @@ One row per (company, Segment3) among active mds rows, plus exactly one sentinel
 - Storage options: `{"clusterBy": ["CustomerSegmentSK"]}`.
 - Reads: `mds_dataset.mds_data_customer_segment_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`): CTE `segment_master` from active mds rows UNION ALL the literal `non_segment` row (SK -1). Runs after dim_company.
-- Approximate size (BigQuery metadata, 2026-10-31): 11 rows, 2.1 KB.
 
 # Examples
 

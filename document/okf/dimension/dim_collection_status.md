@@ -49,7 +49,6 @@ One row per active mds record, intended as (company, Year, Month, CustomerID). K
 - Storage options: `{"clusterBy": ["CollectSK"]}`.
 - Reads: `mds_dataset.mds_data_collection_status_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows; runs after dim_company. Stored-SK consumers `fact_mir_vs`/`fact_mir_rs` are daily full rebuilds, which keeps the regenerating SK consistent.
-- Approximate size (BigQuery metadata, 2026-10-31): 538 rows, 138.4 KB.
 
 # Examples
 

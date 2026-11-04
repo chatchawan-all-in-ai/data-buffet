@@ -54,7 +54,6 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 - Reads: [raw_mac5_ag01.tempgpsweb](/initial/raw_mac5_ag01/tempgpsweb.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Storage: partition by `(none)`, cluster by `company_id`.
-- Approximate size (BigQuery metadata, 2026-10-31): 522 rows, 103.8 KB.
 
 # Examples
 
