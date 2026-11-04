@@ -7,8 +7,7 @@ Contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
                          table whether a new Dataform run requires a send, advances the checkpoint
                          of tables with nothing to export, and starts the send job when needed
                          (never while an execution of it is still running).
-  python main.py send    N tasks in parallel: every task takes the next group (task_group, in the
-                         order of includes/controller/mart-export-config.json) that is not held by another task, and sends that group's tables one after another:
+  python main.py send    N tasks in parallel, scheduling groups under the contract linked above:
                          claim -> recover from the record subscription if the previous run died ->
                          diff into a staging table -> Storage Read API -> publish batches of 1,000
                          -> record into mart_sent_state -> release.
@@ -21,6 +20,7 @@ Logs are JSON lines on stdout (Cloud Logging reads them).
 """
 import json
 import os
+import random
 import re
 import sys
 import threading
@@ -52,6 +52,7 @@ MAX_OUTSTANDING = 20000             # unfinished messages before publishing wait
 RECORD_EVERY_ROWS = 1_000_000       # mart_sent_state is updated every this many sent rows
 RECOVERY_WAIT_SECONDS = 600         # backlog of the record subscription must reach 0 within this
 DATAFORM_CACHE_SECONDS = 60
+CONCURRENT_ATTEMPTS = 6             # tries of a statement aborted by concurrent DML on a shared table
 
 START = time.monotonic()
 
@@ -78,6 +79,19 @@ def cleanup_deadline():
 
 def record_deadline():
     return cleanup_deadline() - 60
+
+
+def retry_concurrent(call, deadline=None):
+    """Runs call(); a statement aborted by concurrent DML on a shared table is retried after a short
+    random backoff, with at most CONCURRENT_ATTEMPTS attempts within the caller's deadline."""
+    for attempt in range(1, CONCURRENT_ATTEMPTS + 1):
+        try:
+            return call()
+        except Exception as e:
+            text = str(e).lower()
+            if attempt == CONCURRENT_ATTEMPTS or not ("concurrent update" in text or "could not serialize" in text):
+                raise
+            time.sleep(min(random.uniform(1, 1 + 2 * attempt), remaining(deadline)))
 
 
 def now_utc():
@@ -173,7 +187,8 @@ class Context:
         return job
 
     def dml(self, sql, params, deadline=None):
-        return int(self.query(sql, params, deadline).num_dml_affected_rows or 0)
+        return retry_concurrent(
+            lambda: int(self.query(sql, params, deadline).num_dml_affected_rows or 0), deadline)
 
     def read_config(self):
         job = self.query(f"""
@@ -447,14 +462,7 @@ def merge_sent_state(ctx, table_name, invocation_id, source_table, deadline=None
     from google.cloud import bigquery as bq
     params = [bq.ScalarQueryParameter("table_name", "STRING", table_name),
               bq.ScalarQueryParameter("invocation_id", "STRING", invocation_id)]
-    for attempt in range(1, 6):
-        try:
-            ctx.query(MERGE_SQL.format(source=source_table), params, deadline=deadline)
-            return
-        except Exception as e:  # concurrent DML on the shared table is queued, rarely aborted
-            if attempt == 5 or "concurrent" not in str(e).lower():
-                raise
-            time.sleep(min(attempt * 5, remaining(deadline)))
+    retry_concurrent(lambda: ctx.query(MERGE_SQL.format(source=source_table), params, deadline=deadline), deadline)
 
 
 def record_rows(ctx, table_name, invocation_id, rows, tag):
@@ -738,8 +746,8 @@ def send_main():
             groups = ordered_groups(ctx.read_config(), order)
             pick = None
             for group, members in groups.items():
-                if group in handled:
-                    continue
+                if group in handled or all(r["seeded_at"] is None for r in members):
+                    continue                           # nothing to send: not claimed, not released
                 claim = claim_group(ctx, group)
                 if claim is not None:
                     pick = group, claim
@@ -766,7 +774,11 @@ def send_main():
                         failed.append(f"{row['table_name']}: {type(e).__name__}: {e}")
                         log("ERROR", "table failed", table=row["table_name"], error=str(e))
             finally:
-                release_group(ctx, group, group_claim)
+                try:
+                    release_group(ctx, group, group_claim)
+                except Exception as e:                 # claim expiry allows later tasks to reclaim the group
+                    log("WARNING", "group release failed, the claim expires by itself", group=group,
+                        error=str(e))
     except Exception as e:
         failed.append(f"send task: {type(e).__name__}: {e}")
         log("ERROR", "send task failed", error=str(e))

@@ -257,14 +257,18 @@ and validation are described in the [config reference](../../okf/process/mart_ex
    A failure posts to Slack (webhook in Secret Manager secret `slack-datamart-dataform`).
 
 **Send job** (`main.py send`, 5 tasks in parallel, 2 vCPU / 4 GiB each, task timeout 30 minutes,
-no retries, service account `datamart-publisher`). Tables are grouped by `task_group`; the order
+no task retries, service account `datamart-publisher`). Tables are grouped by `task_group`; the order
 of the groups is the order of the first entry of each group in `mart-export-config.json`, with
 the five large ones (`fact_order`, `fact_transaction_delivery`, `fact_delivery`, `fact_quotation`,
-`target`) at the top. Every task takes the next group, in that order, that still has a table to
-send and works through its tables one after another, then takes the next group, until none is
-left. The task atomically sets `group_claimed_at` on every row in the group only if no
+`target`) at the top. Every task takes the next group, in that order, that has at least one seeded
+table (a group whose tables are all unseeded is never claimed) and works through its tables
+one after another, then takes the next group, until none is left. The task atomically sets
+`group_claimed_at` on every row in the group only if no
 member has a live group or table claim; competing tasks skip that group. It releases the group
 after processing its members, and a crashed task's group claim expires after 35 minutes.
+Every DML on `mart_export_config` (and the `mart_sent_state` MERGE) is retried a bounded number of
+times with a short random backoff when BigQuery aborts it for a concurrent update. A group release
+that still fails is logged as a warning and does not fail the task; the claim expires by itself.
 The JSON must supply every table and its required group; missing or mismatched entries fail
 clearly without alternate ordering. Per table:
 
