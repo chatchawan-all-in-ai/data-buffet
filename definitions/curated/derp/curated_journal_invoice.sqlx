@@ -16,7 +16,9 @@ WITH header AS (
         is_posted,
         posted_datetime,
         -- ตัวอักษรนำหน้าเป็นส่วนของเลขเอกสาร (K6910000328 ≠ 6910000328) ห้ามตัดเหลือแต่ตัวเลข
-        REGEXP_EXTRACT(description, r'^\s*((?:[A-Za-z]+(?:-[A-Za-z]+)?)?\d{6,})') AS doc_no
+        -- ยอมเฉพาะคำนำหน้าที่รู้จัก ไม่หาเลขทั้งข้อความ เพราะจะไปติดเบอร์โทรหรือเลข PO แทน
+        REGEXP_EXTRACT(description, r'^\s*(?:รับคืน|อ้างอิงใบจ่าย|ใบจ่ายขายจาก(?:\s*MAC-5)?)?\s*((?:[A-Za-z]+(?:-[A-Za-z]+)?)?\d{6,})') AS doc_no,
+        REGEXP_EXTRACT(description, r'^\s*(รับคืน|อ้างอิงใบจ่าย|ใบจ่ายขายจาก)') AS doc_prefix
     FROM ${ref(databuffet.VALIDATED_DERP, "inventory_movement_journal_headers")}
     WHERE journal_name_id = 'IM-MAC-01'
 ),
@@ -48,6 +50,8 @@ SELECT
         WHEN header.doc_no IS NULL THEN 'NO_DOC_NO'
         WHEN invoice.mihVnos IS NULL THEN 'NOT_IN_MAC5'
         WHEN invoice.doc_count > 1 THEN 'AMBIGUOUS'
+        -- รับคืนอ้างใบขายเดิม แยกไว้ไม่ให้ไปหักต้นทุนใบนั้น (ยอดขายใบเดิมยังเต็ม)
+        WHEN header.doc_prefix = 'รับคืน' THEN 'RETURN'
         ELSE 'MATCHED'
     END AS matchStatus,
     IF(invoice.doc_count = 1, invoice.company_id, NULL) AS company_id,
