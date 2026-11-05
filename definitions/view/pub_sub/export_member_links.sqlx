@@ -4,7 +4,7 @@ config {
     dependencies: ["pub_sub_schema", "org_center_link"],
     // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
     tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
-    description: "Pub/Sub export of the TA app table member_links: one row = one PC to TA link at one branch and start date; columns of the 2026-11-02 org sample plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+    description: "Pub/Sub export of the TA app table member_links: one row = one PC to TA department link at one branch and start date; columns of the 2026-11-02 org sample plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
 }
 
 js {
@@ -16,8 +16,8 @@ js {
 --   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
 --   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
 --   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
--- Natural key = company_id, link_type, from_membership_id, to_membership_id, site_id, valid_from.
--- from = the PC's EmployeeID, to = the TA's EmployeeID, site_id = branch code. org_center_link.valid_to
+-- Natural key = company_id, link_type, from_membership_id, department_id, site_id, valid_from.
+-- from = the PC's EmployeeID, department_id = the TA department (the TA position) the PC is linked to (NULL when not yet known), site_id = branch code. org_center_link.valid_to
 -- already is the first day after the link, so only 2066-12-31 -> NULL applies here.
 -- scope_unit_id and source_row_id have no source and stay NULL; pc_type / branch_type are not exported.
 WITH link AS (
@@ -25,7 +25,7 @@ WITH link AS (
     company_id,
     link_type,
     pc_employee_id AS from_membership_id,
-    ta_employee_id AS to_membership_id,
+    department_id,
     branch_code AS site_id,
     CAST(NULL AS STRING) AS scope_unit_id,
     valid_from,
@@ -36,6 +36,6 @@ WITH link AS (
 )
 SELECT
   l.*,
-  TO_JSON_STRING(STRUCT(l.company_id, l.link_type, l.from_membership_id, l.to_membership_id, l.site_id, l.valid_from)) AS row_key,
+  TO_JSON_STRING(STRUCT(l.company_id, l.link_type, l.from_membership_id, l.department_id, l.site_id, l.valid_from)) AS row_key,
   FARM_FINGERPRINT(TO_JSON_STRING(l)) AS row_hash
 FROM link AS l

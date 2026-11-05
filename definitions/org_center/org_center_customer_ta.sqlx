@@ -5,7 +5,7 @@ config {
                     "org_center_schema"
                   ],
     tags: [databuffet.TAG_DIM_DAILY],
-    uniqueKey: ["company_id", "customer_code", "ta_employee_id", "valid_from"],
+    uniqueKey: ["company_id", "customer_code", "department_id", "valid_from"],
     bigquery: {
         clusterBy: ["company_id", "customer_code"]
     },
@@ -20,12 +20,13 @@ js {
     const MdsDataCustomerTaTableRef = `${MdsDataCustomerTaTable.database}.${MdsDataCustomerTaTable.schema}.${MdsDataCustomerTaTable.name}`;
 }
 
--- 1 แถว = ลูกค้า 1 ราย อยู่ใน portfolio ของ TA 1 คน ในช่วงวันที่หนึ่ง · ค่าจาก MDS (active เท่านั้น)
+-- 1 แถว = ลูกค้า 1 ราย อยู่ใน portfolio ของ department (ตำแหน่ง TA) 1 แห่ง ในช่วงวันที่หนึ่ง · ค่าจาก MDS (active เท่านั้น)
+-- DepartmentID ว่างได้ = department_id NULL (ยังหา department ไม่ได้) · แถวยังอยู่ แต่ไม่ให้สิทธิ์ใน rls_ta_customer และ org_center_flags รายงาน
 -- valid_to = EndDate ของ MDS (วันแรกที่ไม่รับผิดชอบแล้ว) · EndDate ว่าง = 2066-12-31 เหมือนตารางอื่นใน org center
 SELECT
   ${databuffet.functionData.cleanString("companyID")} AS company_id,
   ${databuffet.functionData.cleanString("CustomerCode")} AS customer_code,
-  ${databuffet.functionData.cleanString("TAEmployeeID")} AS ta_employee_id,
+  ${databuffet.functionData.cleanString("DepartmentID")} AS department_id,
   SharePercent AS share_percent,
   StartDate AS valid_from,
   IFNULL(EndDate, DATE '2066-12-31') AS valid_to,

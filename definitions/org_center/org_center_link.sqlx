@@ -28,7 +28,8 @@ js {
 
 }
 
--- 1 แถว = PC 1 คน ผูกกับ TA ที่ 1 สาขา ในช่วงวันที่หนึ่ง · ค่าจาก MDS เก็บตามที่กรอก (ไม่ trim ไม่แก้รหัส)
+-- 1 แถว = PC 1 คน ผูกกับ department (ตำแหน่ง TA) ที่ 1 สาขา ในช่วงวันที่หนึ่ง · ค่าจาก MDS เก็บตามที่กรอก (ไม่ trim ไม่แก้รหัส)
+-- DepartmentID ว่างได้ (ยังหา department ไม่ได้) = department_id NULL · แถวยังอยู่ใน link แต่ไม่มีที่นั่ง TA และ org_center_flags รายงาน
 -- valid_to = EndDate ของ MDS (วันแรกที่ไม่รับผิดชอบแล้ว) · EndDate ว่าง = 2066-12-31 เหมือนตารางอื่นใน org center
 WITH pc_type AS (
   -- employee_type ว่าง = PC_MDT · 'พันธมิตร' = PC_AGENT · ค่าอื่นหรือไม่มีใน PC master = NULL
@@ -50,7 +51,7 @@ WITH pc_type AS (
     ty.pc_type AS pc_type,
     pt.BranchCode AS branch_code,
     pt.BranchType AS branch_type,
-    pt.TAEmployeeID AS ta_employee_id,
+    NULLIF(pt.DepartmentID, '') AS department_id,
     pt.StartDate AS valid_from,
     IFNULL(pt.EndDate, DATE '2066-12-31') AS valid_to
   FROM `${MdsDataPcTaTableRef}` AS pt

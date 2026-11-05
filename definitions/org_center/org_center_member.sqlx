@@ -36,13 +36,6 @@ js {
     };
     const MdsDataMdtSalesPcMasterTableRef = `${MdsDataMdtSalesPcMasterTable.database}.${MdsDataMdtSalesPcMasterTable.schema}.${MdsDataMdtSalesPcMasterTable.name}`;
 
-    const MdsDataMdtSalesBranchMasterTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_mdt_sales_branch_master",
-    };
-    const MdsDataMdtSalesBranchMasterTableRef = `${MdsDataMdtSalesBranchMasterTable.database}.${MdsDataMdtSalesBranchMasterTable.schema}.${MdsDataMdtSalesBranchMasterTable.name}`;
-
     const MdsDataCompanyMasterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
@@ -219,59 +212,37 @@ WITH emp_email AS (
   WHERE is_active = TRUE
   QUALIFY ROW_NUMBER() OVER (PARTITION BY employee_id ORDER BY end_date DESC, start_date DESC, updated_at DESC, id) = 1
 
+), ta_dept AS (
+  -- ที่นั่ง TA ต่อ department (1 department = 1 ส่วน) · TA หลายคนใน department เดียวกันได้ทุกคน
+  SELECT DISTINCT
+    company_id,
+    department_id,
+    unit_id,
+    StartDate AS valid_from,
+    EndDate AS valid_to
+  FROM ta_base
+
 ), pc_ov AS (
-  -- PC อยู่ส่วนเดียวกับ TA ของตัวเอง ในช่วงที่ซ้อนกับช่วงของ link (valid_to ของ link ไม่รวมวันนั้น, 2066-12-31 = ไม่มีวันสิ้นสุด)
+  -- PC อยู่ส่วนของ department ที่ link ชี้ ในช่วงที่ซ้อนกับที่นั่ง TA ของ department นั้น (valid_to ของ link ไม่รวมวันนั้น, 2066-12-31 = ไม่มีวันสิ้นสุด)
+  -- link ที่ department_id ว่าง = ไม่มีแถว member (ยังอยู่ใน link และ org_center_flags รายงาน)
   SELECT
     l.company_id,
     l.pc_employee_id AS employee_id,
     l.pc_type AS position_code,
-    l.branch_code,
-    ta.unit_id,
-    ta.department_id,
-    GREATEST(l.valid_from, ta.valid_from) AS valid_from,
-    LEAST(IF(l.valid_to = DATE '2066-12-31', l.valid_to, DATE_SUB(l.valid_to, INTERVAL 1 DAY)), ta.valid_to) AS valid_to,
-    COUNT(*) OVER (PARTITION BY l.company_id, l.pc_employee_id, l.branch_type, l.branch_code, l.valid_from) AS ta_unit_count
+    d.unit_id,
+    GREATEST(l.valid_from, d.valid_from) AS valid_from,
+    LEAST(IF(l.valid_to = DATE '2066-12-31', l.valid_to, DATE_SUB(l.valid_to, INTERVAL 1 DAY)), d.valid_to) AS valid_to
   FROM `${OrgCenterLinkTableRef}` AS l
-  JOIN ta
-    ON l.company_id = ta.company_id
-   AND l.ta_employee_id = ta.employee_id
-   AND GREATEST(l.valid_from, ta.valid_from) <= LEAST(IF(l.valid_to = DATE '2066-12-31', l.valid_to, DATE_SUB(l.valid_to, INTERVAL 1 DAY)), ta.valid_to)
+  JOIN ta_dept AS d
+    ON l.company_id = d.company_id
+   AND l.department_id = d.department_id
+   AND GREATEST(l.valid_from, d.valid_from) <= LEAST(IF(l.valid_to = DATE '2066-12-31', l.valid_to, DATE_SUB(l.valid_to, INTERVAL 1 DAY)), d.valid_to)
   WHERE l.pc_type IS NOT NULL
     AND l.pc_employee_id IS NOT NULL
 
-), pc_zone AS (
-  SELECT DISTINCT
-    o.company_id,
-    o.employee_id,
-    o.branch_code,
-    o.unit_id,
-    o.valid_from,
-    o.valid_to
-  FROM pc_ov AS o
-  JOIN `${MdsDataMdtSalesBranchMasterTableRef}` AS br
-    ON br.is_active = TRUE
-   AND br.branch_code = o.branch_code
-  CROSS JOIN UNNEST(o.department_id) AS dept
-  WHERE br.zone_id IN UNNEST(SPLIT(dept, '_'))
-
-), pc_link AS (
-  -- TA อยู่ส่วนเดียว = ใช้ส่วนนั้น · TA อยู่หลายส่วน = เก็บส่วนที่ department_id มี segment (แยกด้วย _) เท่ากับ zone_id ของสาขา PC
-  -- ใน mds_data_mdt_sales_branch_master เป๊ะ · ไม่ตรงส่วนไหน = ไม่มีแถว member (ยังอยู่ใน link)
-  SELECT o.*
-  FROM pc_ov AS o
-  LEFT JOIN pc_zone AS z
-    ON o.company_id = z.company_id
-   AND o.employee_id = z.employee_id
-   AND o.branch_code = z.branch_code
-   AND o.unit_id = z.unit_id
-   AND o.valid_from = z.valid_from
-   AND o.valid_to = z.valid_to
-  WHERE o.ta_unit_count = 1
-    OR z.unit_id IS NOT NULL
-
 ), pc_ranges AS (
   SELECT DISTINCT company_id, employee_id, position_code, unit_id, valid_from, valid_to
-  FROM pc_link
+  FROM pc_ov
 
 ), pc_previous AS (
   SELECT

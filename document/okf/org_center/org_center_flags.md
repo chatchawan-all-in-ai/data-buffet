@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "org_center_flags"
-description: "One row = one data-quality problem found in the org-center tables (unit, member, person, link or exception)."
+description: "One row = one data-quality problem found in the org-center tables (unit, member, person, link, customer portfolio or exception)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=org_center&t=org_center_flags&page=table"
 project_id: databuffet-nonprd
 dataset_id: org_center
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-Report-only data-quality table of the org center, rebuilt nightly: it lists problems found in [org_center_unit](/org_center/org_center_unit.md), [org_center_member](/org_center/org_center_member.md), [org_center_person](/org_center/org_center_person.md), [org_center_link](/org_center/org_center_link.md) and [org_center_exception](/org_center/org_center_exception.md) (input = output; nothing is fixed or hidden in those tables). The rules follow the Check sheet of Org_Mock_Master_Plan_v4.xlsx.
+Report-only data-quality table of the org center, rebuilt nightly: it lists problems found in [org_center_unit](/org_center/org_center_unit.md), [org_center_member](/org_center/org_center_member.md), [org_center_person](/org_center/org_center_person.md), [org_center_link](/org_center/org_center_link.md), [org_center_customer_ta](/org_center/org_center_customer_ta.md) and [org_center_exception](/org_center/org_center_exception.md) (input = output; nothing is fixed or hidden in those tables). The rules follow the Check sheet of Org_Mock_Master_Plan_v4.xlsx.
 
 # Grain and key
 
@@ -40,8 +40,8 @@ One row per problem: `entity` + `entity_key` + `rule_code`. No declared key. The
 
 - Definition: `definitions/org_center/org_center_flags.sqlx` (`type: "table"`, tags `dimension_daily`).
 - Storage options: `{"clusterBy": ["rule_code", "entity"]}`.
-- Reads: [org_center.org_center_unit](/org_center/org_center_unit.md), [org_center.org_center_member](/org_center/org_center_member.md), [org_center.org_center_person](/org_center/org_center_person.md), [org_center.org_center_link](/org_center/org_center_link.md), [org_center.org_center_exception](/org_center/org_center_exception.md), `mds_dataset.mds_data_mdt_sales_pc_master` (master data loaded outside this repo), `mds_dataset.mds_data_mdt_sales_branch_master` (master data loaded outside this repo), `mds_dataset.mds_data_company_master` (master data loaded outside this repo).
-- Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Depends on the five other org_center tables; also reads mds_data_mdt_sales_pc_master and mds_data_mdt_sales_branch_master (master data loaded outside this repo).
+- Reads: [org_center.org_center_unit](/org_center/org_center_unit.md), [org_center.org_center_member](/org_center/org_center_member.md), [org_center.org_center_person](/org_center/org_center_person.md), [org_center.org_center_link](/org_center/org_center_link.md), [org_center.org_center_customer_ta](/org_center/org_center_customer_ta.md), [org_center.org_center_exception](/org_center/org_center_exception.md), `mds_dataset.mds_data_mdt_sales_pc_master` (master data loaded outside this repo), `mds_dataset.mds_data_mdt_sales_branch_master` (master data loaded outside this repo), `mds_dataset.mds_data_company_master` (master data loaded outside this repo).
+- Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Depends on the six other org_center tables; also reads mds_data_mdt_sales_pc_master and mds_data_mdt_sales_branch_master (master data loaded outside this repo).
 
 # Examples
 

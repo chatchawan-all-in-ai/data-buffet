@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-05 (TA department binding)
+
+* **Update**: Revised the [customer portfolio](org_center/org_center_customer_ta.md), [PC assignment](org_center/org_center_link.md), [membership](org_center/org_center_member.md), [flags](org_center/org_center_flags.md), [customer access](process/rls_ta_customer.md), [customer assignment export](view/pub_sub/export_customer_ta_assignments.md) and [PC link export](view/pub_sub/export_member_links.md) contracts.
+
 ## 2026-11-03 (org center field changes)
 * **Update**: `org_center_person` card: new column `line_uuid` (MDS EMPLOYEE_INFO LineUUID); `company_ids` -> `company_id`, `position_codes` -> `position_code`.
 * **Update**: `org_center_member` card: `department_ids` -> `department_id`; column `company_name` dropped. `org_center_link` card: column `company_name` dropped.

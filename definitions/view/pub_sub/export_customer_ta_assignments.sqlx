@@ -1,15 +1,14 @@
 config {
     type: "view",
     schema: databuffet.PUB_SUB,
-    dependencies: ["pub_sub_schema", "org_center_customer_ta", "org_center_member"],
+    dependencies: ["pub_sub_schema", "org_center_customer_ta"],
     // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
     tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
-    description: "Pub/Sub export of the TA app table customer_ta_assignments: one row = one customer in the portfolio of one TA for a period, with the customer company and the company of the TA membership it points to; columns of the 2026-11-02 org sample plus membership_company_id, row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+    description: "Pub/Sub export of the TA app table customer_ta_assignments: one row = one customer in the portfolio of one TA department for a period, with the customer company also used as the department membership company; columns of the 2026-11-02 org sample (membership_id renamed department_id) plus membership_company_id, row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
 }
 
 js {
     const OrgCenterCustomerTaTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_customer_ta`;
-    const OrgCenterMemberTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_member`;
 }
 
 -- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
@@ -17,44 +16,24 @@ js {
 --   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
 --   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
 --   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
--- Natural key = company_id, customer_id, membership_id, valid_from.
--- company_id = the customer's company; membership_id = the TA's EmployeeID; membership_company_id = the company
--- of the membership that TA already has (captain decision 2026-11-02): the customer's company when the TA has
--- a membership there, else the company of the TA seat (TA position first, then company_id). org_center_customer_ta.valid_to
--- is the first day after the assignment, so only 2066-12-31 -> NULL applies. source_row_id = MDS id.
-WITH ta_membership AS (
-  SELECT DISTINCT employee_id, company_id, position_code = 'TA' AS is_ta
-  FROM `${OrgCenterMemberTableRef}`
-
-), ta_company AS (
-  -- one fallback company per TA: a company where the person sits as TA first, then the lowest company_id
-  SELECT employee_id, ARRAY_AGG(company_id ORDER BY is_ta DESC, company_id LIMIT 1)[OFFSET(0)] AS company_id
-  FROM (
-    SELECT employee_id, company_id, LOGICAL_OR(is_ta) AS is_ta
-    FROM ta_membership
-    GROUP BY employee_id, company_id
-  )
-  GROUP BY employee_id
-
-), assignment AS (
+-- Natural key = company_id, customer_id, department_id, valid_from.
+-- company_id = the customer's company; department_id = the TA department (the TA position) that owns the customer
+-- (NULL when not yet known; it is part of the key, so an empty value is its own key bucket).
+-- org_center_customer_ta.valid_to is the first day after the assignment, so only 2066-12-31 -> NULL applies. source_row_id = MDS id.
+WITH assignment AS (
   SELECT
     c.company_id,
     c.customer_code AS customer_id,
-    c.ta_employee_id AS membership_id,
+    c.department_id,
     c.share_percent,
     c.valid_from,
     IF(c.valid_to >= DATE '2066-12-31', CAST(NULL AS DATE), c.valid_to) AS valid_to,
     c.source_row_id,
-    IF(own.employee_id IS NOT NULL, c.company_id, fb.company_id) AS membership_company_id
+    IF(c.department_id IS NULL, CAST(NULL AS STRING), c.company_id) AS membership_company_id
   FROM `${OrgCenterCustomerTaTableRef}` AS c
-  LEFT JOIN (SELECT DISTINCT employee_id, company_id FROM ta_membership) AS own
-    ON c.ta_employee_id = own.employee_id
-   AND c.company_id = own.company_id
-  LEFT JOIN ta_company AS fb
-    ON c.ta_employee_id = fb.employee_id
 )
 SELECT
   a.*,
-  TO_JSON_STRING(STRUCT(a.company_id, a.customer_id, a.membership_id, a.valid_from)) AS row_key,
+  TO_JSON_STRING(STRUCT(a.company_id, a.customer_id, a.department_id, a.valid_from)) AS row_key,
   FARM_FINGERPRINT(TO_JSON_STRING(a)) AS row_hash
 FROM assignment AS a

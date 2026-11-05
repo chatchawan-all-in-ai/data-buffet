@@ -3,7 +3,7 @@ config {
     schema: databuffet.ORG_CENTER,
     dependencies: [
                     "org_center_schema",
-                    "org_center_unit", "org_center_member", "org_center_person", "org_center_link", "org_center_exception"
+                    "org_center_unit", "org_center_member", "org_center_person", "org_center_link", "org_center_customer_ta", "org_center_exception"
                   ],
     tags: [databuffet.TAG_DIM_DAILY],
     bigquery: {
@@ -39,6 +39,13 @@ js {
         name: "org_center_link",
     };
     const OrgCenterLinkTableRef = `${OrgCenterLinkTable.database}.${OrgCenterLinkTable.schema}.${OrgCenterLinkTable.name}`;
+
+    const OrgCenterCustomerTaTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.ORG_CENTER,
+        name: "org_center_customer_ta",
+    };
+    const OrgCenterCustomerTaTableRef = `${OrgCenterCustomerTaTable.database}.${OrgCenterCustomerTaTable.schema}.${OrgCenterCustomerTaTable.name}`;
 
     const OrgCenterExceptionTable = {
         database: databuffet.DATABASE,
@@ -177,18 +184,48 @@ WITH today AS (
       AND pc.employee_id = l.pc_employee_id
   )
 
-), link_ta AS (
+), link_department AS (
+  -- department_id ที่มีค่า แต่ไม่มีที่นั่ง TA ของ department นั้นในบริษัทเดียวกันใน org_center_member
   SELECT l.company_id, 'LINK' AS entity,
          TO_JSON_STRING([l.company_id, l.pc_employee_id, l.branch_type, l.branch_code, CAST(l.valid_from AS STRING)]) AS entity_key,
-         'PC_TA_UNKNOWN_TA' AS rule_code, 'TA ใน mds_data_ta_pc ไม่มีตำแหน่ง TA ของบริษัทเดียวกันใน org_center_member' AS rule_description
+         'UNKNOWN_DEPARTMENT' AS rule_code, 'department_id ใน mds_data_ta_pc ไม่มีที่นั่ง TA ของบริษัทเดียวกันใน org_center_member' AS rule_description
   FROM `${OrgCenterLinkTableRef}` AS l
-  WHERE NOT EXISTS (
-    SELECT 1
-    FROM `${OrgCenterMemberTableRef}` AS m
-    WHERE m.position_code = 'TA'
-      AND m.company_id = l.company_id
-      AND m.employee_id = l.ta_employee_id
-  )
+  WHERE l.department_id IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1
+      FROM `${OrgCenterMemberTableRef}` AS m
+      WHERE m.position_code = 'TA'
+        AND m.company_id = l.company_id
+        AND l.department_id IN UNNEST(m.department_id)
+    )
+
+), link_no_department AS (
+  SELECT l.company_id, 'LINK' AS entity,
+         TO_JSON_STRING([l.company_id, l.pc_employee_id, l.branch_type, l.branch_code, CAST(l.valid_from AS STRING)]) AS entity_key,
+         'NO_DEPARTMENT' AS rule_code, 'DepartmentID ว่างใน mds_data_ta_pc (ยังไม่มีที่นั่ง TA ให้ PC นี้)' AS rule_description
+  FROM `${OrgCenterLinkTableRef}` AS l
+  WHERE l.department_id IS NULL
+
+), customer_department AS (
+  SELECT c.company_id, 'CUSTOMER_TA' AS entity,
+         TO_JSON_STRING([c.company_id, c.customer_code, c.department_id, CAST(c.valid_from AS STRING)]) AS entity_key,
+         'UNKNOWN_DEPARTMENT' AS rule_code, 'department_id ใน mds_data_ta_customer ไม่มีที่นั่ง TA ของบริษัทเดียวกันใน org_center_member' AS rule_description
+  FROM `${OrgCenterCustomerTaTableRef}` AS c
+  WHERE c.department_id IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1
+      FROM `${OrgCenterMemberTableRef}` AS m
+      WHERE m.position_code = 'TA'
+        AND m.company_id = c.company_id
+        AND c.department_id IN UNNEST(m.department_id)
+    )
+
+), customer_no_department AS (
+  SELECT c.company_id, 'CUSTOMER_TA' AS entity,
+         TO_JSON_STRING([c.company_id, c.customer_code, c.department_id, CAST(c.valid_from AS STRING)]) AS entity_key,
+         'NO_DEPARTMENT' AS rule_code, 'DepartmentID ว่างใน mds_data_ta_customer (ลูกค้านี้ยังไม่ให้สิทธิ์ใคร)' AS rule_description
+  FROM `${OrgCenterCustomerTaTableRef}` AS c
+  WHERE c.department_id IS NULL
 
 ), link_branch AS (
   -- branch master มีเฉพาะสาขา MDT จึงตรวจเฉพาะ PC ของ MDT
@@ -205,10 +242,10 @@ WITH today AS (
     )
 
 ), link_overlap AS (
-  -- PC 1 คน + บริษัท + branch_type + สาขา ต้องมี TA หลัก 1 คนต่อวัน · valid_to ไม่รวมวันนั้น
+  -- PC 1 คน + บริษัท + branch_type + สาขา ต้องมี department หลัก 1 แห่งต่อวัน · valid_to ไม่รวมวันนั้น
   SELECT a.company_id, 'LINK' AS entity,
          TO_JSON_STRING([a.company_id, a.pc_employee_id, a.branch_type, a.branch_code, CAST(a.valid_from AS STRING)]) AS entity_key,
-         'PC_TA_OVERLAP' AS rule_code, 'ช่วงวันที่ซ้อนกับแถวอื่นของ PC + บริษัท + branch_type + สาขาเดียวกัน (ต้องมี TA หลัก 1 คนต่อวัน)' AS rule_description
+         'PC_TA_OVERLAP' AS rule_code, 'ช่วงวันที่ซ้อนกับแถวอื่นของ PC + บริษัท + branch_type + สาขาเดียวกัน (ต้องมี department หลัก 1 แห่งต่อวัน)' AS rule_description
   FROM `${OrgCenterLinkTableRef}` AS a
   WHERE EXISTS (
     SELECT 1
@@ -219,7 +256,7 @@ WITH today AS (
       AND a.branch_code IS NOT DISTINCT FROM b.branch_code
       AND a.valid_from < b.valid_to
       AND b.valid_from < a.valid_to
-      AND (a.valid_from, a.ta_employee_id) != (b.valid_from, b.ta_employee_id)
+      AND (a.valid_from != b.valid_from OR a.department_id IS DISTINCT FROM b.department_id)
   )
 
 ), exception_no_employee AS (
@@ -256,7 +293,10 @@ WITH today AS (
   UNION ALL SELECT * FROM unit_no_manager
   UNION ALL SELECT * FROM company_no_ceo
   UNION ALL SELECT * FROM link_pc
-  UNION ALL SELECT * FROM link_ta
+  UNION ALL SELECT * FROM link_department
+  UNION ALL SELECT * FROM link_no_department
+  UNION ALL SELECT * FROM customer_department
+  UNION ALL SELECT * FROM customer_no_department
   UNION ALL SELECT * FROM link_branch
   UNION ALL SELECT * FROM link_overlap
   UNION ALL SELECT * FROM exception_no_employee

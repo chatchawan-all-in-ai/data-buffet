@@ -88,14 +88,12 @@ See the [table card](../../okf/org_center/org_center_member.md#schema) for the a
 
 **PC rows** (`PC_MDT` / `PC_AGENT`, from `org_center_link`): position = the link's `pc_type`; names from
 `mds_data_mdt_sales_pc_master` (active rows; latest `end_date`, then `start_date`, then `updated_at`, then lowest `id`; no nickname).
-A link with NULL `pc_type` or NULL `pc_employee_id`, or no overlapping TA row, produces no PC member row.
-Unit = the unit of the linked TA's `TA` member row in the same
-company whose dates overlap the link period; dates = the overlap (link `valid_to` is exclusive, so one day
-earlier unless `2066-12-31`). If the TA has exactly one overlapping unit, the PC takes it. If the TA has more
-than one, only the unit whose `department_id` has a `_`-separated segment
-exactly equal to the `zone_id` of the PC's branch (`mds_data_mdt_sales_branch_master.branch_code`) is kept; no match =
-no member row (the link row stays). For each company + person + PC type + unit, overlapping or adjacent
-periods across branches and TAs merge into one contiguous interval. Disjoint periods stay in separate rows;
+A link with NULL `pc_type`, NULL `pc_employee_id` or NULL `department_id`, or a department with no overlapping TA seat, produces no PC member row.
+TA binding is by department (the TA position): the PC takes the unit of the TA seat of `link.department_id` in the same
+company (one department = one unit; any TA seated in that department gives the seat, so moving a TA changes nothing here);
+dates = the overlap of the link period and the seat (link `valid_to` is exclusive, so one day
+earlier unless `2066-12-31`). For each company + person + PC type + unit, overlapping or adjacent
+periods across branches and departments merge into one contiguous interval. Disjoint periods stay in separate rows;
 `valid_from` distinguishes those rows, so gaps do not make the person active in `org_center_person`.
 No phone number in member — it is in `org_center_person`.
 
@@ -168,8 +166,8 @@ LINE UUID (no check rule; see the [person schema](../../okf/org_center/org_cente
 | Column | Type | Meaning |
 |---|---|---|
 | `company_id` | STRING | NULL for person-level rules |
-| `entity` | STRING | `UNIT` / `MEMBER` / `PERSON` / `LINK` / `COMPANY` / `EXCEPTION` |
-| `entity_key` | STRING | JSON array of the entity's key components, preserving NULL as JSON null (company: company_id · unit: company, unit_id · member: its 5 key columns · person: employee_id · link: its 5 key columns · exception: source_row_id, company_code, marketing_group_id, sub_marketing_id, segment_id; dates are ISO strings) |
+| `entity` | STRING | `UNIT` / `MEMBER` / `PERSON` / `LINK` / `CUSTOMER_TA` / `COMPANY` / `EXCEPTION` |
+| `entity_key` | STRING | JSON array of the entity's key components, preserving NULL as JSON null (company: company_id · unit: company, unit_id · member: its 5 key columns · person: employee_id · link: its 5 key columns · customer_ta: company_id, customer_code, department_id, valid_from · exception: source_row_id, company_code, marketing_group_id, sub_marketing_id, segment_id; dates are ISO strings) |
 | `rule_code` | STRING | see below |
 | `rule_description` | STRING | Thai description |
 
@@ -182,9 +180,10 @@ LINE UUID (no check rule; see the [person schema](../../okf/org_center/org_cente
 | `UNIT_NO_MANAGER` | UNIT | DIVISION / REGION / SECTION valid today with no `DIRECTOR` / `REGION_MGR` / `SECTION_MGR` (by level) member valid today |
 | `COMPANY_NO_CEO` | COMPANY | an active company in `mds_data_company_master` has an empty cleaned `CEOEmpID` in its latest active row (`updated_at` descending, then lowest `id`); includes companies without divisions |
 | `PC_TA_UNKNOWN_PC` | LINK | `pc_employee_id` not in active `mds_data_mdt_sales_pc_master` |
-| `PC_TA_UNKNOWN_TA` | LINK | `ta_employee_id` has no `TA` member row in that company |
+| `UNKNOWN_DEPARTMENT` | LINK / CUSTOMER_TA | `department_id` is set but no `TA` member row of that company has it in `department_id` |
+| `NO_DEPARTMENT` | LINK / CUSTOMER_TA | `department_id` is empty (department not yet known): the PC gets no member row; the customer gives no access in `rls_ta_customer` |
 | `PC_TA_UNKNOWN_BRANCH` | LINK | `PC_MDT` link whose `branch_code` is not in active `mds_data_mdt_sales_branch_master` (the master is MDT only) |
-| `PC_TA_OVERLAP` | LINK | another row of the same company + PC + `branch_type` + `branch_code` overlaps in `[valid_from, valid_to)` with different TAs or start dates — one flag per affected link row, regardless of how many counterparts overlap |
+| `PC_TA_OVERLAP` | LINK | another row of the same company + PC + `branch_type` + `branch_code` overlaps in `[valid_from, valid_to)` with different departments or start dates — one flag per affected link row, regardless of how many counterparts overlap |
 | `EXCEPTION_NO_EMPLOYEE` | EXCEPTION | a row of `org_center_exception` has no `employee_id`; one flag per expanded company and product scope |
 | `PHONE_FORMAT` | PERSON | non-NULL `mobile_phone` matches neither `0xx-xxx-xxxx` nor `+66` followed by 1–2 digits, 3 digits, and 4 digits, with an optional space or hyphen between each group (including after `+66`) |
 | `PHONE_DUPLICATE` | PERSON | the same `mobile_phone` belongs to more than one person |
@@ -197,6 +196,7 @@ Added 2026-10-30 after MDS Company Master got optional CEO fields, following `Or
 
 ## Rules
 
+- **MDS cutover prerequisite:** do not merge this department-binding change before the MDS swap. TA_PC must provide optional DepartmentID with its existing key; TA_CUSTOMER must be recreated under the same name with key companyID + CustomerCode + optional DepartmentID + StartDate. TAEmployeeID is removed from both sources. Fast-forwarding `nonprod` and rebuilding require a separate go-ahead after the swap.
 - **Expired rows are kept.** Date derivation is described per table above; the consumer
   decides who is active. Placeholder managers from MDS (`Non Director`, `9999990`–
   `9999999` such as `HO`, `Online`, `Imboon`) are passed through too.

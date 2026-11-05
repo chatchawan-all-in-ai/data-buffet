@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "org_center_customer_ta"
-description: "One row = one customer in the portfolio of one TA for a date range, from the MDS customer-to-TA portfolio master."
+description: "One row = one customer in the portfolio of one TA department for a date range, from the MDS customer-to-TA portfolio master."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=org_center&t=org_center_customer_ta&page=table"
 project_id: databuffet-nonprd
 dataset_id: org_center
@@ -20,11 +20,11 @@ status: draft
 
 # What it is
 
-Customer portfolio of each TA: which customer (by company and customer code) a TA is responsible for, with the share of the customer and the date range. Rows mirror the active rows of the source listed under How it is built.
+Customer portfolio of each TA department: which customer (by company and customer code) a department (the TA position) is responsible for, with the share of the customer and the date range. Rows mirror the active rows of the source listed under How it is built.
 
 # Grain and key
 
-One row per `company_id` + `customer_code` + `ta_employee_id` + `valid_from` (the MDS key).
+One row per `company_id` + `customer_code` + `department_id` + `valid_from` (the MDS key). `department_id` may be NULL (department not yet known); an empty value is its own key bucket.
 
 # Schema
 
@@ -32,10 +32,10 @@ One row per `company_id` + `customer_code` + `ta_employee_id` + `valid_from` (th
 |---|---|---|
 | `company_id` | STRING | Company code (companyID), trimmed; empty becomes NULL. |
 | `customer_code` | STRING | Customer code (CustomerCode), trimmed; empty becomes NULL. |
-| `ta_employee_id` | STRING | TA employee code (TAEmployeeID) responsible for the customer, trimmed; empty becomes NULL. |
-| `share_percent` | FLOAT64 | Share of the customer assigned to the TA (SharePercent). |
+| `department_id` | STRING | TA department (DepartmentID) responsible for the customer, trimmed; empty becomes NULL. |
+| `share_percent` | FLOAT64 | Share of the customer assigned to the department (SharePercent). |
 | `valid_from` | DATE | StartDate of the assignment. |
-| `valid_to` | DATE | EndDate of the assignment, EXCLUSIVE (the first day the TA is no longer responsible); empty EndDate becomes 2066-12-31. |
+| `valid_to` | DATE | EndDate of the assignment, EXCLUSIVE (the first day the department is no longer responsible); empty EndDate becomes 2066-12-31. |
 | `customer_name` | STRING | Customer name as entered in MDS (CustomerName), trimmed; empty becomes NULL. |
 | `source_row_id` | STRING | `id` of the MDS row, for tracing back to the portfolio source. |
 
@@ -49,12 +49,12 @@ One row per `company_id` + `customer_code` + `ta_employee_id` + `valid_from` (th
 
 # Examples
 
-Current customers of one TA.
+Current customers of one TA department.
 
 ```sql
 SELECT customer_code, customer_name, share_percent, valid_from, valid_to
 FROM `databuffet-nonprd.org_center.org_center_customer_ta`
 WHERE company_id = 'ag01'
-  AND ta_employee_id = '<TA employee code>'
+  AND department_id = '<department id>'
   AND CURRENT_DATE('Asia/Bangkok') >= valid_from AND CURRENT_DATE('Asia/Bangkok') < valid_to
 ```

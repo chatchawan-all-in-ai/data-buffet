@@ -4,7 +4,7 @@ config {
     dependencies: [
                     "org_center_unit", "org_center_member",
                     "org_center_customer_ta", "org_center_exception",
-                    "dim_company"
+                    "dim_company", "dim_sale_representative_last", "dim_section_last"
                   ],
     tags: [databuffet.TAG_DIM_DAILY],
     uniqueKey: ["employee_id", "customer_company_id", "customer_code", "marketing_group_id", "sub_marketing_id", "segment_id"],
@@ -18,6 +18,8 @@ js {
     const OrgCenterMemberTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_member`;
     const OrgCenterCustomerTaTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_customer_ta`;
     const OrgCenterExceptionTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_exception`;
+    const DimSaleRepresentativeLastTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_sale_representative_last`;
+    const DimSectionLastTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_section_last`;
     const DimCompanyTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_company`;
 }
 
@@ -58,40 +60,59 @@ WITH today AS (
     AND m.employee_id IS NOT NULL
 
 ), ta AS (
-  -- ที่นั่ง TA วันนี้ (TA ที่ดูแลหลายส่วน = 1 แถวต่อส่วน)
-  SELECT DISTINCT company_id, employee_id, unit_id
-  FROM member
-  WHERE position_code = 'TA'
+  -- ที่นั่ง TA วันนี้ ต่อ department (1 department = 1 ส่วน) · department เดียวมี TA หลายคนได้ทุกคน
+  SELECT DISTINCT
+    ${databuffet.functionData.cleanString("rep.companyID")} AS company_id,
+    ${databuffet.functionData.cleanString("rep.EmployeeID")} AS employee_id,
+    CONCAT('SEC-', ${databuffet.functionData.cleanString("sec.SectionID")}) AS unit_id,
+    ${databuffet.functionData.cleanString("rep.DepartmentID")} AS department_id
+  FROM `${DimSaleRepresentativeLastTableRef}` AS rep
+  LEFT JOIN `${DimSectionLastTableRef}` AS sec
+    ON rep.SectionSK = sec.SectionSK
+  CROSS JOIN today
+  WHERE rep.DepartmentID IS NOT NULL
+    AND today.d BETWEEN rep.StartDate AND rep.EndDate
 
 ), portfolio AS (
-  -- พอร์ตที่มีผลวันนี้ เฉพาะ TA ที่ยังมีที่นั่ง TA · ลูกค้าดูแลร่วมกัน 2 คน ได้ทั้งคู่ (ไม่ใช้ share_percent)
+  -- พอร์ตที่มีผลวันนี้ ผูกกับ department · department_id ว่าง = ไม่ให้สิทธิ์ใคร
   SELECT DISTINCT
     p.company_id AS customer_company_id,
     p.customer_code,
-    p.ta_employee_id
+    p.department_id
   FROM `${OrgCenterCustomerTaTableRef}` AS p, today
   WHERE today.d >= p.valid_from AND today.d < p.valid_to
     AND p.company_id IS NOT NULL
     AND p.customer_code IS NOT NULL
-    AND EXISTS (SELECT 1 FROM ta WHERE ta.employee_id = p.ta_employee_id)
+    AND p.department_id IS NOT NULL
 
-), section_customer AS (
-  SELECT
+), ta_portfolio AS (
+  -- ลูกค้าของ department x TA ที่นั่งใน department นั้นวันนี้ · ลูกค้าดูแลร่วมกัน 2 คน ได้ทั้งคู่ (ไม่ใช้ share_percent)
+  SELECT DISTINCT
     ta.company_id,
     ta.unit_id AS section_unit_id,
+    ta.employee_id,
     portfolio.customer_company_id,
     portfolio.customer_code
   FROM ta
   JOIN portfolio
-    ON portfolio.ta_employee_id = ta.employee_id
+    ON portfolio.customer_company_id = ta.company_id
+   AND portfolio.department_id = ta.department_id
+
+), section_customer AS (
+  SELECT DISTINCT
+    company_id,
+    section_unit_id,
+    customer_company_id,
+    customer_code
+  FROM ta_portfolio
 
 ), org_grant AS (
-  SELECT
-    ta_employee_id AS employee_id,
+  SELECT DISTINCT
+    employee_id,
     customer_company_id,
     customer_code,
     'TA' AS access_source
-  FROM portfolio
+  FROM ta_portfolio
 
   UNION ALL
   SELECT DISTINCT

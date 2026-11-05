@@ -175,9 +175,9 @@ the next successful `daily_process` run.
 | `employees` | `export_employees` | `person_key` | `org_center_person` + people of `org_center_exception` without a seat, named from `mds_data_org_employee_mapping_center` |
 | `memberships` | `export_memberships` | `company_id`, `employee_id` | `org_center_member` folded per person and company; status from today's seats |
 | `appointments` | `export_appointments` | `company_id`, `membership_id`, `org_unit_id`, `position_id`, `valid_from` | `org_center_member`; extra column `zone` (TA DepartmentID) |
-| `member_links` | `export_member_links` | `company_id`, `link_type`, `from_membership_id`, `to_membership_id`, `site_id`, `valid_from` | `org_center_link` |
+| `member_links` | `export_member_links` | [Key contract](../../okf/view/pub_sub/export_member_links.md#grain-and-key) | `org_center_link` |
 | `access_exceptions` | `export_access_exceptions` | `source_row_id` + every scope column | `org_center_exception`, arrays split |
-| `customer_ta_assignments` | `export_customer_ta_assignments` | `company_id`, `customer_id`, `membership_id`, `valid_from` | `org_center_customer_ta`; extra column `membership_company_id` (the company of the TA membership the row points to) |
+| `customer_ta_assignments` | `export_customer_ta_assignments` | [Key contract](../../okf/view/pub_sub/export_customer_ta_assignments.md#grain-and-key) | `org_center_customer_ta`; [membership company contract](../../okf/view/pub_sub/export_customer_ta_assignments.md#schema) |
 
 ### AI team sample tables
 
