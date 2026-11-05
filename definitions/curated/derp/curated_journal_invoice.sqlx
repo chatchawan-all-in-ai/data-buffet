@@ -9,18 +9,37 @@ config {
 }
 
 -- rebuild ทั้งตาราง (ไม่ใช่ incremental): journal กลับรายการเข้ามาหลังวันขายได้ ยอด invoice เก่าจึงเปลี่ยนย้อนหลัง
-WITH header AS (
+WITH header_base AS (
     SELECT
         journal_number,
         description,
         is_posted,
         posted_datetime,
-        -- ตัวอักษรนำหน้าเป็นส่วนของเลขเอกสาร (K6910000328 ≠ 6910000328) ห้ามตัดเหลือแต่ตัวเลข
-        -- ยอมเฉพาะคำนำหน้าที่รู้จัก ไม่หาเลขทั้งข้อความ เพราะจะไปติดเบอร์โทรหรือเลข PO แทน
-        REGEXP_EXTRACT(description, r'^\s*(?:รับคืน|อ้างอิงใบจ่าย|ใบจ่ายขายจาก(?:\s*MAC-5)?)?\s*((?:[A-Za-z]+(?:-[A-Za-z]+)?)?\d{6,})') AS doc_no,
-        REGEXP_EXTRACT(description, r'^\s*(รับคืน|อ้างอิงใบจ่าย|ใบจ่ายขายจาก)') AS doc_prefix
+        -- ใบรับคืนที่ขึ้นต้นด้วยวันที่ เลขเอกสารอยู่กลางข้อความ ไม่ได้อยู่ต้นข้อความ
+        REGEXP_CONTAINS(description, r'^\s*\d{1,2}/\d{1,2}/\d{2,4}') AND STRPOS(description, 'คืน') > 0 AS is_dated_return
     FROM ${ref(databuffet.VALIDATED_DERP, "inventory_movement_journal_headers")}
     WHERE journal_name_id = 'IM-MAC-01'
+),
+
+header AS (
+    SELECT
+        journal_number,
+        description,
+        is_posted,
+        posted_datetime,
+        IF(
+            is_dated_return,
+            -- ใช้เลขใบรับคืน RT... ก่อน เพราะข้อความมักมีเลขใบเบิก CH-... ปนอยู่ด้วย
+            COALESCE(
+                REGEXP_EXTRACT(description, r'(RT[A-Za-z]*-[A-Za-z]+\d{6,})'),
+                REGEXP_EXTRACT(description, r'((?:[A-Za-z]+(?:-[A-Za-z]+)?)?\d{6,})')
+            ),
+            -- ตัวอักษรนำหน้าเป็นส่วนของเลขเอกสาร (K6910000328 ≠ 6910000328) ห้ามตัดเหลือแต่ตัวเลข
+            -- ยอมเฉพาะคำนำหน้าที่รู้จัก ไม่หาเลขทั้งข้อความ เพราะจะไปติดเบอร์โทรหรือเลข PO แทน
+            REGEXP_EXTRACT(description, r'^\s*(?:รับคืน|อ้างอิงใบจ่าย|ใบจ่ายขายจาก(?:\s*MAC-5)?)?\s*((?:[A-Za-z]+(?:-[A-Za-z]+)?)?\d{6,})')
+        ) AS doc_no,
+        IF(is_dated_return, 'รับคืน', REGEXP_EXTRACT(description, r'^\s*(รับคืน|อ้างอิงใบจ่าย|ใบจ่ายขายจาก)')) AS doc_prefix
+    FROM header_base
 ),
 
 entry AS (

@@ -9,23 +9,76 @@ config {
 }
 
 -- rebuild ทั้งตาราง (ไม่ใช่ incremental): ยอด invoice เปลี่ยนย้อนหลังเมื่อมี journal กลับรายการ
-WITH invoice_cost AS (
-    -- รวมทุก journal ที่ post แล้ว ให้รายการกลับหักล้างกันเหลือยอดสุทธิ
+-- ต้นทุนคิดตามสินค้า ไม่ปันตามยอดขาย: บรรทัดใบขาย → บาร์โค้ด → master SKU → key เดียวกับ journal entries
+-- ต้นทุนที่ไม่มีบรรทัดใบขายรองรับไม่ปัน แยกเป็นแถว NO_LINE เพื่อให้ SUM(costDerp) ต่อใบ = invoiceCostDerp
+WITH journal AS (
     SELECT
+        journalNumber,
+        journalCost,
         company_id,
         mihType AS milType,
-        mihVnos AS milVnos,
-        SUM(journalCost) AS invoice_cost,
-        COUNT(*) AS journal_count
+        mihVnos AS milVnos
     FROM ${ref(databuffet.CURATED_DERP, "curated_journal_invoice")}
     WHERE matchStatus = 'MATCHED'
         AND isPosted
         AND journalCost IS NOT NULL
-    GROUP BY company_id, mihType, mihVnos
+),
+
+invoice_cost AS (
+    -- รวมทุก journal ที่ post แล้ว ให้รายการกลับหักล้างกันเหลือยอดสุทธิ
+    SELECT
+        company_id,
+        milType,
+        milVnos,
+        SUM(journalCost) AS invoice_cost,
+        COUNT(*) AS journal_count
+    FROM journal
+    GROUP BY company_id, milType, milVnos
+),
+
+entry AS (
+    -- ช่องที่ว่างเป็น '' ทั้งสองฝั่ง ไม่งั้น NULL = NULL ไม่ match
+    SELECT
+        journal.company_id,
+        journal.milType,
+        journal.milVnos,
+        entries.item_number,
+        IFNULL(entries.product_color_id, '') AS color_id,
+        IFNULL(entries.product_size_id, '') AS size_id,
+        IFNULL(entries.product_style_id, '') AS style_id,
+        -SUM(entries.cost_amount) AS key_cost
+    FROM ${ref(databuffet.VALIDATED_DERP, "inventory_movement_journal_entries")} AS entries
+    INNER JOIN journal
+        ON journal.journalNumber = entries.journal_number
+    GROUP BY 1, 2, 3, 4, 5, 6, 7
+),
+
+barcode AS (
+    SELECT DISTINCT
+        company_id,
+        stkcode,
+        stk_barcode
+    FROM ${ref(databuffet.VALIDATED_MAC5, "stk")},
+        UNNEST([stkbarc1, stkbarc2, stkbarc3, stkcode885]) AS stk_barcode
+    WHERE NULLIF(TRIM(stk_barcode), '') IS NOT NULL
+),
+
+sku AS (
+    SELECT DISTINCT
+        sku_barcode,
+        d365_code AS item_number,
+        IFNULL(d365_color, '') AS color_id,
+        IFNULL(d365_size, '') AS size_id,
+        IFNULL(d365_style, '') AS style_id
+    FROM ${ref(databuffet.VALIDATED_MASTER_SKU, "products")},
+        UNNEST([universal_barcode, internal_barcode]) AS sku_barcode
+    WHERE sku_barcode IS NOT NULL
+        AND d365_code IS NOT NULL
 ),
 
 line AS (
-    SELECT
+    -- curated_mil มีแถวซ้ำทั้งแถวอยู่บ้าง ถ้าไม่ยุบ ต้นทุนของ key จะถูกนับให้ทั้งสองแถว
+    SELECT DISTINCT
         mil.company_id,
         mil.milType,
         mil.milVnos,
@@ -33,41 +86,179 @@ line AS (
         mil.milPer,
         mil.milStk,
         mil.milQuan,
-        mil.milSum,
-        invoice_cost.invoice_cost,
-        invoice_cost.journal_count,
-        SUM(mil.milSum) OVER invoice_window AS invoice_sum,
-        SUM(mil.milQuan) OVER invoice_window AS invoice_quan,
-        COUNT(*) OVER invoice_window AS invoice_lines
+        mil.milSum
     FROM ${ref(databuffet.CURATED_MAC5, "curated_mil")} AS mil
     INNER JOIN invoice_cost
         ON invoice_cost.company_id = mil.company_id
         AND invoice_cost.milType = mil.milType
         AND invoice_cost.milVnos = mil.milVnos
-    WINDOW invoice_window AS (PARTITION BY mil.company_id, mil.milType, mil.milVnos)
+),
+
+line_key AS (
+    -- บาร์โค้ดหลายตัวชี้ key เดียวกันได้ → DISTINCT ให้เหลือ 1 แถวต่อ (บรรทัด, key)
+    SELECT DISTINCT
+        line.company_id,
+        line.milType,
+        line.milVnos,
+        line.milListno,
+        line.milPer,
+        sku.item_number,
+        sku.color_id,
+        sku.size_id,
+        sku.style_id,
+        line.milQuan,
+        line.milSum
+    FROM line
+    INNER JOIN barcode
+        ON barcode.company_id = line.company_id
+        AND barcode.stkcode = line.milStk
+    INNER JOIN sku
+        ON sku.sku_barcode = barcode.stk_barcode
+),
+
+key_alloc AS (
+    -- สินค้าเดียวกันหลายแถวในใบ (ซ้ำ หรือ ag01 แตกตามพนักงานขาย) แบ่งต้นทุนของ key ตามยอดขาย → จำนวน → เท่ากัน
+    SELECT
+        line_key.company_id,
+        line_key.milType,
+        line_key.milVnos,
+        line_key.milListno,
+        line_key.milPer,
+        CASE
+            WHEN SUM(line_key.milSum) OVER key_window != 0 THEN 'MILSUM'
+            WHEN SUM(line_key.milQuan) OVER key_window != 0 THEN 'MILQUAN'
+            ELSE 'EQUAL'
+        END AS allocation_basis,
+        CASE
+            WHEN SUM(line_key.milSum) OVER key_window != 0
+                THEN entry.key_cost * line_key.milSum / SUM(line_key.milSum) OVER key_window
+            WHEN SUM(line_key.milQuan) OVER key_window != 0
+                THEN entry.key_cost * line_key.milQuan / SUM(line_key.milQuan) OVER key_window
+            ELSE entry.key_cost / COUNT(*) OVER key_window
+        END AS alloc_cost
+    FROM line_key
+    INNER JOIN entry
+        ON entry.company_id = line_key.company_id
+        AND entry.milType = line_key.milType
+        AND entry.milVnos = line_key.milVnos
+        AND entry.item_number = line_key.item_number
+        AND entry.color_id = line_key.color_id
+        AND entry.size_id = line_key.size_id
+        AND entry.style_id = line_key.style_id
+    WINDOW key_window AS (
+        PARTITION BY line_key.company_id, line_key.milType, line_key.milVnos,
+            line_key.item_number, line_key.color_id, line_key.size_id, line_key.style_id
+    )
+),
+
+line_alloc AS (
+    SELECT
+        company_id,
+        milType,
+        milVnos,
+        milListno,
+        milPer,
+        STRING_AGG(DISTINCT allocation_basis) AS allocation_basis,
+        SUM(alloc_cost) AS cost_derp
+    FROM key_alloc
+    GROUP BY company_id, milType, milVnos, milListno, milPer
+),
+
+line_has_key AS (
+    SELECT DISTINCT company_id, milType, milVnos, milListno, milPer
+    FROM line_key
+),
+
+line_has_barcode AS (
+    SELECT DISTINCT company_id, stkcode
+    FROM barcode
+),
+
+line_cost AS (
+    SELECT
+        line.*,
+        CASE
+            WHEN line_alloc.milVnos IS NOT NULL THEN 'MATCHED'
+            WHEN line_has_barcode.stkcode IS NULL THEN 'NO_BARCODE'
+            WHEN line_has_key.milVnos IS NULL THEN 'NO_SKU'
+            ELSE 'NO_ENTRY'
+        END AS cost_status,
+        line_alloc.allocation_basis,
+        line_alloc.cost_derp
+    FROM line
+    LEFT JOIN line_alloc
+        ON line_alloc.company_id = line.company_id
+        AND line_alloc.milType = line.milType
+        AND line_alloc.milVnos = line.milVnos
+        AND line_alloc.milListno = line.milListno
+        AND line_alloc.milPer IS NOT DISTINCT FROM line.milPer
+    LEFT JOIN line_has_key
+        ON line_has_key.company_id = line.company_id
+        AND line_has_key.milType = line.milType
+        AND line_has_key.milVnos = line.milVnos
+        AND line_has_key.milListno = line.milListno
+        AND line_has_key.milPer IS NOT DISTINCT FROM line.milPer
+    LEFT JOIN line_has_barcode
+        ON line_has_barcode.company_id = line.company_id
+        AND line_has_barcode.stkcode = line.milStk
+),
+
+no_line AS (
+    -- key ใน journal ที่ไม่มีบรรทัดใบขายไหนรองรับ (เช่นชิ้นส่วนใน COMBO SET)
+    SELECT entry.*
+    FROM entry
+    LEFT JOIN (
+        SELECT DISTINCT company_id, milType, milVnos, item_number, color_id, size_id, style_id
+        FROM line_key
+    ) AS used_key
+        USING (company_id, milType, milVnos, item_number, color_id, size_id, style_id)
+    WHERE used_key.milVnos IS NULL
 )
 
 SELECT
-    company_id,
-    milType,
-    milVnos,
-    milListno,
+    line_cost.company_id,
+    line_cost.milType,
+    line_cost.milVnos,
+    line_cost.milListno,
     -- ag01 แตกบรรทัดตาม split-sale ใน curated_mil → แถวต่อ (บรรทัด, พนักงานขาย)
-    milPer,
-    milStk,
-    milQuan,
-    milSum,
-    -- ใบที่ยอดขายรวม = 0 (ส่วนใหญ่ SS/TS) แบ่งตามยอดเงินไม่ได้ → ใช้จำนวนชิ้น แล้วค่อยแบ่งเท่ากัน
-    CASE
-        WHEN invoice_sum != 0 THEN 'MILSUM'
-        WHEN invoice_quan != 0 THEN 'MILQUAN'
-        ELSE 'EQUAL'
-    END AS allocationBasis,
-    CASE
-        WHEN invoice_sum != 0 THEN invoice_cost * milSum / invoice_sum
-        WHEN invoice_quan != 0 THEN invoice_cost * milQuan / invoice_quan
-        ELSE invoice_cost / invoice_lines
-    END AS costDerp,
-    invoice_cost AS invoiceCostDerp,
-    journal_count AS journalCount
-FROM line
+    line_cost.milPer,
+    line_cost.milStk,
+    line_cost.milQuan,
+    line_cost.milSum,
+    CAST(NULL AS STRING) AS itemNumber,
+    CAST(NULL AS STRING) AS productColorId,
+    CAST(NULL AS STRING) AS productSizeId,
+    CAST(NULL AS STRING) AS productStyleId,
+    line_cost.cost_status AS costStatus,
+    line_cost.allocation_basis AS allocationBasis,
+    -- NULL = จับสินค้าไม่ได้ ไม่ใช่ต้นทุน 0
+    line_cost.cost_derp AS costDerp,
+    invoice_cost.invoice_cost AS invoiceCostDerp,
+    invoice_cost.journal_count AS journalCount
+FROM line_cost
+INNER JOIN invoice_cost
+    USING (company_id, milType, milVnos)
+
+UNION ALL
+
+SELECT
+    no_line.company_id,
+    no_line.milType,
+    no_line.milVnos,
+    CAST(NULL AS INT64) AS milListno,
+    CAST(NULL AS STRING) AS milPer,
+    CAST(NULL AS STRING) AS milStk,
+    CAST(NULL AS FLOAT64) AS milQuan,
+    CAST(NULL AS FLOAT64) AS milSum,
+    no_line.item_number AS itemNumber,
+    NULLIF(no_line.color_id, '') AS productColorId,
+    NULLIF(no_line.size_id, '') AS productSizeId,
+    NULLIF(no_line.style_id, '') AS productStyleId,
+    'NO_LINE' AS costStatus,
+    CAST(NULL AS STRING) AS allocationBasis,
+    no_line.key_cost AS costDerp,
+    invoice_cost.invoice_cost AS invoiceCostDerp,
+    invoice_cost.journal_count AS journalCount
+FROM no_line
+INNER JOIN invoice_cost
+    USING (company_id, milType, milVnos)
