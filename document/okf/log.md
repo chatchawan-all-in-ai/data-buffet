@@ -9,6 +9,10 @@
 * **Creation**: Added the [curated_derp](curated/curated_derp/index.md) dataset with the [curated_invoice_line_cost](curated/curated_derp/curated_invoice_line_cost.md) and [curated_journal_invoice](curated/curated_derp/curated_journal_invoice.md) cards (curated 16 cards).
 * **Update**: Review corrections to the dimension, fact, curated, org_center, process and cdc cards and their indexes: grain and key wording, column meanings, formulas, examples, `Read by:` lines (including the Pub/Sub export views), unified wording for repeated columns, and removal of warnings, history and dated observations.
 
+## 2026-11-05 (TA customer dependency order)
+
+* **Update**: [rls_ta_customer](process/rls_ta_customer.md) now waits for `update_sk_sale_rep_group` to fill `SectionSK` before rebuilding access.
+
 ## 2026-11-05 (view card review fixes)
 
 * **Update**: Review corrections to the [dimension_view](view/dimension_view/index.md), [fact_view](view/fact_view/index.md), [onetime](view/onetime/index.md), [process_dataset](view/process_dataset/index.md) and [bridge_dataset](view/bridge_dataset/index.md) cards: grain and key descriptions, column lists following the sqlx, column meanings and formulas, reader and export lists; deploy lines and caveats removed; refreshed edit metadata on changed cards.

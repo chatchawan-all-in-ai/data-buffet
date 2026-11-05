@@ -4,7 +4,8 @@ config {
     dependencies: [
                     "org_center_unit", "org_center_member",
                     "org_center_customer_ta", "org_center_exception",
-                    "dim_company", "dim_sale_representative_last", "dim_section_last"
+                    "dim_company", "dim_sale_representative_last", "dim_section_last",
+                    "update_sk_sale_rep_group"
                   ],
     tags: [databuffet.TAG_DIM_DAILY],
     uniqueKey: ["employee_id", "customer_company_id", "customer_code", "marketing_group_id", "sub_marketing_id", "segment_id"],
