@@ -196,7 +196,7 @@ Added 2026-10-30 after MDS Company Master got optional CEO fields, following `Or
 
 ## Rules
 
-- **MDS cutover prerequisite:** do not merge this department-binding change before the MDS swap. TA_PC must provide optional DepartmentID with its existing key; TA_CUSTOMER must be recreated under the same name with key companyID + CustomerCode + optional DepartmentID + StartDate. TAEmployeeID is removed from both sources. Fast-forwarding `nonprod` and rebuilding require a separate go-ahead after the swap.
+- **Source contract (department binding):** `mds_data_ta_pc.DepartmentID` is an optional, non-key column. `mds_data_ta_customer` is keyed on `companyID` + `CustomerCode` + `DepartmentID` (empty allowed) + `StartDate`. Neither source has `TAEmployeeID`.
 - **Expired rows are kept.** Date derivation is described per table above; the consumer
   decides who is active. Placeholder managers from MDS (`Non Director`, `9999990`–
   `9999999` such as `HO`, `Online`, `Imboon`) are passed through too.

@@ -300,8 +300,7 @@
       "task_group": "org",
       "trigger_scheduler": "daily_process",
       "source_tables": [
-        "org_center.org_center_customer_ta",
-        "org_center.org_center_member"
+        "org_center.org_center_customer_ta"
       ]
     },
     {
