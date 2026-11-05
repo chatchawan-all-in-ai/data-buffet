@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tbook_quotation`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Sales quotations of the quotation app (header per revision), with customer, project, channel, terms and approval type; source of curated_tbook_quotation.
+Validated copy of MAC5 `tbook_quotation`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. Phone numbers in `noteforapp` are masked as `xxx-xxx-xxxx` (REGEXP_REPLACE). Table meaning: Sales quotations of the quotation app (header per revision), with customer, project, channel, terms and approval type; source of curated_tbook_quotation.
 Used by: [curated_mac5.curated_tbook_quotation](/curated/curated_mac5/curated_tbook_quotation.md), [dimension_table.dim_customer_report_info](/dimension/dim_customer_report_info.md).
 
 # Grain and key
@@ -34,7 +34,7 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `id` | INT64 | Quotation identifier, referenced by `tbook_quodetail.linkid`. |
 | `running` | STRING | Quotation number (e.g. `QT32-61`), referenced by `mih.mihref1` of orders made from it. |
 | `atten` | STRING | Attention or contact text of the quotation, including a customer code before a backslash when supplied. |
@@ -110,7 +110,7 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 - Reads: [raw_mac5_ag01.tbook_quotation](/initial/raw_mac5_ag01/tbook_quotation.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY extradesc desc, cname desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `id`.
+- Storage: not partitioned; cluster by `company_id`, `id`.
 
 # Examples
 

@@ -61,7 +61,7 @@ One row per `company_id`, `cfsvnosid`, `cfsdateid`, `cfscusid`, `cfstypeid`. The
 - Reads: [raw_mac5_ag01.cfs](/initial/raw_mac5_ag01/cfs.md), [raw_mac5_aa05.cfs](/initial/raw_mac5_aa05/cfs.md), [raw_mac5_ab01.cfs](/initial/raw_mac5_ab01/cfs.md), [raw_mac5_ac02.cfs](/initial/raw_mac5_ac02/cfs.md), [raw_mac5_ak02.cfs](/initial/raw_mac5_ak02/cfs.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY cfsdateid desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `cfsvnosid`.
+- Storage: not partitioned; cluster by `company_id`, `cfsvnosid`.
 
 # Examples
 

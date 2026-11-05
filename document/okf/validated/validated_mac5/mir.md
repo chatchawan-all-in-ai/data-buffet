@@ -24,7 +24,7 @@ status: draft
 # What it is
 
 Validated copy of MAC5 `mir` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Lines of receipts (`RS`/`RP`) and billing statements (`VS`/`VP`), each settling or billing one invoice or note.
-Used by: [fact_table.fact_mir_rs](/fact/fact_mir_rs.md), [fact_table.fact_mir_vs](/fact/fact_mir_vs.md), [fact_view.view_aging_ri](/view/fact_view/view_aging_ri.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
+Used by: [fact_table.fact_mir_rs](/fact/fact_mir_rs.md), [fact_table.fact_mir_vs](/fact/fact_mir_vs.md), [fact_view.view_aging_ri](/view/fact_view/view_aging_ri.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [pub_sub.export_receipt](/view/pub_sub/export_receipt.md).
 
 # Grain and key
 
@@ -60,7 +60,7 @@ One row per `company_id`, `mirtype`, `mirvnos`, `mirlistno`. The key is declared
 
 - Definition: `definitions/validated/mac5/mir.sqlx` (`type: "incremental"`, tags `validated`, `validated_full`).
 - Reads: [raw_mac5_ag01.mir](/initial/raw_mac5_ag01/mir.md), [raw_mac5_aa05.mir](/initial/raw_mac5_aa05/mir.md), [raw_mac5_ab01.mir](/initial/raw_mac5_ab01/mir.md), [raw_mac5_ac02.mir](/initial/raw_mac5_ac02/mir.md), [raw_mac5_ak02.mir](/initial/raw_mac5_ak02/mir.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY mirbinvdate desc, mirdesc desc) = 1`.
 - Storage: partition by `asatdate`, cluster by `company_id`, `mirtype`, `mirvnos`, `mircus`.
 - **Document-grain purge**: `pre_operations` builds a TEMP table of the batch and DELETEs whole documents (company_id + type + vnos) from the target before the MERGE, so lines deleted at source disappear.

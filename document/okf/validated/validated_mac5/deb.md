@@ -24,7 +24,7 @@ status: draft
 # What it is
 
 Validated copy of MAC5 `deb` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Customer master of the MAC5 ERP: names, addresses, tax ID, group, grade, salesperson, credit limit and terms.
-Used by: [process_dataset.deb_address_data](/process/deb_address_data.md), [fact_view.view_fact_transcation](/view/fact_view/view_fact_transcation.md), [cdc_dataset.cdc_change_log](/cdc/cdc_change_log.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_customer_report_info](/dimension/dim_customer_report_info.md), [dimension_table.dim_delivery](/dimension/dim_delivery.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [fact_table.fact_delivery](/fact/fact_delivery.md), [fact_table.fact_transcation](/fact/fact_transcation.md).
+Used by: [process_dataset.deb_address_data](/process/deb_address_data.md), [fact_view.view_fact_transcation](/view/fact_view/view_fact_transcation.md), [cdc_dataset.cdc_change_log](/cdc/cdc_change_log.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_customer_report_info](/dimension/dim_customer_report_info.md), [dimension_table.dim_delivery](/dimension/dim_delivery.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [fact_table.fact_delivery](/fact/fact_delivery.md), [fact_table.fact_transcation](/fact/fact_transcation.md), [pub_sub.export_company](/view/pub_sub/export_company.md).
 
 # Grain and key
 
@@ -114,7 +114,7 @@ One row per `company_id`, `debcode`. The key is declared twice in the definition
 - Reads: [raw_mac5_ag01.deb](/initial/raw_mac5_ag01/deb.md), [raw_mac5_aa05.deb](/initial/raw_mac5_aa05/deb.md), [raw_mac5_ab01.deb](/initial/raw_mac5_ab01/deb.md), [raw_mac5_ac02.deb](/initial/raw_mac5_ac02/deb.md), [raw_mac5_ak02.deb](/initial/raw_mac5_ak02/deb.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY debnamet desc, debnamee desc, debdate desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `debcode`.
+- Storage: not partitioned; cluster by `company_id`, `debcode`.
 
 # Examples
 

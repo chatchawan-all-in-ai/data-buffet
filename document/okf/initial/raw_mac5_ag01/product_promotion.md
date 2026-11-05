@@ -20,11 +20,11 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/product_promotion/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `product_promotion` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Promotion items with quantity and channel (currently empty). Used by: [validated_mac5.product_promotion](/validated/validated_mac5/product_promotion.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/product_promotion/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `product_promotion` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Promotion items with quantity and channel. Used by: [validated_mac5.product_promotion](/validated/validated_mac5/product_promotion.md).
 
 # Grain and key
 
-One row per source record in the files under the URI. No key is declared at this layer. The files are replaced or appended by the extract job, so the row set is whatever the files currently contain.
+One row per source record in the files under the URI. No key is declared at this layer. The files are replaced or appended by the extract job, so the row set is the content of the files.
 
 # Schema
 

@@ -69,7 +69,7 @@ One row per `customer_address_id`. The key is declared twice in the definition (
 
 - Definition: `definitions/validated/derp/crm_customer_address.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_derp.crm_customer_address](/initial/raw_derp/crm_customer_address.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY updated_at DESC, asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `customer_address_id`.
 

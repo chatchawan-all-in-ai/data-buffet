@@ -49,7 +49,7 @@ One row per `pc_id`. The key is declared twice in the definition (`uniqueKey` an
 
 - Definition: `definitions/validated/mastersku/product_category.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_mastersku.product_category](/initial/raw_mastersku/product_category.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `pc_id`.
 

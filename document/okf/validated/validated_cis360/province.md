@@ -37,7 +37,7 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 | `id` | INT64 | Primary key of the province lookup. |
 | `province_code` | STRING | 2-digit Thai province code. |
 | `province_name` | STRING | Province name in Thai. |
-| `province_name_en` | STRING | Province name in English (currently holds the Thai name). |
+| `province_name_en` | STRING | Province name in English. |
 | `country_id` | INT64 | Identifier of the parent country (`country.id`). |
 | `create_date` | DATETIME | Timestamp when the record was created. |
 | `create_by` | STRING | Identifier of the user or system that created the record. |
@@ -51,7 +51,7 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 - Definition: `definitions/validated/cis360/province.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_cis360.province](/initial/raw_cis360/province.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `id`.
 

@@ -34,7 +34,7 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `id` | INT64 | Row identifier of the mapping. |
 | `deb_code` | STRING | MAC5 customer (debtor) code of the developer company. |
 | `vendor_name` | STRING | Developer company name as printed on its purchase orders, used to match the MAC5 customer. |
@@ -46,7 +46,7 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 - Reads: [raw_mac5_ag01.match_deb_bot_re](/initial/raw_mac5_ag01/match_deb_bot_re.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY vendor_name desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `id`.
+- Storage: not partitioned; cluster by `company_id`, `id`.
 
 # Examples
 

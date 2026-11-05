@@ -24,7 +24,7 @@ status: draft
 # What it is
 
 Validated copy of MAC5 `sto`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Warehouse master of the MAC5 ERP: code, group (FG, WIP, RM...) and Thai/English name.
-Used by: [dimension_table.dim_store](/dimension/dim_store.md).
+Used by: [dimension_table.dim_store](/dimension/dim_store.md), [pub_sub.export_warehouse](/view/pub_sub/export_warehouse.md).
 
 # Grain and key
 
@@ -34,7 +34,7 @@ One row per `company_id`, `stocode`. The key is declared twice in the definition
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `stocode` | STRING | Warehouse code. |
 | `stogroup` | STRING | Warehouse group code (FG = finished goods, WIP, RM = raw material, SP, TM, CRC). |
 | `stodesct` | STRING | Thai name of the warehouse. |
@@ -50,7 +50,7 @@ One row per `company_id`, `stocode`. The key is declared twice in the definition
 - Reads: [raw_mac5_ag01.sto](/initial/raw_mac5_ag01/sto.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY stoeditdt desc, stodesct desc, stodesce desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `stocode`.
+- Storage: not partitioned; cluster by `company_id`, `stocode`.
 
 # Examples
 

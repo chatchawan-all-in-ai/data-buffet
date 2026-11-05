@@ -73,7 +73,7 @@ One row per `master_sales_channel_id`. The key is declared twice in the definiti
 
 - Definition: `definitions/validated/derp/sales_channel_master_sales_channel.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_derp.sales_channel_master_sales_channel](/initial/raw_derp/sales_channel_master_sales_channel.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY updated_at DESC, asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `master_sales_channel_id`.
 

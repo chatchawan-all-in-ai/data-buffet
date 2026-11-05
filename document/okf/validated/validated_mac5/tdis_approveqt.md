@@ -34,7 +34,7 @@ One row per `company_id`, `docno`, `stktype`. The key is declared twice in the d
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `docno` | STRING | Quotation identifier (`tbook_quotation.id`) sent for approval. |
 | `lv1` | STRING | Level-1 approval result code. |
 | `lv2` | STRING | Level-2 approval result code. |
@@ -59,7 +59,7 @@ One row per `company_id`, `docno`, `stktype`. The key is declared twice in the d
 - Reads: [raw_mac5_ag01.tdis_approveqt](/initial/raw_mac5_ag01/tdis_approveqt.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY sendtime desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `docno`.
+- Storage: not partitioned; cluster by `company_id`, `docno`.
 
 # Examples
 

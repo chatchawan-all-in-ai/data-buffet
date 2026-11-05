@@ -48,7 +48,7 @@ One row per `category_id`, `language_id`. The key is declared twice in the defin
 
 - Definition: `definitions/validated/master_sku/category_translations.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_master_sku.category_translations](/initial/raw_master_sku/category_translations.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC, updated_at DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `category_id`, `language_id`.
 

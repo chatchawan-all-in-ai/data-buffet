@@ -63,7 +63,7 @@ One row per `vendor_id`, `branch`. The key is declared twice in the definition (
 
 - Definition: `definitions/validated/saleout_mdt/BT/sales_by_branch.sqlx` (`type: "incremental"`, tags `validated`).
 - Reads: [raw_saleout_mdt.sales_by_branch](/initial/raw_saleout_mdt/sales_by_branch.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY ASATDATE DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `vendor_id`, `branch`.
 

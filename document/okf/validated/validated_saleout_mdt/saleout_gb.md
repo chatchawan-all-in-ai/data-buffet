@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of SALEOUT_MDT `saleout_gb`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Daily sell-out bill lines of the company products at Global House branches, including returns.
+Validated copy of SALEOUT_MDT `saleout_gb`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. Rows with an empty `Sale_Date` are dropped; the sale date is parsed from both file formats (MM/DD/YYYY and DD/MM/YYYY, Gregorian or Buddhist year) and the `type` values `ขาย`/`รับคืน` are mapped to `SALE`/`RETURN`. Table meaning: Daily sell-out bill lines of the company products at Global House branches, including returns.
 Used by: [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md).
 
 # Grain and key
@@ -53,7 +53,7 @@ One row per `sale_no`, `sale_date`, `branch_code`, `product_code`. The key is de
 
 - Definition: `definitions/validated/saleout_mdt/GB/saleout_gb.sqlx` (`type: "incremental"`, tags `validated`, `saleout_daily`).
 - Reads: [raw_saleout_mdt.saleout_gb](/initial/raw_saleout_mdt/saleout_gb.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY ASATDATE DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `sale_date`, `branch_code`, `product_code`, `sale_no`.
 

@@ -24,7 +24,7 @@ status: draft
 # What it is
 
 Validated copy of MAC5 `ar_s` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Status codes and display names (with colours) for sales-side documents, referenced by `mihstatus`.
-Used by: [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [fact_view.view_aging_ri](/view/fact_view/view_aging_ri.md), [fact_view.view_fact_mir_rs](/view/fact_view/view_fact_mir_rs.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md), [dimension_table.dim_order](/dimension/dim_order.md).
+Used by: [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [fact_view.view_aging_ri](/view/fact_view/view_aging_ri.md), [fact_view.view_fact_mir_rs](/view/fact_view/view_fact_mir_rs.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md), [dimension_table.dim_order](/dimension/dim_order.md), [pub_sub.export_credit_note](/view/pub_sub/export_credit_note.md), [pub_sub.export_debit_note](/view/pub_sub/export_debit_note.md), [pub_sub.export_receipt](/view/pub_sub/export_receipt.md), [pub_sub.export_status](/view/pub_sub/export_status.md).
 
 # Grain and key
 
@@ -47,7 +47,7 @@ One row per `company_id`, `ar_scode`. The key is declared twice in the definitio
 - Reads: [raw_mac5_ag01.ar_s](/initial/raw_mac5_ag01/ar_s.md), [raw_mac5_aa05.ar_s](/initial/raw_mac5_aa05/ar_s.md), [raw_mac5_ab01.ar_s](/initial/raw_mac5_ab01/ar_s.md), [raw_mac5_ac02.ar_s](/initial/raw_mac5_ac02/ar_s.md), [raw_mac5_ak02.ar_s](/initial/raw_mac5_ak02/ar_s.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY ar_snamet desc, ar_snamee desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `ar_scode`.
+- Storage: not partitioned; cluster by `company_id`, `ar_scode`.
 
 # Examples
 

@@ -34,7 +34,7 @@ One row per `company_id`, `CSTdate`, `CSTtype`, `CSTvnos`, `CSTcus`, `CSTstk`, `
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `cstdate` | DATETIME | Document date. |
 | `csttype` | STRING | Document type code (IS = invoice, PS = sales order). |
 | `cstvnos` | STRING | Document number. |
@@ -64,7 +64,7 @@ One row per `company_id`, `CSTdate`, `CSTtype`, `CSTvnos`, `CSTcus`, `CSTstk`, `
 
 - Definition: `definitions/validated/mac5/cst.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_mac5_ag01.cst](/initial/raw_mac5_ag01/cst.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `company_id`, `cstdate`, `cstcus`, `cststk`.
 

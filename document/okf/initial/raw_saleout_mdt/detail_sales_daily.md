@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/detail_sales_daily/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `detail_sales_daily` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Boonthavorn (BT) daily sell-out of the company products per branch, article and channel (format used from 2026-10-08). Used by: [validated_saleout_mdt.detail_sales_daily](/validated/validated_saleout_mdt/detail_sales_daily.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/detail_sales_daily/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `detail_sales_daily` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Boonthavorn (BT) daily sell-out of the company products per branch, article and channel. Used by: [validated_saleout_mdt.detail_sales_daily](/validated/validated_saleout_mdt/detail_sales_daily.md).
 
 # Grain and key
 

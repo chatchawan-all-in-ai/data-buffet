@@ -34,7 +34,7 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `id` | INT64 | Quotation spread identifier, referenced by `detail_qtspread.ref_id`, `qt_spread_to_mih.qt_spread_ref_id` and `pathfilestamper.mainqtid`. |
 | `ref_id` | INT64 | Sequence number of the spread within the quotation (1 = first order from the quotation). |
 | `qtid` | STRING | Quotation identifier (`tbook_quotation.id`). |
@@ -94,7 +94,7 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 - Reads: [raw_mac5_ag01.main_qtspread](/initial/raw_mac5_ag01/main_qtspread.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY projectname desc, dupdate desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `id`.
+- Storage: not partitioned; cluster by `company_id`, `id`.
 
 # Examples
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tmp_pdf_sansiri"
-description: "One row = one purchase order line imported from a Sansiri PDF purchase order from source table `tmp_pdf_sansiri` (no declared key; append-style, not deduplicated)."
+description: "One row = one purchase order line imported from a Sansiri PDF purchase order from source table `tmp_pdf_sansiri` (no declared key; not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tmp_pdf_sansiri&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tmp_pdf_sansiri`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Purchase order lines read from PDF purchase orders of the developer Sansiri, one row per PO line, staged for order entry.
+Validated copy of MAC5 `tmp_pdf_sansiri`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`. There is no business logic at this layer. Table meaning: Purchase order lines read from PDF purchase orders of the developer Sansiri, one row per PO line, staged for order entry.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,7 +34,7 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `crdate` | STRING | Creation date of the developer purchase order as printed in the PDF (text, format varies by developer). |
 | `vendorno` | STRING | Vendor number printed on the developer purchase order. |
 | `vendorname` | STRING | Name of the developer company that issued the purchase order. |
@@ -88,7 +88,7 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 - Definition: `definitions/validated/mac5/tmp_pdf_sansiri.sqlx` (`type: "table"`, tags `validated`, `validated_full`).
 - Reads: [raw_mac5_ag01.tmp_pdf_sansiri](/initial/raw_mac5_ag01/tmp_pdf_sansiri.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
-- Storage: partition by `(none)`, cluster by `company_id`, `vendorno`.
+- Storage: not partitioned; cluster by `company_id`, `vendorno`.
 
 # Examples
 

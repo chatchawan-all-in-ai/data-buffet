@@ -24,7 +24,7 @@ status: draft
 # What it is
 
 Validated copy of MASTERSKU `brand`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Product brands of the old product master MASTERSKU, each owned by a vendor.
-Used by: [curated_mastersku.product_for_aisearch](/curated/curated_mastersku/product_for_aisearch.md).
+Used by: [curated_mastersku.product_for_aisearch](/curated/curated_mastersku/product_for_aisearch.md), [pub_sub.export_brand](/view/pub_sub/export_brand.md).
 
 # Grain and key
 
@@ -53,7 +53,7 @@ One row per `bra_id`. The key is declared twice in the definition (`uniqueKey` a
 
 - Definition: `definitions/validated/mastersku/brand.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_mastersku.brand](/initial/raw_mastersku/brand.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `bra_id`.
 

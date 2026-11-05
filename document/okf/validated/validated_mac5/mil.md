@@ -23,8 +23,8 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `mil` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Line items of all MAC5 trading documents (product, quantity, prices, discounts, link to the source document), one row per company, document type, document number and line number.
-Used by: [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md).
+Validated copy of MAC5 `mil` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. For credit notes (`miltype` `BS`) the quantity and amount columns are sign-flipped and the values before the flip are kept in the `*_raw` columns; the lines are LEFT JOINed to [mih](/validated/validated_mac5/mih.md) on company, date, type, number and customer; rows with an empty `milvnos` are dropped. Table meaning: Line items of all MAC5 trading documents (product, quantity, prices, discounts, link to the source document), one row per company, document type, document number and line number.
+Used by: [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [pub_sub.export_credit_note](/view/pub_sub/export_credit_note.md), [pub_sub.export_debit_note](/view/pub_sub/export_debit_note.md), [pub_sub.export_invoice](/view/pub_sub/export_invoice.md), [pub_sub.export_order](/view/pub_sub/export_order.md).
 
 # Grain and key
 
@@ -105,7 +105,7 @@ One row per `company_id`, `MILtype`, `MILvnos`, `MILlistNo`. The key is declared
 
 - Definition: `definitions/validated/mac5/mil.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_mac5_ag01.mil](/initial/raw_mac5_ag01/mil.md), [raw_mac5_aa05.mil](/initial/raw_mac5_aa05/mil.md), [raw_mac5_ab01.mil](/initial/raw_mac5_ab01/mil.md), [raw_mac5_ac02.mil](/initial/raw_mac5_ac02/mil.md), [raw_mac5_ak02.mil](/initial/raw_mac5_ak02/mil.md), [validated_mac5.mih](/validated/validated_mac5/mih.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `company_id`, `miltype`, `milvnos`.
 - **Document-grain purge**: `pre_operations` builds a TEMP table of the batch and DELETEs whole documents (company_id + type + vnos) from the target before the MERGE, so lines deleted at source disappear.

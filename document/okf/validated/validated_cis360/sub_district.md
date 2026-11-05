@@ -37,7 +37,7 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 | `id` | INT64 | Primary key of the sub-district lookup. |
 | `sub_district_code` | STRING | 6-digit Thai sub-district (tambon/khwaeng) code. |
 | `sub_district_name` | STRING | Sub-district name in Thai. |
-| `sub_district_name_en` | STRING | Sub-district name in English (currently holds the Thai name). |
+| `sub_district_name_en` | STRING | Sub-district name in English. |
 | `district_id` | INT64 | Identifier of the parent district (`district.id`). |
 | `create_date` | DATETIME | Timestamp when the record was created. |
 | `create_by` | STRING | Identifier of the user or system that created the record. |
@@ -51,7 +51,7 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 - Definition: `definitions/validated/cis360/sub_district.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_cis360.sub_district](/initial/raw_cis360/sub_district.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `id`.
 

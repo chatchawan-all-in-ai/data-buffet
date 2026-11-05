@@ -34,7 +34,7 @@ One row per `company_id`, `doccode`. The key is declared twice in the definition
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `doccode` | STRING | Document type code (e.g. `PO`, `POL`, `FR`). |
 | `docgroup` | STRING | Document group code (e.g. `A`, `P`, `S`, `AR`, `AK`). |
 | `docdesct` | STRING | Thai name of the document type. |
@@ -53,7 +53,7 @@ One row per `company_id`, `doccode`. The key is declared twice in the definition
 - Reads: [raw_mac5_ag01.doc](/initial/raw_mac5_ag01/doc.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY doceditdt desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `doccode`.
+- Storage: not partitioned; cluster by `company_id`, `doccode`.
 
 # Examples
 

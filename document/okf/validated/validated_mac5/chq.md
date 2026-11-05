@@ -23,8 +23,8 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `chq` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Cheques received from customers and issued to suppliers, with bank, dates, amount, status and memo-derived payment splits.
-Used by: [fact_table.fact_chq](/fact/fact_chq.md), [fact_view.view_aging_ri](/view/fact_view/view_aging_ri.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
+Validated copy of MAC5 `chq` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. The `extract_text` and `extract_value` columns are parsed from the memo `chqmemo` by the UDF `function_dataset.EXTRACT_CHQ_DATA`; the raw memo is kept in `chqmemo_raw`. Table meaning: Cheques received from customers and issued to suppliers, with bank, dates, amount, status and memo-derived payment splits.
+Used by: [fact_table.fact_chq](/fact/fact_chq.md), [fact_view.view_aging_ri](/view/fact_view/view_aging_ri.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [pub_sub.export_chqri](/view/pub_sub/export_chqri.md), [pub_sub.export_receipt](/view/pub_sub/export_receipt.md).
 
 # Grain and key
 
@@ -76,7 +76,7 @@ One row per `company_id`, `chqno`, `chqbank`, `chqdatec`, `chqtag`. The key is d
 - Reads: [raw_mac5_ag01.chq](/initial/raw_mac5_ag01/chq.md), [raw_mac5_aa05.chq](/initial/raw_mac5_aa05/chq.md), [raw_mac5_ab01.chq](/initial/raw_mac5_ab01/chq.md), [raw_mac5_ac02.chq](/initial/raw_mac5_ac02/chq.md), [raw_mac5_ak02.chq](/initial/raw_mac5_ak02/chq.md), `function_dataset.EXTRACT_CHQ_DATA` (UDF).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY chqkeydate desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `chqno`.
+- Storage: not partitioned; cluster by `company_id`, `chqno`.
 
 # Examples
 

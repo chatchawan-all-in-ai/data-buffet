@@ -34,7 +34,7 @@ One row per `company_id`, `stfcode`, `stflist`. The key is declared twice in the
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `stfcode` | STRING | Product code of the finished item the formula belongs to. |
 | `stflist` | STRING | Stock code of the component in the formula. |
 | `stfquan` | FLOAT64 | Quantity of the component per finished item. |
@@ -47,7 +47,7 @@ One row per `company_id`, `stfcode`, `stflist`. The key is declared twice in the
 - Definition: `definitions/validated/mac5/stf.sqlx` (`type: "table"`, tags `validated`, `validated_full`).
 - Reads: [raw_mac5_ag01.stf](/initial/raw_mac5_ag01/stf.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
-- Storage: partition by `(none)`, cluster by `company_id`, `stfcode`, `stflist`.
+- Storage: not partitioned; cluster by `company_id`, `stfcode`, `stflist`.
 
 # Examples
 

@@ -34,7 +34,7 @@ One row per `company_id`, `sblstk`, `sblsto`. The key is declared twice in the d
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `sblstk` | STRING | Stock code of the balance row. |
 | `sblsto` | STRING | Warehouse code of the balance row (joins `sto.stocode`). |
 | `sblquan` | FLOAT64 | Stock balance quantity in the base unit. |
@@ -45,7 +45,7 @@ One row per `company_id`, `sblstk`, `sblsto`. The key is declared twice in the d
 - Definition: `definitions/validated/mac5/sbl.sqlx` (`type: "table"`, tags `validated`, `validated_full`).
 - Reads: [raw_mac5_ag01.sbl](/initial/raw_mac5_ag01/sbl.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
-- Storage: partition by `(none)`, cluster by `company_id`, `sblstk`, `sblsto`.
+- Storage: not partitioned; cluster by `company_id`, `sblstk`, `sblsto`.
 
 # Examples
 

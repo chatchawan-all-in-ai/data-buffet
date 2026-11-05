@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of SALEOUT_MDT `sale_by_branch_detail`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Boonthavorn (BT) daily sell-out file up to 2026-10-07, with month-to-date sales of the company products per branch, article and channel; curated derives daily sales from the change in MTD values.
+Validated copy of SALEOUT_MDT `sale_by_branch_detail`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. `distribution_channel` `Website` is mapped to `Web`. Table meaning: Boonthavorn (BT) sell-out file with month-to-date (MTD) sales of the company products per branch, article and channel; curated derives daily sales from the change in MTD values.
 Used by: [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md).
 
 # Grain and key
@@ -58,7 +58,7 @@ One row per `branch`, `article_id`, `distribution_channel`, `end_date`. The key 
 
 - Definition: `definitions/validated/saleout_mdt/BT/sale_by_branch_detail.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`, `saleout_daily`).
 - Reads: [raw_saleout_mdt.sale_by_branch_detail](/initial/raw_saleout_mdt/sale_by_branch_detail.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY ASATDATE DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `branch`, `article_id`, `end_date`.
 

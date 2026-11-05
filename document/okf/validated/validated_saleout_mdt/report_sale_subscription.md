@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "report_sale_subscription"
-description: "One row = one SKU at one Thai Watsadu branch in one daily file from source table `report_sale_subscription` (no declared key; append-style, not deduplicated)."
+description: "One row = one SKU at one Thai Watsadu branch in one daily file from source table `report_sale_subscription` (no declared key; not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_saleout_mdt&t=report_sale_subscription&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_saleout_mdt
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of SALEOUT_MDT `report_sale_subscription`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Daily Thai Watsadu (TW) sales-and-stock report for the company products: sales on the last sold date, stock on hand and on order per branch and SKU.
+Validated copy of SALEOUT_MDT `report_sale_subscription`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`. There is no business logic at this layer. Table meaning: Daily Thai Watsadu (TW) sales-and-stock report for the company products: sales on the last sold date, stock on hand and on order per branch and SKU.
 Used by: [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md), [curated_saleout_mdt.curated_stock_mdt](/curated/curated_saleout_mdt/curated_stock_mdt.md).
 
 # Grain and key
@@ -48,7 +48,7 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 | `Stock_On_Order` | INT64 | Stock quantity on open purchase orders. |
 | `Last_Sold_Date` | DATE | Date the SKU was last sold at the branch. |
 | `Last_Receive_Date` | DATE | Date the SKU was last received at the branch. |
-| `ASATDATE` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
+| `ASATDATE` | DATE | Extract date (the raw ASATDATE partition parsed to DATE); the partition column. |
 
 # How it is built
 

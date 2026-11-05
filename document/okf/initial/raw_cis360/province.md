@@ -33,7 +33,7 @@ One row per source record **per ASATDATE partition**: the same business record a
 | `id` | INT64 | Primary key of the province lookup. |
 | `province_code` | STRING | 2-digit Thai province code. |
 | `province_name` | STRING | Province name in Thai. |
-| `province_name_en` | STRING | Province name in English (currently holds the Thai name). |
+| `province_name_en` | STRING | Province name in English. |
 | `country_id` | INT64 | Identifier of the parent country (`country.id`). |
 | `create_date` | STRING | Timestamp when the record was created. |
 | `create_by` | STRING | Identifier of the user or system that created the record. |

@@ -45,7 +45,7 @@ One row per `pas_id`. The key is declared twice in the definition (`uniqueKey` a
 
 - Definition: `definitions/validated/mastersku/product_admin_status.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_mastersku.product_admin_status](/initial/raw_mastersku/product_admin_status.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `pas_id`.
 

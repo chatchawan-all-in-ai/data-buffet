@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mip"
-description: "One row = one file attached to a document from source table `mip` (no declared key; append-style, not deduplicated)."
+description: "One row = one file attached to a document from source table `mip` (no declared key; not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mip&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `mip`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Files attached to ERP documents (purchase orders, maps, BOQs, quotations), one row per document, file number and revision.
+Validated copy of MAC5 `mip`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`. There is no business logic at this layer. Table meaning: Files attached to ERP documents (purchase orders, maps, BOQs, quotations), one row per document, file number and revision.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,7 +34,7 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `mipvnos` | STRING | Number of the document the file is attached to. |
 | `mipfileno` | INT64 | Sequence number of the attached file within the document. |
 | `miprev` | INT64 | Revision number of the attachment. |
@@ -48,7 +48,7 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 - Definition: `definitions/validated/mac5/mip.sqlx` (`type: "table"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_mac5_ag01.mip](/initial/raw_mac5_ag01/mip.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
-- Storage: partition by `(none)`, cluster by `company_id`, `mipvnos`.
+- Storage: not partitioned; cluster by `company_id`, `mipvnos`.
 
 # Examples
 

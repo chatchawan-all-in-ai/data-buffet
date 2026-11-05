@@ -34,7 +34,7 @@ One row per `company_id`, `stdautono`. The key is declared twice in the definiti
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `stdcode` | STRING | Item code the customer uses for the product. |
 | `stdtype` | INT64 | Mapping type code (1, 2). |
 | `stddebtor` | STRING | Customer code the mapping belongs to (joins `deb.debcode`). |
@@ -49,7 +49,7 @@ One row per `company_id`, `stdautono`. The key is declared twice in the definiti
 - Reads: [raw_mac5_ag01.std](/initial/raw_mac5_ag01/std.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY stddesct1 desc, stddesce1 desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `stdautono`.
+- Storage: not partitioned; cluster by `company_id`, `stdautono`.
 
 # Examples
 

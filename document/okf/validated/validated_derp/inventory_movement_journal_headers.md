@@ -24,7 +24,7 @@ status: draft
 # What it is
 
 Validated copy of DERP `inventory_movement_journal_headers`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Headers of ERP inventory movement journals: journal type, default site and warehouse, and posting status.
-No other table or view in this repository reads it.
+Used by: [curated_derp.curated_journal_invoice](/curated/curated_derp/curated_journal_invoice.md).
 
 # Grain and key
 
@@ -63,7 +63,7 @@ One row per `journal_number`. The key is declared twice in the definition (`uniq
 
 - Definition: `definitions/validated/derp/inventory_movement_journal_headers.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_derp.inventory_movement_journal_headers](/initial/raw_derp/inventory_movement_journal_headers.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY updated_datetime DESC, created_datetime DESC, asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `journal_number`.
 

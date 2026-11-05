@@ -24,7 +24,7 @@ status: draft
 # What it is
 
 Validated copy of MASTER_SKU `products`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Products (SKUs) of the master_sku 3.0 product master, with master SKU code, MAC5 and Dynamics 365 cross-reference codes, barcodes, texts, dimensions, units of measure, classification groups and statuses.
-Used by: [curated_master_sku.curated_products](/curated/curated_master_sku/curated_products.md), [curated_master_sku.product_for_aisearch_v3](/curated/curated_master_sku/product_for_aisearch_v3.md).
+Used by: [curated_master_sku.curated_products](/curated/curated_master_sku/curated_products.md), [curated_master_sku.product_for_aisearch_v3](/curated/curated_master_sku/product_for_aisearch_v3.md), [curated_derp.curated_invoice_line_cost](/curated/curated_derp/curated_invoice_line_cost.md).
 
 # Grain and key
 
@@ -148,7 +148,7 @@ One row per `id`. The key is declared twice in the definition (`uniqueKey` and `
 
 - Definition: `definitions/validated/master_sku/products.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_master_sku.products](/initial/raw_master_sku/products.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC, updated_at DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `id`.
 

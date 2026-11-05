@@ -34,7 +34,7 @@ One row per `company_id`, `stkcode`. The key is declared twice in the definition
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `stkcode` | STRING | Product (stock item) code. |
 | `stkgroup` | STRING | Stock group code (joins `stg.stgcode`). |
 | `stkdesct1` | STRING | Thai product description, line 1. |
@@ -54,7 +54,7 @@ One row per `company_id`, `stkcode`. The key is declared twice in the definition
 - Reads: [raw_mac5_ag01.stk_mkt](/initial/raw_mac5_ag01/stk_mkt.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY stkdesct1 DESC) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `stkcode`.
+- Storage: not partitioned; cluster by `company_id`, `stkcode`.
 
 # Examples
 

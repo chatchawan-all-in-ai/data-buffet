@@ -34,7 +34,7 @@ One row per `company_id`, `proreid`, `prorestkcode`. The key is declared twice i
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `proreid` | INT64 | Running ID of the promotion item row. |
 | `prorestkcode` | STRING | Stock (product) code included in the promotion. |
 | `proresttcode` | STRING | Promotion set code the product belongs to (numeric, e.g. `80164`). |
@@ -50,7 +50,7 @@ One row per `company_id`, `proreid`, `prorestkcode`. The key is declared twice i
 - Reads: [raw_mac5_ag01.pro_re](/initial/raw_mac5_ag01/pro_re.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY proreenddate desc, prorestrdate desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `proreid`, `prorestkcode`.
+- Storage: not partitioned; cluster by `company_id`, `proreid`, `prorestkcode`.
 
 # Examples
 

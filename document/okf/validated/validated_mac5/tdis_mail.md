@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tdis_mail"
-description: "One row = one sales user of the approval system from source table `tdis_mail` (no declared key; append-style, not deduplicated)."
+description: "One row = one sales user of the approval system from source table `tdis_mail` (no declared key; not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tdis_mail&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tdis_mail`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Sales users of the quotation approval system with their approval level, approver email chains per product line and access flags.
+Validated copy of MAC5 `tdis_mail`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`. There is no business logic at this layer. Table meaning: Sales users of the quotation approval system with their approval level, approver email chains per product line and access flags.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,7 +34,7 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `saleid` | STRING | Employee code of the sales user. |
 | `spass` | STRING | Login password of the sales user (mostly hashed). |
 | `salename` | STRING | Name of the sales user. |
@@ -104,7 +104,7 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 - Definition: `definitions/validated/mac5/tdis_mail.sqlx` (`type: "table"`, tags `validated`, `validated_full`).
 - Reads: [raw_mac5_ag01.tdis_mail](/initial/raw_mac5_ag01/tdis_mail.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
-- Storage: partition by `(none)`, cluster by `company_id`, `saleid`.
+- Storage: not partitioned; cluster by `company_id`, `saleid`.
 
 # Examples
 

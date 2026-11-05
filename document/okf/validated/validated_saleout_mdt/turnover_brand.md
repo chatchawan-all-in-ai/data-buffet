@@ -49,7 +49,7 @@ One row per `vendor_id`, `mch3`, `brand`, `class_stock`. The key is declared twi
 
 - Definition: `definitions/validated/saleout_mdt/BT/turnover_brand.sqlx` (`type: "incremental"`, tags `validated`).
 - Reads: [raw_saleout_mdt.turnover_brand](/initial/raw_saleout_mdt/turnover_brand.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY ASATDATE DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `vendor_id`, `mch3`, `brand`, `class_stock`.
 

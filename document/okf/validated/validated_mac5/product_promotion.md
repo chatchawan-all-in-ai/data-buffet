@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `product_promotion`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Promotion items with quantity and channel (currently empty).
+Validated copy of MAC5 `product_promotion`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Promotion items with quantity and channel.
 No other table or view in this repository reads it.
 
 # Grain and key
@@ -34,7 +34,7 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `id` | INT64 | Row identifier of the promotion item. |
 | `product_detail_id` | INT64 | Identifier of the related product detail line. |
 | `sku_id` | STRING | Stock code of the promotion item. |
@@ -48,7 +48,7 @@ One row per `company_id`, `id`. The key is declared twice in the definition (`un
 - Reads: [raw_mac5_ag01.product_promotion](/initial/raw_mac5_ag01/product_promotion.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY create_date desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `id`.
+- Storage: not partitioned; cluster by `company_id`, `id`.
 
 # Examples
 

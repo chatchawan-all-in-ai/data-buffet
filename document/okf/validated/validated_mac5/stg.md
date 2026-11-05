@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `stg` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Stock group master with Thai/English names and the mapped accounting product group.
+Validated copy of MAC5 `stg` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. The `gacccode` and `gaccname` columns are added by LEFT JOINing [stgacc](/validated/validated_mac5/stgacc.md) (which is LEFT JOINed to [stg_report](/validated/validated_mac5/stg_report.md) on `stgacc.gacccode = stg_report.stgacccode`), keeping the highest `gacccode` per `stgcode`. Table meaning: Stock group master with Thai/English names and the mapped accounting product group.
 Used by: [onetime.Product_Attribute](/view/onetime/Product_Attribute.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md).
 
 # Grain and key
@@ -47,7 +47,7 @@ One row per `company_id`, `stgcode`. The key is declared twice in the definition
 - Reads: [validated_mac5.stgacc](/validated/validated_mac5/stgacc.md), [validated_mac5.stg_report](/validated/validated_mac5/stg_report.md), [raw_mac5_ag01.stg](/initial/raw_mac5_ag01/stg.md), [raw_mac5_aa05.stg](/initial/raw_mac5_aa05/stg.md), [raw_mac5_ab01.stg](/initial/raw_mac5_ab01/stg.md), [raw_mac5_ac02.stg](/initial/raw_mac5_ac02/stg.md), [raw_mac5_ak02.stg](/initial/raw_mac5_ak02/stg.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY stgdesct desc, stgdesce desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `stgcode`.
+- Storage: not partitioned; cluster by `company_id`, `stgcode`.
 
 # Examples
 

@@ -59,7 +59,7 @@ One row per `employee_id`. The key is declared twice in the definition (`uniqueK
 
 - Definition: `definitions/validated/derp/sales_employee.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_derp.sales_employee](/initial/raw_derp/sales_employee.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY updated_at DESC, asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `employee_id`.
 

@@ -34,7 +34,7 @@ One row per `company_id`, `logid`. The key is declared twice in the definition (
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `logid` | INT64 | Run identifier of the API job. |
 | `runat` | DATETIME | Date and time the API run started. |
 | `completedat` | DATETIME | Date and time the API run finished. |
@@ -48,7 +48,7 @@ One row per `company_id`, `logid`. The key is declared twice in the definition (
 - Reads: [raw_mac5_ag01.apilog](/initial/raw_mac5_ag01/apilog.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY completedat desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `logid`.
+- Storage: not partitioned; cluster by `company_id`, `logid`.
 
 # Examples
 

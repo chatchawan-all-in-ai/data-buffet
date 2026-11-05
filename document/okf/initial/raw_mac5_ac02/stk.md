@@ -24,7 +24,7 @@ External table over AVRO files in `gs://file-raw-data/mac5_ac02/stk/*.avro` (no 
 
 # Grain and key
 
-One row per source record in the files under the URI. No key is declared at this layer. The files are replaced or appended by the extract job, so the row set is whatever the files currently contain.
+One row per source record in the files under the URI. No key is declared at this layer. The files are replaced or appended by the extract job, so the row set is the content of the files.
 
 # Schema
 

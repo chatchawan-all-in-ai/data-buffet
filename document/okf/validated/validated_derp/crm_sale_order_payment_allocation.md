@@ -50,7 +50,7 @@ One row per `sale_order_payment_allocation_id`. The key is declared twice in the
 
 - Definition: `definitions/validated/derp/crm_sale_order_payment_allocation.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_derp.crm_sale_order_payment_allocation](/initial/raw_derp/crm_sale_order_payment_allocation.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY created_at DESC, asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `sale_order_payment_allocation_id`.
 

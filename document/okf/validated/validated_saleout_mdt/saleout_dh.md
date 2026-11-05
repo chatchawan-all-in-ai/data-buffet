@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of SALEOUT_MDT `saleout_dh`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Daily sell-out of the company products at DoHome branches, from monthly SharePoint files (latest file per zone and month).
+Daily sell-out of the company products at DoHome branches, from monthly SharePoint files in SALEOUT_MDT `saleout_dh`. Rows are filtered out only when raw `SALES_DATE`, `BRANCH_CODE` or `PRODUCT_CODE` is NULL; blank codes survive this filter and become NULL through `cleanCode`. Sale and extract dates are parsed, and codes, product names and source folders are cleaned with the shared helpers. Rows with the latest `file_modified` per source folder and sale month are kept, including ties. Quantity and amount are summed by `sale_date`, `branch_code`, `product_code` and `is_return`; quantity is rounded and cast to INT64, and `asatdate` is the maximum extract date in each group.
 Used by: [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md).
 
 # Grain and key
@@ -36,15 +36,15 @@ One row per `sale_date`, `branch_code`, `product_code`, `is_return`. The key is 
 |---|---|---|
 | `sale_date` | DATE | Sale date. |
 | `store_code` | STRING | Retail chain code, always `DH` (DoHome). |
-| `branch_code` | STRING | DoHome branch code (`M...` = DoHome To Go branches). |
-| `product_code` | STRING | DoHome product code (not a barcode). |
-| `product_name` | STRING | Product name. |
-| `sale_qty` | INT64 | Sales quantity for the day (negative = return). |
-| `sale_amount` | FLOAT64 | Sales amount for the day (THB; negative = return). |
+| `branch_code` | STRING | Cleaned DoHome branch code (`M...` = DoHome To Go branches); blank codes become NULL. |
+| `product_code` | STRING | Cleaned DoHome product code (not a barcode); blank codes become NULL. |
+| `product_name` | STRING | Any product name from the rows in the group (`ANY_VALUE`). |
+| `sale_qty` | INT64 | SUM of source `SALES_QTY` per sale date, branch, product and return flag, rounded and cast to INT64. |
+| `sale_amount` | FLOAT64 | SUM of source `SALES_AMOUNT` per sale date, branch, product and return flag (THB; negative = return). |
 | `is_return` | BOOL | TRUE for return rows (negative amount); sales and returns are kept on separate rows. |
-| `source_folder` | STRING | SharePoint folder (DoHome sales zone) the file came from. |
-| `file_modified` | TIMESTAMP | Last-modified timestamp of the source file; the latest file per folder and month is kept. |
-| `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
+| `source_folder` | STRING | Any source SharePoint folder (DoHome sales zone) from the rows in the group (`ANY_VALUE`). |
+| `file_modified` | TIMESTAMP | Maximum source-file last-modified timestamp in the group, after keeping the latest timestamp per folder and sale month (including ties); unparseable or NULL source timestamps become `1900-01-01`. |
+| `asatdate` | DATE | MAX of the extract dates (raw `ASATDATE` parsed to DATE) in the group; the partition column. |
 
 # How it is built
 

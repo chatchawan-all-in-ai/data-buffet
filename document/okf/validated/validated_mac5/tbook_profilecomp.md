@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "tbook_profilecomp"
-description: "One row = one project profile from source table `tbook_profilecomp` (no declared key; append-style, not deduplicated)."
+description: "One row = one project profile from source table `tbook_profilecomp` (no declared key; not deduplicated)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=tbook_profilecomp&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `tbook_profilecomp`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Construction project and company profiles of the quotation app, with project dates, value, location and contacts; source of dim_project.
+Validated copy of MAC5 `tbook_profilecomp`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`. There is no business logic at this layer. Table meaning: Construction project and company profiles of the quotation app, with project dates, value, location and contacts; source of dim_project.
 Used by: [dimension_table.dim_project](/dimension/dim_project.md).
 
 # Grain and key
@@ -34,7 +34,7 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `docno` | INT64 | Document number of the project profile. |
 | `projectcode` | INT64 | Project code, referenced by the quotation project text. |
 | `projectname` | STRING | Project name. |
@@ -85,7 +85,7 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 - Definition: `definitions/validated/mac5/tbook_profilecomp.sqlx` (`type: "table"`, tags `validated`, `validated_full`).
 - Reads: [raw_mac5_ag01.tbook_profilecomp](/initial/raw_mac5_ag01/tbook_profilecomp.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
-- Storage: partition by `(none)`, cluster by `company_id`, `docno`.
+- Storage: not partitioned; cluster by `company_id`, `docno`.
 
 # Examples
 

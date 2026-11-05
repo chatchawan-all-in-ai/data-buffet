@@ -24,7 +24,7 @@ status: draft
 # What it is
 
 Validated copy of MAC5 `cql` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Cheque and bank-book ledger entries linking each cheque to the receipt or payment document it settles. Cheque/receipt linkage is evidenced by [fact_chq](/fact/fact_chq.md): it matches cqlno to the cheque number, cqlcus to the customer and cqlsuml to the cheque amount, then exposes cqlvnos as the receipt number. Quotation detail instead comes from [tbook_quodetail](/validated/validated_mac5/tbook_quodetail.md).
-Used by: [fact_table.fact_chq](/fact/fact_chq.md), [fact_view.view_aging_ri](/view/fact_view/view_aging_ri.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
+Used by: [fact_table.fact_chq](/fact/fact_chq.md), [fact_view.view_aging_ri](/view/fact_view/view_aging_ri.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [pub_sub.export_chqri](/view/pub_sub/export_chqri.md), [pub_sub.export_receipt](/view/pub_sub/export_receipt.md).
 
 # Grain and key
 
@@ -55,7 +55,7 @@ One row per `company_id`, `cqlbank`, `cqlno`, `cqlsys`, `cqlday`, `cqlmonth`, `c
 
 - Definition: `definitions/validated/mac5/cql.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_mac5_ag01.cql](/initial/raw_mac5_ag01/cql.md), [raw_mac5_aa05.cql](/initial/raw_mac5_aa05/cql.md), [raw_mac5_ab01.cql](/initial/raw_mac5_ab01/cql.md), [raw_mac5_ac02.cql](/initial/raw_mac5_ac02/cql.md), [raw_mac5_ak02.cql](/initial/raw_mac5_ak02/cql.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `company_id`, `cqlbank`, `cqlyear`, `cqlmonth`.
 

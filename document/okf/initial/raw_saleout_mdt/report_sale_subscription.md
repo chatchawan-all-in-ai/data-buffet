@@ -24,7 +24,7 @@ External table over AVRO files in `gs://file-raw-data/saleout_mdt/tw/reportsales
 
 # Grain and key
 
-One row per source record **per ASATDATE partition**: the same business record appears again in every day's extract (full snapshots) or only when it changed (incremental feeds), depending on the source. There is no key at this layer; the validated table defines the key and keeps the newest `asatdate` per key.
+One row per source record **per ASATDATE partition**: the same business record appears again in every day's extract (full snapshots) or only when it changed (incremental feeds), depending on the source. There is no key at this layer, and the validated table does not define one.
 
 # Schema
 

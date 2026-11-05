@@ -47,7 +47,7 @@ One row per `company_id`, `ap_scode`. The key is declared twice in the definitio
 - Reads: [raw_mac5_ag01.ap_s](/initial/raw_mac5_ag01/ap_s.md), [raw_mac5_aa05.ap_s](/initial/raw_mac5_aa05/ap_s.md), [raw_mac5_ab01.ap_s](/initial/raw_mac5_ab01/ap_s.md), [raw_mac5_ac02.ap_s](/initial/raw_mac5_ac02/ap_s.md), [raw_mac5_ak02.ap_s](/initial/raw_mac5_ak02/ap_s.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY ap_snamet desc, ap_snamee desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `ap_scode`.
+- Storage: not partitioned; cluster by `company_id`, `ap_scode`.
 
 # Examples
 

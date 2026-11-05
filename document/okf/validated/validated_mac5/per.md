@@ -24,7 +24,7 @@ status: draft
 # What it is
 
 Validated copy of MAC5 `per` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Employee master of the MAC5 ERP (mainly salespeople): name, department, position, employment dates and contact details.
-Used by: [dimension_table.dim_sale_representative](/dimension/dim_sale_representative.md), [dimension_table.dim_sale_representative_last](/dimension/dim_sale_representative_last.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md), [dimension_table.dim_order](/dimension/dim_order.md).
+Used by: [dimension_table.dim_sale_representative](/dimension/dim_sale_representative.md), [dimension_table.dim_sale_representative_last](/dimension/dim_sale_representative_last.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md), [dimension_table.dim_order](/dimension/dim_order.md), [pub_sub.export_sell](/view/pub_sub/export_sell.md).
 
 # Grain and key
 
@@ -68,7 +68,7 @@ One row per `company_id`, `percode`. The key is declared twice in the definition
 - Reads: [raw_mac5_ag01.per](/initial/raw_mac5_ag01/per.md), [raw_mac5_aa05.per](/initial/raw_mac5_aa05/per.md), [raw_mac5_ab01.per](/initial/raw_mac5_ab01/per.md), [raw_mac5_ac02.per](/initial/raw_mac5_ac02/per.md), [raw_mac5_ak02.per](/initial/raw_mac5_ak02/per.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY perbdate desc, pernamet desc, pernamee desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `percode`.
+- Storage: not partitioned; cluster by `company_id`, `percode`.
 
 # Examples
 

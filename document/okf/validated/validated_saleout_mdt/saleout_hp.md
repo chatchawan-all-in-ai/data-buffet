@@ -23,7 +23,7 @@ status: draft
 
 # What it is
 
-Validated copy of SALEOUT_MDT `saleout_hp`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Daily sell-out of the company products at HomePro and MegaHome branches (quantity and amount per article, branch and day).
+Validated copy of SALEOUT_MDT `saleout_hp`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. The `store_code` column is derived from the cleaned `siteno`; see its mapping in [Schema](#schema). Table meaning: Daily sell-out of the company products at HomePro and MegaHome branches (quantity and amount per article, branch and day).
 Used by: [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md).
 
 # Grain and key
@@ -35,8 +35,8 @@ One row per `siteno`, `artno`, `sale_date`. The key is declared twice in the def
 | Column | Type | Description |
 |---|---|---|
 | `sale_date` | DATE | Sale date (= `perioddate`, one day before `crdate`). |
-| `store_code` | STRING | Retail chain code derived from the branch: `HP` = HomePro, `MH` = MegaHome. |
-| `siteno` | STRING | HomePro/MegaHome branch code (`S...` = HomePro, `M...` = MegaHome). |
+| `store_code` | STRING | Retail chain code from cleaned `siteno`: `M888`, `CS01`, `EX99` and codes starting with `S` map to `HP` (HomePro); other codes starting with `M` map to `MH` (MegaHome); all others give NULL. |
+| `siteno` | STRING | Cleaned HomePro/MegaHome branch code; retail chain mapping is described under `store_code`. |
 | `sitename` | STRING | Branch name. |
 | `artno` | STRING | HomePro article (product) number. |
 | `artdesc` | STRING | HomePro article description (product name). |
@@ -60,7 +60,7 @@ One row per `siteno`, `artno`, `sale_date`. The key is declared twice in the def
 
 - Definition: `definitions/validated/saleout_mdt/HP/saleout_hp.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`, `saleout_daily`).
 - Reads: [raw_saleout_mdt.saleout_hp](/initial/raw_saleout_mdt/saleout_hp.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY ASATDATE DESC, value DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `siteno`, `artno`.
 

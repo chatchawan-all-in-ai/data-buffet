@@ -23,8 +23,8 @@ status: draft
 
 # What it is
 
-Validated copy of MAC5 `mih` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Headers of all MAC5 trading documents (quotations, sales orders, invoices, debit and credit notes, billing statements, receipts and their purchase-side equivalents), one row per company, document type and document number.
-Used by: [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [validated_mac5.mil](/validated/validated_mac5/mil.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
+Validated copy of MAC5 `mih` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. For credit notes (`mihtype` `BS`) the amount columns are sign-flipped and the values before the flip are kept in the `*_raw` columns; the memo is split into `mihmemo_new` and `memo_extract`; rows with an empty `mihvnos` are dropped. Table meaning: Headers of all MAC5 trading documents (quotations, sales orders, invoices, debit and credit notes, billing statements, receipts and their purchase-side equivalents), one row per company, document type and document number.
+Used by: [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [validated_mac5.mil](/validated/validated_mac5/mil.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [pub_sub.export_credit_note](/view/pub_sub/export_credit_note.md), [pub_sub.export_debit_note](/view/pub_sub/export_debit_note.md), [pub_sub.export_invoice](/view/pub_sub/export_invoice.md), [pub_sub.export_order](/view/pub_sub/export_order.md), [pub_sub.export_receipt](/view/pub_sub/export_receipt.md).
 
 # Grain and key
 
@@ -124,10 +124,10 @@ One row per `company_id`, `MIHtype`, `MIHvnos`. The key is declared twice in the
 
 - Definition: `definitions/validated/mac5/mih.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_mac5_ag01.mih](/initial/raw_mac5_ag01/mih.md), [raw_mac5_aa05.mih](/initial/raw_mac5_aa05/mih.md), [raw_mac5_ab01.mih](/initial/raw_mac5_ab01/mih.md), [raw_mac5_ac02.mih](/initial/raw_mac5_ac02/mih.md), [raw_mac5_ak02.mih](/initial/raw_mac5_ak02/mih.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `company_id`, `MIHtype`, `MIHvnos`.
-- Same document-grain purge pattern as `mil`/`mir`; for `mih` (one row per document) it is effectively a no-op.
+- Same document-grain purge pattern as `mil`/`mir`.
 
 # Examples
 

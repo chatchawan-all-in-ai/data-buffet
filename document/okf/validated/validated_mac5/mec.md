@@ -34,7 +34,7 @@ One row per `company_id`, `meccode`. The key is declared twice in the definition
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `meccode` | STRING | Memo-card code, referenced by `mihmec` and `milmec` on documents. |
 | `mectpl` | INT64 | Template number that defines the layout of the card's text fields. |
 | `mectoctype` | INT64 | Owner type of the card (2 = card attached to a customer through `mectocode`, 11 = general card, 8 = other). |
@@ -83,7 +83,7 @@ One row per `company_id`, `meccode`. The key is declared twice in the definition
 - Reads: [raw_mac5_ag01.mec](/initial/raw_mac5_ag01/mec.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY meceditdt desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `meccode`.
+- Storage: not partitioned; cluster by `company_id`, `meccode`.
 
 # Examples
 

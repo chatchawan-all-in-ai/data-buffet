@@ -33,7 +33,7 @@ One row per source record **per ASATDATE partition**: the same business record a
 | `id` | INT64 | Primary key of the sub-district lookup. |
 | `sub_district_code` | STRING | 6-digit Thai sub-district (tambon/khwaeng) code. |
 | `sub_district_name` | STRING | Sub-district name in Thai. |
-| `sub_district_name_en` | STRING | Sub-district name in English (currently holds the Thai name). |
+| `sub_district_name_en` | STRING | Sub-district name in English. |
 | `district_id` | INT64 | Identifier of the parent district (`district.id`). |
 | `create_date` | STRING | Timestamp when the record was created. |
 | `create_by` | STRING | Identifier of the user or system that created the record. |

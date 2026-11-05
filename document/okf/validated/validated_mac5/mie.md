@@ -24,7 +24,7 @@ status: draft
 # What it is
 
 Validated copy of MAC5 `mie` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Per-document payment details: instalment payment terms, cash and cheque amounts received or paid, and withholding tax entries (PND3 / PND53).
-Used by: [fact_table.fact_mir_rs](/fact/fact_mir_rs.md), [fact_table.fact_mir_vs](/fact/fact_mir_vs.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
+Used by: [fact_table.fact_mir_rs](/fact/fact_mir_rs.md), [fact_table.fact_mir_vs](/fact/fact_mir_vs.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [pub_sub.export_invoice](/view/pub_sub/export_invoice.md), [pub_sub.export_order](/view/pub_sub/export_order.md).
 
 # Grain and key
 
@@ -81,7 +81,7 @@ One row per `company_id`, `MIEday`, `MIEmonth`, `MIEyear`, `MIEtype`, `MIEvnos`,
 
 - Definition: `definitions/validated/mac5/mie.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_mac5_ag01.mie](/initial/raw_mac5_ag01/mie.md), [raw_mac5_aa05.mie](/initial/raw_mac5_aa05/mie.md), [raw_mac5_ab01.mie](/initial/raw_mac5_ab01/mie.md), [raw_mac5_ac02.mie](/initial/raw_mac5_ac02/mie.md), [raw_mac5_ak02.mie](/initial/raw_mac5_ak02/mie.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `company_id`, `mietype`, `mievnos`, `miecus`.
 

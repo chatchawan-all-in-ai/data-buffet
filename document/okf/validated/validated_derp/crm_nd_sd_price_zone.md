@@ -52,7 +52,7 @@ One row per `nd_sd_price_zone_id`. The key is declared twice in the definition (
 
 - Definition: `definitions/validated/derp/crm_nd_sd_price_zone.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_derp.crm_nd_sd_price_zone](/initial/raw_derp/crm_nd_sd_price_zone.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY updated_at DESC, asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `nd_sd_price_zone_id`.
 

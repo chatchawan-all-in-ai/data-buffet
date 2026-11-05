@@ -34,7 +34,7 @@ One row per `company_id`, `gacccode`. The key is declared twice in the definitio
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `gacccode` | STRING | Accounting product group code (e.g. `02BI`). |
 | `gaccname` | STRING | Accounting product group name. |
 
@@ -44,7 +44,7 @@ One row per `company_id`, `gacccode`. The key is declared twice in the definitio
 - Reads: [raw_mac5_ag01.stgacc](/initial/raw_mac5_ag01/stgacc.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY gaccname desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `gacccode`.
+- Storage: not partitioned; cluster by `company_id`, `gacccode`.
 
 # Examples
 

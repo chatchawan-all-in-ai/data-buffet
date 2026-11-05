@@ -48,7 +48,7 @@ One row per `pgcg_id`. The key is declared twice in the definition (`uniqueKey` 
 
 - Definition: `definitions/validated/mastersku/product_group_cost_group.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_mastersku.product_group_cost_group](/initial/raw_mastersku/product_group_cost_group.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `pgcg_id`.
 

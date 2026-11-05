@@ -34,7 +34,7 @@ One row per `company_id`, `rowguid`. The key is declared twice in the definition
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code; always `ag01` (the table is loaded from the ag01 database only). |
 | `rowguid` | STRING | Row GUID assigned to the record by the source database. |
 | `cppstkid` | STRING | Product (stock) code of the outstanding purchase line, matching `stk.stkcode`. |
 | `cpplinkid` | INT64 | Internal ID linking the outstanding record to its document line. |
@@ -69,7 +69,7 @@ One row per `company_id`, `rowguid`. The key is declared twice in the definition
 - Reads: [raw_mac5_ag01.cpp](/initial/raw_mac5_ag01/cpp.md).
 - **Full rebuild** (`type: "table"`) on every run from all raw partitions.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY cppdateid desc) = 1`.
-- Storage: partition by `(none)`, cluster by `company_id`, `rowguid`.
+- Storage: not partitioned; cluster by `company_id`, `rowguid`.
 
 # Examples
 

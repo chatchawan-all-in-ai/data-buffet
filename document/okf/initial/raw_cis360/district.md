@@ -33,7 +33,7 @@ One row per source record **per ASATDATE partition**: the same business record a
 | `id` | INT64 | Primary key of the district lookup. |
 | `district_code` | STRING | 4-digit Thai district (amphoe/khet) code. |
 | `district_name` | STRING | District name in Thai. |
-| `district_name_en` | STRING | District name in English (currently holds the Thai name). |
+| `district_name_en` | STRING | District name in English. |
 | `province_id` | INT64 | Identifier of the parent province (`province.id`). |
 | `create_date` | STRING | Timestamp when the record was created. |
 | `create_by` | STRING | Identifier of the user or system that created the record. |

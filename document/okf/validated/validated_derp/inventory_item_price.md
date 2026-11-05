@@ -65,7 +65,7 @@ One row per `inventory_item_price_id`. The key is declared twice in the definiti
 
 - Definition: `definitions/validated/derp/inventory_item_price.sqlx` (`type: "incremental"`, tags `validated`, `validated_incremental`).
 - Reads: [raw_derp.inventory_item_price](/initial/raw_derp/inventory_item_price.md).
-- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days (currently 1; string compare) and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
+- **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
 - Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY updated_datetime DESC, asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `inventory_item_price_id`.
 
