@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
 Validated copy of MAC5 `stgacc`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Accounting product groups (code and name) used to map stock groups to accounting groups.
-Used by: [validated_mac5.stg](/validated/validated_mac5/stg.md).
+
+Read by: [validated_mac5.stg](/validated/validated_mac5/stg.md).
 
 # Grain and key
 

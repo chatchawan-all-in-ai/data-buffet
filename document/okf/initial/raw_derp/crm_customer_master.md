@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_master/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_master` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Customer master records of the DERP CRM: codes (CRM, MAC5, ERP party), names, tax ID, accounts, tax and currency settings, and approval status. Used by: [validated_derp.crm_customer_master](/validated/validated_derp/crm_customer_master.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_master/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_master` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Customer master records of the DERP CRM: codes (CRM, MAC5, ERP party), names, tax ID, accounts, tax and currency settings, and approval status.
+
+Read by: [validated_derp.crm_customer_master](/validated/validated_derp/crm_customer_master.md).
 
 # Grain and key
 

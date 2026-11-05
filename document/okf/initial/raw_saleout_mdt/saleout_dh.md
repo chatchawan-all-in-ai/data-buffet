@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/dh/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `saleout_dh` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Daily sell-out of the company products at DoHome branches, from monthly SharePoint files (latest file per zone and month). Used by: [validated_saleout_mdt.saleout_dh](/validated/validated_saleout_mdt/saleout_dh.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/dh/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `saleout_dh` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Daily sell-out of the company products at DoHome branches, from monthly SharePoint files (latest file per zone and month).
+
+Read by: [validated_saleout_mdt.saleout_dh](/validated/validated_saleout_mdt/saleout_dh.md).
 
 # Grain and key
 

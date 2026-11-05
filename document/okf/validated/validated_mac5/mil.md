@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
 Validated copy of MAC5 `mil` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. For credit notes (`miltype` `BS`) the quantity and amount columns are sign-flipped and the values before the flip are kept in the `*_raw` columns; the lines are LEFT JOINed to [mih](/validated/validated_mac5/mih.md) on company, date, type, number and customer; rows with an empty `milvnos` are dropped. Table meaning: Line items of all MAC5 trading documents (product, quantity, prices, discounts, link to the source document), one row per company, document type, document number and line number.
-Used by: [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [pub_sub.export_credit_note](/view/pub_sub/export_credit_note.md), [pub_sub.export_debit_note](/view/pub_sub/export_debit_note.md), [pub_sub.export_invoice](/view/pub_sub/export_invoice.md), [pub_sub.export_order](/view/pub_sub/export_order.md).
+
+Read by: [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [pub_sub.export_credit_note](/view/pub_sub/export_credit_note.md), [pub_sub.export_debit_note](/view/pub_sub/export_debit_note.md), [pub_sub.export_invoice](/view/pub_sub/export_invoice.md), [pub_sub.export_order](/view/pub_sub/export_order.md).
 
 # Grain and key
 

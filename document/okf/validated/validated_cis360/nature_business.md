@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
 Validated copy of CIS360 `nature_business`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Lookup of CIS360 nature-of-business values.
-Used by: [dimension_table.dim_customer](/dimension/dim_customer.md).
+
+Read by: [dimension_table.dim_customer](/dimension/dim_customer.md).
 
 # Grain and key
 

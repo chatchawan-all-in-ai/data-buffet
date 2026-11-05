@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/sale_by_branch_detail/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sale_by_branch_detail` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Boonthavorn (BT) sell-out file with month-to-date (MTD) sales of the company products per branch, article and channel; curated derives daily sales from the change in MTD values. Used by: [validated_saleout_mdt.sale_by_branch_detail](/validated/validated_saleout_mdt/sale_by_branch_detail.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/sale_by_branch_detail/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sale_by_branch_detail` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Boonthavorn (BT) sell-out file with month-to-date (MTD) sales of the company products per branch, article and channel; curated derives daily sales from the change in MTD values.
+
+Read by: [validated_saleout_mdt.sale_by_branch_detail](/validated/validated_saleout_mdt/sale_by_branch_detail.md).
 
 # Grain and key
 

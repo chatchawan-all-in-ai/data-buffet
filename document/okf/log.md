@@ -4,6 +4,7 @@
 
 ## 2026-11-05 (core card review fixes)
 
+* **Update**: Second-round corrections to validated and initial cards and indexes: reader wording and its [shared rule](README.md#rule), removal of indirect-reader prose from raw cards, index descriptions, refreshed edit metadata and SALEOUT_MDT details.
 * **Creation**: Added the [curated_derp](curated/curated_derp/index.md) dataset with the [curated_invoice_line_cost](curated/curated_derp/curated_invoice_line_cost.md) and [curated_journal_invoice](curated/curated_derp/curated_journal_invoice.md) cards (curated 16 cards).
 * **Update**: Review corrections to the dimension, fact, curated, org_center, process and cdc cards and their indexes: grain and key wording, column meanings, formulas, examples, `Read by:` lines (including the Pub/Sub export views), unified wording for repeated columns, and removal of warnings, history and dated observations.
 

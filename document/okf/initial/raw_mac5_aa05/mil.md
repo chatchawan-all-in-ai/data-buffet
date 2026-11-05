@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_aa05/mil/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `mil` table from MAC5 for company `aa05`; nothing is cleaned or deduplicated here. Table meaning: Line items of all MAC5 trading documents (product, quantity, prices, discounts, link to the source document), one row per company, document type, document number and line number. Used by: [validated_mac5.mil](/validated/validated_mac5/mil.md).
+External table over AVRO files in `gs://file-raw-data/mac5_aa05/mil/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `mil` table from MAC5 for company `aa05`; nothing is cleaned or deduplicated here. Table meaning: Line items of all MAC5 trading documents (product, quantity, prices, discounts, link to the source document), one row per company, document type, document number and line number.
+
+Read by: [validated_mac5.mil](/validated/validated_mac5/mil.md).
 
 # Grain and key
 

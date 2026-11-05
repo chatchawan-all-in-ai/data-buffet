@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
 Validated copy of MAC5 `sto`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Warehouse master of the MAC5 ERP: code, group (FG, WIP, RM...) and Thai/English name.
-Used by: [dimension_table.dim_store](/dimension/dim_store.md), [pub_sub.export_warehouse](/view/pub_sub/export_warehouse.md).
+
+Read by: [dimension_table.dim_store](/dimension/dim_store.md), [pub_sub.export_warehouse](/view/pub_sub/export_warehouse.md).
 
 # Grain and key
 

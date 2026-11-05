@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
 Validated copy of MAC5 `mih2`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Extra sales order (`PS`) data for ag01: salesperson split shares, ship-to and contact details, project, installation and status fields, one row per order revision.
-Used by: [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [dimension_view.view_dim_order](/view/dimension_view/view_dim_order.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md).
+
+Read by: [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [dimension_view.view_dim_order](/view/dimension_view/view_dim_order.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md).
 
 # Grain and key
 

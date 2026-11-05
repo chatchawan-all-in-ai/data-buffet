@@ -5,7 +5,7 @@
 # Tables
 
 * [detail_sales_daily](detail_sales_daily.md) - One row = one article, branch and sales channel on one sale date from source table `detail_sales_daily`, unique on (sale_date, branch, article_id, distribution_channel).
-* [report_sale_subscription](report_sale_subscription.md) - One row = one SKU at one Thai Watsadu branch in one daily file from source table `report_sale_subscription` (no declared key; append-style, not deduplicated).
+* [report_sale_subscription](report_sale_subscription.md) - One row = one SKU at one Thai Watsadu branch in one daily file from source table `report_sale_subscription` (no declared key; not deduplicated).
 * [sale_by_branch_detail](sale_by_branch_detail.md) - One row = one article, branch and sales channel for one report date from source table `sale_by_branch_detail`, unique on (branch, article_id, distribution_channel, end_date).
 * [sale_by_branch_mch3](sale_by_branch_mch3.md) - One row = one branch and merchandise category for one report date from source table `sale_by_branch_mch3`, unique on (vendor_id, branch, mch3).
 * [saleout_dh](saleout_dh.md) - One row = one product, branch, sale date and sale/return flag from source table `saleout_dh`, unique on (sale_date, branch_code, product_code, is_return).

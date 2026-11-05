@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/detail_sales_daily/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `detail_sales_daily` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Boonthavorn (BT) daily sell-out of the company products per branch, article and channel. Used by: [validated_saleout_mdt.detail_sales_daily](/validated/validated_saleout_mdt/detail_sales_daily.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/detail_sales_daily/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `detail_sales_daily` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Boonthavorn (BT) daily sell-out of the company products per branch, article and channel.
+
+Read by: [validated_saleout_mdt.detail_sales_daily](/validated/validated_saleout_mdt/detail_sales_daily.md).
 
 # Grain and key
 

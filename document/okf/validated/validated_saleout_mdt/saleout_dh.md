@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
 Daily sell-out of the company products at DoHome branches, from monthly SharePoint files in SALEOUT_MDT `saleout_dh`. Rows are filtered out only when raw `SALES_DATE`, `BRANCH_CODE` or `PRODUCT_CODE` is NULL; blank codes survive this filter and become NULL through `cleanCode`. Sale and extract dates are parsed, and codes, product names and source folders are cleaned with the shared helpers. Rows with the latest `file_modified` per source folder and sale month are kept, including ties. Quantity and amount are summed by `sale_date`, `branch_code`, `product_code` and `is_return`; quantity is rounded and cast to INT64, and `asatdate` is the maximum extract date in each group.
-Used by: [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md).
+
+Read by: [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md).
 
 # Grain and key
 

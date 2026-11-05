@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/cps_dummy/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `cps_dummy` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Outstanding sales order lines from the ERP's dummy (staging) table, same layout as `cps`. Used by: [validated_mac5.cps_dummy](/validated/validated_mac5/cps_dummy.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/cps_dummy/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `cps_dummy` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Outstanding sales order lines from the ERP's dummy (staging) table, same layout as `cps`.
+
+Read by: [validated_mac5.cps_dummy](/validated/validated_mac5/cps_dummy.md).
 
 # Grain and key
 

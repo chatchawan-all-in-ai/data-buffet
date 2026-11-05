@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/tdis_mail/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tdis_mail` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Sales users of the quotation approval system with their approval level, approver email chains per product line and access flags. Used by: [validated_mac5.tdis_mail](/validated/validated_mac5/tdis_mail.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/tdis_mail/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tdis_mail` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Sales users of the quotation approval system with their approval level, approver email chains per product line and access flags.
+
+Read by: [validated_mac5.tdis_mail](/validated/validated_mac5/tdis_mail.md).
 
 # Grain and key
 

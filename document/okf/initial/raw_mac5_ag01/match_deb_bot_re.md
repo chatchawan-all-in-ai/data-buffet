@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/match_deb_bot_re/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `match_deb_bot_re` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Mapping of developer company names on purchase orders to MAC5 customer (debtor) codes, used by the real-estate PO bot. Used by: [validated_mac5.match_deb_bot_re](/validated/validated_mac5/match_deb_bot_re.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/match_deb_bot_re/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `match_deb_bot_re` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Mapping of developer company names on purchase orders to MAC5 customer (debtor) codes, used by the real-estate PO bot.
+
+Read by: [validated_mac5.match_deb_bot_re](/validated/validated_mac5/match_deb_bot_re.md).
 
 # Grain and key
 

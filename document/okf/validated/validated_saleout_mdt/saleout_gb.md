@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:28:26+07:00" }
 status: draft
 ---
 
 # What it is
 
 Validated copy of SALEOUT_MDT `saleout_gb`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. Rows with an empty `Sale_Date` are dropped; the sale date is parsed from both file formats (MM/DD/YYYY and DD/MM/YYYY, Gregorian or Buddhist year) and the `type` values `ขาย`/`รับคืน` are mapped to `SALE`/`RETURN`. Table meaning: Daily sell-out bill lines of the company products at Global House branches, including returns.
-Used by: [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md).
+
+Read by: [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md).
 
 # Grain and key
 
@@ -36,14 +37,14 @@ One row per `sale_no`, `sale_date`, `branch_code`, `product_code`. The key is de
 |---|---|---|
 | `row_no` | STRING | Line number of the row in the report file. |
 | `sale_no` | STRING | Global House bill (sales document) number. |
-| `sale_date` | DATE | Sale (bill) date. |
+| `sale_date` | DATE | Sale (bill) date. If the year is at least 2500, it is parsed as Buddhist-era DD/MM/YYYY with 543 subtracted from the year; otherwise, DD/MM/YYYY is used when raw `ASATDATE >= '20261015'`, and MM/DD/YYYY is used before that cutoff. Unparseable dates become NULL. |
 | `branch_code` | STRING | Global House branch code (e.g. `GH-218`). |
 | `branch_name` | STRING | Global House branch name. |
 | `branch_short_name` | STRING | Short branch abbreviation used in bill numbers. |
 | `product_code` | STRING | Global House product code (13-digit barcode). |
 | `product_name` | STRING | Product name. |
 | `sale_quantity` | INT64 | Sales quantity (negative = return). |
-| `sale_amount` | FLOAT64 | Sales amount (THB; negative = return). |
+| `sale_amount` | FLOAT64 | Sales amount (THB; negative = return). Commas and apostrophes are removed before casting to FLOAT64. |
 | `type` | STRING | Document type: `SALE` or `RETURN` (newer files send Thai `ขาย`/`รับคืน`). |
 | `reference_no` | STRING | Original bill number referenced by a return. |
 | `deposit_no` | STRING | Deposit document number linked to the bill. |

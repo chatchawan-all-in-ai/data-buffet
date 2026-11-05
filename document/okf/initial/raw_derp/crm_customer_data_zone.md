@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_data_zone/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_data_zone` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Assignments of CRM customers to data zones (three-level zone hierarchy) for main or logistics purposes. Used by: [validated_derp.crm_customer_data_zone](/validated/validated_derp/crm_customer_data_zone.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_data_zone/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_data_zone` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Assignments of CRM customers to data zones (three-level zone hierarchy) for main or logistics purposes.
+
+Read by: [validated_derp.crm_customer_data_zone](/validated/validated_derp/crm_customer_data_zone.md).
 
 # Grain and key
 

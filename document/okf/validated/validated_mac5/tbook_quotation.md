@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
 Validated copy of MAC5 `tbook_quotation`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. Phone numbers in `noteforapp` are masked as `xxx-xxx-xxxx` (REGEXP_REPLACE). Table meaning: Sales quotations of the quotation app (header per revision), with customer, project, channel, terms and approval type; source of curated_tbook_quotation.
-Used by: [curated_mac5.curated_tbook_quotation](/curated/curated_mac5/curated_tbook_quotation.md), [dimension_table.dim_customer_report_info](/dimension/dim_customer_report_info.md).
+
+Read by: [curated_mac5.curated_tbook_quotation](/curated/curated_mac5/curated_tbook_quotation.md), [dimension_table.dim_customer_report_info](/dimension/dim_customer_report_info.md).
 
 # Grain and key
 

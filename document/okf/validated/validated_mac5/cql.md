@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:28:26+07:00" }
 status: draft
 ---
 
 # What it is
 
 Validated copy of MAC5 `cql` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Cheque and bank-book ledger entries linking each cheque to the receipt or payment document it settles. Cheque/receipt linkage is evidenced by [fact_chq](/fact/fact_chq.md): it matches cqlno to the cheque number, cqlcus to the customer and cqlsuml to the cheque amount, then exposes cqlvnos as the receipt number. Quotation detail instead comes from [tbook_quodetail](/validated/validated_mac5/tbook_quodetail.md).
-Used by: [fact_table.fact_chq](/fact/fact_chq.md), [fact_view.view_aging_ri](/view/fact_view/view_aging_ri.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [pub_sub.export_chqri](/view/pub_sub/export_chqri.md), [pub_sub.export_receipt](/view/pub_sub/export_receipt.md).
+
+Read by: [fact_table.fact_chq](/fact/fact_chq.md), [fact_view.view_aging_ri](/view/fact_view/view_aging_ri.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [pub_sub.export_chqri](/view/pub_sub/export_chqri.md), [pub_sub.export_receipt](/view/pub_sub/export_receipt.md).
 
 # Grain and key
 

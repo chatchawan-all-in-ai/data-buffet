@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
 Validated copy of MAC5 `stk` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Product master of the MAC5 ERP: codes, barcodes, descriptions, units, VAT, GL accounts, default warehouse and sales grouping.
-Used by: [dimension_table.dim_stk_mkt](/dimension/dim_stk_mkt.md), [onetime.Product_Attribute](/view/onetime/Product_Attribute.md), [onetime.Transaction_Data_Mart](/view/onetime/Transaction_Data_Mart.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md), [curated_derp.curated_invoice_line_cost](/curated/curated_derp/curated_invoice_line_cost.md), [pub_sub.export_credit_note](/view/pub_sub/export_credit_note.md), [pub_sub.export_debit_note](/view/pub_sub/export_debit_note.md), [pub_sub.export_invoice](/view/pub_sub/export_invoice.md), [pub_sub.export_order](/view/pub_sub/export_order.md), [pub_sub.export_stk](/view/pub_sub/export_stk.md).
+
+Read by: [dimension_table.dim_stk_mkt](/dimension/dim_stk_mkt.md), [onetime.Product_Attribute](/view/onetime/Product_Attribute.md), [onetime.Transaction_Data_Mart](/view/onetime/Transaction_Data_Mart.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md), [curated_derp.curated_invoice_line_cost](/curated/curated_derp/curated_invoice_line_cost.md), [pub_sub.export_credit_note](/view/pub_sub/export_credit_note.md), [pub_sub.export_debit_note](/view/pub_sub/export_debit_note.md), [pub_sub.export_invoice](/view/pub_sub/export_invoice.md), [pub_sub.export_order](/view/pub_sub/export_order.md), [pub_sub.export_stk](/view/pub_sub/export_stk.md).
 
 # Grain and key
 

@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over CSV files in `gs://file-raw-data/saleout_mdt/lastyear_monthly/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `saleout_lastyear_monthly` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Monthly sell-out history of all modern-trade chains from 2022-01 to 2026-07, a backup copy of `onetime.saleout_lastyear_monthly`.
+External table over CSV files in `gs://file-raw-data/saleout_mdt/lastyear_monthly/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `saleout_lastyear_monthly` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Monthly sell-out history of all modern-trade chains by month, chain, branch and product.
+
+No other repo object reads it.
 
 # Grain and key
 

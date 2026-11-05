@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/mih2/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `mih2` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Extra sales order (`PS`) data for ag01: salesperson split shares, ship-to and contact details, project, installation and status fields, one row per order revision. Used by: [validated_mac5.mih2](/validated/validated_mac5/mih2.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/mih2/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `mih2` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Extra sales order (`PS`) data for ag01: salesperson split shares, ship-to and contact details, project, installation and status fields, one row per order revision.
+
+Read by: [validated_mac5.mih2](/validated/validated_mac5/mih2.md).
 
 # Grain and key
 

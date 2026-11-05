@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/master_sku/spec_groups/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `spec_groups` table from MASTER_SKU; nothing is cleaned or deduplicated here. Table meaning: Specification groups (product families sharing one set of variant attributes) of master_sku 3.0; the id matches the old MASTERSKU product group id. Used by: [validated_master_sku.spec_groups](/validated/validated_master_sku/spec_groups.md).
+External table over AVRO files in `gs://file-raw-data/master_sku/spec_groups/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `spec_groups` table from MASTER_SKU; nothing is cleaned or deduplicated here. Table meaning: Specification groups (product families sharing one set of variant attributes) of master_sku 3.0; the id matches the old MASTERSKU product group id.
+
+Read by: [validated_master_sku.spec_groups](/validated/validated_master_sku/spec_groups.md).
 
 # Grain and key
 

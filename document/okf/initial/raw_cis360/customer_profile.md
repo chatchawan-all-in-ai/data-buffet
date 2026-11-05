@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/cis360/customer_profile/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_profile` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Master customer profiles of the CIS360 customer 360 system (individuals and juristic persons) with type, status, KYC and verification flags; `customer_code` links them to MAC5 customers in `dim_customer`. Used by: [validated_cis360.customer_profile](/validated/validated_cis360/customer_profile.md).
+External table over AVRO files in `gs://file-raw-data/cis360/customer_profile/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_profile` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Master customer profiles of the CIS360 customer 360 system (individuals and juristic persons) with type, status, KYC and verification flags; `customer_code` links them to MAC5 customers in `dim_customer`.
+
+Read by: [validated_cis360.customer_profile](/validated/validated_cis360/customer_profile.md).
 
 # Grain and key
 

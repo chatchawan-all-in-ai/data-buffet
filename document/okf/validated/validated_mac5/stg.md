@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
 Validated copy of MAC5 `stg` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. The `gacccode` and `gaccname` columns are added by LEFT JOINing [stgacc](/validated/validated_mac5/stgacc.md) (which is LEFT JOINed to [stg_report](/validated/validated_mac5/stg_report.md) on `stgacc.gacccode = stg_report.stgacccode`), keeping the highest `gacccode` per `stgcode`. Table meaning: Stock group master with Thai/English names and the mapped accounting product group.
-Used by: [onetime.Product_Attribute](/view/onetime/Product_Attribute.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md).
+
+Read by: [onetime.Product_Attribute](/view/onetime/Product_Attribute.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md).
 
 # Grain and key
 

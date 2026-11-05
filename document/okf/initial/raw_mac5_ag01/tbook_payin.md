@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbook_payin/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbook_payin` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Pay-in submissions of sales orders with status and approval time. Used by: [validated_mac5.tbook_payin](/validated/validated_mac5/tbook_payin.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/tbook_payin/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `tbook_payin` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Pay-in submissions of sales orders with status and approval time.
+
+Read by: [validated_mac5.tbook_payin](/validated/validated_mac5/tbook_payin.md).
 
 # Grain and key
 

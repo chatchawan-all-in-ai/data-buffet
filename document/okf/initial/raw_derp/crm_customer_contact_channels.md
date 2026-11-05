@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_contact_channels/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_contact_channels` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Contact channels (phone, email, LINE) recorded for CRM customers. Used by: [validated_derp.crm_customer_contact_channels](/validated/validated_derp/crm_customer_contact_channels.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_contact_channels/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_contact_channels` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Contact channels (phone, email, LINE) recorded for CRM customers.
+
+Read by: [validated_derp.crm_customer_contact_channels](/validated/validated_derp/crm_customer_contact_channels.md).
 
 # Grain and key
 

@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/master_sku/common_codes/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `common_codes` table from MASTER_SKU; nothing is cleaned or deduplicated here. Table meaning: Shared code lists of master_sku 3.0 (units of measure, barcode formats, languages, statuses, product types, synonym types, color descriptors and group types). Used by: [validated_master_sku.common_codes](/validated/validated_master_sku/common_codes.md).
+External table over AVRO files in `gs://file-raw-data/master_sku/common_codes/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `common_codes` table from MASTER_SKU; nothing is cleaned or deduplicated here. Table meaning: Shared code lists of master_sku 3.0 (units of measure, barcode formats, languages, statuses, product types, synonym types, color descriptors and group types).
+
+Read by: [validated_master_sku.common_codes](/validated/validated_master_sku/common_codes.md).
 
 # Grain and key
 

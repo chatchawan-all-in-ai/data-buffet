@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/stock_aging/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `stock_aging` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Stock aging report from Boonthavorn (BT): stock quantity and value of the company products by branch, article and age band, with stock class. Used by: [validated_saleout_mdt.stock_aging](/validated/validated_saleout_mdt/stock_aging.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/stock_aging/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `stock_aging` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Stock aging report from Boonthavorn (BT): stock quantity and value of the company products by branch, article and age band, with stock class.
+
+Read by: [validated_saleout_mdt.stock_aging](/validated/validated_saleout_mdt/stock_aging.md).
 
 # Grain and key
 

@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/tw/reportsalesubscription/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `report_sale_subscription` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Daily Thai Watsadu (TW) sales-and-stock report for the company products: sales on the last sold date, stock on hand and on order per branch and SKU. Used by: [validated_saleout_mdt.report_sale_subscription](/validated/validated_saleout_mdt/report_sale_subscription.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/tw/reportsalesubscription/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `report_sale_subscription` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Daily Thai Watsadu (TW) sales-and-stock report for the company products: sales on the last sold date, stock on hand and on order per branch and SKU.
+
+Read by: [validated_saleout_mdt.report_sale_subscription](/validated/validated_saleout_mdt/report_sale_subscription.md).
 
 # Grain and key
 

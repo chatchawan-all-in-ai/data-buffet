@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_nd_sd_price_territory_group/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_nd_sd_price_territory_group` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Sales territory groups (regions) each ND/SD price applies to. Used by: [validated_derp.crm_nd_sd_price_territory_group](/validated/validated_derp/crm_nd_sd_price_territory_group.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_nd_sd_price_territory_group/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_nd_sd_price_territory_group` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Sales territory groups (regions) each ND/SD price applies to.
+
+Read by: [validated_derp.crm_nd_sd_price_territory_group](/validated/validated_derp/crm_nd_sd_price_territory_group.md).
 
 # Grain and key
 

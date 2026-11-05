@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/stock_by_branch/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `stock_by_branch` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Daily on-hand stock (quantity and cost value) of the company products at each Boonthavorn (BT) branch. Used by: [validated_saleout_mdt.stock_by_branch](/validated/validated_saleout_mdt/stock_by_branch.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/stock_by_branch/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `stock_by_branch` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Daily on-hand stock (quantity and cost value) of the company products at each Boonthavorn (BT) branch.
+
+Read by: [validated_saleout_mdt.stock_by_branch](/validated/validated_saleout_mdt/stock_by_branch.md).
 
 # Grain and key
 

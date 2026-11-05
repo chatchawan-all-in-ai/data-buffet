@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/cis360/category/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `category` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Lookup of CIS360 customer business categories. Used by: [validated_cis360.category](/validated/validated_cis360/category.md).
+External table over AVRO files in `gs://file-raw-data/cis360/category/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `category` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Lookup of CIS360 customer business categories.
+
+Read by: [validated_cis360.category](/validated/validated_cis360/category.md).
 
 # Grain and key
 

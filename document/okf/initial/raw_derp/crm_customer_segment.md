@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_segment/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_segment` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Segmentation attributes of each customer: customer group, customer type, company chain and category hierarchies. Used by: [validated_derp.crm_customer_segment](/validated/validated_derp/crm_customer_segment.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_customer_segment/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_customer_segment` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Segmentation attributes of each customer: customer group, customer type, company chain and category hierarchies.
+
+Read by: [validated_derp.crm_customer_segment](/validated/validated_derp/crm_customer_segment.md).
 
 # Grain and key
 

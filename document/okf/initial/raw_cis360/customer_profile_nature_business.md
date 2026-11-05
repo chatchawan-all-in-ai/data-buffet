@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:40:39+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/cis360/customer_profile_nature_business/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_profile_nature_business` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Link between CIS360 customer profiles and their nature of business; read by `dim_customer`. Used by: [validated_cis360.customer_profile_nature_business](/validated/validated_cis360/customer_profile_nature_business.md).
+External table over AVRO files in `gs://file-raw-data/cis360/customer_profile_nature_business/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `customer_profile_nature_business` table from CIS360; nothing is cleaned or deduplicated here. Table meaning: Link between CIS360 customer profiles and their nature of business.
+
+Read by: [validated_cis360.customer_profile_nature_business](/validated/validated_cis360/customer_profile_nature_business.md).
 
 # Grain and key
 

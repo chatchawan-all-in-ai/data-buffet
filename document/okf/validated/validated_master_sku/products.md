@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
 Validated copy of MASTER_SKU `products`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Products (SKUs) of the master_sku 3.0 product master, with master SKU code, MAC5 and Dynamics 365 cross-reference codes, barcodes, texts, dimensions, units of measure, classification groups and statuses.
-Used by: [curated_master_sku.curated_products](/curated/curated_master_sku/curated_products.md), [curated_master_sku.product_for_aisearch_v3](/curated/curated_master_sku/product_for_aisearch_v3.md), [curated_derp.curated_invoice_line_cost](/curated/curated_derp/curated_invoice_line_cost.md).
+
+Read by: [curated_master_sku.curated_products](/curated/curated_master_sku/curated_products.md), [curated_master_sku.product_for_aisearch_v3](/curated/curated_master_sku/product_for_aisearch_v3.md), [curated_derp.curated_invoice_line_cost](/curated/curated_derp/curated_invoice_line_cost.md).
 
 # Grain and key
 

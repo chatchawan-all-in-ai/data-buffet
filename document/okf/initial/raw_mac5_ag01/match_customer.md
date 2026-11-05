@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:40:39+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/mac5_ag01/match_customer/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `match_customer` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Mapping of Allkons (CIS360) customer codes to MAC5 customer (debtor) codes, used by dim_customer to attach Customer 360 profiles. Used by: [validated_mac5.match_customer](/validated/validated_mac5/match_customer.md).
+External table over AVRO files in `gs://file-raw-data/mac5_ag01/match_customer/*.avro` (no partition columns, the whole glob is read). It is the raw landing copy of the `match_customer` table from MAC5 for company `ag01`; nothing is cleaned or deduplicated here. Table meaning: Mapping of Allkons (CIS360) customer codes to MAC5 customer (debtor) codes.
+
+Read by: [validated_mac5.match_customer](/validated/validated_mac5/match_customer.md).
 
 # Grain and key
 

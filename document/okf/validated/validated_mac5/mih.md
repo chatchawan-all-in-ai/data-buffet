@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
 Validated copy of MAC5 `mih` (UNION ALL of 5 company databases: ag01, aa05, ab01, ac02, ak02): every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. For credit notes (`mihtype` `BS`) the amount columns are sign-flipped and the values before the flip are kept in the `*_raw` columns; the memo is split into `mihmemo_new` and `memo_extract`; rows with an empty `mihvnos` are dropped. Table meaning: Headers of all MAC5 trading documents (quotations, sales orders, invoices, debit and credit notes, billing statements, receipts and their purchase-side equivalents), one row per company, document type and document number.
-Used by: [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [validated_mac5.mil](/validated/validated_mac5/mil.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [pub_sub.export_credit_note](/view/pub_sub/export_credit_note.md), [pub_sub.export_debit_note](/view/pub_sub/export_debit_note.md), [pub_sub.export_invoice](/view/pub_sub/export_invoice.md), [pub_sub.export_order](/view/pub_sub/export_order.md), [pub_sub.export_receipt](/view/pub_sub/export_receipt.md).
+
+Read by: [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [validated_mac5.mil](/validated/validated_mac5/mil.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [pub_sub.export_credit_note](/view/pub_sub/export_credit_note.md), [pub_sub.export_debit_note](/view/pub_sub/export_debit_note.md), [pub_sub.export_invoice](/view/pub_sub/export_invoice.md), [pub_sub.export_order](/view/pub_sub/export_order.md), [pub_sub.export_receipt](/view/pub_sub/export_receipt.md).
 
 # Grain and key
 

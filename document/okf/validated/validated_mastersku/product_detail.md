@@ -17,14 +17,15 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
 Validated copy of MASTERSKU `product_detail`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Extended attributes of each MASTERSKU product: name, series, model, material, sizes, package dimensions, weights with units, warranty, TIS certificate and usage texts.
-Used by: [curated_mastersku.curated_product](/curated/curated_mastersku/curated_product.md), [onetime.Product_Attribute](/view/onetime/Product_Attribute.md), [curated_mastersku.product_for_aisearch](/curated/curated_mastersku/product_for_aisearch.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md).
+
+Read by: [curated_mastersku.curated_product](/curated/curated_mastersku/curated_product.md), [onetime.Product_Attribute](/view/onetime/Product_Attribute.md), [curated_mastersku.product_for_aisearch](/curated/curated_mastersku/product_for_aisearch.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md).
 
 # Grain and key
 

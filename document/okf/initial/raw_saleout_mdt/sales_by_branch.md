@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/sales_by_branch/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sales_by_branch` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Boonthavorn (BT) sales summary of the company products per branch: month-to-date and year-to-date amount, quantity and square metres against last year. Used by: [validated_saleout_mdt.sales_by_branch](/validated/validated_saleout_mdt/sales_by_branch.md).
+External table over AVRO files in `gs://file-raw-data/saleout_mdt/bt/sales_by_branch/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `sales_by_branch` table from SALEOUT_MDT; nothing is cleaned or deduplicated here. Table meaning: Boonthavorn (BT) sales summary of the company products per branch: month-to-date and year-to-date amount, quantity and square metres against last year.
+
+Read by: [validated_saleout_mdt.sales_by_branch](/validated/validated_saleout_mdt/sales_by_branch.md).
 
 # Grain and key
 

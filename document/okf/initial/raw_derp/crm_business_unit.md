@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
 status: draft
 ---
 
 # What it is
 
-External table over AVRO files in `gs://file-raw-data/derp_temp/crm_business_unit/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_business_unit` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Business unit (product line) hierarchy of the CRM, with the responsible employee and two alternates per unit. Used by: [validated_derp.crm_business_unit](/validated/validated_derp/crm_business_unit.md).
+External table over AVRO files in `gs://file-raw-data/derp_temp/crm_business_unit/*` (Hive-partitioned by `ASATDATE=YYYYMMDD`). It is the raw landing copy of the `crm_business_unit` table from DERP; nothing is cleaned or deduplicated here. Table meaning: Business unit (product line) hierarchy of the CRM, with the responsible employee and two alternates per unit.
+
+Read by: [validated_derp.crm_business_unit](/validated/validated_derp/crm_business_unit.md).
 
 # Grain and key
 
