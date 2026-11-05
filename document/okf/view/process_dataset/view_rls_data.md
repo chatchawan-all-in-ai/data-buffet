@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-The organisation-hierarchy part of the row-level-security (RLS) access map. From the latest org dims ([dim_director_last](/dimension/dim_director_last.md), [dim_region_last](/dimension/dim_region_last.md), [dim_section_last](/dimension/dim_section_last.md) and their manager dims) it lists, for every director of sales, region manager and section manager, which directors, regions and sections they may see (a director sees all regions and sections under their director, a region manager the sections under the region and so on), plus the company they belong to (`LevelName = 'CompanyID'`, `level_data = 9`). [view_rls_sale_data](/view/process_dataset/view_rls_sale_data.md) maps `EmployeeID` to e-mail and adds customer rows for Power BI RLS.
+The organisation-hierarchy part of the row-level-security (RLS) access map. From the latest org dims ([dim_director_last](/dimension/dim_director_last.md), [dim_region_last](/dimension/dim_region_last.md), [dim_section_last](/dimension/dim_section_last.md) and their manager dims) it lists, for every director of sales, region manager and section manager, which directors, regions and sections they may see (a director sees all regions and sections under their director, a region manager the sections under the region and so on), plus the company they belong to (`LevelName = 'CompanyID'`, `level_data = 9`). [view_rls_sale_data](/view/process_dataset/view_rls_sale_data.md) maps `EmployeeID` to e-mail and adds customer rows.
 
 Used by [process_dataset.view_rls_sale_data](/view/process_dataset/view_rls_sale_data.md).
 
 # Grain and key
 
-One row per distinct (EmployeeID, EmployeeLevel, LevelName, LevelValue, level_data). Employees missing one of the three levels (`emp_wrong`) get filler rows with `LevelValue = 'All'`; every employee also has one `CompanyID` row (`level_data = 9`). Output is ordered by EmployeeID, level_data descending, LevelValue.
+One row = one allowed value of one attribute of one employee: intended key `EmployeeID`, `LevelName`, `LevelValue` (not unique). The org rows are a UNION ALL that is not distinct across `companyID` values mapping to the same `CompanyReportID`; only the `CompanyID` rows (`level_data = 9`) are `SELECT DISTINCT`. Employees missing one of the three levels (`emp_wrong`) get filler rows with `LevelValue = 'All'`. Output is ordered by EmployeeID, level_data descending, LevelValue.
 
 # Schema
 
@@ -42,7 +42,6 @@ One row per distinct (EmployeeID, EmployeeLevel, LevelName, LevelValue, level_da
 
 - Definition: `definitions/view/process_dataset/view_rls_data.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_director_last](/dimension/dim_director_last.md), [dimension_table.dim_region_last](/dimension/dim_region_last.md), [dimension_table.dim_region_manager_last](/dimension/dim_region_manager_last.md), [dimension_table.dim_section_last](/dimension/dim_section_last.md), [dimension_table.dim_section_manager_last](/dimension/dim_section_manager_last.md), [dimension_view.view_dim_company](/view/dimension_view/view_dim_company.md).
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; depends on `dim_director_last`, `dim_region_last`, `dim_region_manager_last`, `dim_section_last`, `dim_section_manager_last`, `dim_sale_representative_last` and `view_dim_company` (dims rebuilt in `dimension_daily`).
 
 # Examples
 

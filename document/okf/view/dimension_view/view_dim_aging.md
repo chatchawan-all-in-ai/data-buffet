@@ -14,24 +14,24 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Reporting view over [dim_aging](/dimension/dim_aging.md), the AR aging engine. It adds the four channel SKs (via [view_dim_channel](/view/dimension_view/view_dim_channel.md)), the aging bucket SK (`AgingRangSK`, from [dim_aging_rang](/dimension/dim_aging_rang.md)), `DayRange` (days past due) and per-customer receipt-age statistics. Used by [view_aging_ri](/view/fact_view/view_aging_ri.md) and [view_fact_transcation](/view/fact_view/view_fact_transcation.md), and `dim_aging` itself reads it to build [dim_aging_history](/dimension/dim_aging_history.md).
+Reporting view over [dim_aging](/dimension/dim_aging.md), the AR aging engine. It adds the four channel SKs (via [view_dim_channel](/view/dimension_view/view_dim_channel.md)), the aging bucket SK (`AgingRangSK`, from [dim_aging_rang](/dimension/dim_aging_rang.md)), `DayRange` (days past due) and per-customer receipt-age statistics. Read by [view_aging_ri](/view/fact_view/view_aging_ri.md) and [view_fact_transcation](/view/fact_view/view_fact_transcation.md), and [dim_aging](/dimension/dim_aging.md).
 
 # Grain and key
 
-One row per `AgingSK` (QUALIFY ROW_NUMBER over AgingSK ordered by ReceiptAgeDays DESC). Natural key is companyID + cfsVnosID + cfsTypeID. The invoice `BFCN020/47` is excluded.
+One row = one invoice in the current aging: key `AgingSK` (QUALIFY ROW_NUMBER over `AgingSK` ordered by `ReceiptAgeDays` DESC keeps one row per `AgingSK`). `companyID`, `cfsVnosID`, `cfsTypeID` identify the invoice but are not the dedup key. The invoice `BFCN020/47` is excluded.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `AgingSK` | INT64 | SK of the invoice in the current [dim_aging](/dimension/dim_aging.md). Regenerated with ROW_NUMBER every night. |
-| `AgingRangSK` | INT64 | SK of the aging bucket in [dim_aging_rang](/dimension/dim_aging_rang.md) whose [AgingDayMin, AgingDayMax] contains `DayRange`. |
+| `AgingRangSK` | INT64 | SK of the aging bucket in [dim_aging_rang](/dimension/dim_aging_rang.md) whose [AgingDayMin, AgingDayMax] contains `DayRange`, matched within the same `CompanySK`; NULL when the company has no matching range. |
 | `ChannelSK` | INT64 | SK of the channel in [dim_channel](/dimension/dim_channel.md), via [view_dim_channel](/view/dimension_view/view_dim_channel.md) joined on CompanySK + `cfsDep` = DepCode; NULL when no channel matches. |
 | `ChannelFinanceSK` | INT64 | SK of the finance channel (`dim_channel_finance`), from view_dim_channel. |
 | `ChannelSaleSK` | INT64 | SK of the sales channel (`dim_channel_sales`), from view_dim_channel. |
@@ -40,23 +40,23 @@ One row per `AgingSK` (QUALIFY ROW_NUMBER over AgingSK ordered by ReceiptAgeDays
 | `CustomerSK` | INT64 | SK of the customer in [dim_customer](/dimension/dim_customer.md) (stable MERGE SK). |
 | `InvoiceSK` | INT64 | SK of the invoice in [dim_invoice](/dimension/dim_invoice.md) (stable MERGE SK). |
 | `CompanySK` | INT64 | SK of the company in [dim_company](/dimension/dim_company.md). |
-| `companyID` | STRING | MAC5 company code (ag01/aa05/ab01/ac02/ak02). |
+| `companyID` | STRING | MAC5 company code. |
 | `dueDate` | DATE | Due date: the MAC5 `mie` due date when present, otherwise `invoiceDate + transCreditTerm` (from dim_aging). |
 | `realDueDate` | DATE | Computed due date `invoiceDate + transCreditTerm`, ignoring any mie override. |
 | `invoiceDate` | DATE | Invoice date. |
-| `cfsVnosID` | STRING | Invoice document number (cfs vnos / mih `mihVnos`); with companyID and cfsTypeID it is the natural key of an aging row. |
+| `cfsVnosID` | STRING | Invoice document number (cfs vnos / mih `mihVnos`); with `companyID` and `cfsTypeID` it identifies the invoice. |
 | `cfsTypeID` | STRING | Invoice document type (MAC5 mih type of the aging document). |
 | `cfsJob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
 | `cfsDep` | STRING | Department code of the document, used as the sales channel code. |
 | `cfsPer` | STRING | Salesperson (employee) code, matching `per.percode`. |
 | `debCode` | STRING | Customer (debtor) code. |
-| `debName` | STRING | Customer name (`debnamet` from dim_customer). Personal/company data - describe only. |
+| `debName` | STRING | Customer name (`debnamet` from dim_customer). |
 | `calCreditTerm` | INT64 | Credit term in days used for the aging calculation (equals the invoice's `mihstanding`, same value as transCreditTerm). |
 | `debCreditTerm` | INT64 | Credit term in days. |
 | `transCreditTerm` | INT64 | Credit term in days stored on the invoice transaction (`mihstanding`). |
 | `debLimit` | FLOAT64 | Credit limit of the customer in baht. |
 | `debMemo` | STRING | Free-text memo on the customer. |
-| `channel` | STRING | Always NULL in dim_aging (`CAST(NULL AS STRING)`); kept for report compatibility. |
+| `channel` | STRING | Always NULL in dim_aging (`CAST(NULL AS STRING)`). |
 | `mihRef2` | STRING | Always NULL as an aging-schema placeholder. |
 | `mihNote` | STRING | Free-text notes such as delivery instructions or site details. |
 | `mihRef1` | STRING | Distinct linked document numbers separated by pipes: credit/debit notes for IS rows and referenced invoices for BS/AS rows, with links in the closed-invoice exclusion list omitted. |
@@ -82,7 +82,6 @@ One row per `AgingSK` (QUALIFY ROW_NUMBER over AgingSK ordered by ReceiptAgeDays
 
 - Definition: `definitions/view/dimension_view/view_dim_aging.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_view.view_dim_channel](/view/dimension_view/view_dim_channel.md), [dimension_table.dim_aging_rang](/dimension/dim_aging_rang.md).
-- Build: A plain BigQuery view (`type: "view"`, tag `view`): no storage, evaluated at query time over the current content of its base tables, so it is as fresh as they are. The `view` tag is not part of the nightly run; it is deployed with tag `view` after the base dimensions exist. Reads dim_aging, view_dim_channel, dim_aging_rang (dependencies also list dim_sale_representative_last; its join is commented out). View chain: view_dim_channel is deployed before this view.
 
 # Examples
 

@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
@@ -22,11 +22,11 @@ status: draft
 
 The bridge between sell-in (our invoices to the chains) and the sell-out MDT facts (what the chains report selling per branch). It keeps only [fact_transcation](/fact/fact_transcation.md) lines whose customer is a modern-trade chain branch, classifies the chain (`store_code`) from `debgroup`/customer name, and tries to find the MDT branch ([dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md)) from the branch name embedded in the customer name.
 
-No other object in this repo reads it; it is meant to be queried directly (BI tools or ad-hoc SQL).
+No other repo object reads it.
 
 # Grain and key
 
-One row per `fact_transcation` line that belongs to an MDT chain customer: (companyID, doc_type_code, doc_no, doc_line_no, product_code_mac5, plus SaleRepSK where split/dup rows exist). The `branch_lookup` CTE keeps one SK per (store, cleaned branch name) so the LEFT JOIN cannot fan out. Lines of customers with no chain code (`store_code IS NULL`) are dropped.
+One row = one `fact_transcation` row of a customer with a chain code (INNER JOIN; `store_code IS NULL` rows are dropped). No set of this view's columns is unique: `fact_transcation` also carries `milCus` and `milPer`, which this view does not expose. The `branch_lookup` CTE keeps one SK per (store, cleaned branch name), so the LEFT JOIN to `dim_sales_branch_mdt` adds no rows.
 
 # Schema
 
@@ -42,10 +42,10 @@ One row per `fact_transcation` line that belongs to an MDT chain customer: (comp
 | `branch_sk` | INT64 | SK of `dim_sales_branch_mdt` (BranchMdtSK) found by matching store_code + a cleaned branch name key (store prefixes, spaces, brackets, dashes removed); `-1` when no branch matches. |
 | `zone_sk` | INT64 | ZoneMdtSK of the matched branch in `dim_sales_branch_mdt`; `-1` when unmatched. |
 | `CompanySK` | INT64 | SK of `dim_company` (from `fact_transcation`). |
-| `companyID` | STRING | Company code from `fact_transcation.companyID`. |
+| `companyID` | STRING | MAC5 company code from `fact_transcation.companyID`. |
 | `ProductSK` | INT64 | SK of `dim_product_master` for the product on the line. |
 | `SaleRepSK` | INT64 | SK of the sale representative on the line (`fact_transcation.SaleRepSK`, daily-regenerated). |
-| `doc_type_code` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `doc_type_code` | STRING | Document type code (`IS` = invoice, `AS` = debit note, `BS` = credit note, `QS` = sales quotation). |
 | `doc_no` | STRING | Document number of the line, matching `mihvnos` of the header. |
 | `doc_line_no` | INT64 | Line number within the document. |
 | `product_code_mac5` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
@@ -58,41 +58,24 @@ One row per `fact_transcation` line that belongs to an MDT chain customer: (comp
 
 - Definition: `definitions/view/fact_view/view_fact_salein_mdt.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [fact_table.fact_transcation](/fact/fact_transcation.md).
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; `fact_transcation`, `dim_customer` and `dim_sales_branch_mdt` are built first (`fact_daily` after `dimension_daily`).
 
 # Examples
 
-Monthly sales-KPI-eligible sell-in per chain (VAT-inclusive), using resolved sales rows and retaining allocated shares.
+Monthly sell-in per chain, VAT-inclusive.
 
 ```sql
-WITH mdt_customers AS (
-  SELECT DISTINCT CompanySK, CustomerSK, store_code, branch_sk
-  FROM `databuffet-nonprd.fact_view.view_fact_salein_mdt`
-)
-SELECT DATE_TRUNC(s.mix_date, MONTH) AS month, m.store_code,
-       SUM(s.milsum_incvat) AS sell_in_incvat, SUM(s.milQuan) AS qty
-FROM `databuffet-nonprd.fact_view.view_fact_transcation` AS s
-JOIN mdt_customers AS m
-  ON s.CompanySK = m.CompanySK AND s.CustomerSK = m.CustomerSK
-WHERE s.FlagSaleExc = 'No'
-GROUP BY month, m.store_code
-ORDER BY month, m.store_code
+SELECT DATE_TRUNC(sale_date, MONTH) AS month, store_code,
+       SUM(sale_amount_incvat) AS sell_in_incvat, SUM(sale_qty) AS qty
+FROM `databuffet-nonprd.fact_view.view_fact_salein_mdt`
+GROUP BY month, store_code
+ORDER BY month, store_code
 ```
 
-Counts of sales-KPI-eligible document lines and those unmatched to an MDT branch.
+Document lines per chain and how many have no matching MDT branch.
 
 ```sql
-WITH mdt_customers AS (
-  SELECT DISTINCT CompanySK, CustomerSK, store_code, branch_sk
-  FROM `databuffet-nonprd.fact_view.view_fact_salein_mdt`
-), sales_lines AS (
-  SELECT DISTINCT CompanySK, CustomerSK, milType, milVnos, milListno, milStk
-  FROM `databuffet-nonprd.fact_view.view_fact_transcation`
-  WHERE FlagSaleExc = 'No'
-)
-SELECT m.store_code, COUNTIF(m.branch_sk = -1) AS unmatched_lines, COUNT(*) AS lines
-FROM sales_lines AS s
-JOIN mdt_customers AS m
-  ON s.CompanySK = m.CompanySK AND s.CustomerSK = m.CustomerSK
-GROUP BY m.store_code
+SELECT store_code, COUNTIF(branch_sk = -1) AS unmatched_lines, COUNT(*) AS lines
+FROM `databuffet-nonprd.fact_view.view_fact_salein_mdt`
+GROUP BY store_code
+ORDER BY store_code
 ```

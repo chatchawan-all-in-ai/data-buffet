@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "Product_Master_ALL"
-description: "An ag01 dim_product_master barcode version enriched with descriptions, marketing hierarchy, marketing director and physical attributes; enrichment joins can multiply rows."
+description: "An ag01 dim_product_master barcode version enriched with descriptions, marketing hierarchy, marketing director and physical attributes."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=onetime&t=Product_Master_ALL&page=table"
 project_id: databuffet-nonprd
 dataset_id: onetime
@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-The one-stop product master for BI: [dim_product_master](/dimension/dim_product_master.md) (MAC5 + MASTERSKU descriptions, warranty, TIS flag, barcode) joined to the marketing hierarchy ([view_dim_product_mkt](/view/dimension_view/view_dim_product_mkt.md): group, sub group, segment, type), the marketing director ([dim_product_mkt_director](/dimension/dim_product_mkt_director.md)) and the physical attributes of [Product_Attribute](/view/onetime/Product_Attribute.md). It carries no SKs.
+The wide product master: [dim_product_master](/dimension/dim_product_master.md) (MAC5 + MASTERSKU descriptions, warranty, TIS flag, barcode) joined to the marketing hierarchy ([view_dim_product_mkt](/view/dimension_view/view_dim_product_mkt.md): group, sub group, segment, type), the marketing director ([dim_product_mkt_director](/dimension/dim_product_mkt_director.md)) and the physical attributes of [Product_Attribute](/view/onetime/Product_Attribute.md). It carries no SKs.
 
-No other object in this repo reads it; it is meant to be queried directly (BI tools or ad-hoc SQL).
+No other object in this repo reads it.
 
 # Grain and key
 
-Starts from each `dim_product_master` row of company `ag01`, whose natural key is (`CompanySK`, `ProductCode`, `Barcode`), with NULL barcode matched as empty. A barcode change leaves the old row, so `ProductCode` alone is not unique. Marketing, attributes and director are LEFT JOINed on SK + CompanySK; duplicate matches in those inputs can multiply rows further.
+One row = one `dim_product_master` row of company `ag01` with each combination of joined matches: intended key `ProductCode`, `Barcode` (not unique). The source key also includes `CompanySK` (constant for this company and not exposed by this view), with NULL barcode matched as empty. [view_dim_product_mkt](/view/dimension_view/view_dim_product_mkt.md) is joined on `ProductMktSK` + `CompanySK`, [Product_Attribute](/view/onetime/Product_Attribute.md) on `ProductSK` + `CompanySK` (can return several rows per `ProductSK`), and `dim_product_mkt_director` on `ProductMktDirectorSK` + `CompanySK`; all are LEFT JOINs.
 
 # Schema
 
@@ -59,9 +59,9 @@ Starts from each `dim_product_master` row of company `ag01`, whose natural key i
 | `Segment` | STRING | Segment name. |
 | `TypeMarketingID` | STRING | Marketing type id. |
 | `TypeMarketing` | STRING | Marketing type name. |
-| `DirectorMarketingName` | STRING | First name of the marketing director responsible for the marketing type (`dim_product_mkt_director.name`, personal data). |
-| `DirectorMarketingSurname` | STRING | Surname of that director (personal data). |
-| `DirectorMarketingNameSurname` | STRING | Name and surname concatenated (personal data). |
+| `DirectorMarketingName` | STRING | First name of the marketing director responsible for the marketing type (`dim_product_mkt_director.name`). |
+| `DirectorMarketingSurname` | STRING | Surname of that director. |
+| `DirectorMarketingNameSurname` | STRING | Name and surname concatenated. |
 | `ProductColor` | STRING | Color of the product. |
 | `ProductShape` | STRING | Packaging shape of the product (e.g. box, gallon, length). |
 | `ProductGrossWeight` | FLOAT64 | Gross (packed) weight of the product. |
@@ -79,7 +79,6 @@ Starts from each `dim_product_master` row of company `ag01`, whose natural key i
 
 - Definition: `definitions/view/onetime/Product_Master_ALL.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_product_master](/dimension/dim_product_master.md), [dimension_view.view_dim_product_mkt](/view/dimension_view/view_dim_product_mkt.md), [onetime.Product_Attribute](/view/onetime/Product_Attribute.md), [dimension_table.dim_product_mkt_director](/dimension/dim_product_mkt_director.md).
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; depends on `dim_product_master`, `view_dim_product_mkt`, `Product_Attribute` (a view in `onetime`) and `dim_product_mkt_director`; the base dims are rebuilt in `dimension_daily`.
 
 # Examples
 
@@ -93,7 +92,7 @@ ORDER BY MarketingGroupID, ProductCode
 LIMIT 200
 ```
 
-Count of view rows with and without a Thai Industrial Standard certificate (retained barcode versions and enrichment duplicates count separately).
+Count of view rows with and without a Thai Industrial Standard certificate.
 
 ```sql
 SELECT ThaiIndustrialStandardFlag, COUNT(*) AS products

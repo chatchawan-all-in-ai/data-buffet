@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-A pre-aggregated sell-in (sales invoiced to customers) feed for a single director (`DirectorID = '00004'` in [dim_director](/dimension/dim_director.md); the repo does not say which person or team that is, the `_mdt` suffix suggests the modern-trade organisation). It sums the quantity, discount and net-sales measures of [view_fact_transcation](/view/fact_view/view_fact_transcation.md) per day and product, keeping both the bill-date org assignment (`RegionSK`, `RegionManagerSK`, `DirectorSK`) and the latest assignment (`*SKLast`).
+A pre-aggregated sell-in (sales invoiced to customers) feed for a single director (`DirectorID = '00004'`, `DirectorName = 'MDT'` in [dim_director](/dimension/dim_director.md)). It sums the quantity, discount and net-sales measures of [view_fact_transcation](/view/fact_view/view_fact_transcation.md) per day and product, keeping both the bill-date org assignment (`RegionSK`, `RegionManagerSK`, `DirectorSK`) and the latest assignment (`*SKLast`).
 
-No other object in this repo reads it; it is meant to be queried directly (BI tools or ad-hoc SQL).
+No other repo object reads it.
 
 # Grain and key
 
-One row per (mix_date, ProductSK, milStk, NewProductMktSK, FlagSaleExc, FlagAccExc, ReportSK, RegionSK, RegionManagerSK, DirectorSK, RegionSKLast, RegionManagerSKLast, DirectorSKLast): the `GROUP BY 1..16`. milYear/milMonth/milDay are functionally determined by mix_date. Only lines whose `DirectorSK` joins `dim_director` with `DirectorID = '00004'` are included (INNER JOIN), which also drops the zero-filled calendar rows of the source view (their DirectorSK is NULL).
+One row = one `GROUP BY 1..16` group: key `mix_date`, `ProductSK`, `milStk`, `NewProductMktSK`, `FlagSaleExc`, `FlagAccExc`, `ReportSK`, `RegionSK`, `RegionManagerSK`, `DirectorSK`, `RegionSKLast`, `RegionManagerSKLast`, `DirectorSKLast` (unique). milYear/milMonth/milDay are functionally determined by mix_date. Only lines whose `DirectorSK` joins `dim_director` with `DirectorID = '00004'` are included (INNER JOIN), which also drops the zero-filled calendar rows of the source view (their DirectorSK is NULL).
 
 # Schema
 
@@ -59,7 +59,6 @@ One row per (mix_date, ProductSK, milStk, NewProductMktSK, FlagSaleExc, FlagAccE
 
 - Definition: `definitions/view/fact_view/view_fact_salein_director_mdt.sqlx` (`type: "view"`, tags `view`).
 - Reads: [fact_view.view_fact_transcation](/view/fact_view/view_fact_transcation.md), [dimension_table.dim_director](/dimension/dim_director.md).
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; depends on `view_fact_transcation` (a view, listed in `dependencies`) and `dim_director`, which means the underlying tables (`fact_transcation`, dims) is rebuilt first (`fact_daily` after `dimension_daily`).
 
 # Examples
 

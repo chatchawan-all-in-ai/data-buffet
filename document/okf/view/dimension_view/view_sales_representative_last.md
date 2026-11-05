@@ -14,17 +14,17 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Wide convenience view over [view_dim_sale_representative_last](/view/dimension_view/view_dim_sale_representative_last.md): re-joins [dim_department_last](/dimension/dim_department_last.md), [dim_section_last](/dimension/dim_section_last.md) and [dim_region_last](/dimension/dim_region_last.md) to add RegionID/RegionName and SectionID/SectionName (via the department's SectionSK/RegionSK) so one table carries the whole org path of a salesperson. Nothing else in the repo reads it; used by BI.
+Wide view over [view_dim_sale_representative_last](/view/dimension_view/view_dim_sale_representative_last.md): re-joins [dim_department_last](/dimension/dim_department_last.md), [dim_section_last](/dimension/dim_section_last.md) and [dim_region_last](/dimension/dim_region_last.md) to add RegionID/RegionName and SectionID/SectionName (via the department's SectionSK/RegionSK) so one table carries the whole org path of a salesperson. No other repo object reads it.
 
 # Grain and key
 
-One row per SaleRepSK assignment rule (same grain as view_dim_sale_representative_last); all joins are LEFT on SK + CompanySK. Normal and order-window rules can retain multiple SaleRepSK rows for one EmployeeID in a region.
+One row = one view_dim_sale_representative_last row: key `SaleRepSK`; all joins are LEFT on SK + CompanySK. An EmployeeID has one row per rule row of dim_sale_representative_last.
 
 # Schema
 
@@ -38,7 +38,7 @@ One row per SaleRepSK assignment rule (same grain as view_dim_sale_representativ
 | `RegionManagerSK` | INT64 | SK of the region manager in `dim_region_manager_last`; NULL when unresolved. |
 | `DirectorSK` | INT64 | SK of the director in `dim_director_last`; NULL when unresolved. |
 | `CompanySK` | INT64 | SK of the company in [dim_company](/dimension/dim_company.md). |
-| `companyID` | STRING | MAC5 company code (ag01/aa05/ab01/ac02/ak02). |
+| `companyID` | STRING | MAC5 company code. |
 | `DepartmentID` | STRING | Department code of the representative (department_id in MAC5); NULL for rows without a department. |
 | `EmployeeID` | STRING | Employee (salesperson) code, `percode` in MAC5. |
 | `EmployeeName` | STRING | First name, parsed from the MAC5 `pernamet` text (first token). |
@@ -49,9 +49,11 @@ One row per SaleRepSK assignment rule (same grain as view_dim_sale_representativ
 | `ProvinceID` | STRING | Province code of the representative (pass-through from the dimension). |
 | `ChangeSectionFlag` | STRING | Section-change flag from the dimension: `Yes` on change-of-section rows, NULL otherwise. |
 | `CustomerFlag` | STRING | List of customer codes, joined by the pipe character, that the representative rule also applies to; NULL when the rule is not limited to customers. |
-| `StartDate` | DATE | Start of the validity period of this representative/department assignment (pass-through). |
-| `EndDate` | DATE | End of the validity period of this assignment (pass-through). |
-| `Sort` | STRING | Two-digit running number (`FORMAT('%02d', ROW_NUMBER())`) per RegionSK, ordered by DepartmentID then EmployeeID; added for report sorting. |
+| `StartDate` | DATE | Start of the kept validity interval; NULL on ledger rows. |
+| `EndDate` | DATE | End of the kept validity interval; NULL on ledger rows. |
+| `OrderStartDate` | DATE | Start of the order-date window; NULL when no window. |
+| `OrderEndDate` | DATE | End of the order-date window; NULL when no window. |
+| `Sort` | STRING | Two-digit running number (`FORMAT('%02d', ROW_NUMBER())`) per RegionSK, ordered by DepartmentID then EmployeeID. |
 | `RegionID` | STRING | Region code from dim_region_last (via the department's RegionSK). |
 | `RegionName` | STRING | Region name from dim_region_last. |
 | `SectionID` | STRING | Section code from dim_section_last (via the department's SectionSK). |
@@ -62,7 +64,6 @@ One row per SaleRepSK assignment rule (same grain as view_dim_sale_representativ
 
 - Definition: `definitions/view/dimension_view/view_sales_representative_last.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_view.view_dim_sale_representative_last](/view/dimension_view/view_dim_sale_representative_last.md), [dimension_table.dim_department_last](/dimension/dim_department_last.md), [dimension_table.dim_section_last](/dimension/dim_section_last.md), [dimension_table.dim_region_last](/dimension/dim_region_last.md).
-- Build: A plain BigQuery view (`type: "view"`, tag `view`): no storage, evaluated at query time over the current content of its base tables, so it is as fresh as they are. The `view` tag is not part of the nightly run; it is deployed with tag `view` after the base dimensions exist. Reads view_dim_sale_representative_last (a view deployed first) and the three `_last` dims. Tag `view`.
 
 # Examples
 

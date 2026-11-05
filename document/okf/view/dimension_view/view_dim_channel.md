@@ -14,17 +14,17 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Combines [dim_channel](/dimension/dim_channel.md) with the three channel dimensions ([dim_channel_finance](/dimension/dim_channel_finance.md), [dim_channel_sales](/dimension/dim_channel_sales.md), [dim_channel_cost](/dimension/dim_channel_cost.md)) so that one row carries all four channel SKs (ChannelSK, ChannelFinanceSK, ChannelSaleSK, ChannelCostSK). Used to attach channels to facts and to AR aging: [view_dim_aging](/view/dimension_view/view_dim_aging.md), [view_dim_aging_history](/view/dimension_view/view_dim_aging_history.md) and [fact_transcation](/fact/fact_transcation.md) (read without a Dataform dependency). The join keys are CompanySK + DepCode.
+Combines [dim_channel](/dimension/dim_channel.md) with the three channel dimensions ([dim_channel_finance](/dimension/dim_channel_finance.md), [dim_channel_sales](/dimension/dim_channel_sales.md), [dim_channel_cost](/dimension/dim_channel_cost.md)) so that one row carries all four channel SKs (ChannelSK, ChannelFinanceSK, ChannelSaleSK, ChannelCostSK). Read by [view_dim_aging](/view/dimension_view/view_dim_aging.md), [view_dim_aging_history](/view/dimension_view/view_dim_aging_history.md) and [fact_transcation](/fact/fact_transcation.md). Exported by [export_view_dim_channel](/view/pub_sub/export_view_dim_channel.md). The join keys are CompanySK + DepCode.
 
 # Grain and key
 
-One row per dim_channel row (grain of dim_channel: companyID + DepCode). The three LEFT JOINs match on the channel ID and CompanySK, so a channel with no entry in a child dimension has NULL for that SK.
+One row = one department code of a company: key `companyID`, `DepCode` (unique; grain of dim_channel). The three LEFT JOINs match on the channel ID and CompanySK, so a channel with no entry in a child dimension has NULL for that SK.
 
 # Schema
 
@@ -64,7 +64,6 @@ One row per dim_channel row (grain of dim_channel: companyID + DepCode). The thr
 
 - Definition: `definitions/view/dimension_view/view_dim_channel.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_channel](/dimension/dim_channel.md), [dimension_table.dim_channel_finance](/dimension/dim_channel_finance.md), [dimension_table.dim_channel_sales](/dimension/dim_channel_sales.md), [dimension_table.dim_channel_cost](/dimension/dim_channel_cost.md).
-- Build: A plain BigQuery view (`type: "view"`, tag `view`): no storage, evaluated at query time over the current content of its base tables, so it is as fresh as they are. The `view` tag is not part of the nightly run; it is deployed with tag `view` after the base dimensions exist. Reads dim_channel and the three child channel dims (all tag `dimension_daily`, full rebuilds). The SKs are ROW_NUMBER-based and regenerate each night.
 
 # Examples
 

@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-The sell-in sales target for the modern-trade channel, rolled up from the by-sale day-of-work target dimension. [dim_target_product_group_by_sale_dayofwork](/dimension/dim_target_product_group_by_sale_dayofwork.md) holds one row per sales person, department, product group and day; this view keeps only `ChannelTargetGroup = 'MDT'` and sums the new daily amount/quantity to the region/manager/director level, dropping the sale-rep, department and section levels.
+The sales target of the modern-trade channel, rolled up from the by-sale day-of-work target dimension. [dim_target_product_group_by_sale_dayofwork](/dimension/dim_target_product_group_by_sale_dayofwork.md) holds one row per sales person, department, product group and day; this view keeps only `ChannelTargetGroup = 'MDT'` and sums the new daily amount/quantity to the region/manager/director level, dropping the sale-rep, department and section levels.
 
-No other object in this repo reads it; it is meant to be queried directly (BI tools or ad-hoc SQL).
+No other repo object reads it.
 
 # Grain and key
 
-One row per (Date, ProductMktSK, ReportSK, RegionSK, RegionManagerSK, DirectorSK, RegionSKLast, RegionManagerSKLast, DirectorSKLast): `GROUP BY 1..9` over `ChannelTargetGroup = 'MDT'` rows.
+One row = one target group: key `Date`, `ProductMktSK`, `ReportSK`, `RegionSK`, `RegionManagerSK`, `DirectorSK`, `RegionSKLast`, `RegionManagerSKLast`, `DirectorSKLast` (unique). `GROUP BY 1..9` over `ChannelTargetGroup = 'MDT'` rows.
 
 # Schema
 
@@ -48,7 +48,6 @@ One row per (Date, ProductMktSK, ReportSK, RegionSK, RegionManagerSK, DirectorSK
 
 - Definition: `definitions/view/fact_view/view_fact_target_product_group_mdt.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_target_product_group_by_sale_dayofwork](/dimension/dim_target_product_group_by_sale_dayofwork.md).
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; depends on `dim_target_product_group_by_sale_dayofwork` (tag `dimension_daily`, rebuilt every night) being built first.
 
 # Examples
 

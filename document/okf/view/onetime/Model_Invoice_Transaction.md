@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "Model_Invoice_Transaction"
-description: "Sales rows of CompanySK 4 for 2024-2026 enriched with names; retained product barcode versions can repeat each source row and its measures."
+description: "One row = one view_fact_transcation line of CompanySK 4 for 2024-2026 with IDs and names; a line repeats once per matching dim_product_master row."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=onetime&t=Model_Invoice_Transaction&page=table"
 project_id: databuffet-nonprd
 dataset_id: onetime
@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-A denormalised, name-resolved sales transaction model meant to be loaded straight into a BI semantic model (the `onetime` dataset holds data marts and Power BI models). It takes [view_fact_transcation](/view/fact_view/view_fact_transcation.md), replaces all SKs with their IDs and names (channel, payment, document type, sales rep, section, region, director, product, marketing group, customer, province/district, report line) and renames measures to readable names (`NetSalesExcVat`, `Quantity`, ...). The org columns use the LATEST structure (`*_last` dims and `*SKLast` columns). Product enrichment can repeat measures.
+A denormalised, name-resolved sales transaction model. It takes [view_fact_transcation](/view/fact_view/view_fact_transcation.md), replaces all SKs with their IDs and names (channel, payment, document type, sales rep, section, region, director, product, marketing group, customer, province/district, report line) and renames measures to readable names (`NetSalesExcVat`, `Quantity`, ...). The org columns use the LATEST structure (`*_last` dims and `*SKLast` columns).
 
-No other object in this repo reads it; it is meant to be queried directly (BI tools or ad-hoc SQL).
+No other object in this repo reads it.
 
 # Grain and key
 
-Starts from rows of `view_fact_transcation` restricted to `milYear IN (2024, 2025, 2026)`, `milvnos IS NOT NULL` (drops the calendar filler rows) and `CompanySK = 4` (hard-coded; company `ag01`, Thammasorn Co., Ltd., in `dim_company`). Most dimension joins use SK + CompanySK, but the product join uses LOWER(milStk) = LOWER(ProductCode) + CompanySK, not ProductSK. It emits every retained barcode version, so one eligible 100-baht source row can become two model rows totalling 200. There is no deduplication of that product expansion.
+One row = one `view_fact_transcation` line restricted to `milYear IN (2024, 2025, 2026)`, `milvnos IS NOT NULL` (drops the calendar filler rows) and `CompanySK = 4` (hard-coded): intended key is that of `view_fact_transcation` (`milVnos`, `milType`, `CompanySK`, plus line columns), not unique here. Most dimension joins use SK + `CompanySK`; the product join uses `LOWER(milStk) = LOWER(ProductCode)` + `CompanySK` (not `ProductSK`) against `dim_product_master`, so a line is repeated once per matching `dim_product_master` row and its measures repeat with it. There is no deduplication.
 
 # Schema
 
@@ -70,13 +70,13 @@ Starts from rows of `view_fact_transcation` restricted to `milYear IN (2024, 202
 | `TeamName` | STRING | Department/team name (`dim_department_last.DepartmentName`). |
 | `SectionID` | STRING | Section id under the latest structure, using `ChangeSectionSKLast` (so district/PS changes are applied). |
 | `SectionName` | STRING | Section name (`dim_section_last`). |
-| `SectionManagerNameSurname` | STRING | Concatenated name of the section manager under the latest structure (personal data). |
+| `SectionManagerNameSurname` | STRING | Concatenated name of the section manager under the latest structure. |
 | `RegionID` | STRING | Region id under the latest structure (`RegionSKLast`). |
 | `RegionName` | STRING | Region name (`dim_region_last`). |
-| `RegionManagerNameSurname` | STRING | Concatenated name of the region manager under the latest structure (personal data). |
+| `RegionManagerNameSurname` | STRING | Concatenated name of the region manager under the latest structure. |
 | `DirectorID` | STRING | Director id under the latest structure (`DirectorSKLast`). |
 | `DirectorName` | STRING | Director name/group label (`dim_director_last.DirectorName`). |
-| `DirectorSalesNameSurname` | STRING | Name of the director of sales (`dim_director_last.DirectorOfSalesName`, personal data). |
+| `DirectorSalesNameSurname` | STRING | Name of the director of sales (`dim_director_last.DirectorOfSalesName`). |
 | `FlagSaleKPIExclude` | STRING | `view_fact_transcation.FlagSaleExc`: `Yes` = line excluded from the sales KPI. |
 | `FlagSalesFiananceExclude` | STRING | `view_fact_transcation.FlagAccExc`: `Yes` = line excluded from finance sales (column name keeps the original typo `Fianance`). |
 | `SCGSalesType` | STRING | `FlagSCG`: `ซื้อตรง` (direct) or `ซื้อผ่านร้าน` (through a shop) for SCG `CRC` documents, else NULL. |
@@ -88,16 +88,16 @@ Starts from rows of `view_fact_transcation` restricted to `milYear IN (2024, 202
 | `SubMarketingName` | STRING | Sub-marketing group name. |
 | `SegmentID` | STRING | Segment id. |
 | `SegmentName` | STRING | Segment name. |
-| `NetSalesExcVat` | FLOAT64 | Net line amount excluding VAT after line and allocated header discounts, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows; zero on calendar rows without a transaction. |
+| `NetSalesExcVat` | FLOAT64 | Net line amount excluding VAT after line and allocated header discounts, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows. |
 | `NetSalesIncVat` | FLOAT64 | `milsum_incvat`: net sales including VAT. |
-| `Quantity` | FLOAT64 | Line quantity, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows; zero on calendar rows without a transaction. |
-| `DiscountAmountExcVat` | FLOAT64 | Line discount amount excluding VAT, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows; zero on calendar rows without a transaction. |
+| `Quantity` | FLOAT64 | Line quantity, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows. |
+| `DiscountAmountExcVat` | FLOAT64 | Line discount amount excluding VAT, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows. |
 | `DiscountAmountIncVat` | FLOAT64 | `mildisca_incvat`: discount including VAT. |
-| `GrossAmountExcVat` | FLOAT64 | Gross line amount before discounts excluding VAT, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows; zero on calendar rows without a transaction. |
+| `GrossAmountExcVat` | FLOAT64 | Gross line amount before discounts excluding VAT, negative for BS credit notes and multiplied by the salesperson share for ag01 split-sale rows. |
 | `GrossAmountIncVat` | FLOAT64 | `milcog_incvat`: gross amount including VAT. |
 | `ProductCostPercent` | FLOAT64 | `ProductPercent`: cost percentage as a fraction from the cost-% rule; NULL when no rule. |
-| `DepositExcVat` | FLOAT64 | Deposit amount excluding VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero; zero on calendar rows without a transaction. |
-| `DepositIncVat` | FLOAT64 | Deposit amount including VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero; zero on calendar rows without a transaction. |
+| `DepositExcVat` | FLOAT64 | Deposit amount excluding VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero. |
+| `DepositIncVat` | FLOAT64 | Deposit amount including VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero. |
 | `CustomerID` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
 | `CustomerName` | STRING | Customer Thai name from `view_dim_customer.debnamet`. |
 | `SubDistrict` | STRING | Sub-district name of the customer (`view_dim_customer.SubDistrict`). |
@@ -106,42 +106,32 @@ Starts from rows of `view_fact_transcation` restricted to `milYear IN (2024, 202
 | `ReportID` | STRING | Report line id from `dim_report` (via `ReportSK`). |
 | `ReportName1` | STRING | Report name level 1. |
 | `ReportName2` | STRING | Report name level 2. |
-| `TargetBySaleDayofworkSK` | INT64 | SK linking the line to the day-of-work target (`dim_target_product_group_by_sale_dayofwork`); join to `Model_Target_DayOfWork.TargetBySaleDayofworkSK` (regenerated daily). |
+| `TargetBySaleDayofworkSK` | INT64 | SK linking the line to the day-of-work target (`dim_target_product_group_by_sale_dayofwork`); join to `Model_Target_DayOfWork.TargetBySaleDayofworkSK`. |
 
 # How it is built
 
 - Definition: `definitions/view/onetime/Model_Invoice_Transaction.sqlx` (`type: "view"`, tags `view`).
 - Reads: [fact_view.view_fact_transcation](/view/fact_view/view_fact_transcation.md), [dimension_table.dim_sale_representative_last](/dimension/dim_sale_representative_last.md), [dimension_table.dim_department_last](/dimension/dim_department_last.md), [dimension_table.dim_section_last](/dimension/dim_section_last.md), [dimension_table.dim_section_manager_last](/dimension/dim_section_manager_last.md), [dimension_table.dim_region_manager_last](/dimension/dim_region_manager_last.md), [dimension_table.dim_region_last](/dimension/dim_region_last.md), [dimension_table.dim_director_last](/dimension/dim_director_last.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_view.view_dim_customer](/view/dimension_view/view_dim_customer.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md), [dimension_table.dim_payment](/dimension/dim_payment.md), [dimension_table.dim_doctype](/dimension/dim_doctype.md), [dimension_table.dim_channel](/dimension/dim_channel.md), [dimension_table.dim_channel_cost](/dimension/dim_channel_cost.md), [dimension_table.dim_report](/dimension/dim_report.md).
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; depends on `view_fact_transcation` (so on `fact_transcation`, tag `fact_daily`) and the `*_last` dims, `dim_channel`, `dim_payment`, `dim_doctype`, `dim_invoice`, `dim_product_master`, `dim_product_mkt`, `view_dim_customer`, `dim_report`, all rebuilt first.
 
 # Examples
 
-Monthly net sales by sales-channel group before product enrichment, with the model's company/year scope and sales-KPI filter.
+Monthly net sales by sales-channel group, excluding lines flagged out of the sales KPI.
 
 ```sql
-SELECT FORMAT_DATE('%Y-%m', s.mix_date) AS month, ch.ChannelGroup AS ChannelSaleGroup,
-       SUM(s.milSum) AS net_sales_exc_vat, SUM(s.milQuan) AS qty
-FROM `databuffet-nonprd.fact_view.view_fact_transcation` AS s
-LEFT JOIN `databuffet-nonprd.dimension_table.dim_channel` AS ch
-  ON s.ChannelSK = ch.ChannelSK AND s.CompanySK = ch.CompanySK
-WHERE s.CompanySK = 4 AND s.milYear IN (2024, 2025, 2026)
-  AND s.milVnos IS NOT NULL AND s.FlagSaleExc = 'No'
-GROUP BY month, ch.ChannelGroup
+SELECT FORMAT_DATE('%Y-%m', InvoiceDate) AS month, ChannelSaleGroup,
+       SUM(NetSalesExcVat) AS net_sales_exc_vat, SUM(Quantity) AS qty
+FROM `databuffet-nonprd.onetime.Model_Invoice_Transaction`
+WHERE FlagSaleKPIExclude = 'No'
+GROUP BY month, ChannelSaleGroup
 ORDER BY month, net_sales_exc_vat DESC
 ```
 
-Net sales by latest region and marketing group for 2025 before product enrichment; same-run dimension joins use their matching SKs.
+Net sales by region and marketing group for 2025.
 
 ```sql
-SELECT r.RegionID, r.RegionName, m.MarketingGroup AS MarketingGroupName,
-       SUM(s.milSum) AS net_sales_exc_vat
-FROM `databuffet-nonprd.fact_view.view_fact_transcation` AS s
-LEFT JOIN `databuffet-nonprd.dimension_table.dim_region_last` AS r
-  ON s.RegionSKLast = r.RegionSK AND s.CompanySK = r.CompanySK
-LEFT JOIN `databuffet-nonprd.dimension_table.dim_product_mkt` AS m
-  ON s.ProductMktSK = m.ProductMktSK AND s.CompanySK = m.CompanySK
-WHERE s.CompanySK = 4 AND s.milYear = 2025
-  AND s.milVnos IS NOT NULL AND s.FlagSaleExc = 'No'
-GROUP BY r.RegionID, r.RegionName, m.MarketingGroup
+SELECT RegionID, RegionName, MarketingGroupName, SUM(NetSalesExcVat) AS net_sales_exc_vat
+FROM `databuffet-nonprd.onetime.Model_Invoice_Transaction`
+WHERE InvoiceYear = 2025 AND FlagSaleKPIExclude = 'No'
+GROUP BY RegionID, RegionName, MarketingGroupName
 ORDER BY net_sales_exc_vat DESC
 ```

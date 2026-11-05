@@ -14,25 +14,25 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-The final RLS access list for employees of type `sales`. It joins [view_rls_data](/view/process_dataset/view_rls_data.md) (org hierarchy by employee id) to the mds employee mapping to get the e-mail, then adds `CustomerID` rows: every customer in [rls_customer360](/process/rls_customer360.md) whose pipe-separated `SectionID` list contains a section the employee may see. Power BI RLS (Customer360 and sales models) filters on `EmployeeEmail`. Employees of type `special` or `mkt` come from [view_rls_special_data](/view/process_dataset/view_rls_special_data.md).
+The final RLS access list for employees of type `sales`. It joins [view_rls_data](/view/process_dataset/view_rls_data.md) (org hierarchy by employee id) to the mds employee mapping to get the e-mail, then adds `CustomerID` rows: every customer in [rls_customer360](/process/rls_customer360.md) whose pipe-separated `SectionID` list contains a section the employee may see. Employees of type `special` or `mkt` come from [view_rls_special_data](/view/process_dataset/view_rls_special_data.md).
 
-No other object in this repo reads it; it is meant to be queried directly (BI tools or ad-hoc SQL).
+Used by [export_view_rls_sale_data](/view/pub_sub/export_view_rls_sale_data.md).
 
 # Grain and key
 
-One row per distinct (EmployeeEmail, LevelName, LevelValue) (the UNION ALL of `rls_data` and `rls_customer`, each `DISTINCT`). Only active mapping rows with an employee id and e-mail and `LOWER(TRIM(employeetype)) = 'sales'` are used.
+One row = one allowed value of one attribute of one sales employee: key `EmployeeEmail`, `LevelName`, `LevelValue` (unique: UNION ALL of `rls_data` and `rls_customer`, each `DISTINCT`, with disjoint `LevelName` values). Only active mapping rows with an employee id and e-mail and `LOWER(TRIM(employeetype)) = 'sales'` are used.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `EmployeeEmail` | STRING | E-mail of the sales employee from `mds_data_org_employee_mapping_center` (active rows with `employeetype = 'sales'`); the identity matched by Power BI RLS. |
+| `EmployeeEmail` | STRING | E-mail of the sales employee from `mds_data_org_employee_mapping_center` (active rows with `employeetype = 'sales'`). |
 | `LevelName` | STRING | Restricted attribute: `DirectorID`, `RegionID`, `SectionID`, `CompanyID` (from `view_rls_data`) or `CustomerID` (added here). |
 | `LevelValue` | STRING | Allowed value for that attribute: an org id, the company report id, or a customer code (`milCus`). |
 
@@ -40,7 +40,6 @@ One row per distinct (EmployeeEmail, LevelName, LevelValue) (the UNION ALL of `r
 
 - Definition: `definitions/view/process_dataset/view_rls_sale_data.sqlx` (`type: "view"`, tags `view`).
 - Reads: `mds_dataset.mds_data_org_employee_mapping_center` (master data loaded outside this repo), [process_dataset.view_rls_data](/view/process_dataset/view_rls_data.md), [process_dataset.rls_customer360](/process/rls_customer360.md).
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; depends on `view_rls_data` and the table `process_dataset.rls_customer360` (tag `process`, built after `fact_transcation`); `mds_dataset.mds_data_org_employee_mapping_center` is loaded outside this repo.
 
 # Examples
 

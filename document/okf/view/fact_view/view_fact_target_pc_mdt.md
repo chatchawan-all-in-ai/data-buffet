@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Sell-out targets of the modern-trade chains at PC level. [fact_target_saleout_mdt](/fact/fact_target_saleout_mdt.md) has daily targets per branch and marketing group but no person; [dim_pc](/dimension/dim_pc.md) says which PCs cover a slot in each month. The view divides the target equally among those PCs and keeps every original column of the fact so it can be swapped into a BI model. PcSK identifies employee + branch + marketing group; one employee can have several assignment SKs.
+Sell-out targets of the modern-trade chains at PC level. [fact_target_saleout_mdt](/fact/fact_target_saleout_mdt.md) has daily targets per branch and marketing group but no person; [dim_pc](/dimension/dim_pc.md) says which PCs cover a slot in each month. The view divides the target equally among those PCs and keeps every original column of the fact. PcSK identifies employee + branch + marketing group; one employee can have several assignment SKs.
 
-No other object in this repo reads it; it is meant to be queried directly (BI tools or ad-hoc SQL).
+No other repo object reads it.
 
 # Grain and key
 
-One row per `fact_target_saleout_mdt` row (target_date, branch_code, marketing_group_id, sub_marketing_id, segment_id) times the number of PCs of its slot in that month; one row with `pc_sk_list` NULL and the full target when no PC is assigned. `dim_pc` is expanded to month level (`GENERATE_DATE_ARRAY` from StartDate to EndDate or 2099-12-31) because targets are daily but assignments monthly; placeholders and `PcSK = -1` are excluded.
+One row = one `fact_target_saleout_mdt` row (key `target_date`, `branch_code`, `marketing_group_id`, `sub_marketing_id`, `segment_id`) times the number of PCs of its slot in that month; one row with `pc_sk_list` NULL and the full target when no PC is assigned. `dim_pc` is expanded to month level (`GENERATE_DATE_ARRAY` from StartDate to EndDate or 2099-12-31) because targets are daily but assignments monthly; placeholders and `PcSK = -1` are excluded.
 
 # Schema
 
@@ -53,13 +53,12 @@ One row per `fact_target_saleout_mdt` row (target_date, branch_code, marketing_g
 | `target_year` | INT64 | Year of the target. |
 | `target_month` | INT64 | Month of the target. |
 | `days_in_month` | INT64 | Number of days the monthly target was spread over; `target_amt * days_in_month` (before the PC split) gives the monthly target. |
-| `mds_id` | STRING | MdsID of the target row in mds; kept so the view has the same columns as the fact and can replace it in BI models. |
+| `mds_id` | STRING | MdsID of the target row in mds. |
 
 # How it is built
 
 - Definition: `definitions/view/fact_view/view_fact_target_pc_mdt.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_pc](/dimension/dim_pc.md), [fact_table.fact_target_saleout_mdt](/fact/fact_target_saleout_mdt.md).
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; depends on `fact_target_saleout_mdt` (tags `fact_daily` + `saleout_daily`) and `dim_pc` being rebuilt first.
 
 # Examples
 

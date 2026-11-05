@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
@@ -26,30 +26,30 @@ Used by [fact_table.fact_transcation](/fact/fact_transcation.md).
 
 # Grain and key
 
-One row per `curated_mil` line of a document of type IS, AS, BS or QS: key (company, milType, milVnos, milCus, milListno, plus split-sale `milPer` for ag01). It uses an INNER JOIN of `curated_mih` to `curated_mil` on year/month/day/type/number/customer/company, so documents without lines are absent; the LEFT JOINs (quotation, stk, address, company) are intended to stay 1:1 (`stk` is `SELECT DISTINCT`).
+One row = one `curated_mil` line of a document of type IS, AS, BS or QS: key `companyID`, `milType`, `milVnos`, `milCus`, `milListno`, plus `milPer` for split-sale rows (intended key, not enforced by the view). It uses an INNER JOIN of `curated_mih` to `curated_mil` on year/month/day/type/number/customer/company, so documents without lines are absent; the LEFT JOINs (quotation, stk, address, company) are intended to stay 1:1 (`stk` is `SELECT DISTINCT`).
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `CompanySK` | INT64 | SK of `dim_company` (join on `company_id`); stable. |
-| `companyID` | STRING | Company code (ag01/aa05/ab01/ac02/ak02) from `dim_company`. |
+| `companyID` | STRING | MAC5 company code from `dim_company`. |
 | `mihvatno` | STRING | Tax invoice number of the document. |
 | `mihdesc` | STRING | Free-text document description. |
 | `mihmemo` | STRING | Free-text document memo with an optional tag enclosed in `฿` signs. |
 | `memoextract` | STRING | Tag extracted from the document memo, defaulting to `฿00฿` and matched to `dim_payment.CodeMemo`. |
 | `mihmemonew` | STRING | Document memo with the tag enclosed in `฿` signs removed, or NULL when no text remains. |
 | `mihCancel` | INT64 | Cancellation flag (-1 = cancelled, 0 = active). |
-| `mihStatus` | INT64 | Document status code; meaning in `ar_s` for sales types and `ap_s` for purchase types (e.g. 26 = approved sales order, 30 = VAT sale, 32 = cancelled tax invoice). |
+| `mihStatus` | INT64 | Document status code from the header, with sales status meanings in `ar_s`. |
 | `mihnotes` | STRING | Free-text notes such as delivery instructions or site details. |
 | `QuotationID` | INT64 | Quotation id (`curated_tbook_quotation.id`) reached through the linked PS (order) document: `milLinkvcno -> PS mihVnos -> mihref1 = quotation running`. |
 | `QuotationCode` | STRING | Quotation running number (`curated_tbook_quotation.running`) found the same way. |
 | `milDay` | INT64 | Day part of the document date. |
 | `milMonth` | INT64 | Month part of the document date. |
 | `milYear` | INT64 | Year part of the document date (Gregorian). |
-| `milType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `milType` | STRING | Document type code (`IS` = invoice, `AS` = debit note, `BS` = credit note, `QS` = sales quotation). |
 | `milVnos` | STRING | Document number of the line, matching `mihvnos` of the header. |
-| `milCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `milCus` | STRING | Customer code, matching `deb.debcode`. |
 | `milStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
 | `milJob` | STRING | Job code of the line (sales job or project category such as `TT`, `SHOP`, or a project number). |
 | `milDep` | STRING | Department code of the line, used as the sales channel code. |
@@ -115,20 +115,19 @@ One row per `curated_mil` line of a document of type IS, AS, BS or QS: key (comp
 | `OrderProvinceSK` | INT64 | Province SK of the customer's address (`view_deb_address_data`, AI-parsed from the debtor address), used for order-based rules. |
 | `OrderDistrictSK` | INT64 | District SK of the customer's address. |
 | `OrderSubDistrictSK` | INT64 | Sub-district SK of the customer's address. |
-| `Vat` | FLOAT64 | VAT of the document allocated to the line: `milSum / SUM(milSum over document) * mihVatsum` (sign flipped for `BS` credit notes); 0 when the document total is 0. |
+| `Vat` | FLOAT64 | VAT allocated to the line: `milSum / over_milsum * mihVatsum`, where `over_milsum` is `SUM(milSum)` partitioned by `milDay`, `milMonth`, `milYear`, `milType`, `milCus`, `milVnos` (no company column). The same formula applies to `BS` and other types, without an extra sign reversal; 0 when the window total is NULL or 0. |
 | `milsum_incvat` | FLOAT64 | Net amount including VAT: `milSum + Vat`. |
 | `mildisca_incvat` | FLOAT64 | Discount amount including VAT: `milDisca * stkVat` when the document carries VAT (`mihVatsum <> 0`), else `milDisca`. |
 | `milcog_incvat` | FLOAT64 | Gross amount including VAT: `milCog * stkVat` when the document carries VAT, else `milCog`. |
 | `Barcode` | STRING | Product barcode (`stk.stkcode885`). |
-| `DepositExcVat` | FLOAT64 | Deposit amount excluding VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero. |
-| `DepositIncVat` | FLOAT64 | Deposit amount including VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero. |
-| `DepositVat` | FLOAT64 | Deposit VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero. |
+| `DepositExcVat` | FLOAT64 | Deposit amount excluding VAT allocated to the line by its share of the document net amount (`milSum / SUM(milSum)` over the same window as `Vat`), or zero when that total is zero. |
+| `DepositIncVat` | FLOAT64 | Deposit amount including VAT allocated to the line by its share of the document net amount (`milSum / SUM(milSum)` over the same window as `Vat`), or zero when that total is zero. |
+| `DepositVat` | FLOAT64 | Deposit VAT allocated to the line by its share of the document net amount (`milSum / SUM(milSum)` over the same window as `Vat`), or zero when that total is zero. |
 
 # How it is built
 
 - Definition: `definitions/view/onetime/Transaction_Data_Mart.sqlx` (`type: "view"`, tags `view`).
 - Reads: [validated_mac5.stk](/validated/validated_mac5/stk.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [curated_mac5.curated_tbook_quotation](/curated/curated_mac5/curated_tbook_quotation.md), [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [process_dataset.view_deb_address_data](/view/process_dataset/view_deb_address_data.md), [dimension_table.dim_company](/dimension/dim_company.md).
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; its inputs `curated_mih`, `curated_mil`, `curated_tbook_quotation` and `validated_mac5.stk` are read via `ref()` (curated/validated tags); `view_deb_address_data` and `dim_company` are declared dependencies. The table `fact_transcation` (tag `fact_daily`) reads this view every night, so changes here only reach reporting after that rebuild. Dataset `onetime` is kept for BI compatibility, not because it is one-off.
 
 # Examples
 

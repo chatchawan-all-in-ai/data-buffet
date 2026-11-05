@@ -14,24 +14,24 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Presentation view over [dim_company](/dimension/dim_company.md). It passes the company columns through and adds `CompanyReportID` (ag01 and ab01 merged into 'ag01') plus the Thai and English legal names used on reports (hard-coded per company in the view). Used by [view_rls_data](/view/process_dataset/view_rls_data.md).
+Presentation view over [dim_company](/dimension/dim_company.md). It passes the company columns through and adds `CompanyReportID` (ag01 and ab01 merged into 'ag01') plus the Thai and English legal names used on reports (hard-coded per company in the view). Read by [view_rls_data](/view/process_dataset/view_rls_data.md). Exported by [export_view_dim_company](/view/pub_sub/export_view_dim_company.md).
 
 # Grain and key
 
-One row per company (CompanySK / CompanyID; 5 MAC5 companies). Unknown CompanyIDs get 'ไม่มีข้อมูล' / 'No Data' as report names.
+One row = one company: key `CompanyID` (`CompanySK` is its SK). Unknown CompanyIDs get 'ไม่มีข้อมูล' / 'No Data' as report names.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `CompanySK` | INT64 | Stable SK of the company in dim_company. |
-| `CompanyID` | STRING | MAC5 company code (ag01/aa05/ab01/ac02/ak02). |
+| `CompanyID` | STRING | MAC5 company code. |
 | `CompanyCode` | STRING | Company code from dim_company (pass-through from mds company master). |
 | `CompanyNameTH` | STRING | Company name in Thai from dim_company (pass-through). |
 | `CompanyNameEN` | STRING | Company name in English from dim_company (pass-through). |
@@ -43,7 +43,6 @@ One row per company (CompanySK / CompanyID; 5 MAC5 companies). Unknown CompanyID
 
 - Definition: `definitions/view/dimension_view/view_dim_company.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_company](/dimension/dim_company.md).
-- Build: A plain BigQuery view (`type: "view"`, tag `view`): no storage, evaluated at query time over the current content of its base tables, so it is as fresh as they are. The `view` tag is not part of the nightly run; it is deployed with tag `view` after the base dimensions exist. Reads only dim_company (a stable MERGE-SK dim from mds). The report names are literals in the view.
 
 # Examples
 

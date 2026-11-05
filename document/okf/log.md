@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-05 (view card review fixes)
+
+* **Update**: Review corrections to the [dimension_view](view/dimension_view/index.md), [fact_view](view/fact_view/index.md), [onetime](view/onetime/index.md), [process_dataset](view/process_dataset/index.md) and [bridge_dataset](view/bridge_dataset/index.md) cards: grain and key descriptions, column lists following the sqlx, column meanings and formulas, reader and export lists; deploy lines and caveats removed; refreshed edit metadata on changed cards.
+
 ## 2026-11-05 (validated and initial card review fixes)
 
 * **Update**: Review corrections to the [validated](validated/index.md) and [initial](initial/index.md) cards: `company_id` meaning per actual UNION branches, no dedup sentence on tables without a key, the added logic of `chq`, `mih`, `mil`, `stg`, `tbook_quotation`, `saleout_dh`, `saleout_gb`, `saleout_hp` and `sale_by_branch_detail`, the readers in Used by (`curated_derp` and the `pub_sub` export views), and removal of time-dependent wording (`BACKFILL_DAYS` value, dates, `(none)` partition).

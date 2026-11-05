@@ -14,17 +14,17 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Order dimension for sales/backlog reporting: [dim_order](/dimension/dim_order.md) plus `OrderType` (via `fn_order_type` on `mihref2`), `CustomerShipTo` (`mih2pos` from MAC5 mih2) and `FlagExpire` (document older than the MDS expiry rule for its prefix). The business meaning of the flag is documented in overview/business-flags.md.
+Order dimension for sales/backlog reporting: [dim_order](/dimension/dim_order.md) plus `OrderType` (via `fn_order_type` on `mihref2`), `CustomerShipTo` (`mih2pos` from MAC5 mih2) and `FlagExpire` (document older than the MDS expiry rule for its prefix). The business meaning of the flag is documented in overview/business-flags.md. Exported by [export_view_dim_order](/view/pub_sub/export_view_dim_order.md).
 
 # Grain and key
 
-One row per `OrderSK` (QUALIFY ROW_NUMBER over OrderSK ordered by mih2pos DESC, so one ship-to is chosen when several exist). dim_order natural key: mihYear/mihMonth/mihDay/mihType/mihVnos (+ company).
+One row = one sales order: key `OrderSK` (unique; `QUALIFY ROW_NUMBER()` over `OrderSK` ordered by `mih2pos` DESC, so one ship-to is chosen when several exist). dim_order natural key: company + `mihYear`/`mihMonth`/`mihDay` + `mihType` ('PS') + `mihVnos` + `mihCus` (NULL treated as empty).
 
 # Schema
 
@@ -37,15 +37,15 @@ One row per `OrderSK` (QUALIFY ROW_NUMBER over OrderSK ordered by mih2pos DESC, 
 | `mihYear` | INT64 | Year part of the document date (Gregorian). |
 | `mihMonth` | INT64 | Month part of the document date. |
 | `mihDay` | INT64 | Day part of the document date. |
-| `mihType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `mihType` | STRING | Document type code (`PS` = sales order). |
 | `mihVnos` | STRING | Document number, unique within company and document type. |
-| `mihCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mihCus` | STRING | Customer code, matching `deb.debcode`. |
 | `mihJob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
 | `mihRef1` | STRING | Reference document number 1 for the source quotation or sales order. |
 | `mihRef2` | STRING | Customer purchase-order or external order reference number. |
 | `mihRef3` | STRING | Free-text reference 3 of the document. |
 | `mihCancel` | INT64 | Cancellation flag (-1 = cancelled, 0 = active). |
-| `mihStatus` | INT64 | Document status code; meaning in `ar_s` for sales types and `ap_s` for purchase types (e.g. 26 = approved sales order, 30 = VAT sale, 32 = cancelled tax invoice). |
+| `mihStatus` | INT64 | Document status code from the header, with sales status meanings in `ar_s`. |
 | `StatusName` | STRING | Thai status name. |
 | `memoExtract` | STRING | Tag extracted from the document memo, defaulting to `฿00฿` and matched to `dim_payment.CodeMemo`. |
 | `mihMemoNew` | STRING | Document memo with the tag enclosed in `฿` signs removed, or NULL when no text remains. |
@@ -69,7 +69,6 @@ One row per `OrderSK` (QUALIFY ROW_NUMBER over OrderSK ordered by mih2pos DESC, 
 
 - Definition: `definitions/view/dimension_view/view_dim_order.sqlx` (`type: "view"`, tags `view`).
 - Reads: `function_dataset.fn_order_type` (UDF), [dimension_table.dim_order](/dimension/dim_order.md), [validated_mac5.mih2](/validated/validated_mac5/mih2.md), `mds_dataset.mds_data_document_expire_rule_master` (master data loaded outside this repo).
-- Build: A plain BigQuery view (`type: "view"`, tag `view`): no storage, evaluated at query time over the current content of its base tables, so it is as fresh as they are. The `view` tag is not part of the nightly run; it is deployed with tag `view` after the base dimensions exist. Reads dim_order (operations MERGE, stable SK, tag `dimension_daily`), validated_mac5.mih2, MDS `mds_data_document_expire_rule_master`, and UDF `fn_order_type`.
 
 # Examples
 

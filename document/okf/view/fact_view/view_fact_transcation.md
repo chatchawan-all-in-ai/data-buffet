@@ -6,7 +6,7 @@ resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p
 project_id: databuffet-nonprd
 dataset_id: fact_view
 table_id: view_fact_transcation
-tags: ["view", "fact_view", "mac5"]
+tags: ["view", "fact_view"]
 sources:
   - id: sqlx
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/definitions/view/fact_view/view_fact_transcation.sqlx"
@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-The main BI-facing sales (sell-in) transaction view. It starts from the physical table [fact_transcation](/fact/fact_transcation.md), keeps one row per document line by choosing one sale-rep match, adds the latest-structure (`*Last`) org assignments, the invoice/aging/order/quotation links, the customer-report link, sales-KPI and accounting exclusion flags, the SCG purchase type and the product cost percent, and finally gap-fills the calendar so every date of every company has at least one row. Customer-, invoice- and aging-level models ([Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md), [view_fact_salein_director_mdt](/view/fact_view/view_fact_salein_director_mdt.md)) read from it.
+The main sales (sell-in) transaction view. It starts from the physical table [fact_transcation](/fact/fact_transcation.md), keeps one row per document line by choosing one sale-rep match, adds the latest-structure (`*Last`) org assignments, the invoice/aging/order/quotation links, the customer-report link, sales-KPI and accounting exclusion flags, the SCG purchase type and the product cost percent, and finally gap-fills the calendar so every date of every company has at least one row.
 
-Used by [fact_view.view_fact_salein_director_mdt](/view/fact_view/view_fact_salein_director_mdt.md), [onetime.Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md).
+Used by [fact_view.view_fact_salein_director_mdt](/view/fact_view/view_fact_salein_director_mdt.md), [onetime.Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md). Exported by [export_view_fact_transcation](/view/pub_sub/export_view_fact_transcation.md).
 
 # Grain and key
 
-One row per sales line: (CompanySK, milType, milVnos, milCus, LOWER(milStk), milPer, milListno), enforced by `QUALIFY ROW_NUMBER() OVER (PARTITION BY ... ORDER BY seq_condition, dim_report.Segment, SaleRepSK DESC) = 1` in the `raw_table` step; this is what removes the per-line duplicates of `fact_transcation` created by the sale-rep and report joins. In addition, a calendar spine (`dim_calendar` x `dim_company`, from the start of the year 4 years ago up to yesterday, Asia/Bangkok) is LEFT JOINed, so dates without sales appear as one row with `milVnos` NULL, all measures 0 and `mix_date` = the calendar date; the `select distinct` at the end collapses identical rows.
+One row = one sales document line (IS/AS/BS/QS): intended key `CompanySK`, `milType`, `milVnos`, `milCus`, `LOWER(milStk)`, `milPer`, `milListno`. The `raw_table` step keeps one sale-rep/report match per key with `QUALIFY ROW_NUMBER() OVER (PARTITION BY ... ORDER BY seq_condition, dim_report.Segment, SaleRepSK DESC) = 1`; the later LEFT JOINs to `fact_invoice`, `view_dim_aging` and `rebate_textsplit` are not guarded and can add rows, so uniqueness of the key is not guaranteed. In addition, a calendar spine (`dim_calendar` x `dim_company`, from the start of the year 4 years ago up to yesterday, Asia/Bangkok) is LEFT JOINed, so dates without sales appear as one row with `milVnos` NULL, all measures 0 and `mix_date` = the calendar date; the `select distinct` at the end collapses identical rows.
 
 # Schema
 
@@ -41,9 +41,9 @@ One row per sales line: (CompanySK, milType, milVnos, milCus, LOWER(milStk), mil
 | `QuotationSK` | INT64 | `COALESCE(fact_invoice.QuotationSK, fact_order.QuotationSK)`, link to `dim_quotation`. |
 | `FactQuotationSK` | INT64 | `COALESCE(fact_invoice.FactQuotationSK, fact_order.FactQuotationSK)`. |
 | `CustomerReportInfoSK` | INT64 | SK of `dim_customer_report_info` for the customer-report name on the invoice (whitespace-insensitive match); `-1` (reserved row) when the line has an invoice but the name is not found; NULL when there is no invoice. |
-| `FlagSaleExc` | STRING | `Yes` when the line is flagged for exclusion from sales KPI: document cancelled or status 32/33 (`fn_flag_exc`), no linked order (`RefOrder` empty or doc no `0001`/`PRE...`), or matched by a rebate rule (customer, sales, product, text-split, dep) with `salesExc = 'Yes'`; otherwise `No`. |
+| `FlagSaleExc` | STRING | `Yes` when the line is flagged for exclusion from sales KPI: document cancelled or status 32/33 (`fn_flag_exc`), no linked order (`RefOrder` empty or doc no `0001`/`PRE...`), or matched by a rebate rule (customer, sales, product, text-split) with `salesExc = 'Yes'`; otherwise `No`. |
 | `FlagAccExc` | STRING | `Yes` when the line is flagged for exclusion from finance/accounting sales: cancelled or status 32/33, or matched by a rebate rule with `accExc = 'Yes'`; otherwise `No`. |
-| `FlagMappingInvoice` | STRING | NULL for companies other than ag01/ab01. For ag01/ab01: `Yes` when the bill is re-mapped to a section through `onetime.mapping_invoice` (`FlagMustUser`, or a section id exists, or month between 202401 and 202601), `No` otherwise; NULL again outside that month window. Drives which org SKs are used. |
+| `FlagMappingInvoice` | STRING | NULL for companies other than ag01/ab01. For ag01/ab01: evaluated in order: `Yes` when `onetime.mapping_invoice.FlagMustUser` is true; NULL when the bill month is outside 202401–202601; `Yes` when the bill month is within 202401–202601 (so the later section-id and `No` branches are never reached). Drives which org SKs are used. |
 | `ReportSK` | INT64 | SK of the `dim_report` line (by region, and marketing group where a region has several lines); NULL when no line matches. |
 | `SaleRepSKLast` | INT64 | SK of `dim_sale_representative_last` chosen for the line using the LATEST sale-rep snapshot (matching employee id, channel/dep, customer flag, province, order window by `seq_condition`); historical bills are re-assigned to the latest structure. |
 | `DepartmentSKLast` | INT64 | Department SK under the latest structure; NULL when `FlagMappingInvoice = 'Yes'`. |
@@ -59,7 +59,7 @@ One row per sales line: (CompanySK, milType, milVnos, milCus, LOWER(milStk), mil
 | `ChangeRegionManagerSK` | INT64 | Region-manager SK at the bill date after the change-section rules. |
 | `ChangeDirectorSK` | INT64 | Director SK at the bill date after the change-section rules (placeholder `Non Director` row when applicable). |
 | `PumpSK` | INT64 | SK of `dim_pump_information` matched on product, `FlagNewProductMKT`, region id and company. |
-| `companyID` | STRING | Company code (ag01/aa05/ab01/ac02/ak02) from `dim_company`. |
+| `companyID` | STRING | MAC5 company code from `dim_company`; NULL on the zero-filled calendar rows. |
 | `InvoiceProvinceSK` | INT64 | Province SK of the invoiced customer's address (`view_deb_address_data`). |
 | `InvoiceDistrictSK` | INT64 | District SK of the invoiced customer's address. |
 | `InvoiceSubDistrictSK` | INT64 | Sub-district SK of the invoiced customer's address. |
@@ -98,7 +98,7 @@ One row per sales line: (CompanySK, milType, milVnos, milCus, LOWER(milStk), mil
 | `mihmemonew` | STRING | Document memo with the tag enclosed in `฿` signs removed, or NULL when no text remains. |
 | `QuotationID` | INT64 | Quotation id (`curated_tbook_quotation.id`) reached through the linked PS (order) document: `milLinkvcno -> PS mihVnos -> mihref1 = quotation running`. |
 | `QuotationCode` | STRING | Quotation running number (`curated_tbook_quotation.running`) found the same way. |
-| `milType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `milType` | STRING | Document type code (`IS` = invoice, `AS` = debit note, `BS` = credit note, `QS` = sales quotation). |
 | `milVnos` | STRING | Document number of the line, matching `mihvnos` of the header. |
 | `milCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
 | `milStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
@@ -172,7 +172,7 @@ One row per sales line: (CompanySK, milType, milVnos, milCus, LOWER(milStk), mil
 | `milCost` | FLOAT64 | Cost amount of the line; zero on calendar rows without a transaction. |
 | `milUcost` | FLOAT64 | Unit cost of the line; zero on calendar rows without a transaction. |
 | `milUprice` | FLOAT64 | Unit price of the line, excluding VAT; zero on calendar rows without a transaction. |
-| `Vat` | FLOAT64 | VAT of the document allocated to the line: `milSum / SUM(milSum over document) * mihVatsum` (sign flipped for `BS` credit notes); 0 when the document total is 0. |
+| `Vat` | FLOAT64 | Allocated VAT passed through from `fact_transcation`; calculation and window keys are defined in [Transaction_Data_Mart](/view/onetime/Transaction_Data_Mart.md#schema). |
 | `milsum_incvat` | FLOAT64 | Net amount including VAT: `milSum + Vat`. |
 | `mildisca_incvat` | FLOAT64 | Discount amount including VAT: `milDisca * stkVat` when the document carries VAT (`mihVatsum <> 0`), else `milDisca`. |
 | `milcog_incvat` | FLOAT64 | Gross amount including VAT: `milCog * stkVat` when the document carries VAT, else `milCog`. |
@@ -184,7 +184,6 @@ One row per sales line: (CompanySK, milType, milVnos, milCus, LOWER(milStk), mil
 
 - Definition: `definitions/view/fact_view/view_fact_transcation.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_calendar](/dimension/dim_calendar.md), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_rebate](/dimension/dim_rebate.md), [dimension_table.dim_report](/dimension/dim_report.md), [fact_table.fact_transcation](/fact/fact_transcation.md), [dimension_view.view_dim_invoice](/view/dimension_view/view_dim_invoice.md), [dimension_table.dim_order](/dimension/dim_order.md), [validated_mac5.deb](/validated/validated_mac5/deb.md), `onetime.mapping_invoice`, [dimension_table.dim_section](/dimension/dim_section.md), [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_director](/dimension/dim_director.md), [dimension_table.dim_pump_information](/dimension/dim_pump_information.md), `function_dataset.fn_flag_scg` (UDF), [dimension_table.dim_sale_representative](/dimension/dim_sale_representative.md), [dimension_table.dim_channel](/dimension/dim_channel.md), [dimension_table.dim_sale_representative_last](/dimension/dim_sale_representative_last.md), [dimension_table.dim_department_last](/dimension/dim_department_last.md), [dimension_table.dim_section_last](/dimension/dim_section_last.md), [dimension_table.dim_director_last](/dimension/dim_director_last.md), [dimension_table.dim_change_district](/dimension/dim_change_district.md), [dimension_table.dim_cost_stk](/dimension/dim_cost_stk.md), [dimension_table.dim_cost_group](/dimension/dim_cost_group.md), [dimension_table.dim_stk_mkt](/dimension/dim_stk_mkt.md), [dimension_table.dim_region_last](/dimension/dim_region_last.md), [dimension_table.dim_section_manager](/dimension/dim_section_manager.md), [dimension_table.dim_region_manager](/dimension/dim_region_manager.md), `function_dataset.fn_flag_exc` (UDF), [dimension_table.dim_product_master](/dimension/dim_product_master.md), [fact_table.fact_invoice](/fact/fact_invoice.md), [dimension_view.view_dim_aging](/view/dimension_view/view_dim_aging.md), [fact_table.fact_order](/fact/fact_order.md), [dimension_table.dim_customer_report_info](/dimension/dim_customer_report_info.md).
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; its base `fact_transcation` (tag `fact_daily`) is rebuilt first after all org/product/customer dims (`dimension_daily`). It reads the `*_last` dims for the latest org structure, `fact_invoice`, `fact_order`, `view_dim_aging`, `view_dim_invoice`, `dim_rebate`, `dim_customer_report_info`, `onetime.mapping_invoice` and UDFs `fn_flag_exc` / `fn_flag_scg`.
 
 # Examples
 

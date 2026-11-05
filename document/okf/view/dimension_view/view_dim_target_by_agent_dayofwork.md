@@ -14,17 +14,17 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Daily spread of the by-agent targets: [dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md) (monthly allocation per agent) is joined to the calendar so that `CalAmt`/`CalQty` are divided evenly over the month's working days (`Amt_New`/`Qty_New`; holidays get 0). It also resolves the as-of-date org SKs (sales rep, department, region, section, managers, director) from the date-versioned dims using StartDate/EndDate. Nothing else in the repo reads it.
+Daily spread of the by-agent targets: [dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md) (monthly allocation per agent) is joined to the calendar so that `CalAmt`/`CalQty` are divided evenly over the month's working days (`Amt_New`/`Qty_New`; holidays get 0). A working day is a dim_calendar date with `HolidayFlag` = 'No'; `total_day` counts the distinct working days of the target's year-month. It also resolves the as-of-date org SKs (sales rep, department, region, section, managers, director) from the date-versioned dims using StartDate/EndDate. No other repo object reads it.
 
 # Grain and key
 
-One row per TargetBySaleSK x Date of the target month (`TargetBySaleDayofworkSK` is a generated ROW_NUMBER over Year, Month, Day, TargetBySaleSK). `SELECT DISTINCT` guards against join fan-out.
+One row = one allocated target spread to one calendar date: key `TargetBySaleSK` + `Date` (intended; the as-of-date joins on StartDate/EndDate can add rows for the same key). `TargetBySaleDayofworkSK` is a `ROW_NUMBER()` over Year, Month, Day, TargetBySaleSK and is unique within a query result.
 
 # Schema
 
@@ -49,7 +49,7 @@ One row per TargetBySaleSK x Date of the target month (`TargetBySaleDayofworkSK`
 | `DirectorSKLast` | INT64 | SK of the director in dim_director_last (through the region). |
 | `ReportSK` | INT64 | SK of the report row in dim_report chosen by region (and marketing group when the region has several report rows); NULL when none. |
 | `TargetProductGroupSK` | INT64 | SK of the target row in dim_target_product_group. |
-| `RateTargetSK` | INT64 | SK of the allocation-rate row in dim_rate_target; NULL for an unmatched allocation branch, which can coexist with matched rows for the target. |
+| `RateTargetSK` | INT64 | SK of the allocation-rate row in dim_rate_target; NULL on a row where no rate row matched at the year+month or year+month+product group level; such rows can coexist with matched rows of the same target. |
 | `ProductMktSK` | INT64 | SK of the marketing classification in dim_product_mkt matched on group/sub/segment IDs + CompanySK. |
 | `CompanySK` | INT64 | SK of the company in dim_company. |
 | `companyID` | STRING | MAC5 company code. |
@@ -79,7 +79,6 @@ One row per TargetBySaleSK x Date of the target month (`TargetBySaleDayofworkSK`
 
 - Definition: `definitions/view/dimension_view/view_dim_target_by_agent_dayofwork.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_calendar](/dimension/dim_calendar.md), [dimension_table.dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md), [dimension_table.dim_sale_representative](/dimension/dim_sale_representative.md), [dimension_table.dim_department](/dimension/dim_department.md), [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_director](/dimension/dim_director.md), [dimension_table.dim_section](/dimension/dim_section.md), [dimension_table.dim_region_manager](/dimension/dim_region_manager.md), [dimension_table.dim_section_manager](/dimension/dim_section_manager.md).
-- Build: A plain BigQuery view (`type: "view"`, tag `view`): no storage, evaluated at query time over the current content of its base tables, so it is as fresh as they are. The `view` tag is not part of the nightly run; it is deployed with tag `view` after the base dimensions exist. Reads dim_calendar, dim_target_product_group_by_sale and the date-versioned dims (dim_sale_representative, dim_department, dim_region, dim_director, dim_section, dim_region_manager, dim_section_manager). All upstream tables are daily full rebuilds (`dimension_daily`).
 
 # Examples
 

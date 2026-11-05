@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "view_dim_customer"
-description: "One row = one customer (CustomerSK) of a company, with group SK, address names, MDS nickname and key-account info."
+description: "One row = one customer with each matching nickname and key-account record, with group SK and address names; CustomerSK can repeat."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_customer&page=table"
 project_id: databuffet-nonprd
 dataset_id: dimension_view
@@ -14,17 +14,17 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Enriched customer view over [dim_customer](/dimension/dim_customer.md). It adds `GroupCustomerSK` (from [dim_group_customer](/dimension/dim_group_customer.md)), the invoice address names (SubDistrict/District/Province/Region from the address dims), the MDS nickname (`NicknameCustomer`, `FlagMDSNickName`) and MDS key-account code/name. Used by [view_dim_invoice](/view/dimension_view/view_dim_invoice.md), [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md) and [dim_customer_report_info](/dimension/dim_customer_report_info.md).
+Enriched customer view over [dim_customer](/dimension/dim_customer.md). It adds `GroupCustomerSK` (from [dim_group_customer](/dimension/dim_group_customer.md)), the invoice address names (SubDistrict/District/Province/Region from the address dims), the MDS nickname (`NicknameCustomer`, `FlagMDSNickName`) and MDS key-account code/name. Read by [view_dim_invoice](/view/dimension_view/view_dim_invoice.md), [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md) and [dim_customer_report_info](/dimension/dim_customer_report_info.md). Exported by [export_view_dim_customer](/view/pub_sub/export_view_dim_customer.md).
 
 # Grain and key
 
-One row per dim_customer row (CustomerSK; natural key companyID + debcode); all joins are LEFT. Duplicates can only arise if an MDS nickname or key-account table holds several active rows for one customer code.
+One row = one customer with each matching nickname and key-account record: intended key `CustomerSK` (not unique; source natural key `companyID`, `debcode`); all joins are LEFT. The nickname and key-account joins match on `companyID` + `debcode` with no date filter, so a customer with several active rows in either MDS table gets one output row per combination of matches.
 
 # Schema
 
@@ -68,14 +68,13 @@ One row per dim_customer row (CustomerSK; natural key companyID + debcode); all 
 | `Region` | STRING | Geography/region name of the province (`dim_geographies.name`). |
 | `NicknameCustomer` | STRING | MDS customer nickname if one exists, else `debnamet`. |
 | `FlagMDSNickName` | BOOL | TRUE when NicknameCustomer comes from the MDS nickname master. |
-| `KeyAccountCode` | STRING | Key-account group code from the MDS key-account master (joined by companyid + customercode); NULL if not a key account. |
+| `KeyAccountCode` | STRING | Key-account code from the key-account group master (reached through the key-account master by companyid + customercode); NULL if the customer is not a key account or the group master has no active row. |
 | `KeyAccountName` | STRING | Key-account group name from the MDS key-account group master. |
 
 # How it is built
 
 - Definition: `definitions/view/dimension_view/view_dim_customer.sqlx` (`type: "view"`, tags `view`).
 - Reads: `mds_dataset.mds_data_customernickname_master` (master data loaded outside this repo), `mds_dataset.mds_data_keyaccount_master` (master data loaded outside this repo), `mds_dataset.mds_data_keyaccount_group_master` (master data loaded outside this repo), [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_group_customer](/dimension/dim_group_customer.md), `dimension_table.dim_sub_districts`, `dimension_table.dim_districts`, `dimension_table.dim_provinces`, `dimension_table.dim_geographies`.
-- Build: A plain BigQuery view (`type: "view"`, tag `view`): no storage, evaluated at query time over the current content of its base tables, so it is as fresh as they are. The `view` tag is not part of the nightly run; it is deployed with tag `view` after the base dimensions exist. Reads dim_customer, dim_group_customer, the address dims, and three mds tables (nickname, key account, key account group; only `is_active = TRUE`). Master data in mds_dataset is loaded outside this repo.
 
 # Examples
 

@@ -14,17 +14,17 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Read-model for the Power BI table 'Dimension Customer Report Info'. [dim_customer_report_info](/dimension/dim_customer_report_info.md) stores only SKs of the TA (responsible salesperson) chain; this view resolves them into IDs and names (department, section, region, section manager, region manager, director, employee) from the `_last` dimensions, converts `FlagPC` to Yes/No and `OnlinePercent` to text with '%', and adds the Thai address names. `CustomerSegmentSK` is passed through for Power BI to relate to `dim_customer_segment`. In Power BI the chain is `view_fact_transcation` (`CustomerReportInfoSK`) -> this view -> `dim_customer_segment`.
+Reporting view over [dim_customer_report_info](/dimension/dim_customer_report_info.md) stores only SKs of the TA (responsible salesperson) chain; this view resolves them into IDs and names (department, section, region, section manager, region manager, director, employee) from the `_last` dimensions, converts `FlagPC` to Yes/No and `OnlinePercent` to text with '%', and adds the Thai address names. `CustomerSegmentSK` is passed through from dim_customer_report_info. Exported by [export_view_dim_customer_report_info](/view/pub_sub/export_view_dim_customer_report_info.md).
 
 # Grain and key
 
-One row per `CustomerReportInfoSK` (company + report name key). All SKs are unique in their target dims, so the LEFT JOINs do not multiply rows.
+One row = one report shop name of a company: key `CustomerReportInfoSK` (MERGE key `CompanyID` + `CustomerReportKey` in dim_customer_report_info). Includes the reserved row `CustomerReportInfoSK = -1`, whose `CompanyID`, `CompanySK` and `CustomerReportName` are NULL. Each LEFT JOIN matches one SK in a dimension whose SK is unique, so the joins keep one row per `CustomerReportInfoSK`.
 
 # Schema
 
@@ -32,7 +32,7 @@ One row per `CustomerReportInfoSK` (company + report name key). All SKs are uniq
 |---|---|---|
 | `CustomerReportInfoSK` | INT64 | Stable SK of the report-info row (MERGE key CompanyID + CustomerReportKey in dim_customer_report_info); joined from view_fact_transcation. |
 | `CompanySK` | INT64 | SK of the company in dim_company. |
-| `CustomerSegmentSK` | INT64 | SK of the segment in `dim_customer_segment` (full rebuild, regenerated daily); passed through for Power BI to relate. |
+| `CustomerSegmentSK` | INT64 | SK of the segment in `dim_customer_segment` (full rebuild, regenerated daily); passed through. |
 | `CompanyID` | STRING | MAC5 company code. |
 | `CustomerReportName` | STRING | Report shop name (from MDS Customer_Report_Master / invoice names; matches view_dim_invoice `CustomerReportName`). |
 | `FlagPC` | STRING | 'Yes' if the shop is a PC (flag in MDS), else 'No' (NULL becomes 'No'). |
@@ -56,6 +56,7 @@ One row per `CustomerReportInfoSK` (company + report name key). All SKs are uniq
 | `InvoiceProvinceSK` | INT64 | SK of the invoice-address province of the representative customer. |
 | `InvoiceDistrictSK` | INT64 | SK of the invoice-address district. |
 | `InvoiceSubDistrictSK` | INT64 | SK of the invoice-address sub-district. |
+| `CustomerReportKey` | STRING | Report name with all whitespace removed (key part in dim_customer_report_info). |
 | `TADepartmentID` | STRING | Department ID of the TA (from dim_department_last). |
 | `TADepartmentName` | STRING | Department name of the TA. |
 | `TASectionID` | STRING | Section ID of the TA (dim_section_last). |
@@ -63,13 +64,13 @@ One row per `CustomerReportInfoSK` (company + report name key). All SKs are uniq
 | `TARegionID` | STRING | Region ID of the TA (dim_region_last). |
 | `TARegionName` | STRING | Region name of the TA. |
 | `TASectionManagerID` | STRING | Employee ID of the TA section manager. |
-| `TASectionManagerName` | STRING | Section manager display name 'name surname (nickname)'; NULL if empty. Personal data. |
+| `TASectionManagerName` | STRING | Section manager display name 'name surname (nickname)'; NULL if empty. |
 | `TARegionManagerID` | STRING | Employee ID of the TA region manager. |
-| `TARegionManagerName` | STRING | Region manager display name 'name surname (nickname)'; NULL if empty. Personal data. |
+| `TARegionManagerName` | STRING | Region manager display name 'name surname (nickname)'; NULL if empty. |
 | `TADirectorID` | STRING | Director ID of the TA (dim_director_last). |
 | `TADirectorName` | STRING | Director name. |
 | `TAEmployeeID` | STRING | Employee ID of the TA salesperson (dim_sale_representative_last). |
-| `TAEmployeeName` | STRING | Salesperson display name 'name surname (nickname)'; NULL if empty. Personal data. |
+| `TAEmployeeName` | STRING | Salesperson display name 'name surname (nickname)'; NULL if empty. |
 | `SubDistrict` | STRING | Thai sub-district name (dim_sub_districts.name_th), same method as view_dim_customer. |
 | `District` | STRING | Thai district name (dim_districts.name_th). |
 | `Province` | STRING | Thai province name (dim_provinces.name_th). |
@@ -78,7 +79,6 @@ One row per `CustomerReportInfoSK` (company + report name key). All SKs are uniq
 
 - Definition: `definitions/view/dimension_view/view_dim_customer_report_info.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_customer_report_info](/dimension/dim_customer_report_info.md), [dimension_table.dim_department_last](/dimension/dim_department_last.md), [dimension_table.dim_section_last](/dimension/dim_section_last.md), [dimension_table.dim_region_last](/dimension/dim_region_last.md), [dimension_table.dim_section_manager_last](/dimension/dim_section_manager_last.md), [dimension_table.dim_region_manager_last](/dimension/dim_region_manager_last.md), [dimension_table.dim_director_last](/dimension/dim_director_last.md), [dimension_table.dim_sale_representative_last](/dimension/dim_sale_representative_last.md), `dimension_table.dim_sub_districts`, `dimension_table.dim_districts`, `dimension_table.dim_provinces`.
-- Build: A plain BigQuery view (`type: "view"`, tag `view`): no storage, evaluated at query time over the current content of its base tables, so it is as fresh as they are. The `view` tag is not part of the nightly run; it is deployed with tag `view` after the base dimensions exist. Reads dim_customer_report_info (MERGE, stable SK, built after the invoice/customer dims) and the `_last` family dims. The `view` tag is not in the nightly run; `view_fact_transcation` is deployed before this view.
 
 # Examples
 

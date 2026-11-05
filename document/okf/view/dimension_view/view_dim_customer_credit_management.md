@@ -14,17 +14,17 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Credit-management view: a narrow slice of [dim_customer](/dimension/dim_customer.md) (credit limit, credit term, memo) joined with the latest grade row of [dim_customer_grade](/dimension/dim_customer_grade.md), exposing the invoice-based and due-based grades. Not used by other repo objects; consumed by BI credit-control reports.
+Credit-management view: a narrow slice of [dim_customer](/dimension/dim_customer.md) (credit limit, credit term, memo) joined with the latest grade row of [dim_customer_grade](/dimension/dim_customer_grade.md), exposing the invoice-based and due-based grades. No other repo object reads it.
 
 # Grain and key
 
-One row per CustomerSK. dim_customer_grade is reduced to one row per CustomerSK (highest CustomerGradeSK wins) before the LEFT JOIN, so customers without a grade have NULL grade columns.
+One row = one customer: key `CustomerSK`. dim_customer_grade is reduced to one row per CustomerSK (highest CustomerGradeSK wins) before the LEFT JOIN, so customers without a grade have NULL grade columns.
 
 # Schema
 
@@ -45,11 +45,10 @@ One row per CustomerSK. dim_customer_grade is reduced to one row per CustomerSK 
 
 - Definition: `definitions/view/dimension_view/view_dim_customer_credit_management.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_customer_grade](/dimension/dim_customer_grade.md).
-- Build: A plain BigQuery view (`type: "view"`, tag `view`): no storage, evaluated at query time over the current content of its base tables, so it is as fresh as they are. The `view` tag is not part of the nightly run; it is deployed with tag `view` after the base dimensions exist. Reads dim_customer and dim_customer_grade (both tag `dimension_daily`; dim_customer_grade is rebuilt from chq/cql/mie/mir/deb/mih and score dims).
 
 # Examples
 
-Customers over their limit grade with terms:
+Customers that have a due grade:
 
 ```sql
 SELECT companyID, debcode, deblimit, debcreditterm, Invoice_Customer_CM_Grade, Due_Customer_CM_Grade

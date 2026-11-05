@@ -14,17 +14,17 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Sales target allocation by agent: each monthly product-group target from [dim_target_product_group](/dimension/dim_target_product_group.md) is split to salespeople using [dim_rate_target](/dimension/dim_rate_target.md) percentages (CalAmt/CalQty), and tagged with the owner's latest department/section/region/director SKs from the `_last` dims and a ReportSK from [dim_report](/dimension/dim_report.md). The daily-spread counterpart is [view_dim_target_by_agent_dayofwork](/view/dimension_view/view_dim_target_by_agent_dayofwork.md), which reads the materialised table `dim_target_product_group_by_sale` (same allocation idea).
+Sales target allocation by agent: each monthly product-group target from [dim_target_product_group](/dimension/dim_target_product_group.md) is split to salespeople using [dim_rate_target](/dimension/dim_rate_target.md) percentages (CalAmt/CalQty), and tagged with the owner's latest department/section/region/director SKs from the `_last` dims and a ReportSK from [dim_report](/dimension/dim_report.md). The daily-spread counterpart is [view_dim_target_by_agent_dayofwork](/view/dimension_view/view_dim_target_by_agent_dayofwork.md), which reads the table `dim_target_product_group_by_sale` (same allocation idea). No other repo object reads this view.
 
 # Grain and key
 
-One row per target row x allocation: unique over company, owner SKs, TargetProductGroupSK, RateTargetSK, ProductMktSK, Year, Month, group/segment IDs, ChannelTargetGroup, TargetID, EmployeeID, DepartmentID (enforced by QUALIFY ROW_NUMBER ordered by report segment). `TargetBySaleSK` is a generated sequence, not a stable key.
+One row = one target row allocated to one salesperson: key `TargetBySaleSK` (unique within a query result; `ROW_NUMBER()` ordered by TargetProductGroupSK, RateTargetSK, so values are not stable). Rows are deduplicated by `QUALIFY ROW_NUMBER()` over company, owner SKs, TargetProductGroupSK, RateTargetSK, ProductMktSK, Year, Month, group/segment IDs, ChannelTargetGroup, TargetID, EmployeeID and DepartmentID, keeping the lowest dim_report match segment.
 
 # Schema
 
@@ -40,7 +40,7 @@ One row per target row x allocation: unique over company, owner SKs, TargetProdu
 | `DirectorSKLast` | INT64 | SK of the director in dim_director_last (through the region). |
 | `ReportSK` | INT64 | SK of the report row in dim_report chosen by region (and marketing group when the region has several report rows); NULL when none. |
 | `TargetProductGroupSK` | INT64 | SK of the target row in dim_target_product_group. |
-| `RateTargetSK` | INT64 | SK of the allocation-rate row in dim_rate_target; NULL for an unmatched branch row, even when another branch allocated the same target. |
+| `RateTargetSK` | INT64 | SK of the allocation-rate row in dim_rate_target; NULL on a row where no rate row matched at the year+month or year+month+product group level; such rows can coexist with matched rows of the same target. |
 | `ProductMktSK` | INT64 | SK of the marketing classification in dim_product_mkt matched on group/sub/segment IDs + CompanySK. |
 | `CompanySK` | INT64 | SK of the company in dim_company. |
 | `companyID` | STRING | MAC5 company code. |
@@ -66,7 +66,7 @@ One row per target row x allocation: unique over company, owner SKs, TargetProdu
 
 - Definition: `definitions/view/dimension_view/view_dim_target_by_agent.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_target_product_group](/dimension/dim_target_product_group.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_report](/dimension/dim_report.md), [dimension_table.dim_rate_target](/dimension/dim_rate_target.md), [dimension_table.dim_sale_representative_last](/dimension/dim_sale_representative_last.md), [dimension_table.dim_department_last](/dimension/dim_department_last.md), [dimension_table.dim_region_last](/dimension/dim_region_last.md), [dimension_table.dim_section_last](/dimension/dim_section_last.md), [dimension_table.dim_region_manager_last](/dimension/dim_region_manager_last.md), [dimension_table.dim_section_manager_last](/dimension/dim_section_manager_last.md).
-- Build: A plain BigQuery view (`type: "view"`, tag `view`): no storage, evaluated at query time over the current content of its base tables, so it is as fresh as they are. The `view` tag is not part of the nightly run; it is deployed with tag `view` after the base dimensions exist. Reads dim_target_product_group, dim_product_mkt, dim_report, dim_rate_target, dim_sale_representative_last, dim_department_last, dim_region_last, dim_section_last, dim_region_manager_last, dim_section_manager_last. A view, so it recomputes on every query (heavy joins).
+- Allocation: dim_rate_target rows are matched to a target by TargetID + CompanySK at three levels: (1) Year only (Month and ProductGroupID NULL), (2) Year + Month, (3) Year + Month + ProductGroupID = the target's MarketingGroupID. A target row with no matching rate row at level 2 or 3 is kept with NULL `RateTargetSK`; a target + rate pair produced at a lower level is not repeated at a higher level.
 
 # Examples
 

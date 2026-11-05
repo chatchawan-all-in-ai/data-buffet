@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-The document-level twin of [view_deb_address_data](/view/process_dataset/view_deb_address_data.md): it applies the same most-specific-first geography matching (sub-district, then district, then province) to `process_dataset.mih_address_data`, a table of parsed addresses per document header. That table is not built by this repo (it pre-exists in BigQuery), so this view is only useful if it is populated; nothing else in the repo reads it.
+The document-level twin of [view_deb_address_data](/view/process_dataset/view_deb_address_data.md): it applies the same most-specific-first geography matching (sub-district, then district, then province) to `process_dataset.mih_address_data`, a table of parsed addresses per document header. That table is not built by this repo.
 
-No other object in this repo reads it; it is meant to be queried directly (BI tools or ad-hoc SQL).
+No other object in this repo reads it.
 
 # Grain and key
 
-One row per (mihType, mihVnos) of `mih_address_data` that matched at some level, with the same `NOT EXISTS` guards on (mihType, mihVnos); documents that match nothing are absent. There is no company column and no company filter, so the same (type, number) can exist for different companies only if `mih_address_data` carries them.
+One row = one document address match of `mih_address_data`: intended key `mihType`, `mihVnos` (not unique). `sub_districts`, `districts` and `provinces` rows are chosen most-specific-first with `NOT EXISTS` guards on (`mihType`, `mihVnos`); documents that match nothing are absent. The view has no company column and no company filter, and a name that matches several dimension rows yields several rows.
 
 # Schema
 
@@ -34,8 +34,8 @@ One row per (mihType, mihVnos) of `mih_address_data` that matched at some level,
 |---|---|---|
 | `address_type` | STRING | Constant `invoice`. |
 | `condition` | STRING | How the address was matched: `sub_districts` (matched to a sub-district), `districts` (only a district matched) or `provinces` (only a province matched). |
-| `mihType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
-| `mihVnos` | STRING | Document number, unique within company and document type. |
+| `mihType` | STRING | Document type code of the document header (as in MAC5 `mih`). |
+| `mihVnos` | STRING | Document number of the header. |
 | `raw_address` | STRING | Source address text (debtor address lines concatenated) that was sent to the AI parser. |
 | `ProvinceSK` | INT64 | SK of `dim_provinces` (Thai province); NULL only if not matched at any level (such rows are not returned). |
 | `DistrictSK` | INT64 | SK of `dim_districts`; NULL when matching stopped at province level. |
@@ -51,7 +51,7 @@ One row per (mihType, mihVnos) of `mih_address_data` that matched at some level,
 
 - Definition: `definitions/view/process_dataset/view_mih_address_data.sqlx` (`type: "view"`, tags `view`).
 - Reads: `process_dataset.mih_address_data`, `dimension_table.dim_sub_districts`, `dimension_table.dim_districts`, `dimension_table.dim_provinces`.
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; reads `process_dataset.mih_address_data` and the geography dims `dim_provinces/districts/sub_districts`, none of which this repo builds (`dependencies` is empty).
+- Type view; no declared dependencies.
 
 # Examples
 

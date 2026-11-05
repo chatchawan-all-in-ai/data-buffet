@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
@@ -22,11 +22,11 @@ status: draft
 
 Sell-out of the modern-trade chains broken down by PC (promoter/product consultant, from [dim_pc](/dimension/dim_pc.md)). [fact_saleout_monthly_mdt](/fact/fact_saleout_monthly_mdt.md) has branch x product sales but no person, while the PC master assigns people to a slot (branch + marketing group, with start/end dates). The view expands each assignment to the months it is valid, divides quantity and amount equally among the PCs of the slot, and flags one row per PcSK assignment per month. One employee may have several assignments across branches or marketing groups.
 
-No other object in this repo reads it; it is meant to be queried directly (BI tools or ad-hoc SQL).
+No other repo object reads it.
 
 # Grain and key
 
-One row per `fact_saleout_monthly_mdt` row (month_date, store_code, branch_code, sales_channel, product_code) multiplied by the number of PCs assigned to its slot in that month (`pc_sk_list`); a row with no PC stays once with `pc_sk_list` NULL and full amounts. Placeholder PCs (`IsPlaceholder`) and `PcSK = -1` are ignored. Because amounts are divided by `pc_in_slot`, `SUM(sale_amount)` over the view equals the fact total.
+One row = one `fact_saleout_monthly_mdt` row (key `month_date`, `store_code`, `branch_code`, `sales_channel`, `product_code`) multiplied by the number of PCs assigned to its slot in that month (`pc_sk_list`); a row with no PC stays once with `pc_sk_list` NULL and full amounts. Placeholder PCs (`IsPlaceholder`) and `PcSK = -1` are ignored. Because amounts are divided by `pc_in_slot`, `SUM(sale_amount)` over the view equals the fact total.
 
 # Schema
 
@@ -58,7 +58,6 @@ One row per `fact_saleout_monthly_mdt` row (month_date, store_code, branch_code,
 
 - Definition: `definitions/view/fact_view/view_fact_saleout_pc_mdt.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [fact_table.fact_saleout_monthly_mdt](/fact/fact_saleout_monthly_mdt.md), [dimension_table.dim_pc](/dimension/dim_pc.md).
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; depends on `fact_saleout_monthly_mdt` (tags `fact_daily` + `saleout_daily`), `dim_pc` and `dim_product_mkt` being rebuilt first. It is defined in `definitions/view/fact_view/`.
 
 # Examples
 
@@ -72,7 +71,7 @@ GROUP BY month, pc_sk_list
 ORDER BY month, sale_amount DESC
 ```
 
-Distinct employees represented in sell-out per chain for October 2026 (counts people across their assignments).
+Distinct employees represented in sell-out per chain and month (counts people across their assignments).
 
 ```sql
 SELECT DATE_TRUNC(s.month_date, MONTH) AS month, s.store_code,
@@ -80,7 +79,6 @@ SELECT DATE_TRUNC(s.month_date, MONTH) AS month, s.store_code,
 FROM `databuffet-nonprd.fact_view.view_fact_saleout_pc_mdt` AS s
 JOIN `databuffet-nonprd.dimension_table.dim_pc` AS pc
   ON s.pc_sk_list = pc.PcSK
-WHERE s.month_date >= DATE '2026-10-01' AND s.month_date < DATE '2026-11-01'
 GROUP BY month, s.store_code
 ORDER BY month, s.store_code
 ```

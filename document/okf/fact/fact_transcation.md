@@ -148,7 +148,7 @@ One row per bill line, but the upsert key is only (`milVnos`, `milType`, `Compan
 | `asatdate` | DATE | Snapshot/extract date of the source line (`curated_mil.asatdate`). |
 | `percent_sale` | STRING | Salesperson share of the line, a percent STRING such as '100.00%' (curated_mil split-sale: ag01 lines can be split into two rows with per_sale1/per_sale2). |
 | `stkGroup` | STRING | Stock group code (joins `stg.stgcode`). |
-| `Vat` | FLOAT64 | VAT amount allocated to the line: `milSum / over_milsum * mihVatsum` (sign flipped for BS), where over_milsum is the bill total; 0 when the bill total is 0. |
+| `Vat` | FLOAT64 | Allocated VAT passed through from [Transaction_Data_Mart](/view/onetime/Transaction_Data_Mart.md#schema), which defines the calculation and window keys. |
 | `milsum_incvat` | FLOAT64 | `milSum + Vat`, line amount including VAT. |
 | `mildisca_incvat` | FLOAT64 | `milDisca * stkVat` (stock VAT multiplier) when the bill has VAT, otherwise milDisca. |
 | `milcog_incvat` | FLOAT64 | `milCog * stkVat` when the bill has VAT, otherwise milCog. |

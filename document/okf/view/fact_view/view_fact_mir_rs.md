@@ -6,7 +6,7 @@ resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p
 project_id: databuffet-nonprd
 dataset_id: fact_view
 table_id: view_fact_mir_rs
-tags: ["view", "fact_view", "mac5"]
+tags: ["view", "fact_view"]
 sources:
   - id: sqlx
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/definitions/view/fact_view/view_fact_mir_rs.sqlx"
@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-The BI-facing version of the `fact_mir_rs` receipt/payment-received fact. It adds the link to the AR aging dimension (`AgingSK`) and the status of the receipt document (`mihcancel`, `mihstatus`, Thai status text `ar_snamet`) to every `fact_mir_rs` column.
+The view over the `fact_mir_rs` receipt/payment-received fact. It adds the link to the AR aging dimension (`AgingSK`) and the status of the receipt document (`mihcancel`, `mihstatus`, Thai status text `ar_snamet`) to every `fact_mir_rs` column.
 
-No other object in this repo reads it; it is meant to be queried directly (BI tools or ad-hoc SQL).
+No other repo object reads it.
 
 # Grain and key
 
-One row per `ReceiveSK` (the key of [fact_mir_rs](/fact/fact_mir_rs.md)). `dim_aging` can hold several rows per invoice number, so the view ends with `QUALIFY ROW_NUMBER() OVER (PARTITION BY t1.ReceiveSK ORDER BY t2.AgingSK DESC) = 1`; this makes the row count equal to `fact_mir_rs`. This removes extra aging matches per ReceiveSK, but preserves the fact's cheque expansion: one validated receipt line can still occur under several ReceiveSK values.
+One row = one receipt (RS) line or cheque of [fact_mir_rs](/fact/fact_mir_rs.md): key `ReceiveSK` (unique). The view joins `dim_aging` on invoice number and company, which can match several rows per invoice number (different `cfsTypeID`), so it ends with `QUALIFY ROW_NUMBER() OVER (PARTITION BY t1.ReceiveSK ORDER BY t2.AgingSK DESC) = 1`; this makes the row count equal to `fact_mir_rs`. This removes extra aging matches per ReceiveSK, but preserves the fact's cheque expansion: one validated receipt line can still occur under several ReceiveSK values.
 
 # Schema
 
@@ -44,11 +44,11 @@ One row per `ReceiveSK` (the key of [fact_mir_rs](/fact/fact_mir_rs.md)). `dim_a
 | `InvoiceSK` | INT64 | SK of `dim_invoice` (match on invoice number, type, customer, date and company, first SK kept). `dim_invoice` is a MERGE dim with stable SKs. |
 | `CompanySK` | INT64 | SK of `dim_company` (match `company_id`); stable across days. |
 | `duedate` | DATE | Due date of the billed invoice: `PARSE_DATE('%d/%m/%Y', SUBSTR(mie.miectermdx, 1, 10))` from validated `mie`, joined on invoice number + customer + company. NULL when no `mie` row matches. |
-| `company_id` | STRING | Company code (ag01/aa05/ab01/ac02/ak02), pass-through of `validated_mac5.mir.company_id`. Joins to `dim_company.companyID`. |
+| `company_id` | STRING | MAC5 company code, pass-through of `validated_mac5.mir.company_id`. Joins to `dim_company.companyID`. |
 | `mirday` | INT64 | Day part of the document date. |
 | `mirmonth` | INT64 | Month part of the document date. |
 | `miryear` | INT64 | Year part of the document date (Gregorian). |
-| `mirtype` | STRING | Document type code (RS = sales receipt, VS = sales billing statement; RP / VP on the purchase side). |
+| `mirtype` | STRING | Document type code (`RS` = sales receipt; NULL on cheque-only rows). |
 | `mirvnos` | STRING | Receipt or billing-statement document number. |
 | `mircus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
 | `mirlistno` | INT64 | Line number within the receipt or billing statement. |
@@ -73,7 +73,6 @@ One row per `ReceiveSK` (the key of [fact_mir_rs](/fact/fact_mir_rs.md)). `dim_a
 
 - Definition: `definitions/view/fact_view/view_fact_mir_rs.sqlx` (`type: "view"`, tags `view`).
 - Reads: [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [fact_table.fact_mir_rs](/fact/fact_mir_rs.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [validated_mac5.ar_s](/validated/validated_mac5/ar_s.md).
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; `fact_mir_rs` and `dim_aging` are rebuilt first (declared in `dependencies`); `curated_mih` and `validated_mac5.ar_s` are read via `ref()`.
 
 # Examples
 

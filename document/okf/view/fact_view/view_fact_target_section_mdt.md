@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-A small roll-up of [fact_target_saleout_mdt](/fact/fact_target_saleout_mdt.md) to chain and marketing-group level. It collapses branch, sub-marketing group and segment and keeps only the amount and a branch count, so it is cheap to query for chain-level target dashboards.
+A small roll-up of [fact_target_saleout_mdt](/fact/fact_target_saleout_mdt.md) to chain and marketing-group level. It collapses branch, sub-marketing group and segment and keeps only the amount and a branch count.
 
-No other object in this repo reads it; it is meant to be queried directly (BI tools or ad-hoc SQL).
+No other repo object reads it.
 
 # Grain and key
 
-One row per (target_date, store_code, marketing_group_id); `marketing_group_name` is `ANY_VALUE`. Quantity is not included.
+One row = one marketing group of one store on one target date: key `target_date`, `store_code`, `marketing_group_id` (unique); `marketing_group_name` is `ANY_VALUE`. Quantity is not included.
 
 # Schema
 
@@ -43,7 +43,6 @@ One row per (target_date, store_code, marketing_group_id); `marketing_group_name
 
 - Definition: `definitions/view/fact_view/view_fact_target_section_mdt.sqlx` (`type: "view"`, tags `view`).
 - Reads: [fact_table.fact_target_saleout_mdt](/fact/fact_target_saleout_mdt.md).
-- Logical view (`type: "view"`, tag `view`): `CREATE OR REPLACE VIEW`, no data is stored, so every query reads the current content of the base tables. It is (re)deployed by running tag `view`; depends on `fact_target_saleout_mdt` (tags `fact_daily` + `saleout_daily`) being rebuilt first.
 
 # Examples
 
