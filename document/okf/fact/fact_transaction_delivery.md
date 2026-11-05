@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -22,11 +22,11 @@ status: draft
 
 Invoice-line base used by the delivery tracking fact: IS (invoice) lines from `curated_mil` joined to [dim_invoice](/dimension/dim_invoice.md) and [dim_product_master](/dimension/dim_product_master.md). It provides the invoiced quantities/amounts that [fact_delivery](/fact/fact_delivery.md) attaches to trip/delivery status rows. Unlike [fact_invoice](/fact/fact_invoice.md) it covers only milType 'IS' and has no order/quotation links.
 
-Used by / context: used by [fact_table.fact_delivery](/fact/fact_delivery.md).
+Read by: [fact_delivery](/fact/fact_delivery.md), [export_fact_transaction_delivery](/view/pub_sub/export_fact_transaction_delivery.md).
 
 # Grain and key
 
-One row per `FactTransDeliverySK` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay, milType, milvnos, lower(milStk)). Business grain: company + date + `milvnos` + customer + product (group-by also includes InvoiceSK and ProductSK). The company + case-insensitive product-code join matches every retained barcode version; each ProductSK group repeats the source measures. FactTransDeliverySK is an expanded-row key, not a unique invoice/product total. Window: invoice date >= start of the year 4 years ago (Asia/Bangkok).
+One row = the invoiced totals of one product on one IS invoice (company, date, `milvnos`, customer) per matched ProductSK: key `FactTransDeliverySK` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay, milType, milvnos, lower(milStk)); the group-by also includes InvoiceSK and ProductSK. The invoice join matches every InvoiceSK for the same company, date, type, invoice number and customer, regardless of linked order. The company + case-insensitive product-code join matches every retained barcode version; each InvoiceSK/ProductSK group repeats the source measures. FactTransDeliverySK is an expanded-row key, not a unique invoice/product total. Window: invoice date >= start of the year 4 years ago (Asia/Bangkok).
 
 # Schema
 
@@ -35,7 +35,7 @@ One row per `FactTransDeliverySK` (ROW_NUMBER over CompanySK, milYear, milMonth,
 | `FactTransDeliverySK` | INT64 | Surrogate key: ROW_NUMBER over CompanySK, date parts, milType, milvnos, lower(milStk). Regenerates every run. |
 | `InvoiceSK` | INT64 | Surrogate key of [dim_invoice](/dimension/dim_invoice.md) (join on date, type, vnos, customer, company; only milType 'IS'). |
 | `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md) (company + case-insensitive product code); NULL if unmatched. |
-| `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md). |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | MAC5 company code from dim_company. |
 | `mix_date` | DATE | Invoice business date (PARSE_DATE of year/month/day); partition column. |
 | `company_id` | STRING | MAC5 company code from curated_mil (same value as companyID). |
@@ -46,11 +46,11 @@ One row per `FactTransDeliverySK` (ROW_NUMBER over CompanySK, milYear, milMonth,
 | `milvnos` | STRING | Document number of the line, matching `mihvnos` of the header. |
 | `milCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
 | `milStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
-| `milQuan` | FLOAT64 | SUM of `curated_mil.milQuan` over the grain. |
-| `milAdisc` | FLOAT64 | SUM of `curated_mil.milAdisc`: the document-level discount allocated to the lines. |
-| `milCog` | FLOAT64 | SUM of `curated_mil.milCog`: gross line amount excluding VAT, with salesperson shares already applied to split-sale lines. |
-| `milDisca` | FLOAT64 | SUM of `curated_mil.milDisca`: line discount amount excluding VAT. |
-| `milSum` | FLOAT64 | SUM of `curated_mil.milSum`, line net amount in THB. |
+| `milQuan` | FLOAT64 | SUM of `curated_mil.milQuan` over the grain; the salesperson share is already applied on ag01 split-sale lines. |
+| `milAdisc` | FLOAT64 | SUM of `curated_mil.milAdisc`: the document-level discount allocated to the lines; the salesperson share is already applied on ag01 split-sale lines. |
+| `milCog` | FLOAT64 | SUM of `curated_mil.milCog`: gross line amount excluding VAT; the salesperson share is already applied on ag01 split-sale lines. |
+| `milDisca` | FLOAT64 | SUM of `curated_mil.milDisca`: line discount amount excluding VAT; the salesperson share is already applied on ag01 split-sale lines. |
+| `milSum` | FLOAT64 | SUM of `curated_mil.milSum`, line net amount in THB; the salesperson share is already applied on ag01 split-sale lines. |
 | `asatdate` | DATE | Build date, CURRENT_DATE('Asia/Bangkok'). |
 
 # How it is built
@@ -61,22 +61,21 @@ One row per `FactTransDeliverySK` (ROW_NUMBER over CompanySK, milYear, milMonth,
 
 # Examples
 
-Invoiced source quantity and amount per month before product enrichment, for IS lines with a matching invoice header.
+Invoiced quantity and amount per month, counting each invoice line once (invoice candidates and product-version rows repeat the source measures).
 ```sql
-SELECT DATE_TRUNC(DATE(m.milYear, m.milMonth, m.milDay), MONTH) AS month,
-       SUM(m.milQuan) AS qty, SUM(m.milSum) AS amount
-FROM `databuffet-nonprd.curated_mac5.curated_mil` AS m
-WHERE m.company_id = 'ag01' AND m.milType = 'IS'
-  AND DATE(m.milYear, m.milMonth, m.milDay) >= DATE '2026-01-01'
-  AND EXISTS (
-    SELECT 1 FROM `databuffet-nonprd.dimension_table.dim_invoice` AS i
-    WHERE i.companyID = m.company_id AND i.mihType = m.milType
-      AND i.mihVnos = m.milVnos AND i.mihCus = m.milCus
-      AND i.mihYear = m.milYear AND i.mihMonth = m.milMonth AND i.mihDay = m.milDay
-  )
+WITH invoice_lines AS (
+  SELECT mix_date, milQuan, milSum
+  FROM `databuffet-nonprd.fact_table.fact_transaction_delivery`
+  WHERE companyID = 'ag01' AND mix_date >= DATE '2026-01-01'
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY CompanySK, milYear, milMonth, milDay, milType, milvnos, milCus, milStk
+    ORDER BY FactTransDeliverySK) = 1
+)
+SELECT DATE_TRUNC(mix_date, MONTH) AS month, SUM(milQuan) AS qty, SUM(milSum) AS amount
+FROM invoice_lines
 GROUP BY month ORDER BY month;
 ```
-Expanded invoice/product-version rows for inspection; measures can repeat.
+Expanded invoice-candidate/product-version rows for inspection; measures can repeat.
 ```sql
 SELECT FactTransDeliverySK, InvoiceSK, ProductSK, milStk, milQuan, milSum
 FROM `databuffet-nonprd.fact_table.fact_transaction_delivery`

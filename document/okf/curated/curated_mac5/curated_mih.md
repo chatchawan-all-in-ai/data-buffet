@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Curated MAC5 document header table (MAC5 ERP `mih`). It renames the validated_mac5.mih columns to camelCase, adds the status description (`mihstatus_desc`) from the AR/AP status lookups and, for company ag01 only, the split-sale percentages (`percentSale1`, `percentSale2`) from validated_mac5.mih2. It is the main source of order (`mihType = 'PS'`) and invoice (`'IS'`) headers for dim_order, dim_invoice, dim_quotation, dim_delivery, the AR facts (fact_mir_vs, fact_mir_rs), the store facts (fact_order_store, fact_invoice_store, fact_backlog_store) and the Transaction_Data_Mart view. Pairs with [curated_mil](/curated/curated_mac5/curated_mil.md) (the line items).
+Curated MAC5 document header table (MAC5 ERP `mih`). It renames the validated_mac5.mih columns to camelCase, adds the status description (`mihstatus_desc`) from the AR/AP status lookups and, for company ag01 only, the split-sale percentages (`percentSale1`, `percentSale2`) from validated_mac5.mih2. Pairs with [curated_mil](/curated/curated_mac5/curated_mil.md) (the line items).
+
+Read by: [curated_journal_invoice](/curated/curated_derp/curated_journal_invoice.md), [dim_aging](/dimension/dim_aging.md), [dim_customer_grade](/dimension/dim_customer_grade.md), [dim_delivery](/dimension/dim_delivery.md), [dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [dim_invoice](/dimension/dim_invoice.md), [dim_order](/dimension/dim_order.md), [dim_quotation](/dimension/dim_quotation.md), [fact_backlog_store](/fact/fact_backlog_store.md), [fact_delivery](/fact/fact_delivery.md), [fact_invoice_store](/fact/fact_invoice_store.md), [fact_mir_rs](/fact/fact_mir_rs.md), [fact_mir_vs](/fact/fact_mir_vs.md), [fact_order_store](/fact/fact_order_store.md), [view_aging_ri](/view/fact_view/view_aging_ri.md), [view_fact_mir_rs](/view/fact_view/view_fact_mir_rs.md), [Transaction_Data_Mart](/view/onetime/Transaction_Data_Mart.md).
 
 # Grain and key
 
@@ -110,8 +112,8 @@ One row per document: `company_id` + `mihType` + `mihVnos` (the `uniqueKey`; doc
 | `memoExtract` | STRING | Tag extracted from the document memo, defaulting to `฿00฿` and matched to `dim_payment.CodeMemo`. |
 | `asatdate` | DATE | Extract date of the winning row (from validated_mac5.mih); partition column. The incremental window compares against it. |
 | `mihstatus_desc` | STRING | Thai status name resolved from mihStatus: for sales types (QS, PS, IS, AS, BS, VS, RS) `ar_s.ar_snamet`, for purchase types (QP, PP, IP, AP, BP, VP, RP) `ap_s.ap_snamet`, NULL for other types (joined on company_id). |
-| `percentSale1` | STRING | Share of the document credited to sales rep 1, as a percent string like '100.00%'. For ag01 it comes from validated_mac5.mih2.mih2perpc (split-sale) matched on mihRef1 = mih2vnos and mihCus = mih2cus; when no split exists, and for every other company, it is the default '100.00%'. |
-| `percentSale2` | STRING | Share credited to sales rep 2 as a percent string (from mih2.mih2per2pc, ag01 only); default '0.00%' when there is no split and for every other company. |
+| `percentSale1` | STRING | Share of the document credited to sales rep 1, as a percent string like '100.00%' or '33.33%' (`CONCAT(ROUND(x, 2), '%')`; not capped at 100). For ag01 it comes from validated_mac5.mih2.mih2perpc (split-sale) matched on mihRef1 = mih2vnos and mihCus = mih2cus; when no split exists, and for every other company, it is the default '100.00%'. |
+| `percentSale2` | STRING | Share credited to sales rep 2 as a percent string such as '40%' (from mih2.mih2per2pc, ag01 only; not capped at 100); default '0.00%' when there is no split and for every other company. |
 
 # How it is built
 
@@ -119,7 +121,7 @@ One row per document: `company_id` + `mihType` + `mihVnos` (the `uniqueKey`; doc
 - `uniqueKey`: `company_id`, `mihType`, `mihVnos`.
 - Storage options: `{"partitionBy": "asatdate", "clusterBy": ["company_id", "mihVnos", "mihType"]}`.
 - Reads: [validated_mac5.mih](/validated/validated_mac5/mih.md), [validated_mac5.ar_s](/validated/validated_mac5/ar_s.md), [validated_mac5.ap_s](/validated/validated_mac5/ap_s.md), [validated_mac5.mih2](/validated/validated_mac5/mih2.md).
-- Incremental MERGE on `uniqueKey` (tag `curated`, built after `validated_mac5.mih`, `ar_s`, `ap_s`, `mih2`); each run re-reads only validated rows with `asatdate` within the last `BACKFILL_DAYS` days (currently 1, Asia/Bangkok) and replaces those documents. No pre/post operations (unlike curated_mil).
+- Incremental MERGE on `uniqueKey` (tag `curated`, built after `validated_mac5.mih`, `ar_s`, `ap_s`, `mih2`); each run re-reads only validated rows with `asatdate` within the last `BACKFILL_DAYS` days (Asia/Bangkok) and replaces those documents. No pre/post operations.
 
 # Examples
 

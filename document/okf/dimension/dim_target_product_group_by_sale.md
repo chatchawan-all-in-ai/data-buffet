@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [dim_target_product_group_by_sale_dayofwork](/dimension/dim_target_prod
 
 # Grain and key
 
-Three allocation branches are combined with UNION ALL: (1) year-wide rate rows (Month and ProductGroupID NULL), (2) monthly rows (Month set, ProductGroupID NULL), and (3) month plus product-group rows (`MarketingGroupID = ProductGroupID`). The later branches exclude only matches with the same TargetProductGroupSK, CompanySK and RateTargetSK already emitted by an earlier branch. Distinct yearly and monthly rules therefore both survive; there is no first-match precedence per target. The monthly branches use LEFT JOINs, so NULL-rule rows can coexist with successful allocations from other branches. The final `DISTINCT` + `QUALIFY ROW_NUMBER()` removes duplicates created by the report join. Grain is therefore one row per `(TargetProductGroupSK, RateTargetSK)` (plus employee, department and date range). `TargetBySaleSK` is `ROW_NUMBER()` over TargetProductGroupSK, RateTargetSK.
+One row = one target allocated to one employee and department by a rate rule: key (`TargetProductGroupSK`, `RateTargetSK`), `TargetBySaleSK` numbered over that pair. Three allocation branches are combined with UNION ALL: (1) year-wide rate rows (Month and ProductGroupID NULL), (2) monthly rows (Month set, ProductGroupID NULL), and (3) month plus product-group rows (`MarketingGroupID = ProductGroupID`). The later branches exclude only matches with the same TargetProductGroupSK, CompanySK and RateTargetSK already emitted by an earlier branch. Distinct yearly and monthly rules therefore both survive; there is no first-match precedence per target. The monthly branches use LEFT JOINs, so NULL-rule rows can coexist with successful allocations from other branches. The final `DISTINCT` + `QUALIFY ROW_NUMBER()` removes duplicates created by the report join. `TargetBySaleSK` is `ROW_NUMBER()` over TargetProductGroupSK, RateTargetSK.
 
 # Schema
 
@@ -72,7 +72,7 @@ Three allocation branches are combined with UNION ALL: (1) year-wide rate rows (
 - `uniqueKey`: `TargetBySaleSK`.
 - Storage options: `{"clusterBy": ["TargetBySaleSK"]}`.
 - Reads: [dimension_table.dim_target_product_group](/dimension/dim_target_product_group.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_report](/dimension/dim_report.md), [dimension_table.dim_rate_target](/dimension/dim_rate_target.md), [dimension_table.dim_sale_representative_last](/dimension/dim_sale_representative_last.md), [dimension_table.dim_department_last](/dimension/dim_department_last.md), [dimension_table.dim_region_last](/dimension/dim_region_last.md), [dimension_table.dim_section_last](/dimension/dim_section_last.md), [dimension_table.dim_region_manager_last](/dimension/dim_region_manager_last.md), [dimension_table.dim_section_manager_last](/dimension/dim_section_manager_last.md).
-- Full daily rebuild (`type: "table"`), tag `dimension_daily`; depends on dim_product_mkt, dim_report, dim_rate_target, dim_target_product_group, `update_sk_sale_rep_group` and all the `*_last` dims.
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_product_mkt, dim_report, dim_rate_target, dim_target_product_group, `update_sk_sale_rep_group` and the `_last` dims dim_sale_representative_last, dim_department_last, dim_region_last, dim_region_manager_last, dim_section_last and dim_section_manager_last.
 
 # Examples
 

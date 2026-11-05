@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -22,18 +22,18 @@ status: draft
 
 Monthly sell-out fact for modern trade, built from `curated_saleout_monthly_mdt`, which picks per (month, chain) the best source: chain closing file > BI file > collapsed daily feed. It is used to compare against the daily [fact_saleout_mdt](/fact/fact_saleout_mdt.md) and feeds `view_fact_saleout_pc_mdt`. It has the same dimension SKs as fact_saleout_mdt.
 
-Used by / context: used by [fact_view.view_fact_saleout_pc_mdt](/view/fact_view/view_fact_saleout_pc_mdt.md).
+Read by: [view_fact_saleout_pc_mdt](/view/fact_view/view_fact_saleout_pc_mdt.md).
 
 # Grain and key
 
-Uniqueness key: (`month_date`, `store_code`, `branch_code`, `sales_channel`, `product_code`). Mixed grain: for the current (in-progress) month `month_date` is the daily sale date; for closed months it is the month-end date (comment in SQL: running month = daily, closed month = one block).
+One row = one chain x branch x sales channel x product total of sell-out per `month_date`: key (`month_date`, `store_code`, `branch_code`, `sales_channel`, `product_code`) - the uniqueKey. Mixed grain: for the current (in-progress) month `month_date` is the daily sale date; for closed months it is the month-end date.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `month_date` | DATE | Month key (partition column): daily date for the current month, month-end date for closed months. Group by DATE_TRUNC(month_date, MONTH). |
-| `store_code` | STRING | Retail-chain (store) code: HP, MH, BT, GB, TW or DH, set per chain feed in the curated_saleout_mdt build; joins dim_region.RegionID for the region sets. |
+| `store_code` | STRING | Retail-chain (store) code from `curated_saleout_monthly_mdt`; joins dim_region.RegionID for the region sets. |
 | `branch_code` | STRING | Branch code/name as sent by the chain (trimmed when matched). |
 | `sales_channel` | STRING | Sales channel from the source, '-' when the source grain has none. |
 | `product_code` | STRING | Product code as the chain sent it (leading zeros stripped for the dim match). |
@@ -42,7 +42,7 @@ Uniqueness key: (`month_date`, `store_code`, `branch_code`, `sales_channel`, `pr
 | `zone_sk` | INT64 | Surrogate key `ZoneMdtSK` of the branch's zone, taken from dim_sales_branch_mdt; -1 when unmatched. |
 | `product_mdt_sk` | INT64 | Surrogate key `ProductMdtSK` of [dim_product_mdt](/dimension/dim_product_mdt.md) (match on product code with leading zeros removed); -1 when the product is unknown. |
 | `product_sk` | INT64 | `ProductSK` carried from dim_product_mdt (link to the MAC5 product master where mapped); -1 when unknown. |
-| `product_mkt_sk` | INT64 | Surrogate key `ProductMktSK` of [dim_product_mkt](/dimension/dim_product_mkt.md) (marketing group of the product); products with no group fall back to the 'Waiting Master' group (MarketingGroupID '999'), found by ID because SKs change daily; -1 if that group is missing. |
+| `product_mkt_sk` | INT64 | Surrogate key `ProductMktSK` of [dim_product_mkt](/dimension/dim_product_mkt.md) (marketing group of the product); products with no group fall back to the 'Waiting Master' group (MarketingGroupID '999'), found by MarketingGroupID; -1 if that group is missing. |
 | `report_sk` | INT64 | Surrogate key `ReportSK` of [dim_report](/dimension/dim_report.md) by (store, marketing group), falling back to the store's 'Other' line; -1 if none. |
 | `region_sk` | INT64 | `RegionSK` of [dim_region](/dimension/dim_region.md) valid on the row date (`store_code = RegionID`, date between StartDate and EndDate): the 'Region Transaction' value at the time, not the current one; -1 if none. |
 | `region_manager_sk` | INT64 | `RegionManagerSK` of [dim_region_manager](/dimension/dim_region_manager.md) valid on the row date (not current); -1 if none. |
@@ -57,7 +57,7 @@ Uniqueness key: (`month_date`, `store_code`, `branch_code`, `sales_channel`, `pr
 - `uniqueKey`: `month_date`, `store_code`, `branch_code`, `sales_channel`, `product_code`.
 - Storage options: `{"partitionBy": "month_date", "clusterBy": ["store_code", "branch_sk", "product_mdt_sk"]}`.
 - Reads: [dimension_table.dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_report](/dimension/dim_report.md), [dimension_table.dim_product_mdt](/dimension/dim_product_mdt.md), [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_region_manager](/dimension/dim_region_manager.md), [dimension_table.dim_director](/dimension/dim_director.md), [curated_saleout_mdt.curated_saleout_monthly_mdt](/curated/curated_saleout_mdt/curated_saleout_monthly_mdt.md).
-- Refresh: full daily rebuild (`type: "table"`, tags `fact_daily` and `saleout_daily`, partition `month_date`, cluster `store_code, branch_sk, product_mdt_sk`) because the curated source changes daily; after the MDT dims; re-run in `saleout_morning`.
+- Refresh: full daily rebuild (`type: "table"`, tags `fact_daily` and `saleout_daily`, partition `month_date`, cluster `store_code, branch_sk, product_mdt_sk`); after the MDT dims.
 
 # Examples
 

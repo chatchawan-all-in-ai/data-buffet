@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -22,33 +22,35 @@ status: draft
 
 Manually maintained collection status notes for customers with overdue balances: what action is being taken, why, and who is responsible, per month. [fact_mir_vs](/fact/fact_mir_vs.md) and [fact_mir_rs](/fact/fact_mir_rs.md) store its `CollectSK` for the AR/receipt chain. Source: mds `mds_data_collection_status_master`.
 
+Read by: [fact_mir_vs](/fact/fact_mir_vs.md), [fact_mir_rs](/fact/fact_mir_rs.md).
+
 # Grain and key
 
-One row per active mds record, intended as (company, Year, Month, CustomerID). Key: `CollectSK` (surrogate, unstable across days).
+One row = one active mds record (company, Year, Month, CustomerID): key `CollectSK` (surrogate, regenerated every run).
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `CollectSK` | INT64 | `CollectSK` is `ROW_NUMBER() OVER(ORDER BY CompanyID, Year, Month, CustomerID)` over the active mds rows; it regenerates on every daily run. |
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), found by a LEFT JOIN on `companyID`; NULL when the mds company code has no match in dim_company. |
+| `CollectSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY CompanyID, Year, Month, CustomerID)` over the active mds rows. Regenerated every run. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `CompanyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `CompanyID`; natural join key to dim_company.companyID. |
-| `Year` | INT64 | Calendar year of the follow-up record (`castInt64` of mds `Year`; fails the run on a non-numeric value). |
+| `Year` | INT64 | Calendar year of the follow-up record (`castInt64` of mds `Year`). |
 | `Month` | INT64 | Month number 1-12 of the follow-up record (`castInt64` of mds `Month`). |
 | `CustomerID` | INT64 | MAC5 customer code as INT64 (`castInt64` of mds `CustomerID`); fact_mir_rs joins it to the receipt customer `mircus` (cast to STRING) with company, year and month. |
 | `CustomerName` | STRING | Customer name as typed in MDS (`cleanString`); descriptive. |
 | `Actions` | STRING | Collection action taken or planned (free text from MDS). |
 | `Justification` | STRING | Reason or explanation recorded for the status (free text from MDS). |
-| `Responsible` | STRING | Person or team responsible for the collection follow-up (free text from MDS; contains personal names, not shown here). |
-| `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. |
+| `Responsible` | STRING | Person or team responsible for the collection follow-up (free text from MDS). |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_collection_status_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 
-- Definition: `definitions/dimension/dim_collection_status.sqlx` (`type: "table"`, tags `dimension_daily`).
+- Definition: `definitions/dimension/dim_collection_status.sqlx` (`type: "table"`, tag `dimension_daily`).
 - `uniqueKey`: `CollectSK`.
 - Storage options: `{"clusterBy": ["CollectSK"]}`.
-- Reads: `mds_dataset.mds_data_collection_status_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows; runs after dim_company. Stored-SK consumers `fact_mir_vs`/`fact_mir_rs` are daily full rebuilds, which keeps the regenerating SK consistent.
+- Reads: `mds_dataset.mds_data_collection_status_master` (master data loaded outside this repo; only rows with `is_active = TRUE`), [dimension_table.dim_company](/dimension/dim_company.md).
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
 
 # Examples
 

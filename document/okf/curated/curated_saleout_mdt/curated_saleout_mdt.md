@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Daily sell-out of the modern-trade (MDT) chains HomePro (HP), Mega Home (MH), Boonthavorn (BT), Global House (GB), Thai Watsadu (TW) and DoHome (DH), unified from the six different feed formats into one grain, plus a historical file (saleout_lastyear) for days before each chain's feed started. Feeds [curated_saleout_monthly_mdt](/curated/curated_saleout_mdt/curated_saleout_monthly_mdt.md) (as DAILY_ROLLUP), fact_saleout_mdt and the dimensions dim_product_mdt and dim_sales_branch_mdt. Flag columns separate exact figures from derived or estimated ones.
+Daily sell-out of the modern-trade (MDT) chains HomePro (HP), Mega Home (MH), Boonthavorn (BT), Global House (GB), Thai Watsadu (TW) and DoHome (DH), unified from the six different feed formats into one grain, plus a historical file (saleout_lastyear) for days before each chain's feed started. Flag columns separate exact figures from derived or estimated ones.
+
+Read by: [curated_saleout_monthly_mdt](/curated/curated_saleout_mdt/curated_saleout_monthly_mdt.md), [dim_product_mdt](/dimension/dim_product_mdt.md), [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [fact_saleout_mdt](/fact/fact_saleout_mdt.md).
 
 # Grain and key
 

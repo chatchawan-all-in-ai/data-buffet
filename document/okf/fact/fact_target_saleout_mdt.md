@@ -14,26 +14,26 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Daily sell-out targets for modern trade at marketing-group level (not per product), coming from [dim_target_saleout_mdt](/dimension/dim_target_saleout_mdt.md) (MDS target master) with branch, zone and as-at-date region/manager/director SKs. BI compares sell-out rolled up to MarketingGroupID against it. Used by `view_fact_target_pc_mdt` and `view_fact_target_section_mdt`.
+Daily sell-out targets for modern trade at marketing-group level (not per product), coming from [dim_target_saleout_mdt](/dimension/dim_target_saleout_mdt.md) (MDS target master) with branch, zone and as-at-date region/manager/director SKs. BI compares sell-out rolled up to MarketingGroupID against it.
 
-Used by / context: used by [fact_view.view_fact_target_pc_mdt](/view/fact_view/view_fact_target_pc_mdt.md), [fact_view.view_fact_target_section_mdt](/view/fact_view/view_fact_target_section_mdt.md).
+Read by: [view_fact_target_pc_mdt](/view/fact_view/view_fact_target_pc_mdt.md), [view_fact_target_section_mdt](/view/fact_view/view_fact_target_section_mdt.md).
 
 # Grain and key
 
-One row per (`target_date`, `branch_code`, `marketing_group_id`, `sub_marketing_id`, `segment_id`) (uniqueKey). Monthly targets are divided equally over the days of the month. Rows with NULL `TargetDate` (the dim's unknown row) are excluded.
+One row = the daily sell-out target of one MDT branch for one marketing group / sub-marketing / segment on one date: key (`target_date`, `branch_code`, `marketing_group_id`, `sub_marketing_id`, `segment_id`) - the uniqueKey. Monthly targets are divided equally over the days of the month. Rows with NULL `TargetDate` (the dim's unknown row) are excluded.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `target_date` | DATE | Date the daily target applies to (partition column); rows without a date are dropped. |
-| `store_code` | STRING | Retail-chain (store) code: HP, MH, BT, GB, TW or DH, set per chain feed in the curated_saleout_mdt build; joins dim_region.RegionID for the region sets. |
+| `store_code` | STRING | Retail-chain (store) code of the target's branch (`StoreCode` of dim_sales_branch_mdt, carried by [dim_target_saleout_mdt](/dimension/dim_target_saleout_mdt.md)); NULL when the branch is unmatched; joins dim_region.RegionID for the region sets. |
 | `branch_sk` | INT64 | Surrogate key `BranchMdtSK` of [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md) carried from the target dim; -1 when unmatched. |
 | `zone_sk` | INT64 | Surrogate key `ZoneMdtSK` of the branch's zone, taken from dim_sales_branch_mdt; -1 when unmatched. |
 | `product_mkt_sk` | INT64 | `ProductMktSK` of [dim_product_mkt](/dimension/dim_product_mkt.md) for the marketing group from the target dim; -1 if none. |

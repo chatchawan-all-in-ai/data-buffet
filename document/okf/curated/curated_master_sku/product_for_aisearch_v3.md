@@ -14,13 +14,13 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Daily feed of the product catalogue for AI search, built directly from the master_sku 3.0 validated tables. It is a shadow of the older [product_for_aisearch](/curated/curated_mastersku/product_for_aisearch.md) feed (which still reads the legacy MASTERSKU source); no reader uses v3 yet. Per the current SQL the struct has 15 fields; the package size, weight, unit and special-specification fields of the old feed are commented out in the definition.
+Daily feed of the product catalogue for AI search, built directly from the master_sku 3.0 validated tables. It is the master_sku 3.0 counterpart of [product_for_aisearch](/curated/curated_mastersku/product_for_aisearch.md) (legacy MASTERSKU source). The struct has 15 fields.
 
 # Grain and key
 

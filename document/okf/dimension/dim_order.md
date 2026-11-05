@@ -14,40 +14,40 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Sales-order dimension. Each row is a `curated_mih` header of type PS (sales order) from the last four years with its status name and colour from `ar_s`, salesperson name from `per`, delivery/key dates and an `OrderStatus` computed by comparing ordered quantities per item (PS lines) with invoiced quantities (IS lines whose `milLinkVcno` points to the order). It is the source of `OrderSK` for [fact_order](/fact/fact_order.md), [fact_order_store](/fact/fact_order_store.md), [fact_backlog_store](/fact/fact_backlog_store.md), [fact_invoice_store](/fact/fact_invoice_store.md) and [fact_transcation](/fact/fact_transcation.md); [dim_invoice](/dimension/dim_invoice.md) links invoices to it, and [view_dim_order](/view/dimension_view/view_dim_order.md) exposes it.
+Sales-order dimension. Each row is a `curated_mih` header of type PS (sales order) from the last four years with its status name and colour from `ar_s`, salesperson name from `per`, delivery/key dates and an `OrderStatus` computed by comparing ordered quantities per item (PS lines) with invoiced quantities (IS lines whose `milLinkVcno` points to the order).
 
-Used by: [fact_table.fact_backlog_store](/fact/fact_backlog_store.md), [fact_table.fact_invoice_store](/fact/fact_invoice_store.md), [fact_table.fact_order](/fact/fact_order.md), [fact_table.fact_order_store](/fact/fact_order_store.md), [dimension_view.view_dim_invoice](/view/dimension_view/view_dim_invoice.md), [dimension_view.view_dim_order](/view/dimension_view/view_dim_order.md), [fact_view.view_fact_transcation](/view/fact_view/view_fact_transcation.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md), [fact_table.fact_transcation](/fact/fact_transcation.md).
+Read by: [fact_backlog_store](/fact/fact_backlog_store.md), [fact_invoice_store](/fact/fact_invoice_store.md), [fact_order](/fact/fact_order.md), [fact_order_store](/fact/fact_order_store.md), [fact_transcation](/fact/fact_transcation.md), [dim_invoice](/dimension/dim_invoice.md), [view_dim_invoice](/view/dimension_view/view_dim_invoice.md), [view_dim_order](/view/dimension_view/view_dim_order.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md).
 
 # Grain and key
 
-One row per (`CompanySK`, `mihYear`, `mihMonth`, `mihDay`, `mihType` = 'PS', `mihVnos`, `mihCus` with NULL treated as empty). `OrderSK` is a stable surrogate key (existing orders keep it; new ones get `max_sk + ROW_NUMBER()`). Only orders dated from 1 January four years ago are loaded.
+One row = one sales order (document type PS): key (`CompanySK`, `mihYear`, `mihMonth`, `mihDay`, `mihType` = 'PS', `mihVnos`, `mihCus` with NULL treated as empty). `OrderSK` is a stable surrogate key (existing orders keep it; new ones get `max_sk + ROW_NUMBER()`). Only orders dated from 1 January four years ago are loaded.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `OrderSK` | INT64 | Stable surrogate key of the order; never regenerated, stored in facts. |
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md). |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | MAC5 company code. |
 | `mix_date` | DATE | Order date built from `mihYear`/`mihMonth`/`mihDay`. |
 | `mihYear` | INT64 | Year part of the document date (Gregorian). |
 | `mihMonth` | INT64 | Month part of the document date. |
 | `mihDay` | INT64 | Day part of the document date. |
-| `mihType` | STRING | Document type code (QS = sales quotation, PS = sales order, IS = invoice, AS = debit note, BS = credit note, VS = billing statement, RS = receipt; purchase side QP, PP, IP, AP, BP, VP, RP); `BL` = billing document. |
+| `mihType` | STRING | Document type code; always `PS` (sales order). |
 | `mihVnos` | STRING | Document number, unique within company and document type. |
-| `mihCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
+| `mihCus` | STRING | Customer code, matching `deb.debcode`. |
 | `mihJob` | STRING | Job code of the document (sales job or project category such as `TT`, `REL`, `GOV`, or a project number). |
 | `mihRef1` | STRING | Reference document number 1 for the source quotation or sales order. |
 | `mihRef2` | STRING | Customer purchase-order or external order reference number. |
 | `mihRef3` | STRING | Free-text reference 3 of the document. |
 | `mihCancel` | INT64 | Cancellation flag (-1 = cancelled, 0 = active). |
-| `mihStatus` | INT64 | Document status code; meaning in `ar_s` for sales types and `ap_s` for purchase types (e.g. 26 = approved sales order, 30 = VAT sale, 32 = cancelled tax invoice). |
+| `mihStatus` | INT64 | Document status code; meaning in `ar_s` (e.g. 26 = approved sales order). |
 | `StatusName` | STRING | Thai status name. |
 | `memoExtract` | STRING | Tag extracted from the document memo, defaulting to `฿00฿` and matched to `dim_payment.CodeMemo`. |
 | `mihMemoNew` | STRING | Document memo with the tag enclosed in `฿` signs removed, or NULL when no text remains. |

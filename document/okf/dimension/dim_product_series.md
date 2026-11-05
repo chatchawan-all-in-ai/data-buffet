@@ -14,26 +14,28 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Small lookup of product series (e.g. TITAN, OTHERS). Used by [dim_target_series_mdt](/dimension/dim_target_series_mdt.md), which maps unknown series codes to OTHERS (there is no -1 row), and by the product attribute model [Product_Attribute](/view/onetime/Product_Attribute.md). It reads mds `mds_data_mdt_product_series_master`.
+Lookup of MDT product series (e.g. TITAN, OTHERS). Source: mds `mds_data_mdt_product_series_master`.
+
+Read by: [dim_target_series_mdt](/dimension/dim_target_series_mdt.md), [Product_Attribute](/view/onetime/Product_Attribute.md), [export_dim_product_series](/view/pub_sub/export_dim_product_series.md).
 
 # Grain and key
 
-One row per `SeriesCode` among active mds rows; duplicates on the trimmed code are collapsed keeping the latest `updated_at` (then lowest id), to stop targets in dim_target_series_mdt multiplying. Key: `SeriesSK` (surrogate, unstable across days). No sentinel row.
+One row = one MDT product series: key `SeriesCode` among active mds rows; duplicates on the trimmed code are collapsed keeping the latest `updated_at` (then lowest id). `SeriesSK` is the surrogate key, regenerated every run. No sentinel row.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `SeriesSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY SeriesCode)` over deduped rows; regenerates every run. |
+| `SeriesSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY SeriesCode)` over deduped rows. Regenerated every run. |
 | `SeriesCode` | STRING | Series code (mds `SeriesCode`, trimmed, empty to NULL); unique key. |
 | `SeriesName` | STRING | Series name (mds `SeriesName`, trimmed, empty to NULL). |
-| `MdsID` | STRING | Row id of the source record in the mds master (`id`, not run through `cleanString`; trace column). |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_mdt_product_series_master`; trace column back to MDS. |
 
 # How it is built
 
@@ -41,7 +43,8 @@ One row per `SeriesCode` among active mds rows; duplicates on the trimmed code a
 - `uniqueKey`: `SeriesSK`.
 - Storage options: `{"clusterBy": ["SeriesSK"]}`.
 - Reads: `mds_dataset.mds_data_mdt_product_series_master` (master data loaded outside this repo).
-- Full daily rebuild (`type: "table"`, tags `dimension_daily` and the saleout daily tag) from active mds rows with a QUALIFY dedup on trimmed `SeriesCode`; no dim_company dependency. Clustered by `SeriesSK`.
+- QUALIFY dedup on trimmed `SeriesCode`.
+- Full daily rebuild (`type: "table"`, tags `dimension_daily`, `saleout_daily`); no declared dependencies.
 
 # Examples
 

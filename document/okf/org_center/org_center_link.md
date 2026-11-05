@@ -14,17 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/org_center/org-center.md"
     title: "Data Mart wiki (document/project_wiki/org_center/org-center.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-PC-to-TA assignment table of the org center (the TA app's member_links with link_type 'PC_TA'): from = PC (promoter, employee type MDT or partner agent), to = the TA department (the TA position, not the person who sits there), site = branch. Rows mirror the source listed under How it is built (active rows) as entered. [org_center_member](/org_center/org_center_member.md) uses it to create the PC_MDT and PC_AGENT member rows, and [org_center_flags](/org_center/org_center_flags.md) checks it.
+PC-to-TA assignment table of the org center (the TA app's member_links with link_type 'PC_TA'): from = PC (promoter, employee type MDT or partner agent), to = the TA department (the TA position, not the person who sits there), site = branch. Rows mirror the source listed under How it is built (active rows) as entered.
+
+Read by: [org_center_member](/org_center/org_center_member.md), [org_center_flags](/org_center/org_center_flags.md), [export_member_links](/view/pub_sub/export_member_links.md).
 
 # Grain and key
 
-One row per `company_id` + `pc_employee_id` + `branch_type` + `branch_code` + `valid_from` (the MDS key; the MDS team guarantees one valid row per (company, PC, branch type, branch) per day, so periods do not overlap). Source codes are passed through without trimming or case changes, except an empty DepartmentID becomes NULL as described in the schema. There is no deduplication or filtering of unknown codes (wrong codes are fixed in MDS).
+One row = one promoter (PC) linked to one TA department at one branch for a date range: key `company_id` + `pc_employee_id` + `branch_type` + `branch_code` + `valid_from` (the MDS key). Overlapping periods of the same company, PC, branch type and branch are reported as PC_TA_OVERLAP in [org_center_flags](/org_center/org_center_flags.md). Source codes are passed through without trimming or case changes, except an empty DepartmentID becomes NULL as described in the schema; there is no deduplication or filtering of unknown codes.
 
 # Schema
 

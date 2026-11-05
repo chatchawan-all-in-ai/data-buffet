@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -26,19 +26,19 @@ Read by: [view_dim_product_master](/view/dimension_view/view_dim_product_master.
 
 # Grain and key
 
-One row per active MDS row, ordered and SK-numbered by CompanyID, WaterPacCode. Natural key `(CompanyID, WaterPacCode)`. No -1 row.
+One row = one active MDS WaterPac row: key `WaterPacSK`, `ROW_NUMBER()` ordered by CompanyID, WaterPacCode; natural key `(CompanyID, WaterPacCode)`. No -1 row.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `WaterPacSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by CompanyID, WaterPacCode. Regenerated every run. |
-| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on companyID; NULL if no match. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `CompanyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `WaterPacCode` | STRING | WaterPac code; matched case-insensitively to the product-code suffix extracted by `view_dim_product_master`. |
 | `WaterPacName` | STRING | Display name of the WaterPac, used as `PumpSegment` for water-pac segments. |
 | `Brand` | STRING | Pump brand of the WaterPac set as entered in MDS, e.g. `HITACHI`, `MITSUBISHI`, `CMB`, `DAB`, `RINNAI`. |
-| `MdsID` | STRING | `id` of the source row in `mds_data_waterpac_master`; trace column. |
+| `MdsID` | STRING | `id` of the source row in `mds_data_waterpac_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 
@@ -46,7 +46,7 @@ One row per active MDS row, ordered and SK-numbered by CompanyID, WaterPacCode. 
 - `uniqueKey`: `WaterPacSK`.
 - Storage options: `{"clusterBy": ["WaterPacSK"]}`.
 - Reads: `mds_dataset.mds_data_waterpac_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`), tag `dimension_daily`; `CREATE OR REPLACE` each run from `mds_dataset` (loaded outside this repo). Runs after `dim_company`. Reads `mds_data_waterpac_master`; it is the reference implementation of the full-rebuild pattern (`dim_waterpac.sqlx`).
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
 
 # Examples
 

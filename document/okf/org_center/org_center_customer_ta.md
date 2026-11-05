@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/org_center/org-center.md"
     title: "Data Mart wiki (document/project_wiki/org_center/org-center.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-01T00:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -22,9 +22,11 @@ status: draft
 
 Customer portfolio of each TA department: which customer (by company and customer code) a department (the TA position) is responsible for, with the share of the customer and the date range. Rows mirror the active rows of the source listed under How it is built.
 
+Read by: [rls_ta_customer](/process/rls_ta_customer.md), [org_center_flags](/org_center/org_center_flags.md), [export_customer_ta_assignments](/view/pub_sub/export_customer_ta_assignments.md).
+
 # Grain and key
 
-One row per `company_id` + `customer_code` + `department_id` + `valid_from` (the MDS key). `department_id` may be NULL (department not yet known); an empty value is its own key bucket.
+One row = one customer in the portfolio of one TA department for a date range: key `company_id` + `customer_code` + `department_id` + `valid_from` (the MDS key). `department_id` is NULL when DepartmentID is empty; such rows give access to nobody and are flagged NO_DEPARTMENT in [org_center_flags](/org_center/org_center_flags.md).
 
 # Schema
 

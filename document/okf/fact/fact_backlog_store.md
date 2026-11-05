@@ -14,26 +14,24 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Order backlog (unfilled quantity) by store: for each PS sales order that is not cancelled and has no clear/extra sum, the requested quantity (`cpsStkREQ`) minus the quantity cut/shipped (`cpsStkCUT1`) taken from the latest `validated_mac5.cps` snapshot per company. Answers how much is still to be delivered per store/product. Sister of [fact_order_store](/fact/fact_order_store.md) and [fact_invoice_store](/fact/fact_invoice_store.md); no other table reads it.
-
-Used by / context: used by nothing else in the repo.
+Order backlog (unfilled quantity) by store: for each PS sales order that is not cancelled and has no clear/extra sum, the requested quantity (`cpsStkREQ`) minus the quantity cut/shipped (`cpsStkCUT1`) taken from the latest `validated_mac5.cps` snapshot per company. Answers how much is still to be delivered per store/product. Sister of [fact_order_store](/fact/fact_order_store.md) and [fact_invoice_store](/fact/fact_invoice_store.md).
 
 # Grain and key
 
-One row per `FactBacklogStoreSK` (ROW_NUMBER over CompanySK, date parts, cpsVnosID, cpsCusID, cpsStkID). Rows are SUMs grouped by company, order date, order/customer/product/store and `FlagFree`. Only the latest `asatdate` of cps per company is read (snapshot, not history). Order header filters: `mihType = 'PS'`, `mihCancel = 0`, `mihClearUM = 0`, `mihExtraSUM = 0`, description not LIKE '%PO.วางบิล%', 4-year window. Lines are restricted to those in `mil_line_scope` (same filters as the order-store line scope). Only company_id ag01 and ab01, only products whose `TypeMarketing` is not 'Sourcing', and (store facts) lines with `milstype <> 3`, product code not starting with the Thai letter bo, and not `TEST%`.
+One row = one product on one open PS sales order per customer and store: key `FactBacklogStoreSK` (ROW_NUMBER over CompanySK, mihYear, mihMonth, mihDay, cpsVnosID, cpsCusID, cpsStkID). Rows are SUMs grouped by company, order date, order/customer/product/store and `FlagFree`. Only the latest `asatdate` of cps per company is read (snapshot, not history). Order header filters: `mihType = 'PS'`, `mihCancel = 0`, `mihClearUM = 0`, `mihExtraSUM = 0`, description not LIKE '%PO.วางบิล%', order date within the 4-year window (truncated to start-of-year); the order must also be in `dim_order` with an active MDS status that has `flagwarehouse = true`. Lines are restricted to PS lines of `curated_mil` with `milstype <> 3`, product code not starting with the Thai letter bo and not `TEST%`. Only company_id ag01 and ab01; only products whose `TypeMarketing` is not 'Sourcing' (products with no marketing type are dropped too).
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `FactBacklogStoreSK` | INT64 | Surrogate key: ROW_NUMBER over CompanySK, date parts, cpsVnosID, cpsCusID, cpsStkID. Regenerates daily. |
-| `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md). |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `company_id` | STRING | MAC5 company code; only 'ag01' and 'ab01' are loaded. |
 | `sDate` | DATE | Order date: SAFE.PARSE_DATE of mihYear, mihMonth, mihDay of the order header; partition column. |
 | `mihYear` | INT64 | Year part of the document date (Gregorian). |
@@ -41,7 +39,7 @@ One row per `FactBacklogStoreSK` (ROW_NUMBER over CompanySK, date parts, cpsVnos
 | `mihDay` | INT64 | Day part of the document date. |
 | `OrderSK` | INT64 | Surrogate key of [dim_order](/dimension/dim_order.md) via `mihVnos`; never NULL (INNER JOIN). |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md) (`debcode = mihCus`, same company); NULL when unmatched. |
-| `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md) (case-insensitive product code match); rows without a product (or with TypeMarketing 'Sourcing') are dropped by an INNER JOIN, so never NULL. |
+| `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md) (exact product code match on `cpsStkID`); rows without a product (or with TypeMarketing 'Sourcing') are dropped by an INNER JOIN, so never NULL. |
 | `StoreSK` | INT64 | Surrogate key of [dim_store](/dimension/dim_store.md) (warehouse/branch) matched on company and store code; -1 when the store code is not in dim_store. |
 | `cpsVnosID` | STRING | Number of the sales order document that has the outstanding line (e.g. a `PS` sales order). |
 | `cpsCusID` | STRING | Customer code of the document, matching `deb.debcode`. |

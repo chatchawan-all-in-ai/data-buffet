@@ -14,26 +14,26 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Lookup that gives every transaction line its pump segment (PumpSegment) per product and region. For region PS1 with the new-product-market flag the segment comes from `dim_product_mkt.Segment`; for everything else it is `PumpSegment` of `view_dim_product_master`. `view_fact_transcation` joins it to expose `PumpSK`. It is the only dimension that is derived from a fact table.
+Lookup that gives every transaction line its pump segment (PumpSegment) per product and region. For region PS1 with the new-product-market flag the segment comes from `dim_product_mkt.Segment`; for everything else it is `PumpSegment` of `view_dim_product_master`.
 
-Read by: [view_fact_transcation](/view/fact_view/view_fact_transcation.md).
+Read by: [view_fact_transcation](/view/fact_view/view_fact_transcation.md), [export_dim_pump_information](/view/pub_sub/export_dim_pump_information.md).
 
 # Grain and key
 
-Built from `SELECT DISTINCT` over fact_transcation lines with `milStk` not NULL, joined to the product master view, dim_region and dim_product_mkt; the distinct key is `(CompanySK, CompanyID, milstk, RegionID, FlagNewProductMKT, PumpSegment)`. Consumers join on `(LOWER(milstk), FlagNewProductMKT, RegionID, CompanySK)`, so a key with two different PumpSegment values would fan out. SK ordered by lower(milstk), RegionID, FlagNewProductMKT. No -1 row.
+One row = one distinct combination `(CompanySK, CompanyID, milstk, RegionID, FlagNewProductMKT, PumpSegment)` taken with `SELECT DISTINCT` over fact_transcation lines with `milStk` not NULL, joined to the product master view, dim_region and dim_product_mkt. Readers join on `(LOWER(milstk), FlagNewProductMKT, RegionID, CompanySK)`. `PumpSK` is ordered by lower(milstk), RegionID, FlagNewProductMKT. No -1 row.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `PumpSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by lower(milstk), RegionID, FlagNewProductMKT. Regenerated every run. |
-| `CompanySK` | INT64 | Company SK copied from `fact_transcation.CompanySK`. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md), copied from `fact_transcation.CompanySK`; NULL if no match. |
 | `CompanyID` | STRING | Company code copied from `fact_transcation.CompanyID`. |
 | `milstk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
 | `RegionID` | STRING | Region code of the line, from dim_region via `fact_transcation.RegionSK`; NULL when the line has no region. |
@@ -46,7 +46,7 @@ Built from `SELECT DISTINCT` over fact_transcation lines with `milStk` not NULL,
 - `uniqueKey`: `PumpSK`.
 - Storage options: `{"clusterBy": ["PumpSK"]}`.
 - Reads: [fact_table.fact_transcation](/fact/fact_transcation.md), [dimension_view.view_dim_product_master](/view/dimension_view/view_dim_product_master.md), [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md).
-- Full daily rebuild (`type: "table"`), tag `dimension_daily`, but it reads `fact_transcation` (tag `fact_daily`); config dependencies are fact_transcation, dim_product_mkt, dim_product_master and dim_region.
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after fact_transcation, dim_product_mkt, dim_product_master and dim_region.
 
 # Examples
 

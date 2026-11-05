@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -22,18 +22,18 @@ status: draft
 
 Target amounts before they are split among employees. `dim_target_product_group_by_sale` joins it to [dim_rate_target](/dimension/dim_rate_target.md) to allocate the target by employee, and `view_dim_target_by_agent` and `Model_Target_DayOfWork` consume the result.
 
-Read by: [dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md), [view_dim_target_by_agent](/view/dimension_view/view_dim_target_by_agent.md), [Model_Target_DayOfWork](/view/onetime/Model_Target_DayOfWork.md).
+Read by: [dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md), [Model_Target_DayOfWork](/view/onetime/Model_Target_DayOfWork.md), [view_dim_target_by_agent](/view/dimension_view/view_dim_target_by_agent.md).
 
 # Grain and key
 
-One row per active MDS row, SK ordered by companyID, Year, Month, MarketingGroupID, SubMarketingID, SegmentID, ChannelTargetGroup, TargetID. Natural key is that same tuple (uniqueness not enforced). No -1 row.
+One row = one active MDS target row: key `TargetProductGroupSK`, `ROW_NUMBER()` ordered by companyID, Year, Month, MarketingGroupID, SubMarketingID, SegmentID, ChannelTargetGroup, TargetID; natural key is that same tuple (uniqueness is not enforced). No -1 row.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `TargetProductGroupSK` | INT64 | Surrogate key, `ROW_NUMBER()` over the key tuple above. Regenerated every run. |
-| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on companyID; NULL if no match. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `Year` | INT64 | Target year (INT64 via `castInt64`). |
 | `Month` | INT64 | Target month (INT64 via `castInt64`). |
@@ -47,7 +47,7 @@ One row per active MDS row, SK ordered by companyID, Year, Month, MarketingGroup
 | `TargetID` | STRING | Target code; the join key to `dim_rate_target.TargetID` (with CompanySK, Year, Month). |
 | `Amt` | FLOAT64 | Target sales amount in THB for the month (FLOAT64 via `castFloat64`). |
 | `Qty` | FLOAT64 | Target quantity (FLOAT64 via `castFloat64`). |
-| `MdsId` | STRING | `id` of the source row in `mds_data_sales_target_by_product_group_master` (selected as MdsID in SQL); trace column. Dropped by dim_target_product_group_by_sale. |
+| `MdsId` | STRING | `id` of the source row in `mds_data_sales_target_by_product_group_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 
@@ -55,7 +55,7 @@ One row per active MDS row, SK ordered by companyID, Year, Month, MarketingGroup
 - `uniqueKey`: `TargetProductGroupSK`.
 - Storage options: `{"clusterBy": ["TargetProductGroupSK"]}`.
 - Reads: `mds_dataset.mds_data_sales_target_by_product_group_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`), tag `dimension_daily`; `CREATE OR REPLACE` each run from `mds_dataset` (loaded outside this repo). Runs after `dim_company`. Reads `mds_data_sales_target_by_product_group_master`.
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
 
 # Examples
 

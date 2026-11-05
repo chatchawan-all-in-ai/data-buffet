@@ -14,15 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Main product dimension. It starts from the MAC5 stock master `stk` (all companies) plus eight dummy ag01 'others' codes for products without an MDT code, adds the MAC5 stock group and accounting group (`stg`), and enriches by barcode (`STKcode885`) with the MASTERSKU product/product_detail (name, description, dimensions, guarantee, certificate, brand, vendor). It also resolves the marketing SKs ([dim_stk_mkt](/dimension/dim_stk_mkt.md), [dim_product_mkt](/dimension/dim_product_mkt.md)). It is the source of `ProductSK` for [fact_order](/fact/fact_order.md), [fact_order_store](/fact/fact_order_store.md), [fact_invoice_store](/fact/fact_invoice_store.md), [fact_backlog_store](/fact/fact_backlog_store.md), [fact_quotation](/fact/fact_quotation.md), [fact_transcation](/fact/fact_transcation.md) and [fact_transaction_delivery](/fact/fact_transaction_delivery.md), and is exposed as [view_dim_product_master](/view/dimension_view/view_dim_product_master.md).
+Main product dimension. It starts from the MAC5 stock master `stk` (all companies) plus eight dummy ag01 'others' codes for products without an MDT code, adds the MAC5 stock group and accounting group (`stg`), and enriches by barcode (`STKcode885`) with the MASTERSKU product/product_detail (name, description, dimensions, guarantee, certificate, brand, vendor). It also resolves the marketing SKs ([dim_stk_mkt](/dimension/dim_stk_mkt.md), [dim_product_mkt](/dimension/dim_product_mkt.md)).
 
-Used by: [dimension_table.dim_product_mdt](/dimension/dim_product_mdt.md), [fact_table.fact_backlog_store](/fact/fact_backlog_store.md), [fact_table.fact_invoice_store](/fact/fact_invoice_store.md), [fact_table.fact_order](/fact/fact_order.md), [fact_table.fact_order_store](/fact/fact_order_store.md), [dimension_view.view_dim_product_master](/view/dimension_view/view_dim_product_master.md), [fact_view.view_fact_transcation](/view/fact_view/view_fact_transcation.md), [onetime.Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md), [onetime.Product_Attribute](/view/onetime/Product_Attribute.md), [onetime.Product_Master_ALL](/view/onetime/Product_Master_ALL.md), [fact_table.fact_quotation](/fact/fact_quotation.md), [fact_table.fact_transaction_delivery](/fact/fact_transaction_delivery.md), [fact_table.fact_transcation](/fact/fact_transcation.md).
+Read by: [dim_product_mdt](/dimension/dim_product_mdt.md), [dim_pump_information](/dimension/dim_pump_information.md), [fact_backlog_store](/fact/fact_backlog_store.md), [fact_invoice_store](/fact/fact_invoice_store.md), [fact_order](/fact/fact_order.md), [fact_order_store](/fact/fact_order_store.md), [fact_quotation](/fact/fact_quotation.md), [fact_transaction_delivery](/fact/fact_transaction_delivery.md), [fact_transcation](/fact/fact_transcation.md), [view_dim_product_master](/view/dimension_view/view_dim_product_master.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md), [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md), [Product_Attribute](/view/onetime/Product_Attribute.md), [Product_Master_ALL](/view/onetime/Product_Master_ALL.md).
 
 # Grain and key
 
@@ -35,7 +35,7 @@ One row per (`CompanySK`, `ProductCode`, `Barcode`) (a missing barcode is matche
 | `ProductSK` | INT64 | Stable surrogate key of the product; assigned once and never regenerated, stored in facts. |
 | `StkMktSK` | INT64 | SK from [dim_stk_mkt](/dimension/dim_stk_mkt.md) matched on stock code and company (marketing attributes per stock code). NULL when the product is not in the marketing master. |
 | `ProductMktSK` | INT64 | SK from [dim_product_mkt](/dimension/dim_product_mkt.md), matched via the stock's marketing group, sub-marketing and segment ids. NULL when unmatched. |
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md). |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | MAC5 company code of the stock row. |
 | `ProductCode` | STRING | MAC5 stock code (`stk.stkcode`); matches `milStk` on lines, but can occur in multiple barcode versions within a company. The dummy codes (OTHERS-style and WAITING999) exist for ag01 only. |
 | `ProductCode1` | STRING | Secondary product code or short model name. |
@@ -64,7 +64,7 @@ One row per (`CompanySK`, `ProductCode`, `Barcode`) (a missing barcode is matche
 
 - Definition: `definitions/dimension/dim_product_master.sqlx` (`type: "operations"`, tags `dimension_daily`); the operation owns this table.
 - Reads: [validated_mac5.stk](/validated/validated_mac5/stk.md), [validated_mac5.stg](/validated/validated_mac5/stg.md), [validated_mastersku.product](/validated/validated_mastersku/product.md), [validated_mastersku.product_detail](/validated/validated_mastersku/product_detail.md), [dimension_table.dim_stk_mkt](/dimension/dim_stk_mkt.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_company](/dimension/dim_company.md).
-- Refresh: MERGE with stable SK on the natural key (`ProductCode` + `Barcode` + `CompanySK`) in a `type: "operations"` file, tag `dimension_daily`; updates all attributes, inserts new products with `max_sk + ROW_NUMBER()`, no delete. Reads all of `stk` each run. Runs after `dim_company`, `dim_stk_mkt` and `dim_product_mkt`; target table pre-exists in BigQuery.
+- Refresh: MERGE with stable SK on the natural key (`ProductCode` + `Barcode` + `CompanySK`) in a `type: "operations"` file, tag `dimension_daily`; updates all attributes, inserts new products with `max_sk + ROW_NUMBER()`, no delete. Reads all of `stk` each run. Runs after `dim_company`, `dim_product_mkt`, `dim_rebate` and `dim_stk_mkt` (declared dependencies); target table pre-exists in BigQuery.
 
 # Examples
 
@@ -77,11 +77,11 @@ GROUP BY companyID
 ORDER BY companyID;
 ```
 
-ProductSK for a company, stock code and known barcode.
+ProductSK for a company code, stock code and known barcode.
 
 ```sql
 SELECT ProductSK, ProductCode, Barcode, ProductMac5Description, ProductGroupMAC5, BrandID
 FROM `databuffet-nonprd.dimension_table.dim_product_master`
-WHERE CompanySK = 1 AND ProductCode = 'ABC123'
+WHERE companyID = 'ag01' AND ProductCode = 'ABC123'
   AND IFNULL(Barcode, '') = '8851234567890';
 ```

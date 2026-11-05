@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Curated MAC5 sales quotation header (source table tbook_quotation of the MAC5 booking module): the latest revision per quotation, with columns renamed to PascalCase. Used to build dim_quotation (quotation attributes, customer and project parsed out of the Atten/Project text, tied to the orders and invoices that reference the quotation code) and by the Transaction_Data_Mart view (QuotationID, QuotationCode for each order).
+Curated MAC5 sales quotation header (source table tbook_quotation of the MAC5 booking module): the latest revision per quotation, with columns renamed to PascalCase.
+
+Read by: [dim_quotation](/dimension/dim_quotation.md), [Transaction_Data_Mart](/view/onetime/Transaction_Data_Mart.md).
 
 # Grain and key
 
@@ -30,7 +32,7 @@ One row per `company_id` + `Running` (quotation code). Duplicates across revisio
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02): a literal injected per UNION branch, one per MAC5 company database. |
+| `company_id` | STRING | Company code (ag01 / aa05 / ab01 / ac02 / ak02). |
 | `ID` | INT64 | Quotation identifier, referenced by `tbook_quodetail.linkid`. |
 | `Running` | STRING | Quotation number referenced by orders, with missing source numbers represented as an empty string. |
 | `Atten` | STRING | Attention or contact text of the quotation, including a customer code before a backslash when supplied. |
@@ -106,7 +108,7 @@ One row per `company_id` + `Running` (quotation code). Duplicates across revisio
 - `uniqueKey`: `company_id`, `running`.
 - Storage options: `{"clusterBy": ["company_id", "running", "cashstatus", "cancel"]}`.
 - Reads: [validated_mac5.tbook_quotation](/validated/validated_mac5/tbook_quotation.md).
-- Declared `type: "incremental"` (tag `curated`, after `validated_mac5.tbook_quotation`) with MERGE on `uniqueKey`, but the partition and the incremental window filter are commented out, so every run reads the whole validated table and behaves like a full rebuild.
+- Declared `type: "incremental"` (tag `curated`, after `validated_mac5.tbook_quotation`) with MERGE on `uniqueKey`; no partition and no incremental window filter, so every run MERGEs the whole validated table by key; rows gone from the source are not removed.
 
 # Examples
 

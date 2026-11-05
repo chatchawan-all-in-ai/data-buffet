@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -22,18 +22,18 @@ status: draft
 
 Says who manages each section and when (employee ID plus name parts). It supplies `SectionManagerSK` to `fact_transcation` and `view_fact_transcation`, and the target-by-agent day-of-work view; [dim_section_manager_last](/dimension/dim_section_manager_last.md) is the latest-row snapshot.
 
-Read by: [dim_section_manager_last](/dimension/dim_section_manager_last.md), [dim_target_product_group_by_sale_dayofwork](/dimension/dim_target_product_group_by_sale_dayofwork.md), [view_dim_target_by_agent_dayofwork](/view/dimension_view/view_dim_target_by_agent_dayofwork.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md), [fact_transcation](/fact/fact_transcation.md).
+Read by: [dim_section_manager_last](/dimension/dim_section_manager_last.md), [dim_target_product_group_by_sale_dayofwork](/dimension/dim_target_product_group_by_sale_dayofwork.md), [fact_transcation](/fact/fact_transcation.md), [view_dim_target_by_agent_dayofwork](/view/dimension_view/view_dim_target_by_agent_dayofwork.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md).
 
 # Grain and key
 
-One row per active MDS row, ordered and SK-numbered by companyID, SectionID, StartDate, EndDate. A section that changed manager has one row per interval. No -1 row.
+One row = one active MDS section manager assignment: key `SectionManagerSK`, `ROW_NUMBER()` ordered by companyID, SectionID, StartDate, EndDate. A section that changed manager has one row per interval. No -1 row.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `SectionManagerSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by companyID, SectionID, StartDate, EndDate. Regenerated every run. |
-| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on companyID; NULL if no match. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `SectionID` | STRING | Section code managed; joins to dim_section.SectionID and dim_department.SectionID. |
 | `SectionName` | STRING | Section name as entered in the manager master. |
@@ -43,7 +43,7 @@ One row per active MDS row, ordered and SK-numbered by companyID, SectionID, Sta
 | `SectionManagerNickname` | STRING | Manager nickname. |
 | `StartDate` | DATE | First date this assignment is valid (MDS DATE). |
 | `EndDate` | DATE | Last date this assignment is valid (MDS DATE). |
-| `MdsID` | STRING | `id` of the source row in `mds_data_sales_section_manager_master`; trace column. |
+| `MdsID` | STRING | `id` of the source row in `mds_data_sales_section_manager_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 
@@ -51,7 +51,7 @@ One row per active MDS row, ordered and SK-numbered by companyID, SectionID, Sta
 - `uniqueKey`: `SectionManagerSK`.
 - Storage options: `{"clusterBy": ["SectionManagerSK"]}`.
 - Reads: `mds_dataset.mds_data_sales_section_manager_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`), tag `dimension_daily`; `CREATE OR REPLACE` each run from `mds_dataset` (loaded outside this repo). Runs after `dim_company`. Reads `mds_data_sales_section_manager_master`.
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
 
 # Examples
 

@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Closing (EOM) sales file that Global House (GB) sends itself (folder SO_MDT_EOM/GB), kept as 'the figure reported by the chain' to compare with the daily feed and as the CHAIN_FILE source of [curated_saleout_monthly_mdt](/curated/curated_saleout_mdt/curated_saleout_monthly_mdt.md). The bill lines of the file are rolled up to month level.
+Closing (EOM) sales file that Global House (GB) sends itself (folder SO_MDT_EOM/GB), kept as 'the figure reported by the chain' to compare with the daily feed. The bill lines of the file are rolled up to month level.
+
+Read by: [curated_saleout_monthly_mdt](/curated/curated_saleout_mdt/curated_saleout_monthly_mdt.md).
 
 # Grain and key
 
@@ -39,7 +41,7 @@ One row per `month_date` (first day of the period, from the Sale_Date column), `
 | `doc_type` | STRING | Document type as sent by the chain (Type column): SALE or RETURN. |
 | `sale_qty` | INT64 | Sum of Sale_Quantity for the key; negative for returns. |
 | `sale_amount` | FLOAT64 | Sum of Sale_Amount, parsed from a dirty string (thousands commas and a leading apostrophe on return rows are stripped); returns are negative. |
-| `asatdate` | DATE | Latest raw load date among the rows summed (the DAG run date, not the period). |
+| `asatdate` | DATE | MAX of the ASATDATE of the chosen file version (the DAG run date, not the period). |
 
 # How it is built
 
@@ -47,7 +49,7 @@ One row per `month_date` (first day of the period, from the Sale_Date column), `
 - `uniqueKey`: `month_date`, `branch_code`, `product_code`, `doc_type`.
 - Storage options: `{"partitionBy": "month_date", "clusterBy": ["branch_code", "product_code"]}`.
 - Reads: [raw_saleout_mdt.eom_gb](/initial/raw_saleout_mdt/eom_gb.md).
-- Full rebuild each run (`type: "table"`, tags `curated`, `curated_full`, `saleout_daily`; depends on `curated_schema_saleout` and `create_all_table_raw_saleout_mdt`); partitioned by `month_date`, clustered by branch_code, product_code. Reads raw `eom_gb` directly.
+- Full rebuild each run (`type: "table"`, tags `curated`, `curated_full`, `saleout_daily`; depends on `curated_schema_saleout` and `create_all_table_raw_saleout_mdt`); partitioned by `month_date`, clustered by branch_code, product_code. Reads raw `eom_gb` directly. Per `month_date` only the newest file version (latest ASATDATE) that is not made entirely of duplicated rows is used; the run fails if every version of a month is duplicated.
 
 # Examples
 

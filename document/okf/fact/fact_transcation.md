@@ -14,25 +14,25 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-The main sales-transaction fact of the warehouse: every invoice-type bill line (IS invoice, AS, BS credit/return, QS) from MAC5, produced from `onetime.Transaction_Data_Mart` and joined to about 20 dimensions: product, payment, channel, customer address, marketing group (with an MDS re-map), the sale-representative chain (SaleRep -> Department -> Region -> RegionManager -> Section -> SectionManager -> Director, with 'Change*' current-organisation versions) and sales targets. It answers sales, discount, cost and VAT by product, customer, salesperson and organisation. The table name keeps the load-bearing typo `fact_transcation`. Consumers: `view_fact_transcation` (the BI-facing view that filters the expected duplicates), `view_fact_salein_mdt`, [dim_pump_information](/dimension/dim_pump_information.md) and [rls_customer360](/process/rls_customer360.md).
+The main sales-transaction fact of the warehouse: every invoice-type bill line (IS invoice, AS, BS credit/return, QS) from MAC5, produced from `onetime.Transaction_Data_Mart` and joined to about 20 dimensions: product, payment, channel, customer address, marketing group (with an MDS re-map), the sale-representative chain (SaleRep -> Department -> Region -> RegionManager -> Section -> SectionManager -> Director, with 'Change*' current-organisation versions) and sales targets. It answers sales, discount, cost and VAT by product, customer, salesperson and organisation. The table name keeps the load-bearing typo `fact_transcation`.
 
-Used by / context: used by [dimension_table.dim_pump_information](/dimension/dim_pump_information.md), [process_dataset.rls_customer360](/process/rls_customer360.md), [fact_view.view_fact_salein_mdt](/view/fact_view/view_fact_salein_mdt.md), [fact_view.view_fact_transcation](/view/fact_view/view_fact_transcation.md).
+Read by: [dim_pump_information](/dimension/dim_pump_information.md), [rls_customer360](/process/rls_customer360.md), [view_fact_salein_mdt](/view/fact_view/view_fact_salein_mdt.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md).
 
 # Grain and key
 
-One row per bill line, but the upsert key is only (`milVnos`, `milType`, `CompanySK`), i.e. a bill document; all lines of a re-processed bill are deleted and re-inserted. There are expected per-line duplicates: `curated_mil` splits ag01 lines into two rows by salesperson share (`percent_sale`) and the sale-rep match can leave more than one candidate per line, so the same line can appear several times; `view_fact_transcation` filters them. Window: rows with `mix_date >= start of year, 4 years ago`.
+One row = one bill line (`milListno`) of one IS/AS/BS/QS document per customer, product and salesperson (`milPer`), per company: no unique key is declared; the upsert key is (`milVnos`, `milType`, `CompanySK`), i.e. a bill document, and all lines of a re-processed bill are deleted and re-inserted. The line is de-duplicated with `QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, milType, milVnos, milCus, LOWER(milStk), milPer, milListno ORDER BY seq_condition, SaleRepSK DESC) = 1`, keeping one sale-rep candidate per line; `curated_mil` splits ag01 lines into two rows by salesperson share (`percent_sale`) with different `milPer`, which stay separate rows. The final enrichment joins (address, marketing group, target) can still repeat a line, and `view_fact_transcation` re-applies a QUALIFY on the same partition. Window: rows with `mix_date >= start of year, 4 years ago`.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md), carried from Transaction_Data_Mart; part of the upsert key. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID in Transaction_Data_Mart; NULL if no match; part of the upsert key. |
 | `companyID` | STRING | MAC5 company code (ag01, aa05, ab01, ac02, ak02). |
 | `InvoiceProvinceSK` | INT64 | Province SK of the customer's address from `view_deb_address_data` (AI-parsed address, joined on milCus + company). |
 | `InvoiceDistrictSK` | INT64 | District SK of the customer's address from view_deb_address_data. |
@@ -47,11 +47,11 @@ One row per bill line, but the upsert key is only (`milVnos`, `milType`, `Compan
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md) (`milCus = debcode`, CompanySK). |
 | `SaleRepSK` | INT64 | Surrogate key of [dim_sale_representative](/dimension/dim_sale_representative.md) chosen per line: employee match on milPer (or DummyChannel) + date window + DepCode/customer/channel rules, best `seq_condition` kept (business-flags.md). |
 | `DepartmentSK` | INT64 | Surrogate key of `dim_department` reached from the chosen sale rep (hierarchy chain). |
-| `RegionSK` | INT64 | Surrogate key of [dim_region](/dimension/dim_region.md) from the sales-org chain; when FlagMappingInvoice is 'Yes' it is replaced by the mapping-invoice section's region, 'No' gives NULL. |
-| `RegionManagerSK` | INT64 | Surrogate key of dim_region_manager from the chain; same FlagMappingInvoice override as RegionSK. |
-| `SectionSK` | INT64 | Surrogate key of dim_section from the chain; replaced by the mapping section when FlagMappingInvoice = 'Yes', NULL when 'No'. |
-| `SectionManagerSK` | INT64 | Surrogate key of dim_section_manager; same override rule as SectionSK. |
-| `DirectorSK` | INT64 | Surrogate key of [dim_director](/dimension/dim_director.md); same override rule as RegionSK. |
+| `RegionSK` | INT64 | Surrogate key of [dim_region](/dimension/dim_region.md) from the sales-org chain of the chosen sale rep, unless the invoice-mapping rule applies. Mapping rule (shared by RegionSK, RegionManagerSK, SectionSK, SectionManagerSK and DirectorSK): for company ag01/ab01, when `onetime.mapping_invoice` has `FlagMustUser = TRUE` for the line (`milPer`, `milVnos`, company) or `mix_date` is in 202401-202601, the value is taken from the chain of the section in the mapping row (NULL when the mapping row has no section); for other companies, and for ag01/ab01 outside 202401-202601 without `FlagMustUser`, the sale-rep chain value is used. |
+| `RegionManagerSK` | INT64 | Surrogate key of dim_region_manager from the chain; same mapping rule as RegionSK. |
+| `SectionSK` | INT64 | Surrogate key of dim_section from the chain; same mapping rule as RegionSK. |
+| `SectionManagerSK` | INT64 | Surrogate key of dim_section_manager from the chain; same mapping rule as RegionSK. |
+| `DirectorSK` | INT64 | Surrogate key of [dim_director](/dimension/dim_director.md) from the chain; same mapping rule as RegionSK. |
 | `CostStkSk` | INT64 | Surrogate key of dim_cost_stk. |
 | `CostGroupSK` | INT64 | Surrogate key of dim_cost_group for the cost channel. |
 | `ChangeSectionSK` | INT64 | Section SK under the 'change' (current organisation) chain via dim_change_district; used by view_fact_transcation for the `*Last` columns (passes through raw here). |

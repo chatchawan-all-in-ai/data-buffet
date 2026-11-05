@@ -14,26 +14,24 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Order-line fact sliced by store/warehouse (branch) for the store reporting use case: PS (sales order) lines from `curated_mil` joined to their `curated_mih` header, restricted to orders that are in an MDS status with `flagwarehouse = true`, excluding 'PO.วางบิล' orders. Answers which products are ordered per store and when. Sister tables: [fact_invoice_store](/fact/fact_invoice_store.md) and [fact_backlog_store](/fact/fact_backlog_store.md). No other table in the repo reads it.
-
-Used by / context: used by nothing else in the repo.
+Order-line fact sliced by store/warehouse (branch) for the store reporting use case: PS (sales order) lines from `curated_mil` joined to their `curated_mih` header, restricted to orders that are in an MDS status with `flagwarehouse = true`, excluding 'PO.วางบิล' orders. Answers which products are ordered per store and when. Sister tables: [fact_invoice_store](/fact/fact_invoice_store.md) and [fact_backlog_store](/fact/fact_backlog_store.md).
 
 # Grain and key
 
-One row per `FactOrderStoreSK` (ROW_NUMBER over CompanySK, mihYear, mihMonth, mihDay, milType, milVnos, milListNo). Business grain: company + order document (`milVnos`) + line number (`milListNo`). Orders are restricted to those in `dim_order_dedup` (active MDS status with flagwarehouse, description not LIKE '%PO.วางบิล%', order date inside the 4-year window, one OrderSK per company+vnos). Only company_id ag01 and ab01, only products whose `TypeMarketing` is not 'Sourcing', and (store facts) lines with `milstype <> 3`, product code not starting with the Thai letter bo, and not `TEST%`.
+One row = one line (`milListNo`) of one PS sales order per company: key `FactOrderStoreSK` (ROW_NUMBER over CompanySK, mihYear, mihMonth, mihDay, milType, milVnos, milListNo). Orders are restricted to those in `dim_order_dedup` (active MDS status with `flagwarehouse = true`, description not LIKE '%PO.วางบิล%', order date inside the 4-year window, one OrderSK per company + vnos). Only company_id ag01 and ab01; only products whose `TypeMarketing` is not 'Sourcing' (products with no marketing type are dropped too); lines with `milstype <> 3`, product code not starting with the Thai letter bo and not `TEST%`.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `FactOrderStoreSK` | INT64 | Surrogate key: ROW_NUMBER over CompanySK, date parts, milType, milVnos, milListNo. Regenerates daily. |
-| `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md). |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `company_id` | STRING | MAC5 company code; only 'ag01' and 'ab01' are loaded. |
 | `mix_date` | DATE | Order date: SAFE.PARSE_DATE of mihYear, mihMonth, mihDay (Asia/Bangkok business date); partition column. |
 | `mihYear` | INT64 | Year part of the document date (Gregorian). |
@@ -51,7 +49,7 @@ One row per `FactOrderStoreSK` (ROW_NUMBER over CompanySK, mihYear, mihMonth, mi
 | `milSto` | STRING | Warehouse (store) code the line is issued from, matching `sto` store codes. |
 | `milQuan` | FLOAT64 | Line quantity from curated_mil (not summed; one row per line). |
 | `mihPer` | STRING | Salesperson (employee) code, matching `per.percode`. |
-| `milSType` | STRING | Line item type (1 = item, 2 = serial-tracked item, 3 = service). |
+| `milSType` | STRING | Line item type label: 'Item' (milstype 1), 'Serial' (2), otherwise 'Unknown'; service lines (3) are excluded. |
 | `FlagFree` | STRING | 'Yes' when `milsum = 0` OR `ProductGroupMAC5 = '5000'` OR `milDesc` starts with the Thai word for promotion; else 'No'. |
 
 # How it is built

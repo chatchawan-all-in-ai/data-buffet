@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -22,11 +22,11 @@ status: draft
 
 Quotation-line fact: MAC5 quotation details (`validated_mac5.tbook_quodetail`) joined to [dim_quotation](/dimension/dim_quotation.md), product, customer and company. It answers what was quoted, at what average price, quantity and total. [fact_order](/fact/fact_order.md) joins it to attach the quotation behind an order line.
 
-Used by / context: used by [fact_table.fact_order](/fact/fact_order.md).
+Read by: [fact_order](/fact/fact_order.md), [export_fact_quotation](/view/pub_sub/export_fact_quotation.md).
 
 # Grain and key
 
-One row per `FactQuotationSK` (ROW_NUMBER over CompanySK, Running, StkCode). The detail is grouped by ProductSK, CompanySK, QuotationSK, SDate, Year/Month/Day, Running, StkCode, CustomerId, ProjectCode; `Price` is AVG, `Quantity`/`Total` are SUM, `StkDesc` is MAX. The product join uses company + stock code and retains each matching ProductSK, so the same source quantities and totals repeat across barcode versions. FactQuotationSK identifies an expanded row, not a unique quotation/product total. The key (CompanySK, Running, StkCode) is not unique on `validated_mac5.tbook_quodetail`, so the SK ordering can tie.
+One row = the quoted totals of one stock code on one quotation (company, `Running`, customer, project) per matched ProductSK: key `FactQuotationSK` (ROW_NUMBER over CompanySK, Running, StkCode). The detail is grouped by ProductSK, CompanySK, QuotationSK, SDate, Year/Month/Day, Running, StkCode, CustomerId, ProjectCode; `Price` is AVG, `Quantity`/`Total` are SUM, `StkDesc` is MAX. The product join uses company + stock code and retains each matching ProductSK, so the same source quantities and totals repeat across barcode versions. FactQuotationSK identifies an expanded row, not a unique quotation/product total. The key (CompanySK, Running, StkCode) is not unique on `validated_mac5.tbook_quodetail`, so the SK ordering can tie.
 
 # Schema
 
@@ -36,7 +36,7 @@ One row per `FactQuotationSK` (ROW_NUMBER over CompanySK, Running, StkCode). The
 | `QuotationSK` | INT64 | Surrogate key of [dim_quotation](/dimension/dim_quotation.md) (join `dim_quotation.id = tbook_quodetail.linkid`, same company). |
 | `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md) (`stkcode = ProductCode`, company). |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md) (`CustomerId = debcode`, company). |
-| `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md). |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | MAC5 company code. |
 | `SDate` | DATE | Quotation date from dim_quotation (`SDate`). |
 | `Year` | INT64 | Year of the quotation (from dim_quotation). |
@@ -60,13 +60,18 @@ One row per `FactQuotationSK` (ROW_NUMBER over CompanySK, Running, StkCode). The
 
 # Examples
 
-Quoted source value per month before product enrichment, for quotation headers present in dim_quotation.
+Quoted value per month, counting each quotation line once (product-version rows repeat the source totals).
 ```sql
-SELECT DATE_TRUNC(q.SDate, MONTH) AS month, SUM(d.total) AS quoted
-FROM `databuffet-nonprd.validated_mac5.tbook_quodetail` AS d
-JOIN `databuffet-nonprd.dimension_table.dim_quotation` AS q
-  ON d.linkid = q.id AND d.company_id = q.companyID
-WHERE d.company_id = 'ag01' AND q.SDate >= DATE '2026-01-01'
+WITH quotation_lines AS (
+  SELECT SDate, Total
+  FROM `databuffet-nonprd.fact_table.fact_quotation`
+  WHERE companyID = 'ag01' AND SDate >= DATE '2026-01-01'
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY CompanySK, QuotationSK, SDate, Running, StkCode, CustomerId, ProjectCode
+    ORDER BY FactQuotationSK) = 1
+)
+SELECT DATE_TRUNC(SDate, MONTH) AS month, SUM(Total) AS quoted
+FROM quotation_lines
 GROUP BY month ORDER BY month;
 ```
 Expanded product-version rows of one quotation; quantities and totals can repeat.

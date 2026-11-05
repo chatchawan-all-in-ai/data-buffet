@@ -14,17 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Holiday calendar master. [dim_calendar](/dimension/dim_calendar.md) reads it to flag holidays and long weekends on the date spine. It has no surrogate key and no company column (holidays are company-neutral). Source: mds `mds_data_holiday_master`.
+Holiday calendar master. It has no surrogate key and no company column (holidays are company-neutral). Source: mds `mds_data_holiday_master`.
+
+Read by: [dim_calendar](/dimension/dim_calendar.md).
 
 # Grain and key
 
-One row per holiday date among active mds rows. No SK and no `uniqueKey`; `HolidayDate` is the natural key (assumed unique, not enforced).
+One row = one holiday date among active mds rows: key `HolidayDate` (uniqueness is not enforced). No SK and no `uniqueKey`.
 
 # Schema
 
@@ -34,14 +36,15 @@ One row per holiday date among active mds rows. No SK and no `uniqueKey`; `Holid
 | `HolidayNameTH` | STRING | Pass-through of mds `HolidayNameTH`, cleaned with `cleanString` (empty string becomes NULL). Thai holiday name. |
 | `HolidayNameEN` | STRING | Pass-through of mds `HolidayNameEN`, cleaned with `cleanString` (empty string becomes NULL). English holiday name. |
 | `LongWeekEndFlag` | INT64 | `castInt64` of mds `LongWeekEndFlag`: 1 when the holiday is part of a long weekend, NULL otherwise. |
-| `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_holiday_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 
 - Definition: `definitions/dimension/dim_holiday.sqlx` (`type: "table"`, tags `dimension_daily`).
 - Storage options: `{"clusterBy": ["HolidayDate", "LongWeekEndFlag"]}`.
 - Reads: `mds_dataset.mds_data_holiday_master` (master data loaded outside this repo).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`), plain SELECT from active mds rows, no SK, `dependencies: []` (no dim_company join). Clustered by `HolidayDate, LongWeekEndFlag` to match the pre-existing table (CREATE OR REPLACE fails if the spec changes).
+- Plain SELECT of active mds rows; no surrogate key and no dim_company join.
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); no declared dependencies.
 
 # Examples
 

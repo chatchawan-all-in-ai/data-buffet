@@ -14,31 +14,33 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Final lookup of the customer-grade model: maps a customer's total score percentage to a `Grade` label. [dim_customer_grade](/dimension/dim_customer_grade.md) joins it twice and stores `InvoiceGradeSK` and `DueGradeSK` (grade based on the invoice-date and due-date scoring); [dim_group_customer_grade](/dimension/dim_group_customer_grade.md) also uses it. Source is mds `mds_data_custgrade_master`.
+Final lookup of the customer-grade model: maps a customer's total score percentage to a `Grade` label. [dim_customer_grade](/dimension/dim_customer_grade.md) and [dim_group_customer_grade](/dimension/dim_group_customer_grade.md) each join it twice, on `CompanySK` and `Percentmin`..`Percentmax` with no date condition, and store `InvoiceGradeSK` and `DueGradeSK` (grade based on the invoice-date and due-date scoring); only the rows of the current year (year of yesterday) are recomputed, so older rows keep the SK from their last run. Source is mds `mds_data_custgrade_master`.
+
+Read by: [dim_customer_grade](/dimension/dim_customer_grade.md), [dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
 
 # Grain and key
 
-One row per (company, Percentmin, Percentmax, StartDate, EndDate) band from mds. Key: `GradeSK` (surrogate, unstable across days).
+One row = one grade band: key (company, Percentmin, Percentmax, StartDate, EndDate) from mds; `GradeSK` is the surrogate key, regenerated every run.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `GradeSK` | INT64 | `GradeSK` is `ROW_NUMBER() OVER(ORDER BY companyID, Percentmin, Percentmax, StartDate, EndDate)` over the active mds rows; it regenerates on every daily run. |
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), found by a LEFT JOIN on `companyID`; NULL when the mds company code has no match in dim_company. |
+| `GradeSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, Percentmin, Percentmax, StartDate, EndDate)` over the active mds rows. Regenerated every run. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `Percentmin` | FLOAT64 | Lower bound (inclusive) of the band for the customer's total score percentage, cast with `castFloat64` from the mds column. |
 | `Percentmax` | FLOAT64 | Upper bound (inclusive) of the band for the customer's total score percentage, cast with `castFloat64` from the mds column. |
 | `Grade` | STRING | Grade label (as entered in MDS) assigned to scores inside the band; `cleanString` of the mds `Grade` column. |
 | `StartDate` | DATE | First day the band row is valid (mds `StartDate`, passed through as DATE). |
-| `EndDate` | DATE | Last day the band row is valid (mds `EndDate`, passed through as DATE). dim_customer_grade matches rows where yesterday (Asia/Bangkok) is between StartDate and EndDate. |
-| `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. |
+| `EndDate` | DATE | Last day the band row is valid (mds `EndDate`, passed through as DATE). |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_custgrade_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 
@@ -46,7 +48,7 @@ One row per (company, Percentmin, Percentmax, StartDate, EndDate) band from mds.
 - `uniqueKey`: `GradeSK`.
 - Storage options: `{"clusterBy": ["GradeSK"]}`.
 - Reads: `mds_dataset.mds_data_custgrade_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows; runs after dim_company. dim_customer_grade lists it as a dependency and refreshes its stored `*GradeSK` values from it.
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
 
 # Examples
 

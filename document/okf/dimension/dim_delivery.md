@@ -14,26 +14,26 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Delivery-tracking dimension built from the MAC5 trip tables (`ttrip`, `ttrip_document`, `tdelivery`) joined to invoice lines in `curated_mil`. For each invoice document that appears on a delivery trip it counts how many vehicles and delivery dates were involved, how many distinct stock codes and how many item units, and splits those units by status: loaded on a truck or not, vehicle released or not, delivered/accepted, not yet delivered or refused by the customer. It is the source of `DeliverySK` for [fact_delivery](/fact/fact_delivery.md).
+Delivery-tracking dimension built from the MAC5 trip tables (`ttrip`, `ttrip_document`, `tdelivery`) joined to invoice lines in `curated_mil`. For each invoice document that appears on a delivery trip it counts how many vehicles and delivery dates were involved, how many distinct stock codes and how many item units, and splits those units by status: loaded on a truck or not, vehicle released or not, delivered/accepted, not yet delivered or refused by the customer.
 
-Used by: [fact_table.fact_delivery](/fact/fact_delivery.md).
+Read by: [fact_delivery](/fact/fact_delivery.md).
 
 # Grain and key
 
-One row per (`companyID`, `documentID`) where `documentID` is the invoice/document number (`ttrip_document.fdocument`, which matches `milVnos` of IS lines linked to another document). `DeliverySK` is a stable surrogate key (existing documents keep it; new ones get `max_sk + ROW_NUMBER()` ordered by `companyID`, `documentID`). Trip items whose stock code starts with '8' are excluded.
+One row = one delivered invoice document per company: key (`companyID`, `documentID`), where `documentID` is the invoice/document number (`ttrip_document.fdocument`, which matches `milVnos` of IS lines linked to another document). `DeliverySK` is a stable surrogate key (existing documents keep it; new ones get `max_sk + ROW_NUMBER()` ordered by `companyID`, `documentID`). Trip items whose stock code starts with '8' are excluded.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `DeliverySK` | INT64 | Stable surrogate key of the delivered document; never regenerated. |
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), joined on company id. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | MAC5 company code. |
 | `documentID` | STRING | Invoice/document number (`ttrip_document.fdocument`), the key together with company; matches `milVnos` / `mihVnos` of the invoice. |
 | `totalVehicle` | INT64 | Count of distinct vehicles (`ttrip.fvehicle`) used to deliver the document. |
@@ -45,8 +45,8 @@ One row per (`companyID`, `documentID`) where `documentID` is the invoice/docume
 | `deliveryStatus_1` | INT64 | Units on trips where the vehicle was released ('ปล่อยรถแล้ว': `ttrip.fpass_Date` present). |
 | `deliveryStatus_2` | INT64 | Units on trips where the vehicle was not released ('ไม่ปล่อยรถ'). |
 | `shipmentStatus_1` | INT64 | Units not yet delivered ('ยังไม่ส่งของ': no `tdelivery` serial number). |
-| `shipmentStatus_2` | INT64 | Units delivered and accepted by the customer ('รับสินค้าแล้ว': `tdelivery` row present and `fcancel = '0'`). |
-| `shipmentStatus_3` | INT64 | Units delivered but refused by the customer ('ลูกค้าไม่รับ': `tdelivery` row present and `fcancel` not '0'). |
+| `shipmentStatus_2` | INT64 | Units delivered and accepted by the customer ('รับสินค้าแล้ว': `tdelivery` row present and `ttrip_document.fcancel = '0'`). |
+| `shipmentStatus_3` | INT64 | Units delivered but refused by the customer ('ลูกค้าไม่รับ': `tdelivery` row present and `ttrip_document.fcancel` not '0'). |
 
 # How it is built
 

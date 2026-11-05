@@ -14,36 +14,39 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Lookup that explains document type codes appearing on accounting/sales documents (category plus code, with EN and TH descriptions). It is joined by the invoice transaction model [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md). It has no surrogate key. Source: mds `mds_data_document_type_master`.
+Lookup that explains document type codes appearing on accounting/sales documents (category plus code, with EN and TH descriptions). It has no surrogate key. Source: mds `mds_data_document_type_master`.
+
+Read by: [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md), [export_dim_doctype](/view/pub_sub/export_dim_doctype.md).
 
 # Grain and key
 
-One row per (company, AccountCategory, Code) among active mds rows. No SK and no `uniqueKey`; `MdsID` identifies the source row.
+One row = one document-type code: key (company, AccountCategory, Code) among active mds rows. No SK and no `uniqueKey`; `MdsID` identifies the source row.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), found by a LEFT JOIN on `companyID`; NULL when the mds company code has no match in dim_company. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `AccountCategory` | STRING | Pass-through of mds `AccountCategory`, cleaned with `cleanString` (empty string becomes NULL). Category of the accounting document family the code belongs to. |
 | `Code` | STRING | Pass-through of mds `Code`, cleaned with `cleanString` (empty string becomes NULL). MAC5 document type code as used in the `type` columns of document headers and lines, e.g. AR: QS quotation, PS sales order, IS invoice, AS debit note, BS credit note, VS billing statement, RS receipt; AP: QP, PP, IP, AP, BP, VP, RP; IC: PX, TP, JX, SP, SS, TS, MX. |
 | `DescriptionEN` | STRING | Pass-through of mds `DescriptionEN`, cleaned with `cleanString` (empty string becomes NULL). English description. |
 | `DescriptionTH` | STRING | Pass-through of mds `DescriptionTH`, cleaned with `cleanString` (empty string becomes NULL). Thai description. |
-| `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_document_type_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 
 - Definition: `definitions/dimension/dim_doctype.sqlx` (`type: "table"`, tags `dimension_daily`).
 - Storage options: `{"clusterBy": ["AccountCategory", "Code"]}`.
 - Reads: `mds_dataset.mds_data_document_type_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`), plain SELECT from active mds rows with no SK; clustered by `AccountCategory, Code` to match the existing table (CREATE OR REPLACE requires the same clustering spec). Runs after dim_company.
+- Plain SELECT of active mds rows; no surrogate key.
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
 
 # Examples
 

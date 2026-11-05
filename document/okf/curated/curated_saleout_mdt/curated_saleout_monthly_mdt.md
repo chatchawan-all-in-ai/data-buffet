@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Monthly sell-out table for modern-trade (MDT) chains; the source of fact_saleout_monthly_mdt (and referenced by the branch/product dimensions). It replaces the hand-built onetime.saleout_monthly_mdt. For each (month, chain) it picks ONE source by priority: 1 CHAIN_FILE (closing files the chain sends itself, curated_eom_gb/hp/tw/bt, from Aug 2026), 2 BI (history file from the BI team, 2022-01 to 2026-07, read from validated_saleout_mdt.saleout_lastyear_monthly), 3 DAILY_ROLLUP (rolled up from [curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md) for months/chains with neither). Related tables: [curated_eom_gb](/curated/curated_saleout_mdt/curated_eom_gb.md), [curated_eom_hp](/curated/curated_saleout_mdt/curated_eom_hp.md), [curated_eom_tw](/curated/curated_saleout_mdt/curated_eom_tw.md), [curated_eom_bt](/curated/curated_saleout_mdt/curated_eom_bt.md).
+Monthly sell-out table for modern-trade (MDT) chains; for each (month, chain) it picks ONE source by priority: 1 CHAIN_FILE (closing files the chain sends itself, curated_eom_gb/hp/tw/bt, from Aug 2026), 2 BI (history file from the BI team, 2022-01 to 2026-07, read from validated_saleout_mdt.saleout_lastyear_monthly), 3 DAILY_ROLLUP (rolled up from [curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md) for months/chains with neither). Related tables: [curated_eom_gb](/curated/curated_saleout_mdt/curated_eom_gb.md), [curated_eom_hp](/curated/curated_saleout_mdt/curated_eom_hp.md), [curated_eom_tw](/curated/curated_saleout_mdt/curated_eom_tw.md), [curated_eom_bt](/curated/curated_saleout_mdt/curated_eom_bt.md).
+
+Read by: [dim_product_mdt](/dimension/dim_product_mdt.md), [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [fact_saleout_monthly_mdt](/fact/fact_saleout_monthly_mdt.md).
 
 # Grain and key
 

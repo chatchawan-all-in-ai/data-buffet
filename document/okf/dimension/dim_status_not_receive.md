@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-List of MAC5 invoice header statuses (`mihstatus`) that are treated as not receiving a payment. `dim_aging` joins it on `mih.mihstatus = StatusID` per company: for receipts in years up to 2023 a match marks the invoice as complete (`status_complete`), so it is not aged as open debt. `view_aging_ri` and the customer-grade dims (`dim_customer_grade`, `dim_group_customer_grade`, `dim_aging_history`) also read it.
+List of MAC5 invoice header statuses (`mihstatus`) that are treated as not receiving a payment. `dim_aging` joins it on `mih.mihstatus = StatusID` per company: for receipts in years up to 2023 a match marks the invoice as complete (`status_complete`), so it is not aged as open debt. `view_aging_ri` and the customer-grade dims (`dim_customer_grade`, `dim_group_customer_grade`) also read it.
 
-Read by: [view_aging_ri](/view/fact_view/view_aging_ri.md), [dim_aging](/dimension/dim_aging.md), [dim_aging_history](/dimension/dim_aging_history.md), [dim_customer_grade](/dimension/dim_customer_grade.md), [dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
+Read by: [dim_aging](/dimension/dim_aging.md), [dim_customer_grade](/dimension/dim_customer_grade.md), [dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [view_aging_ri](/view/fact_view/view_aging_ri.md).
 
 # Grain and key
 
-One row per active MDS row, ordered and SK-numbered by CompanyID, StatusID. Natural key `(CompanyID, StatusID)`. There is no `CompanySK` (the dim_company join is commented out in the definition); joins use the CompanyID code. No -1 row.
+One row = one active MDS status row: key `NotReceiveSK`, `ROW_NUMBER()` ordered by CompanyID, StatusID; natural key `(CompanyID, StatusID)`. There is no `CompanySK`; joins use the CompanyID code. No -1 row.
 
 # Schema
 
@@ -37,7 +37,7 @@ One row per active MDS row, ordered and SK-numbered by CompanyID, StatusID. Natu
 | `StatusID` | INT64 | Invoice status code (INT64 via `castInt64`, fails the run on a non-numeric value); compared with `mihstatus` of the invoice header. |
 | `StatusNameTH` | STRING | Thai name of the status. |
 | `StatusNameENG` | STRING | English name of the status. |
-| `MdsID` | STRING | `id` of the source row in `mds_data_payment_status_not_receive_master`; trace column. |
+| `MdsID` | STRING | `id` of the source row in `mds_data_payment_status_not_receive_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 
@@ -45,7 +45,7 @@ One row per active MDS row, ordered and SK-numbered by CompanyID, StatusID. Natu
 - `uniqueKey`: `NotReceiveSK`.
 - Storage options: `{"clusterBy": ["NotReceiveSK"]}`.
 - Reads: `mds_dataset.mds_data_payment_status_not_receive_master` (master data loaded outside this repo).
-- Full daily rebuild (`type: "table"`), tag `dimension_daily`, reads `mds_data_payment_status_not_receive_master`. `dim_aging` lists it in `dependencies`, so run it first.
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
 
 # Examples
 

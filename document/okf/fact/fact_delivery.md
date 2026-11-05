@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Delivery-tracking fact built from the MAC5 trip tables (`ttrip_document`, `ttrip`, `tdelivery`) for IS invoices that link to orders, showing for each invoice item the vehicle, delivery date, GPS point/zone and how many units are in each status (loaded on truck or not, vehicle released or not, shipment not yet delivered / received / refused by customer). It is enriched with [dim_delivery](/dimension/dim_delivery.md) and the invoice quantities from [fact_transaction_delivery](/fact/fact_transaction_delivery.md). It answers where deliveries stand and whether customers accepted the goods. No other table reads it.
+Delivery-tracking fact built from the MAC5 trip tables (`ttrip_document`, `ttrip`, `tdelivery`) for IS invoices that link to orders, showing for each invoice item the vehicle, delivery date, GPS point/zone and how many units are in each status (loaded on truck or not, vehicle released or not, shipment not yet delivered / received / refused by customer). It is enriched with [dim_delivery](/dimension/dim_delivery.md) and the invoice quantities from [fact_transaction_delivery](/fact/fact_transaction_delivery.md). It answers where deliveries stand and whether customers accepted the goods.
 
-Used by / context: used by nothing else in the repo.
+Read by: [export_fact_delivery](/view/pub_sub/export_fact_delivery.md).
 
 # Grain and key
 
-One row per `FactDeliverySK` (ROW_NUMBER over CompanySK, documentID, DeliveryDate, item). Business grain: company + documentID (invoice number) + item + vehicle + DeliveryDate + location. Items come from `ttrip_document.fitem`; if (document, trip code, item) is not matched to `curated_mil`, the alternate item `fitem2` is used. The status aggregation initially has that business grain, but the later join to fact_transaction_delivery emits every matching invoice/ProductSK candidate. Retained barcode versions therefore repeat all status counts and totalItems as well as invoice measures; FactDeliverySK identifies an expanded row. Only items present in `curated_mil` for the same document (case-insensitive) are kept; items starting with '8' are excluded; documents are restricted to IS lines with a link number.
+One row = the delivery status counts of one invoice item for one vehicle, delivery date and location per matching invoice product candidate: key `FactDeliverySK` (ROW_NUMBER over CompanySK, documentID, DeliveryDate, item). Business grain of the status aggregation: company + documentID (invoice number) + item + vehicle + DeliveryDate + location. Items come from `ttrip_document.fitem`; if (document, trip code, item) is not matched to `curated_mil`, the alternate item `fitem2` is used. The later join to fact_transaction_delivery emits every matching invoice/ProductSK candidate. Retained barcode versions therefore repeat all status counts and totalItems as well as invoice measures; FactDeliverySK identifies an expanded row. Only items present in `curated_mil` for the same document (case-insensitive) are kept; items starting with '8' are excluded; documents are restricted to IS lines with a link number.
 
 # Schema
 
@@ -36,7 +36,7 @@ One row per `FactDeliverySK` (ROW_NUMBER over CompanySK, documentID, DeliveryDat
 | `DeliverySK` | INT64 | Surrogate key of [dim_delivery](/dimension/dim_delivery.md) (join `documentID`, company); NULL if unmatched. |
 | `FactTransDeliverySK` | INT64 | [fact_transaction_delivery](/fact/fact_transaction_delivery.md).FactTransDeliverySK of the invoice line (join documentID = milvnos, case-insensitive item); NULL if unmatched. |
 | `InvoiceSK` | INT64 | InvoiceSK carried from fact_transaction_delivery. |
-| `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md). |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | MAC5 company code. |
 | `documentID` | STRING | Invoice document number (`ttrip_document.fdocument`). |
 | `Vehicle` | STRING | Vehicle identifier of the trip (`ttrip.fvehicle`). |
@@ -64,11 +64,11 @@ One row per `FactDeliverySK` (ROW_NUMBER over CompanySK, documentID, DeliveryDat
 | `milvnos` | STRING | Document number of the line, matching `mihvnos` of the header. |
 | `milCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
 | `milStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
-| `milQuan` | FLOAT64 | SUM of `curated_mil.milQuan` over the grain. |
-| `milAdisc` | FLOAT64 | SUM of `curated_mil.milAdisc`: the document-level discount allocated to the lines. |
-| `milCog` | FLOAT64 | SUM of `curated_mil.milCog`: gross line amount excluding VAT, with salesperson shares already applied to split-sale lines. |
-| `milDisca` | FLOAT64 | SUM of `curated_mil.milDisca`: line discount amount excluding VAT. |
-| `milSum` | FLOAT64 | SUM of `curated_mil.milSum`, line net amount in THB. |
+| `milQuan` | FLOAT64 | SUM of `curated_mil.milQuan` over the grain; the salesperson share is already applied on ag01 split-sale lines. |
+| `milAdisc` | FLOAT64 | SUM of `curated_mil.milAdisc`: the document-level discount allocated to the lines; the salesperson share is already applied on ag01 split-sale lines. |
+| `milCog` | FLOAT64 | SUM of `curated_mil.milCog`: gross line amount excluding VAT; the salesperson share is already applied on ag01 split-sale lines. |
+| `milDisca` | FLOAT64 | SUM of `curated_mil.milDisca`: line discount amount excluding VAT; the salesperson share is already applied on ag01 split-sale lines. |
+| `milSum` | FLOAT64 | SUM of `curated_mil.milSum`, line net amount in THB; the salesperson share is already applied on ag01 split-sale lines. |
 | `asatdate` | DATE | Build date of fact_transaction_delivery (CURRENT_DATE('Asia/Bangkok')). |
 
 # How it is built

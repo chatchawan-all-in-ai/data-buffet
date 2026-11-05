@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Daily (day-of-work) version of the per-employee target: the monthly CalAmt / CalQty are divided by the number of non-holiday days of the month and assigned to each date, so a daily target can be compared with daily sales. `view_fact_target_product_group_mdt`, `Model_Target_DayOfWork` and the target-by-agent day-of-work view read it, and `fact_transcation` carries its `TargetBySaleDayofworkSK` (so facts and daily targets can be reported together).
+Daily (day-of-work) version of the per-employee target: the monthly CalAmt / CalQty are divided by the number of non-holiday days of the month and assigned to each date, so a daily target can be compared with daily sales. `fact_transcation` carries its `TargetBySaleDayofworkSK`, so facts and daily targets can be reported together.
 
-Read by: [view_fact_target_product_group_mdt](/view/fact_view/view_fact_target_product_group_mdt.md), [Model_Target_DayOfWork](/view/onetime/Model_Target_DayOfWork.md), [fact_transcation](/fact/fact_transcation.md).
+Read by: [export_dim_target_product_group_by_sale_dayofwork](/view/pub_sub/export_dim_target_product_group_by_sale_dayofwork.md), [fact_transcation](/fact/fact_transcation.md), [Model_Target_DayOfWork](/view/onetime/Model_Target_DayOfWork.md), [view_fact_target_product_group_mdt](/view/fact_view/view_fact_target_product_group_mdt.md).
 
 # Grain and key
 
-One row per `(TargetBySaleSK, Date)` after the DISTINCT (dates come from `dim_calendar` for the target year and month, limited to StartDate..EndDate of the rate rule when set). The date-valid SKs (SaleRepSK, DepartmentSK, RegionSK, RegionManagerSK, DirectorSK, SectionSK, SectionManagerSK) are resolved by natural keys and `Date BETWEEN StartDate AND EndDate` against the non-`_last` dims, while the `*Last` columns are carried from dim_target_product_group_by_sale. Special rows: when dim_rate_target has a dated rule for the same company, year, month, employee and department, only those dated rows are kept for that employee-month (the others are dropped). SK `TargetBySaleDayofworkSK` = `ROW_NUMBER()` over Year, Month, Day, TargetBySaleSK.
+One row = one allocated target row on one calendar date: key (`TargetBySaleSK`, `Date`) after the DISTINCT (dates come from `dim_calendar` for the target year and month, limited to StartDate..EndDate of the rate rule when set). The date-valid SKs (SaleRepSK, DepartmentSK, RegionSK, RegionManagerSK, DirectorSK, SectionSK, SectionManagerSK) are resolved by natural keys and `Date BETWEEN StartDate AND EndDate` against the non-`_last` dims, while the `*Last` columns are carried from dim_target_product_group_by_sale. Special rows: when dim_rate_target has a dated rule for the same company, year, month, employee and department, only those dated rows are kept for that employee-month (the others are dropped). SK `TargetBySaleDayofworkSK` = `ROW_NUMBER()` over Year, Month, Day, TargetBySaleSK.
 
 # Schema
 
@@ -85,7 +85,7 @@ One row per `(TargetBySaleSK, Date)` after the DISTINCT (dates come from `dim_ca
 - `uniqueKey`: `TargetBySaleDayofworkSK`.
 - Storage options: `{"clusterBy": ["TargetBySaleDayofworkSK"]}`.
 - Reads: [dimension_table.dim_calendar](/dimension/dim_calendar.md), [dimension_table.dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md), [dimension_table.dim_sale_representative](/dimension/dim_sale_representative.md), [dimension_table.dim_department](/dimension/dim_department.md), [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_director](/dimension/dim_director.md), [dimension_table.dim_section](/dimension/dim_section.md), [dimension_table.dim_region_manager](/dimension/dim_region_manager.md), [dimension_table.dim_section_manager](/dimension/dim_section_manager.md), [dimension_table.dim_rate_target](/dimension/dim_rate_target.md).
-- Full daily rebuild (`type: "table"`), tag `dimension_daily`; depends on dim_calendar, dim_rate_target, dim_target_product_group_by_sale and the non-`_last` dims dim_sale_representative, dim_department, dim_director, dim_region, dim_region_manager, dim_section, dim_section_manager, all of which renumber their SKs each night.
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_calendar, dim_rate_target, dim_target_product_group_by_sale and the non-`_last` dims dim_sale_representative, dim_department, dim_director, dim_region, dim_region_manager, dim_section and dim_section_manager.
 
 # Examples
 

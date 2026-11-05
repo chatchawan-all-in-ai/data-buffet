@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Curated MAC5 document line table (MAC5 ERP `mil`), the line-level companion of [curated_mih](/curated/curated_mac5/curated_mih.md). It renames validated_mac5.mil columns to camelCase and, for company ag01 only, applies the split-sale rules: when validated_mac5.mih2 says a document is shared between two sales reps (percentage not 100%), the line is duplicated and its quantity/discount/gross amount/VAT/sum are multiplied by each rep's share, while the `_raw` columns keep the full values. It feeds dim_order, dim_invoice, dim_quotation, dim_delivery, fact_order, fact_invoice, the store facts (fact_order_store, fact_invoice_store, fact_backlog_store), fact_delivery and Transaction_Data_Mart.
+Curated MAC5 document line table (MAC5 ERP `mil`), the line-level companion of [curated_mih](/curated/curated_mac5/curated_mih.md). It renames validated_mac5.mil columns to camelCase and, for company ag01 only, applies the split-sale rules: when validated_mac5.mih2 (matched on `milLinkvcno = mih2vnos` and `milCus = mih2cus`) says a document is shared between two sales reps (percentage not 100%), the line is duplicated and its quantity/discount/gross amount/VAT/sum are multiplied by each rep's share, while the `_raw` columns keep the full values.
+
+Read by: [curated_invoice_line_cost](/curated/curated_derp/curated_invoice_line_cost.md), [dim_aging](/dimension/dim_aging.md), [dim_delivery](/dimension/dim_delivery.md), [dim_invoice](/dimension/dim_invoice.md), [dim_order](/dimension/dim_order.md), [dim_quotation](/dimension/dim_quotation.md), [fact_backlog_store](/fact/fact_backlog_store.md), [fact_delivery](/fact/fact_delivery.md), [fact_invoice](/fact/fact_invoice.md), [fact_invoice_store](/fact/fact_invoice_store.md), [fact_order](/fact/fact_order.md), [fact_order_store](/fact/fact_order_store.md), [fact_transaction_delivery](/fact/fact_transaction_delivery.md), [Transaction_Data_Mart](/view/onetime/Transaction_Data_Mart.md).
 
 # Grain and key
 
@@ -97,7 +99,7 @@ Declared `uniqueKey`: `company_id` + `milType` + `milVnos` + `milListno` (docume
 | `milVcol5` | STRING | User-defined text column 5 of the line. |
 | `milFitem` | INT64 | Free-item flag of the line. |
 | `asatdate` | DATE | Extract date of the validated row (partition column). For ag01 rebuilt rows it is the asatdate of the latest validated row per line. |
-| `percent_sale` | STRING | Share of the line credited to this row's salesperson, as a percent string such as '100.00%'. Rows that are not split carry '100.00%'; ag01 split rows carry the first and second rep shares (mih2 percentages, capped at 100) as e.g. '60.00%' and '40.00%'. |
+| `percent_sale` | STRING | Share of the line credited to this row's salesperson, as a percent string such as '100.00%'. Rows that are not split carry '100.00%'; ag01 split rows carry the first and second rep shares (mih2 percentages, capped at 100) as e.g. '60%' and '33.33%' (`CONCAT(ROUND(x, 2), '%')`). |
 
 # How it is built
 
@@ -105,7 +107,7 @@ Declared `uniqueKey`: `company_id` + `milType` + `milVnos` + `milListno` (docume
 - `uniqueKey`: `company_id`, `milType`, `milVnos`, `milListno`.
 - Storage options: `{"partitionBy": "asatdate", "clusterBy": ["company_id", "milVnos", "milType"]}`.
 - Reads: [validated_mac5.mil](/validated/validated_mac5/mil.md), [validated_mac5.mih2](/validated/validated_mac5/mih2.md).
-- Incremental on `uniqueKey` (tag `curated`, after `validated_mac5.mil` and `mih2`). `pre_operations` builds a TEMP table of the last `BACKFILL_DAYS` day(s) of validated lines (percent_sale hard-coded '100.00%') and DELETEs whole documents (company_id + milType + milVnos) from the table, so lines deleted at source disappear; the body then inserts that temp. `post_operations` rebuilds all ag01 rows from the full validated_mac5.mil (no window): applies the split-sale rule, deletes the documents at document grain and re-inserts (this is the expensive part).
+- Incremental on `uniqueKey` (tag `curated`, after `validated_mac5.mil` and `mih2`). `pre_operations` builds a TEMP table of the last `BACKFILL_DAYS` day(s) of validated lines (percent_sale hard-coded '100.00%') and DELETEs whole documents (company_id + milType + milVnos) from the table, so lines deleted at source disappear; the body then inserts that temp. `post_operations` rebuilds all ag01 rows from the full validated_mac5.mil (no window): applies the split-sale rule, deletes the documents at document grain and re-inserts.
 
 # Examples
 

@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -22,11 +22,11 @@ status: draft
 
 Receipt (RS, payment received) fact for the accounts-receivable chain: each receipt line with its invoice, customer and collection status, joined to the billing note in [fact_mir_vs](/fact/fact_mir_vs.md) and FULL JOINed to cheques in [fact_chq](/fact/fact_chq.md). It answers which invoices were paid, by which cheque, and which cheques have no receipt yet (and vice versa).
 
-Used by / context: used by [fact_view.view_fact_mir_rs](/view/fact_view/view_fact_mir_rs.md).
+Read by: [view_fact_mir_rs](/view/fact_view/view_fact_mir_rs.md).
 
 # Grain and key
 
-One row per `ReceiveSK` (ROW_NUMBER over BillingSK, FactChqSK, company_id, mirtype, mirvnos, mirlistno, mirbinvno). Base grain is an RS `mir` line (company_id, mirtype, mirvnos, mirlistno). The FULL JOIN to `fact_chq` on `cqlvnos = mirvnos` AND `chqcus = mircus` AND company AND `mirtype = 'RS'` can add rows where only the cheque side exists (all `mir*` columns NULL) and can multiply a receipt line when several cheques share the receipt number.
+One row = one receipt (RS) document line against an invoice, with its billing row and the cheque that paid it, or one cheque with no receipt line: key `ReceiveSK` (ROW_NUMBER over BillingSK, FactChqSK, company_id, mirtype, mirvnos, mirlistno, mirbinvno). Base grain is an RS `mir` line (company_id, mirtype, mirvnos, mirlistno) whose header is in `curated_mih` with `mihcancel = 0`; `WHERE inv.mihCancel = 0` turns the LEFT JOIN to `dim_invoice` into an inner join, so lines whose invoice is not found in `dim_invoice` are dropped. The FULL JOIN to `fact_chq` on `cqlvnos = mirvnos` AND `chqcus = mircus` AND company AND `mirtype = 'RS'` can add cheque-only rows, on which every receipt-side column is NULL (all `mir*` columns, BillingSK, CustomerSK, InvoiceSK, CompanySK, CollectSK, Actions, Justification, Responsible, duedate, company_id, asatdate), and can multiply a receipt line when several cheques share the receipt number.
 
 # Schema
 
@@ -41,7 +41,7 @@ One row per `ReceiveSK` (ROW_NUMBER over BillingSK, FactChqSK, company_id, mirty
 | `Responsible` | STRING | Person/role responsible for the collection follow-up, copied from `dim_collection_status.Responsible`. |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md), joined on `mircus = debcode` and `company_id = companyID`. NULL when the customer is not in the dimension. |
 | `InvoiceSK` | INT64 | Surrogate key of [dim_invoice](/dimension/dim_invoice.md) for the invoice this line settles (`mirbinvno`, `mirbinvtype`, `mircus`, `mirbinvdate = mix_date`, company); dim_invoice is first de-duplicated to one row per that key. |
-| `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md), joined on `company_id = companyID`. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `duedate` | DATE | Invoice due date: first 10 characters of `mie.miectermdx` parsed as `dd/mm/yyyy`, where mie is the validated MAC5 invoice-extension row matched on `mirbinvno = mievnos`, `mircus = miecus`, company. NULL when no mie match. |
 | `company_id` | STRING | MAC5 company code (ag01, aa05, ab01, ac02, ak02). Pass-through of validated `mir.company_id`. |
 | `mirday` | INT64 | Day part of the document date. |

@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -30,7 +30,7 @@ One row per `id` (prdSku) per `asatdate` (run date). Only products whose curated
 
 | Column | Type | Description |
 |---|---|---|
-| `asatdate` | DATE | Run date (CURRENT_DATE in Asia/Bangkok) when the row was generated; partition-like day key (the table is not declared partitioned here; the operation deletes and re-inserts the run date). |
+| `asatdate` | DATE | Run date (CURRENT_DATE in Asia/Bangkok) when the row was generated; the operation deletes and re-inserts the run date. |
 | `id` | STRING | Product SKU (curated_product.prdSku); one row per SKU per run date. |
 | `structData` | STRUCT<product_name STRING, sku_code STRING, sales_unit STRING, product_tags_json STRING, barcode STRING, cat_name STRING, brand_name STRING, vd_name STRING, product_status STRING, product_dimensions_json STRING, product_description STRING, product_series STRING, product_model STRING, product_material STRING, product_shape STRING, package_width FLOAT64, package_width_unit STRING, package_length FLOAT64, package_length_unit STRING, package_height FLOAT64, package_height_unit STRING, product_weight_net FLOAT64, product_weight_net_unit STRING, product_weight_gross FLOAT64, product_weight_gross_unit STRING, special_specifications_json STRING> | Payload struct read by the AI search index. Fields: product_name (prdDescription), sku_code (prdSku), sales_unit (prdSaleUnite), product_tags_json (prdTag), barcode (prdUniversalBarcode), cat_name (category.cat_name), brand_name (brand.bra_name, else bra_name_th), vd_name (vendor.vd_name), product_status ('Approve' when prdIsActive, prdIsUse and product_detail.pd_is_system are all TRUE, else 'Non-Approve'), product_dimensions_json (prdDiminsionData), product_description/series/model/material/shape (pd_detail, pd_series, pd_model, pd_material, pd_shape), package_width/length/height (pd_package_wide/long/hight) with their unit names, product_weight_net/gross with unit names, special_specifications_json (pd_spacific_fields). |
 

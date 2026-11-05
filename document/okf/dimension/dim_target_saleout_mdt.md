@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [fact_target_saleout_mdt](/fact/fact_target_saleout_mdt.md).
 
 # Grain and key
 
-Monthly MDS rows are first de-duplicated per `(branch_code, marketinggroupid, submarketingid, segmentid, year, month)` keeping the latest `updated_at`, then expanded to one row per calendar day of the month. SK ordered by TargetDate, BranchCodeMdt, MarketingGroupID, SubMarketingID, SegmentID. Reserved row `TargetSaleoutMdtSK = -1` (BranchCodeMdt 'NotBranch', MarketingGroupID 'NotGroup', SubMarketingID 'NotSubGroup', SegmentID 'NotSegment', NULL date and amounts). Partitioned by TargetDate, so the -1 row sits in the NULL partition.
+One row = one MDT branch, marketing group, sub group and segment on one calendar day: key `TargetSaleoutMdtSK`. Monthly MDS rows are first de-duplicated per `(branch_code, marketinggroupid, submarketingid, segmentid, year, month)` keeping the latest `updated_at`, then expanded to one row per calendar day of the month. SK ordered by TargetDate, BranchCodeMdt, MarketingGroupID, SubMarketingID, SegmentID. Reserved row `TargetSaleoutMdtSK = -1` (BranchCodeMdt 'NotBranch', MarketingGroupID 'NotGroup', SubMarketingID 'NotSubGroup', SegmentID 'NotSegment', NULL date and amounts). Partitioned by TargetDate, so the -1 row sits in the NULL partition.
 
 # Schema
 
@@ -49,7 +49,7 @@ Monthly MDS rows are first de-duplicated per `(branch_code, marketinggroupid, su
 | `DaysInMonth` | INT64 | Number of calendar days in the target month; the divisor used for Amt and Qty. |
 | `Amt` | FLOAT64 | Daily target amount = monthly `value` / DaysInMonth (FLOAT64); NULL on the -1 row. |
 | `Qty` | FLOAT64 | Daily target quantity = monthly `Quantity` / DaysInMonth (FLOAT64); NULL on the -1 row. |
-| `MdsID` | STRING | `id` of the source row in `mds_data_mdt_sales_target_by_product_master`; NULL on the -1 row. |
+| `MdsID` | STRING | `id` of the source row in `mds_data_mdt_sales_target_by_product_master`; trace column back to MDS. NULL on the -1 row. |
 
 # How it is built
 
@@ -57,7 +57,7 @@ Monthly MDS rows are first de-duplicated per `(branch_code, marketinggroupid, su
 - `uniqueKey`: `TargetSaleoutMdtSK`.
 - Storage options: `{"partitionBy": "TargetDate", "clusterBy": ["BranchMdtSK", "MarketingGroupID", "ProductMktSK"]}`.
 - Reads: `mds_dataset.mds_data_mdt_sales_target_by_product_master` (master data loaded outside this repo), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md).
-- Full daily rebuild (`type: "table"`), tags `dimension_daily` and `saleout_daily`; partitioned by TargetDate, clustered by BranchMdtSK, MarketingGroupID, ProductMktSK. Reads `mds_data_mdt_sales_target_by_product_master`, dim_sales_branch_mdt and dim_product_mkt.
+- Full daily rebuild (`type: "table"`, tags `dimension_daily`, `saleout_daily`); runs after dim_sales_branch_mdt and dim_product_mkt.
 
 # Examples
 

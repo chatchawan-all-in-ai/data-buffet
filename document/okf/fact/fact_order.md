@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Order-line fact: every product line of every PS (sales order) document in MAC5, joined to [dim_order](/dimension/dim_order.md) (INNER JOIN, so only orders present in dim_order appear), product, customer, company and the quotation line ([fact_quotation](/fact/fact_quotation.md)) it came from. It answers what was ordered, how much, at what value. Consumers: [fact_invoice](/fact/fact_invoice.md) (links invoices back to orders) and `view_fact_transcation`.
+Order-line fact: every product line of every PS (sales order) document in MAC5, joined to [dim_order](/dimension/dim_order.md) (INNER JOIN, so only orders present in dim_order appear), product, customer, company and the quotation line ([fact_quotation](/fact/fact_quotation.md)) it came from. It answers what was ordered, how much, at what value.
 
-Used by / context: used by [fact_table.fact_invoice](/fact/fact_invoice.md), [fact_view.view_fact_transcation](/view/fact_view/view_fact_transcation.md).
+Read by: [fact_invoice](/fact/fact_invoice.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md), [export_fact_order](/view/pub_sub/export_fact_order.md).
 
 # Grain and key
 
-One row per `FactOrderSk` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay, milType, milVnos, milCus, lower(milStk)). Business grain: company + order date + milType ('PS') + order number (`milvnos`) + customer + product code. `curated_mil` lines are summed (GROUP BY 12 keys incl. ProductSK, OrderSK, mihRef1). ProductSK is part of the grouping: company/code matches to retained barcode versions each receive the same source totals. The subsequent quotation join can repeat each grouped row again for every matching Running + StkCode + CompanySK. FactOrderSk identifies these expanded candidates, not a unique business-line total. No date retention filter (4-year filter is commented out).
+One row = the summed lines of one product on one PS sales order (company, order date, `milvnos`, customer) per matched ProductSK and quotation line: key `FactOrderSk` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay, milType, milVnos, milCus, lower(milStk)). `curated_mil` lines are summed (GROUP BY 12 keys incl. ProductSK, OrderSK, mihRef1). ProductSK is part of the grouping: company/code matches to retained barcode versions each receive the same source totals. The subsequent quotation join can repeat each grouped row again for every matching Running + StkCode + CompanySK. FactOrderSk identifies these expanded candidates, not a unique business-line total. No date retention filter.
 
 # Schema
 
@@ -38,7 +38,7 @@ One row per `FactOrderSk` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay,
 | `QuotationSK` | INT64 | Surrogate key of dim_quotation carried from [fact_quotation](/fact/fact_quotation.md); NULL when no quotation line matches. |
 | `FactQuotationSK` | INT64 | [fact_quotation](/fact/fact_quotation.md).FactQuotationSK of the matching quotation line (join `mihRef1 = Running`, `milStk = StkCode`, CompanySK). |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md) (`milCus = debcode`, same CompanySK). |
-| `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md). |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | MAC5 company code (ag01, aa05, ab01, ac02, ak02). |
 | `mix_date` | DATE | Business date of the order: PARSE_DATE of milYear, milMonth, milDay. |
 | `milYear` | INT64 | Year part of the document date (Gregorian). |
@@ -48,11 +48,11 @@ One row per `FactOrderSk` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay,
 | `milvnos` | STRING | Document number of the line, matching `mihvnos` of the header. |
 | `milStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
 | `milCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
-| `milQuan` | FLOAT64 | Quantity: SUM of `curated_mil.milQuan` over the grain. |
-| `milAdisc` | FLOAT64 | SUM of `curated_mil.milAdisc`: the document-level discount allocated to the lines. |
-| `milCog` | FLOAT64 | SUM of `curated_mil.milCog`: gross line amount excluding VAT, with salesperson shares already applied to split-sale lines. |
-| `milDisca` | FLOAT64 | SUM of `curated_mil.milDisca`: line discount amount excluding VAT. |
-| `milSum` | FLOAT64 | SUM of `curated_mil.milSum`, the line net amount in THB (a `milSum = 0` line is treated as free-of-charge in the store facts). |
+| `milQuan` | FLOAT64 | SUM of `curated_mil.milQuan` over the grain; the salesperson share is already applied on ag01 split-sale lines. |
+| `milAdisc` | FLOAT64 | SUM of `curated_mil.milAdisc`: the document-level discount allocated to the lines; the salesperson share is already applied on ag01 split-sale lines. |
+| `milCog` | FLOAT64 | SUM of `curated_mil.milCog`: gross line amount excluding VAT; the salesperson share is already applied on ag01 split-sale lines. |
+| `milDisca` | FLOAT64 | SUM of `curated_mil.milDisca`: line discount amount excluding VAT; the salesperson share is already applied on ag01 split-sale lines. |
+| `milSum` | FLOAT64 | SUM of `curated_mil.milSum`, the line net amount in THB; the salesperson share is already applied on ag01 split-sale lines. |
 | `asatdate` | DATE | Build date: CURRENT_DATE('Asia/Bangkok') at the run; the partition column. |
 
 # How it is built
@@ -65,19 +65,18 @@ One row per `FactOrderSk` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay,
 
 # Examples
 
-Ordered source quantity and value per month before product/quotation enrichment, for PS lines with a matching order header.
+Ordered quantity and value per month, counting each order line once (product-version and quotation matches repeat the source totals).
 ```sql
-SELECT DATE_TRUNC(DATE(m.milYear, m.milMonth, m.milDay), MONTH) AS month,
-       SUM(m.milQuan) AS qty, SUM(m.milSum) AS amount
-FROM `databuffet-nonprd.curated_mac5.curated_mil` AS m
-WHERE m.company_id = 'ag01' AND m.milType = 'PS'
-  AND DATE(m.milYear, m.milMonth, m.milDay) >= DATE '2026-01-01'
-  AND EXISTS (
-    SELECT 1 FROM `databuffet-nonprd.dimension_table.dim_order` AS o
-    WHERE o.companyID = m.company_id AND o.mihType = m.milType
-      AND o.mihVnos = m.milVnos AND o.mihCus = m.milCus
-      AND o.mihYear = m.milYear AND o.mihMonth = m.milMonth AND o.mihDay = m.milDay
-  )
+WITH order_lines AS (
+  SELECT mix_date, milQuan, milSum
+  FROM `databuffet-nonprd.fact_table.fact_order`
+  WHERE companyID = 'ag01' AND mix_date >= DATE '2026-01-01'
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY CompanySK, OrderSK, milYear, milMonth, milDay, milType, milvnos, milCus, milStk
+    ORDER BY FactOrderSk) = 1
+)
+SELECT DATE_TRUNC(mix_date, MONTH) AS month, SUM(milQuan) AS qty, SUM(milSum) AS amount
+FROM order_lines
 GROUP BY month ORDER BY month;
 ```
 Expanded order/quotation candidates for inspection; repeated amounts are not separate orders.

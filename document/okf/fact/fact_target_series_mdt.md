@@ -14,26 +14,24 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Daily series-level targets for modern trade from [dim_target_series_mdt](/dimension/dim_target_series_mdt.md), with branch, zone and as-at-date region/manager/director SKs; same pattern as [fact_target_saleout_mdt](/fact/fact_target_saleout_mdt.md). BI compares it with sell-out via the product attribute SeriesSK (series names that do not match go to OTHERS). No other table in the repo reads it.
-
-Used by / context: used by nothing else in the repo.
+Daily series-level targets for modern trade from [dim_target_series_mdt](/dimension/dim_target_series_mdt.md), with branch, zone and as-at-date region/manager/director SKs; same pattern as [fact_target_saleout_mdt](/fact/fact_target_saleout_mdt.md). BI compares it with sell-out via the product attribute SeriesSK (series names that do not match go to OTHERS).
 
 # Grain and key
 
-One row per (`target_date`, `branch_code`, `series_code`) (uniqueKey). Monthly targets are split equally over the days of the month; NULL `TargetDate` rows are excluded.
+One row = the daily target quantity of one MDT branch for one product series on one date: key (`target_date`, `branch_code`, `series_code`) - the uniqueKey. Monthly targets are split equally over the days of the month; NULL `TargetDate` rows are excluded.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `target_date` | DATE | Date the daily target applies to (partition column); rows without a date are dropped. |
-| `store_code` | STRING | Retail-chain (store) code: HP, MH, BT, GB, TW or DH, set per chain feed in the curated_saleout_mdt build; joins dim_region.RegionID for the region sets. |
+| `store_code` | STRING | Retail-chain (store) code of the target's branch (`StoreCode` of dim_sales_branch_mdt, carried by [dim_target_series_mdt](/dimension/dim_target_series_mdt.md)); NULL when the branch is unmatched; joins dim_region.RegionID for the region sets. |
 | `branch_sk` | INT64 | Surrogate key `BranchMdtSK` of [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md) carried from the target dim; -1 when unmatched. |
 | `zone_sk` | INT64 | Surrogate key `ZoneMdtSK` of the branch's zone, taken from dim_sales_branch_mdt; -1 when unmatched. |
 | `series_sk` | INT64 | Surrogate key `SeriesSK` of the product series, from dim_target_series_mdt; -1 if none. |

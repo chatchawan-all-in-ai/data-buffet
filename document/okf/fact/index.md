@@ -10,7 +10,7 @@ Star-schema facts in `fact_table` plus the AR chain.
 * [fact_invoice](fact_invoice.md) - One row = one product (milStk) on one invoice-type document (IS/BS/AS/QS) per customer and link number per company, within the last 4 years.
 * [fact_invoice_store](fact_invoice_store.md) - One row = one product line of an invoice (IS) per salesperson share (milPer) for ag01/ab01, with invoice, order, product, customer and store SKs.
 * [fact_mir_rs](fact_mir_rs.md) - One row = one receipt (RS) document line against an invoice, optionally matched to the billing row (BillingSK) and to the cheque (FactChqSK) that paid it, or a cheque with no receipt line.
-* [fact_mir_vs](fact_mir_vs.md) - One row = one billing (VS) document line of a company that bills an invoice (mirbinvno), de-duplicated to one row per invoice.
+* [fact_mir_vs](fact_mir_vs.md) - One row = one billing (VS) document line of a company that bills an invoice (mirbinvno), de-duplicated to the latest billing document per invoice before the enrichment joins.
 * [fact_order](fact_order.md) - One row = the summed lines of one product on one PS sales order (company, date, order number, customer) per matched ProductSK and quotation line; retained product versions and quotation matches repeat the quantities and amounts.
 * [fact_order_store](fact_order_store.md) - One row = one product line (milListNo) of a sales order (PS) in a warehouse-flagged status for ag01/ab01, with product, customer and store SKs.
 * [fact_quotation](fact_quotation.md) - One row = the quoted totals of one stock code on one quotation (company, Running, customer, project) per matched ProductSK; retained barcode versions repeat the quoted quantities and totals.

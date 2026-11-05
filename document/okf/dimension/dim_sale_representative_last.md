@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Latest-row snapshot of [dim_sale_representative](/dimension/dim_sale_representative.md) used for the `*Last` columns (the current sales rep of a customer or sale, independent of date): `view_fact_transcation`, `dim_target_product_group_by_sale`, customer-report info, org-center members. It also carries hierarchy SKs (department, section, section manager, region, region manager, director).
+Latest-row snapshot of [dim_sale_representative](/dimension/dim_sale_representative.md) used for the `*Last` columns (the current sales rep of a customer or sale, independent of date). It also carries hierarchy SKs (department, section, section manager, region, region manager, director).
 
-Read by: [dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md), [org_center_member](/org_center/org_center_member.md), [view_dim_customer_report_info](/view/dimension_view/view_dim_customer_report_info.md), [view_dim_sale_representative_last](/view/dimension_view/view_dim_sale_representative_last.md), [view_dim_target_by_agent](/view/dimension_view/view_dim_target_by_agent.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md), [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md), [Model_Target_DayOfWork](/view/onetime/Model_Target_DayOfWork.md), [dim_customer_report_info](/dimension/dim_customer_report_info.md).
+Read by: [dim_customer_report_info](/dimension/dim_customer_report_info.md), [dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md), [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md), [Model_Target_DayOfWork](/view/onetime/Model_Target_DayOfWork.md), [org_center_member](/org_center/org_center_member.md), [rls_ta_customer](/process/rls_ta_customer.md), [view_dim_customer_report_info](/view/dimension_view/view_dim_customer_report_info.md), [view_dim_sale_representative_last](/view/dimension_view/view_dim_sale_representative_last.md), [view_dim_target_by_agent](/view/dimension_view/view_dim_target_by_agent.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md), [view_rls_data](/view/process_dataset/view_rls_data.md).
 
 # Grain and key
 
-Built in three CTEs. `raw`: rows of dim_sale_representative with DepartmentID not NULL, latest EndDate/StartDate kept per `(CompanyID, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID, OrderStartDate, OrderEndDate)`. `agg_normal`: rows with no DepCode, CostChannelID, ProvinceID, ChangeSectionFlag or OrderStartDate, one per `(CompanyID, EmployeeID)`. `final`: all order-window rows, plus other rows only for employees that have no normal row, plus the normal rows. Then `post_operations` MERGEs one ledger row per employee from `validated_mac5.per` with DepartmentID NULL and NULL dates/hierarchy, SK = MAX(SaleRepSK) + row number. The table has no MdsID column. `SaleRepSK` is renumbered here (ordered by CompanySK, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID) and is not dim_sale_representative.SaleRepSK.
+One row = one sales-representative rule or ledger row: key `SaleRepSK`, built in three CTEs. `raw`: rows of dim_sale_representative with DepartmentID not NULL, latest EndDate/StartDate kept per `(CompanyID, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID, OrderStartDate, OrderEndDate)`. `agg_normal`: rows with no DepCode, CostChannelID, ProvinceID, ChangeSectionFlag or OrderStartDate, one per `(CompanyID, EmployeeID)`. `final`: all order-window rows, plus other rows only for employees that have no normal row, plus the normal rows. Then the `post_operations` MERGE inserts one ledger row per employee from `validated_mac5.per` with names parsed from `pernamet`, DepartmentID NULL and NULL dates/hierarchy, SK = MAX(SaleRepSK) + row number. The table has no MdsID column. `SaleRepSK` is renumbered here (ordered by CompanySK, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID) and is not dim_sale_representative.SaleRepSK.
 
 # Schema
 
@@ -34,16 +34,16 @@ Built in three CTEs. `raw`: rows of dim_sale_representative with DepartmentID no
 |---|---|---|
 | `SaleRepSK` | INT64 | Surrogate key of this snapshot: `ROW_NUMBER()` ordered by CompanySK, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID; ledger rows get MAX + row number in post_operations. Regenerated every run. |
 | `DepartmentSK` | INT64 | SK in dim_department_last for the row's DepartmentID. Built NULL, backfilled by `update_sk_sale_rep_group`; stays NULL on ledger rows (no DepartmentID). |
-| `SectionSK` | INT64 | SK in dim_section_last, copied from the department by `update_sk_sale_rep_group`; NULL until then. |
-| `SectionManagerSK` | INT64 | SK in dim_section_manager_last, from the department by `update_sk_sale_rep_group`; NULL until then. |
-| `RegionSK` | INT64 | SK in dim_region_last, from the department by `update_sk_sale_rep_group`; NULL until then. |
-| `RegionManagerSK` | INT64 | SK in dim_region_manager_last, from the department by `update_sk_sale_rep_group`; NULL until then. |
-| `DirectorSK` | INT64 | SK in dim_director_last, from the department by `update_sk_sale_rep_group`; NULL until then. |
-| `CompanySK` | INT64 | Company SK re-joined from dim_company by companyID. |
+| `SectionSK` | INT64 | SK in dim_section_last, copied from the department by `update_sk_sale_rep_group`. |
+| `SectionManagerSK` | INT64 | SK in dim_section_manager_last, from the department by `update_sk_sale_rep_group`. |
+| `RegionSK` | INT64 | SK in dim_region_last, from the department by `update_sk_sale_rep_group`. |
+| `RegionManagerSK` | INT64 | SK in dim_region_manager_last, from the department by `update_sk_sale_rep_group`. |
+| `DirectorSK` | INT64 | SK in dim_director_last, from the department by `update_sk_sale_rep_group`. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code from dim_company. |
-| `DepartmentID` | STRING | Department code of the kept rule row; NULL on ledger rows. |
+| `DepartmentID` | STRING | Department code of the kept rule row; NULL on ledger rows. It is the TA department that [rls_ta_customer](/process/rls_ta_customer.md) matches with `department_id` of [org_center_customer_ta](/org_center/org_center_customer_ta.md); a row seats the employee in that department on the dates between StartDate and EndDate. |
 | `EmployeeID` | STRING | Employee (sales person) code. |
-| `EmployeeName` | STRING | Given name (MDS or parsed from the MAC5 ledger name; the MERGE refreshes names on matching ledger rows). |
+| `EmployeeName` | STRING | Given name (from MDS on rule rows; on ledger rows parsed from `pernamet`). |
 | `EmployeeSurname` | STRING | Surname (same source as EmployeeName). |
 | `EmployeeNickname` | STRING | Nickname (same source). |
 | `DepCode` | STRING | MAC5 department code(s) of the rule, several codes joined by the pipe character when the rule covers more than one; NULL on normal and ledger rows. |
@@ -62,7 +62,7 @@ Built in three CTEs. `raw`: rows of dim_sale_representative with DepartmentID no
 - `uniqueKey`: `SaleRepSK`.
 - Storage options: `{"clusterBy": ["SaleRepSK"]}`.
 - Reads: [dimension_table.dim_sale_representative](/dimension/dim_sale_representative.md), [dimension_table.dim_company](/dimension/dim_company.md), [validated_mac5.per](/validated/validated_mac5/per.md).
-- Full daily rebuild (`type: "table"`) from dim_sale_representative + dim_company, tag `dimension_daily`, then a `post_operations` MERGE inserts the ledger employees; the hierarchy SKs are filled afterwards by `update_sk_sale_rep_group`, which depends on this table.
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company and dim_sale_representative. A `post_operations` MERGE then inserts the ledger employees, and the hierarchy SKs are filled by `update_sk_sale_rep_group`.
 
 # Examples
 

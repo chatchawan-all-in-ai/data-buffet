@@ -14,29 +14,31 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T16:28:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Precomputed "who sees which customer" table for the TA app and the AI Advisor. Marts are filtered by joining them to this table on the viewer's `employee_id`, the customer's company and code, and the product scope. It is built from [org_center_unit](/org_center/org_center_unit.md), [org_center_member](/org_center/org_center_member.md), [org_center_customer_ta](/org_center/org_center_customer_ta.md) and [org_center_exception](/org_center/org_center_exception.md). It is separate from [rls_customer360](/process/rls_customer360.md) (Power BI).
+Precomputed "who sees which customer" table for the TA app and the AI Advisor. Marts are filtered by joining them to this table on the viewer's `employee_id`, the customer's company and code, and the product scope. It is built from [org_center_unit](/org_center/org_center_unit.md), [org_center_member](/org_center/org_center_member.md), [org_center_customer_ta](/org_center/org_center_customer_ta.md), [org_center_exception](/org_center/org_center_exception.md), [dim_sale_representative_last](/dimension/dim_sale_representative_last.md), [dim_section_last](/dimension/dim_section_last.md) and [dim_company](/dimension/dim_company.md). It is separate from [rls_customer360](/process/rls_customer360.md) (Power BI).
+
+Read by: [export_rls_ta_customer](/view/pub_sub/export_rls_ta_customer.md).
 
 # Grain and key
 
-One row per `employee_id` + `customer_company_id` + `customer_code` + `marketing_group_id` + `sub_marketing_id` + `segment_id`, as of today (Asia/Bangkok). `customer_code = 'ALL'` means every customer of that company; `'ALL'` in a product column means no product restriction. No key column is NULL.
+One row = one viewer x one customer x one product scope visible today: key `employee_id` + `customer_company_id` + `customer_code` + `marketing_group_id` + `sub_marketing_id` + `segment_id`, as of today (Asia/Bangkok). `customer_code = 'ALL'` means every customer of that company; `'ALL'` in a product column means no product restriction. No key column is NULL.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `employee_id` | STRING | The viewer: MDS employee code (the TA app's `person_key`). |
-| `customer_company_id` | STRING | Company of the customer and of the mart sales rows (the portfolio's company, not the viewer's unit company). |
+| `customer_company_id` | STRING | Company of the customer and of the mart sales rows (for TA and manager rows also the company of the viewer's seat; for EXCEPTION rows a company in the exception's scope). |
 | `customer_code` | STRING | ERP customer code, or `ALL` = every customer of `customer_company_id`. |
 | `marketing_group_id` | STRING | `ALL` or a marketing group code (non-`ALL` only on special-access product rows). |
 | `sub_marketing_id` | STRING | `ALL` or a marketing sub-group code. |
 | `segment_id` | STRING | `ALL` or a segment code. |
-| `access_source` | STRING | Where the access comes from: `TA` (customers of the department(s) the TA currently holds in `dim_sale_representative_last`, same company), `SECTION_MGR`, `REGION_MGR`, `DIRECTOR`, `CEO` (customers of those departments' sections under the viewer's unit) or `EXCEPTION` (special access). When several apply the first in this order is kept. |
+| `access_source` | STRING | Where the access comes from: `TA` (portfolio customers, in the same company, of every department the viewer is seated in today as TA), `SECTION_MGR`, `REGION_MGR`, `DIRECTOR`, `CEO` (portfolio customers of every department with a TA seated today in a section under the viewer's unit) or `EXCEPTION` (special access). When several apply the first in this order is kept. |
 
 # How it is built
 

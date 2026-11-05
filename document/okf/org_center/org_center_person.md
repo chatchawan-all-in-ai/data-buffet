@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/org_center/org-center.md"
     title: "Data Mart wiki (document/project_wiki/org_center/org-center.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-The who-is-who list of the org center (the TA app's 'employees'), built from [org_center_member](/org_center/org_center_member.md) plus contact data from MDS (mds_data_employee_info: email, mobile phone, LINE UUID). Where org_center_member says where a person sits and when, this table gives one deterministic row per person. It is checked by [org_center_flags](/org_center/org_center_flags.md) (phone format and duplicates).
+The who-is-who list of the org center (the TA app's 'employees'), built from [org_center_member](/org_center/org_center_member.md) plus contact data from MDS (mds_data_employee_info: email, mobile phone, LINE UUID). Where org_center_member says where a person sits and when, this table gives one deterministic row per person.
+
+Read by: [org_center_flags](/org_center/org_center_flags.md), [export_employees](/view/pub_sub/export_employees.md).
 
 # Grain and key
 
@@ -37,8 +39,8 @@ One row per `employee_id` (never NULL), even when the person works in two compan
 | `email` | STRING | First non-NULL member email in the pick order; only when no non-NULL member email exists falls back to mds_data_employee_info.Email. An empty string is non-NULL and blocks that fallback. |
 | `mobile_phone` | STRING | mds_data_employee_info.MobilePhone by EmployeeID (active rows, latest updated_at then lowest id), as entered with no cleaning; NULL when absent. |
 | `line_uuid` | STRING | mds_data_employee_info.LineUUID by EmployeeID (same active row as mobile_phone), as entered with no cleaning; NULL when absent. |
-| `company_id` | ARRAY<STRING> | Sorted ARRAY of every company_id found in the person's member rows. |
-| `position_code` | ARRAY<STRING> | ARRAY of distinct positions with a member row valid today, ordered CEO, DIRECTOR, REGION_MGR, SECTION_MGR, TA, PC_MDT, PC_AGENT; empty when none is valid. |
+| `company_id` | `ARRAY<STRING>` | Sorted ARRAY of every company_id found in the person's member rows. |
+| `position_code` | `ARRAY<STRING>` | ARRAY of distinct positions with a member row valid today, ordered CEO, DIRECTOR, REGION_MGR, SECTION_MGR, TA, PC_MDT, PC_AGENT; empty when none is valid. |
 | `is_active` | BOOL | TRUE when the person has at least one member row valid today (CURRENT_DATE in Asia/Bangkok between valid_from and valid_to). |
 
 # How it is built

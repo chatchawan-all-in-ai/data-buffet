@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/org_center/org-center.md"
     title: "Data Mart wiki (document/project_wiki/org_center/org-center.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -24,7 +24,7 @@ Report-only data-quality table of the org center, rebuilt nightly: it lists prob
 
 # Grain and key
 
-One row per problem: `entity` + `entity_key` + `rule_code`. No declared key. The [Org Center flags reference](../../project_wiki/org_center/org-center.md#org_center_flags) owns the entity values, key encoding and rule conditions, including the per-scope EXCEPTION_NO_EMPLOYEE rule.
+One row = one data-quality problem found in an org-center table: `entity` + `entity_key` + `rule_code`. No declared key. The [Org Center flags reference](../../project_wiki/org_center/org-center.md#org_center_flags) owns the entity values, key encoding and rule conditions, including the per-scope EXCEPTION_NO_EMPLOYEE rule.
 
 # Schema
 
@@ -41,7 +41,7 @@ One row per problem: `entity` + `entity_key` + `rule_code`. No declared key. The
 - Definition: `definitions/org_center/org_center_flags.sqlx` (`type: "table"`, tags `dimension_daily`).
 - Storage options: `{"clusterBy": ["rule_code", "entity"]}`.
 - Reads: [org_center.org_center_unit](/org_center/org_center_unit.md), [org_center.org_center_member](/org_center/org_center_member.md), [org_center.org_center_person](/org_center/org_center_person.md), [org_center.org_center_link](/org_center/org_center_link.md), [org_center.org_center_customer_ta](/org_center/org_center_customer_ta.md), [org_center.org_center_exception](/org_center/org_center_exception.md), `mds_dataset.mds_data_mdt_sales_pc_master` (master data loaded outside this repo), `mds_dataset.mds_data_mdt_sales_branch_master` (master data loaded outside this repo), `mds_dataset.mds_data_company_master` (master data loaded outside this repo).
-- Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Depends on the six other org_center tables; also reads mds_data_mdt_sales_pc_master and mds_data_mdt_sales_branch_master (master data loaded outside this repo).
+- Full nightly rebuild (`type: "table"`, tag `dimension_daily`; `org_center_schema` creates the dataset). Runs after the six other org_center tables (`org_center_schema` is also declared); also reads mds_data_mdt_sales_pc_master, mds_data_mdt_sales_branch_master and mds_data_company_master (master data loaded outside this repo).
 
 # Examples
 

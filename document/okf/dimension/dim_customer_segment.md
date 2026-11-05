@@ -14,24 +14,26 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Customer-segment master used to classify customers on reports. [dim_customer_report_info](/dimension/dim_customer_report_info.md) references it and relies on the `-1` Non-Segment row as the fallback member when a customer has no segment match. Source: mds `mds_data_customer_segment_master`.
+Customer-segment master used to classify customers on reports. [dim_customer_report_info](/dimension/dim_customer_report_info.md) matches a customer's segment code to `Segment3` within the company; when nothing matches it uses the company's `DC` segment, and then the `-1` Non-Segment row. Source: mds `mds_data_customer_segment_master`.
+
+Read by: [dim_customer_report_info](/dimension/dim_customer_report_info.md), [export_dim_customer_segment](/view/pub_sub/export_dim_customer_segment.md).
 
 # Grain and key
 
-One row per (company, Segment3) among active mds rows, plus exactly one sentinel row with `CustomerSegmentSK = -1`. Key: `CustomerSegmentSK` (surrogate for mds rows, unstable across days; -1 is stable).
+One row = one segment of a company: key `CustomerSegmentSK` (surrogate for mds rows, regenerated every run); natural key `companyID` + `Segment3`, from active mds rows, plus exactly one sentinel row with `CustomerSegmentSK = -1` (stable).
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `CustomerSegmentSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, Segment3)` over active mds rows (regenerates every run); the fixed value `-1` is reserved for the 'Non-Segment' fallback row. |
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), found by a LEFT JOIN on `companyID`; NULL when the mds company code has no match in dim_company. NULL on the -1 row (it is company-neutral). |
+| `CustomerSegmentSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, Segment3)` over active mds rows. Regenerated every run; the fixed value `-1` is reserved for the 'Non-Segment' fallback row. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. NULL on the -1 row. |
 | `CompanyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. NULL on the -1 row. |
 | `Segment1` | STRING | Pass-through of mds `Segment1`, cleaned with `cleanString` (empty string becomes NULL). Top level of the three-level segment code; 'Non-Segment' on the -1 row. |
 | `Segment2` | STRING | Pass-through of mds `Segment2`, cleaned with `cleanString` (empty string becomes NULL). Middle segment level; 'Non-Segment' on the -1 row. |
@@ -39,15 +41,15 @@ One row per (company, Segment3) among active mds rows, plus exactly one sentinel
 | `DescriptionThai` | STRING | Pass-through of mds `DescriptionThai`, cleaned with `cleanString` (empty string becomes NULL). Thai description of the segment. |
 | `DescriptionEng` | STRING | Pass-through of mds `DescriptionEng`, cleaned with `cleanString` (empty string becomes NULL). English description of the segment. |
 | `SortOrder` | INT64 | Display sort order (`castInt64` of mds `SortOrder`); the -1 row uses 99 so it sorts last. |
-| `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. NULL on the -1 row. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_customer_segment_master`, cleaned with `cleanString`; trace column back to MDS. NULL on the -1 row. |
 
 # How it is built
 
-- Definition: `definitions/dimension/dim_customer_segment.sqlx` (`type: "table"`, tags `dimension_daily`).
+- Definition: `definitions/dimension/dim_customer_segment.sqlx` (`type: "table"`, tag `dimension_daily`); CTE `segment_master` is the active mds rows UNION ALL the literal `non_segment` row (SK -1).
 - `uniqueKey`: `CustomerSegmentSK`.
 - Storage options: `{"clusterBy": ["CustomerSegmentSK"]}`.
-- Reads: `mds_dataset.mds_data_customer_segment_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`): CTE `segment_master` from active mds rows UNION ALL the literal `non_segment` row (SK -1). Runs after dim_company.
+- Reads: `mds_dataset.mds_data_customer_segment_master` (master data loaded outside this repo; only rows with `is_active = TRUE`), [dimension_table.dim_company](/dimension/dim_company.md).
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
 
 # Examples
 

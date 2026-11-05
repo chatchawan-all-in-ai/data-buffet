@@ -14,31 +14,31 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-History/snapshot table of AR aging. Every night the operation in `dim_aging.sqlx` inserts the rows of [view_dim_aging](/view/dimension_view/view_dim_aging.md) whose `GroupFlagComplete = 'Non-Completed'` under `asatdate = CURRENT_DATE('Asia/Bangkok') - 1`, then prunes old snapshots. The label is yesterday; the values are captured on the actual run date. It lets BI show the aging position at past month-ends (outstanding by bucket, overdue trend) and compare against the current [dim_aging](/dimension/dim_aging.md). It carries all `dim_aging` columns plus the view's computed `AgingRangSK`, `DayRange`, `cfsDate`, receipt dates and receipt-age columns (the channel SKs are dropped).
+History/snapshot table of AR aging, written by the operation in [dim_aging](/dimension/dim_aging.md) (`dim_aging.sqlx`): every night it inserts the rows of [view_dim_aging](/view/dimension_view/view_dim_aging.md) whose `GroupFlagComplete = 'Non-Completed'` under `asatdate = CURRENT_DATE('Asia/Bangkok') - 1`, then prunes old snapshots. The label is yesterday; the values are captured on the actual run date. It lets BI show the aging position at past month-ends (outstanding by bucket, overdue trend) and compare against the current dim_aging. It carries all `dim_aging` columns plus the view's computed `AgingRangSK`, `DayRange`, `cfsDate`, receipt dates and receipt-age columns (the channel SKs are dropped).
 
-Used by: [dimension_view.view_dim_aging_history](/view/dimension_view/view_dim_aging_history.md), [dimension_table.dim_aging](/dimension/dim_aging.md).
+Read by: [view_dim_aging_history](/view/dimension_view/view_dim_aging_history.md).
 
 # Grain and key
 
-One row per snapshot date (`asatdate`) x document (`companyID` + `cfsVnosID` + `cfsTypeID`). Retention keeps only (a) the latest run date (yesterday) and (b) the last day of each earlier month, so the table has a small number of snapshot dates. The dim_aging_history table has no key constraint; the stored `AgingSK`/`BillingSK` are the values of the capture run and are not stable keys.
+One row = one document in one snapshot: key `asatdate` + (`companyID` + `cfsVnosID` + `cfsTypeID`). Retention keeps only (a) the latest run date (yesterday) and (b) the last day of each earlier month. The table has no key constraint; the stored `AgingSK`/`BillingSK` are the values of the capture run and are not stable keys.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `asatdate` | DATE | Snapshot label = the day before capture (`CURRENT_DATE('Asia/Bangkok') - 1`); the capture date is `asatdate + 1 day`. |
-| `AgingSK` | INT64 | Aging surrogate key stored during the capture run. Regenerated daily in [dim_aging](/dimension/dim_aging.md), so stored values do not match the current `dim_aging` rows. [view_dim_aging_history](/view/dimension_view/view_dim_aging_history.md) re-derives it. |
-| `AgingRangSK` | INT64 | Aging-range bucket SK from [dim_aging_rang](/dimension/dim_aging_rang.md), chosen by `DayRange` between `AgingDayMin` and `AgingDayMax` for the same `CompanySK`. Stable (MERGE dim). Chosen using the capture-date `DayRange`, then frozen; NULL for companies other than ag01 until MDS defines their ranges. |
-| `BillingSK` | INT64 | Billing surrogate key stored during the capture run; unstable for the same reason as `AgingSK`. The view re-derives it from the natural key. |
+| `AgingSK` | INT64 | Aging surrogate key stored during the capture run. Regenerated every run in [dim_aging](/dimension/dim_aging.md), so stored values do not match the current `dim_aging` rows; [view_dim_aging_history](/view/dimension_view/view_dim_aging_history.md) re-derives it. |
+| `AgingRangSK` | INT64 | Aging-range bucket SK from [dim_aging_rang](/dimension/dim_aging_rang.md), chosen by `DayRange` between `AgingDayMin` and `AgingDayMax` for the same `CompanySK`. Stable (MERGE dim). Chosen using the capture-date `DayRange`, then frozen; NULL when no bucket matches. |
+| `BillingSK` | INT64 | Billing-document surrogate key stored during the capture run (from [fact_mir_vs](/fact/fact_mir_vs.md)); regenerated every run there, so the stored value is not stable. The view re-derives it from the natural key. |
 | `CustomerSK` | INT64 | Customer surrogate key from [dim_customer](/dimension/dim_customer.md), joined on `debcode` (the invoice's `mihCus`) and `CompanySK`. NULL when no customer matches. |
 | `InvoiceSK` | INT64 | Invoice surrogate key from [dim_invoice](/dimension/dim_invoice.md), joined on document number (`mihVnos`) and `CompanySK` (first SK per company and document number). |
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), joined on company id. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | MAC5 company code (ag01 / aa05 / ab01 / ac02 / ak02), from `dim_company.companyID`. |
 | `dueDate` | DATE | Due date of the document: the date parsed from MAC5 `mie.MIEctermDX` (dd/mm/yyyy text) when present, otherwise `invoiceDate + transCreditTerm` days. |
 | `realDueDate` | DATE | Computed due date, always `invoiceDate + transCreditTerm` days (ignores the MIE override used in `dueDate`). |
@@ -49,21 +49,21 @@ One row per snapshot date (`asatdate`) x document (`companyID` + `cfsVnosID` + `
 | `cfsDep` | STRING | Department code of the document, used as the sales channel code. |
 | `cfsPer` | STRING | Salesperson (employee) code, matching `per.percode`. |
 | `debCode` | STRING | Customer (debtor) code. |
-| `debName` | STRING | Customer Thai name from `dim_customer.debnamet`. |
+| `debName` | STRING | Customer name in Thai, from `dim_customer.debnamet`. |
 | `calCreditTerm` | INT64 | Credit term in days used for the aging calculation (= `transCreditTerm`, i.e. `mihstanding`). |
-| `debCreditTerm` | INT64 | Credit term in days. |
-| `transCreditTerm` | INT64 | Credit term in days recorded on the document itself (`mihstanding`; MAX over grouped rows for notes). |
-| `debLimit` | FLOAT64 | Credit limit of the customer in baht. |
-| `debMemo` | STRING | Free-text memo on the customer. |
+| `debCreditTerm` | INT64 | Credit term in days, from `dim_customer.DEBcreditTerm`. |
+| `transCreditTerm` | INT64 | Document credit term captured from `dim_aging`; see its [schema](/dimension/dim_aging.md#schema) for the calculation. |
+| `debLimit` | FLOAT64 | Credit limit of the customer in baht, from `dim_customer.debLimit`. |
+| `debMemo` | STRING | Free-text memo on the customer, from `dim_customer.debMemo`. |
 | `channel` | STRING | Always NULL (placeholder `CAST(NULL AS STRING)`); channel is attached later in the views via `dim_channel`. |
 | `mihRef2` | STRING | Always NULL as an aging-schema placeholder. |
 | `mihNote` | STRING | Free-text notes such as delivery instructions or site details. |
 | `mihRef1` | STRING | Distinct linked document numbers separated by pipes: credit/debit notes for IS rows and referenced invoices for BS/AS rows, with links in the closed-invoice exclusion list omitted. |
-| `TotalAmount` | FLOAT64 | Document net total (`mihNetSum`), rounded to 2 decimals for notes. |
+| `TotalAmount` | FLOAT64 | `mihNetSum` of the document, rounded to 2 decimals. |
 | `PaymentAmount` | FLOAT64 | Amount received against the document: sum of RS receipt amounts from `mir` (with the cheque-extract adjustment). If the document is flagged complete via `dim_status_not_receive` (year <= 2023) it equals TotalAmount. For BS/AS rows it is TotalAmount when any receipt exists, else 0. |
 | `CreditNoteAmount` | FLOAT64 | Credit notes (type BS) attached to the invoice, `milSum * 1.07` summed (counts only notes with no receipt of their own). 0 on BS/AS rows. |
 | `DebitNoteAmount` | FLOAT64 | Debit notes (type AS) attached to the invoice, `milSum * 1.07` summed (counts only notes with no receipt of their own). 0 on BS/AS rows. |
-| `OutStanding` | FLOAT64 | Remaining balance: `TotalAmount - PaymentAmount + CreditNoteAmount + DebitNoteAmount`, rounded to 2 decimals; 0 when the status-complete rule applies. |
+| `OutStanding` | FLOAT64 | Remaining balance captured from `dim_aging`; see its [schema](/dimension/dim_aging.md#schema) for the calculation. Stored at capture time and not recalculated when read. |
 | `flagComplete` | STRING | 'Completed' when `OutStanding` is between -1 and 1, else 'Non-Completed'. For invoices dated before 2023 that are still non-complete, a legacy check on `cfs` (`cfsclearsum = -1` and `cfsclearall = -1`) can flip it to 'Completed'. |
 | `MinReceiveDate` | DATE | Earliest receipt date for the document (from RS `mir` rows, or the cheque `extract_date` when cheque extraction applies). |
 | `MaxReceiveDate` | DATE | Latest receipt date for the document (same sources as `MinReceiveDate`). |
@@ -79,9 +79,9 @@ One row per snapshot date (`asatdate`) x document (`companyID` + `cfsVnosID` + `
 
 # How it is built
 
-- Definition: `definitions/dimension/dim_aging.sqlx` (`type: "operations"`, tags `dimension_daily`); the operation owns this table.
-- Reads: [dimension_table.dim_aging](/dimension/dim_aging.md), [validated_mac5.chq](/validated/validated_mac5/chq.md), [validated_mac5.cql](/validated/validated_mac5/cql.md), [validated_mac5.mir](/validated/validated_mac5/mir.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [dimension_table.dim_status_not_receive](/dimension/dim_status_not_receive.md), [validated_mac5.mie](/validated/validated_mac5/mie.md), `onetime.cfsinvclose2024`, [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [validated_mac5.ar_s](/validated/validated_mac5/ar_s.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md), [validated_mac5.cfs](/validated/validated_mac5/cfs.md), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [fact_table.fact_mir_vs](/fact/fact_mir_vs.md), [dimension_view.view_dim_aging](/view/dimension_view/view_dim_aging.md).
-- Refresh: incremental append inside `dim_aging.sqlx` (`type: "operations"`, tag `dimension_daily`), no separate file. Steps each run: DELETE `asatdate >= run_date`, INSERT today's non-completed rows from `view_dim_aging` (`run_date = CURRENT_DATE('Asia/Bangkok') - 1`), then DELETE rows of the current month older than run_date and rows of earlier months that are not the month's last day. Runs after `dim_aging` is rebuilt in the same file; the target table pre-exists in BigQuery.
+- Definition: `definitions/dimension/dim_aging.sqlx` (`type: "operations"`, tag `dimension_daily`); the post-step of the dim_aging operation writes this table; the target pre-exists in BigQuery.
+- Reads: [dimension_view.view_dim_aging](/view/dimension_view/view_dim_aging.md).
+- Incremental append (no separate file); steps each run: DELETE `asatdate >= run_date`, INSERT today's non-completed rows from `view_dim_aging` (`run_date = CURRENT_DATE('Asia/Bangkok') - 1`), then DELETE rows of the current month older than run_date and rows of earlier months that are not the month's last day. Runs after `dim_aging` is rebuilt in the same file.
 
 # Examples
 

@@ -14,17 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-AI address-parsing result for MAC5 customers (table `deb`): it concatenates the three address lines `debadd1at`, `debadd2at`, `debadd3at` into `raw_address` and asks BigQuery `AI.GENERATE` (endpoint gemini-3.5-flash-lite, temperature 0.1, an 'Expert Thai Geographic Data Extractor' prompt) to return sub-district, district and province names in Thai and English. The companion view [view_deb_address_data](/view/process_dataset/view_deb_address_data.md) joins the result to dim_sub_districts / dim_districts / dim_provinces; `fact_transcation` and `dim_customer` read that view for Province/District/SubDistrict keys.
+AI address-parsing result for MAC5 customers (table `deb`): it concatenates the three address lines `debadd1at`, `debadd2at`, `debadd3at` into `raw_address` and asks BigQuery `AI.GENERATE` (endpoint gemini-3.5-flash-lite, temperature 0.1, an 'Expert Thai Geographic Data Extractor' prompt) to return sub-district, district and province names in Thai and English. The companion view [view_deb_address_data](/view/process_dataset/view_deb_address_data.md) joins the result to dim_sub_districts / dim_districts / dim_provinces.
+
+Read by: [view_deb_address_data](/view/process_dataset/view_deb_address_data.md), [dim_customer](/dimension/dim_customer.md), [dim_customer_report_info](/dimension/dim_customer_report_info.md).
 
 # Grain and key
 
-One row per `company_id` + `debcode` (the declared `uniqueKey`). Only customers whose address changed today (per CDC) are parsed and merged in a run; the others keep their earlier parsed row. Rows with a blank concatenated address are never parsed.
+One row = the AI-parsed address of one MAC5 customer (debtor) of one company: key `company_id` + `debcode` (the declared `uniqueKey`). Only customers whose address changed today (per CDC) are parsed and merged in a run; the others keep their earlier parsed row. Rows with a blank concatenated address are never parsed.
 
 # Schema
 
@@ -41,7 +43,7 @@ One row per `company_id` + `debcode` (the declared `uniqueKey`). Only customers 
 - `uniqueKey`: `company_id`, `debcode`.
 - Storage options: `{"clusterBy": ["company_id", "debcode"]}`.
 - Reads: [validated_mac5.deb](/validated/validated_mac5/deb.md), [cdc_dataset.cdc_change_log](/cdc/cdc_change_log.md).
-- Incremental MERGE on `uniqueKey` (`type: "incremental"`, tag `process`; clustered by company_id, debcode; partition commented out). It declares no dependencies but is functionally gated on `cdc_dataset.cdc_change_log`: the SELECT keeps only `deb` rows whose key appears in cdc_change_log for source mac5 / validated_mac5 / deb with `asatdate = CURRENT_DATE('Asia/Bangkok')`, so `cdc` (cdc_change_log) runs first on the same day.
+- Incremental MERGE on `uniqueKey` (`type: "incremental"`, tag `process`; clustered by company_id, debcode; partition commented out). Depends (via `ref`) on `validated_mac5.deb` and `cdc_dataset.cdc_change_log`; the SELECT keeps only `deb` rows whose key (company_id defaulting to 'ag01' when absent from `pk_fields`) appears in cdc_change_log for source mac5 / validated_mac5 / deb with `asatdate = CURRENT_DATE('Asia/Bangkok')`.
 
 # Examples
 

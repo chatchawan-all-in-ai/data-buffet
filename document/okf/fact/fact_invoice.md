@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Invoice-line fact: lines of IS, BS, AS and QS documents from `curated_mil`, joined to `view_dim_invoice` for InvoiceSK, to the originating order line ([fact_order](/fact/fact_order.md), de-duplicated), the quotation, customer and company. It answers what was invoiced/billed and how it ties back to the order and quotation. Consumed by `view_fact_transcation`.
+Invoice-line fact: lines of IS, BS, AS and QS documents from `curated_mil`, joined to `view_dim_invoice` for InvoiceSK, to the originating order line ([fact_order](/fact/fact_order.md), de-duplicated), the quotation, customer and company. It answers what was invoiced/billed and how it ties back to the order and quotation.
 
-Used by / context: used by [fact_view.view_fact_transcation](/view/fact_view/view_fact_transcation.md).
+Read by: [view_fact_transcation](/view/fact_view/view_fact_transcation.md).
 
 # Grain and key
 
-One row per `FactInvoiceSK` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay, milType, milVnos, milCus, LOWER(milStk)). Business grain: company + date + milType + `milvnos` + customer + product + `milLinkVcno` (the group-by includes `milLinkVcno`; the SK ORDER BY does not). Window: `mix_date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)`.
+One row = one product on one invoice-type document (IS/BS/AS/QS) per customer and link number (`milLinkVcno`), per company: key `FactInvoiceSK` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay, milType, milVnos, milCus, LOWER(milStk)); the group-by also includes `milLinkVcno`, the SK ORDER BY does not. Lines are INNER JOINed to `view_dim_invoice` (date, type, vnos, customer, milLinkVcno, company), so lines whose invoice is not found there are dropped. Window: `mix_date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)`.
 
 # Schema
 
@@ -39,7 +39,7 @@ One row per `FactInvoiceSK` (ROW_NUMBER over CompanySK, milYear, milMonth, milDa
 | `QuotationSK` | INT64 | QuotationSK inherited via fact_order. |
 | `FactQuotationSK` | INT64 | FactQuotationSK inherited via fact_order ([fact_quotation](/fact/fact_quotation.md)). |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md). |
-| `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md). |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | MAC5 company code. |
 | `mix_date` | DATE | Business date of the invoice (PARSE_DATE of year/month/day). |
 | `milYear` | INT64 | Year part of the document date (Gregorian). |
@@ -50,11 +50,11 @@ One row per `FactInvoiceSK` (ROW_NUMBER over CompanySK, milYear, milMonth, milDa
 | `milCus` | STRING | Customer code (supplier code on purchase documents), matching `deb.debcode`. |
 | `milStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
 | `milLinkVcno` | STRING | Number of the source document this line was created from (e.g. the sales order of an invoice line). |
-| `milQuan` | FLOAT64 | Quantity: SUM of `curated_mil.milQuan` over the grain. |
-| `milAdisc` | FLOAT64 | SUM of `curated_mil.milAdisc`: the document-level discount allocated to the lines. |
-| `milCog` | FLOAT64 | SUM of `curated_mil.milCog`: gross line amount excluding VAT, with salesperson shares already applied to split-sale lines. |
-| `milDisca` | FLOAT64 | SUM of `curated_mil.milDisca`: line discount amount excluding VAT. |
-| `milSum` | FLOAT64 | SUM of `curated_mil.milSum`, the line net amount in THB (a `milSum = 0` line is treated as free-of-charge in the store facts). |
+| `milQuan` | FLOAT64 | SUM of `curated_mil.milQuan` over the grain; the salesperson share is already applied on ag01 split-sale lines. |
+| `milAdisc` | FLOAT64 | SUM of `curated_mil.milAdisc`: the document-level discount allocated to the lines; the salesperson share is already applied on ag01 split-sale lines. |
+| `milCog` | FLOAT64 | SUM of `curated_mil.milCog`: gross line amount excluding VAT; the salesperson share is already applied on ag01 split-sale lines. |
+| `milDisca` | FLOAT64 | SUM of `curated_mil.milDisca`: line discount amount excluding VAT; the salesperson share is already applied on ag01 split-sale lines. |
+| `milSum` | FLOAT64 | SUM of `curated_mil.milSum`, the line net amount in THB; the salesperson share is already applied on ag01 split-sale lines. |
 | `asatdate` | DATE | Build date, CURRENT_DATE('Asia/Bangkok'); the partition column. |
 
 # How it is built

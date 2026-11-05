@@ -14,31 +14,33 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Scoring-band lookup for the customer-grade model. A customer earns `Score` points when its total received payments for the year (`receive_sum`, from mir receipts) rounded fall inside `[PaymentReceivedMin, PaymentReceivedMax]`. Consumers: [dim_customer_grade](/dimension/dim_customer_grade.md) (as `PaymentReceiveSK`) and [dim_group_customer_grade](/dimension/dim_group_customer_grade.md). Source is mds `mds_data_custgrade_payment_receive_score_master`.
+Scoring-band lookup for the customer-grade model. A customer earns `Score` points when its total received payments for the year (`receive_sum`, from mir receipts) rounded fall inside `[PaymentReceivedMin, PaymentReceivedMax]`. Source is mds `mds_data_custgrade_payment_receive_score_master`.
+
+Read by: [dim_customer_grade](/dimension/dim_customer_grade.md), [dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
 
 # Grain and key
 
-One row per (company, PaymentReceivedMin, PaymentReceivedMax, StartDate, EndDate) band from mds. Key: `PaymentReceiveSK` (surrogate, unstable across days).
+One row = one score band: key (company, PaymentReceivedMin, PaymentReceivedMax, StartDate, EndDate) from mds; `PaymentReceiveSK` is the surrogate key, regenerated every run.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `PaymentReceiveSK` | INT64 | `PaymentReceiveSK` is `ROW_NUMBER() OVER(ORDER BY companyID, PaymentReceivedMin, PaymentReceivedMax, StartDate, EndDate)` over the active mds rows; it regenerates on every daily run. |
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), found by a LEFT JOIN on `companyID`; NULL when the mds company code has no match in dim_company. |
+| `PaymentReceiveSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, PaymentReceivedMin, PaymentReceivedMax, StartDate, EndDate)` over the active mds rows. Regenerated every run. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `PaymentReceivedMin` | FLOAT64 | Lower bound (inclusive) in THB of the band for the total payment amount received from the customer in the year, cast with `castFloat64` from the mds column. |
 | `PaymentReceivedMax` | FLOAT64 | Upper bound (inclusive) in THB of the band for the total payment amount received from the customer in the year, cast with `castFloat64` from the mds column. |
 | `Score` | FLOAT64 | Score points awarded to a customer whose metric falls inside the band; `castFloat64` of the mds `Score` column. [dim_customer_grade](/dimension/dim_customer_grade.md) uses `IFNULL(Score, 0)`. |
 | `StartDate` | DATE | First day the band row is valid (mds `StartDate`, passed through as DATE). |
-| `EndDate` | DATE | Last day the band row is valid (mds `EndDate`, passed through as DATE). dim_customer_grade matches rows where yesterday (Asia/Bangkok) is between StartDate and EndDate. |
-| `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. |
+| `EndDate` | DATE | Last day the band row is valid (mds `EndDate`, passed through as DATE). dim_customer_grade and dim_group_customer_grade match rows where yesterday (Asia/Bangkok) is between StartDate and EndDate. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_custgrade_payment_receive_score_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 
@@ -46,7 +48,7 @@ One row per (company, PaymentReceivedMin, PaymentReceivedMax, StartDate, EndDate
 - `uniqueKey`: `PaymentReceiveSK`.
 - Storage options: `{"clusterBy": ["PaymentReceiveSK"]}`.
 - Reads: `mds_dataset.mds_data_custgrade_payment_receive_score_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows; runs after dim_company.
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
 
 # Examples
 

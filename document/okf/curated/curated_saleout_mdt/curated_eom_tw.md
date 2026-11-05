@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Closing (EOM) sales and stock report that Thai Watsadu sends itself (folder SO_MDT_EOM/TW), kept as the figure 'as reported by the chain' (TW closes on the 8th of the next month) and used as the CHAIN_FILE source of [curated_saleout_monthly_mdt](/curated/curated_saleout_mdt/curated_saleout_monthly_mdt.md). Only rows with some sale are kept (pure stock lines dropped).
+Closing (EOM) sales and stock report that Thai Watsadu sends itself (folder SO_MDT_EOM/TW), kept as the figure 'as reported by the chain'. Only rows with some sale are kept (pure stock lines dropped).
+
+Read by: [curated_saleout_monthly_mdt](/curated/curated_saleout_mdt/curated_saleout_monthly_mdt.md).
 
 # Grain and key
 
@@ -38,7 +40,7 @@ One row per `month_date` (first day of the period, from the PERIOD column read f
 | `barcode_match` | STRING | Barcode (Barcode column, cleaned) for matching the product master. |
 | `sale_qty` | INT64 | Sum of Sales_Qty for the key. |
 | `sale_amount` | FLOAT64 | Sum of Sales_Amount for the key. |
-| `asatdate` | DATE | Latest raw load date among the rows summed (the DAG run date, not the period). |
+| `asatdate` | DATE | MAX of the ASATDATE of the chosen file version (the DAG run date, not the period). |
 
 # How it is built
 
@@ -46,7 +48,7 @@ One row per `month_date` (first day of the period, from the PERIOD column read f
 - `uniqueKey`: `month_date`, `branch_code`, `product_code`.
 - Storage options: `{"partitionBy": "month_date", "clusterBy": ["branch_code", "product_code"]}`.
 - Reads: [raw_saleout_mdt.eom_tw](/initial/raw_saleout_mdt/eom_tw.md).
-- Full rebuild each run (`type: "table"`, tags `curated`, `curated_full`, `saleout_daily`; depends on `curated_schema_saleout` and `create_all_table_raw_saleout_mdt`); partitioned by `month_date`, clustered by branch_code, product_code. Reads raw `eom_tw` directly.
+- Full rebuild each run (`type: "table"`, tags `curated`, `curated_full`, `saleout_daily`; depends on `curated_schema_saleout` and `create_all_table_raw_saleout_mdt`); partitioned by `month_date`, clustered by branch_code, product_code. Reads raw `eom_tw` directly. Per `month_date` only the newest file version (latest ASATDATE) that is not made entirely of duplicated rows is used; the run fails if every version of a month is duplicated.
 
 # Examples
 

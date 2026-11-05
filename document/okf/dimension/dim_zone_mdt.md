@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -26,18 +26,18 @@ Read by: [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [dim_zone_t
 
 # Grain and key
 
-One row per distinct trimmed `zone_id`: duplicates are collapsed keeping the row with the latest start_date (ties by id), so a zone appears once and branch rows do not multiply. Reserved row `ZoneMdtSK = -1` with ZoneCode 'NotZone', ZoneName 'ไม่ระบุโซน' and NULL dates/MdsID.
+One row = one MDT sales zone: key trimmed `zone_id` (`ZoneCode`); duplicates are collapsed keeping the row with the latest start_date (ties by id). `ZoneMdtSK` is `ROW_NUMBER()` ordered by ZoneCode. Reserved row `ZoneMdtSK = -1` with ZoneCode 'NotZone', ZoneName 'ไม่ระบุโซน' and NULL dates/MdsID.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ZoneMdtSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by ZoneCode; -1 for the NotZone row. Regenerated every run (except -1). |
+| `ZoneMdtSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by ZoneCode; -1 for the NotZone row. Regenerated every run. |
 | `ZoneCode` | STRING | Zone code (`zone_id` trimmed, empty becomes NULL); 'NotZone' on the -1 row. Join key used by dim_sales_branch_mdt and dim_zone_ta_mdt. |
 | `ZoneName` | STRING | Zone name; 'ไม่ระบุโซน' on the -1 row. |
 | `StartDate` | DATE | MDS start_date of the kept row; NULL on the -1 row. |
 | `EndDate` | DATE | MDS end_date of the kept row; NULL on the -1 row. |
-| `MdsID` | STRING | `id` of the source row in `mds_data_mdt_sales_zone_master`; NULL on the -1 row. |
+| `MdsID` | STRING | `id` of the source row in `mds_data_mdt_sales_zone_master`; trace column back to MDS. NULL on the -1 row. |
 
 # How it is built
 
@@ -45,7 +45,7 @@ One row per distinct trimmed `zone_id`: duplicates are collapsed keeping the row
 - `uniqueKey`: `ZoneMdtSK`.
 - Storage options: `{"clusterBy": ["ZoneMdtSK"]}`.
 - Reads: `mds_dataset.mds_data_mdt_sales_zone_master` (master data loaded outside this repo).
-- Full daily rebuild (`type: "table"`), tags `dimension_daily` and `saleout_daily`; reads `mds_data_mdt_sales_zone_master` only (no dependencies). Runs before `dim_zone_ta_mdt` and `dim_sales_branch_mdt`.
+- Full daily rebuild (`type: "table"`, tags `dimension_daily`, `saleout_daily`); no declared dependencies.
 
 # Examples
 

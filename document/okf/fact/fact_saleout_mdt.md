@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Modern-trade sell-out fact: daily sales and returns reported by the retail chains (HomePro, Boonthavorn, Global House, Thai Watsadu, DoHome etc.), unioned in `curated_saleout_mdt`, with surrogate keys to the MDT branch/product/marketing/report/region dimensions. It answers what each chain sold per branch, product and day. Used by `view_fact_stock_nonmove_mdt` (non-moving stock) and BI sell-out views. It uses the separate MDT product universe, not the MAC5 product dimension.
+Modern-trade sell-out fact: daily sales and returns reported by the retail chains (HomePro, Boonthavorn, Global House, Thai Watsadu, DoHome etc.), unioned in `curated_saleout_mdt`, with surrogate keys to the MDT branch/product/marketing/report/region dimensions. It answers what each chain sold per branch, product and day. It uses the separate MDT product universe, not the MAC5 product dimension.
 
-Used by / context: used by [fact_view.view_fact_stock_nonmove_mdt](/view/fact_view/view_fact_stock_nonmove_mdt.md).
+Read by: [view_fact_stock_nonmove_mdt](/view/fact_view/view_fact_stock_nonmove_mdt.md).
 
 # Grain and key
 
-One row per (`sale_date`, `store_code`, `branch_code`, `product_code`, `doc_type`) - the uniqueKey, taken from `curated_saleout_mdt`. `doc_type` is 'SALE' or 'RETURN' (returns typically carry negative amounts). Excluded: store 'GB' rows whose marketing segment is 00221 or 00222 (to match the GB BI file).
+One row = one sell-out (sale or return) document-type total per sale date, chain, branch and product: key (`sale_date`, `store_code`, `branch_code`, `product_code`, `doc_type`) - the uniqueKey, taken from `curated_saleout_mdt`. `doc_type` is 'SALE' or 'RETURN' (returns typically carry negative amounts). Excluded: store 'GB' rows whose marketing segment is 00221 or 00222.
 
 # Schema
 
@@ -38,7 +38,7 @@ One row per (`sale_date`, `store_code`, `branch_code`, `product_code`, `doc_type
 | `zone_sk` | INT64 | Surrogate key `ZoneMdtSK` of the branch's zone, taken from dim_sales_branch_mdt; -1 when unmatched. |
 | `product_mdt_sk` | INT64 | Surrogate key `ProductMdtSK` of [dim_product_mdt](/dimension/dim_product_mdt.md) (match on product code with leading zeros removed); -1 when the product is unknown. |
 | `product_sk` | INT64 | `ProductSK` carried from dim_product_mdt (link to the MAC5 product master where mapped); -1 when unknown. |
-| `product_mkt_sk` | INT64 | Surrogate key `ProductMktSK` of [dim_product_mkt](/dimension/dim_product_mkt.md) (marketing group of the product); products with no group fall back to the 'Waiting Master' group (MarketingGroupID '999'), found by ID because SKs change daily; -1 if that group is missing. |
+| `product_mkt_sk` | INT64 | Surrogate key `ProductMktSK` of [dim_product_mkt](/dimension/dim_product_mkt.md) (marketing group of the product); products with no group fall back to the 'Waiting Master' group (MarketingGroupID '999'), found by MarketingGroupID; -1 if that group is missing. |
 | `report_sk` | INT64 | Surrogate key `ReportSK` of [dim_report](/dimension/dim_report.md): the report line for (store, marketing group), falling back to the store's 'Other' line; -1 if none. |
 | `region_sk` | INT64 | `RegionSK` of [dim_region](/dimension/dim_region.md) valid on the row date (`store_code = RegionID`, date between StartDate and EndDate): the 'Region Transaction' value at the time, not the current one; -1 if none. |
 | `region_manager_sk` | INT64 | `RegionManagerSK` of [dim_region_manager](/dimension/dim_region_manager.md) valid on the row date (not current); -1 if none. |
@@ -59,7 +59,7 @@ One row per (`sale_date`, `store_code`, `branch_code`, `product_code`, `doc_type
 - `uniqueKey`: `sale_date`, `store_code`, `branch_code`, `product_code`, `doc_type`.
 - Storage options: `{"partitionBy": "sale_date", "clusterBy": ["store_code", "branch_sk", "product_mdt_sk"]}`.
 - Reads: [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_report](/dimension/dim_report.md), [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_region_manager](/dimension/dim_region_manager.md), [dimension_table.dim_director](/dimension/dim_director.md), [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md), [dimension_table.dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [dimension_table.dim_product_mdt](/dimension/dim_product_mdt.md).
-- Refresh: full daily rebuild (`type: "table"`, tags `fact_daily` and `saleout_daily`, uniqueKey above, partition `sale_date`, cluster `store_code, branch_sk, product_mdt_sk`), after the MDT dims (`dim_sales_branch_mdt`, `dim_product_mdt`, `dim_product_mkt`, `dim_report`, `dim_region`, `dim_region_manager`, `dim_director`); also re-run in workflow `saleout_morning` 08:55.
+- Refresh: full daily rebuild (`type: "table"`, tags `fact_daily` and `saleout_daily`, uniqueKey above, partition `sale_date`, cluster `store_code, branch_sk, product_mdt_sk`), after the MDT dims (`dim_sales_branch_mdt`, `dim_product_mdt`, `dim_product_mkt`, `dim_report`, `dim_region`, `dim_region_manager`, `dim_director`).
 
 # Examples
 

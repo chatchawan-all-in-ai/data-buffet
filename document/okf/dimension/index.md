@@ -72,6 +72,6 @@ Star-schema dimensions in `dimension_table` (surrogate keys, mds and lake source
 * [dim_target_saleout_mdt](dim_target_saleout_mdt.md) - One row = the daily sales target (Amt, Qty) of one MDT branch for one marketing group, sub group and segment on one date, derived by splitting the monthly MDS target evenly over the days of the month, plus a reserved -1 row.
 * [dim_target_series_mdt](dim_target_series_mdt.md) - One row = the daily sales target (Amt, Qty) of one MDT branch for one product series on one date, derived by splitting the monthly MDS series target evenly over the days of the month, plus a reserved -1 row.
 * [dim_waterpac](dim_waterpac.md) - One row = one WaterPac (pump variant) code of a company with its name and brand, from the MDS WaterPac master.
-* [dim_weight_score](dim_weight_score.md) - One row = one customer-grade weight score entry (score type with its weight) of a company over one StartDate to EndDate interval, from the MDS weight-score master.
+* [dim_weight_score](dim_weight_score.md) - One row = one MDS weight-score lookup entry (score type with its weight) of a company over one StartDate to EndDate interval, from the MDS weight-score master.
 * [dim_zone_mdt](dim_zone_mdt.md) - One row = one MDT sales zone (ZoneCode) with its name and validity dates, from the MDS MDT zone master, plus a reserved -1 NotZone row.
 * [dim_zone_ta_mdt](dim_zone_ta_mdt.md) - One row = one zone manager (TA) assignment for an MDT zone over one StartDate to EndDate interval, from the MDS zone manager master, plus a reserved -1 row.

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "fact_mir_vs"
-description: "One row = one billing (VS) document line of a company that bills an invoice (mirbinvno), de-duplicated to one row per invoice."
+description: "One row = one billing (VS) document line of a company that bills an invoice (mirbinvno), de-duplicated to the latest billing document per invoice before the enrichment joins."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_mir_vs&page=table"
 project_id: databuffet-nonprd
 dataset_id: fact_table
@@ -14,32 +14,32 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Billing-note (VS, billing/collection document) fact for accounts receivable aging: which invoices were put on a billing note, with the customer, invoice SK, collection-status SK and invoice due date. It answers which invoices are billed and when they fall due. It feeds [dim_aging](/dimension/dim_aging.md) (which declares it as a dependency), [dim_aging_history](/dimension/dim_aging_history.md), `view_aging_ri`, `view_fact_mir_vs` and [fact_mir_rs](/fact/fact_mir_rs.md) (BillingSK).
+Billing-note (VS, billing/collection document) fact for accounts receivable aging: which invoices were put on a billing note, with the customer, invoice SK, collection-status SK and invoice due date. It answers which invoices are billed and when they fall due. [fact_mir_rs](/fact/fact_mir_rs.md) points to it through BillingSK.
 
-Used by / context: used by [fact_table.fact_mir_rs](/fact/fact_mir_rs.md), [dimension_view.view_dim_aging_history](/view/dimension_view/view_dim_aging_history.md), [fact_view.view_aging_ri](/view/fact_view/view_aging_ri.md), [fact_view.view_fact_mir_vs](/view/fact_view/view_fact_mir_vs.md), [dimension_table.dim_aging](/dimension/dim_aging.md), [dimension_table.dim_aging_history](/dimension/dim_aging_history.md).
+Read by: [fact_mir_rs](/fact/fact_mir_rs.md), [dim_aging](/dimension/dim_aging.md), [view_dim_aging_history](/view/dimension_view/view_dim_aging_history.md), [view_aging_ri](/view/fact_view/view_aging_ri.md), [view_fact_mir_vs](/view/fact_view/view_fact_mir_vs.md).
 
 # Grain and key
 
-One row per `BillingSK` (ROW_NUMBER over company_id, mirtype, mirvnos, mirlistno, mirbinvno). Source `mir` is restricted to `mirtype = 'VS'` and de-duplicated with `QUALIFY ROW_NUMBER() OVER(PARTITION BY mir.mirbinvno ORDER BY miryear DESC, mirmonth DESC, mirday DESC) = 1`, so each invoice number (`mirbinvno`) appears once, on its latest billing document. The partition ignores `company_id`.
+One row = one billing (VS) document line that bills an invoice (`mirbinvno`), reduced to the latest billing document per invoice number: key `BillingSK` (ROW_NUMBER over company_id, mirtype, mirvnos, mirlistno, mirbinvno). Source `mir` is restricted to `mirtype = 'VS'` and to headers present in `curated_mih` (joined on `mirvnos = mihvnos` and `mirtype = mihtype`) with `mihcancel = 0`, then de-duplicated with `QUALIFY ROW_NUMBER() OVER(PARTITION BY mir.mirbinvno ORDER BY miryear DESC, mirmonth DESC, mirday DESC) = 1` before the enrichment joins; the partition ignores `company_id`. `WHERE inv.mihCancel = 0` turns the LEFT JOIN to `dim_invoice` into an inner join: lines whose invoice is not found in `dim_invoice` are dropped.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `BillingSK` | INT64 | Surrogate key: ROW_NUMBER over company_id, mirtype, mirvnos, mirlistno, mirbinvno. Regenerates daily; `fact_mir_rs.BillingSK` points to it. |
-| `CollectSK` | INT64 | Surrogate key of [dim_collection_status](/dimension/dim_collection_status.md), joined on company, receipt year/month and customer (`mircus` cast to STRING = `CustomerID`). NULL when the MDS collection-status master has no row for that month/customer. Regenerates daily. |
+| `CollectSK` | INT64 | Surrogate key of [dim_collection_status](/dimension/dim_collection_status.md), joined on company, billing-document year/month and customer (`mircus` cast to STRING = `CustomerID`). NULL when the MDS collection-status master has no row for that month/customer. Regenerates daily. |
 | `Actions` | STRING | Collection action text, copied from `dim_collection_status.Actions` (MDS collection-status master). |
 | `Justification` | STRING | Collection justification text, copied from `dim_collection_status.Justification`. |
 | `Responsible` | STRING | Person/role responsible for the collection follow-up, copied from `dim_collection_status.Responsible`. |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md), joined on `mircus = debcode` and `company_id = companyID`. NULL when the customer is not in the dimension. |
-| `InvoiceSK` | INT64 | Surrogate key of [dim_invoice](/dimension/dim_invoice.md) for the invoice this line settles (`mirbinvno`, `mirbinvtype`, `mircus`, `mirbinvdate = mix_date`, company); dim_invoice is first de-duplicated to one row per that key. |
-| `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md), joined on `company_id = companyID`. |
+| `InvoiceSK` | INT64 | Surrogate key of [dim_invoice](/dimension/dim_invoice.md) for the invoice this line bills (`mirbinvno`, `mirbinvtype`, `mircus`, `mirbinvdate = mix_date`, company); dim_invoice is first de-duplicated to one row per that key. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `duedate` | DATE | Invoice due date: first 10 characters of `mie.miectermdx` parsed as `dd/mm/yyyy`, where mie is the validated MAC5 invoice-extension row matched on `mirbinvno = mievnos`, `mircus = miecus`, company. NULL when no mie match. |
 | `company_id` | STRING | MAC5 company code (ag01, aa05, ab01, ac02, ak02). Pass-through of validated `mir.company_id`. |
 | `mirday` | INT64 | Day part of the document date. |

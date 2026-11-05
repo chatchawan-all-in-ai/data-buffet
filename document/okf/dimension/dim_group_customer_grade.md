@@ -14,19 +14,17 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Group-level version of [dim_customer_grade](/dimension/dim_customer_grade.md): receipts, late-payment averages, cancelled cheques and first-contact date are aggregated over every customer of a `debgroup` (from [dim_group_customer](/dimension/dim_group_customer.md)) instead of one customer, then scored against the same MDS score bands and mapped to a grade through [dim_grade](/dimension/dim_grade.md). Two results are given: invoice-date basis and due-date basis. Nothing else in the repo reads it (BI reads the table directly, if at all).
-
-Used by: nothing else in the repo.
+Group-level version of [dim_customer_grade](/dimension/dim_customer_grade.md): receipts, late-payment averages, cancelled cheques and first-contact date are aggregated over every customer of a `debgroup` (from [dim_group_customer](/dimension/dim_group_customer.md)) instead of one customer, then scored against the same MDS score bands and mapped to a grade through [dim_grade](/dimension/dim_grade.md). Two results are given: invoice-date basis and due-date basis.
 
 # Grain and key
 
-One row per (`CompanySK`, `CustomerGroup`, `Year`). `GroupCustomerGradeSK` is a stable surrogate key (existing rows keep it; new rows get `max_sk + ROW_NUMBER()` ordered by `CompanySK`, `Year`, `debgroup`). A group gets rows only for years >= the year of its first-contact date.
+One row = one customer group per company per year: key (`CompanySK`, `CustomerGroup`, `Year`). `GroupCustomerGradeSK` is a stable surrogate key (existing rows keep it; new rows get `max_sk + ROW_NUMBER()` ordered by `CompanySK`, `Year`, `debgroup`). A group gets rows only for years >= the year of its first-contact date.
 
 # Schema
 
@@ -34,14 +32,14 @@ One row per (`CompanySK`, `CustomerGroup`, `Year`). `GroupCustomerGradeSK` is a 
 |---|---|---|
 | `GroupCustomerGradeSK` | INT64 | Stable surrogate key of the (customer group, year) grade row; assigned once via `max_sk + ROW_NUMBER()` and kept on later runs. |
 | `GroupCustomerSK` | INT64 | Group SK from [dim_group_customer](/dimension/dim_group_customer.md). |
-| `PaymentReceiveSK` | INT64 | SK of the payment-volume score band from [dim_payment_receive_score](/dimension/dim_payment_receive_score.md): the band where `ROUND(SumPaymentReceive)` falls between `PaymentReceivedMin` and `PaymentReceivedMax` and the as-at date is within the band's StartDate-EndDate. NULL if no band matches. |
-| `InvAvgCollectSK` | INT64 | SK of the collection-speed score band from [dim_avg_collection_score](/dimension/dim_avg_collection_score.md) for the invoice-date based average (`InvoiceDateAvgReceiveAgeDay` within the band's day min/max, valid on the as-at date). Role-played use of the avg-collection dim. |
-| `DueAvgCollectSK` | INT64 | Same as `InvAvgCollectSK` but for the due-date based average (`DueDateAvgReceiveAgeDay`). |
-| `BounceChequeSK` | INT64 | SK of the bounced-cheque score band from [dim_bounce_cheque_score](/dimension/dim_bounce_cheque_score.md) matching `CountCancelCheque` (band min/max, valid on the as-at date). |
-| `ContactSK` | INT64 | SK of the relationship-length score band from [dim_contact_score](/dimension/dim_contact_score.md) matching the rounded years since first contact (`CalculateFirstContact`), valid on the as-at date. |
-| `InvoiceGradeSK` | INT64 | SK of the grade row in [dim_grade](/dimension/dim_grade.md) matching `InvoiceCalPercent` (company grade bands by `Percentmin`..`Percentmax`). Role-played use of dim_grade. |
-| `DueGradeSK` | INT64 | SK of the grade row in [dim_grade](/dimension/dim_grade.md) matching `DueCalPercent`. |
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md). |
+| `PaymentReceiveSK` | INT64 | SK of the payment-volume score band from [dim_payment_receive_score](/dimension/dim_payment_receive_score.md): the band where `ROUND(SumPaymentReceive)` falls between `PaymentReceivedMin` and `PaymentReceivedMax` and the as-at date is within the band's StartDate-EndDate. NULL if no band matches. Refers to the dim row of the run that computed it, so it matches the current dim only for rows where `Year` = year of yesterday. |
+| `InvAvgCollectSK` | INT64 | SK of the collection-speed score band from [dim_avg_collection_score](/dimension/dim_avg_collection_score.md) for the invoice-date based average (`InvoiceDateAvgReceiveAgeDay` within the band's day min/max, valid on the as-at date). Role-played use of the avg-collection dim. Refers to the dim row of the run that computed it, so it matches the current dim only for rows where `Year` = year of yesterday. |
+| `DueAvgCollectSK` | INT64 | Same as `InvAvgCollectSK` but for the due-date based average (`DueDateAvgReceiveAgeDay`). Refers to the dim row of the run that computed it, so it matches the current dim only for rows where `Year` = year of yesterday. |
+| `BounceChequeSK` | INT64 | SK of the bounced-cheque score band from [dim_bounce_cheque_score](/dimension/dim_bounce_cheque_score.md) matching `CountCancelCheque` (band min/max, valid on the as-at date). Refers to the dim row of the run that computed it, so it matches the current dim only for rows where `Year` = year of yesterday. |
+| `ContactSK` | INT64 | SK of the relationship-length score band from [dim_contact_score](/dimension/dim_contact_score.md) matching the rounded years since first contact (`CalculateFirstContact`), valid on the as-at date. Refers to the dim row of the run that computed it, so it matches the current dim only for rows where `Year` = year of yesterday. |
+| `InvoiceGradeSK` | INT64 | SK of the grade row in [dim_grade](/dimension/dim_grade.md) matching `InvoiceCalPercent` (company grade bands by `Percentmin`..`Percentmax`). Role-played use of dim_grade. Refers to the dim row of the run that computed it, so it matches the current dim only for rows where `Year` = year of yesterday. |
+| `DueGradeSK` | INT64 | SK of the grade row in [dim_grade](/dimension/dim_grade.md) matching `DueCalPercent`. Refers to the dim row of the run that computed it, so it matches the current dim only for rows where `Year` = year of yesterday. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md), carried over from `dim_customer.CompanySK`; NULL if no match. |
 | `CompanyID` | STRING | MAC5 company code. |
 | `Year` | INT64 | Calendar year the grade refers to (INT64). A run only computes the year of yesterday's date; earlier years keep the values from the last run in that year. |
 | `CustomerGroup` | STRING | Customer group code (`debgroup`, or the customer's own `debcode` when no group); with `CompanySK` and `Year` the natural key. |

@@ -14,19 +14,19 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Cheque register for accounts receivable: every customer cheque from MAC5 `chq`, with Thai/English status labels, linked to the receipt document (`cqlvnos`) from `cql`. It answers which cheques were received, their dates, amounts, bank and clearing status. It is the cheque side of the AR chain `fact_chq` -> [fact_mir_vs](/fact/fact_mir_vs.md) -> [fact_mir_rs](/fact/fact_mir_rs.md); `fact_mir_rs` FULL JOINs it on `cqlvnos = mirvnos`.
+Cheque register for accounts receivable: every cheque (received, `chqtype` 1, and issued, `chqtype` 2) from MAC5 `chq` with a `cql` row where `cqlbook = 0`, with Thai/English status labels, linked to the receipt document (`cqlvnos`) from `cql`. It answers which cheques were received, their dates, amounts, bank and clearing status. It is the cheque side of the AR chain `fact_chq` -> [fact_mir_vs](/fact/fact_mir_vs.md) -> [fact_mir_rs](/fact/fact_mir_rs.md); `fact_mir_rs` FULL JOINs it on `cqlvnos = mirvnos`.
 
-Used by / context: used by [fact_table.fact_mir_rs](/fact/fact_mir_rs.md).
+Read by: [fact_mir_rs](/fact/fact_mir_rs.md).
 
 # Grain and key
 
-One row per `FactChqSK` (a `ROW_NUMBER()` over `company_id, chqno, cqlcus, cqlvnos`). Business grain is cheque number + customer + company + receipt document. Only cheque rows matching a `cql` row (`chqno = cqlno`, `chqcus = cqlcus`, `chqtotal = cqlsuml`, company) with `cqlbook = 0` survive (the WHERE on the left-joined `cql` turns it into an inner join).
+One row = one cheque (`chqno`) of one customer on one receipt document (`cqlvnos`) per company: key `FactChqSK` (`ROW_NUMBER()` over `company_id, chqno, cqlcus, cqlvnos`). Only cheque rows matching a `cql` row (`chqno = cqlno`, `chqcus = cqlcus`, `chqtotal = cqlsuml`, company) with `cqlbook = 0` appear; the WHERE on the left-joined `cql` makes it an inner join.
 
 # Schema
 
@@ -34,11 +34,11 @@ One row per `FactChqSK` (a `ROW_NUMBER()` over `company_id, chqno, cqlcus, cqlvn
 |---|---|---|
 | `FactChqSK` | INT64 | Surrogate key: ROW_NUMBER over company_id, chqno, cqlcus, cqlvnos. Regenerates daily. |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md) via `chqcus = debcode` and company; NULL if unmatched. |
-| `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md) via `company_id`. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `company_id` | STRING | MAC5 company code. Pass-through of validated `chq.company_id`. |
 | `chqno` | STRING | Cheque number. |
 | `chqbank` | STRING | Bank code of the cheque (e.g. `BBL`, `KBANK`, `SCB`). |
-| `chqacode` | STRING | General-ledger account code of the cheque; sampled MAC5 records show 112001 for received cheques and 211101, 212000, 212400, and 214201 for issued cheques. |
+| `chqacode` | STRING | General-ledger account code of the cheque. |
 | `chqcus` | STRING | Customer code (supplier code for issued cheques), matching `deb.debcode`. |
 | `chqdatec` | DATETIME | Date written on the cheque. |
 | `chqdater` | DATETIME | Date the cheque was received or issued. |
@@ -68,9 +68,9 @@ FROM `databuffet-nonprd.fact_table.fact_chq`
 WHERE company_id = 'ag01'
 GROUP BY chqstatus;
 ```
-Cheques falling due in the next 30 days (Asia/Bangkok).
+Cheques dated (`chqdatec`) in the next 30 days (Asia/Bangkok).
 ```sql
-SELECT company_id, chqno, chqcus, chqdatep, chqtotal
+SELECT company_id, chqno, chqcus, chqdatec, chqtotal
 FROM `databuffet-nonprd.fact_table.fact_chq`
-WHERE DATE(chqdatep) BETWEEN CURRENT_DATE('Asia/Bangkok') AND DATE_ADD(CURRENT_DATE('Asia/Bangkok'), INTERVAL 30 DAY);
+WHERE DATE(chqdatec) BETWEEN CURRENT_DATE('Asia/Bangkok') AND DATE_ADD(CURRENT_DATE('Asia/Bangkok'), INTERVAL 30 DAY);
 ```

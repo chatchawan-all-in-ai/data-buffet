@@ -14,26 +14,24 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Invoice-line fact sliced by store/warehouse: IS lines from `curated_mil` + `curated_mih`, linked to the invoice ([dim_invoice](/dimension/dim_invoice.md)) and, through `milLinkVcno`, to the order ([dim_order](/dimension/dim_order.md)). It answers which products were invoiced per store, per salesperson share and date. It is the invoice counterpart of [fact_order_store](/fact/fact_order_store.md) and [fact_backlog_store](/fact/fact_backlog_store.md); no other table reads it.
-
-Used by / context: used by nothing else in the repo.
+Invoice-line fact sliced by store/warehouse: IS lines from `curated_mil` + `curated_mih`, linked to the invoice ([dim_invoice](/dimension/dim_invoice.md)) and, through `milLinkVcno`, to the order ([dim_order](/dimension/dim_order.md)). It answers which products were invoiced per store, per salesperson share and date. It is the invoice counterpart of [fact_order_store](/fact/fact_order_store.md) and [fact_backlog_store](/fact/fact_backlog_store.md).
 
 # Grain and key
 
-One row per `FactInvoiceStoreSK` (ROW_NUMBER over CompanySK, date parts, milType, mihVnos, milListNo, milPer). The grain includes `milPer` because the IS side of `curated_mil` splits a line across salespeople by `percent_sale`. Window: 4 years truncated to start-of-year on the invoice date (not filtered by order). Only company_id ag01 and ab01, only products whose `TypeMarketing` is not 'Sourcing', and (store facts) lines with `milstype <> 3`, product code not starting with the Thai letter bo, and not `TEST%`.
+One row = one product line of an IS invoice per salesperson share (`milPer`): key `FactInvoiceStoreSK` (ROW_NUMBER over CompanySK, mihYear, mihMonth, mihDay, milType, mihVnos, milListNo, milPer). The IS side of `curated_mil` splits a line across salespeople by `percent_sale`, one row per share. Window: 4 years truncated to start-of-year on the invoice date (not filtered by order). Only company_id ag01 and ab01; only products whose `TypeMarketing` is not 'Sourcing' (products with no marketing type are dropped too); lines with `milstype <> 3`, product code not starting with the Thai letter bo and not `TEST%`.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `FactInvoiceStoreSK` | INT64 | Surrogate key: ROW_NUMBER over CompanySK, date parts, milType, mihVnos, milListNo, milPer. Regenerates daily. |
-| `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md). |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `company_id` | STRING | MAC5 company code; only 'ag01' and 'ab01' are loaded. |
 | `mix_date` | DATE | Invoice date: SAFE.PARSE_DATE of mihYear, mihMonth, mihDay; partition column. |
 | `mihYear` | INT64 | Year part of the document date (Gregorian). |

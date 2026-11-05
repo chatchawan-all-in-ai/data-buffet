@@ -14,29 +14,31 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Snapshot of [dim_department](/dimension/dim_department.md) keeping, for each (CompanyID, DepartmentID), the row with the latest `EndDate` then latest `StartDate` (the current-date filter is commented out). The columns `SectionSK`, `SectionManagerSK`, `RegionSK`, `RegionManagerSK` and `DirectorSK` are created as NULL by this build and backfilled afterwards by the `update_sk_sale_rep_group` step. Consumers include [dim_rate_target](/dimension/dim_rate_target.md), [dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md), [view_dim_customer_report_info](/view/dimension_view/view_dim_customer_report_info.md), [view_dim_sale_representative_last](/view/dimension_view/view_dim_sale_representative_last.md) and [view_fact_transcation](/view/fact_view/view_fact_transcation.md).
+Snapshot of [dim_department](/dimension/dim_department.md) keeping, for each (CompanyID, DepartmentID), the row with the latest `EndDate` then latest `StartDate`. The columns `SectionSK`, `SectionManagerSK`, `RegionSK`, `RegionManagerSK` and `DirectorSK` are created as NULL by this build and backfilled afterwards by the `update_sk_sale_rep_group` step.
+
+Read by: [dim_customer_report_info](/dimension/dim_customer_report_info.md), [dim_rate_target](/dimension/dim_rate_target.md), [dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md), [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md), [Model_Target_DayOfWork](/view/onetime/Model_Target_DayOfWork.md), [view_dim_customer_report_info](/view/dimension_view/view_dim_customer_report_info.md), [view_dim_sale_representative_last](/view/dimension_view/view_dim_sale_representative_last.md), [view_dim_target_by_agent](/view/dimension_view/view_dim_target_by_agent.md), [view_sales_representative_last](/view/dimension_view/view_sales_representative_last.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md).
 
 # Grain and key
 
-One row per (company, DepartmentID). Key: `DepartmentSK`, regenerated as `ROW_NUMBER() OVER (ORDER BY CompanySK, DepartmentID)` on each run (a different numbering than dim_department's).
+One row = the latest-period row of a department: key (company, DepartmentID). `DepartmentSK` is `ROW_NUMBER() OVER (ORDER BY CompanySK, DepartmentID)`, regenerated every run (numbered independently of dim_department).
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `DepartmentSK` | INT64 | `ROW_NUMBER() OVER (ORDER BY CompanySK, DepartmentID)` over the deduped rows; regenerates every run and is NOT the same value as `dim_department.DepartmentSK`. |
-| `SectionSK` | INT64 | Foreign key to the section `_last` dimension; created as NULL by this build and filled by the later `update_sk_sale_rep_group` UPDATE step. May be NULL if that step has not run. |
+| `DepartmentSK` | INT64 | `ROW_NUMBER() OVER (ORDER BY CompanySK, DepartmentID)` over the deduped rows. Regenerated every run; differs from `dim_department.DepartmentSK`. |
+| `SectionSK` | INT64 | Foreign key to the section `_last` dimension; created as NULL by this build and filled by the later `update_sk_sale_rep_group` UPDATE step. |
 | `SectionManagerSK` | INT64 | Foreign key to the section-manager `_last` dimension; NULL at build, backfilled by `update_sk_sale_rep_group`. |
 | `RegionSK` | INT64 | Foreign key to the region `_last` dimension; NULL at build, backfilled by `update_sk_sale_rep_group`. |
 | `RegionManagerSK` | INT64 | Foreign key to the region-manager `_last` dimension; NULL at build, backfilled by `update_sk_sale_rep_group`. |
 | `DirectorSK` | INT64 | Foreign key to [dim_director_last](/dimension/dim_director_last.md); NULL at build, backfilled by `update_sk_sale_rep_group` (dim_rate_target depends on that backfill for its MDT logic). |
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md) via LEFT JOIN on CompanyID. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code from dim_company. |
 | `RegionID` | STRING | Region code, pass-through from dim_department. |
 | `SectionID` | STRING | Section code, pass-through from dim_department. |
@@ -51,7 +53,9 @@ One row per (company, DepartmentID). Key: `DepartmentSK`, regenerated as `ROW_NU
 - `uniqueKey`: `DepartmentSK`.
 - Storage options: `{"clusterBy": ["DepartmentSK"]}`.
 - Reads: [dimension_table.dim_department](/dimension/dim_department.md), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`) from [dim_department](/dimension/dim_department.md) with a QUALIFY dedup. The five FK SK columns are filled afterwards by the separate `update_sk_sale_rep_group` operation, which depends on all `_last` tables; the keys are available after that operation.
+- Rows are chosen with `QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, DepartmentID ORDER BY EndDate DESC, StartDate DESC) = 1`.
+- The five FK SK columns are filled afterwards by the separate `update_sk_sale_rep_group` operation, which depends on all `_last` tables.
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company and dim_department.
 
 # Examples
 

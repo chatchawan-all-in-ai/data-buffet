@@ -14,26 +14,26 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Project dimension built from MAC5 `tbook_profilecomp` (the profile of a customer company and its project in the quotation book): company name, type, status, group, history, place and location, project name, source, start and end, plus a computed project duration in days. It is used to tag quotations with a project: [dim_quotation](/dimension/dim_quotation.md) takes `ProjectSK` from it by matching the project code parsed from the quotation text.
+Project dimension built from MAC5 `tbook_profilecomp` (the profile of a customer company and its project in the quotation book): company name, type, status, group, history, place and location, project name, source, start and end, plus a computed project duration in days.
 
-Used by: [dimension_table.dim_quotation](/dimension/dim_quotation.md).
+Read by: [dim_quotation](/dimension/dim_quotation.md), [export_dim_project](/view/pub_sub/export_dim_project.md).
 
 # Grain and key
 
-One row per (`CompanySK`, `projectCode`). `ProjectSK` is a stable surrogate key (existing project codes keep it; new ones get `max_sk + ROW_NUMBER()` ordered by `CompanySK`, `projectCode`).
+One row = one project profile per company: key (`CompanySK`, `projectCode`). `ProjectSK` is a stable surrogate key (existing project codes keep it; new ones get `max_sk + ROW_NUMBER()` ordered by `CompanySK`, `projectCode`).
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `ProjectSK` | INT64 | Stable surrogate key; never regenerated. |
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md). |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | MAC5 company code. |
 | `projectCode` | INT64 | Project code, referenced by the quotation project text. |
 | `docNo` | INT64 | Document number of the project profile. |

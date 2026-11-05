@@ -14,39 +14,39 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/cdc.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/cdc.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Change-data-capture log. Each day the operation compares the raw table of each CDC-enabled source table with its validated counterpart and writes a row for every record that is new in raw or whose configured check fields differ (after whitespace/trailing-punctuation normalization). Currently only `mac5.deb` (customer master; PKs `company_id`, `debcode`; check fields `debadd1at`, `debadd2at`, `debadd3at`, raw schema `raw_mac5_ag01`) is enabled, so the log tells which customer addresses changed. It exists for cost control: [deb_address_data](/process/deb_address_data.md) re-parses addresses with AI.GENERATE only for customers listed here for today.
+Change-data-capture log. Each day the operation compares the raw table of each CDC-enabled source table with its validated counterpart and writes a row for every record that is new in raw or whose configured check fields differ (after whitespace/trailing-punctuation normalization). The tables tracked are the enabled entries of `cdc-config.json` (`mac5.deb`: customer master; PKs `company_id`, `debcode`; check fields `debadd1at`, `debadd2at`, `debadd3at`), so the log tells which customer addresses changed. The comparison uses the ag01 raw schema (`raw_mac5_ag01`) only. The operation runs before the validated layer, so it compares today's raw table with the previous validated load. [deb_address_data](/process/deb_address_data.md) re-parses addresses with AI.GENERATE only for customers listed here for today.
 
-Used by: [process_dataset.deb_address_data](/process/deb_address_data.md).
+Read by: [deb_address_data](/process/deb_address_data.md).
 
 # Grain and key
 
-One row per detected change per source record per day (`cdc_record_id` is a random `GENERATE_UUID()`; the stable record identity is `source_system` + `source_schema` + `source_table` + `pk_hash` / `pk_fields`). A day's rows are deleted and re-inserted on each run, so there is at most one row per record per `asatdate`. The table is partitioned by `asatdate`, clustered by `source_system, source_schema, source_table, change_type`, and keeps only 7 days (partition expiration).
+One row = one detected change of one tracked source record on one day (`cdc_record_id` is a random `GENERATE_UUID()`; the stable record identity is `source_system` + `source_schema` + `source_table` + `pk_hash` / `pk_fields`). A day's rows are deleted and re-inserted on each run, so there is at most one row per record per `asatdate`. The table is partitioned by `asatdate`, clustered by `source_system, source_schema, source_table, change_type`, and keeps 7 days (partition expiration).
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `cdc_record_id` | STRING | Random UUID (`GENERATE_UUID()`) identifying this log row; not stable across reruns. |
-| `source_system` | STRING | Source name from `cdc-config.json` (currently 'mac5'). |
-| `source_schema` | STRING | Validated dataset of the tracked table (config `validated_schema`, currently 'validated_mac5'). |
-| `source_table` | STRING | Tracked table name (currently 'deb'). |
+| `source_system` | STRING | Source name from `cdc-config.json` (e.g. 'mac5'). |
+| `source_schema` | STRING | Validated dataset of the tracked table (config `validated_schema`, e.g. 'validated_mac5'). |
+| `source_table` | STRING | Tracked table name (e.g. 'deb'). |
 | `pk_fields` | JSON | JSON object of the primary-key values of the changed record, e.g. company_id and debcode (company_id is derived from the raw schema name, `raw_mac5_<company>`). |
 | `pk_hash` | STRING | Hex MD5 of the comma-joined primary-key values (`TO_HEX(MD5(CONCAT(pk1, ',', pk2)))`), usable as a compact record key. |
 | `change_type` | STRING | 'NEW' when the key does not exist in the validated table, 'CHANGED' when it exists and a check field differs. Unchanged records are not logged. |
 | `asatdate` | DATE | Run date, `CURRENT_DATE('Asia/Bangkok')`; the partition column. |
 | `change_timestamp` | TIMESTAMP | Timestamp when the change was recorded (`CURRENT_TIMESTAMP()` at insert). |
 | `changed_fields` | JSON | JSON object mapping each changed check field name to `{raw, validated}` values (JSON-encoded strings); NULL for NEW rows. |
-| `changed_field_names` | ARRAY<STRING> | Array of the check-field names that differ; NULL for NEW rows. |
+| `changed_field_names` | `ARRAY<STRING>` | Array of the check-field names that differ; NULL for NEW rows. |
 | `num_fields_changed` | INT64 | Number of check fields that differ; 0 for NEW rows. |
 | `record_raw` | JSON | The complete raw row as JSON. |
 | `record_validated` | JSON | The complete validated row as JSON; NULL (JSON null) for NEW records. |
-| `cdc_processed_at` | TIMESTAMP | Timestamp the CDC job processed the row (same as `change_timestamp` in practice). |
+| `cdc_processed_at` | TIMESTAMP | Timestamp the CDC job processed the row. |
 
 # How it is built
 

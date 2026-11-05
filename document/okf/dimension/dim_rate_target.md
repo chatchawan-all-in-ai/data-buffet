@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
@@ -26,14 +26,14 @@ Read by: [dim_target_product_group_by_sale](/dimension/dim_target_product_group_
 
 # Grain and key
 
-One row per active MDS row, SK ordered by companyID, Year, Month, ProductGroupID, TargetID, TargetDepartmentID, DepartmentID, EmployeeID. Downstream code uses three rule shapes: Month NULL and ProductGroupID NULL (applies to the whole year), Month set and ProductGroupID NULL (applies to a month), Month and ProductGroupID both set (applies to a marketing group in a month). No -1 row.
+One row = one active MDS row: key `RateTargetSK`, `ROW_NUMBER()` ordered by companyID, Year, Month, ProductGroupID, TargetID, TargetDepartmentID, DepartmentID, EmployeeID. Downstream code uses three rule shapes: Month NULL and ProductGroupID NULL (applies to the whole year), Month set and ProductGroupID NULL (applies to a month), Month and ProductGroupID both set (applies to a marketing group in a month). No -1 row.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `RateTargetSK` | INT64 | Surrogate key, `ROW_NUMBER()` over the key columns above. Regenerated every run. |
-| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on companyID; NULL if no match. |
+| `RateTargetSK` | INT64 | Surrogate key, `ROW_NUMBER()` over the ordering columns above. Regenerated every run. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `Year` | INT64 | Target year (INT64 via `castInt64`). |
 | `Month` | INT64 | Target month 1-12 (INT64 via `castInt64`); NULL means the rule covers the whole year. |
@@ -44,12 +44,12 @@ One row per active MDS row, SK ordered by companyID, Year, Month, ProductGroupID
 | `TargetID` | STRING | Target code; joins to `dim_target_product_group.TargetID` (with CompanySK). |
 | `TargetName` | STRING | Name of the target. |
 | `TargetDepartmentID` | STRING | Code of the department group the rate rule is set for (e.g. `BT`); used only in the SK ordering. |
-| `TargetDepartmentName` | STRING | Name of the target department; empty in current data. |
+| `TargetDepartmentName` | STRING | Name of the target department. |
 | `DepartmentID` | STRING | Department of the employee receiving the share; joins to dim_department_last / dim_department.DepartmentID. |
 | `EmployeeID` | STRING | Employee (sales person) code receiving the share. |
 | `EmployeeName` | STRING | Employee name as entered in MDS. |
-| `Percent` | FLOAT64 | Share of the target in percent (FLOAT64 via `castFloat64`; the consumer divides by 100). For departments under director 'MDT' it is overwritten after the build with 100 divided by the number of distinct employee-department pairs for the same year, month and TargetID. |
-| `MdsID` | STRING | `id` of the source row in `mds_data_target_rate_master`; trace column. |
+| `Percent` | FLOAT64 | Share of the target in percent (FLOAT64 via `castFloat64`; the consumer divides by 100). After the build, rows with the same Year, Month (not NULL) and TargetID as a row whose department belongs to director 'MDT' get 100 divided by the number of distinct EmployeeID-DepartmentID pairs among those MDT rows. |
+| `MdsID` | STRING | `id` of the source row in `mds_data_target_rate_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 
@@ -57,7 +57,7 @@ One row per active MDS row, SK ordered by companyID, Year, Month, ProductGroupID
 - `uniqueKey`: `RateTargetSK`.
 - Storage options: `{"clusterBy": ["RateTargetSK"]}`.
 - Reads: `mds_dataset.mds_data_target_rate_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_department_last](/dimension/dim_department_last.md), [dimension_table.dim_director_last](/dimension/dim_director_last.md).
-- Full daily rebuild (`type: "table"`), tag `dimension_daily`, reads `mds_data_target_rate_master`; a `post_operations` block then recalculates `Percent` for MDT departments. Config dependencies: dim_company, dim_department_last, dim_director_last and `update_sk_sale_rep_group` (the post-step follows the DirectorSK backfill).
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company, dim_department_last, dim_director_last and `update_sk_sale_rep_group`. A `post_operations` block then recalculates `Percent` using the rule in the [schema](#schema).
 
 # Examples
 

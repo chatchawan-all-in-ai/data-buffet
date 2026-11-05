@@ -14,26 +14,26 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Customer-group dimension derived from [dim_customer](/dimension/dim_customer.md). Each distinct `debgroup` code per company becomes one row; customers without a group use their own `debcode` as the group, so every customer belongs to exactly one group. It provides `GroupCustomerSK` for the bridge [GroupCustomerSK_CustomerSK](/view/bridge_dataset/GroupCustomerSK_CustomerSK.md), [view_dim_customer](/view/dimension_view/view_dim_customer.md) and the group-level grade table [dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
+Customer-group dimension derived from [dim_customer](/dimension/dim_customer.md). Each distinct `debgroup` code per company becomes one row; customers without a group use their own `debcode` as the group, so every customer belongs to exactly one group.
 
-Used by: [bridge_dataset.GroupCustomerSK_CustomerSK](/view/bridge_dataset/GroupCustomerSK_CustomerSK.md), [dimension_view.view_dim_customer](/view/dimension_view/view_dim_customer.md), [dimension_table.dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
+Read by: [GroupCustomerSK_CustomerSK](/view/bridge_dataset/GroupCustomerSK_CustomerSK.md), [dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [view_dim_customer](/view/dimension_view/view_dim_customer.md).
 
 # Grain and key
 
-One row per (`CompanySK`, `debgroup`) where `debgroup = IFNULL(dim_customer.debgroup, dim_customer.debcode)`. `GroupCustomerSK` is a stable surrogate key (existing group keeps its SK; new groups get `max_sk + ROW_NUMBER()` ordered by `companyID`, `debgroup`).
+One row = one customer group per company: key (`CompanySK`, `debgroup`) where `debgroup = IFNULL(dim_customer.debgroup, dim_customer.debcode)`. `GroupCustomerSK` is a stable surrogate key (existing group keeps its SK; new groups get `max_sk + ROW_NUMBER()` ordered by `companyID`, `debgroup`).
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
 | `GroupCustomerSK` | INT64 | Stable surrogate key of the customer group; never regenerated. |
-| `CompanySK` | INT64 | Company surrogate key from `dim_customer.CompanySK` / [dim_company](/dimension/dim_company.md). |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) via `dim_customer.CompanySK`; NULL if no match. |
 | `companyID` | STRING | MAC5 company code of the group. |
 | `debgroup` | STRING | Customer group code: `dim_customer.debgroup` (MAC5 `deb.debgroup`), or the customer's own `debcode` when the customer has no group. |
 
@@ -45,11 +45,15 @@ One row per (`CompanySK`, `debgroup`) where `debgroup = IFNULL(dim_customer.debg
 
 # Examples
 
-Number of groups and customers per company (group size distribution input).
+Number of groups and customers per company.
 
 ```sql
-SELECT g.companyID, COUNT(DISTINCT g.GroupCustomerSK) AS groups
+SELECT g.companyID,
+       COUNT(DISTINCT g.GroupCustomerSK) AS n_groups,
+       COUNT(DISTINCT c.CustomerSK) AS n_customers
 FROM `databuffet-nonprd.dimension_table.dim_group_customer` AS g
+JOIN `databuffet-nonprd.dimension_table.dim_customer` AS c
+  ON c.CompanySK = g.CompanySK AND IFNULL(c.debgroup, c.debcode) = g.debgroup
 GROUP BY g.companyID;
 ```
 

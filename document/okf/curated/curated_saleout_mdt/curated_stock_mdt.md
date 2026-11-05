@@ -14,23 +14,25 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Daily stock-on-hand snapshot per branch and product for the modern-trade (MDT) chains that send stock: BT (separate stock_by_branch file, stock date = its end_date) and TW (stock columns of the sales report). Feeds fact_stock_mdt and the product and branch dimensions dim_product_mdt and dim_sales_branch_mdt.
+Daily stock-on-hand snapshot per branch and product for the modern-trade (MDT) chains that send stock: BT (separate stock_by_branch file, stock date = its end_date) and TW (stock columns of the sales report).
+
+Read by: [dim_product_mdt](/dimension/dim_product_mdt.md), [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [fact_stock_mdt](/fact/fact_stock_mdt.md).
 
 # Grain and key
 
-One row per `stock_date`, `store_code` (BT or TW), `branch_code` and `product_code`. Each block is deduplicated so the key is unique: BT keeps the latest file per (branch, article, end_date); TW keeps one row per (asatdate, store, SKU) ordered by Last_Sold_Date, then Stock_On_Hand. There is no declared uniqueKey (rebuilt table).
+One row per `stock_date`, `store_code` (BT or TW), `branch_code` and `product_code`. Each block is deduplicated so the key is unique: BT keeps the latest file per (branch, article, end_date); TW drops rows whose Stock_On_Hand is empty and keeps one row per (asatdate, store, SKU) ordered by Last_Sold_Date, then Stock_On_Hand. There is no declared uniqueKey (rebuilt table).
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `stock_date` | DATE | Date the stock refers to. BT: end_date of the file. TW: the file's asatdate minus 1 day (assumed, not confirmed with the chain, to match BT's end_date = file day minus 1). |
+| `stock_date` | DATE | Date the stock refers to. BT: end_date of the file. TW: the file's asatdate minus 1 day. |
 | `store_code` | STRING | Chain code: 'BT' or 'TW'. |
 | `branch_code` | STRING | Branch identifier: BT uses the Thai branch name, TW the full store string like '60001-CRC Thai Watsadu ...'. |
 | `product_code` | STRING | BT: article_id. TW: SKU with leading zeros stripped (so it matches dim_product_mdt and TW sales). |

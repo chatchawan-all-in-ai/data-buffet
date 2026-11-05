@@ -14,24 +14,26 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Finance-owned product master that bridges old MAC5 product codes to new D365 codes and carries variant attributes (size, colour, style, config), weights, dimensions, units and the six-level TM product hierarchy. Nothing else in the repo reads it (no downstream consumer in `definitions/`); it is published for BI/finance use directly. Source: mds `mds_data_product_finance_master`.
+Finance-owned product master that bridges old MAC5 product codes to new D365 codes and carries variant attributes (size, colour, style, config), weights, dimensions, units and the six-level TM product hierarchy. Source: mds `mds_data_product_finance_master`.
+
+Read by: [export_dim_product_master_fc](/view/pub_sub/export_dim_product_master_fc.md).
 
 # Grain and key
 
-One row per (company, Barcode) among active mds rows (the SK ordering key; uniqueness is not enforced by the SQL). Key: `ProductMasterFcSK` (surrogate, unstable across days).
+One row = one product variant by barcode per company: key (company, Barcode) among active mds rows (the SK ordering key; uniqueness is not enforced by the SQL). `ProductMasterFcSK` is the surrogate key, regenerated every run.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ProductMasterFcSK` | INT64 | `ProductMasterFcSK` is `ROW_NUMBER() OVER(ORDER BY companyID, Barcode)` over the active mds rows; it regenerates on every daily run. |
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), found by a LEFT JOIN on `companyID`; NULL when the mds company code has no match in dim_company. |
+| `ProductMasterFcSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, Barcode)` over the active mds rows. Regenerated every run. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `ProductIDOldMac5` | STRING | Pass-through of mds `ProductIDOldMac5`, cleaned with `cleanString` (empty string becomes NULL). Product code in the old MAC5 system. |
 | `ProductNameOldMac5` | STRING | Pass-through of mds `ProductNameOldMac5`, cleaned with `cleanString` (empty string becomes NULL). Product name in MAC5. |
@@ -70,7 +72,7 @@ One row per (company, Barcode) among active mds rows (the SK ordering key; uniqu
 | `ToUnit` | STRING | Pass-through of mds `ToUnit`, cleaned with `cleanString` (empty string becomes NULL). Target unit of the conversion. |
 | `SalesUnit` | STRING | Pass-through of mds `SalesUnit`, cleaned with `cleanString` (empty string becomes NULL). Sales unit. |
 | `PackSize` | STRING | Pass-through of mds `PackSize`, cleaned with `cleanString` (empty string becomes NULL). Pack size text. |
-| `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_product_finance_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 
@@ -78,7 +80,7 @@ One row per (company, Barcode) among active mds rows (the SK ordering key; uniqu
 - `uniqueKey`: `ProductMasterFcSK`.
 - Storage options: `{"clusterBy": ["ProductMasterFcSK"]}`.
 - Reads: `mds_dataset.mds_data_product_finance_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows (`is_active = TRUE`); runs after dim_company (declared dependency).
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
 
 # Examples
 

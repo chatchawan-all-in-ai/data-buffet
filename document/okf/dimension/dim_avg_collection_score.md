@@ -14,39 +14,41 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
 status: draft
 ---
 
 # What it is
 
-Scoring-band lookup for the customer-grade model. Each row says how many score points a customer earns when its average collection days (days from invoice date or due date to receipt) falls inside `[AvgCollectiondayMin, AvgCollectiondayMax]`. It answers: how fast does this customer pay? Consumers are [dim_customer_grade](/dimension/dim_customer_grade.md) (joined twice, as the invoice-date and due-date score: `InvAvgCollectSK`, `DueAvgCollectSK`) and [dim_group_customer_grade](/dimension/dim_group_customer_grade.md). Source is the mds master `mds_data_custgrade_score_master`, maintained by business users in MDS.
+Scoring-band lookup for the customer-grade model. Each row says how many score points a customer earns when its average collection days (days from invoice date or due date to receipt) falls inside `[AvgCollectiondayMin, AvgCollectiondayMax]`. [dim_customer_grade](/dimension/dim_customer_grade.md) joins it twice, as the invoice-date and due-date score (`InvAvgCollectSK`, `DueAvgCollectSK`). Source is the mds master `mds_data_custgrade_score_master`.
+
+Read by: [dim_customer_grade](/dimension/dim_customer_grade.md), [dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
 
 # Grain and key
 
-One row per (company, min, max, StartDate, EndDate) band from mds. Key: `AvgCollectSK` (surrogate, unstable across days). The natural key is `companyID` + `AvgCollectiondayMin/Max` + validity dates; bands are expected not to overlap for a company on a given date.
+One row = one score band: key `AvgCollectSK` (surrogate, regenerated every run); natural key `companyID` + `AvgCollectiondayMin/Max` + `StartDate` + `EndDate`, from active mds rows.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `AvgCollectSK` | INT64 | `AvgCollectSK` is `ROW_NUMBER() OVER(ORDER BY companyID, AvgCollectiondayMin, AvgCollectiondayMax, StartDate, EndDate)` over the active mds rows; it regenerates on every daily run. |
-| `CompanySK` | INT64 | Company surrogate key from [dim_company](/dimension/dim_company.md), found by a LEFT JOIN on `companyID`; NULL when the mds company code has no match in dim_company. |
+| `AvgCollectSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, AvgCollectiondayMin, AvgCollectiondayMax, StartDate, EndDate)` over the active mds rows. Regenerated every run. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `AvgCollectiondayMin` | FLOAT64 | Lower bound (inclusive) of the band for average collection (receipt age) days, cast with `castFloat64` from the mds column. |
 | `AvgCollectiondayMax` | FLOAT64 | Upper bound (inclusive) of the band for average collection (receipt age) days, cast with `castFloat64` from the mds column. |
 | `Score` | FLOAT64 | Score points awarded to a customer whose metric falls inside the band; `castFloat64` of the mds `Score` column. [dim_customer_grade](/dimension/dim_customer_grade.md) uses `IFNULL(Score, 0)`. |
 | `StartDate` | DATE | First day the band row is valid (mds `StartDate`, passed through as DATE). |
 | `EndDate` | DATE | Last day the band row is valid (mds `EndDate`, passed through as DATE). dim_customer_grade matches rows where yesterday (Asia/Bangkok) is between StartDate and EndDate. |
-| `MdsID` | STRING | Row id of the source record in the mds master table (`id`, cleaned with `cleanString`); trace column back to MDS. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_custgrade_score_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 
-- Definition: `definitions/dimension/dim_avg_collection_score.sqlx` (`type: "table"`, tags `dimension_daily`).
+- Definition: `definitions/dimension/dim_avg_collection_score.sqlx` (`type: "table"`, tag `dimension_daily`).
 - `uniqueKey`: `AvgCollectSK`.
 - Storage options: `{"clusterBy": ["AvgCollectSK"]}`.
-- Reads: `mds_dataset.mds_data_custgrade_score_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`) from active mds rows; runs after dim_company.
+- Reads: `mds_dataset.mds_data_custgrade_score_master` (master data loaded outside this repo; only rows with `is_active = TRUE`), [dimension_table.dim_company](/dimension/dim_company.md).
+- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
 
 # Examples
 
