@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "export_chqri"
-description: "One row = one ag01 received cheque (chqtype 1) per receipt (RS) payment line dated 2026; commission set `chqri` for the TF team, exposed for the Pub/Sub export with the sample's columns plus row_key and row_hash."
+description: "One row = one ag01 received cheque (chqtype 1) per receipt (RS) payment line across all years; commission set `chqri` for the TF team, exposed for the Pub/Sub export with the sample's columns plus row_key and row_hash."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=pub_sub&t=export_chqri&page=table"
 project_id: databuffet-nonprd
 dataset_id: pub_sub
@@ -20,11 +20,11 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of commission set `chqri` for the TF team (company ag01): one ag01 received cheque (chqtype 1) per receipt (RS) payment line dated 2026. Its columns, names, order and JSON types are those of the commission sample sent to TF (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `chqri` to topic `export-commission-chqri`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files are split into date folders by `cqldate` (`snapshot_date` in the export config).
+The Pub/Sub export view of commission set `chqri` for the TF team (company ag01): one ag01 received cheque (chqtype 1) per receipt (RS) payment line across all years. Its columns, names, order and JSON types are those of the commission sample sent to TF (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `chqri` to topic `export-commission-chqri`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files are split into date folders by `cqldate` (`snapshot_date` in the export config).
 
 # Grain and key
 
-One row = one ag01 received cheque (chqtype 1) per receipt (RS) payment line dated 2026: key `company_source_id`, `chqno`, `chqbank`, `chqdatec`, `chqtag`, `cqlvnos`, `cqlbank`, `cqlautono`, `cqlsys` (unique); `row_key` is the JSON of that key.
+One row = one ag01 received cheque (chqtype 1) per receipt (RS) payment line across all years: key `company_source_id`, `chqno`, `chqbank`, `chqdatec`, `chqtag`, `cqlvnos`, `cqlbank`, `cqlautono`, `cqlsys` (unique); `row_key` is the JSON of that key.
 
 # Schema
 
@@ -51,7 +51,7 @@ One row = one ag01 received cheque (chqtype 1) per receipt (RS) payment line dat
 
 - Definition: `definitions/view/pub_sub/export_chqri.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [validated_mac5.chq](/validated/validated_mac5/chq.md), [validated_mac5.cql](/validated/validated_mac5/cql.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Company `ag01` only; documents of 2026. Aliases in the column descriptions: `c` = validated_mac5.cql (cheque/payment line); `q` = validated_mac5.chq (cheque).
+- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Scope: company `ag01`, all years by payment-line date. Aliases in the column descriptions: `c` = validated_mac5.cql (cheque/payment line); `q` = validated_mac5.chq (cheque).
 
 # Examples
 

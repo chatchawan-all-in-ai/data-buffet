@@ -133,15 +133,17 @@ runs** — see "Deploy" below:
 | `view/pub_sub/export_<table>.sqlx` × 33 | `pub_sub.export_<table>` (views, tags `view` + `pub_sub`) | AI team sample tables (below): the columns of the sample CSVs sent 2026-10-26 / 2026-11-02, `row_key`, `row_hash` |
 | `view/pub_sub/export_<set>.sqlx` × 12 | `pub_sub.export_<set>` (views, tags `view` + `pub_sub`) | Commission sets for TF (below): the columns of the sample sent to TF on 2026-10-14, `row_key`, `row_hash` |
 
-**Commission sets for the TF team** (company ag01, documents of 2026; added 2026-11-02).
+**Commission sets for the TF team** (company ag01; added 2026-11-02).
 `table_name` = the message `table`; topic `export-commission-<set>`; all have
 `trigger_scheduler = daily_process`. Columns, names, order and JSON types follow the sample
 `commission_tf_ag01_2026` sent to TF on 2026-10-14 (e.g. `company_source_id`), not the source
 column names. Folder date = the column the first-load files are split by (`snapshot_date`;
 master data has none and goes under the export date).
 
-Year 2026 is fixed in the commission views (`mihyear`, `miryear`, `cqldate`); the SQL headers
-list each deviation from the original SQL Server queries.
+The six document exports (`order`, `invoice`, `credit_note`, `debit_note`, `receipt`,
+`chqri`) cover all years, including historical and future dates, for `ag01` only.
+The sample year does not restrict export coverage. All other filters remain in place;
+the SQL headers list each deviation from the original SQL Server queries.
 
 | Set (`table`) | View | Natural key (`primary_key`) | Built from (validated_mac5 unless noted) | Folder date |
 |---|---|---|---|---|
@@ -150,7 +152,7 @@ list each deviation from the original SQL Server queries.
 | `credit_note` | `export_credit_note` | `company_source_id`, `CN_id`, `no` | `mih` (BS), `mil`, `stk`, `ar_s` | `CN_Date` |
 | `debit_note` | `export_debit_note` | `company_source_id`, `DN_id`, `no` | `mih` (AS), `mil`, `stk`, `ar_s` | `DN_Date` |
 | `receipt` | `export_receipt` | `company_source_id`, `mirvnos`, `mirlistno`, `cqlno`, `cqlbank`, `cqlautono`, `chqbank`, `chqdatec`, `chqtag` (cheque columns NULL for cash) | `mir` (RS), `mih`, `cql`, `chq`, `ar_s` | `Payment_Date` |
-| `chqri` | `export_chqri` | `company_source_id`, `chqno`, `chqbank`, `chqdatec`, `chqtag`, `cqlvnos`, `cqlbank`, `cqlautono`, `cqlsys` | `chq` (type 1), `cql` (RS), year of `cqldate` | `cqldate` |
+| `chqri` | `export_chqri` | `company_source_id`, `chqno`, `chqbank`, `chqdatec`, `chqtag`, `cqlvnos`, `cqlbank`, `cqlautono`, `cqlsys` | `chq` (type 1), `cql` (RS) | `cqldate` |
 | `status` | `export_status` | `company_source_id`, `id` | `ar_s` | export date |
 | `company` | `export_company` | `company_source_id`, `id` (customer code) | `deb` | export date |
 | `sell` | `export_sell` | `company_source_id`, `id` | `per` (hidden sellers included) | export date |

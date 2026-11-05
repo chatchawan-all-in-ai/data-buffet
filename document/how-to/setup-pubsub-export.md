@@ -515,8 +515,8 @@ serialize ทุกการเขียนต่อ `(table, primary_key)` เ�
 
 ## ส่วน C — ชุด commission ของทีม TF
 
-เพิ่ม 2026-11-02 · บริษัท `ag01` · เอกสารปี 2026 + master ทั้งหมด · คอลัมน์ ชื่อ ลำดับ และชนิดข้อมูล
-ตามตัวอย่าง `commission_tf_ag01_2026` ที่ส่งทีม TF เมื่อ 14 ต.ค. 2026 · แต่ละชุดส่ง **หลังรอบ
+ขอบเขตข้อมูลและสัญญาคอลัมน์ของชุด TF อยู่ใน
+[process reference](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) · แต่ละชุดส่ง **หลังรอบ
 `daily_process` (06:00 น.) ที่สำเร็จ** (`trigger_scheduler`) — รอบที่ล้มเหลวหรือการรันมือไม่นับ ชุดนั้นรอ
 `daily_process` รอบถัดไปที่สำเร็จ แล้วส่งการเปลี่ยนทั้งหมดในครั้งเดียว · ข้อมูลตั้งต้นเป็นไฟล์ JSON ใน GCS
 แยก folder ตามวันที่ ทีม TF ดึงเข้าเอง ไม่ส่งออกนอก GCP
@@ -542,10 +542,12 @@ serialize ทุกการเขียนต่อ `(table, primary_key)` เ�
    `gcloud iam service-accounts keys create "$HOME/sa-pull-tf-prd.json" --iam-account=sa-pull-tf-prd@databuffet-nonprd.iam.gserviceaccount.com --project=databuffet-nonprd`
 5. ตั้ง alert และส่ง handover package (ส่วน B ขั้น 4–5)
 
-### C(b). วันโหลดครั้งแรกที่กัปตันกำหนด (ก่อน 15 พฤศจิกายน 2026)
+### C(b). โหลดเต็มครั้งแรกวันที่ 13 พฤศจิกายน 2026
 
-ยังไม่ทำวันนี้และไม่ทำอัตโนมัติเมื่อ merge/deploy/setup/tag `pub_sub` · จนถึงขั้นนี้ 12 topic
-จะไม่ได้รับข้อความ publisher คืน `not seeded: waiting for the first-load export` · ในวันที่กัปตันแจ้งเท่านั้น:
+Merge และ deploy ได้ทันที โดยการส่ง Pub/Sub ของ TF ปิดอยู่แล้วและต้องคงปิดไว้จนถึงวันที่
+13 พฤศจิกายน 2026 · วันนั้นทำ full first load แบบ onetime ตามขั้นตอนด้านล่าง แล้วจึงเปิด
+Pub/Sub สำหรับข้อมูลเดินหน้า · merge/deploy/setup/tag `pub_sub` ไม่ทำ first load อัตโนมัติ
+สำหรับชุดที่ยังไม่ seed publisher คืน `not seeded: waiting for the first-load export`:
 
 1. เปิด Google Cloud Shell, clone repo และ checkout commit ที่ merge/deploy แล้ว เข้า repo
 2. รันทีละ topic (ส่วน B ขั้น 3) เพื่อ seed sent state และเขียนไฟล์จาก snapshot เดียวกัน:
@@ -589,7 +591,7 @@ topic: `export-ta-org_levels`, `export-ta-org_units`, `export-ta-positions`, `ex
 - [ ] วิธี key เท่านั้น: สร้าง JSON key ด้วยมือนอก repo แล้วส่งเป็น zip ใส่รหัสผ่านผ่านช่องทางที่ปลอดภัย และนัดรอบ rotate ทุก 90 วัน (ขั้น 2)
 - [ ] ในวัน first-load ที่กัปตันกำหนด หลังมี subscription แล้ว รันจาก Cloud Shell เท่านั้น `export-snapshot.sh <ทีม> <topic>` ทีละ topic รอให้สคริปต์ seek และรอ 90 วินาทีก่อนเขียน manifest เสร็จ แล้วส่ง folder + export time ให้ทีม · ทีมรอ manifest และโหลดไฟล์ครบก่อนเริ่ม pull (ขั้น 3)
 - [ ] ตั้ง alert backlog + dead letter และส่ง handover package ครบ (ขั้น 4–5)
-- [ ] ชุด commission ของทีม TF: ทำตามส่วน C(a) แล้วรอกัปตันกำหนดวันทำ C(b)
+- [ ] ชุด commission ของทีม TF: ทำตามส่วน C(a) แล้วทำ full first load และเปิด Pub/Sub ตามส่วน C(b)
 
 ---
 

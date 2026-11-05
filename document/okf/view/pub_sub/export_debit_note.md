@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "export_debit_note"
-description: "One row = one line of an ag01 debit note (AS) of 2026, not cancelled; commission set `debit_note` for the TF team, exposed for the Pub/Sub export with the sample's columns plus row_key and row_hash."
+description: "One row = one line of an ag01 debit note (AS) across all years, not cancelled; commission set `debit_note` for the TF team, exposed for the Pub/Sub export with the sample's columns plus row_key and row_hash."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=pub_sub&t=export_debit_note&page=table"
 project_id: databuffet-nonprd
 dataset_id: pub_sub
@@ -20,11 +20,11 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of commission set `debit_note` for the TF team (company ag01): one line of an ag01 debit note (AS) of 2026, not cancelled. Its columns, names, order and JSON types are those of the commission sample sent to TF (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `debit_note` to topic `export-commission-debit_note`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files are split into date folders by `DN_Date` (`snapshot_date` in the export config).
+The Pub/Sub export view of commission set `debit_note` for the TF team (company ag01): one line of an ag01 debit note (AS) across all years, not cancelled. Its columns, names, order and JSON types are those of the commission sample sent to TF (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `debit_note` to topic `export-commission-debit_note`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files are split into date folders by `DN_Date` (`snapshot_date` in the export config).
 
 # Grain and key
 
-One row = one line of an ag01 debit note (AS) of 2026, not cancelled: key `company_source_id`, `DN_id`, `no` (unique); `row_key` is the JSON of that key.
+One row = one line of an ag01 debit note (AS) across all years, not cancelled: key `company_source_id`, `DN_id`, `no` (unique); `row_key` is the JSON of that key.
 
 # Schema
 
@@ -55,7 +55,7 @@ One row = one line of an ag01 debit note (AS) of 2026, not cancelled: key `compa
 
 - Definition: `definitions/view/pub_sub/export_debit_note.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [validated_mac5.ar_s](/validated/validated_mac5/ar_s.md), [validated_mac5.mih](/validated/validated_mac5/mih.md), [validated_mac5.mil](/validated/validated_mac5/mil.md), [validated_mac5.stk](/validated/validated_mac5/stk.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Company `ag01` only; documents of 2026. Aliases in the column descriptions: `ars` = validated_mac5.ar_s (status code); `l` = validated_mac5.mil (document line); `m` = validated_mac5.mih (document header); `s` = validated_mac5.stk (product).
+- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Scope: company `ag01`, all years. Aliases in the column descriptions: `ars` = validated_mac5.ar_s (status code); `l` = validated_mac5.mil (document line); `m` = validated_mac5.mih (document header); `s` = validated_mac5.stk (product).
 
 # Examples
 

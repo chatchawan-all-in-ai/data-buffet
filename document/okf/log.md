@@ -1,5 +1,7 @@
 # Directory Update Log
 
+* **Update**: Expanded the six TF commission export views and their cards to include all years for company `ag01`.
+
 ## 2026-11-05 (core card review fixes)
 
 * **Creation**: Added the [curated_derp](curated/curated_derp/index.md) dataset with the [curated_invoice_line_cost](curated/curated_derp/curated_invoice_line_cost.md) and [curated_journal_invoice](curated/curated_derp/curated_journal_invoice.md) cards (curated 16 cards).
