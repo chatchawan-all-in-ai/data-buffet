@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-02T20:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T16:27:35+07:00" }
 status: draft
 ---
 
@@ -24,7 +24,7 @@ The Pub/Sub export view of the TA app table `access_exceptions`: [org_center_exc
 
 # Grain and key
 
-One special-access scope: key `source_row_id, company_code, director_code, region_code, section_code, mkt_group_id, mkt_subgroup_id, mkt_segment_id` (unique). `row_key` is the JSON of the natural key.
+One row = one special-access scope: key `source_row_id`, `company_code`, `director_code`, `region_code`, `section_code`, `mkt_group_id`, `mkt_subgroup_id`, `mkt_segment_id` (unique); `row_key` is the JSON of that key.
 
 # Schema
 
@@ -43,14 +43,14 @@ One special-access scope: key `source_row_id, company_code, director_code, regio
 | `mkt_segment_id` | STRING | Segment or ALL. Part of the natural key. |
 | `flag_customer` | BOOL | Customer-level flag from MDS. |
 | `source_row_id` | STRING | MDS row id. Part of the natural key. |
-| `row_key` | STRING | `TO_JSON_STRING(STRUCT(<natural key>))`: JSON of the natural key, used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
 | `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_access_exceptions.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [org_center_exception](/org_center/org_center_exception.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow the org sample sent to the AI team on 2026-11-02 (one file per TA app table).
+- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow the TA app org sample (one file per TA app table).
 
 # Examples
 

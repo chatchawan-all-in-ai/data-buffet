@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-03T00:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T16:47:32+07:00" }
 status: draft
 ---
 
@@ -24,7 +24,7 @@ The Pub/Sub export view of [process_dataset.rls_ta_customer](/process/rls_ta_cus
 
 # Grain and key
 
-One row = one customer access grant of one TA employee: key `employee_id`, `customer_company_id`, `customer_code`, `marketing_group_id`, `sub_marketing_id`, `segment_id`, `access_source` (unique); `row_key` is the JSON of that key.
+One row = one customer access grant of one TA employee: key `employee_id`, `customer_company_id`, `customer_code`, `marketing_group_id`, `sub_marketing_id`, `segment_id`, `access_source` (unique); `row_key` is the JSON of that key. `access_source` is part of the key, together with the other 6 columns.
 
 # Schema
 
@@ -36,7 +36,7 @@ One row = one customer access grant of one TA employee: key `employee_id`, `cust
 | `marketing_group_id` | STRING | `ALL` or a marketing group code (non-`ALL` only on special-access product rows). |
 | `sub_marketing_id` | STRING | `ALL` or a marketing sub-group code. |
 | `segment_id` | STRING | `ALL` or a segment code. |
-| `access_source` | STRING | Where the access comes from: `TA` (own portfolio while holding a TA seat), `SECTION_MGR`, `REGION_MGR`, `DIRECTOR`, `CEO` (portfolio customers of every TA seated in sections under the viewer's unit) or `EXCEPTION` (special access). When several apply the first in this order is kept. |
+| `access_source` | STRING | Access reason from [rls_ta_customer](../../process/rls_ta_customer.md#schema), which defines the department-based TA grants, manager grants, exceptions and precedence. |
 | `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
 | `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
 

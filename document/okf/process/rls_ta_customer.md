@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-02T00:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T16:28:08+07:00" }
 status: draft
 ---
 
@@ -36,7 +36,7 @@ One row per `employee_id` + `customer_company_id` + `customer_code` + `marketing
 | `marketing_group_id` | STRING | `ALL` or a marketing group code (non-`ALL` only on special-access product rows). |
 | `sub_marketing_id` | STRING | `ALL` or a marketing sub-group code. |
 | `segment_id` | STRING | `ALL` or a segment code. |
-| `access_source` | STRING | Where the access comes from: `TA` (own portfolio while holding a TA seat), `SECTION_MGR`, `REGION_MGR`, `DIRECTOR`, `CEO` (portfolio customers of every TA seated in sections under the viewer's unit) or `EXCEPTION` (special access). When several apply the first in this order is kept. |
+| `access_source` | STRING | Where the access comes from: `TA` (customers of the department(s) the TA currently holds in `dim_sale_representative_last`, same company), `SECTION_MGR`, `REGION_MGR`, `DIRECTOR`, `CEO` (customers of those departments' sections under the viewer's unit) or `EXCEPTION` (special access). When several apply the first in this order is kept. |
 
 # How it is built
 

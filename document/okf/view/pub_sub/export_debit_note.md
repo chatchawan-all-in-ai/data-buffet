@@ -14,17 +14,17 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-opus-5-5", at: "2026-11-02T18:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-opus-5-5", at: "2026-11-05T16:27:50+07:00" }
 status: draft
 ---
 
 # What it is
 
-The Pub/Sub export view of commission set `debit_note` for the TF team (company ag01): one line of an ag01 debit note (AS) of 2026, not cancelled. Its columns, names, order and JSON types are those of the commission sample sent to TF on 2026-10-14 (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `debit_note` to topic `export-commission-debit_note`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files are split into date folders by `DN_Date` (`snapshot_date` in the export config).
+The Pub/Sub export view of commission set `debit_note` for the TF team (company ag01): one line of an ag01 debit note (AS) of 2026, not cancelled. Its columns, names, order and JSON types are those of the commission sample sent to TF (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `debit_note` to topic `export-commission-debit_note`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files are split into date folders by `DN_Date` (`snapshot_date` in the export config).
 
 # Grain and key
 
-One line of an ag01 debit note (AS) of 2026, not cancelled: key `company_source_id, DN_id, no` (unique). `row_key` is the JSON of that key.
+One row = one line of an ag01 debit note (AS) of 2026, not cancelled: key `company_source_id`, `DN_id`, `no` (unique); `row_key` is the JSON of that key.
 
 # Schema
 
@@ -48,7 +48,7 @@ One line of an ag01 debit note (AS) of 2026, not cancelled: key `company_source_
 | `Actual_amt` | FLOAT64 | From `milsum` of validated_mac5.mil (document line). |
 | `MIHkeyDate` | DATETIME | From `mihkeydate` of validated_mac5.mih (document header). |
 | `DNType` | STRING | From `ar_snamet` of validated_mac5.ar_s (status code). |
-| `row_key` | STRING | `TO_JSON_STRING(STRUCT(company_source_id, DN_id, no))`: JSON of the natural key, used as the message `primary_key` and the row key in `mart_sent_state`; never NULL (a NULL key value is JSON null). |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL (a NULL key value is JSON null). |
 | `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
 
 # How it is built

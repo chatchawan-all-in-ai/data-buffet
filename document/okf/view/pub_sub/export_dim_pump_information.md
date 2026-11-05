@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-03T00:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T16:27:50+07:00" }
 status: draft
 ---
 
@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_table.dim_pump_information](/dimension/dim
 
 # Grain and key
 
-One row = one pump segment per company, product code, region and new-product flag: key `CompanyID`, `milstk`, `RegionID`, `FlagNewProductMKT` (unique); `row_key` is the JSON of that key.
+One row = one pump segment per company, product code, region and new-product flag: key `CompanyID`, `milstk`, `RegionID`, `FlagNewProductMKT` (unique); `row_key` is the JSON of that key. `CompanyID`, `milstk`, `RegionID`, `FlagNewProductMKT` are columns of the source table that are not exported as data columns; they appear only inside `row_key`.
 
 # Schema
 

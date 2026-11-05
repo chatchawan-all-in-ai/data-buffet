@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-03T00:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T16:47:32+07:00" }
 status: draft
 ---
 
@@ -24,7 +24,7 @@ The Pub/Sub export view of [fact_table.fact_transaction_delivery](/fact/fact_tra
 
 # Grain and key
 
-One row = one invoice line that is delivered: key `companyID`, `milType`, `milvnos`, `milStk` plus `occurrence` (the position of the row among rows with the same key, ordered by their data JSON); `row_key` is the JSON of that key.
+One row = one invoice line that is delivered: key `companyID`, `milType`, `milvnos`, `milStk`, `occurrence` (unique); `row_key` is the JSON of that key. `occurrence` is computed as the position of the row among source rows with the same business key, ordered by their data JSON; it appears only inside `row_key`. `companyID`, `milType`, `milStk` are columns of the source table that are not exported as data columns; they appear only inside `row_key`.
 
 # Schema
 

@@ -14,17 +14,17 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-opus-5-5", at: "2026-11-02T18:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-opus-5-5", at: "2026-11-05T16:27:42+07:00" }
 status: draft
 ---
 
 # What it is
 
-The Pub/Sub export view of commission set `company` for the TF team (company ag01): one ag01 customer. Its columns, names, order and JSON types are those of the commission sample sent to TF on 2026-10-14 (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `company` to topic `export-commission-company`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files of this set go under the export date (no `snapshot_date`).
+The Pub/Sub export view of commission set `company` for the TF team (company ag01): one ag01 customer. Its columns, names, order and JSON types are those of the commission sample sent to TF (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `company` to topic `export-commission-company`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files of this set go under the export date (no `snapshot_date`).
 
 # Grain and key
 
-One ag01 customer: key `company_source_id, id` (unique). `row_key` is the JSON of that key.
+One row = one ag01 customer: key `company_source_id`, `id` (unique); `row_key` is the JSON of that key.
 
 # Schema
 
@@ -33,7 +33,7 @@ One ag01 customer: key `company_source_id, id` (unique). `row_key` is the JSON o
 | `company_source_id` | STRING | From `company_id` of the source table. Part of the natural key. |
 | `id` | STRING | From `debcode` of the source table. Part of the natural key. |
 | `companyname` | STRING | From `debnamet` of the source table. |
-| `row_key` | STRING | `TO_JSON_STRING(STRUCT(company_source_id, id))`: JSON of the natural key, used as the message `primary_key` and the row key in `mart_sent_state`; never NULL (a NULL key value is JSON null). |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL (a NULL key value is JSON null). |
 | `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
 
 # How it is built

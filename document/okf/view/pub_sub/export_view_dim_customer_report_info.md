@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-03T00:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T16:28:08+07:00" }
 status: draft
 ---
 
@@ -31,7 +31,7 @@ One row = one customer report name with its segment and TA assignment: key `Cust
 | Column | Type | Description |
 |---|---|---|
 | `CustomerReportInfoSK` | INT64 | Stable SK of the report-info row (MERGE key CompanyID + CustomerReportKey in dim_customer_report_info); joined from view_fact_transcation. |
-| `CustomerSegmentSK` | INT64 | SK of the segment in `dim_customer_segment` (full rebuild, regenerated daily); passed through for Power BI to relate. |
+| `CustomerSegmentSK` | INT64 | SK of the segment in `dim_customer_segment` (full rebuild, regenerated daily). |
 | `CustomerReportName` | STRING | Report shop name (from MDS Customer_Report_Master / invoice names; matches view_dim_invoice `CustomerReportName`). |
 | `ShopOnline` | STRING | Online-shop indicator text from the MDS customer report master (NULL for names that come only from invoices). |
 | `FlagPC` | STRING | 'Yes' if the shop is a PC (flag in MDS), else 'No' (NULL becomes 'No'). |

@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-02T20:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T16:28:08+07:00" }
 status: draft
 ---
 
@@ -24,7 +24,7 @@ The Pub/Sub export view of the TA app table `org_levels`: one row per company an
 
 # Grain and key
 
-One company and depth: key `company_id, depth` (unique). `row_key` is the JSON of the natural key.
+One row = one company and depth: key `company_id`, `depth` (unique); `row_key` is the JSON of that key.
 
 # Schema
 
@@ -34,14 +34,14 @@ One company and depth: key `company_id, depth` (unique). `row_key` is the JSON o
 | `depth` | INT64 | 1 = division, 2 = region, 3 = section. Part of the natural key. |
 | `name` | STRING | Level name shown in the app: ฝ่าย, ภาค or ส่วน. |
 | `mds_source_table` | STRING | MDS master the level comes from: mds_data_sales_director_master, mds_data_sales_region_master or mds_data_sales_section_master. |
-| `row_key` | STRING | `TO_JSON_STRING(STRUCT(<natural key>))`: JSON of the natural key, used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
 | `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_org_levels.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [org_center_unit](/org_center/org_center_unit.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow the org sample sent to the AI team on 2026-11-02 (one file per TA app table).
+- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow the TA app org sample (one file per TA app table).
 
 # Examples
 

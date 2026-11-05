@@ -14,17 +14,17 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-opus-5-5", at: "2026-11-02T18:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-opus-5-5", at: "2026-11-05T16:27:42+07:00" }
 status: draft
 ---
 
 # What it is
 
-The Pub/Sub export view of commission set `chqri` for the TF team (company ag01): one ag01 received cheque (chqtype 1) per receipt (RS) payment line dated 2026. Its columns, names, order and JSON types are those of the commission sample sent to TF on 2026-10-14 (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `chqri` to topic `export-commission-chqri`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files are split into date folders by `cqldate` (`snapshot_date` in the export config).
+The Pub/Sub export view of commission set `chqri` for the TF team (company ag01): one ag01 received cheque (chqtype 1) per receipt (RS) payment line dated 2026. Its columns, names, order and JSON types are those of the commission sample sent to TF (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `chqri` to topic `export-commission-chqri`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files are split into date folders by `cqldate` (`snapshot_date` in the export config).
 
 # Grain and key
 
-One ag01 received cheque (chqtype 1) per receipt (RS) payment line dated 2026: key `company_source_id, chqno, chqbank, chqdatec, chqtag, cqlvnos, cqlbank, cqlautono, cqlsys` (unique). `row_key` is the JSON of that key.
+One row = one ag01 received cheque (chqtype 1) per receipt (RS) payment line dated 2026: key `company_source_id`, `chqno`, `chqbank`, `chqdatec`, `chqtag`, `cqlvnos`, `cqlbank`, `cqlautono`, `cqlsys` (unique); `row_key` is the JSON of that key.
 
 # Schema
 
@@ -44,7 +44,7 @@ One ag01 received cheque (chqtype 1) per receipt (RS) payment line dated 2026: k
 | `cqlvnos` | STRING | From `cqlvnos` of validated_mac5.cql (cheque/payment line). Part of the natural key. |
 | `cqlcus` | STRING | From `cqlcus` of validated_mac5.cql (cheque/payment line). |
 | `payment_amount` | FLOAT64 | From `cqlsuml` of validated_mac5.cql (cheque/payment line). |
-| `row_key` | STRING | `TO_JSON_STRING(STRUCT(company_source_id, chqno, chqbank, chqdatec, chqtag, cqlvnos, cqlbank, cqlautono, cqlsys))`: JSON of the natural key, used as the message `primary_key` and the row key in `mart_sent_state`; never NULL (a NULL key value is JSON null). |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL (a NULL key value is JSON null). |
 | `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
 
 # How it is built

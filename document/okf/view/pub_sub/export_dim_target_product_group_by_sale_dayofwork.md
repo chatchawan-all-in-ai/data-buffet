@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-03T00:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T16:27:50+07:00" }
 status: draft
 ---
 
@@ -24,7 +24,7 @@ The Pub/Sub export view of [dimension_table.dim_target_product_group_by_sale_day
 
 # Grain and key
 
-One row = one daily sales target (amount and quantity) of a sales representative and section for a product marketing group: key `companyID`, `Date`, `EmployeeID`, `DepartmentID`, `TargetID`, `MarketingGroupID`, `SubMarketingID`, `SegmentID`, `ChannelTargetGroup`, `StartDate` (unique); `row_key` is the JSON of that key.
+One row = one daily sales target (amount and quantity) of a sales representative and section for a product marketing group: key `companyID`, `Date`, `EmployeeID`, `DepartmentID`, `TargetID`, `MarketingGroupID`, `SubMarketingID`, `SegmentID`, `ChannelTargetGroup`, `StartDate` (unique); `row_key` is the JSON of that key. `companyID`, `Date`, `EmployeeID`, `DepartmentID`, `TargetID`, `MarketingGroupID`, `SubMarketingID`, `SegmentID`, `ChannelTargetGroup`, `StartDate` are columns of the source table that are not exported as data columns; they appear only inside `row_key`.
 
 # Schema
 

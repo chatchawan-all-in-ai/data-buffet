@@ -1,5 +1,10 @@
 # Directory Update Log
 
+## 2026-11-05 (pub_sub export card review fixes)
+
+* **Update**: Review corrections to the [Pub/Sub export cards and index](view/pub_sub/index.md), including grain and key descriptions, column meanings, formulas and publishing metadata; refreshed edit metadata on changed cards.
+* **Update**: Corrected the access-source description in [rls_ta_customer](process/rls_ta_customer.md#schema); the export card points to that definition.
+
 ## 2026-11-05 (TA department binding)
 
 * **Update**: Revised the [customer portfolio](org_center/org_center_customer_ta.md), [PC assignment](org_center/org_center_link.md), [membership](org_center/org_center_member.md), [flags](org_center/org_center_flags.md), [customer access](process/rls_ta_customer.md), [customer assignment export](view/pub_sub/export_customer_ta_assignments.md) and [PC link export](view/pub_sub/export_member_links.md) contracts.
