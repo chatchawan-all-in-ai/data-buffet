@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
 # What it is
 
 Order-line fact sliced by store/warehouse (branch) for the store reporting use case: PS (sales order) lines from `curated_mil` joined to their `curated_mih` header, restricted to orders that are in an MDS status with `flagwarehouse = true`, excluding 'PO.วางบิล' orders. Answers which products are ordered per store and when. Sister tables: [fact_invoice_store](/fact/fact_invoice_store.md) and [fact_backlog_store](/fact/fact_backlog_store.md).
+
+Read by: none in this repository.
 
 # Grain and key
 

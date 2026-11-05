@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -22,7 +22,7 @@ status: draft
 
 Snapshot of [dim_director](/dimension/dim_director.md) keeping, for each (CompanyID, DirectorID), the row with the latest `EndDate` then `StartDate`.
 
-Read by: [dim_rate_target](/dimension/dim_rate_target.md), [org_center_member](/org_center/org_center_member.md), [org_center_unit](/org_center/org_center_unit.md), [view_dim_customer_report_info](/view/dimension_view/view_dim_customer_report_info.md), [view_rls_data](/view/process_dataset/view_rls_data.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md), [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md), [Model_Target_DayOfWork](/view/onetime/Model_Target_DayOfWork.md).
+Read by: [dim_rate_target](/dimension/dim_rate_target.md), [org_center_member](/org_center/org_center_member.md), [org_center_unit](/org_center/org_center_unit.md), [view_dim_customer_report_info](/view/dimension_view/view_dim_customer_report_info.md), [view_rls_data](/view/process_dataset/view_rls_data.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md), [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md), [Model_Target_DayOfWork](/view/onetime/Model_Target_DayOfWork.md), update_sk_sale_rep_group.
 
 # Grain and key
 
@@ -49,7 +49,7 @@ One row = the latest-period row of a director: key (company, DirectorID). `Direc
 - Storage options: `{"clusterBy": ["DirectorSK"]}`.
 - Reads: [dimension_table.dim_director](/dimension/dim_director.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Rows are chosen with `QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, DirectorID ORDER BY EndDate DESC, StartDate DESC) = 1`.
-- The `update_sk_sale_rep_group` step backfills `dim_department_last.DirectorSK` from this table (it depends on all `_last` tables).
+- The `update_sk_sale_rep_group` step fills `dim_region_last.DirectorSK` from this table on `DirectorID` + `CompanySK`; `dim_department_last` then copies that key.
 - Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company and dim_director.
 
 # Examples

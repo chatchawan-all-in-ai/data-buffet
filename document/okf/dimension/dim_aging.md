@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -61,7 +61,7 @@ One row = one AR document (invoice, credit note or debit note): key (`companyID`
 | `PaymentAmount` | FLOAT64 | Amount received against the document: sum of RS receipt amounts from `mir` (with the cheque-extract adjustment). If the document is flagged complete via `dim_status_not_receive` (year <= 2023) it equals TotalAmount. For BS/AS rows it is TotalAmount when any receipt exists, else 0. |
 | `CreditNoteAmount` | FLOAT64 | Credit notes (type BS) attached to the invoice, `milSum * 1.07` summed (counts only notes with no receipt of their own). 0 on BS/AS rows. |
 | `DebitNoteAmount` | FLOAT64 | Debit notes (type AS) attached to the invoice, `milSum * 1.07` summed (counts only notes with no receipt of their own). 0 on BS/AS rows. |
-| `OutStanding` | FLOAT64 | Remaining balance. IS rows: `TotalAmount - PaymentAmount + CreditNoteAmount + DebitNoteAmount`, rounded to 2 decimals; 0 when the status-complete rule applies. BS/AS rows: 0 when the status-complete rule applies or when a receipt exists; `TotalAmount` when the note has no linked invoice (`mihRef1` is NULL); otherwise `TotalAmount` minus the note's own credit-note (BS) or debit-note (AS) amount (`milSum * 1.07` of its linked lines), rounded to 2 decimals. |
+| `OutStanding` | FLOAT64 | Remaining balance. IS rows: `TotalAmount - PaymentAmount + CreditNoteAmount + DebitNoteAmount`, rounded to 2 decimals; 0 when the status-complete rule applies. BS/AS rows: 0 when the status-complete rule applies or when a receipt exists; `TotalAmount` when the note has no linked invoice (`mihRef1` is NULL); otherwise `TotalAmount` minus the note's own credit-note (BS) or debit-note (AS) amount (`milSum * 1.07` of all its lines), rounded to 2 decimals. |
 | `flagComplete` | STRING | 'Completed' when `OutStanding` is between -1 and 1, else 'Non-Completed'. For invoices dated before 2023 that are still non-complete, a legacy check on `cfs` (`cfsclearsum = -1` and `cfsclearall = -1`) can flip it to 'Completed'. |
 | `MinReceiveDate` | DATE | Earliest receipt date for the document (from RS `mir` rows, or the cheque `extract_date` when cheque extraction applies). |
 | `MaxReceiveDate` | DATE | Latest receipt date for the document (same sources as `MinReceiveDate`). |

@@ -14,13 +14,13 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
 # What it is
 
-Monthly sell-out table for modern-trade (MDT) chains; for each (month, chain) it picks ONE source by priority: 1 CHAIN_FILE (closing files the chain sends itself, curated_eom_gb/hp/tw/bt, from Aug 2026), 2 BI (history file from the BI team, 2022-01 to 2026-07, read from validated_saleout_mdt.saleout_lastyear_monthly), 3 DAILY_ROLLUP (rolled up from [curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md) for months/chains with neither). Related tables: [curated_eom_gb](/curated/curated_saleout_mdt/curated_eom_gb.md), [curated_eom_hp](/curated/curated_saleout_mdt/curated_eom_hp.md), [curated_eom_tw](/curated/curated_saleout_mdt/curated_eom_tw.md), [curated_eom_bt](/curated/curated_saleout_mdt/curated_eom_bt.md).
+Monthly sell-out table for modern-trade (MDT) chains; for each (month, chain) it picks one source by priority: 1 CHAIN_FILE (closing files from curated_eom_gb/hp/tw/bt), 2 BI (history from validated_saleout_mdt.saleout_lastyear_monthly), 3 DAILY_ROLLUP (rolled up from [curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md) when neither is available). Related tables: [curated_eom_gb](/curated/curated_saleout_mdt/curated_eom_gb.md), [curated_eom_hp](/curated/curated_saleout_mdt/curated_eom_hp.md), [curated_eom_tw](/curated/curated_saleout_mdt/curated_eom_tw.md), [curated_eom_bt](/curated/curated_saleout_mdt/curated_eom_bt.md). Rows with DH product code `10176841` are excluded.
 
 Read by: [dim_product_mdt](/dimension/dim_product_mdt.md), [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [fact_saleout_monthly_mdt](/fact/fact_saleout_monthly_mdt.md).
 
@@ -36,7 +36,7 @@ Declared `uniqueKey`: `month_date`, `store_code`, `branch_code`, `product_code`.
 | `store_code` | STRING | Chain code (HP, MH, GB, BT, TW, DH). |
 | `branch_code` | STRING | Branch identifier in the convention of the chain (BT Thai branch name, TW full store string, DH branch codes with '_TG' appended for 'to go' branches from the BI file). |
 | `branch_name` | STRING | Branch name when the source has one; NULL for TW and BT closing files and for DH. |
-| `sales_channel` | STRING | Constant '-' (kept so the schema matches the old table; this grain has no channel). |
+| `sales_channel` | STRING | Constant '-'. |
 | `product_code` | STRING | Product code of the chain (HP ARTNO, BT article id, GB barcode, TW SKU without leading zeros, DH own code). |
 | `product_name` | STRING | Product name from the source. |
 | `sale_qty` | FLOAT64 | Quantity sold in the month (or day for the current month); negative for returns. |

@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -49,7 +49,7 @@ One row = one active MDS row: key `RateTargetSK`, `ROW_NUMBER()` ordered by comp
 | `EmployeeID` | STRING | Employee (sales person) code receiving the share. |
 | `EmployeeName` | STRING | Employee name as entered in MDS. |
 | `Percent` | FLOAT64 | Share of the target in percent (FLOAT64 via `castFloat64`; the consumer divides by 100). After the build, rows with the same Year, Month (not NULL) and TargetID as a row whose department belongs to director 'MDT' get 100 divided by the number of distinct EmployeeID-DepartmentID pairs among those MDT rows. |
-| `MdsID` | STRING | `id` of the source row in `mds_data_target_rate_master`, cleaned with `cleanString`; trace column back to MDS. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_target_rate_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 

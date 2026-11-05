@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
 # What it is
 
 Daily series-level targets for modern trade from [dim_target_series_mdt](/dimension/dim_target_series_mdt.md), with branch, zone and as-at-date region/manager/director SKs; same pattern as [fact_target_saleout_mdt](/fact/fact_target_saleout_mdt.md). BI compares it with sell-out via the product attribute SeriesSK (series names that do not match go to OTHERS).
+
+Read by: none in this repository.
 
 # Grain and key
 

@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -33,7 +33,7 @@ One row = one distinct combination `(CompanySK, CompanyID, milstk, RegionID, Fla
 | Column | Type | Description |
 |---|---|---|
 | `PumpSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by lower(milstk), RegionID, FlagNewProductMKT. Regenerated every run. |
-| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md), copied from `fact_transcation.CompanySK`; NULL if no match. |
+| `CompanySK` | INT64 | Copied from `fact_transcation.CompanySK`; NULL when that source value is NULL. |
 | `CompanyID` | STRING | Company code copied from `fact_transcation.CompanyID`. |
 | `milstk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
 | `RegionID` | STRING | Region code of the line, from dim_region via `fact_transcation.RegionSK`; NULL when the line has no region. |

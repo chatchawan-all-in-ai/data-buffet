@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -32,7 +32,7 @@ One row = one sell-out (sale or return) document-type total per sale date, chain
 
 | Column | Type | Description |
 |---|---|---|
-| `sale_date` | DATE | Date of the sale (partition column). For BT, spread evenly over the covered range when the feed gives a date range. |
+| `sale_date` | DATE | Date of the sale (partition column). For BT multi-day rows, this is the last day of the covered span and the whole MTD difference is assigned to that day. |
 | `store_code` | STRING | Retail-chain (store) code: HP, MH, BT, GB, TW or DH, set per chain feed in the curated_saleout_mdt build; joins dim_region.RegionID for the region sets. |
 | `branch_sk` | INT64 | Surrogate key `BranchMdtSK` of [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md) (match on store code + branch code); -1 when the branch is not in the dimension. |
 | `zone_sk` | INT64 | Surrogate key `ZoneMdtSK` of the branch's zone, taken from dim_sales_branch_mdt; -1 when unmatched. |
@@ -47,7 +47,7 @@ One row = one sell-out (sale or return) document-type total per sale date, chain
 | `doc_type_source` | STRING | 'SOURCE' when the chain sent the document type, 'DERIVED' when the build derived it (from curated_saleout_mdt). |
 | `sale_qty` | INT64 | Quantity sold (negative or flagged return when doc_type RETURN), from curated_saleout_mdt. |
 | `sale_amount` | FLOAT64 | Sales amount, from curated_saleout_mdt (currency THB; sign negative on returns). |
-| `days_covered` | INT64 | Number of days the source row covered (1 = exact day; >1 when the chain sent a range that was spread, e.g. BT). |
+| `days_covered` | INT64 | Number of days covered by the source row (1 = exact day; >1 when BT sent a multi-day span whose full amount is assigned to the last day). |
 | `date_is_estimated` | BOOL | TRUE when `days_covered > 1` (sale date is estimated), else FALSE. |
 | `branch_code` | STRING | Branch code/name exactly as the chain sent it (degenerate; format varies per chain). |
 | `product_code` | STRING | Product code as the chain sent it (may have leading zeros; matched to dim_product_mdt after LTRIM of '0'). |

@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
 # What it is
 
 MDS weight-score lookup: each row names a score type in English and Thai and gives its numeric weight.
+
+Read by: none in this repository.
 
 # Grain and key
 
@@ -39,7 +41,7 @@ One row = one active MDS weight-score row: key `WeightSK`, `ROW_NUMBER()` ordere
 | `Remark` | STRING | Free-text remark from MDS. |
 | `StartDate` | DATE | First date the weight applies (MDS DATE). |
 | `EndDate` | DATE | Last date the weight applies (MDS DATE). |
-| `MdsID` | STRING | `id` of the source row in `mds_data_custgrade_weight_score_master`, cleaned with `cleanString`; trace column back to MDS. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_custgrade_weight_score_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 

@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
 # What it is
 
 Product catalogue of the legacy MASTERSKU source: a camelCase rename of validated_mastersku.product with colour and size re-derived from the product JSON (post-operation). It is the input of [product_for_aisearch](/curated/curated_mastersku/product_for_aisearch.md) (the AI-search feed). The master_sku 3.0 successor with the same 50 columns is [curated_products](/curated/curated_master_sku/curated_products.md).
+
+Read by: [product_for_aisearch](/curated/curated_mastersku/product_for_aisearch.md).
 
 # Grain and key
 

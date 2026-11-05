@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -22,7 +22,7 @@ status: draft
 
 AI address-parsing result for MAC5 customers (table `deb`): it concatenates the three address lines `debadd1at`, `debadd2at`, `debadd3at` into `raw_address` and asks BigQuery `AI.GENERATE` (endpoint gemini-3.5-flash-lite, temperature 0.1, an 'Expert Thai Geographic Data Extractor' prompt) to return sub-district, district and province names in Thai and English. The companion view [view_deb_address_data](/view/process_dataset/view_deb_address_data.md) joins the result to dim_sub_districts / dim_districts / dim_provinces.
 
-Read by: [view_deb_address_data](/view/process_dataset/view_deb_address_data.md), [dim_customer](/dimension/dim_customer.md), [dim_customer_report_info](/dimension/dim_customer_report_info.md).
+Read by: [view_deb_address_data](/view/process_dataset/view_deb_address_data.md).
 
 # Grain and key
 

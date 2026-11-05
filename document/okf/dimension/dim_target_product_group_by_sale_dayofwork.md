@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -53,7 +53,7 @@ One row = one allocated target row on one calendar date: key (`TargetBySaleSK`, 
 | `TargetProductGroupSK` | INT64 | Copied: SK of the source target in dim_target_product_group. |
 | `RateTargetSK` | INT64 | Copied: SK of the rate rule in dim_rate_target; NULL for an unmatched allocation branch, which can coexist with matched rows for the target. |
 | `ProductMktSK` | INT64 | Copied: SK in dim_product_mkt. |
-| `CompanySK` | INT64 | Copied: company SK. |
+| `CompanySK` | INT64 | Copied from [dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md).CompanySK. |
 | `companyID` | STRING | Copied: company code. |
 | `Year` | INT64 | Copied: target year (also the join key to the calendar). |
 | `Month` | INT64 | Copied: target month. |

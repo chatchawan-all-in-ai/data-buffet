@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [fact_delivery](/fact/fact_delivery.md), [export_fact_transaction_deliv
 
 # Grain and key
 
-One row = the invoiced totals of one product on one IS invoice (company, date, `milvnos`, customer) per matched ProductSK: key `FactTransDeliverySK` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay, milType, milvnos, lower(milStk)); the group-by also includes InvoiceSK and ProductSK. The invoice join matches every InvoiceSK for the same company, date, type, invoice number and customer, regardless of linked order. The company + case-insensitive product-code join matches every retained barcode version; each InvoiceSK/ProductSK group repeats the source measures. FactTransDeliverySK is an expanded-row key, not a unique invoice/product total. Window: invoice date >= start of the year 4 years ago (Asia/Bangkok).
+One row = the invoiced totals of one product on one IS invoice (company, date, `milvnos`, customer) per matched ProductSK: key `FactTransDeliverySK` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay, milType, milvnos, lower(milStk)); the group-by also includes InvoiceSK and ProductSK. The INNER JOIN to `dim_invoice` drops lines without a matching invoice; the invoice join matches every InvoiceSK for the same company, date, type, invoice number and customer, regardless of linked order. The company + case-insensitive product-code join matches every retained barcode version; each InvoiceSK/ProductSK group repeats the source measures. FactTransDeliverySK is an expanded-row key, not a unique invoice/product total. Window: invoice date >= start of the year 4 years ago (Asia/Bangkok).
 
 # Schema
 

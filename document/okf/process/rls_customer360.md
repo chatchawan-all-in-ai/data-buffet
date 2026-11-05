@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-10-31T00:17:08+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
 # What it is
 
-Customer-to-organisation access map used for row-level security (RLS) on Customer360: it tells downstream views which sales entities touch each customer, so they can decide who may see that customer. It is built from fact_transcation joined to dim_section, dim_region, dim_director and dim_product_mkt, and is read by [view_rls_sale_data](/view/process_dataset/view_rls_sale_data.md) (matches a sales user's section via `SectionID`) and [view_rls_special_data](/view/process_dataset/view_rls_special_data.md). It holds no AI and no CDC gate.
+Customer-to-organisation access map used for row-level security (RLS) on Customer360: it tells downstream views which sales entities touch each customer, so they can decide who may see that customer. It is built from fact_transcation joined to dim_section, dim_region, dim_director and dim_product_mkt. It holds no AI and no CDC gate.
+
+Read by: [view_rls_sale_data](/view/process_dataset/view_rls_sale_data.md), [view_rls_special_data](/view/process_dataset/view_rls_special_data.md).
 
 # Grain and key
 

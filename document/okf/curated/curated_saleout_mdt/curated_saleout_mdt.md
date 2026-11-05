@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [curated_saleout_monthly_mdt](/curated/curated_saleout_mdt/curated_sale
 
 # Grain and key
 
-One row per `sale_date`, `store_code`, `branch_code`, `product_code`, `doc_type` (the declared `uniqueKey`). Sales channels are summed together; documents of type SALE and RETURN are separate rows. BT up to 2026-10-07 sends cumulative month-to-date figures that are differenced into daily amounts; rows covering several days carry `days_covered` > 1 and `date_is_estimated` = TRUE.
+One row per `sale_date`, `store_code`, `branch_code`, `product_code`, `doc_type` (the declared `uniqueKey`). Sales channels are summed together; documents of type SALE and RETURN are separate rows. BT cumulative month-to-date figures are differenced, with multi-day differences assigned to the last day of the span; these rows carry `days_covered` > 1 and `date_is_estimated` = TRUE. DH product code `10176841` and the three configured GB Hitachi pump barcodes are excluded.
 
 # Schema
 

@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -39,7 +39,7 @@ One row = one active MDS section row: key `SectionSK`, `ROW_NUMBER()` ordered by
 | `SectionName` | STRING | Display name of the section (MDS). |
 | `StartDate` | DATE | First date the row is valid (MDS DATE). |
 | `EndDate` | DATE | Last date the row is valid (MDS DATE). |
-| `MdsID` | STRING | `id` of the source row in `mds_data_sales_section_master`, cleaned with `cleanString`; trace column back to MDS. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_section_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 

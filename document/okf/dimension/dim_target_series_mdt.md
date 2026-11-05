@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -45,7 +45,7 @@ One row = one MDT branch and product series on one calendar day: key `TargetSeri
 | `DaysInMonth` | INT64 | Calendar days in the target month; divisor for Amt and Qty. |
 | `Amt` | FLOAT64 | Daily target amount = monthly `Value` / DaysInMonth (FLOAT64); NULL on the -1 row. |
 | `Qty` | FLOAT64 | Daily target quantity = monthly `Quantity` / DaysInMonth (FLOAT64); NULL on the -1 row. |
-| `MdsID` | STRING | `id` of the source row in `mds_data_mdt_sales_target_by_series`; trace column back to MDS. NULL on the -1 row. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_mdt_sales_target_by_series`; trace column back to MDS. NULL on the -1 row. |
 
 # How it is built
 

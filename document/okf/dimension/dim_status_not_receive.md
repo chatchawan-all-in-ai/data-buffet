@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -37,7 +37,7 @@ One row = one active MDS status row: key `NotReceiveSK`, `ROW_NUMBER()` ordered 
 | `StatusID` | INT64 | Invoice status code (INT64 via `castInt64`, fails the run on a non-numeric value); compared with `mihstatus` of the invoice header. |
 | `StatusNameTH` | STRING | Thai name of the status. |
 | `StatusNameENG` | STRING | English name of the status. |
-| `MdsID` | STRING | `id` of the source row in `mds_data_payment_status_not_receive_master`, cleaned with `cleanString`; trace column back to MDS. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_payment_status_not_receive_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 

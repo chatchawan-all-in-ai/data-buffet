@@ -1,5 +1,6 @@
 # Directory Update Log
 
+* **Update**: Second-round corrections to the scoped core cards and indexes: fixed remaining report findings, standardized `Read by:` to direct readers, documented that rule, and refreshed `generated.at` on edited cards.
 * **Update**: Expanded the six TF commission export views and their cards to include all years for company `ag01`.
 
 ## 2026-11-05 (core card review fixes)

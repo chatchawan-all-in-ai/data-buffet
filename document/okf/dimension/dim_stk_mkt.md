@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [dim_product_master](/dimension/dim_product_master.md), [dim_product_md
 
 # Grain and key
 
-One row = one stock code: key `StkMktSK`; two blocks UNION ALL'd and numbered once: (1) active MDS rows (`MdsID` set); (2) 'Waiting Master' placeholders, one per distinct stock code of `validated_mac5.stk` that has no MDS row for the same StkCode + companyID (`MdsID` NULL, MarketingGroupID '999', SubMarketingID '9999', SegmentID '99999', all names 'Waiting Master', Size and Color NULL). SK order puts MDS rows first, then placeholders, then companyID, StkCode. Natural key `(companyID, StkCode)` (plus Size/Color when MDS carries several variants; uniqueness is not enforced).
+One row = one stock code or one MDS Size/Color variant: key `StkMktSK`; two blocks UNION ALL'd and numbered once: (1) active MDS rows (`MdsID` set); (2) 'Waiting Master' placeholders, one per distinct stock code of `validated_mac5.stk` that has no MDS row for the same StkCode + companyID (`MdsID` NULL, MarketingGroupID '999', SubMarketingID '9999', SegmentID '99999', all names 'Waiting Master', Size and Color NULL). SK order puts MDS rows first, then placeholders, then companyID, StkCode. Natural key `(companyID, StkCode)` plus Size/Color when MDS carries several variants; uniqueness is not enforced.
 
 # Schema
 
@@ -44,7 +44,7 @@ One row = one stock code: key `StkMktSK`; two blocks UNION ALL'd and numbered on
 | `SubMarketing` | STRING | Name of the sub marketing group; 'Waiting Master' for placeholders. |
 | `SegmentID` | STRING | Segment code (level 4); '99999' for placeholders. |
 | `Segment` | STRING | Segment name; 'Waiting Master' for placeholders. |
-| `MdsID` | STRING | `id` of the source row in `mds_data_product_market_group_by_product_id_master`, cleaned with `cleanString`; trace column back to MDS. NULL for 'Waiting Master' rows. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_product_market_group_by_product_id_master`, cleaned with `cleanString`; trace column back to MDS. NULL for 'Waiting Master' rows. |
 
 # How it is built
 

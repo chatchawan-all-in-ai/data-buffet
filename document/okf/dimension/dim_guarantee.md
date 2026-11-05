@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -22,7 +22,7 @@ status: draft
 
 Register of customer bank guarantees: which bank issued it, the guarantee limit (`BG_Limit`), the expiry date and renewal status, plus the customer's contact details as typed in MDS. Source: mds `mds_data_guarantee_document_master`.
 
-Read by: [view_dim_guarantee](/view/dimension_view/view_dim_guarantee.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md).
+Read by: [view_dim_guarantee](/view/dimension_view/view_dim_guarantee.md).
 
 # Grain and key
 

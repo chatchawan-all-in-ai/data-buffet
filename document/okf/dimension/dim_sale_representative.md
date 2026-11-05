@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -49,7 +49,7 @@ One row = one rule row or one ledger row: key `SaleRepSK`, `ROW_NUMBER()` over a
 | `EndDate` | DATE | Last date the rule is valid; 2499-12-31 on ledger rows. |
 | `OrderStartDate` | DATE | Start of an order-date window: a row with an order window wins the match for bills ordered inside the window (`seq_condition` 0). NULL when no window. |
 | `OrderEndDate` | DATE | End of the order-date window; NULL when no window. |
-| `MdsID` | STRING | `id` of the source row in `mds_data_sales_representative_master`, cleaned with `cleanString`; trace column back to MDS; NULL for ledger rows. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_representative_master`, cleaned with `cleanString`; trace column back to MDS; NULL for ledger rows. |
 
 # How it is built
 

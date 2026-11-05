@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "dim_delivery"
-description: "One row = one delivered invoice document (MAC5 IS document) per company with trip, vehicle, item quantity and preparation/release/receipt status counts."
+description: "One row = one invoice document on a delivery trip (MAC5 IS document) per company with trip, vehicle, item quantity and preparation/release/receipt status counts."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_delivery&page=table"
 project_id: databuffet-nonprd
 dataset_id: dimension_table
@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [fact_delivery](/fact/fact_delivery.md).
 
 # Grain and key
 
-One row = one delivered invoice document per company: key (`companyID`, `documentID`), where `documentID` is the invoice/document number (`ttrip_document.fdocument`, which matches `milVnos` of IS lines linked to another document). `DeliverySK` is a stable surrogate key (existing documents keep it; new ones get `max_sk + ROW_NUMBER()` ordered by `companyID`, `documentID`). Trip items whose stock code starts with '8' are excluded.
+One row = one invoice document on a delivery trip per company: key (`companyID`, `documentID`), where `documentID` is the invoice/document number (`ttrip_document.fdocument`, which matches `milVnos` of IS lines linked to another document). `DeliverySK` is a stable surrogate key (existing documents keep it; new ones get `max_sk + ROW_NUMBER()` ordered by `companyID`, `documentID`). Trip items whose stock code starts with '8' are excluded.
 
 # Schema
 
@@ -41,7 +41,7 @@ One row = one delivered invoice document per company: key (`companyID`, `documen
 | `totalStkcode` | INT64 | Count of distinct item codes (`fitem`, or `fitem2` when `fitem` does not match an invoice line) on the document. |
 | `totalQty` | INT64 | Total item units: count of `ttrip_document` item rows for the document (each row counted once), after matching items to invoice lines. |
 | `documentStatus_1` | INT64 | Units whose document is loaded on a truck ('จัดของขึ้นรถ': `fdocument` present). |
-| `documentStatus_2` | INT64 | Units whose document is not yet loaded ('ยังไม่จัดของ'). |
+| `documentStatus_2` | INT64 | Always 0: every unit comes from a trip row joined on `fdocument`. |
 | `deliveryStatus_1` | INT64 | Units on trips where the vehicle was released ('ปล่อยรถแล้ว': `ttrip.fpass_Date` present). |
 | `deliveryStatus_2` | INT64 | Units on trips where the vehicle was not released ('ไม่ปล่อยรถ'). |
 | `shipmentStatus_1` | INT64 | Units not yet delivered ('ยังไม่ส่งของ': no `tdelivery` serial number). |

@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -38,8 +38,8 @@ One row = one segment of a company: key `CustomerSegmentSK` (surrogate for mds r
 | `Segment1` | STRING | Pass-through of mds `Segment1`, cleaned with `cleanString` (empty string becomes NULL). Top level of the three-level segment code; 'Non-Segment' on the -1 row. |
 | `Segment2` | STRING | Pass-through of mds `Segment2`, cleaned with `cleanString` (empty string becomes NULL). Middle segment level; 'Non-Segment' on the -1 row. |
 | `Segment3` | STRING | Pass-through of mds `Segment3`, cleaned with `cleanString` (empty string becomes NULL). Leaf segment level (the row key together with company); 'Non-Segment' on the -1 row. |
-| `DescriptionThai` | STRING | Pass-through of mds `DescriptionThai`, cleaned with `cleanString` (empty string becomes NULL). Thai description of the segment. |
-| `DescriptionEng` | STRING | Pass-through of mds `DescriptionEng`, cleaned with `cleanString` (empty string becomes NULL). English description of the segment. |
+| `DescriptionThai` | STRING | Pass-through of mds `DescriptionThai`, cleaned with `cleanString` (empty string becomes NULL); `Non-Segment` on the reserved -1 row. Thai description of the segment. |
+| `DescriptionEng` | STRING | Pass-through of mds `DescriptionEng`, cleaned with `cleanString` (empty string becomes NULL); `Non-Segment` on the reserved -1 row. English description of the segment. |
 | `SortOrder` | INT64 | Display sort order (`castInt64` of mds `SortOrder`); the -1 row uses 99 so it sorts last. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_customer_segment_master`, cleaned with `cleanString`; trace column back to MDS. NULL on the -1 row. |
 

@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -47,7 +47,7 @@ One row = one active MDS target row: key `TargetProductGroupSK`, `ROW_NUMBER()` 
 | `TargetID` | STRING | Target code; the join key to `dim_rate_target.TargetID` (with CompanySK, Year, Month). |
 | `Amt` | FLOAT64 | Target sales amount in THB for the month (FLOAT64 via `castFloat64`). |
 | `Qty` | FLOAT64 | Target quantity (FLOAT64 via `castFloat64`). |
-| `MdsId` | STRING | `id` of the source row in `mds_data_sales_target_by_product_group_master`, cleaned with `cleanString`; trace column back to MDS. |
+| `MdsId` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_target_by_product_group_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 

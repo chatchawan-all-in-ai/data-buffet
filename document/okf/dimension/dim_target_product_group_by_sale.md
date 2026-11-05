@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -44,7 +44,7 @@ One row = one target allocated to one employee and department by a rate rule: ke
 | `TargetProductGroupSK` | INT64 | SK of the source target row in dim_target_product_group (same-day numbering). |
 | `RateTargetSK` | INT64 | SK of the matching rule in dim_rate_target; NULL for an unmatched branch row, even if another branch allocated the same target. |
 | `ProductMktSK` | INT64 | SK in [dim_product_mkt](/dimension/dim_product_mkt.md) for the target's MarketingGroupID + SubMarketingID + SegmentID + CompanySK; NULL when not found. |
-| `CompanySK` | INT64 | Company SK of the target (from dim_target_product_group). |
+| `CompanySK` | INT64 | Copied from [dim_target_product_group](/dimension/dim_target_product_group.md).CompanySK. |
 | `companyID` | STRING | Company code of the target. |
 | `Year` | INT64 | Target year (from dim_target_product_group.Year). |
 | `Month` | INT64 | Target month (from dim_target_product_group.Month). |

@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -22,9 +22,11 @@ status: draft
 
 DERP cost per MAC5 document line. The cost of a document is the net sum of the `journalCost` of its posted journals with `matchStatus = 'MATCHED'` in [curated_journal_invoice](/curated/curated_derp/curated_journal_invoice.md). It is allocated by product, not by sales value: a line is mapped to a DERP item key through its stock barcode and the master SKU barcode, and the cost of each key in the journal entries is split over the lines that carry that key. Cost that no line accounts for is kept in separate `NO_LINE` rows, so the sum of `costDerp` per document equals `invoiceCostDerp`.
 
+Read by: none in this repository.
+
 # Grain and key
 
-One row = one document line of [curated_mil](/curated/curated_mac5/curated_mil.md): key `company_id`, `milType`, `milVnos`, `milListno`, `milPer` (ag01 split-sale lines are one row per salesperson); rows identical on those five columns plus `milStk`, `milQuan` and `milSum` are collapsed (`SELECT DISTINCT`). Only documents with at least one matched, posted journal that has a non-NULL cost are included. A document also gets one `NO_LINE` row per DERP item key (`itemNumber`, color, size, style) of its journal entries that no line was mapped to; those rows have NULL line columns. No declared `uniqueKey`.
+One row = one document line of [curated_mil](/curated/curated_mac5/curated_mil.md). The five line columns are `company_id`, `milType`, `milVnos`, `milListno` and `milPer` (ag01 split-sale lines have one row per salesperson); they are not unique by themselves because line rows are distinct on those five plus `milStk`, `milQuan` and `milSum`. Only documents with at least one matched, posted journal that has a non-NULL cost are included. A document also gets one `NO_LINE` row per DERP item key (`itemNumber`, color, size, style) of its journal entries that no line was mapped to; those rows have NULL line columns, so the five line columns do not identify them. No declared `uniqueKey`.
 
 # Schema
 

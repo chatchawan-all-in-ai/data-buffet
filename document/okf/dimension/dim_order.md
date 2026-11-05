@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -72,7 +72,7 @@ One row = one sales order (document type PS): key (`CompanySK`, `mihYear`, `mihM
 
 # Examples
 
-Open orders per company by fulfilment status for the current year.
+Orders per company by fulfilment status for the current year.
 
 ```sql
 SELECT companyID, OrderStatus, COUNT(*) AS orders

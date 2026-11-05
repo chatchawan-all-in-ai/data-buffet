@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/org_center/org-center.md"
     title: "Data Mart wiki (document/project_wiki/org_center/org-center.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -32,7 +32,7 @@ One row = one organisation unit of one company: key `company_id` + `unit_id` (`u
 
 | Column | Type | Description |
 |---|---|---|
-| `company_id` | STRING | Company code (companyID of the source dim). |
+| `company_id` | STRING | Company code; COMPANY rows use CompanyID from mds_data_company_master, and other rows carry the company_id from their source dimension. |
 | `unit_id` | STRING | Unit key: `CO-` / `DIR-` / `REG-` / `SEC-` plus `unit_code`. |
 | `unit_level` | STRING | COMPANY, DIVISION, REGION or SECTION. |
 | `depth` | INT64 | 0 = COMPANY, 1 = DIVISION, 2 = REGION, 3 = SECTION. |
@@ -41,7 +41,7 @@ One row = one organisation unit of one company: key `company_id` + `unit_id` (`u
 | `parent_unit_id` | STRING | unit_id of the parent unit (region to division, section to region); NULL for a company; a division points to its company unit. |
 | `valid_from` | DATE | StartDate of the latest `_last` dim row for the unit; COMPANY rows: 2000-01-01. |
 | `valid_to` | DATE | EndDate of the `_last` dim row; 2066-12-31 means still active; COMPANY rows: 2066-12-31. |
-| `plan_code` | STRING | The unit's code in the org plan file Org_Mock_Master_Plan_v4.xlsx: DIVISION = DirectorID; REGION = RegionID (the five PS1-n sub-regions all map to PS1); SECTION = unit_code except 7 dummy sections named by a fixed list in the SQL (e.g. Dummy999994 to HO, Dummy999993 to Imboon, Dummy999991 to Online). |
+| `plan_code` | STRING | The unit's code in the org plan file Org_Mock_Master_Plan_v4.xlsx: DIVISION = DirectorID; REGION = RegionID (the five PS1-n sub-regions all map to PS1); SECTION = unit_code except 7 dummy sections named by a fixed list in the SQL (e.g. Dummy999994 to HO, Dummy999993 to Imboon, Dummy999991 to Online); NULL on COMPANY rows. |
 | `region_code` | STRING | REGION rows only: dim_region_last.RegionID (the five PS1-n sub-regions all map to PS1; other regions equal `unit_code`); NULL for COMPANY, DIVISION and SECTION rows. Matches the region codes of [org_center_exception](/org_center/org_center_exception.md). |
 | `company_name` | STRING | dim_company.CompanyNameTH by company_id; NULL if the company is not in the dim. COMPANY rows: `mds_data_company_master.CompanyNameTH`. |
 

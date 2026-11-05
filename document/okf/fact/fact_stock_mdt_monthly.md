@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
 # What it is
 
 Month-end stock snapshot derived from [fact_stock_mdt](/fact/fact_stock_mdt.md): for each chain and month it takes the last day on which that chain has non-empty data and returns that day's stock for every branch/product. It answers month-end stock by branch/product.
+
+Read by: none in this repository.
 
 # Grain and key
 

@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/curated/curated-layer.md"
     title: "Data Mart wiki (document/project_wiki/curated/curated-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
 # What it is
 
 Product catalogue built from the new master_sku source (validated_master_sku.products + brand_vendors + common_codes). It mirrors the 50 columns, names and order of [curated_product](/curated/curated_mastersku/curated_product.md); columns master_sku does not have are NULL. It is the master_sku counterpart of curated_product.
+
+Read by: none in this repository.
 
 # Grain and key
 

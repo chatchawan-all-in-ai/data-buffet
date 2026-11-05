@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "dim_bounce_cheque_score"
-description: "One row = one score band (min/max count of cancelled/bounced cheques, validity period) per company, used to score a customer's cheque reliability."
+description: "One row = one score band (bounds and validity period) per company for the customer-grade CountCancelCheque metric."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_bounce_cheque_score&page=table"
 project_id: databuffet-nonprd
 dataset_id: dimension_table
@@ -14,13 +14,13 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T23:20:34+07:00" }
 status: draft
 ---
 
 # What it is
 
-Scoring-band lookup for the customer-grade model. A customer earns `Score` points when its yearly count of cancelled cheques (`CountCancelCheque` in dim_customer_grade) falls inside `[BouncedChequeMin, BouncedChequeMax]`; [dim_customer_grade](/dimension/dim_customer_grade.md) stores the matched band as `BounceChequeSK`. Source is the mds master `mds_data_custgrade_cheque_score_master`.
+Scoring-band lookup for the customer-grade model. A customer earns `Score` points when its `CountCancelCheque` metric (defined in [dim_customer_grade](/dimension/dim_customer_grade.md#schema)) falls inside `[BouncedChequeMin, BouncedChequeMax]`; [dim_customer_grade](/dimension/dim_customer_grade.md) stores the matched band as `BounceChequeSK`. Source is the mds master `mds_data_custgrade_cheque_score_master`.
 
 Read by: [dim_customer_grade](/dimension/dim_customer_grade.md), [dim_group_customer_grade](/dimension/dim_group_customer_grade.md).
 
@@ -35,8 +35,8 @@ One row = one score band: key `BounceChequeSK` (surrogate, regenerated every run
 | `BounceChequeSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, BouncedChequeMin, BouncedChequeMax, StartDate, EndDate)` over the active mds rows. Regenerated every run. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
-| `BouncedChequeMin` | FLOAT64 | Lower bound (inclusive) of the band for the number of cancelled (bounced) cheques, cast with `castFloat64` from the mds column. |
-| `BouncedChequeMax` | FLOAT64 | Upper bound (inclusive) of the band for the number of cancelled (bounced) cheques, cast with `castFloat64` from the mds column. |
+| `BouncedChequeMin` | FLOAT64 | Lower bound (inclusive) of the band for `CountCancelCheque` (see the metric definition linked above), cast with `castFloat64` from the mds column. |
+| `BouncedChequeMax` | FLOAT64 | Upper bound (inclusive) of the band for `CountCancelCheque` (see the metric definition linked above), cast with `castFloat64` from the mds column. |
 | `Score` | FLOAT64 | Score points awarded to a customer whose metric falls inside the band; `castFloat64` of the mds `Score` column. [dim_customer_grade](/dimension/dim_customer_grade.md) uses `IFNULL(Score, 0)`. |
 | `StartDate` | DATE | First day the band row is valid (mds `StartDate`, passed through as DATE). |
 | `EndDate` | DATE | Last day the band row is valid (mds `EndDate`, passed through as DATE). dim_customer_grade matches rows where yesterday (Asia/Bangkok) is between StartDate and EndDate. |

@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -37,7 +37,7 @@ One row = one active mds record (company, Year, Month, CustomerID): key `Collect
 | `CompanyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `CompanyID`; natural join key to dim_company.companyID. |
 | `Year` | INT64 | Calendar year of the follow-up record (`castInt64` of mds `Year`). |
 | `Month` | INT64 | Month number 1-12 of the follow-up record (`castInt64` of mds `Month`). |
-| `CustomerID` | INT64 | MAC5 customer code as INT64 (`castInt64` of mds `CustomerID`); fact_mir_rs joins it to the receipt customer `mircus` (cast to STRING) with company, year and month. |
+| `CustomerID` | INT64 | MAC5 customer code as INT64 (`castInt64` of mds `CustomerID`); [fact_mir_rs](/fact/fact_mir_rs.md) and [fact_mir_vs](/fact/fact_mir_vs.md) join it to the receipt or billing customer `mircus` (cast to STRING) with company, year and month. |
 | `CustomerName` | STRING | Customer name as typed in MDS (`cleanString`); descriptive. |
 | `Actions` | STRING | Collection action taken or planned (free text from MDS). |
 | `Justification` | STRING | Reason or explanation recorded for the status (free text from MDS). |

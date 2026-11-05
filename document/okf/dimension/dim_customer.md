@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -23,6 +23,8 @@ status: draft
 Customer master dimension for the data mart. It starts from MAC5 `deb` (the debtor master, all five companies), adds the matching CIS360 customer profile (status, nature of business, customer type, names) through the `match_customer` mapping, and attaches province/district/sub-district SKs from the AI-parsed address view [view_deb_address_data](/view/process_dataset/view_deb_address_data.md). The CIS360 profile is matched only for ag01 customers; for the other companies the CIS360 columns are NULL. It is the source of `CustomerSK` for the fact tables and is exposed via [view_dim_customer](/view/dimension_view/view_dim_customer.md).
 
 Read by: [fact_backlog_store](/fact/fact_backlog_store.md), [fact_chq](/fact/fact_chq.md), [fact_invoice](/fact/fact_invoice.md), [fact_invoice_store](/fact/fact_invoice_store.md), [fact_mir_rs](/fact/fact_mir_rs.md), [fact_mir_vs](/fact/fact_mir_vs.md), [fact_order](/fact/fact_order.md), [fact_order_store](/fact/fact_order_store.md), [fact_quotation](/fact/fact_quotation.md), [fact_transcation](/fact/fact_transcation.md), [dim_aging](/dimension/dim_aging.md), [dim_customer_grade](/dimension/dim_customer_grade.md), [dim_group_customer](/dimension/dim_group_customer.md), [dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [view_dim_customer](/view/dimension_view/view_dim_customer.md), [view_dim_customer_credit_management](/view/dimension_view/view_dim_customer_credit_management.md), [view_dim_guarantee](/view/dimension_view/view_dim_guarantee.md), [view_fact_salein_mdt](/view/fact_view/view_fact_salein_mdt.md), [GroupCustomerSK_CustomerSK](/view/bridge_dataset/GroupCustomerSK_CustomerSK.md).
+
+If multiple rows from `view_deb_address_data` match a debtor, one address row is kept without an ordering rule.
 
 # Grain and key
 

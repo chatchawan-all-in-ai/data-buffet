@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [view_dim_aging_history](/view/dimension_view/view_dim_aging_history.md
 
 # Grain and key
 
-One row = one document in one snapshot: key `asatdate` + (`companyID` + `cfsVnosID` + `cfsTypeID`). Retention keeps only (a) the latest run date (yesterday) and (b) the last day of each earlier month. The table has no key constraint; the stored `AgingSK`/`BillingSK` are the values of the capture run and are not stable keys.
+One row = one document in one snapshot: key `asatdate` + (`companyID` + `cfsVnosID` + `cfsTypeID`). The source view excludes document `BFCN020/47` and keeps one row per `AgingSK` before insertion. Retention keeps only (a) the latest run date (yesterday) and (b) the last day of each earlier month. The table has no key constraint; the stored `AgingSK`/`BillingSK` are the values of the capture run and are not stable keys.
 
 # Schema
 
@@ -73,8 +73,8 @@ One row = one document in one snapshot: key `asatdate` + (`companyID` + `cfsVnos
 | `cfsDate` | DATE | `DATE(invoiceDate)`, the document date. |
 | `minReceiptDate` | DATE | `MinReceiveDate` when `flagComplete = 'Completed'`, else NULL. |
 | `maxReceiptDate` | DATE | `MaxReceiveDate` when `flagComplete = 'Completed'`, else NULL. |
-| `minCustomerReceiptAgeDay` | INT64 | Smallest `ReceiptAgeDays` of the same customer code (`debcode`) within the snapshot (window over customer, ignoring NULLs). |
-| `maxCustomerReceiptAgeDay` | INT64 | Largest `ReceiptAgeDays` of the same customer code within the snapshot (`LAST_VALUE` over ordered rows, ignoring NULLs). |
+| `minCustomerReceiptAgeDay` | INT64 | Smallest `ReceiptAgeDays` of the same customer code (`debcode`) across all rows of `view_dim_aging` before the `Non-Completed` snapshot filter (window over customer, ignoring NULLs). |
+| `maxCustomerReceiptAgeDay` | INT64 | Largest `ReceiptAgeDays` of the same customer code across all rows of `view_dim_aging` before the `Non-Completed` snapshot filter (`LAST_VALUE` over ordered rows, ignoring NULLs). |
 | `ReceiptAgeDays` | INT64 | For 'Completed' rows, days from `invoiceDate` to `MaxReceiveDate` (how long the customer took to pay); NULL otherwise. |
 
 # How it is built

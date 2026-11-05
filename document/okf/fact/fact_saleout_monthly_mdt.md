@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -35,7 +35,7 @@ One row = one chain x branch x sales channel x product total of sell-out per `mo
 | `month_date` | DATE | Month key (partition column): daily date for the current month, month-end date for closed months. Group by DATE_TRUNC(month_date, MONTH). |
 | `store_code` | STRING | Retail-chain (store) code from `curated_saleout_monthly_mdt`; joins dim_region.RegionID for the region sets. |
 | `branch_code` | STRING | Branch code/name as sent by the chain (trimmed when matched). |
-| `sales_channel` | STRING | Sales channel from the source, '-' when the source grain has none. |
+| `sales_channel` | STRING | Constant '-'. |
 | `product_code` | STRING | Product code as the chain sent it (leading zeros stripped for the dim match). |
 | `product_name` | STRING | Product name as sent by the chain (from curated_saleout_monthly_mdt). |
 | `branch_sk` | INT64 | Surrogate key `BranchMdtSK` of [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md) (match on store code + branch code); -1 when the branch is not in the dimension. |

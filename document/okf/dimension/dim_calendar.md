@@ -14,13 +14,13 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
 # What it is
 
-Date dimension. It supplies the standard calendar attributes (names, month/quarter/year keys, week number) and Thai business-day flags (weekend, holiday with TH/EN name, long weekend of 3+ consecutive days off) built from [dim_holiday](/dimension/dim_holiday.md). It is joined by `Date`, except [dim_customer_grade](/dimension/dim_customer_grade.md) and [dim_group_customer_grade](/dimension/dim_group_customer_grade.md), which read only the `Year` of yesterday's date.
+Date dimension. It supplies the standard calendar attributes (names, month/quarter/year keys, week number) and Thai business-day flags (weekend, holiday with TH/EN name, long weekend of 3+ consecutive days off) built from [dim_holiday](/dimension/dim_holiday.md).
 
 Read by: [view_dim_calendar](/view/dimension_view/view_dim_calendar.md), [view_dim_target_by_agent_dayofwork](/view/dimension_view/view_dim_target_by_agent_dayofwork.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md), [dim_target_product_group_by_sale_dayofwork](/dimension/dim_target_product_group_by_sale_dayofwork.md), [dim_customer_grade](/dimension/dim_customer_grade.md), [dim_group_customer_grade](/dimension/dim_group_customer_grade.md), [export_dim_calendar](/view/pub_sub/export_dim_calendar.md).
 

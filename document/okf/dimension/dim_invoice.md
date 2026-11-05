@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "dim_invoice"
-description: "One row = one sales document line-link (invoice IS, credit note BS, debit note AS or quotation QS) per company, identified by document number, customer and linked order number, with sales-split percentages."
+description: "One row = one sales document per distinct linked order number (NULL when unlinked), company, customer and date, with sales-split percentages."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_table&t=dim_invoice&page=table"
 project_id: databuffet-nonprd
 dataset_id: dimension_table
@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [dim_aging](/dimension/dim_aging.md), [fact_invoice_store](/fact/fact_i
 
 # Grain and key
 
-One row = one sales document linked to one source order: key (`CompanySK`, `mihYear`, `mihMonth`, `mihDay`, `mihVnos`, `mihCus`, `milLinkVcno`); a document number can appear several times when its lines link to different order numbers. `InvoiceSK` is a stable surrogate key (existing combos keep it; new ones get `max_sk + ROW_NUMBER()`). Rolling window: only documents dated from 1 January four years ago are loaded.
+One row = one sales document per distinct `milLinkVcno` (NULL when not linked): key (`CompanySK`, `mihYear`, `mihMonth`, `mihDay`, `mihVnos`, `mihCus`, `milLinkVcno`). A document number can appear several times when its lines link to different order numbers. `InvoiceSK` is a stable surrogate key (existing combos keep it; new ones get `max_sk + ROW_NUMBER()`). Rolling window: only documents dated from 1 January four years ago are loaded.
 
 # Schema
 

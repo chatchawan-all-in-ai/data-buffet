@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
 # What it is
 
 Order backlog (unfilled quantity) by store: for each PS sales order that is not cancelled and has no clear/extra sum, the requested quantity (`cpsStkREQ`) minus the quantity cut/shipped (`cpsStkCUT1`) taken from the latest `validated_mac5.cps` snapshot per company. Answers how much is still to be delivered per store/product. Sister of [fact_order_store](/fact/fact_order_store.md) and [fact_invoice_store](/fact/fact_invoice_store.md).
+
+Read by: none in this repository.
 
 # Grain and key
 

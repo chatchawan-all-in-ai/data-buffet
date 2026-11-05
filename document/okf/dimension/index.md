@@ -8,7 +8,7 @@ Star-schema dimensions in `dimension_table` (surrogate keys, mds and lake source
 * [dim_aging_history](dim_aging_history.md) - One row = one AR document in a non-completed group, captured under the prior-day asatdate label; kept for the latest label and month-ends.
 * [dim_aging_rang](dim_aging_rang.md) - One row = one aging bucket (min and max days past due, with its report label) defined per company in MDS master data.
 * [dim_avg_collection_score](dim_avg_collection_score.md) - One row = one score band (min/max average collection days, validity period) per company, used to score a customer's average receipt age.
-* [dim_bounce_cheque_score](dim_bounce_cheque_score.md) - One row = one score band (min/max count of cancelled/bounced cheques, validity period) per company, used to score a customer's cheque reliability.
+* [dim_bounce_cheque_score](dim_bounce_cheque_score.md) - Score bands for the customer-grade CountCancelCheque metric; see the card for grain and bounds.
 * [dim_calendar](dim_calendar.md) - One row = one calendar date with day/week/month/quarter/year labels and weekend, holiday and long-weekend flags.
 * [dim_change_district](dim_change_district.md) - One row = one customer-to-new-section reassignment (customer, old section, new section, validity period) per company, from the MDS change-section master.
 * [dim_channel](dim_channel.md) - One row = one department code (DepCode) per company with its sales, cost and finance channel classification, from the MDS channel master.
@@ -24,7 +24,7 @@ Star-schema dimensions in `dimension_table` (surrogate keys, mds and lake source
 * [dim_customer_grade](dim_customer_grade.md) - One row = one customer per company per year with payment, collection-speed, bounced-cheque and relationship scores and the resulting credit grade.
 * [dim_customer_report_info](dim_customer_report_info.md) - One row = one customer report name (shop/account name as shown on reports, whitespace-insensitive) per company, with segment, TA (team-area) chain, sale rep, address and online-shop attributes.
 * [dim_customer_segment](dim_customer_segment.md) - One row = one customer segment code (Segment1/2/3 with Thai and English descriptions) per company, plus a reserved -1 'Non-Segment' row.
-* [dim_delivery](dim_delivery.md) - One row = one delivered invoice document (MAC5 IS document) per company with trip, vehicle, item quantity and preparation/release/receipt status counts.
+* [dim_delivery](dim_delivery.md) - One row = one invoice document on a delivery trip (MAC5 IS document) per company with trip, vehicle, item quantity and preparation/release/receipt status counts.
 * [dim_department](dim_department.md) - One row = one sales department (company, region, section, department id) with its validity period, from the MDS sales-department master.
 * [dim_department_last](dim_department_last.md) - One row = the latest-period row of each department per company, taken from dim_department, with placeholder FK columns for section, region and director.
 * [dim_director](dim_director.md) - One row = one sales director (company, DirectorID) with the director of sales and a validity period, from the MDS sales-director master.
@@ -35,7 +35,7 @@ Star-schema dimensions in `dimension_table` (surrogate keys, mds and lake source
 * [dim_group_customer_grade](dim_group_customer_grade.md) - One row = one customer group per company per year with payment, collection-speed, bounced-cheque and relationship scores and the resulting credit grade.
 * [dim_guarantee](dim_guarantee.md) - One row = one bank guarantee (BG) document for a customer at a bank (company, customer code, bank name), with its limit and expiry date, from the MDS guarantee master.
 * [dim_holiday](dim_holiday.md) - One row = one public holiday date with Thai and English names and a long-weekend flag, from the MDS holiday master.
-* [dim_invoice](dim_invoice.md) - One row = one sales document line-link (invoice IS, credit note BS, debit note AS or quotation QS) per company, identified by document number, customer and linked order number, with sales-split percentages.
+* [dim_invoice](dim_invoice.md) - One row = one sales document per distinct linked order number (NULL when unlinked), company, customer and date, with sales-split percentages.
 * [dim_order](dim_order.md) - One row = one MAC5 sales order (document type PS) per company with header attributes, status text and a derived fulfilment status (On Order / In Process / Complete).
 * [dim_payment](dim_payment.md) - One row = one payment memo code (CodeMemo) per company with its payment id, name, method (EN/TH) and type, from the MDS payment master.
 * [dim_payment_receive_score](dim_payment_receive_score.md) - One row = one score band (min/max total payment received, validity period) per company, used to score a customer's yearly payment volume.

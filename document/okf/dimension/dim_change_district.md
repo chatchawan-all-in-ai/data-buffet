@@ -14,13 +14,13 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
 # What it is
 
-Records customers whose sales section (district) is changed for a period, so reports can attribute their sales to the new section instead of the one on the document. It is LEFT JOINed on `customerCode` (after `TRIM`) + `CompanySK` + `mix_date BETWEEN startDate AND endDate`, and `newSectionID` is then resolved to a Change-Section SK. Source is mds `mds_data_change_section_master`.
+Records customers whose sales section (district) is changed for a period, so reports can attribute their sales to the new section instead of the one on the document. Both readers join on `customerCode` + `CompanySK` + `mix_date BETWEEN startDate AND endDate`; [fact_transcation](/fact/fact_transcation.md) trims both customer codes first, while [view_fact_transcation](/view/fact_view/view_fact_transcation.md) does not. `newSectionID` is then resolved to a Change-Section SK. Source is mds `mds_data_change_section_master`.
 
 Read by: [fact_transcation](/fact/fact_transcation.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md).
 

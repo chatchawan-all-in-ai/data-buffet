@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -41,7 +41,7 @@ One row = one active MDS rule row: key `RebateSK`, `ROW_NUMBER()` ordered by com
 | `type` | STRING | Name of the MAC5 field(s) the rebate rule matches on, e.g. `StkCode`, `MilPer`, `mildep`; several fields are joined by the pipe character (`MilCus`, `MihCus`). Not used by any definition in this repo. |
 | `salesExc` | STRING | 'Yes' when matching lines are excluded from sales KPIs; consumers treat any other value as no exclusion (default 'No'). |
 | `accExc` | STRING | 'Yes' when matching lines are excluded from accounting KPIs; any other value is no exclusion. |
-| `MdsID` | STRING | `id` of the source row in `mds_data_sales_kpi_condition_master`, cleaned with `cleanString`; trace column back to MDS. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_kpi_condition_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 

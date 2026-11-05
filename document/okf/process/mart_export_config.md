@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
 # What it is
 
-Configuration and state table of the Data Mart to Pub/Sub export: one row per exported table (dim_company, the commission sets, the TA app org tables and the AI team sample tables; table_name = the BigQuery table name in lower case, e.g. dim_calendar, view_dim_customer, fact_order, rls_ta_customer). The columns table_name, source_view, topic, trigger_scheduler and task_group come from `includes/controller/mart-export-config.json`; last_invocation_id, last_invocation_end and claimed_at are written by the first-load exporter and the Cloud Run publisher (job `datamart-publish-check` every 5 minutes starts job `datamart-publish-send`, both outside Dataform) to checkpoint the last Dataform workflow invocation handled and to claim the row while publishing. It is paired with [mart_sent_state](/process/mart_sent_state.md); the export views it points to live in dataset [pub_sub](/view/pub_sub/index.md), e.g. [export_dim_company](/view/pub_sub/export_dim_company.md) and [export_order](/view/pub_sub/export_order.md).
+Configuration and state table of the Data Mart to Pub/Sub export: one row per exported table (dim_company, the commission sets, the TA app org tables and the AI team sample tables; table_name = the BigQuery table name in lower case, e.g. dim_calendar, view_dim_customer, fact_order, rls_ta_customer). The columns table_name, source_view, topic, trigger_scheduler and task_group come from `includes/controller/mart-export-config.json`. Outside Dataform, the first-load exporter writes `seeded_at`; the publisher writes `last_invocation_id`, `last_invocation_end`, `claimed_at`, `group_claimed_at` and the `recovery_*` state. These fields checkpoint invocations, seed existing sent state, and claim or recover work while publishing. It is paired with [mart_sent_state](/process/mart_sent_state.md); the export views it points to live in dataset [pub_sub](/view/pub_sub/index.md), e.g. [export_dim_company](/view/pub_sub/export_dim_company.md) and [export_order](/view/pub_sub/export_order.md).
+
+Read by: none in this repository.
 
 # Grain and key
 
@@ -34,7 +36,7 @@ One row = one Data Mart table exported to Pub/Sub: key `table_name` (the exporte
 | `source_view` | STRING | Full name of the export view in dataset pub_sub (databuffet-nonprd.pub_sub.export_<table>). |
 | `topic` | STRING | Pub/Sub topic the changed rows are published to. |
 | `last_invocation_id` | STRING | Publisher checkpoint: id (after workflowInvocations/) of the last Dataform workflow invocation already handled for this table; NULL before seeding; 'seed' after the first-load snapshot records its current rows, until a later export. |
-| `last_invocation_end` | TIMESTAMP | End time (UTC) of that invocation, or the seed time for 'seed'; NULL before seeding or before the first export of a table without trigger_scheduler; only invocations that ended later count as new. |
+| `last_invocation_end` | TIMESTAMP | End time (UTC) of that invocation, or the seed time when seeded from sent state. NULL before seeding and, after a Dataform `seeded_at` backfill, until the publisher first advances or sends the table. |
 | `claimed_at` | TIMESTAMP | Shared being-processed marker (UTC) set by the publisher or the first-load exporter; NULL = free; the publisher may reclaim a claim older than 35 minutes only for a seeded table. The first-load exporter requires NULL. |
 | `trigger_scheduler` | STRING | Dataform workflow configuration whose SUCCEEDED invocations trigger the export ('daily_process' for the commission sets, the TA org sets and the AI team sample tables); NULL = a SUCCEEDED invocation whose action table_name SUCCEEDED (dim_company). |
 | `seeded_at` | TIMESTAMP | NULL = not seeded; the publisher skips the table entirely regardless of claimed_at. The first-load export sets it to the export time in the seed transaction; tables that already have sent state are backfilled from MIN(sent_at). |

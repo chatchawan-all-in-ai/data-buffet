@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/org_center/org-center.md"
     title: "Data Mart wiki (document/project_wiki/org_center/org-center.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -34,15 +34,15 @@ One row = one person holding one position at one unit for a date range: key `com
 |---|---|---|
 | `company_id` | STRING | Company code. |
 | `employee_id` | STRING | MDS employee code (the TA app's person_key). For PC rows it is the link's pc_employee_id. |
-| `first_name` | STRING | First name from the dim of that position (for DIRECTOR the DirectorOfSalesName split at the first word); for PCs from mds_data_mdt_sales_pc_master. |
-| `last_name` | STRING | Surname from the same source (rest of the name for DIRECTOR). |
-| `nickname` | STRING | Nickname from the dim; NULL for DIRECTOR and PC rows. |
+| `first_name` | STRING | First name from the dim of that position (DIRECTOR and CEO names split at the first word); for CEOs the source is CEOName from mds_data_company_master; for PCs the source is mds_data_mdt_sales_pc_master. |
+| `last_name` | STRING | Surname from the same source (rest of the name for DIRECTOR and CEO). |
+| `nickname` | STRING | Nickname from the dim; NULL for CEO, DIRECTOR and PC rows. |
 | `email` | STRING | Email from mds_data_org_employee_mapping_center (active rows, a non-NULL email first, then latest updated_at); NULL when the person is not in that table. |
 | `position_code` | STRING | CEO, DIRECTOR, REGION_MGR, SECTION_MGR, TA, PC_MDT or PC_AGENT. |
 | `unit_id` | STRING | Unit held at (join to org_center_unit.unit_id for the same company): CO-/DIR-/REG-/SEC- keys. TA rows: the section of the TA's department; PC rows: the section of the linked department (the department's TA seat). |
 | `department_id` | `ARRAY<STRING>` | TA departments merged into the row (ARRAY of department ids); empty for managers and PCs. |
 | `valid_from` | DATE | Start of the inclusive membership interval (CEO: 2000-01-01; otherwise dim StartDate; for a TA the earliest start over merged departments; for PCs the overlap of the link period with the TA seat of the linked department). |
-| `valid_to` | DATE | End of the inclusive interval (CEO: 2066-12-31; otherwise dim EndDate; latest end for a TA; 2066-12-31 = still active; for PCs the link's exclusive valid_to minus one day unless 2066-12-31). |
+| `valid_to` | DATE | End of the inclusive interval (CEO: 2066-12-31; otherwise dim EndDate; latest end for a TA; 2066-12-31 = still active; for PCs, the earlier of the link's exclusive valid_to minus one day (unless 2066-12-31) and the TA seat's EndDate, after adjacent or overlapping periods are merged). |
 
 # How it is built
 

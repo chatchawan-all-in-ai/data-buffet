@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -42,7 +42,7 @@ One row = one active MDS zone manager assignment (no de-duplication): key `ZoneT
 | `EmployeeNickname` | STRING | Manager nickname. |
 | `StartDate` | DATE | MDS start_date of the assignment; NULL on the -1 row. |
 | `EndDate` | DATE | MDS end_date of the assignment; NULL on the -1 row. |
-| `MdsID` | STRING | `id` of the source row in `mds_data_mdt_sales_zone_ta_master`; trace column back to MDS. NULL on the -1 row. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_mdt_sales_zone_ta_master`; trace column back to MDS. NULL on the -1 row. |
 
 # How it is built
 

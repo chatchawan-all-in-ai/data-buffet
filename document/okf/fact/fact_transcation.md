@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -47,7 +47,7 @@ One row = one bill line (`milListno`) of one IS/AS/BS/QS document per customer, 
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md) (`milCus = debcode`, CompanySK). |
 | `SaleRepSK` | INT64 | Surrogate key of [dim_sale_representative](/dimension/dim_sale_representative.md) chosen per line: employee match on milPer (or DummyChannel) + date window + DepCode/customer/channel rules, best `seq_condition` kept (business-flags.md). |
 | `DepartmentSK` | INT64 | Surrogate key of `dim_department` reached from the chosen sale rep (hierarchy chain). |
-| `RegionSK` | INT64 | Surrogate key of [dim_region](/dimension/dim_region.md) from the sales-org chain of the chosen sale rep, unless the invoice-mapping rule applies. Mapping rule (shared by RegionSK, RegionManagerSK, SectionSK, SectionManagerSK and DirectorSK): for company ag01/ab01, when `onetime.mapping_invoice` has `FlagMustUser = TRUE` for the line (`milPer`, `milVnos`, company) or `mix_date` is in 202401-202601, the value is taken from the chain of the section in the mapping row (NULL when the mapping row has no section); for other companies, and for ag01/ab01 outside 202401-202601 without `FlagMustUser`, the sale-rep chain value is used. |
+| `RegionSK` | INT64 | Surrogate key of [dim_region](/dimension/dim_region.md) from the sales-org chain of the chosen sale rep, unless the invoice-mapping rule applies. Mapping rule (shared by RegionSK, RegionManagerSK, SectionSK, SectionManagerSK and DirectorSK): for company ag01/ab01, when `onetime.mapping_invoice` has `FlagMustUser = TRUE` for the line (`milPer`, `milVnos`, company) or `mix_date` is in 202401-202601, the value is taken from the chain of the section in the mapping row (NULL when there is no mapping row or it has no section); for other companies, and for ag01/ab01 outside 202401-202601 without `FlagMustUser`, the sale-rep chain value is used. |
 | `RegionManagerSK` | INT64 | Surrogate key of dim_region_manager from the chain; same mapping rule as RegionSK. |
 | `SectionSK` | INT64 | Surrogate key of dim_section from the chain; same mapping rule as RegionSK. |
 | `SectionManagerSK` | INT64 | Surrogate key of dim_section_manager from the chain; same mapping rule as RegionSK. |

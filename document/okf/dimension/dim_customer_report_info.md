@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -50,9 +50,9 @@ One row per (`CompanyID`, `CustomerReportKey`), where the key is the report name
 | `SectionManagerSK` | INT64 | Section manager SK of the TA chain (from `dim_department_last`). |
 | `RegionManagerSK` | INT64 | Region manager SK of the TA chain (from `dim_department_last`). |
 | `DirectorSK` | INT64 | Director SK of the TA chain (from `dim_department_last`). |
-| `TASource` | STRING | How the TA was found: 'DEBSALESP' (the customer's `deb.debsalesp` has exactly one current non-dummy TA), 'MDT' (modern-trade chain employee: chain from `deb.debgroup`, slot picked via latest invoice `mihDep`), or NULL (no TA). Not read from MDS. |
+| `TASource` | STRING | How the TA was found: 'DEBSALESP' (the customer's `deb.debsalesp` has exactly one current non-dummy TA and is not a modern-trade employee), 'MDT' (modern-trade chain employee selected from `deb.debgroup`; a single TA is used directly, while multiple TAs are resolved by the latest matching invoice `mihDep`), or NULL (no TA). Not read from MDS. |
 | `TADebcode` | STRING | Debtor code used to find the TA (a code whose own display name equals the report name; latest invoice if several). |
-| `SaleRepSK` | INT64 | Sale representative SK from `dim_sale_representative_last` for the employee behind the TA (`debsalesp`); NULL if none. |
+| `SaleRepSK` | INT64 | Sale representative SK from `dim_sale_representative_last` for the customer's `deb.debsalesp`, regardless of `TASource`; NULL if none. |
 | `ReportDebcode` | STRING | Representative debtor code of the shop: `SegmentDebcode` if present, else `TADebcode`. |
 | `DEBcreditTerm` | INT64 | Credit term in days, from `validated_mac5.deb.DEBcreditTerm` of `ReportDebcode`. |
 | `InvoiceProvinceSK` | INT64 | Province SK of `ReportDebcode`'s address (from `view_deb_address_data`, one row chosen per debtor: sub-district > district > province, then lowest SK). |

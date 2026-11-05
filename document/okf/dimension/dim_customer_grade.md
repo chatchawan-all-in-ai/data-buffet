@@ -14,13 +14,13 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T23:20:34+07:00" }
 status: draft
 ---
 
 # What it is
 
-Customer credit-management scorecard. For each customer and year it totals receipts, measures how late the customer pays (against invoice date and against due date), counts cancelled cheques and relationship length, looks each measure up in the MDS-driven score band dims, adds a fixed credibility score of 20, converts the sum to a percent of 80, and maps that percent to a grade (labels held in [dim_grade](/dimension/dim_grade.md)). Two parallel results exist: an invoice-date grade and a due-date grade. The group-level equivalent is [dim_group_customer_grade](/dimension/dim_group_customer_grade.md). The band and grade SK columns point to dims that regenerate their SKs every run, but only the current-year rows are recomputed, so they match those dims only for rows with `Year` = the year of yesterday's date.
+Customer credit-management scorecard. For each customer and year it totals receipts, measures how late the customer pays (against invoice date and against due date), computes `CountCancelCheque` (defined in Schema below) and relationship length, looks each measure up in the MDS-driven score band dims, adds a fixed credibility score of 20, converts the sum to a percent of 80, and maps that percent to a grade (labels held in [dim_grade](/dimension/dim_grade.md)). Two parallel results exist: an invoice-date grade and a due-date grade. The group-level equivalent is [dim_group_customer_grade](/dimension/dim_group_customer_grade.md). The band and grade SK columns point to dims that regenerate their SKs every run, but only the current-year rows are recomputed, so they match those dims only for rows with `Year` = the year of yesterday's date.
 
 Read by: [view_dim_customer_credit_management](/view/dimension_view/view_dim_customer_credit_management.md).
 
@@ -49,10 +49,10 @@ One row = one customer in one year: key (`CompanySK`, `CustomerCode`, `Year`). `
 | `CustomerLimit` | FLOAT64 | Credit limit of the customer in baht. |
 | `CustomerCreditTerm` | INT64 | Credit term in days. |
 | `CustomerMemo` | STRING | Free-text memo on the customer. |
-| `SumPaymentReceive` | FLOAT64 | Total received (RS receipts, cheque-extract dates applied, rounded to 2 decimals) in `Year`; 0 when none. Receipts of cancelled or not-received statuses are excluded. |
+| `SumPaymentReceive` | FLOAT64 | Total received (RS receipts, cheque-extract dates applied, rounded to 2 decimals) in `Year`; 0 when none. For BS/AS receipts, the amount is the linked bill's `mihnetsum`. RS receipts with header status 7 are included through 2022; other cancelled or not-received statuses are excluded. |
 | `InvoiceDateAvgReceiveAgeDay` | FLOAT64 | Average days (rounded up) between invoice date and receipt date for receipts in `Year`, counting only late-positive differences; 0 when none. |
 | `DueDateAvgReceiveAgeDay` | FLOAT64 | Average days (rounded up) between the computed due date (`invoice date + credit term`) and receipt date, counting only positive differences (paid late); 0 when none. |
-| `CountCancelCheque` | INT64 | Number of distinct cheques with `chqstatus = 2` (cancelled/bounced) dated in `Year`; 0 when none. |
+| `CountCancelCheque` | INT64 | Number of distinct general-ledger account codes (`chqacode`) among cheque rows with `chqstatus = 2` (cancelled/bounced) dated in `Year`; rows with the same `chqacode` count once; 0 when none. |
 | `CalculateFirstContact` | FLOAT64 | Years (days / 365.0) from the first-contact date to the day before the run. |
 | `Credibility` | INT64 | Fixed credibility score of 20 for every row (hard-coded `20 as credibility_score`). |
 | `FirstContactDate` | DATETIME | First-contact date: `debdate`, else the earliest MAC5 invoice (`mih`) date, else `debeditdt` (deb last-edit date). DATETIME. |

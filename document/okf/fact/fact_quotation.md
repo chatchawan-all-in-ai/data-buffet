@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [fact_order](/fact/fact_order.md), [export_fact_quotation](/view/pub_su
 
 # Grain and key
 
-One row = the quoted totals of one stock code on one quotation (company, `Running`, customer, project) per matched ProductSK: key `FactQuotationSK` (ROW_NUMBER over CompanySK, Running, StkCode). The detail is grouped by ProductSK, CompanySK, QuotationSK, SDate, Year/Month/Day, Running, StkCode, CustomerId, ProjectCode; `Price` is AVG, `Quantity`/`Total` are SUM, `StkDesc` is MAX. The product join uses company + stock code and retains each matching ProductSK, so the same source quantities and totals repeat across barcode versions. FactQuotationSK identifies an expanded row, not a unique quotation/product total. The key (CompanySK, Running, StkCode) is not unique on `validated_mac5.tbook_quodetail`, so the SK ordering can tie.
+One row = the quoted totals of one stock code on one quotation (company, `Running`, customer, project) per matched ProductSK: key `FactQuotationSK` (ROW_NUMBER over CompanySK, Running, StkCode). The INNER JOIN to `dim_quotation` drops detail rows without a matching quotation. The detail is grouped by ProductSK, CompanySK, QuotationSK, SDate, Year/Month/Day, Running, StkCode, CustomerId, ProjectCode; `Price` is AVG, `Quantity`/`Total` are SUM, `StkDesc` is MAX. The product join uses company + stock code and retains each matching ProductSK, so the same source quantities and totals repeat across barcode versions. FactQuotationSK identifies an expanded row, not a unique quotation/product total. The key (CompanySK, Running, StkCode) is not unique on `validated_mac5.tbook_quodetail`, so the SK ordering can tie.
 
 # Schema
 

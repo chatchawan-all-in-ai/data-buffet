@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -50,7 +50,7 @@ One row = one MDT branch: key `BranchMdtSK`, from three blocks UNION ALL'd. (1) 
 | `Warehouse` | STRING | Company warehouse/site code serving the branch (`KTB`, `LP`, `KK`, `UB`, `PK`, `HY`); NULL on waiting rows, 'NotWarehouse' on the -1 row. |
 | `StartDate` | DATE | MDS start_date for master rows; first sale date seen in the feeds for waiting rows; NULL on the -1 row. |
 | `EndDate` | DATE | MDS end_date for master rows; NULL for waiting and -1 rows. |
-| `MdsID` | STRING | `id` of the source row in `mds_data_mdt_sales_branch_master`; trace column back to MDS. NULL on waiting and -1 rows. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_mdt_sales_branch_master`; trace column back to MDS. NULL on waiting and -1 rows. |
 
 # How it is built
 

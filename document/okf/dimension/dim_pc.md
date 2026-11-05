@@ -14,13 +14,13 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
 # What it is
 
-Roster of PCs (sales promoters) of the MDT (modern trade / saleout) business, assigned to a branch and a marketing group for a period. The PC views allocate branch saleout/targets to PCs by branch + `MarketingGroupID` (PC assignment is at marketing-group level, not product SK). Source: mds `mds_data_mdt_sales_pc_master`; branch SK from [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md).
+Roster of PCs (sales promoters) of the MDT (modern trade / saleout) business, assigned to a branch and a marketing group for a period. The PC views allocate branch saleout/targets to PCs by branch + `MarketingGroupID`. Source: mds `mds_data_mdt_sales_pc_master`; branch SK from [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md).
 
 Read by: [view_fact_saleout_pc_mdt](/view/fact_view/view_fact_saleout_pc_mdt.md), [view_fact_target_pc_mdt](/view/fact_view/view_fact_target_pc_mdt.md).
 

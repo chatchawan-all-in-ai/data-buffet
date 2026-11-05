@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -22,7 +22,7 @@ status: draft
 
 Main product dimension. It starts from the MAC5 stock master `stk` (all companies) plus eight dummy ag01 'others' codes for products without an MDT code, adds the MAC5 stock group and accounting group (`stg`), and enriches by barcode (`STKcode885`) with the MASTERSKU product/product_detail (name, description, dimensions, guarantee, certificate, brand, vendor). It also resolves the marketing SKs ([dim_stk_mkt](/dimension/dim_stk_mkt.md), [dim_product_mkt](/dimension/dim_product_mkt.md)).
 
-Read by: [dim_product_mdt](/dimension/dim_product_mdt.md), [dim_pump_information](/dimension/dim_pump_information.md), [fact_backlog_store](/fact/fact_backlog_store.md), [fact_invoice_store](/fact/fact_invoice_store.md), [fact_order](/fact/fact_order.md), [fact_order_store](/fact/fact_order_store.md), [fact_quotation](/fact/fact_quotation.md), [fact_transaction_delivery](/fact/fact_transaction_delivery.md), [fact_transcation](/fact/fact_transcation.md), [view_dim_product_master](/view/dimension_view/view_dim_product_master.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md), [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md), [Product_Attribute](/view/onetime/Product_Attribute.md), [Product_Master_ALL](/view/onetime/Product_Master_ALL.md).
+Read by: [dim_product_mdt](/dimension/dim_product_mdt.md), [fact_backlog_store](/fact/fact_backlog_store.md), [fact_invoice_store](/fact/fact_invoice_store.md), [fact_order](/fact/fact_order.md), [fact_order_store](/fact/fact_order_store.md), [fact_quotation](/fact/fact_quotation.md), [fact_transaction_delivery](/fact/fact_transaction_delivery.md), [fact_transcation](/fact/fact_transcation.md), [view_dim_product_master](/view/dimension_view/view_dim_product_master.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md), [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md), [Product_Attribute](/view/onetime/Product_Attribute.md), [Product_Master_ALL](/view/onetime/Product_Master_ALL.md).
 
 # Grain and key
 

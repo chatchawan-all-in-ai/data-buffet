@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
 status: draft
 ---
 
@@ -40,7 +40,7 @@ One row = one active MDS report-group row: key `ReportSK`, `ROW_NUMBER()` ordere
 | `MarketingGroupID` | STRING | Marketing (product) group code that narrows the report group; NULL means the row applies to the region regardless of group. Matched to the marketing group of the product (for example `stk_mkt.MarketingGroupID`). |
 | `ReportName1` | STRING | First display name of the report group (MDS). |
 | `ReportName2` | STRING | Second display name of the report group (MDS). |
-| `MdsID` | STRING | `id` of the source row in `mds_data_sales_report_group_master`, cleaned with `cleanString`; trace column back to MDS. |
+| `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_report_group_master`, cleaned with `cleanString`; trace column back to MDS. |
 
 # How it is built
 
