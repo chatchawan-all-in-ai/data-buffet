@@ -20,7 +20,9 @@ status: draft
 
 # What it is
 
-Combines [dim_channel](/dimension/dim_channel.md) with the three channel dimensions ([dim_channel_finance](/dimension/dim_channel_finance.md), [dim_channel_sales](/dimension/dim_channel_sales.md), [dim_channel_cost](/dimension/dim_channel_cost.md)) so that one row carries all four channel SKs (ChannelSK, ChannelFinanceSK, ChannelSaleSK, ChannelCostSK). Read by [view_dim_aging](/view/dimension_view/view_dim_aging.md), [view_dim_aging_history](/view/dimension_view/view_dim_aging_history.md) and [fact_transcation](/fact/fact_transcation.md). Exported by [export_view_dim_channel](/view/pub_sub/export_view_dim_channel.md). The join keys are CompanySK + DepCode.
+Combines [dim_channel](/dimension/dim_channel.md) with the three channel dimensions ([dim_channel_finance](/dimension/dim_channel_finance.md), [dim_channel_sales](/dimension/dim_channel_sales.md), [dim_channel_cost](/dimension/dim_channel_cost.md)) so that one row carries all four channel SKs (ChannelSK, ChannelFinanceSK, ChannelSaleSK, ChannelCostSK). The join keys are CompanySK + DepCode.
+
+Read by: [export_view_dim_channel](/view/pub_sub/export_view_dim_channel.md), [fact_transcation](/fact/fact_transcation.md), [view_dim_aging](/view/dimension_view/view_dim_aging.md) and [view_dim_aging_history](/view/dimension_view/view_dim_aging_history.md).
 
 # Grain and key
 

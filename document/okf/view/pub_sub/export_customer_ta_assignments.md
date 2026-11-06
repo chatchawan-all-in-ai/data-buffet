@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of the TA app table `customer_ta_assignments`: one row per [org_center_customer_ta](/org_center/org_center_customer_ta.md) row. `company_id` is the customer's company; `department_id` is the TA department that owns the customer; `membership_company_id` is the company paired with `department_id` (the customer's company); NULL when `department_id` is NULL. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `customer_ta_assignments` to topic `export-ta-customer_ta_assignments`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of the TA app table `customer_ta_assignments`: one row per [org_center_customer_ta](/org_center/org_center_customer_ta.md) row. `company_id` is the customer's company; `department_id` is the TA department that owns the customer; `membership_company_id` is the company paired with `department_id` (the customer's company); NULL when `department_id` is NULL. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-customer_ta_assignments`.
 
 # Grain and key
 
@@ -38,14 +38,13 @@ One row = one customer of one TA department from one start date: key `company_id
 | `valid_to` | DATE | First day after the assignment (already exclusive in org center); NULL when it never ends. |
 | `source_row_id` | STRING | MDS row id. |
 | `membership_company_id` | STRING | The company paired with `department_id` (the customer's company); NULL when `department_id` is NULL. |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_customer_ta_assignments.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [org_center_customer_ta](/org_center/org_center_customer_ta.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow the TA app org sample (one file per TA app table).
 
 # Examples
 

@@ -22,8 +22,6 @@ status: draft
 
 The target side of the sales model, the counterpart of [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md). It flattens [dim_target_product_group_by_sale_dayofwork](/dimension/dim_target_product_group_by_sale_dayofwork.md) (monthly targets spread over working days, 0 on holidays) into readable columns: sales rep, team, section, region, director, marketing group/segment, channel target group and report line. The org columns are resolved from the `*_last` dimensions by joining the SKs stored on the target row.
 
-No other object in this repo reads it.
-
 # Grain and key
 
 One row = one day-of-work target row of `dim_target_product_group_by_sale_dayofwork` with `CompanySK = 4`: key `TargetBySaleDayofworkSK` (unique in the source dimension). Every join is a LEFT JOIN on SK + `CompanySK` to the `*_last` dims, `dim_product_mkt`, `dim_target_product_group` and `dim_report`, each matching one row per SK, so the row count equals the source rows.

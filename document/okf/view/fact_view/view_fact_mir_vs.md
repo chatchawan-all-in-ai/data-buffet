@@ -22,8 +22,6 @@ status: draft
 
 The view over the `fact_mir_vs` billing fact. It returns every `fact_mir_vs` column plus `AgingSK`, the link to the AR aging dimension ([dim_aging](/dimension/dim_aging.md)), so a billing line can be analysed together with the invoice's outstanding amount and aging bucket.
 
-No other repo object reads it.
-
 # Grain and key
 
 One row = one billing (VS) line of [fact_mir_vs](/fact/fact_mir_vs.md): key `BillingSK` (unique); natural key `company_id`, `mirtype`, `mirvnos`, `mirlistno`, `mirbinvno`. The join to `dim_aging` can match several rows per invoice number (different `cfsTypeID`), so the view ends with `QUALIFY ROW_NUMBER() OVER (PARTITION BY t1.BillingSK ORDER BY t2.AgingSK DESC) = 1`, keeping the row count exactly equal to `fact_mir_vs`.

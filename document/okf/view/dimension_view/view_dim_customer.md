@@ -14,13 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T23:45:29+07:00" }
 status: draft
 ---
 
 # What it is
 
-Enriched customer view over [dim_customer](/dimension/dim_customer.md). It adds `GroupCustomerSK` (from [dim_group_customer](/dimension/dim_group_customer.md)), the invoice address names (SubDistrict/District/Province/Region from the address dims), the MDS nickname (`NicknameCustomer`, `FlagMDSNickName`) and MDS key-account code/name. Read by [view_dim_invoice](/view/dimension_view/view_dim_invoice.md), [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md) and [dim_customer_report_info](/dimension/dim_customer_report_info.md). Exported by [export_view_dim_customer](/view/pub_sub/export_view_dim_customer.md).
+Enriched customer view over [dim_customer](/dimension/dim_customer.md). It adds `GroupCustomerSK` (from [dim_group_customer](/dimension/dim_group_customer.md)), the invoice address names (SubDistrict/District/Province/Region from the address dims), the MDS nickname (`NicknameCustomer`, `FlagMDSNickName`) and MDS key-account code/name.
+
+Read by: [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md), [dim_customer_report_info](/dimension/dim_customer_report_info.md), [export_view_dim_customer](/view/pub_sub/export_view_dim_customer.md) and [view_dim_invoice](/view/dimension_view/view_dim_invoice.md).
 
 # Grain and key
 
@@ -30,7 +32,7 @@ One row = one customer with each matching nickname and key-account record: inten
 
 | Column | Type | Description |
 |---|---|---|
-| `GroupCustomerSK` | INT64 | SK of the customer group in dim_group_customer; NULL when the lookup fails. A NULL debgroup normally resolves to a self-group keyed by debcode, so this SK does not indicate whether a business group was assigned. |
+| `GroupCustomerSK` | INT64 | SK of the customer group in `dim_group_customer`, joined on `companyID` + `IFNULL(debgroup, debcode)`; NULL when no group row. |
 | `CustomerSK` | INT64 | Stable SK of the customer in dim_customer. |
 | `InvoiceProvinceSK` | INT64 | SK of the invoice-address province in `dim_provinces` (pass-through from dim_customer). |
 | `InvoiceDistrictSK` | INT64 | SK of the invoice-address district in `dim_districts` (pass-through). |
@@ -39,22 +41,22 @@ One row = one customer with each matching nickname and key-account record: inten
 | `companyID` | STRING | MAC5 company code. |
 | `debcode` | STRING | Customer (debtor) code. |
 | `debdate` | DATETIME | Date the customer record was created. |
-| `customer_code` | STRING | CIS360 customer code (`C` + 7 digits), matched to `match_customer.customer_allkon` to link MAC5 customers. |
-| `prefix_id` | INT64 | Name prefix (title) of the customer (`prefix.id`). |
+| `customer_code` | STRING | CIS360 customer code (`C` + 7 digits), matched through `match_customer.customer_allkon`; NULL unless matched through `match_customer` to a CIS360 profile for `ag01`. |
+| `prefix_id` | INT64 | Name prefix (title) from the matched CIS360 customer profile; NULL unless matched through `match_customer` to a CIS360 profile for `ag01`. |
 | `debnamet` | STRING | Customer name in Thai. |
-| `first_name` | STRING | First name of the customer (individual). |
-| `last_name` | STRING | Last name of the customer (individual). |
+| `first_name` | STRING | First name of the customer (individual) from the matched CIS360 customer profile; NULL unless matched through `match_customer` to a CIS360 profile for `ag01`. |
+| `last_name` | STRING | Last name of the customer (individual) from the matched CIS360 customer profile; NULL unless matched through `match_customer` to a CIS360 profile for `ag01`. |
 | `debtaxclass` | FLOAT64 | VAT rate applied to the customer in percent (7 or 0). |
-| `full_name` | STRING | Full display name of the customer (person or company). |
-| `customer_status_name` | STRING | Customer status name in Thai. |
+| `full_name` | STRING | Full display name of the customer (person or company) from the matched CIS360 customer profile; NULL unless matched through `match_customer` to a CIS360 profile for `ag01`. |
+| `customer_status_name` | STRING | Customer status name in Thai from the matched CIS360 customer profile; NULL unless matched through `match_customer` to a CIS360 profile for `ag01`. |
 | `debsalesp` | STRING | Salesperson code assigned to the customer (joins `per.percode`). |
 | `debxxxx` | STRING | Secondary salesperson (employee) code of the customer. |
 | `debgrade` | STRING | Customer grade code. |
-| `nature_business_code` | STRING | Nature of business code (e.g. `WHOLESALE_BUSINESS`, `FINANCIAL_BUSINESS`, `LOGISTICS_BUSINESS`, `HRR`). |
-| `nature_business_name` | STRING | Nature of business name in Thai. |
-| `nature_business_name_en` | STRING | Nature of business name in English. |
-| `customer_type_name` | STRING | Customer type name in Thai. |
-| `customer_type_name_en` | STRING | Customer type name in English. |
+| `nature_business_code` | STRING | Nature of business code from the matched CIS360 customer profile; NULL unless matched through `match_customer` to a CIS360 profile for `ag01`. |
+| `nature_business_name` | STRING | Nature of business name in Thai from the matched CIS360 customer profile; NULL unless matched through `match_customer` to a CIS360 profile for `ag01`. |
+| `nature_business_name_en` | STRING | Nature of business name in English from the matched CIS360 customer profile; NULL unless matched through `match_customer` to a CIS360 profile for `ag01`. |
+| `customer_type_name` | STRING | Customer type name in Thai from the matched CIS360 customer profile; NULL unless matched through `match_customer` to a CIS360 profile for `ag01`. |
+| `customer_type_name_en` | STRING | Customer type name in English from the matched CIS360 customer profile; NULL unless matched through `match_customer` to a CIS360 profile for `ag01`. |
 | `debbranch` | STRING | Tax branch number of the customer (`00000` = head office). |
 | `deblimit` | FLOAT64 | Credit limit of the customer in baht. |
 | `debgroup` | STRING | Customer group code (e.g. HP, TW, BT, GB, MH, DOHOME); drives channel matching in the sale-rep rules. |

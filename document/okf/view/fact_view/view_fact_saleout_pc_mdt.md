@@ -22,17 +22,14 @@ status: draft
 
 Sell-out of the modern-trade chains broken down by PC (promoter/product consultant, from [dim_pc](/dimension/dim_pc.md)). [fact_saleout_monthly_mdt](/fact/fact_saleout_monthly_mdt.md) has branch x product sales but no person, while the PC master assigns people to a slot (branch + marketing group, with start/end dates). The view expands each assignment to the months it is valid, divides quantity and amount equally among the PCs of the slot, and flags one row per PcSK assignment per month. One employee may have several assignments across branches or marketing groups.
 
-No other repo object reads it.
-
 # Grain and key
-
-One row = one `fact_saleout_monthly_mdt` row (key `month_date`, `store_code`, `branch_code`, `sales_channel`, `product_code`) multiplied by the number of PCs assigned to its slot in that month (`pc_sk_list`); a row with no PC stays once with `pc_sk_list` NULL and full amounts. Placeholder PCs (`IsPlaceholder`) and `PcSK = -1` are ignored. Because amounts are divided by `pc_in_slot`, `SUM(sale_amount)` over the view equals the fact total.
+One row = one `fact_saleout_monthly_mdt` row for each assigned PC in its slot: key = fact key + `pc_sk_list`. Rows with no assigned PC have `pc_sk_list` NULL; placeholder PCs and `PcSK = -1` are excluded.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `month_date` | DATE | Date of the sell-out row from `fact_saleout_monthly_mdt`. Mixed grain: for the running month the rows are per day, for closed months one lump; always group by `DATE_TRUNC(month_date, MONTH)` for monthly figures. |
+| `month_date` | DATE | Date of the sell-out row from `fact_saleout_monthly_mdt`; daily for the in-progress month and month-end for closed months. |
 | `store_code` | STRING | Modern-trade chain code (e.g. HP, TW, BT, GB, MH, DH) as in `fact_saleout_monthly_mdt`. |
 | `branch_code` | STRING | Branch code as sent by the chain (trimmed). |
 | `branch_sk` | INT64 | SK of `dim_sales_branch_mdt` (BranchMdtSK); `-1` when the branch is unknown. |
@@ -48,11 +45,11 @@ One row = one `fact_saleout_monthly_mdt` row (key `month_date`, `store_code`, `b
 | `region_sk` | INT64 | SK of `dim_region` valid at `month_date`. |
 | `region_manager_sk` | INT64 | SK of `dim_region_manager` valid at `month_date`. |
 | `director_sk` | INT64 | SK of `dim_director` valid at `month_date`. |
-| `pc_sk_list` | INT64 | Assignment SK of `dim_pc` (PcSK) for an employee + branch + marketing group in that month (a single value despite the `_list` name); it is not a person key. NULL when no PC is assigned. |
+| `pc_sk_list` | INT64 | Assignment SK of `dim_pc` (`PcSK`) for an employee, branch and marketing group in that month; NULL when no PC is assigned. |
 | `sale_qty` | FLOAT64 | Sell-out quantity divided by the number of PCs sharing the slot (month, branch, marketing group); the full quantity when no PC is assigned. Summing over PCs gives back the original total. |
 | `sale_amount` | FLOAT64 | Sell-out amount divided the same way as `sale_qty`. |
 | `asatdate` | DATE | Date the source fact was built (`CURRENT_DATE('Asia/Bangkok')` in `fact_saleout_monthly_mdt`). |
-| `fact_pc_not_count` | STRING | `No` marks one row per PcSK assignment per month represented in sell-out; `Yes` marks additional rows or rows without an assignment. Counting No rows counts assignments, not distinct employees. |
+| `fact_pc_not_count` | STRING | `No` marks one row per PcSK assignment per month represented in sell-out; `Yes` marks additional rows or rows without an assignment. |
 
 # How it is built
 

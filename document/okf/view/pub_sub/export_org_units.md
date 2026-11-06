@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of the TA app table `org_units`: the units of [org_center_unit](/org_center/org_center_unit.md) except the COMPANY rows. `id` is the org center `unit_id`; it is unique only within a company, so every reference to a unit pairs it with `company_id`. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `org_units` to topic `export-ta-org_units`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of the TA app table `org_units`: the units of [org_center_unit](/org_center/org_center_unit.md) except the COMPANY rows. `id` is the org center `unit_id`; it is unique only within a company, so every reference to a unit pairs it with `company_id`. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-org_units`.
 
 # Grain and key
 
@@ -39,15 +39,14 @@ One row = one unit of one company: key `company_id`, `id` (unique); `row_key` is
 | `valid_from` | DATE | Start date of the unit. |
 | `valid_to` | DATE | First day after the unit ends (org center end date + 1 day); NULL when it never ends (2066-12-31 in org center). |
 | `source_row_id` | STRING | No source; always NULL. |
-| `region_code` | STRING | RegionID on region rows (PS1 on PS1-1 to PS1-5); NULL on divisions and sections. |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `region_code` | STRING | RegionID on region rows; NULL on divisions and sections. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_org_units.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [org_center_unit](/org_center/org_center_unit.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow the TA app org sample (one file per TA app table).
 
 # Examples
 

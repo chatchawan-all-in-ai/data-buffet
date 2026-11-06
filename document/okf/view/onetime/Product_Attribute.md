@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "Product_Attribute"
-description: "Current barcoded ag01 MAC5 stock joined to matching dim_product_master ProductSK rows and MASTERSKU attributes; a code can have multiple retained barcode versions."
+description: "One row = one combination of a barcoded MAC5 stock item, matching dim_product_master rows and MASTERSKU attribute rows."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=onetime&t=Product_Attribute&page=table"
 project_id: databuffet-nonprd
 dataset_id: onetime
@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T23:54:24+07:00" }
 status: draft
 ---
 
@@ -22,7 +22,7 @@ status: draft
 
 Physical product attributes (colour, shape, weights, size, unit, material, model, series) for the products of company ag01. MAC5 stock items ([stk](/validated/validated_mac5/stk.md)) are linked by barcode to the MASTERSKU product master ([product](/validated/validated_mastersku/product.md), [product_detail](/validated/validated_mastersku/product_detail.md)), and the series name is mapped to [dim_product_series](/dimension/dim_product_series.md). It is a building block of the wide product view [Product_Master_ALL](/view/onetime/Product_Master_ALL.md).
 
-Used by [onetime.Product_Master_ALL](/view/onetime/Product_Master_ALL.md). Exported by [export_product_attribute](/view/pub_sub/export_product_attribute.md).
+Read by: [Product_Master_ALL](/view/onetime/Product_Master_ALL.md) and [export_product_attribute](/view/pub_sub/export_product_attribute.md).
 
 # Grain and key
 
@@ -58,12 +58,12 @@ One row = one (`stk` row, matching `dim_product_master` row, matching MASTERSKU 
 
 # Examples
 
-Attributes of products in one series.
+Attributes of products in the TITAN series (code `100001`).
 
 ```sql
 SELECT ProductCode, ProductColor, ProductSize, ProductUnit, ProductMaterials
 FROM `databuffet-nonprd.onetime.Product_Attribute`
-WHERE SeriesCode IS NOT NULL
+WHERE SeriesCode = '100001'
 ORDER BY ProductCode
 LIMIT 100
 ```

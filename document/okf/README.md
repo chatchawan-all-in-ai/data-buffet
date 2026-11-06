@@ -31,7 +31,7 @@ and no answers from people. Sources in frontmatter point only to repository file
 - A new table or view has a new card and a line in the folder `index.md`.
 - Changed columns, grain, source or behavior are reflected in that table's own card.
 - A dropped table or view has its card and index line deleted.
-- Every card has a `Read by:` line listing repository tables and views that query the table's data, including `view/pub_sub/export_*` views that select from it. Listing an object only in `dependencies` does not make it a reader. If none do, write `Read by: none in this repository.`
+- Use a `Read by:` line to list repository tables and views that query the table's data, including `view/pub_sub/export_*` views that select from it. Listing an object only in `dependencies` does not make it a reader. If none do, omit the line.
 - `generated.at` is the timestamp of the card's last content edit.
 
 Card and index changes and a `log.md` entry accompany the code change in the same commit.

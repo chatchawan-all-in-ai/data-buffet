@@ -22,7 +22,7 @@ status: draft
 
 The organisation-hierarchy part of the row-level-security (RLS) access map. From the latest org dims ([dim_director_last](/dimension/dim_director_last.md), [dim_region_last](/dimension/dim_region_last.md), [dim_section_last](/dimension/dim_section_last.md) and their manager dims) it lists, for every director of sales, region manager and section manager, which directors, regions and sections they may see (a director sees all regions and sections under their director, a region manager the sections under the region and so on), plus the company they belong to (`LevelName = 'CompanyID'`, `level_data = 9`). [view_rls_sale_data](/view/process_dataset/view_rls_sale_data.md) maps `EmployeeID` to e-mail and adds customer rows.
 
-Used by [process_dataset.view_rls_sale_data](/view/process_dataset/view_rls_sale_data.md).
+Read by: [view_rls_sale_data](/view/process_dataset/view_rls_sale_data.md).
 
 # Grain and key
 
@@ -33,7 +33,7 @@ One row = one allowed value of one attribute of one employee: intended key `Empl
 | Column | Type | Description |
 |---|---|---|
 | `EmployeeID` | STRING | Employee id of the director of sales (`DirectorOfSalesID`), region manager (`RegionManagerEmployeeID`) or section manager (`SectionManagerEmployeeID`) from the `*_last` dims; maps to `EmployeeID` in `mds_data_org_employee_mapping_center`. |
-| `EmployeeLevel` | INT64 | Highest organisation level of the employee: 4 = director, 3 = region manager, 2 = section manager; NULL on rows built only for the company filter if the employee has no level. |
+| `EmployeeLevel` | INT64 | Highest organisation level of the employee in the company: 4 = director, 3 = region manager, 2 = section manager. |
 | `LevelName` | STRING | Which attribute is restricted: `DirectorID`, `RegionID`, `SectionID`, or `CompanyID`. |
 | `LevelValue` | STRING | Allowed value for that attribute (director id, region id, section id, or the company's `CompanyReportID`); `All` for a level the employee has no row for. |
 | `level_data` | INT64 | Numeric level of the attribute: 4 = DirectorID, 3 = RegionID, 2 = SectionID, 9 = the CompanyID rows appended at the end. |

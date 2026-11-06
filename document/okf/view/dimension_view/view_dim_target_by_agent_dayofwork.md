@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-Daily spread of the by-agent targets: [dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md) (monthly allocation per agent) is joined to the calendar so that `CalAmt`/`CalQty` are divided evenly over the month's working days (`Amt_New`/`Qty_New`; holidays get 0). A working day is a dim_calendar date with `HolidayFlag` = 'No'; `total_day` counts the distinct working days of the target's year-month. It also resolves the as-of-date org SKs (sales rep, department, region, section, managers, director) from the date-versioned dims using StartDate/EndDate. No other repo object reads it.
+Daily spread of the by-agent targets: [dim_target_product_group_by_sale](/dimension/dim_target_product_group_by_sale.md) (monthly allocation per agent) is joined to the calendar so that `CalAmt`/`CalQty` are divided evenly over the month's working days (`Amt_New`/`Qty_New`; holidays get 0). A working day is a dim_calendar date with `HolidayFlag` = 'No'; `total_day` counts the distinct working days of the target's year-month. It also resolves the as-of-date org SKs (sales rep, department, region, section, managers, director) from the date-versioned dims using StartDate/EndDate.
 
 # Grain and key
 
@@ -69,7 +69,7 @@ One row = one allocated target spread to one calendar date: key `TargetBySaleSK`
 | `Percent` | FLOAT64 | Allocation percentage for this employee (0-100) from dim_rate_target. |
 | `DepartmentID` | STRING | Department of the employee in the rate row. |
 | `CalAmt` | FLOAT64 | Allocated target amount = Amt x Percent / 100. |
-| `CalQty` | FLOAT64 | Allocated target quantity for the month (Qty x Percent / 100). |
+| `CalQty` | FLOAT64 | Allocated target quantity = Qty x Percent / 100. |
 | `Day` | STRING | Two-digit day of month as text (dim_calendar `Day`). |
 | `total_day` | INT64 | Number of distinct working days in the target's year-month (HolidayFlag = 'No'). |
 | `Amt_New` | FLOAT64 | Daily target amount: TRUNC(CalAmt / total_day, 10) on working days, 0 on holidays. |
@@ -82,14 +82,14 @@ One row = one allocated target spread to one calendar date: key `TargetBySaleSK`
 
 # Examples
 
-Daily target for a salesperson in one month:
+Daily targets by salesperson for one month:
 
 ```sql
-SELECT Date, SUM(Amt_New) AS daily_target
+SELECT companyID, EmployeeID, Date, SUM(Amt_New) AS daily_target
 FROM `databuffet-nonprd.dimension_view.view_dim_target_by_agent_dayofwork`
-WHERE companyID = 'ag01' AND Year = 2026 AND Month = 10 AND EmployeeID = 'E001'
-GROUP BY Date
-ORDER BY Date
+WHERE Year = 2026 AND Month = 10
+GROUP BY companyID, EmployeeID, Date
+ORDER BY companyID, EmployeeID, Date
 ```
 
 Month total after daily spread:

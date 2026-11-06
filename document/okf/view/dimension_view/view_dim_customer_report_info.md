@@ -20,7 +20,9 @@ status: draft
 
 # What it is
 
-Reporting view over [dim_customer_report_info](/dimension/dim_customer_report_info.md) stores only SKs of the TA (responsible salesperson) chain; this view resolves them into IDs and names (department, section, region, section manager, region manager, director, employee) from the `_last` dimensions, converts `FlagPC` to Yes/No and `OnlinePercent` to text with '%', and adds the Thai address names. `CustomerSegmentSK` is passed through from dim_customer_report_info. Exported by [export_view_dim_customer_report_info](/view/pub_sub/export_view_dim_customer_report_info.md).
+Reporting view over [dim_customer_report_info](/dimension/dim_customer_report_info.md), which stores the SKs of the TA (responsible salesperson) chain. This view resolves them into IDs and names (department, section, region, section manager, region manager, director, employee) from the `_last` dimensions, converts `FlagPC` to Yes/No and `OnlinePercent` to text with `%`, and adds the Thai address names. `CustomerSegmentSK` is passed through from dim_customer_report_info.
+
+Read by: [export_view_dim_customer_report_info](/view/pub_sub/export_view_dim_customer_report_info.md).
 
 # Grain and key
 
@@ -30,7 +32,7 @@ One row = one report shop name of a company: key `CustomerReportInfoSK` (MERGE k
 
 | Column | Type | Description |
 |---|---|---|
-| `CustomerReportInfoSK` | INT64 | Stable SK of the report-info row (MERGE key CompanyID + CustomerReportKey in dim_customer_report_info); joined from view_fact_transcation. |
+| `CustomerReportInfoSK` | INT64 | Stable SK of the report-info row (MERGE key `CompanyID` + `CustomerReportKey` in `dim_customer_report_info`). |
 | `CompanySK` | INT64 | SK of the company in dim_company. |
 | `CustomerSegmentSK` | INT64 | SK of the segment in `dim_customer_segment` (full rebuild, regenerated daily); passed through. |
 | `CompanyID` | STRING | MAC5 company code. |

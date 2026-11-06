@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of [dimension_table.dim_company](/dimension/dim_company.md), with the business columns of the company dimension under their dim names (no surrogate key, no MdsId), for the whole table. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful run of the Dataform action `dim_company` (the export has no `trigger_scheduler`) and publishes NEW/UPDATE/DELETE messages with `table` = `dim_company` to topic `export-ta-dim_company`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of [dimension_table.dim_company](/dimension/dim_company.md), with the business columns of the company dimension under their dim names (no surrogate key, no MdsId), for the whole table. After each successful `dim_company` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-dim_company`.
 
 # Grain and key
 
@@ -34,14 +34,13 @@ One row = one company: key `CompanyID` (unique); `row_key` is the JSON of that k
 | `CompanyCode` | STRING | Company code/short name from `dim_company.CompanyCode`. |
 | `CompanyNameTH` | STRING | Company name in Thai from `dim_company.CompanyNameTH`. |
 | `CompanyNameEN` | STRING | Company name in English from `dim_company.CompanyNameEN`. |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_dim_company.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [dimension_table.dim_company](/dimension/dim_company.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow `dimension_table.dim_company` without `CompanySK` and `MdsId`.
 
 # Examples
 

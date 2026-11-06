@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "view_dim_invoice"
-description: "One row = one invoice-type document line group with each matching customer and name record, with order/aging SKs, SCG flag and a resolved shop name; InvoiceSK can repeat."
+description: "One row = one `dim_invoice` sales document with each matching customer and name record, with order/aging SKs, SCG flag and a resolved shop name; `InvoiceSK` can repeat."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_invoice&page=table"
 project_id: databuffet-nonprd
 dataset_id: dimension_view
@@ -20,11 +20,13 @@ status: draft
 
 # What it is
 
-Invoice dimension for the transaction model: [dim_invoice](/dimension/dim_invoice.md) enriched with `AgingSK` (from dim_aging by invoice number), `RefOrder` (the order the invoice came from, for BS/AS via the original IS), `FlagSCG`, the shop name for chain customers (`CRCShopName`), the branch name `mecdesc` and the final `CustomerReportName`. `CustomerReportName` is resolved in priority order: the MDS nickname when `FlagMDSNickName` is true (used as is); otherwise the rule-based name (SCG/Global House/HomePro shops: branch name `mecdesc`, else the CRC shop name from `mihNotes`, else the cleaned customer name) passed through the MDS CRC shop rename. For the Siam Global House customer the rule-based name has a trailing " จ.<province>" removed and the mall-name prefix normalised to "สยามโกลบอลเฮ้าส์ ". Read by [fact_invoice](/fact/fact_invoice.md), [fact_transcation](/fact/fact_transcation.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md) and [dim_customer_report_info](/dimension/dim_customer_report_info.md). Exported by [export_view_dim_invoice](/view/pub_sub/export_view_dim_invoice.md).
+Invoice dimension for the transaction model: [dim_invoice](/dimension/dim_invoice.md) enriched with `AgingSK` (from dim_aging by invoice number), `RefOrder` (the order the invoice came from, for BS/AS via the original IS), `FlagSCG`, the shop name for chain customers (`CRCShopName`), the branch name `mecdesc` and the final `CustomerReportName`. `CustomerReportName` is resolved in priority order: the MDS nickname when `FlagMDSNickName` is true (used as is); otherwise the rule-based name (SCG/Global House/HomePro shops: branch name `mecdesc`, else the CRC shop name from `mihNotes`, else the cleaned customer name) passed through the MDS CRC shop rename. For the Siam Global House customer the rule-based name has a trailing " จ.<province>" removed and the mall-name prefix normalised to "สยามโกลบอลเฮ้าส์ ".
+
+Read by: [dim_customer_report_info](/dimension/dim_customer_report_info.md), [export_view_dim_invoice](/view/pub_sub/export_view_dim_invoice.md), [fact_invoice](/fact/fact_invoice.md), [fact_transcation](/fact/fact_transcation.md) and [view_fact_transcation](/view/fact_view/view_fact_transcation.md).
 
 # Grain and key
 
-One row = one invoice-type document line group with each combination of matching customer and name records: intended key `InvoiceSK` (not guaranteed unique). `tab_main` keeps one row per `InvoiceSK` with `QUALIFY ROW_NUMBER()` ordered by `AgingSK`; subsequent LEFT JOINs to [view_dim_customer](/view/dimension_view/view_dim_customer.md#grain-and-key), `mec` and the active MDS CRC rename rows can add rows, with no final deduplication. dim_invoice natural key: company + year/month/day + vnos + customer + milLinkVcno.
+One row = one `dim_invoice` sales document with each combination of matching customer and name records: intended key `InvoiceSK` (not guaranteed unique). `tab_main` keeps one row per `InvoiceSK` with `QUALIFY ROW_NUMBER()` ordered by `AgingSK`; subsequent LEFT JOINs to [view_dim_customer](/view/dimension_view/view_dim_customer.md#grain-and-key), `mec` and the active MDS CRC rename rows can add rows, with no final deduplication. dim_invoice natural key: company + year/month/day + vnos + customer + milLinkVcno.
 
 # Schema
 

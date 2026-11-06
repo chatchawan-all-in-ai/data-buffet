@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "export_view_dim_customer_report_info"
-description: "One row = one customer report name with its segment and TA assignment, exposed for the Pub/Sub export of the AI team sample table dimension_view.view_dim_customer_report_info with row_key and row_hash."
+description: "One row = one customer report name with its segment and TA assignment, exposed for the Pub/Sub export of dimension_view.view_dim_customer_report_info with row_key and row_hash."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=pub_sub&t=export_view_dim_customer_report_info&page=table"
 project_id: databuffet-nonprd
 dataset_id: pub_sub
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of [dimension_view.view_dim_customer_report_info](/view/dimension_view/view_dim_customer_report_info.md), with the columns, names and order of the sample table sent to the AI team, for the whole table. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `view_dim_customer_report_info` to topic `export-ta-view_dim_customer_report_info`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of [dimension_view.view_dim_customer_report_info](/view/dimension_view/view_dim_customer_report_info.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-view_dim_customer_report_info`.
 
 # Grain and key
 
@@ -36,31 +36,30 @@ One row = one customer report name with its segment and TA assignment: key `Cust
 | `ShopOnline` | STRING | Online-shop indicator text from the MDS customer report master (NULL for names that come only from invoices). |
 | `FlagPC` | STRING | 'Yes' if the shop is a PC (flag in MDS), else 'No' (NULL becomes 'No'). |
 | `TAEmployeeID` | STRING | Employee ID of the TA salesperson (dim_sale_representative_last). |
-| `TAEmployeeName` | STRING | Salesperson display name 'name surname (nickname)'; NULL if empty. Personal data. |
+| `TAEmployeeName` | STRING | Salesperson display name 'name surname (nickname)'; NULL if empty. |
 | `TADepartmentID` | STRING | Department ID of the TA (from dim_department_last). |
 | `TADepartmentName` | STRING | Department name of the TA. |
 | `TASectionID` | STRING | Section ID of the TA (dim_section_last). |
 | `TASectionName` | STRING | Section name of the TA. |
 | `TASectionManagerID` | STRING | Employee ID of the TA section manager. |
-| `TASectionManagerName` | STRING | Section manager display name 'name surname (nickname)'; NULL if empty. Personal data. |
+| `TASectionManagerName` | STRING | Section manager display name 'name surname (nickname)'; NULL if empty. |
 | `TARegionID` | STRING | Region ID of the TA (dim_region_last). |
 | `TARegionName` | STRING | Region name of the TA. |
 | `TARegionManagerID` | STRING | Employee ID of the TA region manager. |
-| `TARegionManagerName` | STRING | Region manager display name 'name surname (nickname)'; NULL if empty. Personal data. |
+| `TARegionManagerName` | STRING | Region manager display name 'name surname (nickname)'; NULL if empty. |
 | `TADirectorID` | STRING | Director ID of the TA (dim_director_last). |
 | `TADirectorName` | STRING | Director name. |
 | `SubDistrict` | STRING | Thai sub-district name (dim_sub_districts.name_th), same method as view_dim_customer. |
 | `District` | STRING | Thai district name (dim_districts.name_th). |
 | `Province` | STRING | Thai province name (dim_provinces.name_th). |
 | `DEBcreditTerm` | INT64 | Credit term in days. |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_view_dim_customer_report_info.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [dimension_view.view_dim_customer_report_info](/view/dimension_view/view_dim_customer_report_info.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow the AI team sample table `dimension_view.view_dim_customer_report_info`.
 
 # Examples
 

@@ -22,8 +22,6 @@ status: draft
 
 The bridge between sell-in (our invoices to the chains) and the sell-out MDT facts (what the chains report selling per branch). It keeps only [fact_transcation](/fact/fact_transcation.md) lines whose customer is a modern-trade chain branch, classifies the chain (`store_code`) from `debgroup`/customer name, and tries to find the MDT branch ([dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md)) from the branch name embedded in the customer name.
 
-No other repo object reads it.
-
 # Grain and key
 
 One row = one `fact_transcation` row of a customer with a chain code (INNER JOIN; `store_code IS NULL` rows are dropped). No set of this view's columns is unique: `fact_transcation` also carries `milCus` and `milPer`, which this view does not expose. The `branch_lookup` CTE keeps one SK per (store, cleaned branch name), so the LEFT JOIN to `dim_sales_branch_mdt` adds no rows.

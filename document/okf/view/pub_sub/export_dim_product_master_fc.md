@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "export_dim_product_master_fc"
-description: "One row = one product of the finance product master, by barcode, exposed for the Pub/Sub export of the AI team sample table dimension_table.dim_product_master_fc with row_key and row_hash."
+description: "One row = one product of the finance product master, by barcode, exposed for the Pub/Sub export of dimension_table.dim_product_master_fc with row_key and row_hash."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=pub_sub&t=export_dim_product_master_fc&page=table"
 project_id: databuffet-nonprd
 dataset_id: pub_sub
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of [dimension_table.dim_product_master_fc](/dimension/dim_product_master_fc.md), with the columns, names and order of the sample table sent to the AI team, for the whole table. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `dim_product_master_fc` to topic `export-ta-dim_product_master_fc`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of [dimension_table.dim_product_master_fc](/dimension/dim_product_master_fc.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-dim_product_master_fc`.
 
 # Grain and key
 
@@ -33,14 +33,13 @@ One row = one product of the finance product master, by barcode: key `Barcode` (
 | `Barcode` | STRING | Pass-through of mds `Barcode`, cleaned with `cleanString` (empty string becomes NULL). Product barcode; the row-order key (with companyID) for the SK. |
 | `TM2Brand` | STRING | Pass-through of mds `TM2Brand`, cleaned with `cleanString` (empty string becomes NULL). Hierarchy level 2: brand. |
 | `TM3Series` | STRING | Pass-through of mds `TM3Series`, cleaned with `cleanString` (empty string becomes NULL). Level 3: series. |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_dim_product_master_fc.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [dimension_table.dim_product_master_fc](/dimension/dim_product_master_fc.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow the AI team sample table `dimension_table.dim_product_master_fc`.
 
 # Examples
 

@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T23:45:29+07:00" }
 status: draft
 ---
 
@@ -22,11 +22,11 @@ status: draft
 
 The main sales (sell-in) transaction view. It starts from the physical table [fact_transcation](/fact/fact_transcation.md), keeps one row per document line by choosing one sale-rep match, adds the latest-structure (`*Last`) org assignments, the invoice/aging/order/quotation links, the customer-report link, sales-KPI and accounting exclusion flags, the SCG purchase type and the product cost percent, and finally gap-fills the calendar so every date of every company has at least one row.
 
-Used by [fact_view.view_fact_salein_director_mdt](/view/fact_view/view_fact_salein_director_mdt.md), [onetime.Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md). Exported by [export_view_fact_transcation](/view/pub_sub/export_view_fact_transcation.md).
+Read by: [Model_Invoice_Transaction](/view/onetime/Model_Invoice_Transaction.md), [export_view_fact_transcation](/view/pub_sub/export_view_fact_transcation.md) and [view_fact_salein_director_mdt](/view/fact_view/view_fact_salein_director_mdt.md).
 
 # Grain and key
 
-One row = one sales document line (IS/AS/BS/QS): intended key `CompanySK`, `milType`, `milVnos`, `milCus`, `LOWER(milStk)`, `milPer`, `milListno`. The `raw_table` step keeps one sale-rep/report match per key with `QUALIFY ROW_NUMBER() OVER (PARTITION BY ... ORDER BY seq_condition, dim_report.Segment, SaleRepSK DESC) = 1`; the later LEFT JOINs to `fact_invoice`, `view_dim_aging` and `rebate_textsplit` are not guarded and can add rows, so uniqueness of the key is not guaranteed. In addition, a calendar spine (`dim_calendar` x `dim_company`, from the start of the year 4 years ago up to yesterday, Asia/Bangkok) is LEFT JOINed, so dates without sales appear as one row with `milVnos` NULL, all measures 0 and `mix_date` = the calendar date; the `select distinct` at the end collapses identical rows.
+One row = one sales document line (IS/AS/BS/QS): intended key `CompanySK`, `milType`, `milVnos`, `milCus`, `LOWER(milStk)`, `milPer`, `milListno`. The `raw_table` step keeps one sale-rep/report match per key with `QUALIFY ROW_NUMBER() OVER (PARTITION BY ... ORDER BY seq_condition, dim_report.Segment, SaleRepSK DESC) = 1`; the later LEFT JOINs to `dim_product_master` (`t4`), `dim_rebate` (customer, sales, product, department and text-split aliases), `fact_invoice` (`t2`), `view_dim_aging`, `fact_order` (`t3`), linked `view_dim_invoice` (`t6`) and `dim_customer_report_info` (`cri`) are not guarded and can add rows, so uniqueness of the key is not guaranteed. In particular, `t6` groups by `CompanySK`, `mihType`, `mihVnos` but joins only on company and `milLinkVcno = mihVnos`, without matching document type; several types sharing a linked number can match and yield different `FlagSaleExc` values that survive the final DISTINCT. In addition, a calendar spine (`dim_calendar` x `dim_company`, from the start of the year 4 years ago up to yesterday, Asia/Bangkok) is LEFT JOINed, so dates without sales appear as one row with `milVnos` NULL, all measures 0 and `mix_date` = the calendar date; the `select distinct` at the end collapses identical rows.
 
 # Schema
 
@@ -41,8 +41,8 @@ One row = one sales document line (IS/AS/BS/QS): intended key `CompanySK`, `milT
 | `QuotationSK` | INT64 | `COALESCE(fact_invoice.QuotationSK, fact_order.QuotationSK)`, link to `dim_quotation`. |
 | `FactQuotationSK` | INT64 | `COALESCE(fact_invoice.FactQuotationSK, fact_order.FactQuotationSK)`. |
 | `CustomerReportInfoSK` | INT64 | SK of `dim_customer_report_info` for the customer-report name on the invoice (whitespace-insensitive match); `-1` (reserved row) when the line has an invoice but the name is not found; NULL when there is no invoice. |
-| `FlagSaleExc` | STRING | `Yes` when the line is flagged for exclusion from sales KPI: document cancelled or status 32/33 (`fn_flag_exc`), no linked order (`RefOrder` empty or doc no `0001`/`PRE...`), or matched by a rebate rule (customer, sales, product, text-split) with `salesExc = 'Yes'`; otherwise `No`. |
-| `FlagAccExc` | STRING | `Yes` when the line is flagged for exclusion from finance/accounting sales: cancelled or status 32/33, or matched by a rebate rule with `accExc = 'Yes'`; otherwise `No`. |
+| `FlagSaleExc` | STRING | `Yes` when the line is flagged for exclusion from sales KPI: document cancelled or status 32/33 (`fn_flag_exc`), no linked order (`RefOrder` empty or doc no `0001`/`PRE...`), or matched by a rebate rule (customer, sales, product, text-split) with `salesExc = 'Yes'`; otherwise `No`; NULL on calendar rows. |
+| `FlagAccExc` | STRING | `Yes` when the line is flagged for exclusion from finance/accounting sales: cancelled or status 32/33, or matched by a rebate rule with `accExc = 'Yes'`; otherwise `No`; NULL on calendar rows. |
 | `FlagMappingInvoice` | STRING | NULL for companies other than ag01/ab01. For ag01/ab01: evaluated in order: `Yes` when `onetime.mapping_invoice.FlagMustUser` is true; NULL when the bill month is outside 202401–202601; `Yes` when the bill month is within 202401–202601 (so the later section-id and `No` branches are never reached). Drives which org SKs are used. |
 | `ReportSK` | INT64 | SK of the `dim_report` line (by region, and marketing group where a region has several lines); NULL when no line matches. |
 | `SaleRepSKLast` | INT64 | SK of `dim_sale_representative_last` chosen for the line using the LATEST sale-rep snapshot (matching employee id, channel/dep, customer flag, province, order window by `seq_condition`); historical bills are re-assigned to the latest structure. |
@@ -52,7 +52,7 @@ One row = one sales document line (IS/AS/BS/QS): intended key `CompanySK`, `milT
 | `SectionSKLast` | INT64 | Section SK under the latest structure. |
 | `SectionManagerSKLast` | INT64 | Section-manager SK under the latest structure. |
 | `DirectorSKLast` | INT64 | Director SK under the latest structure. |
-| `ChangeSectionSKLast` | INT64 | Section SK after the change-section rules under the latest structure: Agent/PS customers moved to the new section from `dim_change_district` or a `Dummy999990` section when `ChangeSectionFlag = 'Yes'`; otherwise the same as `SectionSKLast`. |
+| `ChangeSectionSKLast` | INT64 | Section SK under the latest structure, evaluated in order: (1) mapped director `dir_map.DirectorName` is Agent and the alphabetic-only parts of `trans.SectionID` and `chg_dis_map.newSectionID` match: use `change_sec_map_sk.SectionSK`; (2) mapped director starts with PS and `trans.SectionID` is PS1-4: use the flag/fallback rules below, before testing the PS prefix match; (3) mapped director starts with PS and the first three characters of those section IDs match: use `change_sec_map_sk.SectionSK`; (4) all remaining rows use the same flag/fallback rules. Director and section comparisons are case-insensitive. Flag/fallback rules: when `FlagMappingInvoice` is NULL, `sale_sk.ChangeSectionFlag = 'Yes'` uses `COALESCE(change_sec_sk.SectionSK, dummy_sec_last.SectionSK)` (dummy `Dummy999990`), otherwise `sec_sk.SectionSK`; when `FlagMappingInvoice = 'Yes'`, use `sec_map_sk.SectionSK`; any other flag value returns NULL. Both `change_sec_map_sk` and `sec_map_sk` match the latest section by `trans.SectionMappingID` + company. |
 | `ChangeSectionSK` | INT64 | Section SK at the bill date after the same change-section rules (district change, PS1-4 split, Dummy999990 placeholder). |
 | `ChangeSectionManagerSK` | INT64 | Section-manager SK at the bill date after the change-section rules. |
 | `ChangeRegionSK` | INT64 | Region SK at the bill date after the change-section rules. |
@@ -172,10 +172,10 @@ One row = one sales document line (IS/AS/BS/QS): intended key `CompanySK`, `milT
 | `milCost` | FLOAT64 | Cost amount of the line; zero on calendar rows without a transaction. |
 | `milUcost` | FLOAT64 | Unit cost of the line; zero on calendar rows without a transaction. |
 | `milUprice` | FLOAT64 | Unit price of the line, excluding VAT; zero on calendar rows without a transaction. |
-| `Vat` | FLOAT64 | Allocated VAT passed through from `fact_transcation`; calculation and window keys are defined in [Transaction_Data_Mart](/view/onetime/Transaction_Data_Mart.md#schema). |
-| `milsum_incvat` | FLOAT64 | Net amount including VAT: `milSum + Vat`. |
-| `mildisca_incvat` | FLOAT64 | Discount amount including VAT: `milDisca * stkVat` when the document carries VAT (`mihVatsum <> 0`), else `milDisca`. |
-| `milcog_incvat` | FLOAT64 | Gross amount including VAT: `milCog * stkVat` when the document carries VAT, else `milCog`. |
+| `Vat` | FLOAT64 | Allocated VAT passed through from `fact_transcation`; calculation and window keys are defined in [Transaction_Data_Mart](/view/onetime/Transaction_Data_Mart.md#schema); 0 on calendar rows without a transaction. |
+| `milsum_incvat` | FLOAT64 | Net amount including VAT: `milSum + Vat`; 0 on calendar rows without a transaction. |
+| `mildisca_incvat` | FLOAT64 | Discount amount including VAT: `milDisca * stkVat` when the document carries VAT (`mihVatsum <> 0`), else `milDisca`; 0 on calendar rows without a transaction. |
+| `milcog_incvat` | FLOAT64 | Gross amount including VAT: `milCog * stkVat` when the document carries VAT, else `milCog`; 0 on calendar rows without a transaction. |
 | `DepositExcVat` | FLOAT64 | Deposit amount excluding VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero; zero on calendar rows without a transaction. |
 | `DepositIncVat` | FLOAT64 | Deposit amount including VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero; zero on calendar rows without a transaction. |
 | `DepositVat` | FLOAT64 | Deposit VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero; zero on calendar rows without a transaction. |

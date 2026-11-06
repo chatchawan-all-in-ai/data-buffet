@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-Sales target allocation by agent: each monthly product-group target from [dim_target_product_group](/dimension/dim_target_product_group.md) is split to salespeople using [dim_rate_target](/dimension/dim_rate_target.md) percentages (CalAmt/CalQty), and tagged with the owner's latest department/section/region/director SKs from the `_last` dims and a ReportSK from [dim_report](/dimension/dim_report.md). The daily-spread counterpart is [view_dim_target_by_agent_dayofwork](/view/dimension_view/view_dim_target_by_agent_dayofwork.md), which reads the table `dim_target_product_group_by_sale` (same allocation idea). No other repo object reads this view.
+Sales target allocation by agent: each monthly product-group target from [dim_target_product_group](/dimension/dim_target_product_group.md) is split to salespeople using [dim_rate_target](/dimension/dim_rate_target.md) percentages (CalAmt/CalQty), and tagged with the owner's latest department/section/region/director SKs from the `_last` dims and a ReportSK from [dim_report](/dimension/dim_report.md). The daily-spread counterpart is [view_dim_target_by_agent_dayofwork](/view/dimension_view/view_dim_target_by_agent_dayofwork.md), which reads the table `dim_target_product_group_by_sale` (same allocation idea).
 
 # Grain and key
 
@@ -66,7 +66,7 @@ One row = one target row allocated to one salesperson: key `TargetBySaleSK` (uni
 
 - Definition: `definitions/view/dimension_view/view_dim_target_by_agent.sqlx` (`type: "view"`, tags `view`).
 - Reads: [dimension_table.dim_target_product_group](/dimension/dim_target_product_group.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_report](/dimension/dim_report.md), [dimension_table.dim_rate_target](/dimension/dim_rate_target.md), [dimension_table.dim_sale_representative_last](/dimension/dim_sale_representative_last.md), [dimension_table.dim_department_last](/dimension/dim_department_last.md), [dimension_table.dim_region_last](/dimension/dim_region_last.md), [dimension_table.dim_section_last](/dimension/dim_section_last.md), [dimension_table.dim_region_manager_last](/dimension/dim_region_manager_last.md), [dimension_table.dim_section_manager_last](/dimension/dim_section_manager_last.md).
-- Allocation: dim_rate_target rows are matched to a target by TargetID + CompanySK at three levels: (1) Year only (Month and ProductGroupID NULL), (2) Year + Month, (3) Year + Month + ProductGroupID = the target's MarketingGroupID. A target row with no matching rate row at level 2 or 3 is kept with NULL `RateTargetSK`; a target + rate pair produced at a lower level is not repeated at a higher level.
+- Allocation: dim_rate_target rows are matched to a target by TargetID + CompanySK at three levels: (1) Year only (Month and ProductGroupID NULL), (2) Year + Month (`ProductGroupID` NULL), (3) Year + Month + ProductGroupID = the target's MarketingGroupID. A target row with no matching rate row at level 2 or 3 is kept with NULL `RateTargetSK`; a target + rate pair produced at a lower level is not repeated at a higher level.
 
 # Examples
 

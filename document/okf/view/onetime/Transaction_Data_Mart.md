@@ -20,13 +20,12 @@ status: draft
 
 # What it is
 
-The sales-line data mart that feeds the physical table [fact_transcation](/fact/fact_transcation.md). It joins MAC5 document headers ([curated_mih](/curated/curated_mac5/curated_mih.md)) to their lines ([curated_mil](/curated/curated_mac5/curated_mil.md)) for document types IS/AS/BS/QS, adds stock attributes (stock group, barcode, VAT rate), the quotation reached through the linked order, the customer's address SKs, and allocates the document VAT and deposit to each line so VAT-inclusive amounts can be reported. It has no org/channel/product SKs yet; those are added by `fact_transcation` and `view_fact_transcation`.
+The sales-line data mart that feeds the physical table [fact_transcation](/fact/fact_transcation.md). It joins MAC5 document headers ([curated_mih](/curated/curated_mac5/curated_mih.md)) to their lines ([curated_mil](/curated/curated_mac5/curated_mil.md)) for document types IS/AS/BS/QS, adds stock attributes (stock group, barcode, VAT rate), the quotation reached through the linked order, the customer address SKs, and allocates the document VAT and deposit to each line so VAT-inclusive amounts can be reported. It carries no org, channel or product SKs; `fact_transcation` and `view_fact_transcation` add them.
 
-Used by [fact_table.fact_transcation](/fact/fact_transcation.md).
+Read by: [fact_transcation](/fact/fact_transcation.md).
 
 # Grain and key
-
-One row = one `curated_mil` line of a document of type IS, AS, BS or QS: key `companyID`, `milType`, `milVnos`, `milCus`, `milListno`, plus `milPer` for split-sale rows (intended key, not enforced by the view). It uses an INNER JOIN of `curated_mih` to `curated_mil` on year/month/day/type/number/customer/company, so documents without lines are absent; the LEFT JOINs (quotation, stk, address, company) are intended to stay 1:1 (`stk` is `SELECT DISTINCT`).
+One row = one `curated_mil` line of a document of type IS, AS, BS or QS: key `companyID`, `milType`, `milVnos`, `milCus`, `milListno`, plus `milPer` for split-sale rows. It uses an INNER JOIN of `curated_mih` to `curated_mil` on year/month/day/type/number/customer/company, so documents without lines are absent. The LEFT JOINs add quotation, stock, address and company columns to each line.
 
 # Schema
 
@@ -115,7 +114,7 @@ One row = one `curated_mil` line of a document of type IS, AS, BS or QS: key `co
 | `OrderProvinceSK` | INT64 | Province SK of the customer's address (`view_deb_address_data`, AI-parsed from the debtor address), used for order-based rules. |
 | `OrderDistrictSK` | INT64 | District SK of the customer's address. |
 | `OrderSubDistrictSK` | INT64 | Sub-district SK of the customer's address. |
-| `Vat` | FLOAT64 | VAT allocated to the line: `milSum / over_milsum * mihVatsum`, where `over_milsum` is `SUM(milSum)` partitioned by `milDay`, `milMonth`, `milYear`, `milType`, `milCus`, `milVnos` (no company column). The same formula applies to `BS` and other types, without an extra sign reversal; 0 when the window total is NULL or 0. |
+| `Vat` | FLOAT64 | VAT allocated to the line: `milSum / over_milsum * mihVatsum`, where `over_milsum` is `SUM(milSum)` partitioned by `milDay`, `milMonth`, `milYear`, `milType`, `milCus`, `milVnos`; 0 when the window total is NULL or 0. |
 | `milsum_incvat` | FLOAT64 | Net amount including VAT: `milSum + Vat`. |
 | `mildisca_incvat` | FLOAT64 | Discount amount including VAT: `milDisca * stkVat` when the document carries VAT (`mihVatsum <> 0`), else `milDisca`. |
 | `milcog_incvat` | FLOAT64 | Gross amount including VAT: `milCog * stkVat` when the document carries VAT, else `milCog`. |

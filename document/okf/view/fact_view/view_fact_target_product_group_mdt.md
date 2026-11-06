@@ -22,8 +22,6 @@ status: draft
 
 The sales target of the modern-trade channel, rolled up from the by-sale day-of-work target dimension. [dim_target_product_group_by_sale_dayofwork](/dimension/dim_target_product_group_by_sale_dayofwork.md) holds one row per sales person, department, product group and day; this view keeps only `ChannelTargetGroup = 'MDT'` and sums the new daily amount/quantity to the region/manager/director level, dropping the sale-rep, department and section levels.
 
-No other repo object reads it.
-
 # Grain and key
 
 One row = one target group: key `Date`, `ProductMktSK`, `ReportSK`, `RegionSK`, `RegionManagerSK`, `DirectorSK`, `RegionSKLast`, `RegionManagerSKLast`, `DirectorSKLast` (unique). `GROUP BY 1..9` over `ChannelTargetGroup = 'MDT'` rows.

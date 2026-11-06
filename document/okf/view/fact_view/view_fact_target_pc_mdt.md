@@ -22,8 +22,6 @@ status: draft
 
 Sell-out targets of the modern-trade chains at PC level. [fact_target_saleout_mdt](/fact/fact_target_saleout_mdt.md) has daily targets per branch and marketing group but no person; [dim_pc](/dimension/dim_pc.md) says which PCs cover a slot in each month. The view divides the target equally among those PCs and keeps every original column of the fact. PcSK identifies employee + branch + marketing group; one employee can have several assignment SKs.
 
-No other repo object reads it.
-
 # Grain and key
 
 One row = one `fact_target_saleout_mdt` row (key `target_date`, `branch_code`, `marketing_group_id`, `sub_marketing_id`, `segment_id`) times the number of PCs of its slot in that month; one row with `pc_sk_list` NULL and the full target when no PC is assigned. `dim_pc` is expanded to month level (`GENERATE_DATE_ARRAY` from StartDate to EndDate or 2099-12-31) because targets are daily but assignments monthly; placeholders and `PcSK = -1` are excluded.

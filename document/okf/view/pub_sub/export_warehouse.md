@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "export_warehouse"
-description: "One row = one ag01 warehouse; commission set `warehouse` for the TF team, exposed for the Pub/Sub export with the sample's columns plus row_key and row_hash."
+description: "One row = one ag01 warehouse; commission set `warehouse` for the TF team, exposed for the Pub/Sub export with row_key and row_hash."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=pub_sub&t=export_warehouse&page=table"
 project_id: databuffet-nonprd
 dataset_id: pub_sub
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of commission set `warehouse` for the TF team (company ag01): one ag01 warehouse. Its columns, names, order and JSON types are those of the commission sample sent to TF (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `warehouse` to topic `export-commission-warehouse`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files of this set go under the export date (no `snapshot_date`).
+The Pub/Sub export view of commission set `warehouse` for the TF team (company ag01): one ag01 warehouse. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-commission-warehouse`.
 
 # Grain and key
 
@@ -33,25 +33,16 @@ One row = one ag01 warehouse: key `company_source_id`, `id` (unique); `row_key` 
 | `company_source_id` | STRING | From `company_id` of the source table. Part of the natural key. |
 | `id` | STRING | From `stocode` of the source table. Part of the natural key. |
 | `warehouse` | STRING | From `stodesct` of the source table. |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL (a NULL key value is JSON null). |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_warehouse.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [validated_mac5.sto](/validated/validated_mac5/sto.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Company `ag01` only; all rows.
 
 # Examples
 
-Rows per folder date of the first-load files (one folder: the export date).
-
-```sql
-SELECT CURRENT_DATE('Asia/Bangkok') AS folder_date, COUNT(*) AS n
-FROM `databuffet-nonprd.pub_sub.export_warehouse`
-GROUP BY folder_date
-ORDER BY folder_date
-```
 
 Duplicate natural keys.
 

@@ -20,7 +20,9 @@ status: draft
 
 # What it is
 
-Presentation view over [dim_company](/dimension/dim_company.md). It passes the company columns through and adds `CompanyReportID` (ag01 and ab01 merged into 'ag01') plus the Thai and English legal names used on reports (hard-coded per company in the view). Read by [view_rls_data](/view/process_dataset/view_rls_data.md). Exported by [export_view_dim_company](/view/pub_sub/export_view_dim_company.md).
+Presentation view over [dim_company](/dimension/dim_company.md). It passes the company columns through and adds `CompanyReportID` (ag01 and ab01 merged into 'ag01') plus the Thai and English legal names used on reports (hard-coded per company in the view).
+
+Read by: [export_view_dim_company](/view/pub_sub/export_view_dim_company.md) and [view_rls_data](/view/process_dataset/view_rls_data.md).
 
 # Grain and key
 

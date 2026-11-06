@@ -1,5 +1,10 @@
 # Directory Update Log
 
+* **Update**: Aligned the shared reader rule with omitted empty reader lists, used the TITAN series code in the product-attribute example, and replaced stale export and aggregation descriptions with pointers to the source cards.
+
+* **Update**: Clarified CIS360 `ag01` profile matching, stored aging-history values, ordered latest-section rules and transaction join multiplicity in the view cards and their exports.
+
+* **Update**: Corrected the [view cards](view/index.md) and [Pub/Sub export cards](view/pub_sub/index.md): table facts, SQL examples, direct readers and export contracts; removed deploy lines and standardized `Read by:` wording.
 * **Update**: Second-round corrections to the scoped core cards and indexes: fixed remaining report findings, standardized `Read by:` to direct readers, documented that rule, and refreshed `generated.at` on edited cards.
 * **Update**: Expanded the six TF commission export views and their cards to include all years for company `ag01`.
 

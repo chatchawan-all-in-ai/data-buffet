@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of the TA app table `positions`: the distinct position codes that appear in [org_center_member](/org_center/org_center_member.md) per company; the possible codes are those of `org_center_member.position_code`. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `positions` to topic `export-ta-positions`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of the TA app table `positions`: the distinct position codes that appear in [org_center_member](/org_center/org_center_member.md) per company; the possible codes are those of `org_center_member.position_code`. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-positions`.
 
 # Grain and key
 
@@ -35,14 +35,13 @@ One row = one position of one company: key `company_id`, `code` (unique); `row_k
 | `name` | STRING | No source; always NULL. |
 | `default_role_id` | STRING | No source; always NULL. |
 | `uniform_code` | STRING | No source; always NULL. |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_positions.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [org_center_member](/org_center/org_center_member.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow the TA app org sample (one file per TA app table).
 
 # Examples
 

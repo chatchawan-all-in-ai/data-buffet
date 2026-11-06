@@ -22,8 +22,6 @@ status: draft
 
 The RLS access list for employees whose scope is configured by hand in mds (`mds_data_org_rls_special`) instead of following the sales hierarchy, i.e. employee types `special` and `mkt`. A pipe-separated mds cell (`A|B`) is split into several rows; `ALL` means no restriction; the marketing group/sub-group/segment columns are combined per position. `CustomerID` rows are derived from [rls_customer360](/process/rls_customer360.md): `ALL`, or the customers matching the employee's director/region/section or marketing filters. It has the same three columns as [view_rls_sale_data](/view/process_dataset/view_rls_sale_data.md).
 
-No other object in this repo reads it.
-
 # Grain and key
 
 One row = one allowed value of one attribute of one special or marketing employee: intended key `EmployeeEmail`, `LevelName`, `LevelValue`. Rows are distinct on `EmployeeID`, `EmployeeEmail`, `EmployeeType`, `LevelName`, `LevelValue` (`UNION DISTINCT` of the normal pivot, marketing combination, `ALL` customer rows and customer-filter rows) before the view keeps three columns, so the key repeats only if one e-mail has several `EmployeeID` or type values. Only active mds rows (`is_active = TRUE`) of active mapping rows with `employeetype IN ('special','mkt')` are used.

@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "export_fact_quotation"
-description: "One row = one quotation line, exposed for the Pub/Sub export of the AI team sample table fact_table.fact_quotation with row_key and row_hash."
+description: "One row = one quotation line, exposed for the Pub/Sub export of fact_table.fact_quotation with row_key and row_hash."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=pub_sub&t=export_fact_quotation&page=table"
 project_id: databuffet-nonprd
 dataset_id: pub_sub
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of [fact_table.fact_quotation](/fact/fact_quotation.md), with the columns, names and order of the sample table sent to the AI team, for the whole table. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `fact_quotation` to topic `export-ta-fact_quotation`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of [fact_table.fact_quotation](/fact/fact_quotation.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-fact_quotation`.
 
 # Grain and key
 
@@ -34,19 +34,18 @@ One row = one quotation line: key `companyID`, `Running`, `StkCode`, `occurrence
 | `QuotationSK` | INT64 | Surrogate key of [dim_quotation](/dimension/dim_quotation.md) (join `dim_quotation.id = tbook_quodetail.linkid`, same company). |
 | `SDate` | DATE | Quotation date from dim_quotation (`SDate`). |
 | `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md) (`stkcode = ProductCode`, company). |
-| `CompanySK` | INT64 | Surrogate key of [dim_company](/dimension/dim_company.md). |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md) (`CustomerId = debcode`, company). |
 | `Total` | FLOAT64 | Quoted line total: SUM(total). |
 | `Quantity` | FLOAT64 | Quoted quantity: SUM(quantity). |
 | `Price` | FLOAT64 | Unit price: AVG(price) over the group. |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_fact_quotation.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [fact_table.fact_quotation](/fact/fact_quotation.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow the AI team sample table `fact_table.fact_quotation`.
 
 # Examples
 

@@ -22,8 +22,6 @@ status: draft
 
 A denormalised, name-resolved sales transaction model. It takes [view_fact_transcation](/view/fact_view/view_fact_transcation.md), replaces all SKs with their IDs and names (channel, payment, document type, sales rep, section, region, director, product, marketing group, customer, province/district, report line) and renames measures to readable names (`NetSalesExcVat`, `Quantity`, ...). The org columns use the LATEST structure (`*_last` dims and `*SKLast` columns).
 
-No other object in this repo reads it.
-
 # Grain and key
 
 One row = one `view_fact_transcation` line restricted to `milYear IN (2024, 2025, 2026)`, `milvnos IS NOT NULL` (drops the calendar filler rows) and `CompanySK = 4` (hard-coded): intended key is that of `view_fact_transcation` (`milVnos`, `milType`, `CompanySK`, plus line columns), not unique here. Most dimension joins use SK + `CompanySK`; the product join uses `LOWER(milStk) = LOWER(ProductCode)` + `CompanySK` (not `ProductSK`) against `dim_product_master`, so a line is repeated once per matching `dim_product_master` row and its measures repeat with it. There is no deduplication.

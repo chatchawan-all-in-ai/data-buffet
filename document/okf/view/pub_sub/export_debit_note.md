@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "export_debit_note"
-description: "One row = one line of an ag01 debit note (AS) across all years, not cancelled; commission set `debit_note` for the TF team, exposed for the Pub/Sub export with the sample's columns plus row_key and row_hash."
+description: "One row = one line of an ag01 debit note (AS) across all years, not cancelled; commission set `debit_note` for the TF team, exposed for the Pub/Sub export with row_key and row_hash."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=pub_sub&t=export_debit_note&page=table"
 project_id: databuffet-nonprd
 dataset_id: pub_sub
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of commission set `debit_note` for the TF team (company ag01): one line of an ag01 debit note (AS) across all years, not cancelled. Its columns, names, order and JSON types are those of the commission sample sent to TF (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `debit_note` to topic `export-commission-debit_note`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files are split into date folders by `DN_Date` (`snapshot_date` in the export config).
+The Pub/Sub export view of commission set `debit_note` for the TF team (company ag01): one line of an ag01 debit note (AS) across all years, not cancelled. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-commission-debit_note`.
 
 # Grain and key
 
@@ -32,7 +32,7 @@ One row = one line of an ag01 debit note (AS) across all years, not cancelled: k
 |---|---|---|
 | `company_source_id` | STRING | From `company_id` of validated_mac5.mih (document header). Part of the natural key. |
 | `INV_No` | STRING | From `millinkvcno` of validated_mac5.mil (document line). |
-| `Invoiceid` | STRING | Constant '' (as in the sample). |
+| `Invoiceid` | STRING | Constant ''. |
 | `DN_id` | STRING | From `mihvnos` of validated_mac5.mih (document header). Part of the natural key. |
 | `DN_Date` | STRING | Computed: `FORMAT('%d/%d/%d', m.mihday, m.mihmonth, m.mihyear)`. |
 | `companyid` | STRING | From `mihcus` of validated_mac5.mih (document header). |
@@ -48,25 +48,17 @@ One row = one line of an ag01 debit note (AS) across all years, not cancelled: k
 | `Actual_amt` | FLOAT64 | From `milsum` of validated_mac5.mil (document line). |
 | `MIHkeyDate` | DATETIME | From `mihkeydate` of validated_mac5.mih (document header). |
 | `DNType` | STRING | From `ar_snamet` of validated_mac5.ar_s (status code). |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL (a NULL key value is JSON null). |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_debit_note.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [validated_mac5.ar_s](/validated/validated_mac5/ar_s.md), [validated_mac5.mih](/validated/validated_mac5/mih.md), [validated_mac5.mil](/validated/validated_mac5/mil.md), [validated_mac5.stk](/validated/validated_mac5/stk.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Scope: company `ag01`, all years. Aliases in the column descriptions: `ars` = validated_mac5.ar_s (status code); `l` = validated_mac5.mil (document line); `m` = validated_mac5.mih (document header); `s` = validated_mac5.stk (product).
+- Scope: company `ag01`, all years. Aliases in the column descriptions: `ars` = validated_mac5.ar_s (status code); `l` = validated_mac5.mil (document line); `m` = validated_mac5.mih (document header); `s` = validated_mac5.stk (product).
 
 # Examples
 
-Rows per folder date of the first-load files.
-
-```sql
-SELECT DATE(PARSE_DATETIME('%d/%m/%Y', DN_Date)) AS folder_date, COUNT(*) AS n
-FROM `databuffet-nonprd.pub_sub.export_debit_note`
-GROUP BY folder_date
-ORDER BY folder_date
-```
 
 Duplicate natural keys.
 

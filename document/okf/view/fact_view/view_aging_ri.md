@@ -22,11 +22,8 @@ status: draft
 
 The AR (accounts receivable) aging report for open items. It starts from [view_dim_aging](/view/dimension_view/view_dim_aging.md) (the aging dimension plus channel, DayRange and receipt-age fields), keeps only documents whose whole invoice group is still `Non-Completed`, and adds the customer PO number, the aging-bucket report name, the billing description/notes and two readable text columns that list every receipt (RI = receive invoice) with its status and cheque result.
 
-No other repo object reads it.
-
 # Grain and key
-
-One row = one aging document: key `companyID`, `cfsVnosID`, `cfsTypeID`, i.e. one invoice (IS), credit note (BS) or debit note (AS). It inherits the uniqueness of `view_dim_aging` (one row per `AgingSK`, which this view drops together with `AgingRangSK`, `BillingSK`, `CustomerSK`, `InvoiceSK`, `CompanySK` and the four channel SKs). Rows are restricted to `GroupFlagComplete = 'Non-Completed'`. The extra joins (agg_mir, dim_aging_rang, dim_invoice, fact_mir_vs) are intended to be 1:1.
+One row = one aging document: intended key `companyID`, `cfsVnosID`, `cfsTypeID` (not unique; `view_dim_aging` is unique only on `AgingSK`, which this view drops). Rows are restricted to `GroupFlagComplete = 'Non-Completed'`. The joins to `agg_mir`, `dim_aging_rang`, `dim_invoice` and `fact_mir_vs` add receipt, bucket, invoice and billing fields.
 
 # Schema
 
@@ -56,7 +53,7 @@ One row = one aging document: key `companyID`, `cfsVnosID`, `cfsTypeID`, i.e. on
 | `PaymentAmount` | FLOAT64 | Amount received against the document (`RiAmount`): sum of RS receipt lines (cheque-adjusted); equals TotalAmount for old documents flagged complete by status. |
 | `CreditNoteAmount` | FLOAT64 | Credit-note (BS) amount linked to the invoice (`mil.milSum * 1.07`, so VAT-inclusive at a fixed 7%); only IS rows carry it, BS/AS rows are 0 (their amount is in `TotalAmount`). |
 | `DebitNoteAmount` | FLOAT64 | Debit-note (AS) amount linked to the invoice (same `milSum * 1.07` rule); only IS rows carry it, BS/AS rows are 0. |
-| `OutStanding` | FLOAT64 | Remaining receivable: `TotalAmount - PaymentAmount + CreditNoteAmount + DebitNoteAmount` for IS rows (BS/AS rows have CreditNoteAmount and DebitNoteAmount 0), rounded to 2 decimals; 0 for documents completed by status. Positive = still to collect. |
+| `OutStanding` | FLOAT64 | Remaining balance. IS rows: `TotalAmount - PaymentAmount + CreditNoteAmount + DebitNoteAmount`, rounded to 2 decimals; 0 when the status-complete rule applies. BS/AS rows: 0 when the status-complete rule applies or when a receipt exists; `TotalAmount` when the note has no linked invoice (`mihRef1` is NULL); otherwise `TotalAmount` minus the note's own credit-note (BS) or debit-note (AS) amount (`milSum * 1.07` of its linked lines), rounded to 2 decimals. |
 | `flagComplete` | STRING | `Completed` when OutStanding is within -1..1, otherwise `Non-Completed`; pre-2023 invoices that look open are also marked Completed when MAC5 cfs shows `cfsclearsum = -1 AND cfsclearall = -1` and a receipt exists. |
 | `MinReceiveDate` | DATE | Earliest receipt (RS) date for the document (cheque extract date for bounced/edited cheques). |
 | `MaxReceiveDate` | DATE | Latest receipt (RS) date for the document. |
@@ -73,8 +70,8 @@ One row = one aging document: key `companyID`, `cfsVnosID`, `cfsTypeID`, i.e. on
 | `ReportName` | STRING | `dim_aging_rang.ReportName` for the row's aging bucket (join on AgingRangSK); NULL when no bucket matches. |
 | `mirdesc` | STRING | Description copied from the referenced invoice. |
 | `mirnotes` | STRING | Notes copied from the referenced invoice. |
-| `ri_information` | STRING | Multi-line text, one numbered line per receipt (RS) document of the invoice, ordered by receive date: `n. (Y/N) <receipt no> / <receive date> / (<status code>) <status name>`. `(Y)` = receipt counts (FlagUse), `(N)` = excluded status. |
-| `ri_amt` | STRING | Multi-line text (STRING, not numeric), one numbered line per receipt: `n. (Y/N) <receipt no> / <amount, 2 decimals with thousands separator> / เช็คปกติ/เช็คเด้ง [/ adjusted amount]`; `เช็คเด้ง` = bounced cheque, in which case the cheque-adjusted amount is appended. |
+| `ri_information` | STRING | Multi-line text, one numbered line per receipt (`mir`) line of the invoice, ordered by receive date: `n. (Y/N) <receipt no> / <receive date> / (<status code>) <status name>`. `(Y)` = receipt counts (`FlagUse`), `(N)` = excluded status. Cancelled receipt documents are excluded. |
+| `ri_amt` | STRING | Multi-line text (STRING, not numeric), one numbered line per receipt (`mir`) line: `n. (Y/N) <receipt no> / <amount, 2 decimals with thousands separator> / เช็คปกติ/เช็คเด้ง [/ adjusted amount]`; `เช็คเด้ง` = bounced cheque, in which case the cheque-adjusted amount is appended. Cancelled receipt documents are excluded. |
 
 # How it is built
 

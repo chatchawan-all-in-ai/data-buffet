@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "GroupCustomerSK_CustomerSK"
-description: "One row = one (GroupCustomerSK, CustomerSK) pair linking a customer group to a customer, in the bridge_dataset schema."
+description: "One row = one (GroupCustomerSK, CustomerSK) pair linking a customer group to a customer."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=bridge_dataset&t=GroupCustomerSK_CustomerSK&page=table"
 project_id: databuffet-nonprd
 dataset_id: bridge_dataset
@@ -21,8 +21,6 @@ status: draft
 # What it is
 
 Bridge (many-to-many helper) view between [dim_group_customer](/dimension/dim_group_customer.md) and [dim_customer](/dimension/dim_customer.md). It joins the two on CompanySK and the group code (`debgroup`, or the customer's own `debcode` when it has no group) and keeps only the two surrogate keys.
-
-No other object in this repo reads it.
 
 # Grain and key
 
@@ -47,7 +45,12 @@ Customers that belong to a given group:
 ```sql
 SELECT CustomerSK
 FROM `databuffet-nonprd.bridge_dataset.GroupCustomerSK_CustomerSK`
-WHERE GroupCustomerSK = 100 AND CustomerSK IS NOT NULL
+WHERE GroupCustomerSK = (
+  SELECT GroupCustomerSK
+  FROM `databuffet-nonprd.dimension_table.dim_group_customer`
+  WHERE companyID = '<company code>' AND debgroup = '<group code>'
+)
+  AND CustomerSK IS NOT NULL
 ```
 
 Customer counts per group:

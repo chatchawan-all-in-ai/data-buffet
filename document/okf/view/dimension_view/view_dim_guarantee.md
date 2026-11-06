@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-Customer guarantee view: [dim_guarantee](/dimension/dim_guarantee.md) (bank guarantee documents from MDS) with the customer's `CustomerSK` from [dim_customer](/dimension/dim_customer.md), matched on customer code and CompanySK. Rows whose customer cannot be matched are dropped. No other repo object reads it.
+Customer guarantee view: [dim_guarantee](/dimension/dim_guarantee.md) (bank guarantee documents from MDS) with the customer's `CustomerSK` from [dim_customer](/dimension/dim_customer.md), matched on customer code and CompanySK. Rows whose customer cannot be matched are dropped.
 
 # Grain and key
 

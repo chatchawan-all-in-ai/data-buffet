@@ -22,7 +22,7 @@ status: draft
 
 The final RLS access list for employees of type `sales`. It joins [view_rls_data](/view/process_dataset/view_rls_data.md) (org hierarchy by employee id) to the mds employee mapping to get the e-mail, then adds `CustomerID` rows: every customer in [rls_customer360](/process/rls_customer360.md) whose pipe-separated `SectionID` list contains a section the employee may see. Employees of type `special` or `mkt` come from [view_rls_special_data](/view/process_dataset/view_rls_special_data.md).
 
-Used by [export_view_rls_sale_data](/view/pub_sub/export_view_rls_sale_data.md).
+Read by: [export_view_rls_sale_data](/view/pub_sub/export_view_rls_sale_data.md).
 
 # Grain and key
 

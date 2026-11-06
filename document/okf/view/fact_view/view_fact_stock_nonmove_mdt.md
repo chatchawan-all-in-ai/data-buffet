@@ -22,8 +22,6 @@ status: draft
 
 Non-moving stock report for modern-trade chains. It takes the latest snapshot per (chain, branch, product) from [fact_stock_mdt](/fact/fact_stock_mdt.md), keeps only items still on hand, and joins the last time that item sold in [fact_saleout_mdt](/fact/fact_saleout_mdt.md), then buckets the age.
 
-No other repo object reads it.
-
 # Grain and key
 
 One row = one product of one branch of one store: key `store_code`, `branch_code`, `product_code` (unique). `latest_stock` keeps `ROW_NUMBER() ... ORDER BY stock_date DESC = 1`, then `WHERE onhand_qty > 0`. The sales aggregate is also per (store, branch, product), so the LEFT JOIN is 1:1.

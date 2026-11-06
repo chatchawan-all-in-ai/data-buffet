@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-Credit-management view: a narrow slice of [dim_customer](/dimension/dim_customer.md) (credit limit, credit term, memo) joined with the latest grade row of [dim_customer_grade](/dimension/dim_customer_grade.md), exposing the invoice-based and due-based grades. No other repo object reads it.
+Credit-management view: a narrow slice of [dim_customer](/dimension/dim_customer.md) (credit limit, credit term, memo) joined with the latest grade row of [dim_customer_grade](/dimension/dim_customer_grade.md), exposing the invoice-based and due-based grades.
 
 # Grain and key
 

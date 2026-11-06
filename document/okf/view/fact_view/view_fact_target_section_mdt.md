@@ -22,8 +22,6 @@ status: draft
 
 A small roll-up of [fact_target_saleout_mdt](/fact/fact_target_saleout_mdt.md) to chain and marketing-group level. It collapses branch, sub-marketing group and segment and keeps only the amount and a branch count.
 
-No other repo object reads it.
-
 # Grain and key
 
 One row = one marketing group of one store on one target date: key `target_date`, `store_code`, `marketing_group_id` (unique); `marketing_group_name` is `ANY_VALUE`. Quantity is not included.

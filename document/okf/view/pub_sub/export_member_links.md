@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of the TA app table `member_links`: one row per [org_center_link](/org_center/org_center_link.md) row (PC_TA links from MDS; the TA side is the department, not the person). pc_type and branch_type are not exported. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `member_links` to topic `export-ta-member_links`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of the TA app table `member_links`: one row per [org_center_link](/org_center/org_center_link.md) row (PC_TA links from MDS; the TA side is the department, not the person). pc_type and branch_type are not exported. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-member_links`.
 
 # Grain and key
 
@@ -40,14 +40,13 @@ One row = one link: key `company_id`, `link_type`, `from_membership_id`, `depart
 | `valid_to` | DATE | First day after the link (already exclusive in org center); NULL when it never ends. |
 | `source` | STRING | Constant 'mds'. |
 | `source_row_id` | STRING | No source; always NULL. |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_member_links.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [org_center_link](/org_center/org_center_link.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow the TA app org sample (one file per TA app table).
 
 # Examples
 

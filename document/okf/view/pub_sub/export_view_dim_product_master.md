@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "export_view_dim_product_master"
-description: "One row = one product, exposed for the Pub/Sub export of the AI team sample table dimension_view.view_dim_product_master with row_key and row_hash."
+description: "One row = one product, exposed for the Pub/Sub export of dimension_view.view_dim_product_master with row_key and row_hash."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=pub_sub&t=export_view_dim_product_master&page=table"
 project_id: databuffet-nonprd
 dataset_id: pub_sub
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of [dimension_view.view_dim_product_master](/view/dimension_view/view_dim_product_master.md), with the columns, names and order of the sample table sent to the AI team, for the whole table. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `view_dim_product_master` to topic `export-ta-view_dim_product_master`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of [dimension_view.view_dim_product_master](/view/dimension_view/view_dim_product_master.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-view_dim_product_master`.
 
 # Grain and key
 
@@ -36,16 +36,15 @@ One row = one product: key `ProductSK` (unique); `row_key` is the JSON of that k
 | `ProductName` | STRING | Full product name. |
 | `ProductDescription` | STRING | Product name/description. |
 | `ProductMac5Description` | STRING | MAC5 stock description (`stkdesct1`). |
-| `PumpSegment` | STRING | Pump segment label: WaterPac name for SegmentID 00111/00112, the marketing Segment for MarketingGroupID 002, else 'OTHERS'. |
+| `PumpSegment` | STRING | Pump segment label: for SegmentID 00111/00112 the WaterPac name, taken as the first non-NULL of the dim_waterpac names matched by the WaterPac code of `ProductCode`, `ProductCode1`, `ProductMac5Description` (in that order), else 'WaterPac'; the marketing Segment for MarketingGroupID 002; else 'OTHERS'. The WaterPac code is the text after `/` that starts with P or U (regex `/([PU][a-zA-Z0-9].*)$`). |
 | `BrandID` | STRING | Brand of the product (FK to `brand.bra_id`). |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_view_dim_product_master.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [dimension_view.view_dim_product_master](/view/dimension_view/view_dim_product_master.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow the AI team sample table `dimension_view.view_dim_product_master`.
 
 # Examples
 

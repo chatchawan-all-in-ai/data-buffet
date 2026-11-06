@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "export_dim_project"
-description: "One row = one project profile, exposed for the Pub/Sub export of the AI team sample table dimension_table.dim_project with row_key and row_hash."
+description: "One row = one project profile, exposed for the Pub/Sub export of dimension_table.dim_project with row_key and row_hash."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=pub_sub&t=export_dim_project&page=table"
 project_id: databuffet-nonprd
 dataset_id: pub_sub
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of [dimension_table.dim_project](/dimension/dim_project.md), with the columns, names and order of the sample table sent to the AI team, for the whole table. The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `dim_project` to topic `export-ta-dim_project`. It is registered in [mart_export_config](/process/mart_export_config.md).
+The Pub/Sub export view of [dimension_table.dim_project](/dimension/dim_project.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-dim_project`.
 
 # Grain and key
 
@@ -37,14 +37,13 @@ One row = one project profile: key `ProjectSK` (unique); `row_key` is the JSON o
 | `province` | STRING | Province of the project. |
 | `companyStatus` | STRING | Project status colour (`เขียว` = green, `เหลือง` = yellow, `แดง` = red). |
 | `profileComp` | STRING | Project profile description (e.g. condominium, hotel). |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL. |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_dim_project.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [dimension_table.dim_project](/dimension/dim_project.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Columns follow the AI team sample table `dimension_table.dim_project`.
 
 # Examples
 

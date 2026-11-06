@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "export_sell"
-description: "One row = one ag01 salesperson, hidden ones included; commission set `sell` for the TF team, exposed for the Pub/Sub export with the sample's columns plus row_key and row_hash."
+description: "One row = one ag01 salesperson, hidden ones included; commission set `sell` for the TF team, exposed for the Pub/Sub export with row_key and row_hash."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=pub_sub&t=export_sell&page=table"
 project_id: databuffet-nonprd
 dataset_id: pub_sub
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of commission set `sell` for the TF team (company ag01): one ag01 salesperson, hidden ones included. Its columns, names, order and JSON types are those of the commission sample sent to TF (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `sell` to topic `export-commission-sell`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files of this set go under the export date (no `snapshot_date`).
+The Pub/Sub export view of commission set `sell` for the TF team (company ag01): one ag01 salesperson, hidden ones included. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-commission-sell`.
 
 # Grain and key
 
@@ -34,29 +34,20 @@ One row = one ag01 salesperson, hidden ones included: key `company_source_id`, `
 | `id` | STRING | From `percode` of the source table. Part of the natural key. |
 | `sellid` | STRING | From `percode` of the source table. |
 | `name` | STRING | From `pernamet` of the source table. |
-| `surname` | STRING | Constant '' (as in the sample). |
+| `surname` | STRING | Constant ''. |
 | `position` | STRING | From `perpositn` of the source table. |
 | `Sales_area` | STRING | From `perdep` of the source table. |
-| `Sales_region` | STRING | Constant '' (as in the sample). |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL (a NULL key value is JSON null). |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `Sales_region` | STRING | Constant ''. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_sell.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [validated_mac5.per](/validated/validated_mac5/per.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Company `ag01` only; all rows.
 
 # Examples
 
-Rows per folder date of the first-load files (one folder: the export date).
-
-```sql
-SELECT CURRENT_DATE('Asia/Bangkok') AS folder_date, COUNT(*) AS n
-FROM `databuffet-nonprd.pub_sub.export_sell`
-GROUP BY folder_date
-ORDER BY folder_date
-```
 
 Duplicate natural keys.
 

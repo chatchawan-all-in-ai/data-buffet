@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "view_dim_product_master"
-description: "ProductSK rows from the barcode-aware product dimension, enriched with marketing segment SKs, rebate exclusion flags and the pump segment."
+description: "One row = one product (`ProductSK`) from dim_product_master with rebate exclusion flags (`FlagSalesExc`, `FlagAccExc`) and the pump segment (`PumpSegment`)."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_product_master&page=table"
 project_id: databuffet-nonprd
 dataset_id: dimension_view
@@ -20,7 +20,9 @@ status: draft
 
 # What it is
 
-Product dimension for BI: [dim_product_master](/dimension/dim_product_master.md) (MAC5 stock + MASTERSKU product attributes) plus `FlagSalesExc`/`FlagAccExc` (from [dim_rebate](/dimension/dim_rebate.md), status 'Product') and `PumpSegment` (derived from the marketing segment and the WaterPac code parsed from the product code). The WaterPac name comes from [dim_waterpac](/dimension/dim_waterpac.md). Read by [dim_pump_information](/dimension/dim_pump_information.md). Exported by [export_view_dim_product_master](/view/pub_sub/export_view_dim_product_master.md).
+Product dimension for BI: [dim_product_master](/dimension/dim_product_master.md) (MAC5 stock + MASTERSKU product attributes) plus `FlagSalesExc`/`FlagAccExc` (from [dim_rebate](/dimension/dim_rebate.md), status 'Product') and `PumpSegment` (derived from the marketing segment and the WaterPac code parsed from the product code). The WaterPac name comes from [dim_waterpac](/dimension/dim_waterpac.md).
+
+Read by: [dim_pump_information](/dimension/dim_pump_information.md) and [export_view_dim_product_master](/view/pub_sub/export_view_dim_product_master.md).
 
 # Grain and key
 

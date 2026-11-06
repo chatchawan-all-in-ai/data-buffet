@@ -22,11 +22,9 @@ status: draft
 
 The view over the `fact_mir_rs` receipt/payment-received fact. It adds the link to the AR aging dimension (`AgingSK`) and the status of the receipt document (`mihcancel`, `mihstatus`, Thai status text `ar_snamet`) to every `fact_mir_rs` column.
 
-No other repo object reads it.
-
 # Grain and key
 
-One row = one receipt (RS) line or cheque of [fact_mir_rs](/fact/fact_mir_rs.md): key `ReceiveSK` (unique). The view joins `dim_aging` on invoice number and company, which can match several rows per invoice number (different `cfsTypeID`), so it ends with `QUALIFY ROW_NUMBER() OVER (PARTITION BY t1.ReceiveSK ORDER BY t2.AgingSK DESC) = 1`; this makes the row count equal to `fact_mir_rs`. This removes extra aging matches per ReceiveSK, but preserves the fact's cheque expansion: one validated receipt line can still occur under several ReceiveSK values.
+One row = one receipt (RS) line or cheque of [fact_mir_rs](/fact/fact_mir_rs.md): key `ReceiveSK` (unique). The view joins `dim_aging` on invoice number and company, which can match several rows per invoice number (different `cfsTypeID`), and keeps the highest `AgingSK` per `ReceiveSK` with `QUALIFY ROW_NUMBER() OVER (PARTITION BY t1.ReceiveSK ORDER BY t2.AgingSK DESC) = 1`. A receipt line expanded by cheques has one row per cheque.
 
 # Schema
 

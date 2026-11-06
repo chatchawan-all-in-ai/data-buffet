@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-Time-versioned sales representative dimension: [dim_sale_representative](/dimension/dim_sale_representative.md) joined to [dim_department](/dimension/dim_department.md) for the department name. The versioned (StartDate/EndDate) variant, as opposed to the `_last` snapshot [view_dim_sale_representative_last](/view/dimension_view/view_dim_sale_representative_last.md). No other repo object reads it.
+Time-versioned sales representative dimension: [dim_sale_representative](/dimension/dim_sale_representative.md) joined to [dim_department](/dimension/dim_department.md) for the department name. The versioned (StartDate/EndDate) variant, as opposed to the `_last` snapshot [view_dim_sale_representative_last](/view/dimension_view/view_dim_sale_representative_last.md).
 
 # Grain and key
 

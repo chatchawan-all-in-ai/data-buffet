@@ -22,7 +22,7 @@ status: draft
 
 Turns the AI-parsed customer addresses of [deb_address_data](/process/deb_address_data.md) (Thai/English sub-district, district and province names from `AI.GENERATE`) into SKs of the geography dimensions (`dim_sub_districts`, `dim_districts`, `dim_provinces`). It tries the most specific match first (sub-district, then district, then province) so each customer gets the deepest SK that could be matched.
 
-Used by [onetime.Transaction_Data_Mart](/view/onetime/Transaction_Data_Mart.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_customer_report_info](/dimension/dim_customer_report_info.md), [fact_table.fact_transcation](/fact/fact_transcation.md).
+Read by: [Transaction_Data_Mart](/view/onetime/Transaction_Data_Mart.md), [dim_customer](/dimension/dim_customer.md), [dim_customer_report_info](/dimension/dim_customer_report_info.md) and [fact_transcation](/fact/fact_transcation.md).
 
 # Grain and key
 
@@ -37,7 +37,7 @@ One row = one customer address match of company `ag01`: intended key `company_id
 | `company_id` | STRING | Company code from `deb_address_data`; this view keeps only `ag01`. |
 | `debcode` | STRING | Customer (debtor) code. |
 | `raw_address` | STRING | Source address text (debtor address lines concatenated) that was sent to the AI parser. |
-| `ProvinceSK` | INT64 | SK of `dim_provinces` (Thai province); NULL only if not matched at any level (such rows are not returned). |
+| `ProvinceSK` | INT64 | SK of `dim_provinces` (Thai province); never NULL. |
 | `DistrictSK` | INT64 | SK of `dim_districts`; NULL when matching stopped at province level. |
 | `SubDistrictSK` | INT64 | SK of `dim_sub_districts`; NULL when matching stopped at district or province level. |
 | `SubDistrictTH` | STRING | Sub-district name in Thai as parsed by the AI (`info.SubDistrictTH`). |

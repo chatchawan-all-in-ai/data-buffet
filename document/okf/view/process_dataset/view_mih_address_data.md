@@ -22,8 +22,6 @@ status: draft
 
 The document-level twin of [view_deb_address_data](/view/process_dataset/view_deb_address_data.md): it applies the same most-specific-first geography matching (sub-district, then district, then province) to `process_dataset.mih_address_data`, a table of parsed addresses per document header. That table is not built by this repo.
 
-No other object in this repo reads it.
-
 # Grain and key
 
 One row = one document address match of `mih_address_data`: intended key `mihType`, `mihVnos` (not unique). `sub_districts`, `districts` and `provinces` rows are chosen most-specific-first with `NOT EXISTS` guards on (`mihType`, `mihVnos`); documents that match nothing are absent. The view has no company column and no company filter, and a name that matches several dimension rows yields several rows.
@@ -37,7 +35,7 @@ One row = one document address match of `mih_address_data`: intended key `mihTyp
 | `mihType` | STRING | Document type code of the document header (as in MAC5 `mih`). |
 | `mihVnos` | STRING | Document number of the header. |
 | `raw_address` | STRING | Source address text (debtor address lines concatenated) that was sent to the AI parser. |
-| `ProvinceSK` | INT64 | SK of `dim_provinces` (Thai province); NULL only if not matched at any level (such rows are not returned). |
+| `ProvinceSK` | INT64 | SK of `dim_provinces` (Thai province); never NULL. |
 | `DistrictSK` | INT64 | SK of `dim_districts`; NULL when matching stopped at province level. |
 | `SubDistrictSK` | INT64 | SK of `dim_sub_districts`; NULL when matching stopped at district or province level. |
 | `SubDistrictTH` | STRING | Sub-district name in Thai as parsed by the AI (`info.SubDistrictTH`). |

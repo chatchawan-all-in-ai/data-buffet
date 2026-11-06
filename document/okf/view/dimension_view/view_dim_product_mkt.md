@@ -20,7 +20,9 @@ status: draft
 
 # What it is
 
-Marketing hierarchy view: [dim_product_mkt](/dimension/dim_product_mkt.md) (type > marketing group > sub-marketing > segment, from MDS) with `ProductMktDirectorSK` from [dim_product_mkt_director](/dimension/dim_product_mkt_director.md), matched on TypeMarketingID and CompanyID. Read by [Product_Master_ALL](/view/onetime/Product_Master_ALL.md). Exported by [export_view_dim_product_mkt](/view/pub_sub/export_view_dim_product_mkt.md).
+Marketing hierarchy view: [dim_product_mkt](/dimension/dim_product_mkt.md) (type > marketing group > sub-marketing > segment, from MDS) with `ProductMktDirectorSK` from [dim_product_mkt_director](/dimension/dim_product_mkt_director.md), matched on TypeMarketingID and CompanyID.
+
+Read by: [Product_Master_ALL](/view/onetime/Product_Master_ALL.md) and [export_view_dim_product_mkt](/view/pub_sub/export_view_dim_product_mkt.md).
 
 # Grain and key
 
@@ -64,7 +66,7 @@ ORDER BY TypeMarketing, MarketingGroup, SubMarketing, Segment
 Classification rows with no matching director record:
 
 ```sql
-SELECT COUNT(*) AS rows
+SELECT COUNT(*) AS row_count
 FROM `databuffet-nonprd.dimension_view.view_dim_product_mkt`
 WHERE ProductMktDirectorSK IS NULL
 ```

@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-Wide view over [view_dim_sale_representative_last](/view/dimension_view/view_dim_sale_representative_last.md): re-joins [dim_department_last](/dimension/dim_department_last.md), [dim_section_last](/dimension/dim_section_last.md) and [dim_region_last](/dimension/dim_region_last.md) to add RegionID/RegionName and SectionID/SectionName (via the department's SectionSK/RegionSK) so one table carries the whole org path of a salesperson. No other repo object reads it.
+Wide view over [view_dim_sale_representative_last](/view/dimension_view/view_dim_sale_representative_last.md): re-joins [dim_department_last](/dimension/dim_department_last.md), [dim_section_last](/dimension/dim_section_last.md) and [dim_region_last](/dimension/dim_region_last.md) to add RegionID/RegionName and SectionID/SectionName (via the department's SectionSK/RegionSK) so one table carries the whole org path of a salesperson.
 
 # Grain and key
 

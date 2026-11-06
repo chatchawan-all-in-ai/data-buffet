@@ -20,7 +20,9 @@ status: draft
 
 # What it is
 
-Reporting view over [dim_aging](/dimension/dim_aging.md), the AR aging engine. It adds the four channel SKs (via [view_dim_channel](/view/dimension_view/view_dim_channel.md)), the aging bucket SK (`AgingRangSK`, from [dim_aging_rang](/dimension/dim_aging_rang.md)), `DayRange` (days past due) and per-customer receipt-age statistics. Read by [view_aging_ri](/view/fact_view/view_aging_ri.md) and [view_fact_transcation](/view/fact_view/view_fact_transcation.md), and [dim_aging](/dimension/dim_aging.md).
+Reporting view over [dim_aging](/dimension/dim_aging.md), the AR aging engine. It adds the four channel SKs (via [view_dim_channel](/view/dimension_view/view_dim_channel.md)), the aging bucket SK (`AgingRangSK`, from [dim_aging_rang](/dimension/dim_aging_rang.md)), `DayRange` (days past due) and per-customer receipt-age statistics.
+
+Read by: [view_aging_ri](/view/fact_view/view_aging_ri.md), [view_fact_transcation](/view/fact_view/view_fact_transcation.md) and [dim_aging](/dimension/dim_aging.md) (the history snapshot step).
 
 # Grain and key
 

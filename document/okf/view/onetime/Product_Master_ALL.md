@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "Product_Master_ALL"
-description: "An ag01 dim_product_master barcode version enriched with descriptions, marketing hierarchy, marketing director and physical attributes."
+description: "One row = one dim_product_master barcode version with matching marketing hierarchy, director and physical-attribute rows."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=onetime&t=Product_Master_ALL&page=table"
 project_id: databuffet-nonprd
 dataset_id: onetime
@@ -21,8 +21,6 @@ status: draft
 # What it is
 
 The wide product master: [dim_product_master](/dimension/dim_product_master.md) (MAC5 + MASTERSKU descriptions, warranty, TIS flag, barcode) joined to the marketing hierarchy ([view_dim_product_mkt](/view/dimension_view/view_dim_product_mkt.md): group, sub group, segment, type), the marketing director ([dim_product_mkt_director](/dimension/dim_product_mkt_director.md)) and the physical attributes of [Product_Attribute](/view/onetime/Product_Attribute.md). It carries no SKs.
-
-No other object in this repo reads it.
 
 # Grain and key
 
@@ -95,7 +93,7 @@ LIMIT 200
 Count of view rows with and without a Thai Industrial Standard certificate.
 
 ```sql
-SELECT ThaiIndustrialStandardFlag, COUNT(*) AS products
+SELECT ThaiIndustrialStandardFlag, COUNT(*) AS view_rows
 FROM `databuffet-nonprd.onetime.Product_Master_ALL`
 GROUP BY ThaiIndustrialStandardFlag
 ```

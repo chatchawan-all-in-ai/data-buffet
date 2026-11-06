@@ -20,7 +20,9 @@ status: draft
 
 # What it is
 
-Order dimension for sales/backlog reporting: [dim_order](/dimension/dim_order.md) plus `OrderType` (via `fn_order_type` on `mihref2`), `CustomerShipTo` (`mih2pos` from MAC5 mih2) and `FlagExpire` (document older than the MDS expiry rule for its prefix). The business meaning of the flag is documented in overview/business-flags.md. Exported by [export_view_dim_order](/view/pub_sub/export_view_dim_order.md).
+Order dimension for sales/backlog reporting: [dim_order](/dimension/dim_order.md) plus `OrderType` (via `fn_order_type` on `mihref2`), `CustomerShipTo` (`mih2pos` from MAC5 mih2) and `FlagExpire` (document older than the MDS expiry rule for its prefix).
+
+Read by: [export_view_dim_order](/view/pub_sub/export_view_dim_order.md).
 
 # Grain and key
 
@@ -50,7 +52,7 @@ One row = one sales order: key `OrderSK` (unique; `QUALIFY ROW_NUMBER()` over `O
 | `memoExtract` | STRING | Tag extracted from the document memo, defaulting to `฿00฿` and matched to `dim_payment.CodeMemo`. |
 | `mihMemoNew` | STRING | Document memo with the tag enclosed in `฿` signs removed, or NULL when no text remains. |
 | `mihStatusDesc` | STRING | Status description text from the mih row (`mihstatus_desc`). |
-| `OrderStatus` | STRING | Fulfilment status computed in dim_order from PS vs IS quantities per item: 'In Process' if any item partly delivered, else 'On Order' if any item undelivered, else 'Complete'. |
+| `OrderStatus` | STRING | Fulfilment status computed here: per item, 'On Order' if no invoice line links to it, 'Complete' if invoiced quantity >= ordered quantity, else 'In Process'; per order, any 'In Process' item makes 'In Process', else any 'On Order' makes 'On Order', else 'Complete'. NULL when the order has no PS lines. |
 | `mihNotes` | STRING | Free-text notes such as delivery instructions or site details. |
 | `mihDesc` | STRING | Free-text document description. |
 | `mihKeydate` | DATETIME | Date and time the document was keyed. |
@@ -77,7 +79,7 @@ Open orders that have expired:
 ```sql
 SELECT OrderSK, mihVnos, mix_date, OrderStatus, OrderType
 FROM `databuffet-nonprd.dimension_view.view_dim_order`
-WHERE FlagExpire = 'Yes' AND OrderStatus != 'Complete'
+WHERE FlagExpire = 'Yes' AND (OrderStatus IS NULL OR OrderStatus != 'Complete')
 ```
 
 Orders by status for the last 60 days:

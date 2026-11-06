@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "export_company_source"
-description: "One row = the Data Mart company ag01 that owns the data; commission set `company_source` for the TF team, exposed for the Pub/Sub export with the sample's columns plus row_key and row_hash."
+description: "One row = the Data Mart company ag01 that owns the data; commission set `company_source` for the TF team, exposed for the Pub/Sub export with row_key and row_hash."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=pub_sub&t=export_company_source&page=table"
 project_id: databuffet-nonprd
 dataset_id: pub_sub
@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of commission set `company_source` for the TF team (company ag01): the Data Mart company ag01 that owns the data. Its columns, names, order and JSON types are those of the commission sample sent to TF (`commission_tf_ag01_2026`). The Cloud Run publisher (jobs `datamart-publish-check` and `datamart-publish-send`) compares `row_hash` with [mart_sent_state](/process/mart_sent_state.md) after each successful `daily_process` run and publishes NEW/UPDATE/DELETE messages with `table` = `company_source` to topic `export-commission-company_source`. It is registered in [mart_export_config](/process/mart_export_config.md). First-load files of this set go under the export date (no `snapshot_date`).
+The Pub/Sub export view of commission set `company_source` for the TF team (company ag01): the Data Mart company ag01 that owns the data. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-commission-company_source`.
 
 # Grain and key
 
@@ -34,25 +34,16 @@ One row = one Data Mart company (ag01) that owns the data: key `company_source_i
 | `CompanyCode` | STRING | From `CompanyCode` of dimension_table.dim_company. |
 | `CompanyNameTH` | STRING | From `CompanyNameTH` of dimension_table.dim_company. |
 | `CompanyNameEN` | STRING | From `CompanyNameEN` of dimension_table.dim_company. |
-| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key` and the row key in `mart_sent_state`; never NULL (a NULL key value is JSON null). |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`; the publisher sends a row only when it differs from the sent state. |
+| `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
 
 # How it is built
 
 - Definition: `definitions/view/pub_sub/export_company_source.sqlx` (`type: "view"`, tags `view`, `pub_sub`).
 - Reads: [dimension_table.dim_company](/dimension/dim_company.md).
-- Logical view: `CREATE OR REPLACE VIEW`, no data stored; deployed by running tag `pub_sub` by hand (no scheduler runs it). Company `ag01` only; all rows.
 
 # Examples
 
-Rows per folder date of the first-load files (one folder: the export date).
-
-```sql
-SELECT CURRENT_DATE('Asia/Bangkok') AS folder_date, COUNT(*) AS n
-FROM `databuffet-nonprd.pub_sub.export_company_source`
-GROUP BY folder_date
-ORDER BY folder_date
-```
 
 Duplicate natural keys.
 

@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "view_dim_sale_representative_last"
-description: "One row = one sales representative in the latest-organisation snapshot (SaleRepSK) with department name and a per-region sort number."
+description: "One row = one sales-representative rule or ledger row (`SaleRepSK`) in the latest organisation; an employee can have several rows."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=dimension_view&t=view_dim_sale_representative_last&page=table"
 project_id: databuffet-nonprd
 dataset_id: dimension_view
@@ -20,7 +20,9 @@ status: draft
 
 # What it is
 
-Current-organisation ('last') sales representative view: [dim_sale_representative_last](/dimension/dim_sale_representative_last.md) joined to [dim_department_last](/dimension/dim_department_last.md) for `DepartmentName`, plus a `Sort` column for report ordering. The `_last` family shows the latest org chart (each employee at their latest department/section/region), unlike the date-versioned dims. Read by [view_sales_representative_last](/view/dimension_view/view_sales_representative_last.md). Exported by [export_view_dim_sale_representative_last](/view/pub_sub/export_view_dim_sale_representative_last.md).
+Current-organisation ('last') sales representative view: [dim_sale_representative_last](/dimension/dim_sale_representative_last.md) joined to [dim_department_last](/dimension/dim_department_last.md) for `DepartmentName`, plus a `Sort` column for report ordering. The `_last` family shows the latest org chart (each employee at their latest department/section/region), unlike the date-versioned dims.
+
+Read by: [export_view_dim_sale_representative_last](/view/pub_sub/export_view_dim_sale_representative_last.md) and [view_sales_representative_last](/view/dimension_view/view_sales_representative_last.md).
 
 # Grain and key
 

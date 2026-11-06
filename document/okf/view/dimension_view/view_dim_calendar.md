@@ -20,11 +20,11 @@ status: draft
 
 # What it is
 
-Reporting view over [dim_calendar](/dimension/dim_calendar.md): every dim_calendar column plus the BOOL `LatestDateFilter`. No other repo object reads it.
+Reporting view over [dim_calendar](/dimension/dim_calendar.md): every dim_calendar column plus the BOOL `LatestDateFilter`.
 
 # Grain and key
 
-One row = one calendar date: key `Date` (same grain as dim_calendar). `LatestDateFilter` is TRUE for dates from the latest working day before today up to yesterday; there a working day is a date with `HolidayFlag = 'No'` that is not a Saturday, so Saturday never counts as the latest working day although its `HolidayFlag` is 'No'.
+One row = one calendar date: key `Date` (same grain as dim_calendar).
 
 # Schema
 
@@ -47,8 +47,8 @@ One row = one calendar date: key `Date` (same grain as dim_calendar). `LatestDat
 | `YearQuater` | STRING | Text `Qn YYYY`. |
 | `Day` | STRING | Two-digit day of month as text. |
 | `HolidayFlag` | STRING | 'Yes' for a public holiday (from dim_holiday) or Sunday, else 'No'. Saturday is 'No'. |
-| `HolidayNameTH` | STRING | Thai holiday name, or the Thai text for weekend days; derived in dim_calendar. |
-| `HolidayNameEN` | STRING | English holiday name, or 'Weekend' for weekend days; derived in dim_calendar. |
+| `HolidayNameTH` | STRING | Thai holiday name from `dim_holiday` when the date is a listed holiday; 'วันหยุดสุดสัปดาห์' for a weekend day that is not a holiday; 'วันธรรมดา' (normal day) otherwise. |
+| `HolidayNameEN` | STRING | Thai holiday name from `HolidayNameTH` when the date is a listed holiday; 'Weekend' for weekend days that are not listed holidays; 'Normal day' otherwise. |
 | `LongWeekEndFlag` | STRING | 'Yes' when the date is a day off inside a run of 3 or more consecutive days off (weekend/holiday), else 'No'. |
 | `LatestDateFilter` | BOOL | BOOL added by this view: TRUE when Date is between the latest working day and yesterday (Asia/Bangkok). |
 
