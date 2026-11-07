@@ -4,17 +4,18 @@
 > the conversion scope. The common synchronization contract is in
 > [merge-sk-pattern.md](merge-sk-pattern.md); table-specific details are in each OKF card.
 >
-> | Pattern | Dimensions | Behavior |
-> |---|---:|---|
-> | Stable-SK three-clause sync | 52 | Complete active-source snapshot; match/update, insert, and delete absent rows; company retains its legacy identity lookup |
-> | Distinct behavior | 2 | `dim_order`, `dim_customer_report_info` |
-> | Unchanged | 17 | Existing actions, including the held dimensions below |
+> | Pattern | Behavior |
+> |---|---|
+> | Stable-SK three-clause sync | Complete active-source snapshot; match/update, insert, and delete absent rows; company retains its legacy identity lookup |
+> | Distinct behavior | `dim_order`, `dim_customer_report_info` |
+> | Unchanged | Existing actions, including the held dimensions below |
 >
 > Held conversions: `dim_aging`, `dim_product_master`, `dim_stk_mkt`, and
 > `dim_target_saleout_mdt` retain their original key-generation behavior and OKF cards.
 > The only SQLX exception is `dim_target_saleout_mdt`'s ProductMkt lookup ordering,
 > which uses the business-field order from before stable allocation in `dim_product_mkt`.
-> `dim_target_product_group_by_sale_dayofwork` also retains its original daily rebuild.
+> `dim_target_product_group_by_sale` and `dim_target_product_group_by_sale_dayofwork`
+> are also held; their rebuild and key contracts are owned by their OKF cards below.
 >
 > Key selection follows the [grain-preservation contract](merge-sk-pattern.md#key-and-synchronization-rules).
 > Exact table grains and keys are owned by their OKF cards.
@@ -109,7 +110,7 @@ action; see [stable dimension sync](merge-sk-pattern.md) and the project DAG.
 
 ## Group (c) — Other dimension outputs (12) + `dim_change_district`
 
-> Except for the held daily rebuild listed below, SK dimensions in this group use the common stable-SK sync. Their existing latest-row,
+> Except for the held daily rebuilds listed below, SK dimensions in this group use the common stable-SK sync. Their existing latest-row,
 > target, store, pump, and union/fallback source logic remains part of the complete source.
 
 | File | SK | Notes |
@@ -117,7 +118,7 @@ action; see [stable dimension sync](merge-sk-pattern.md) and the project DAG.
 | dim_change_district | *(none; CompanySK FK)* | **อ่าน mds** (นับใน (a)): Plain SELECT from mds_data_change_section_master, `WHERE is_active = true` |
 | dim_product_series | SeriesSK · NK = SeriesCode | Active rows from `mds_data_product_series_master`; stable SK sync retains SeriesCode as the key · consumer: `dim_target_series_mdt`, view `onetime.Product_Attribute` · see [special-cases](special-cases.md) |
 | dim_department_last / dim_director_last / dim_region_last / dim_region_manager_last / dim_section_last / dim_section_manager_last / dim_sale_representative_last | established `<X>SK` | Stable SK sync on the retained latest-period natural key, including validity dates; NULL FK SKs are backfilled by `update_sk_sale_rep_group` |
-| dim_target_product_group_by_sale | TargetBySaleSK | Stable SK sync on the complete allocation QUALIFY partition, including SaleRepSKLast, all retained hierarchy SKs, ProductMktSK, target/rate identifiers, marketing attributes and date range; existing source joins remain unchanged |
+| dim_target_product_group_by_sale | TargetBySaleSK | Held because the stable-SK existing-row lookup exceeded BigQuery's on-demand CPU limit; see the [table contract](../../okf/dimension/dim_target_product_group_by_sale.md#grain-and-key) |
 | dim_target_product_group_by_sale_dayofwork | TargetBySaleDayofworkSK | Held; original daily full-rebuild behavior remains |
 | dim_store | StoreSK · **NK = companyID + StoreCode** | คลัง/สาขาจาก `validated_mac5.sto` (601 แถว ag01) · `StoreGroup` (`stogroup`) เป็นชั้นที่ใช้สไลซ์ — KK ขอนแก่น, LP ลำพูน, HY หาดใหญ่, UB อุบลราชธานี, PK ภูเก็ต · `ReportStore` (เพิ่ม 2026-09-03) = `stogroup` ที่ไม่อยู่ใน `kk/pk/lp/ub/hy` ยุบเป็น `'KTB'` ถังเดียว ไว้สไลซ์รายงาน · `UNION ALL` แถว Unknown `StoreSK = -1` (`StoreNameE = 'Unknown'`, **`ReportStore = 'KTB'`** ตั้งแต่ 2026-09-25 — เดิม `'Unknown'`) รับรหัสที่ไม่มีใน `sto` (pattern เดียวกับ `dim_stk_mkt`) · consumer: `fact_order_store` / `fact_invoice_store` / `fact_backlog_store` ต่อด้วย `milSto` / `cpsSto` (เพิ่ม 2026-09-01) |
 | dim_pump_information | PumpSK · **NK = CompanyID + milstk + RegionID + FlagNewProductMKT + PumpSegment** | **อ่านจาก `fact_transcation`** (ไม่ใช่ mds) → `PumpSegment`; PS1 + FlagNewProductMKT → `dim_product_mkt.Segment`, นอกนั้น → `view_dim_product_master.PumpSegment` (เพิ่ม 2026-08-26) · consumer: `view_fact_transcation` join กลับด้วย NK 4 ตัว (ไม่ persist PumpSK) · **`CompanySK` จำเป็น — `milstk` unique แค่ภายในบริษัท** |

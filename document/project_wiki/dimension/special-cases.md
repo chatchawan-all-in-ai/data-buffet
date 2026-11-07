@@ -133,9 +133,9 @@ key sync retains the source rows, and `dim_target_series_mdt` maps unknown serie
 
 ## `dim_target_product_group_by_sale` / `_dayofwork` — target snapshots
 
-`dim_target_product_group_by_sale` synchronizes its complete source snapshot on the
-established natural key and retains matching SKs. Both dimensions keep their existing
-source calculations and joins.
+The [inventory](inventory.md) owns the held-conversion scope and rationale.
+For `dim_target_product_group_by_sale`, see its
+[rebuild and key contract](../../okf/dimension/dim_target_product_group_by_sale.md#grain-and-key).
 
 `dim_target_product_group_by_sale_dayofwork` is held: it retains its original daily
 full rebuild and regenerates `TargetBySaleDayofworkSK` with `ROW_NUMBER()`. Consumers

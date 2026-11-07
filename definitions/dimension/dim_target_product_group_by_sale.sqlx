@@ -1,6 +1,5 @@
 config {
-    type: "operations",
-  hasOutput: true,
+    type: "table",
     schema: databuffet.DIMENSION_TABLE,
     dependencies: [
                     "dim_product_mkt", "dim_report",
@@ -12,32 +11,23 @@ config {
                     "dim_section_last", "dim_section_manager_last"
                 ],
     tags: [databuffet.TAG_DIM_DAILY],
+    uniqueKey: ["TargetBySaleSK"],
+    bigquery: {
+        clusterBy: ["TargetBySaleSK"]
+    },
 }
 
 js {
-    const DimTargetProductGroupBySaleTable = {
+    // ref ชี้กลับมาที่ตัวเอง (name()) — ยังไม่ได้ใช้ เพราะ config เป็น type: "table"
+    // Dataform จึงสร้าง/เขียนตารางให้เอง ไม่ต้องเขียน DDL อ้างชื่อตัวเองใน body
+    // เก็บไว้เผื่อวันไหนเปลี่ยนเป็น type: "operations"
+    const DimSourceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
-    const DimTargetProductGroupBySaleTableRef = `${DimTargetProductGroupBySaleTable.database}.${DimTargetProductGroupBySaleTable.schema}.${DimTargetProductGroupBySaleTable.name}`;
+    const DimSourceTableRef = `${DimSourceTable.database}.${DimSourceTable.schema}.${DimSourceTable.name}`;
 
-    const stableDimensionColumns = ['TargetBySaleSK', 'SaleRepSKLast', 'DepartmentSKLast', 'RegionSKLast', 'RegionManagerSKLast', 'SectionSKLast', 'SectionManagerSKLast', 'DirectorSKLast', 'ReportSK', 'TargetProductGroupSK', 'RateTargetSK', 'ProductMktSK', 'CompanySK', 'companyID', 'Year', 'Month', 'MarketingGroupID', 'MarketingGroupName', 'SubMarketingID', 'SubMarketingName', 'SegmentID', 'SegmentName', 'ChannelTargetGroup', 'TargetID', 'Amt', 'Qty', 'EmployeeID', 'Percent', 'DepartmentID', 'StartDate', 'EndDate', 'CalAmt', 'CalQty'];
-    const stableDimensionKeyColumns = ['CompanySK', 'SaleRepSKLast', 'DepartmentSKLast', 'RegionSKLast', 'RegionManagerSKLast', 'SectionSKLast', 'SectionManagerSKLast', 'DirectorSKLast', 'TargetProductGroupSK', 'RateTargetSK', 'ProductMktSK', 'Year', 'Month', 'MarketingGroupID', 'MarketingGroupName', 'SubMarketingID', 'SubMarketingName', 'SegmentID', 'SegmentName', 'ChannelTargetGroup', 'TargetID', 'EmployeeID', 'DepartmentID', 'StartDate', 'EndDate'];
-    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
-    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
-    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
-        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
-    ).join("\n      AND ");
-    const stableDimensionMergeCondition = 'T.`TargetBySaleSK` = S.`TargetBySaleSK`';
-    const stableDimensionUpdateSet = stableDimensionColumns
-        .filter((column) => column !== 'TargetBySaleSK' && !stableDimensionKeyColumns.includes(column))
-        .map((column) => `T.\`${column}\` = S.\`${column}\``)
-        .join(",\n      ");
-    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
-    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
-
-    // Target product group dimension used to enrich each target row.
     const DimTargetProductGroupTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -110,325 +100,255 @@ js {
 
 }
 
+with target_table as (
+  select
+    dim_p_mkt.ProductMktSK,
+    dim_p_mkt.MarketingGroupID as MarketingGroupID_pg,
+    dim_tg_pg.* except(MdsID),
+  from `${DimTargetProductGroupTableRef}` as dim_tg_pg
+  left join `${DimProductMktTableRef}` as dim_p_mkt
+    on dim_tg_pg.MarketingGroupID = dim_p_mkt.MarketingGroupID
+    and dim_tg_pg.SubMarketingID = dim_p_mkt.SubMarketingID
+    and dim_tg_pg.SegmentID = dim_p_mkt.SegmentID
+    and dim_tg_pg.CompanySK = dim_p_mkt.CompanySK
 
-
-BEGIN
-  DECLARE max_sk INT64 DEFAULT 0;
-
-  CREATE TEMP TABLE stable_sk_source_snapshot AS (
-    with target_table as (
-      select
-        dim_p_mkt.ProductMktSK,
-        dim_p_mkt.MarketingGroupID as MarketingGroupID_pg,
-        dim_tg_pg.* except(MdsID),
-      from `${DimTargetProductGroupTableRef}` as dim_tg_pg
-      left join `${DimProductMktTableRef}` as dim_p_mkt
-        on dim_tg_pg.MarketingGroupID = dim_p_mkt.MarketingGroupID
-        and dim_tg_pg.SubMarketingID = dim_p_mkt.SubMarketingID
-        and dim_tg_pg.SegmentID = dim_p_mkt.SegmentID
-        and dim_tg_pg.CompanySK = dim_p_mkt.CompanySK
-
-    ), dim_report as (
-      SELECT
-        * except(MdsID),
-        (CASE
-          WHEN COUNT(*) OVER(PARTITION BY RegionID) = 1 THEN 1
-          WHEN COUNT(*) OVER(PARTITION BY RegionID) > 1
-                AND MarketingGroupID IS NULL THEN 3
-          ELSE 2
-        END) AS Segment
-      FROM `${DimReportTableRef}`
-
-    ), rate_target_table as (
-      select CompanySK, RateTargetSK, year, month, startdate, enddate, productgroupid, TargetID, EmployeeID, Percent, DepartmentID
-      from `${DimRateTargetTableRef}`
-
-    ), rate_target_table_1 as (
-      select *
-      from rate_target_table
-      where month is null and productgroupid is null
-        and exists (
-          select 1 from target_table
-          where target_table.targetid = rate_target_table.targetid
-            and target_table.CompanySK = rate_target_table.CompanySK
-        )
-
-    ), rate_target_table_2 as (
-      select *
-      from rate_target_table
-      where month is not null and productgroupid is null
-        and exists (
-          select 1 from target_table
-          where target_table.targetid = rate_target_table.targetid
-            and target_table.CompanySK = rate_target_table.CompanySK
-        )
-
-    ), rate_target_table_3 as (
-      select *
-      from rate_target_table
-      where month is not null and productgroupid is not null
-        and exists (
-          select 1 from target_table
-          where target_table.targetid = rate_target_table.targetid
-            and target_table.CompanySK = rate_target_table.CompanySK
-        )
-
-    ), aggregate_target_1 as (
-      select
-        --- SK
-        tg.TargetProductGroupSK,
-        rate.RateTargetSK,
-        tg.ProductMktSK,
-
-        --- target
-        tg.* except(TargetProductGroupSK, ProductMktSK),
-
-        --- rate target
-        rate.EmployeeID,
-        rate.Percent,
-        rate.DepartmentID,
-        rate.StartDate,
-        rate.EndDate,
-
-        -- Cal
-        (tg.Amt * (rate.Percent / 100)) as CalAmt,
-        (tg.Qty * (rate.Percent / 100)) as CalQty,
-      from target_table as tg
-      inner join rate_target_table_1 as rate
-        on tg.Year = rate.Year
-          and tg.TargetID = rate.TargetID
-          and tg.CompanySK = rate.CompanySK
-
-    ), aggregate_target_2 as (
-      select
-        --- SK
-        tg.TargetProductGroupSK,
-        rate.RateTargetSK,
-        tg.ProductMktSK,
-
-        --- target
-        tg.* except(TargetProductGroupSK, ProductMktSK),
-
-        --- rate target
-        rate.EmployeeID,
-        rate.Percent,
-        rate.DepartmentID,
-        rate.StartDate,
-        rate.EndDate,
-
-        -- Cal
-        (tg.Amt * (rate.Percent / 100)) as CalAmt,
-        (tg.Qty * (rate.Percent / 100)) as CalQty,
-      from target_table as tg
-      left join rate_target_table_2 as rate
-        on tg.Year = rate.Year
-          and tg.Month = rate.Month
-          and tg.TargetID = rate.TargetID
-          and tg.CompanySK = rate.CompanySK
-      where not exists (
-          select 1
-          from aggregate_target_1 as agg_target
-          where tg.TargetProductGroupSK = agg_target.TargetProductGroupSK
-            and rate.RateTargetSK= agg_target.RateTargetSK
-            and tg.CompanySK = agg_target.CompanySK
-        )
-
-    ), aggregate_target_3 as (
-      select
-        --- SK
-        tg.TargetProductGroupSK,
-        rate.RateTargetSK,
-        tg.ProductMktSK,
-
-        --- target
-        tg.* except(TargetProductGroupSK, ProductMktSK),
-
-        --- rate target
-        rate.EmployeeID,
-        rate.Percent,
-        rate.DepartmentID,
-        rate.StartDate,
-        rate.EndDate,
-
-        -- Cal
-        (tg.Amt * (rate.Percent / 100)) as CalAmt,
-        (tg.Qty * (rate.Percent / 100)) as CalQty,
-      from target_table as tg
-      left join rate_target_table_3 as rate
-        on tg.Year = rate.Year
-          and tg.Month = rate.Month
-          and tg.MarketingGroupID = rate.ProductGroupID
-          and tg.TargetID = rate.TargetID
-          and tg.CompanySK = rate.CompanySK
-      where not exists (
-          select 1
-          from aggregate_target_1 as agg_target
-          where tg.TargetProductGroupSK = agg_target.TargetProductGroupSK
-            and rate.RateTargetSK= agg_target.RateTargetSK
-            and tg.CompanySK = agg_target.CompanySK
-        )
-        and not exists (
-          select 1
-          from aggregate_target_2 as agg_target
-          where tg.TargetProductGroupSK = agg_target.TargetProductGroupSK
-            and rate.RateTargetSK= agg_target.RateTargetSK
-            and tg.CompanySK = agg_target.CompanySK
-        )
-
-    ), mix_table as (
-      select *
-      from aggregate_target_1
-      union all
-      select *
-      from aggregate_target_2
-      union all
-      select *
-      from aggregate_target_3
-
-    ), final as (
-      -- 372096
-      select distinct
-        -- row_number() over(order by TargetProductGroupSK, RateTargetSK) as TargetBySaleSK,
-        l.SaleRepSK as SaleRepSKLast,
-        l.DepartmentSK as DepartmentSKLast,
-        d.RegionSK as RegionSKLast,
-        d.RegionManagerSK as RegionManagerSKLast,
-        e.SectionSK as SectionSKLast,
-        e.SectionManagerSK as SectionManagerSKLast,
-        d.DirectorSK as DirectorSKLast,
-        dim_report.ReportSK,
-        a.* except(MarketingGroupID_pg)
-      from mix_table as a
-      -- Process Sale
-      left join `${DimSaleRepLastTableRef}` as l
-        on a.employeeid = l.employeeid
-        and a.DepartmentID = l.DepartmentID
-        and a.CompanySK = l.CompanySK
-
-      -- Process Department
-      left join `${DimDepartmentLastTableRef}` as c
-        on a.DepartmentID = c.DepartmentID
-        and a.CompanySK = c.CompanySK
-      left join `${DimRegionLastTableRef}` as d
-        on c.RegionSK = d.RegionSK
-        and c.CompanySK = d.CompanySK
-      left join `${DimSectionLastTableRef}` as e
-        on c.SectionSK = e.SectionSK
-        and c.CompanySK = e.CompanySK
-      left join `${DimRegionManagerLastTableRef}` as f
-        on d.RegionManagerSK = f.RegionManagerSK
-        and d.CompanySK = f.CompanySK
-      left join `${DimSectionManagerLastTableRef}` as g
-        on e.SectionManagerSK = g.SectionManagerSK
-        and e.CompanySK = g.CompanySK
-      left join dim_report as dim_report
-        on a.CompanySK = dim_report.CompanySK
-          and (CASE
-            WHEN dim_report.Segment = 1
-              THEN d.RegionID = dim_report.RegionID
-            WHEN dim_report.Segment = 2
-              THEN d.RegionID = dim_report.RegionID
-                and a.MarketingGroupID_pg = dim_report.MarketingGroupID
-            WHEN dim_report.Segment = 3
-              THEN d.RegionID = dim_report.RegionID
-                and dim_report.MarketingGroupID is null
-          END)
-
-      qualify row_number() over(partition by CompanySK, SaleRepSKLast, DepartmentSKLast, RegionSKLast, RegionManagerSKLast,
-    SectionSKLast, SectionManagerSKLast, DirectorSKLast, TargetProductGroupSK, RateTargetSK, ProductMktSK,
-    Year, Month, MarketingGroupID, MarketingGroupName, SubMarketingID, SubMarketingName, SegmentID, SegmentName,
-    ChannelTargetGroup, TargetID, EmployeeID, DepartmentID, StartDate, EndDate order by dim_report.Segment) = 1
-
-    )
-    SELECT
-      CAST(NULL AS INT64) AS TargetBySaleSK,
-      *
-    FROM (
-      select
-        COALESCE(final.SaleRepSKLast, l.SaleRepSK) as SaleRepSKLast,
-        final.* except(SaleRepSKLast)
-
-      from final
-      left join `${DimSaleRepLastTableRef}` as l
-        on final.CompanySK = l.CompanySK
-        and final.employeeid = l.employeeid
-        and l.DepartmentID is null
-      where final.SaleRepSKLast is null
-      union all
-      select
-        SaleRepSKLast,
-        * except(SaleRepSKLast)
-      from final
-      where final.SaleRepSKLast is not null
-    )
-  );
-
-  ASSERT NOT EXISTS (
-    SELECT 1
-    FROM _SESSION.stable_sk_source_snapshot
-    GROUP BY ${stableDimensionKeySql}
-    HAVING COUNT(*) > 1
-  ) AS 'dim_target_product_group_by_sale source natural key must be unique';
-
-  ASSERT NOT EXISTS (
-    SELECT 1
-    FROM `${DimTargetProductGroupBySaleTableRef}`
-    GROUP BY ${stableDimensionKeySql}
-    HAVING COUNT(*) > 1
-  ) AS 'dim_target_product_group_by_sale target natural key must be unique';
-
-  ASSERT NOT EXISTS (
-    SELECT 1
-    FROM `${DimTargetProductGroupBySaleTableRef}`
-    WHERE `TargetBySaleSK` IS NULL
-  ) AS 'dim_target_product_group_by_sale target surrogate key must not be NULL';
-
-  ASSERT NOT EXISTS (
-    SELECT 1
-    FROM `${DimTargetProductGroupBySaleTableRef}`
-    GROUP BY `TargetBySaleSK`
-    HAVING COUNT(*) > 1
-  ) AS 'dim_target_product_group_by_sale target surrogate key must be unique';
-
-  SET max_sk = COALESCE((
-    SELECT MAX(`TargetBySaleSK`)
-    FROM `${DimTargetProductGroupBySaleTableRef}`
-  ), 0);
-
-  CREATE TEMP TABLE stable_sk_source AS
+), dim_report as (
   SELECT
-    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
-    REPLACE (
-      CASE
-        WHEN allocated_row.`TargetBySaleSK` = -1 THEN -1
-        ELSE COALESCE(
-          allocated_row.stable_existing_sk,
-          max_sk + allocated_row.stable_new_sk_rank
-        )
-      END AS `TargetBySaleSK`
-    )
-  FROM (
-    SELECT
-      source_row.*,
-      target_row.`TargetBySaleSK` AS stable_existing_sk,
-      ROW_NUMBER() OVER (
-        PARTITION BY (target_row.`TargetBySaleSK` IS NULL)
-        ORDER BY ${stableDimensionOrderSql}
-      ) AS stable_new_sk_rank
-    FROM _SESSION.stable_sk_source_snapshot AS source_row
-    LEFT JOIN `${DimTargetProductGroupBySaleTableRef}` AS target_row
-      ON ${stableDimensionLookupCondition}
-  ) AS allocated_row;
+    * except(MdsID),
+    (CASE
+      WHEN COUNT(*) OVER(PARTITION BY RegionID) = 1 THEN 1
+      WHEN COUNT(*) OVER(PARTITION BY RegionID) > 1
+            AND MarketingGroupID IS NULL THEN 3
+      ELSE 2
+    END) AS Segment
+  FROM `${DimReportTableRef}`
 
-  MERGE `${DimTargetProductGroupBySaleTableRef}` AS T
-  USING _SESSION.stable_sk_source AS S
-    ON ${stableDimensionMergeCondition}
-  WHEN MATCHED THEN
-    UPDATE SET
-      ${stableDimensionUpdateSet}
-  WHEN NOT MATCHED THEN
-    INSERT (${stableDimensionInsertColumns})
-    VALUES (${stableDimensionInsertValues})
-  WHEN NOT MATCHED BY SOURCE THEN
-    DELETE;
-END;
+), rate_target_table as (
+  select CompanySK, RateTargetSK, year, month, startdate, enddate, productgroupid, TargetID, EmployeeID, Percent, DepartmentID
+  from `${DimRateTargetTableRef}`
+
+), rate_target_table_1 as (
+  select *
+  from rate_target_table
+  where month is null and productgroupid is null
+    and exists (
+      select 1 from target_table
+      where target_table.targetid = rate_target_table.targetid
+        and target_table.CompanySK = rate_target_table.CompanySK
+    )
+
+), rate_target_table_2 as (
+  select *
+  from rate_target_table
+  where month is not null and productgroupid is null
+    and exists (
+      select 1 from target_table
+      where target_table.targetid = rate_target_table.targetid
+        and target_table.CompanySK = rate_target_table.CompanySK
+    )
+
+), rate_target_table_3 as (
+  select *
+  from rate_target_table
+  where month is not null and productgroupid is not null
+    and exists (
+      select 1 from target_table
+      where target_table.targetid = rate_target_table.targetid
+        and target_table.CompanySK = rate_target_table.CompanySK
+    )
+
+), aggregate_target_1 as (
+  select
+    --- SK
+    tg.TargetProductGroupSK,
+    rate.RateTargetSK,
+    tg.ProductMktSK,
+
+    --- target
+    tg.* except(TargetProductGroupSK, ProductMktSK),
+
+    --- rate target
+    rate.EmployeeID,
+    rate.Percent,
+    rate.DepartmentID,
+    rate.StartDate,
+    rate.EndDate,
+
+    -- Cal
+    (tg.Amt * (rate.Percent / 100)) as CalAmt,
+    (tg.Qty * (rate.Percent / 100)) as CalQty,
+  from target_table as tg
+  inner join rate_target_table_1 as rate
+    on tg.Year = rate.Year
+      and tg.TargetID = rate.TargetID
+      and tg.CompanySK = rate.CompanySK
+
+), aggregate_target_2 as (
+  select
+    --- SK
+    tg.TargetProductGroupSK,
+    rate.RateTargetSK,
+    tg.ProductMktSK,
+
+    --- target
+    tg.* except(TargetProductGroupSK, ProductMktSK),
+
+    --- rate target
+    rate.EmployeeID,
+    rate.Percent,
+    rate.DepartmentID,
+    rate.StartDate,
+    rate.EndDate,
+
+    -- Cal
+    (tg.Amt * (rate.Percent / 100)) as CalAmt,
+    (tg.Qty * (rate.Percent / 100)) as CalQty,
+  from target_table as tg
+  left join rate_target_table_2 as rate
+    on tg.Year = rate.Year
+      and tg.Month = rate.Month
+      and tg.TargetID = rate.TargetID
+      and tg.CompanySK = rate.CompanySK
+  where not exists (
+      select 1
+      from aggregate_target_1 as agg_target
+      where tg.TargetProductGroupSK = agg_target.TargetProductGroupSK
+        and rate.RateTargetSK= agg_target.RateTargetSK
+        and tg.CompanySK = agg_target.CompanySK
+    )
+
+), aggregate_target_3 as (
+  select
+    --- SK
+    tg.TargetProductGroupSK,
+    rate.RateTargetSK,
+    tg.ProductMktSK,
+
+    --- target
+    tg.* except(TargetProductGroupSK, ProductMktSK),
+
+    --- rate target
+    rate.EmployeeID,
+    rate.Percent,
+    rate.DepartmentID,
+    rate.StartDate,
+    rate.EndDate,
+
+    -- Cal
+    (tg.Amt * (rate.Percent / 100)) as CalAmt,
+    (tg.Qty * (rate.Percent / 100)) as CalQty,
+  from target_table as tg
+  left join rate_target_table_3 as rate
+    on tg.Year = rate.Year
+      and tg.Month = rate.Month
+      and tg.MarketingGroupID = rate.ProductGroupID
+      and tg.TargetID = rate.TargetID
+      and tg.CompanySK = rate.CompanySK
+  where not exists (
+      select 1
+      from aggregate_target_1 as agg_target
+      where tg.TargetProductGroupSK = agg_target.TargetProductGroupSK
+        and rate.RateTargetSK= agg_target.RateTargetSK
+        and tg.CompanySK = agg_target.CompanySK
+    )
+    and not exists (
+      select 1
+      from aggregate_target_2 as agg_target
+      where tg.TargetProductGroupSK = agg_target.TargetProductGroupSK
+        and rate.RateTargetSK= agg_target.RateTargetSK
+        and tg.CompanySK = agg_target.CompanySK
+    )
+
+), mix_table as (
+  select *
+  from aggregate_target_1
+  union all
+  select *
+  from aggregate_target_2
+  union all
+  select *
+  from aggregate_target_3
+
+), final as (
+  -- 372096
+  select distinct
+    -- row_number() over(order by TargetProductGroupSK, RateTargetSK) as TargetBySaleSK,
+    l.SaleRepSK as SaleRepSKLast,
+    l.DepartmentSK as DepartmentSKLast,
+    d.RegionSK as RegionSKLast,
+    d.RegionManagerSK as RegionManagerSKLast,
+    e.SectionSK as SectionSKLast,
+    e.SectionManagerSK as SectionManagerSKLast,
+    d.DirectorSK as DirectorSKLast,
+    dim_report.ReportSK,
+    a.* except(MarketingGroupID_pg)
+  from mix_table as a
+  -- Process Sale
+  left join `${DimSaleRepLastTableRef}` as l
+    on a.employeeid = l.employeeid
+    and a.DepartmentID = l.DepartmentID
+    and a.CompanySK = l.CompanySK
+
+  -- Process Department
+  left join `${DimDepartmentLastTableRef}` as c
+    on a.DepartmentID = c.DepartmentID
+    and a.CompanySK = c.CompanySK
+  left join `${DimRegionLastTableRef}` as d
+    on c.RegionSK = d.RegionSK
+    and c.CompanySK = d.CompanySK
+  left join `${DimSectionLastTableRef}` as e
+    on c.SectionSK = e.SectionSK
+    and c.CompanySK = e.CompanySK
+  left join `${DimRegionManagerLastTableRef}` as f
+    on d.RegionManagerSK = f.RegionManagerSK
+    and d.CompanySK = f.CompanySK
+  left join `${DimSectionManagerLastTableRef}` as g
+    on e.SectionManagerSK = g.SectionManagerSK
+    and e.CompanySK = g.CompanySK
+  left join dim_report as dim_report
+    on a.CompanySK = dim_report.CompanySK
+      and (CASE
+        WHEN dim_report.Segment = 1
+          THEN d.RegionID = dim_report.RegionID
+        WHEN dim_report.Segment = 2
+          THEN d.RegionID = dim_report.RegionID
+            and a.MarketingGroupID_pg = dim_report.MarketingGroupID
+        WHEN dim_report.Segment = 3
+          THEN d.RegionID = dim_report.RegionID
+            and dim_report.MarketingGroupID is null
+      END)
+
+  qualify row_number() over(partition by CompanySK, SaleRepSKLast, DepartmentSKLast, RegionSKLast, RegionManagerSKLast,
+SectionSKLast, SectionManagerSKLast, DirectorSKLast, TargetProductGroupSK, RateTargetSK, ProductMktSK,
+Year, Month, MarketingGroupID, MarketingGroupName, SubMarketingID, SubMarketingName, SegmentID, SegmentName,
+ChannelTargetGroup, TargetID, EmployeeID, DepartmentID, StartDate, EndDate order by dim_report.Segment) = 1
+
+)
+SELECT
+  row_number() over(order by TargetProductGroupSK, RateTargetSK) as TargetBySaleSK,
+  *
+FROM (
+  select
+    COALESCE(final.SaleRepSKLast, l.SaleRepSK) as SaleRepSKLast,
+    final.* except(SaleRepSKLast)
+
+  from final
+  left join `${DimSaleRepLastTableRef}` as l
+    on final.CompanySK = l.CompanySK
+    and final.employeeid = l.employeeid
+    and l.DepartmentID is null
+  where final.SaleRepSKLast is null
+  union all
+  select
+    SaleRepSKLast,
+    * except(SaleRepSKLast)
+  from final
+  where final.SaleRepSKLast is not null
+)
+
+
+pre_operations {
+}
+
+post_operations {
+}

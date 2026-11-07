@@ -80,3 +80,6 @@
 ## 2026-10-31
 * **Creation**: Established the bundle with 605 cards (initial 261, validated 190, curated 14, dimension 71, fact 18, view 41, process 4, cdc 1, org_center 5).
 * **Creation**: Added `index.md` files for the bundle, each layer and each dataset folder.
+
+## 2026-11-08 (target by sale rebuild)
+* **Update**: Updated the [target-by-sale contract](dimension/dim_target_product_group_by_sale.md#grain-and-key) and its consumer reference for the restored rebuild.
