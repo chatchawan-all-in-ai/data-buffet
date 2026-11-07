@@ -13,8 +13,8 @@
 | Understand a source system / raw data (incl. SALEOUT_MDT end-to-end, DERP) | [overview/source-systems.md](overview/source-systems.md), [initial/initial-layer.md](initial/initial-layer.md) |
 | Add/edit a validated table | [validated/validated-layer.md](validated/validated-layer.md), [validated/source-inventory.md](validated/source-inventory.md) |
 | Add/edit a curated table | [curated/curated-layer.md](curated/curated-layer.md) |
-| Add/edit a dimension | [dimension/dimension-layer.md](dimension/dimension-layer.md) → [dimension/full-rebuild-pattern.md](dimension/full-rebuild-pattern.md) (default) / [dimension/merge-sk-pattern.md](dimension/merge-sk-pattern.md) (stable-SK legacy) → [dimension/special-cases.md](dimension/special-cases.md) |
-| mds soft-delete / is_active / overwrite import | [dimension/full-rebuild-pattern.md](dimension/full-rebuild-pattern.md); tombstone (2 MERGE dims only): [dimension/mds-delete-pattern.md](dimension/mds-delete-pattern.md) |
+| Add/edit a dimension | [dimension/dimension-layer.md](dimension/dimension-layer.md) → [dimension/merge-sk-pattern.md](dimension/merge-sk-pattern.md) (common stable-key sync) → [dimension/special-cases.md](dimension/special-cases.md) |
+| MDS soft-delete / `is_active` / overwrite import | [dimension/mds-delete-pattern.md](dimension/mds-delete-pattern.md) and [dimension/inventory.md](dimension/inventory.md) |
 | Which dim owns which SK | [dimension/inventory.md](dimension/inventory.md) |
 | Add/edit a fact | [fact/fact-layer.md](fact/fact-layer.md) |
 | Add/edit a view (presentation layer) | [view/view-layer.md](view/view-layer.md), how-to: `document/how-to/add-view.md` |
@@ -32,15 +32,14 @@
 1. Timezone is always `Asia/Bangkok`.
 2. Follow the [data-cleaning rules, including incremental string keys](../coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล).
 3. Never hardcode dataset names/tags — use `databuffet.*` constants.
-4. SK stability is per-pattern: MERGE dims (`dim_company`, `dim_aging_rang`, lake dims, `dim_customer_report_info`)
-   have SKs that are stable forever — never regenerate them. The full-rebuild mds
-   dims regenerate SKs daily — never persist those SKs across days.
-5. `type: "operations"` targets (MERGE dims, `fact_transcation`) pre-exist in
+4. Follow the [dimension sync contract](dimension/merge-sk-pattern.md) and
+   [inventory](dimension/inventory.md), preserving held and unchanged actions.
+5. `type: "operations"` targets (dimension sync actions and `fact_transcation`) pre-exist in
    BigQuery — Dataform does not create them.
 6. Preserve load-bearing typos verbatim: `fact_transcation`, `CDC_DATESET`, `prdDiminsionData`.
-7. mds **MERGE** dims (dim_company, dim_aging_rang) must end with the inactive-row
-   DELETE before `END;` — full-rebuild dims need no tombstone.
-8. Dimension build dependencies: [full-rebuild properties](dimension/full-rebuild-pattern.md#properties).
+7. Stable dimension sync uses a complete active-source snapshot; do not limit delete-by-
+   source to an `updated_at` window.
+8. Dimension build dependencies: see [dimension inventory](dimension/inventory.md).
 
 ## Companion tooling
 

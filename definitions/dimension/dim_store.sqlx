@@ -1,15 +1,34 @@
 config {
-  type: "table",
+  type: "operations",
+  hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_company"],
   tags: [databuffet.TAG_DIM_DAILY],
-  uniqueKey: ["StoreSK"],
-  bigquery: {
-    clusterBy: ["StoreSK"],
-  },
 }
 
 js {
+    const DimStoreTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimStoreTableRef = `${DimStoreTable.database}.${DimStoreTable.schema}.${DimStoreTable.name}`;
+
+    const stableDimensionColumns = ['StoreSK', 'CompanySK', 'companyID', 'StoreCode', 'StoreGroup', 'StoreNameT', 'StoreNameE', 'ReportStore'];
+    const stableDimensionKeyColumns = ['companyID', 'StoreCode'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`StoreSK` = S.`StoreSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'StoreSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -18,40 +37,113 @@ js {
     const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 }
 
-WITH sto_master AS (
+
+
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    WITH sto_master AS (
+      SELECT
+        ROW_NUMBER() OVER(ORDER BY sto.company_id, sto.stocode) AS StoreSK,
+        dim_com.CompanySK,
+        sto.company_id AS companyID,
+        sto.stocode AS StoreCode,
+        sto.stogroup AS StoreGroup,
+        sto.stodesct AS StoreNameT,
+        sto.stodesce AS StoreNameE,
+        (CASE
+          WHEN lower(ifnull(sto.stogroup, '')) not in ('kk', 'pk', 'lp', 'ub', 'hy') THEN 'KTB'
+          ELSE sto.stogroup
+        END) AS ReportStore
+      FROM ${ref(databuffet.VALIDATED_MAC5, "sto")} AS sto
+      LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+        ON sto.company_id = dim_com.companyID
+      WHERE sto.company_id in ('ag01', 'ab01')
+
+    ), unknown_store AS (
+      SELECT
+        -1 AS StoreSK,
+        CAST(NULL AS INT64)  AS CompanySK,
+        CAST(NULL AS STRING) AS companyID,
+        CAST(NULL AS STRING) AS StoreCode,
+        CAST(NULL AS STRING) AS StoreGroup,
+        'ไม่ระบุคลัง' AS StoreNameT,
+        'Unknown' AS StoreNameE,
+        'KTB' AS ReportStore
+    )
+
+    SELECT * FROM sto_master
+    UNION ALL
+    SELECT * FROM unknown_store
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_store source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimStoreTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_store target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimStoreTableRef}`
+    WHERE `StoreSK` IS NULL
+  ) AS 'dim_store target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimStoreTableRef}`
+    GROUP BY `StoreSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_store target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`StoreSK`)
+    FROM `${DimStoreTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
   SELECT
-    ROW_NUMBER() OVER(ORDER BY sto.company_id, sto.stocode) AS StoreSK,
-    dim_com.CompanySK,
-    sto.company_id AS companyID,
-    sto.stocode AS StoreCode,
-    sto.stogroup AS StoreGroup,
-    sto.stodesct AS StoreNameT,
-    sto.stodesce AS StoreNameE,
-    (CASE 
-      WHEN lower(ifnull(sto.stogroup, '')) not in ('kk', 'pk', 'lp', 'ub', 'hy') THEN 'KTB'
-      ELSE sto.stogroup
-    END) AS ReportStore
-  FROM ${ref(databuffet.VALIDATED_MAC5, "sto")} AS sto
-  LEFT JOIN `${DimCompanyTableRef}` AS dim_com
-    ON sto.company_id = dim_com.companyID
-  WHERE sto.company_id in ('ag01', 'ab01')
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`StoreSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `StoreSK`
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.`StoreSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`StoreSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimStoreTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
 
-), unknown_store AS (
-  SELECT
-    -1 AS StoreSK,
-    CAST(NULL AS INT64)  AS CompanySK,
-    CAST(NULL AS STRING) AS companyID,
-    CAST(NULL AS STRING) AS StoreCode,
-    CAST(NULL AS STRING) AS StoreGroup,
-    'ไม่ระบุคลัง' AS StoreNameT,
-    'Unknown' AS StoreNameE,
-    'KTB' AS ReportStore
-)
-
-SELECT * FROM sto_master
-UNION ALL
-SELECT * FROM unknown_store
-
-pre_operations {}
-
-post_operations {}
+  MERGE `${DimStoreTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

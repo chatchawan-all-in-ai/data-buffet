@@ -28,6 +28,8 @@ Read by: [view_fact_target_pc_mdt](/view/fact_view/view_fact_target_pc_mdt.md), 
 
 One row = the daily sell-out target of one MDT branch for one marketing group / sub-marketing / segment on one date: key (`target_date`, `branch_code`, `marketing_group_id`, `sub_marketing_id`, `segment_id`) - the uniqueKey. Monthly targets are divided equally over the days of the month. Rows with NULL `TargetDate` (the dim's unknown row) are excluded.
 
+Period lookups choose the lowest SubRegionID, then the former dimension business order (companyID, RegionID, SubRegionID, StartDate, EndDate); director lookups use companyID, DirectorID, StartDate, EndDate.
+
 # Schema
 
 | Column | Type | Description |

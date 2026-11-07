@@ -26,6 +26,8 @@ The bridge between sell-in (our invoices to the chains) and the sell-out MDT fac
 
 One row = one `fact_transcation` row of a customer with a chain code (INNER JOIN; `store_code IS NULL` rows are dropped). No set of this view's columns is unique: `fact_transcation` also carries `milCus` and `milPer`, which this view does not expose. The `branch_lookup` CTE keeps one SK per (store, cleaned branch name), so the LEFT JOIN to `dim_sales_branch_mdt` adds no rows.
 
+Branch-name matches choose MDS branches before feed-only branches, then StoreCode and BranchCode in ascending order.
+
 # Schema
 
 | Column | Type | Description |
@@ -42,7 +44,7 @@ One row = one `fact_transcation` row of a customer with a chain code (INNER JOIN
 | `CompanySK` | INT64 | SK of `dim_company` (from `fact_transcation`). |
 | `companyID` | STRING | MAC5 company code from `fact_transcation.companyID`. |
 | `ProductSK` | INT64 | SK of `dim_product_master` for the product on the line. |
-| `SaleRepSK` | INT64 | SK of the sale representative on the line (`fact_transcation.SaleRepSK`, daily-regenerated). |
+| `SaleRepSK` | INT64 | Stable surrogate key of the sale representative on the line (`fact_transcation.SaleRepSK`). |
 | `doc_type_code` | STRING | Document type code (`IS` = invoice, `AS` = debit note, `BS` = credit note, `QS` = sales quotation). |
 | `doc_no` | STRING | Document number of the line, matching `mihvnos` of the header. |
 | `doc_line_no` | INT64 | Line number within the document. |

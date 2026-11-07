@@ -1,16 +1,34 @@
 config {
-  type: "table",
+  type: "operations",
+  hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_sales_branch_mdt", "dim_product_series"],
   tags: [databuffet.TAG_DIM_DAILY, databuffet.TAG_SALEOUT_DAILY],
-  uniqueKey: ["TargetSeriesMdtSK"],
-  bigquery: {
-    partitionBy: "TargetDate",
-    clusterBy: ["BranchMdtSK", "SeriesSK"],
-  },
 }
 
 js {
+    const DimTargetSeriesMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimTargetSeriesMdtTableRef = `${DimTargetSeriesMdtTable.database}.${DimTargetSeriesMdtTable.schema}.${DimTargetSeriesMdtTable.name}`;
+
+    const stableDimensionColumns = ['TargetSeriesMdtSK', 'BranchMdtSK', 'SeriesSK', 'StoreCode', 'BranchCodeMdt', 'SeriesCode', 'SeriesName', 'TargetDate', 'TargetYear', 'TargetMonth', 'DaysInMonth', 'Amt', 'Qty', 'MdsID'];
+    const stableDimensionKeyColumns = ['TargetDate', 'BranchCodeMdt', 'SeriesCode'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`TargetSeriesMdtSK` = S.`TargetSeriesMdtSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'TargetSeriesMdtSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const MdsSourceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
@@ -33,89 +51,162 @@ js {
     const DimSeriesTableRef = `${DimProductSeriesTable.database}.${DimProductSeriesTable.schema}.${DimProductSeriesTable.name}`;
 }
 
--- เป้ารายเดือนราย series (ตอนนี้มีแค่ TITAN) — pattern เดียวกับ dim_target_saleout_mdt
-WITH monthly AS (
+
+
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    -- เป้ารายเดือนราย series (ตอนนี้มีแค่ TITAN) — pattern เดียวกับ dim_target_saleout_mdt
+    WITH monthly AS (
+      SELECT
+        CAST(t1.Year  AS INT64) AS TargetYear,
+        CAST(t1.Month AS INT64) AS TargetMonth,
+        DATE(CAST(t1.Year AS INT64), CAST(t1.Month AS INT64), 1) AS MonthStart,
+        NULLIF(CAST(TRIM(t1.BranchCode) AS STRING), '') AS BranchCodeMdt,
+        NULLIF(CAST(TRIM(t1.SeriesCode) AS STRING), '') AS SeriesCode,
+        NULLIF(CAST(TRIM(t1.SeriesName) AS STRING), '') AS SeriesName,
+        t1.Value    AS MonthAmt,
+        t1.Quantity AS MonthQty,
+        t1.id AS MdsID
+      FROM `${MdsSourceTableRef}` AS t1
+      WHERE t1.is_active = TRUE
+        AND t1.Year IS NOT NULL
+        AND t1.Month IS NOT NULL
+      -- กันเป้าซ้ำต่อ (สาขา, series, ปี, เดือน) — เก็บแถวที่แก้ล่าสุด
+      QUALIFY ROW_NUMBER() OVER(
+        PARTITION BY TRIM(t1.BranchCode), TRIM(t1.SeriesCode),
+                     CAST(t1.Year AS INT64), CAST(t1.Month AS INT64)
+        ORDER BY t1.updated_at DESC, t1.id
+      ) = 1
+
+    ), daily AS (
+      SELECT
+        m.*,
+        d AS TargetDate,
+        DATE_DIFF(DATE_ADD(m.MonthStart, INTERVAL 1 MONTH), m.MonthStart, DAY) AS DaysInMonth
+      FROM monthly AS m
+      CROSS JOIN UNNEST(GENERATE_DATE_ARRAY(m.MonthStart, LAST_DAY(m.MonthStart))) AS d
+
+    ), target_master AS (
+      SELECT
+        ROW_NUMBER() OVER(
+          ORDER BY d.TargetDate, d.BranchCodeMdt, d.SeriesCode
+        ) AS TargetSeriesMdtSK,
+        IFNULL(dim_br.BranchMdtSK, -1) AS BranchMdtSK,
+        -- รหัสที่ไม่มีใน dim ลง OTHERS (999999) · ไม่มีแถว OTHERS ก็ได้ -1 ไม่ใช่ตารางว่าง
+        COALESCE(
+          dim_series.SeriesSK,
+          (SELECT MIN(SeriesSK) FROM `${DimSeriesTableRef}` WHERE SeriesCode = '999999'),
+          -1) AS SeriesSK,
+        dim_br.StoreCode,
+        d.BranchCodeMdt,
+        d.SeriesCode,
+        d.SeriesName,
+        d.TargetDate,
+        d.TargetYear,
+        d.TargetMonth,
+        d.DaysInMonth,
+        d.MonthAmt / d.DaysInMonth AS Amt,
+        d.MonthQty / d.DaysInMonth AS Qty,
+        d.MdsID
+      FROM daily AS d
+      LEFT JOIN `${DimBranchTableRef}` AS dim_br
+        ON IF(STARTS_WITH(d.BranchCodeMdt, 'GH_'),
+              CONCAT('GB_', SUBSTR(d.BranchCodeMdt, 4)),
+              d.BranchCodeMdt) = dim_br.BranchCodeMdt
+      LEFT JOIN `${DimSeriesTableRef}` AS dim_series
+        ON d.SeriesCode = dim_series.SeriesCode
+
+    ), unknown_target AS (
+      SELECT
+        -1                    AS TargetSeriesMdtSK,
+        -1                    AS BranchMdtSK,
+        -1                    AS SeriesSK,
+        'NotStore'            AS StoreCode,
+        'NotBranch'           AS BranchCodeMdt,
+        'NotSeries'           AS SeriesCode,
+        'ไม่ระบุซีรีส์'            AS SeriesName,
+        CAST(NULL AS DATE)    AS TargetDate,
+        CAST(NULL AS INT64)   AS TargetYear,
+        CAST(NULL AS INT64)   AS TargetMonth,
+        CAST(NULL AS INT64)   AS DaysInMonth,
+        CAST(NULL AS FLOAT64) AS Amt,
+        CAST(NULL AS FLOAT64) AS Qty,
+        CAST(NULL AS STRING)  AS MdsID
+    )
+
+    SELECT * FROM target_master
+    UNION ALL
+    SELECT * FROM unknown_target
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_target_series_mdt source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimTargetSeriesMdtTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_target_series_mdt target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimTargetSeriesMdtTableRef}`
+    WHERE `TargetSeriesMdtSK` IS NULL
+  ) AS 'dim_target_series_mdt target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimTargetSeriesMdtTableRef}`
+    GROUP BY `TargetSeriesMdtSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_target_series_mdt target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`TargetSeriesMdtSK`)
+    FROM `${DimTargetSeriesMdtTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
   SELECT
-    CAST(t1.Year  AS INT64) AS TargetYear,
-    CAST(t1.Month AS INT64) AS TargetMonth,
-    DATE(CAST(t1.Year AS INT64), CAST(t1.Month AS INT64), 1) AS MonthStart,
-    NULLIF(CAST(TRIM(t1.BranchCode) AS STRING), '') AS BranchCodeMdt,
-    NULLIF(CAST(TRIM(t1.SeriesCode) AS STRING), '') AS SeriesCode,
-    NULLIF(CAST(TRIM(t1.SeriesName) AS STRING), '') AS SeriesName,
-    t1.Value    AS MonthAmt,
-    t1.Quantity AS MonthQty,
-    t1.id AS MdsID
-  FROM `${MdsSourceTableRef}` AS t1
-  WHERE t1.is_active = TRUE
-    AND t1.Year IS NOT NULL
-    AND t1.Month IS NOT NULL
-  -- กันเป้าซ้ำต่อ (สาขา, series, ปี, เดือน) — เก็บแถวที่แก้ล่าสุด
-  QUALIFY ROW_NUMBER() OVER(
-    PARTITION BY TRIM(t1.BranchCode), TRIM(t1.SeriesCode),
-                 CAST(t1.Year AS INT64), CAST(t1.Month AS INT64)
-    ORDER BY t1.updated_at DESC, t1.id
-  ) = 1
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`TargetSeriesMdtSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `TargetSeriesMdtSK`
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.`TargetSeriesMdtSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`TargetSeriesMdtSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimTargetSeriesMdtTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
 
-), daily AS (
-  SELECT
-    m.*,
-    d AS TargetDate,
-    DATE_DIFF(DATE_ADD(m.MonthStart, INTERVAL 1 MONTH), m.MonthStart, DAY) AS DaysInMonth
-  FROM monthly AS m
-  CROSS JOIN UNNEST(GENERATE_DATE_ARRAY(m.MonthStart, LAST_DAY(m.MonthStart))) AS d
-
-), target_master AS (
-  SELECT
-    ROW_NUMBER() OVER(
-      ORDER BY d.TargetDate, d.BranchCodeMdt, d.SeriesCode
-    ) AS TargetSeriesMdtSK,
-    IFNULL(dim_br.BranchMdtSK, -1) AS BranchMdtSK,
-    -- รหัสที่ไม่มีใน dim ลง OTHERS (999999) · ไม่มีแถว OTHERS ก็ได้ -1 ไม่ใช่ตารางว่าง
-    COALESCE(
-      dim_series.SeriesSK,
-      (SELECT MIN(SeriesSK) FROM `${DimSeriesTableRef}` WHERE SeriesCode = '999999'),
-      -1) AS SeriesSK,
-    dim_br.StoreCode,
-    d.BranchCodeMdt,
-    d.SeriesCode,
-    d.SeriesName,
-    d.TargetDate,
-    d.TargetYear,
-    d.TargetMonth,
-    d.DaysInMonth,
-    d.MonthAmt / d.DaysInMonth AS Amt,
-    d.MonthQty / d.DaysInMonth AS Qty,
-    d.MdsID
-  FROM daily AS d
-  LEFT JOIN `${DimBranchTableRef}` AS dim_br
-    ON IF(STARTS_WITH(d.BranchCodeMdt, 'GH_'),
-          CONCAT('GB_', SUBSTR(d.BranchCodeMdt, 4)),
-          d.BranchCodeMdt) = dim_br.BranchCodeMdt
-  LEFT JOIN `${DimSeriesTableRef}` AS dim_series
-    ON d.SeriesCode = dim_series.SeriesCode
-
-), unknown_target AS (
-  SELECT
-    -1                    AS TargetSeriesMdtSK,
-    -1                    AS BranchMdtSK,
-    -1                    AS SeriesSK,
-    'NotStore'            AS StoreCode,
-    'NotBranch'           AS BranchCodeMdt,
-    'NotSeries'           AS SeriesCode,
-    'ไม่ระบุซีรีส์'            AS SeriesName,
-    CAST(NULL AS DATE)    AS TargetDate,
-    CAST(NULL AS INT64)   AS TargetYear,
-    CAST(NULL AS INT64)   AS TargetMonth,
-    CAST(NULL AS INT64)   AS DaysInMonth,
-    CAST(NULL AS FLOAT64) AS Amt,
-    CAST(NULL AS FLOAT64) AS Qty,
-    CAST(NULL AS STRING)  AS MdsID
-)
-
-SELECT * FROM target_master
-UNION ALL
-SELECT * FROM unknown_target
-
-pre_operations {}
-
-post_operations {}
+  MERGE `${DimTargetSeriesMdtTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

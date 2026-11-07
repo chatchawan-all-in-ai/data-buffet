@@ -65,8 +65,9 @@ js {
 
 ## Key facts
 
-- `MDS_BACKFILL_DAYS` (currently `"1"`) limits how far back mds-sourced dimension
-  MERGEs scan `updated_at`. See [dimension MERGE pattern](../dimension/merge-sk-pattern.md).
+- `MDS_BACKFILL_DAYS` (currently `"1"`) remains in project configuration for compatibility;
+  active dimension definitions no longer use it. Stable-key dimension sync reads a
+  complete source snapshot. See [dimension sync](../dimension/merge-sk-pattern.md).
 - `BACKFILL_DAYS` (default `"1"`) is the incremental look-back window for every
   validated and curated table. It **is** committed — `workflow_settings.yaml` has been
   tracked in git since 2026-08-16, so every clone gets the value. The `|| "1"` fallback

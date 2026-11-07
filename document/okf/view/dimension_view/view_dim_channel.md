@@ -32,7 +32,7 @@ One row = one department code of a company: key `companyID`, `DepCode` (unique; 
 
 | Column | Type | Description |
 |---|---|---|
-| `ChannelSK` | INT64 | SK of the row in [dim_channel](/dimension/dim_channel.md) (regenerated nightly). |
+| `ChannelSK` | INT64 | Stable SK of the row in [dim_channel](/dimension/dim_channel.md). |
 | `ChannelFinanceSK` | INT64 | SK of the finance channel in dim_channel_finance matched on ChannelIDFinance + CompanySK; NULL if unmatched. |
 | `ChannelSaleSK` | INT64 | SK of the sales channel in dim_channel_sales matched on ChannelID + CompanySK; NULL if unmatched. |
 | `ChannelCostSK` | INT64 | SK of the cost channel in dim_channel_cost matched on ChannelCostID + CompanySK; NULL if unmatched. |

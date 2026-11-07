@@ -26,13 +26,13 @@ Read by: [export_dim_product_master_fc](/view/pub_sub/export_dim_product_master_
 
 # Grain and key
 
-One row = one product variant by barcode per company: key (company, Barcode) among active mds rows (the SK ordering key; uniqueness is not enforced by the SQL). `ProductMasterFcSK` is the surrogate key, regenerated every run.
+One row = one product variant by barcode per company. Natural key: (`companyID`, `Barcode`). `ProductMasterFcSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ProductMasterFcSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, Barcode)` over the active mds rows. Regenerated every run. |
+| `ProductMasterFcSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `ProductIDOldMac5` | STRING | Pass-through of mds `ProductIDOldMac5`, cleaned with `cleanString` (empty string becomes NULL). Product code in the old MAC5 system. |
@@ -73,15 +73,11 @@ One row = one product variant by barcode per company: key (company, Barcode) amo
 | `SalesUnit` | STRING | Pass-through of mds `SalesUnit`, cleaned with `cleanString` (empty string becomes NULL). Sales unit. |
 | `PackSize` | STRING | Pass-through of mds `PackSize`, cleaned with `cleanString` (empty string becomes NULL). Pack size text. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_product_finance_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_product_master_fc.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `ProductMasterFcSK`.
-- Storage options: `{"clusterBy": ["ProductMasterFcSK"]}`.
+- Definition: `definitions/dimension/dim_product_master_fc.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_product_finance_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Map old MAC5 product codes to new D365 codes.

@@ -26,13 +26,13 @@ Read by: [dim_customer_grade](/dimension/dim_customer_grade.md), [dim_group_cust
 
 # Grain and key
 
-One row = one score band: key `BounceChequeSK` (surrogate, regenerated every run); natural key `companyID` + `BouncedChequeMin/Max` + `StartDate` + `EndDate`, from active mds rows.
+One row = one score band. Natural key: (`companyID`, `BouncedChequeMin`, `BouncedChequeMax`, `StartDate`, `EndDate`). `BounceChequeSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `BounceChequeSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, BouncedChequeMin, BouncedChequeMax, StartDate, EndDate)` over the active mds rows. Regenerated every run. |
+| `BounceChequeSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `BouncedChequeMin` | FLOAT64 | Lower bound (inclusive) of the band for `CountCancelCheque` (see the metric definition linked above), cast with `castFloat64` from the mds column. |
@@ -41,15 +41,11 @@ One row = one score band: key `BounceChequeSK` (surrogate, regenerated every run
 | `StartDate` | DATE | First day the band row is valid (mds `StartDate`, passed through as DATE). |
 | `EndDate` | DATE | Last day the band row is valid (mds `EndDate`, passed through as DATE). dim_customer_grade matches rows where yesterday (Asia/Bangkok) is between StartDate and EndDate. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_custgrade_cheque_score_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_bounce_cheque_score.sqlx` (`type: "table"`, tag `dimension_daily`).
-- `uniqueKey`: `BounceChequeSK`.
-- Storage options: `{"clusterBy": ["BounceChequeSK"]}`.
+- Definition: `definitions/dimension/dim_bounce_cheque_score.sqlx` (`type: "operations"`, `hasOutput: true`, tag `dimension_daily`).
 - Reads: `mds_dataset.mds_data_custgrade_cheque_score_master` (master data loaded outside this repo; only rows with `is_active = TRUE`), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Bands valid today per company.

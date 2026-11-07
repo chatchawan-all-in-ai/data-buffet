@@ -1,15 +1,34 @@
 config {
-  type: "table",
+  type: "operations",
+  hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_product_master", "dim_stk_mkt", "dim_product_mkt"],
   tags: [databuffet.TAG_DIM_DAILY, databuffet.TAG_SALEOUT_DAILY],
-  uniqueKey: ["ProductMdtSK"],
-  bigquery: {
-    clusterBy: ["ProductMdtSK"],
-  },
 }
 
 js {
+    const DimProductMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimProductMdtTableRef = `${DimProductMdtTable.database}.${DimProductMdtTable.schema}.${DimProductMdtTable.name}`;
+
+    const stableDimensionColumns = ['ProductMdtSK', 'ProductSK', 'ProductMktSK', 'ProductCode', 'ProductName', 'ProductMac5Code', 'StoreCode', 'CompanyID', 'MdsID'];
+    const stableDimensionKeyColumns = ['ProductCode'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`ProductMdtSK` = S.`ProductMdtSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'ProductMdtSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const MdsSourceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
@@ -39,124 +58,197 @@ js {
 
 }
 
-WITH mac5_dedup AS (
-  SELECT ProductSK, ProductMktSK, companyID, ProductCode
-  FROM `${DimProductMasterTableRef}`
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY companyID, ProductCode ORDER BY ProductSK) = 1
 
-  ), mkt_fallback AS (
 
-  SELECT k.StkCode, k.companyID, m.ProductMktSK
-  FROM `${DimStkMktTableRef}` AS k
-  INNER JOIN `${DimProductMktTableRef}` AS m
-    ON  k.MarketingGroupID = m.MarketingGroupID
-    AND k.SubMarketingID   = m.SubMarketingID
-    AND k.SegmentID        = m.SegmentID
-    AND k.companyID        = m.companyID
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY k.companyID, k.StkCode ORDER BY m.ProductMktSK) = 1
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
 
-), product_src AS (
-  SELECT *
-  FROM `${MdsSourceTableRef}`
-  WHERE is_active = TRUE
-    AND product_mdt_code IS NOT NULL
-  QUALIFY ROW_NUMBER() OVER(
-    PARTITION BY CAST(product_mdt_code AS INT64)
-    ORDER BY product_mac5_code IS NULL, region_id, id
-  ) = 1
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    WITH mac5_dedup AS (
+      SELECT ProductSK, ProductMktSK, companyID, ProductCode
+      FROM `${DimProductMasterTableRef}`
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY companyID, ProductCode ORDER BY ProductSK) = 1
 
-), product_master AS (
-    SELECT
-    ROW_NUMBER() OVER(ORDER BY CAST(t1.product_mdt_code AS INT64)) AS ProductMdtSK,
-    IFNULL(mac5.ProductSK, IFNULL(wait5.ProductSK, -1)) AS ProductSK,
-    IFNULL(NULLIF(mac5.ProductMktSK, -1),
-           IFNULL(fb.ProductMktSK, IFNULL(wait.ProductMktSK, -1))) AS ProductMktSK,
-    CAST(CAST(t1.product_mdt_code AS INT64) AS STRING)          AS ProductCode,
-    NULLIF(CAST(TRIM(t1.product_mdt_name) AS STRING), '')  AS ProductName,
-    IF(mac5.ProductSK IS NULL AND fb.ProductMktSK IS NULL,
-       'WAITING999',
-       NULLIF(CAST(TRIM(t1.product_mac5_code) AS STRING), '')) AS ProductMac5Code,
-    NULLIF(CAST(TRIM(t1.region_id) AS STRING), '')         AS StoreCode,
-    NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')            AS CompanyID,
-    t1.id                                                         AS MdsID
-  FROM product_src AS t1
-  LEFT JOIN mac5_dedup AS mac5
-    ON  NULLIF(CAST(TRIM(t1.product_mac5_code) AS STRING), '') = mac5.ProductCode
-    AND NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')            = mac5.companyID
-   LEFT JOIN mkt_fallback AS fb
-    ON  NULLIF(CAST(TRIM(t1.product_mac5_code) AS STRING), '') = fb.StkCode
-    AND NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')            = fb.companyID
+      ), mkt_fallback AS (
 
-  LEFT JOIN mkt_fallback AS wait
-    ON  wait.StkCode  = 'WAITING999'
-    AND wait.companyID = NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')
+      SELECT k.StkCode, k.companyID, m.ProductMktSK
+      FROM `${DimStkMktTableRef}` AS k
+      INNER JOIN `${DimProductMktTableRef}` AS m
+        ON  k.MarketingGroupID = m.MarketingGroupID
+        AND k.SubMarketingID   = m.SubMarketingID
+        AND k.SegmentID        = m.SegmentID
+        AND k.companyID        = m.companyID
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY k.companyID, k.StkCode ORDER BY m.CompanyID, m.TypeMarketingID, m.MarketingGroupID, m.SubMarketingID, m.SegmentID) = 1
 
-  LEFT JOIN mac5_dedup AS wait5
-    ON  wait5.ProductCode = 'WAITING999'
-    AND wait5.companyID   = NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')
+    ), product_src AS (
+      SELECT *
+      FROM `${MdsSourceTableRef}`
+      WHERE is_active = TRUE
+        AND product_mdt_code IS NOT NULL
+      QUALIFY ROW_NUMBER() OVER(
+        PARTITION BY CAST(product_mdt_code AS INT64)
+        ORDER BY product_mac5_code IS NULL, region_id, id
+      ) = 1
 
-    ), feed_product AS (
+    ), product_master AS (
+        SELECT
+        ROW_NUMBER() OVER(ORDER BY CAST(t1.product_mdt_code AS INT64)) AS ProductMdtSK,
+        IFNULL(mac5.ProductSK, IFNULL(wait5.ProductSK, -1)) AS ProductSK,
+        IFNULL(NULLIF(mac5.ProductMktSK, -1),
+               IFNULL(fb.ProductMktSK, IFNULL(wait.ProductMktSK, -1))) AS ProductMktSK,
+        CAST(CAST(t1.product_mdt_code AS INT64) AS STRING)          AS ProductCode,
+        NULLIF(CAST(TRIM(t1.product_mdt_name) AS STRING), '')  AS ProductName,
+        IF(mac5.ProductSK IS NULL AND fb.ProductMktSK IS NULL,
+           'WAITING999',
+           NULLIF(CAST(TRIM(t1.product_mac5_code) AS STRING), '')) AS ProductMac5Code,
+        NULLIF(CAST(TRIM(t1.region_id) AS STRING), '')         AS StoreCode,
+        NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')            AS CompanyID,
+        t1.id                                                         AS MdsID
+      FROM product_src AS t1
+      LEFT JOIN mac5_dedup AS mac5
+        ON  NULLIF(CAST(TRIM(t1.product_mac5_code) AS STRING), '') = mac5.ProductCode
+        AND NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')            = mac5.companyID
+       LEFT JOIN mkt_fallback AS fb
+        ON  NULLIF(CAST(TRIM(t1.product_mac5_code) AS STRING), '') = fb.StkCode
+        AND NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')            = fb.companyID
 
+      LEFT JOIN mkt_fallback AS wait
+        ON  wait.StkCode  = 'WAITING999'
+        AND wait.companyID = NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')
+
+      LEFT JOIN mac5_dedup AS wait5
+        ON  wait5.ProductCode = 'WAITING999'
+        AND wait5.companyID   = NULLIF(CAST(TRIM(t1.commpy) AS STRING), '')
+
+        ), feed_product AS (
+
+      SELECT
+        LTRIM(product_code, '0') AS product_code,
+        ANY_VALUE(product_name) AS product_name,
+        MIN(store_code)         AS store_code
+      FROM (
+        SELECT product_code, product_name, store_code
+        FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_mdt")}
+        UNION ALL
+        SELECT product_code, product_name, store_code
+        FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_monthly_mdt")}
+        UNION ALL
+        SELECT product_code, product_name, store_code
+        FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_stock_mdt")}
+      )
+      WHERE product_code IS NOT NULL
+      GROUP BY LTRIM(product_code, '0')
+
+    ), new_product AS (
+
+      SELECT
+        (SELECT IFNULL(MAX(ProductMdtSK), 0) FROM product_master)
+          + ROW_NUMBER() OVER(ORDER BY f.product_code)        AS ProductMdtSK,
+        IFNULL(wait5.ProductSK, -1)                          AS ProductSK,
+        IFNULL(wait.ProductMktSK, -1)                        AS ProductMktSK,
+        f.product_code                                       AS ProductCode,
+        IFNULL(f.product_name, f.product_code)               AS ProductName,
+        'WAITING999'                                           AS ProductMac5Code,
+        f.store_code                                         AS StoreCode,
+        'ag01'                                               AS CompanyID,
+        CAST(NULL AS STRING)                                 AS MdsID
+      FROM feed_product AS f
+      LEFT JOIN mkt_fallback AS wait
+        ON  wait.StkCode   = 'WAITING999'
+        AND wait.companyID = 'ag01'
+      LEFT JOIN mac5_dedup AS wait5
+        ON  wait5.ProductCode = 'WAITING999'
+        AND wait5.companyID   = 'ag01'
+      WHERE NOT EXISTS (
+        SELECT 1 FROM product_master AS p WHERE p.ProductCode = f.product_code
+      )
+
+    ), unknown_product AS (
+      SELECT
+        -1                   AS ProductMdtSK,
+        -1                   AS ProductSK,
+        -1                   AS ProductMktSK,
+        'NotProduct'         AS ProductCode,
+        'ไม่ระบุสินค้า'           AS ProductName,
+        'ยังไม่มีข้อมูล'           AS ProductMac5Code,
+        'NotStore'           AS StoreCode,
+        'NotCompany'         AS CompanyID,
+        CAST(NULL AS STRING) AS MdsID
+    )
+
+    SELECT * FROM product_master
+    UNION ALL
+    SELECT * FROM new_product
+    UNION ALL
+    SELECT * FROM unknown_product
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_mdt source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductMdtTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_mdt target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductMdtTableRef}`
+    WHERE `ProductMdtSK` IS NULL
+  ) AS 'dim_product_mdt target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductMdtTableRef}`
+    GROUP BY `ProductMdtSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_mdt target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`ProductMdtSK`)
+    FROM `${DimProductMdtTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
   SELECT
-    LTRIM(product_code, '0') AS product_code,
-    ANY_VALUE(product_name) AS product_name,
-    MIN(store_code)         AS store_code
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`ProductMdtSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `ProductMdtSK`
+    )
   FROM (
-    SELECT product_code, product_name, store_code
-    FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_mdt")}
-    UNION ALL
-    SELECT product_code, product_name, store_code
-    FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_monthly_mdt")}
-    UNION ALL
-    SELECT product_code, product_name, store_code
-    FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_stock_mdt")}
-  )
-  WHERE product_code IS NOT NULL
-  GROUP BY LTRIM(product_code, '0')
+    SELECT
+      source_row.*,
+      target_row.`ProductMdtSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`ProductMdtSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimProductMdtTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
 
-), new_product AS (
-
-  SELECT
-    (SELECT IFNULL(MAX(ProductMdtSK), 0) FROM product_master)
-      + ROW_NUMBER() OVER(ORDER BY f.product_code)        AS ProductMdtSK,
-    IFNULL(wait5.ProductSK, -1)                          AS ProductSK,
-    IFNULL(wait.ProductMktSK, -1)                        AS ProductMktSK,
-    f.product_code                                       AS ProductCode,
-    IFNULL(f.product_name, f.product_code)               AS ProductName,
-    'WAITING999'                                           AS ProductMac5Code,
-    f.store_code                                         AS StoreCode,
-    'ag01'                                               AS CompanyID,
-    CAST(NULL AS STRING)                                 AS MdsID
-  FROM feed_product AS f
-  LEFT JOIN mkt_fallback AS wait
-    ON  wait.StkCode   = 'WAITING999'
-    AND wait.companyID = 'ag01'
-  LEFT JOIN mac5_dedup AS wait5
-    ON  wait5.ProductCode = 'WAITING999'
-    AND wait5.companyID   = 'ag01'
-  WHERE NOT EXISTS (
-    SELECT 1 FROM product_master AS p WHERE p.ProductCode = f.product_code
-  )
-
-), unknown_product AS (
-  SELECT
-    -1                   AS ProductMdtSK,
-    -1                   AS ProductSK,
-    -1                   AS ProductMktSK,
-    'NotProduct'         AS ProductCode,
-    'ไม่ระบุสินค้า'           AS ProductName,
-    'ยังไม่มีข้อมูล'           AS ProductMac5Code,
-    'NotStore'           AS StoreCode,
-    'NotCompany'         AS CompanyID,
-    CAST(NULL AS STRING) AS MdsID
-)
-
-SELECT * FROM product_master
-UNION ALL
-SELECT * FROM new_product
-UNION ALL
-SELECT * FROM unknown_product
-
-pre_operations {}
-
-post_operations {}
+  MERGE `${DimProductMdtTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

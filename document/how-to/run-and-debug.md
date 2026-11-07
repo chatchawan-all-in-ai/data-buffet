@@ -102,13 +102,13 @@ wsl -e bash -lc "bq --project_id=databuffet-nonprd query --use_legacy_sql=false 
 | `Unrecognized name: <col>` ตอนสร้างตาราง | `partitionBy`/`clusterBy` ใน config ชี้คอลัมน์ที่ SELECT ไม่ได้คืนมา — ถอดคอลัมน์เมื่อไรต้องเช็ค config ด้วยเสมอ |
 | `Octal escape sequences are not allowed in template strings` | มี `\1`–`\9` ใน **คอมเมนต์ `--`** ของ SQLX (คอมเมนต์ถูกประมวลเป็น template literal) — เขียน `\\1` ใน comment ส่วนโค้ด SQL ใช้ backslash เดี่ยวได้ ดู [coding-standard §3.3](../coding-standards/sqlx-coding-standard.md) |
 | dim MERGE บอก table not found | ตาราง `operations` ต้องมีใน BigQuery ก่อนรันครั้งแรก Dataform ไม่สร้างให้ |
-| dim ไม่เห็นข้อมูล mds ที่แก้ไปแล้ว | เกิน window `MDS_BACKFILL_DAYS` (1 วัน) — ใช้ skill `backfill-dimension` · **เฉพาะ dim แบบ MERGE** (2 mds + 10 lake) dim full-rebuild เห็นทันทีอยู่แล้ว |
+| dim ไม่เห็นข้อมูล mds ที่แก้ไปแล้ว | stable-key dimensions read a complete active-source snapshot on the daily run; check the action’s dependency and `is_active` filter. The active dimension definitions do not use `MDS_BACKFILL_DAYS`. |
 | validated ขาดข้อมูลย้อนหลัง | window incremental = `BACKFILL_DAYS` (1 วัน, string compare `ASATDATE`) — เพิ่มค่าชั่วคราวใน `workflow_settings.yaml` แล้วรันรอบเดียว (รอบ schedule compile branch `nonprod` ตอน 05:45 — ถ้าจะให้รอบอัตโนมัติใช้ค่าใหม่ ต้อง commit ลง `nonprod` ก่อน 05:45) |
 | บรรทัดที่ต้นทางลบไปแล้วยังค้าง | PK ระดับบรรทัด MERGE ลบให้ไม่ได้ — `mih`/`mil`/`mir`/`curated_mil` ใช้ doc-grain purge ใน `pre_operations` แล้ว ถ้าตารางใหม่มีอาการนี้ต้องทำแบบเดียวกัน |
 | parse datetime fail | รูปแบบ timestamp จาก raw เปลี่ยน — `parseFlexibleDatetime` รองรับ 2 แบบ ถ้ามีแบบที่ 3 ต้องเพิ่ม |
 | ALTER PRIMARY KEY fail ซ้ำ ๆ | BigQuery metadata ชนกัน — retry loop จัดการเอง ถ้ายัง fail ให้รันใหม่ |
 | fact row ซ้ำ | grain ของ temp table ไม่ตรง DELETE key · หรือ join กับตารางที่มีรหัสซ้ำ (ใส่ `QUALIFY ROW_NUMBER() = 1` ฝั่ง dim ก่อน join) |
-| SK ค้างใน fact หลัง mds ลบ | พฤติกรรมที่ยอมรับ (hard delete 2026-07-10) — dim full-rebuild จะหายเองวันถัดไป |
+| Candidate dimension row is missing from the complete source but is referenced by a fact | Compare its SK with fact references before applying the delete. If a retained fact would keep the removed SK, hold the dimension and request a decision. |
 | view บน BigQuery ไม่ตรงกับ repo | ยังไม่ได้รัน tag `view` หรือมีคนแก้บน console — ใช้ skill `bq-drift-scan` |
 
 ## Environment / Git

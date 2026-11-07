@@ -30,7 +30,7 @@ One row = one sales channel of a company: key `companyID`, `DepCode` (unique); `
 
 | Column | Type | Description |
 |---|---|---|
-| `ChannelSK` | INT64 | SK of the row in [dim_channel](/dimension/dim_channel.md) (regenerated nightly). |
+| `ChannelSK` | INT64 | Stable SK of the row in [dim_channel](/dimension/dim_channel.md). |
 | `ChannelGroup` | STRING | Sales channel group name (pass-through from dim_channel). |
 | `ChannelName` | STRING | Sales channel name (pass-through). |
 | `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |

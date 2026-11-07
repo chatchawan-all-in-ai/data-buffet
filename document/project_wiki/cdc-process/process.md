@@ -189,8 +189,8 @@ sample data: the 31 tables of the 2026-10-26 package, `rls_ta_customer` (rls sam
 lower case. Topic routing and triggers are owned by
 [`mart-export-config.json`](../../../includes/controller/mart-export-config.json). Columns, names and order are the
 sample CSV header, read from the same source for the whole table (the sample filters are not applied), so they
-keep the SK columns of the sample: SKs of the full-rebuild dims and facts regenerate every run and move
-rows whose data did not change otherwise. Where a table has no unique business key the key is the business
+keep the SK columns of the sample: dimension SKs remain stable for matching natural keys, while fact SKs
+that use `ROW_NUMBER()` can regenerate and move rows whose data did not change otherwise. Where a table has no unique business key the key is the business
 columns plus `occurrence` (position of the row among rows with the same key, ordered by their data JSON).
 `view_dim_company` has its own view because its sample columns differ from `export_dim_company`.
 
@@ -346,7 +346,7 @@ image (the required group and table order is read from it), so a new group takes
 - data columns first, under the **source table's column names** (no renaming, no
   `company_source_id`) — except the commission, TA app and AI team sample sets, which keep the names
   agreed in their respective samples. The AI team sample sets retain their sample SK columns,
-  including regenerated SKs; other exports exclude dimension SKs and incidental daily values
+  including regenerated fact SKs; other exports exclude dimension SKs and incidental daily values
   that make unchanged rows look changed. Date-driven membership status is intentional;
   its transition rules are owned by the
   [`export_memberships` schema](../../okf/view/pub_sub/export_memberships.md#schema);

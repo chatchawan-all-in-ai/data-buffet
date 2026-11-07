@@ -1,15 +1,34 @@
 config {
-  type: "table",
+  type: "operations",
+  hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["fact_transcation", "dim_product_mkt", "dim_product_master", "dim_region"],
   tags: [databuffet.TAG_DIM_DAILY],
-  uniqueKey: ["PumpSK"],
-  bigquery: {
-    clusterBy: ["PumpSK"],
-  },
 }
 
 js {
+    const DimPumpInformationTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimPumpInformationTableRef = `${DimPumpInformationTable.database}.${DimPumpInformationTable.schema}.${DimPumpInformationTable.name}`;
+
+    const stableDimensionColumns = ['PumpSK', 'CompanySK', 'CompanyID', 'milstk', 'RegionID', 'FlagNewProductMKT', 'PumpSegment'];
+    const stableDimensionKeyColumns = ['CompanyID', 'milstk', 'RegionID', 'FlagNewProductMKT', 'PumpSegment'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`PumpSK` = S.`PumpSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'PumpSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const FactTranscationTable = {
         database: databuffet.DATABASE,
         schema: databuffet.FACT_TABLE,
@@ -40,35 +59,108 @@ js {
 
 }
 
-with mix_data as (
-  select distinct
-    fact.CompanySK,
-    fact.CompanyID,
-    fact.milstk, reg.RegionID, fact.FlagNewProductMKT, 
-    -- prd.PumpSegment as OldPumpSegment, 
-    -- prd_mkt.Segment as ProcessPumpSegment,
 
-    (CASE 
-      WHEN reg.RegionID = 'PS1' and FlagNewProductMKT = true THEN prd_mkt.Segment
-      ELSE prd.PumpSegment
-    END) as PumpSegment
 
-  from `${FactTranscationTableRef}` as fact
-  left join `${ProductMasterViewRef}` as prd
-    on fact.ProductSK = prd.ProductSK
-  left join `${DimRegionTableRef}` as reg
-    on fact.RegionSK = reg.RegionSK
-  left join `${DimProductMktTableRef}` as prd_mkt
-    on fact.NewProductMktSK = prd_mkt.ProductMktSK
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
 
-  where fact.milStk is not null
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    with mix_data as (
+      select distinct
+        fact.CompanySK,
+        fact.CompanyID,
+        fact.milstk, reg.RegionID, fact.FlagNewProductMKT,
+        -- prd.PumpSegment as OldPumpSegment,
+        -- prd_mkt.Segment as ProcessPumpSegment,
 
-)
-  select
-    row_number() over(order by lower(milstk), regionid, FlagNewProductMKT) as PumpSK, 
-    *
-  from mix_data
+        (CASE
+          WHEN reg.RegionID = 'PS1' and FlagNewProductMKT = true THEN prd_mkt.Segment
+          ELSE prd.PumpSegment
+        END) as PumpSegment
 
-pre_operations {}
+      from `${FactTranscationTableRef}` as fact
+      left join `${ProductMasterViewRef}` as prd
+        on fact.ProductSK = prd.ProductSK
+      left join `${DimRegionTableRef}` as reg
+        on fact.RegionSK = reg.RegionSK
+      left join `${DimProductMktTableRef}` as prd_mkt
+        on fact.NewProductMktSK = prd_mkt.ProductMktSK
 
-post_operations {}
+      where fact.milStk is not null
+
+    )
+      select
+        row_number() over(order by lower(milstk), regionid, FlagNewProductMKT) as PumpSK,
+        *
+      from mix_data
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_pump_information source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPumpInformationTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_pump_information target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPumpInformationTableRef}`
+    WHERE `PumpSK` IS NULL
+  ) AS 'dim_pump_information target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPumpInformationTableRef}`
+    GROUP BY `PumpSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_pump_information target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`PumpSK`)
+    FROM `${DimPumpInformationTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`PumpSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `PumpSK`
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.`PumpSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`PumpSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimPumpInformationTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
+
+  MERGE `${DimPumpInformationTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

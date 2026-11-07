@@ -231,7 +231,7 @@ with mds as (
     AND c.debsalesp = i.mihPer
     AND i.mihDep IN UNNEST(SPLIT(REPLACE(c.DepCode, ' ', ''), '|'))
     AND IFNULL(i.mihCancel, 0) <> -1
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY c.company_id, c.debcode ORDER BY i.mix_date DESC, i.mihVnos DESC, c.DepartmentSK) = 1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY c.company_id, c.debcode ORDER BY i.mix_date DESC, i.mihVnos DESC, (SELECT dep.DepartmentID FROM `${DimDepartmentLastTableRef}` AS dep WHERE dep.DepartmentSK = c.DepartmentSK)) = 1
 
 ), mdt_ta as (
   -- TA เดียวในเชน ใช้ตัวนั้น · หลาย TA ใช้ mdt_slot · ไม่มีตัวเลือก / debgroup ไม่ใช่เชน = ว่าง
@@ -329,7 +329,7 @@ with mds as (
     SELECT CompanySK, EmployeeID, SaleRepSK
     FROM `${DimSaleRepLastTableRef}`
     QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, EmployeeID
-      ORDER BY IF(EmployeeName IS NOT NULL, 0, 1), SaleRepSK) = 1
+      ORDER BY IF(EmployeeName IS NOT NULL, 0, 1), (CASE WHEN DepartmentID IS NULL THEN 1 ELSE 0 END), CompanySK, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID) = 1
   ) AS sr
     ON t.CompanySK = sr.CompanySK
     AND t.TAEmployeeID = sr.EmployeeID

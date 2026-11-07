@@ -26,13 +26,13 @@ Read by: [fact_transcation](/fact/fact_transcation.md), [view_fact_transcation](
 
 # Grain and key
 
-One row = one standard-cost rate of a product and cost channel for a validity period: key `CostStkSK` (surrogate, regenerated every run); natural key `companyID` + `MilStk` + `GaccID` + `ChannelCostID` + `StartDate` + `EndDate`, from active mds rows.
+One row = one standard-cost rate of a product and cost channel for a validity period. Natural key: (`companyID`, `MilStk`, `GaccID`, `ChannelCostID`, `StartDate`, `EndDate`). `CostStkSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `CostStkSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, MilStk, GaccID, ChannelCostID, StartDate, EndDate)` over the active mds rows. Regenerated every run. |
+| `CostStkSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `MilStk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
@@ -44,15 +44,11 @@ One row = one standard-cost rate of a product and cost channel for a validity pe
 | `StartDate` | DATE | First day the percentage is valid (mds `StartDate`, DATE). |
 | `EndDate` | DATE | Last day the percentage is valid (mds `EndDate`, DATE). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_standard_cost_by_product_id_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_cost_stk.sqlx` (`type: "table"`, tag `dimension_daily`).
-- `uniqueKey`: `CostStkSK`.
-- Storage options: `{"clusterBy": ["CostStkSK"]}`.
+- Definition: `definitions/dimension/dim_cost_stk.sqlx` (`type: "operations"`, `hasOutput: true`, tag `dimension_daily`).
 - Reads: `mds_dataset.mds_data_standard_cost_by_product_id_master` (master data loaded outside this repo; only rows with `is_active = TRUE`), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Product-level standard cost percent valid today.

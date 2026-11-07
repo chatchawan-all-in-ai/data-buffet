@@ -26,13 +26,13 @@ Read by: [view_dim_product_master](/view/dimension_view/view_dim_product_master.
 
 # Grain and key
 
-One row = one active MDS rule row: key `RebateSK`, `ROW_NUMBER()` ordered by companyID, rebate, status; natural key `(companyID, rebate, status)` (uniqueness is not enforced). The meaning of `rebate` depends on `status`: status `cutomer` (sic) compares to the line customer `milCus`, `sales` to the sales person `milPer`, `product` to the product code `milStk`, `textsplit` is a substring matched against the line description, the product description or the department (view_fact_transcation). Rows with status `dep` (department `milDep`) are not applied: view_fact_transcation keeps only the `cutomer`, `sales`, `product` and `textsplit` statuses. No -1 row.
+One row = one active MDS rule row. Natural key: (`companyID`, `rebate`, `status`). `RebateSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `RebateSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by companyID, rebate, status. Regenerated every run. |
+| `RebateSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `rebate` | STRING | The code or text the rule matches; its meaning depends on `status` (customer code, sales person code, product code, department code, or a text fragment for textsplit). `view_fact_transcation` compares it after TRIM. |
@@ -42,15 +42,11 @@ One row = one active MDS rule row: key `RebateSK`, `ROW_NUMBER()` ordered by com
 | `salesExc` | STRING | 'Yes' when matching lines are excluded from sales KPIs; consumers treat any other value as no exclusion (default 'No'). |
 | `accExc` | STRING | 'Yes' when matching lines are excluded from accounting KPIs; any other value is no exclusion. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_kpi_condition_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_rebate.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `RebateSK`.
-- Storage options: `{"clusterBy": ["RebateSK"]}`.
+- Definition: `definitions/dimension/dim_rebate.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_sales_kpi_condition_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Product-level rebate rules that exclude lines from sales KPIs.

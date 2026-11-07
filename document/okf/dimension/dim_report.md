@@ -26,13 +26,13 @@ Read by: [dim_target_product_group_by_sale](/dimension/dim_target_product_group_
 
 # Grain and key
 
-One row = one active MDS report-group row: key `ReportSK`, `ROW_NUMBER()` ordered by companyID, ReportID, RegionID, MarketingGroupID. A `Segment` value (1, 2 or 3) is **not stored**; `view_fact_transcation` and `dim_target_product_group_by_sale` derive it per RegionID: only one row for the RegionID gives 1 (match on RegionID); more than one row and MarketingGroupID NULL gives 3 (RegionID-only catch-all row); otherwise 2 (RegionID plus MarketingGroupID). No -1 row.
+One row = one active MDS report-group row. Natural key: (`companyID`, `ReportID`, `RegionID`, `MarketingGroupID`). `ReportSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ReportSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by companyID, ReportID, RegionID, MarketingGroupID. Regenerated every run. |
+| `ReportSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `ReportID` | STRING | Report group code from MDS. |
@@ -41,15 +41,11 @@ One row = one active MDS report-group row: key `ReportSK`, `ROW_NUMBER()` ordere
 | `ReportName1` | STRING | First display name of the report group (MDS). |
 | `ReportName2` | STRING | Second display name of the report group (MDS). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_report_group_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_report.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `ReportSK`.
-- Storage options: `{"clusterBy": ["ReportSK"]}`.
+- Definition: `definitions/dimension/dim_report.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_sales_report_group_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Report-group rows with the Segment value the consumers derive.

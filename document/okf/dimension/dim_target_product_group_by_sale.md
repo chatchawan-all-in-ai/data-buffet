@@ -26,13 +26,13 @@ Read by: [dim_target_product_group_by_sale_dayofwork](/dimension/dim_target_prod
 
 # Grain and key
 
-One row = one target allocated to one employee and department by a rate rule: key (`TargetProductGroupSK`, `RateTargetSK`), `TargetBySaleSK` numbered over that pair. Three allocation branches are combined with UNION ALL: (1) year-wide rate rows (Month and ProductGroupID NULL), (2) monthly rows (Month set, ProductGroupID NULL), and (3) month plus product-group rows (`MarketingGroupID = ProductGroupID`). The later branches exclude only matches with the same TargetProductGroupSK, CompanySK and RateTargetSK already emitted by an earlier branch. Distinct yearly and monthly rules therefore both survive; there is no first-match precedence per target. The monthly branches use LEFT JOINs, so NULL-rule rows can coexist with successful allocations from other branches. The final `DISTINCT` + `QUALIFY ROW_NUMBER()` removes duplicates created by the report join. `TargetBySaleSK` is `ROW_NUMBER()` over TargetProductGroupSK, RateTargetSK.
+One row = one target allocated to one employee and department by a rate rule. Natural key: (`CompanySK`, `SaleRepSKLast`, `DepartmentSKLast`, `RegionSKLast`, `RegionManagerSKLast`, `SectionSKLast`, `SectionManagerSKLast`, `DirectorSKLast`, `TargetProductGroupSK`, `RateTargetSK`, `ProductMktSK`, `Year`, `Month`, `MarketingGroupID`, `MarketingGroupName`, `SubMarketingID`, `SubMarketingName`, `SegmentID`, `SegmentName`, `ChannelTargetGroup`, `TargetID`, `EmployeeID`, `DepartmentID`, `StartDate`, `EndDate`). `TargetBySaleSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `TargetBySaleSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by TargetProductGroupSK, RateTargetSK. Regenerated every run. |
+| `TargetBySaleSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `SaleRepSKLast` | INT64 | SK in [dim_sale_representative_last](/dimension/dim_sale_representative_last.md) matched on EmployeeID + DepartmentID + CompanySK; when that fails, falls back to the employee's row with DepartmentID NULL; NULL if neither exists. |
 | `DepartmentSKLast` | INT64 | `DepartmentSK` of the matched dim_sale_representative_last row. |
 | `RegionSKLast` | INT64 | RegionSK in dim_region_last, reached through dim_department_last (DepartmentID + CompanySK). |
@@ -65,15 +65,11 @@ One row = one target allocated to one employee and department by a rate rule: ke
 | `EndDate` | DATE | End date of the rate rule (dim_rate_target.EndDate). |
 | `CalAmt` | FLOAT64 | Allocated target amount = Amt * Percent / 100. |
 | `CalQty` | FLOAT64 | Allocated target quantity = Qty * Percent / 100. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_target_product_group_by_sale.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `TargetBySaleSK`.
-- Storage options: `{"clusterBy": ["TargetBySaleSK"]}`.
+- Definition: `definitions/dimension/dim_target_product_group_by_sale.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: [dimension_table.dim_target_product_group](/dimension/dim_target_product_group.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_report](/dimension/dim_report.md), [dimension_table.dim_rate_target](/dimension/dim_rate_target.md), [dimension_table.dim_sale_representative_last](/dimension/dim_sale_representative_last.md), [dimension_table.dim_department_last](/dimension/dim_department_last.md), [dimension_table.dim_region_last](/dimension/dim_region_last.md), [dimension_table.dim_section_last](/dimension/dim_section_last.md), [dimension_table.dim_region_manager_last](/dimension/dim_region_manager_last.md), [dimension_table.dim_section_manager_last](/dimension/dim_section_manager_last.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_product_mkt, dim_report, dim_rate_target, dim_target_product_group, `update_sk_sale_rep_group` and the `_last` dims dim_sale_representative_last, dim_department_last, dim_region_last, dim_region_manager_last, dim_section_last and dim_section_manager_last.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_product_mkt, dim_report, dim_rate_target, dim_target_product_group, `update_sk_sale_rep_group` and the `_last` dims dim_sale_representative_last, dim_department_last, dim_region_last, dim_region_manager_last, dim_section_last and dim_section_manager_last.
 # Examples
 
 Allocated target per employee for the current year.

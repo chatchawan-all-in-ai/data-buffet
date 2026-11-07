@@ -52,20 +52,20 @@ WITH region_at_date AS (
   SELECT RegionID, RegionSK, DirectorID, StartDate, EndDate
   FROM `${DimRegionTableRef}`
   WHERE companyID = 'ag01'
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionSK) = 1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, companyID, RegionID, StartDate, EndDate) = 1
 
 ), region_manager_at_date AS (
   SELECT RegionID, RegionManagerSK, StartDate, EndDate
   FROM `${DimRegionManagerTableRef}`
   WHERE companyID = 'ag01'
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionManagerSK) = 1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, companyID, RegionID, StartDate, EndDate) = 1
 
 ), director_at_date AS (
   -- ต้องผ่าน dim_region ก่อนเพราะ DirectorID อยู่ที่นั่น
   SELECT DirectorID, DirectorSK, StartDate, EndDate
   FROM `${DimDirectorTableRef}`
   WHERE companyID = 'ag01'
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY DirectorID, StartDate ORDER BY DirectorSK) = 1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY DirectorID, StartDate ORDER BY companyID, DirectorID, StartDate, EndDate) = 1
 
 )
 

@@ -26,27 +26,23 @@ Read by: [view_dim_channel](/view/dimension_view/view_dim_channel.md).
 
 # Grain and key
 
-One row = one finance channel of a company among active mds rows: key `ChannelFinanceSK` (surrogate, regenerated every run); natural key `companyID` + `ChannelIDFinance`.
+One row = one finance channel of a company among active mds rows. Natural key: (`companyID`, `ChannelIDFinance`). `ChannelFinanceSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ChannelFinanceSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, ChannelIDFinance)` over the active mds rows. Regenerated every run. |
+| `ChannelFinanceSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `ChannelIDFinance` | STRING | Pass-through of mds `ChannelIDFinance`, cleaned with `cleanString` (empty string becomes NULL). Natural key with companyID. |
 | `ChannelNameFinance` | STRING | Pass-through of mds `ChannelNameFinance`, cleaned with `cleanString` (empty string becomes NULL). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_channel_finance_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_channel_finance.sqlx` (`type: "table"`, tag `dimension_daily`).
-- `uniqueKey`: `ChannelFinanceSK`.
-- Storage options: `{"clusterBy": ["ChannelFinanceSK"]}`.
+- Definition: `definitions/dimension/dim_channel_finance.sqlx` (`type: "operations"`, `hasOutput: true`, tag `dimension_daily`).
 - Reads: `mds_dataset.mds_data_channel_finance_master` (master data loaded outside this repo; only rows with `is_active = TRUE`), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Codes and names for one company.

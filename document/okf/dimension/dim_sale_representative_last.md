@@ -26,13 +26,15 @@ Read by: [dim_customer_report_info](/dimension/dim_customer_report_info.md), [di
 
 # Grain and key
 
-One row = one sales-representative rule or ledger row: key `SaleRepSK`, built in three CTEs. `raw`: rows of dim_sale_representative with DepartmentID not NULL, latest EndDate/StartDate kept per `(CompanyID, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID, OrderStartDate, OrderEndDate)`. `agg_normal`: rows with no DepCode, CostChannelID, ProvinceID, ChangeSectionFlag or OrderStartDate, one per `(CompanyID, EmployeeID)`. `final`: all order-window rows, plus other rows only for employees that have no normal row, plus the normal rows. Then the `post_operations` MERGE inserts one ledger row per employee from `validated_mac5.per` with names parsed from `pernamet`, DepartmentID NULL and NULL dates/hierarchy, SK = MAX(SaleRepSK) + row number. The table has no MdsID column. `SaleRepSK` is renumbered here (ordered by CompanySK, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID) and is not dim_sale_representative.SaleRepSK.
+One row = one sales-representative rule or ledger row. Natural key: (`companyID`, `DepartmentID`, `EmployeeID`, `DepCode`, `CostChannelID`, `ProvinceID`, `StartDate`, `EndDate`, `OrderStartDate`, `OrderEndDate`, `CustomerFlag`). `SaleRepSK` is retained for a matching key; new keys are allocated after the current maximum. The source snapshot includes current rule rows and current null-department ledger employees from `validated_mac5.per`; rows absent from the assembled snapshot are removed.
+
+Transaction-view selection first uses rule priority and report segment, then ledger rows before rule rows, then CompanySK, DepartmentID, EmployeeID, DepCode, CostChannelID and ProvinceID in descending order.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `SaleRepSK` | INT64 | Surrogate key of this snapshot: `ROW_NUMBER()` ordered by CompanySK, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID; ledger rows get MAX + row number in post_operations. Regenerated every run. |
+| `SaleRepSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `DepartmentSK` | INT64 | SK in dim_department_last for the row's DepartmentID. Built NULL, backfilled by `update_sk_sale_rep_group`; stays NULL on ledger rows (no DepartmentID). |
 | `SectionSK` | INT64 | SK in dim_section_last, copied from the department by `update_sk_sale_rep_group`. |
 | `SectionManagerSK` | INT64 | SK in dim_section_manager_last, from the department by `update_sk_sale_rep_group`. |
@@ -55,15 +57,12 @@ One row = one sales-representative rule or ledger row: key `SaleRepSK`, built in
 | `EndDate` | DATE | End of the kept validity interval; NULL on ledger rows. |
 | `OrderStartDate` | DATE | Start of the order-date window (rows with a window are always kept); NULL otherwise. |
 | `OrderEndDate` | DATE | End of the order-date window; NULL otherwise. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_sale_representative_last.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `SaleRepSK`.
-- Storage options: `{"clusterBy": ["SaleRepSK"]}`.
+- Definition: `definitions/dimension/dim_sale_representative_last.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: [dimension_table.dim_sale_representative](/dimension/dim_sale_representative.md), [dimension_table.dim_company](/dimension/dim_company.md), [validated_mac5.per](/validated/validated_mac5/per.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company and dim_sale_representative. A `post_operations` MERGE then inserts the ledger employees, and the hierarchy SKs are filled by `update_sk_sale_rep_group`.
-
+- Stable-key sync from the assembled current-rule and current-ledger snapshot; matching keys retain their SK and update attributes, new rows are inserted, and rows outside the snapshot are removed. Runs after dim_company and dim_sale_representative.
+- The snapshot parses ledger employee names from `validated_mac5.per`; the hierarchy SKs are filled by `update_sk_sale_rep_group`.
 # Examples
 
 Latest rule rows with their department keys filled in.

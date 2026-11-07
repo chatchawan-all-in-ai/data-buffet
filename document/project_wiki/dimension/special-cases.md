@@ -1,11 +1,14 @@
 # Dimension Layer — Special Cases
 
-> **LLM context**: Deviations from the canonical MERGE pattern. Check this page before
-> editing any of these files with a bulk/mechanical change.
+> **LLM context**: Source branches and special behaviors that must remain intact when
+> editing a dimension. The common stable-SK sync is described in
+> [merge-sk-pattern.md](merge-sk-pattern.md).
 
-## `dim_sale_representative` — UNION of two sources (rebuilt daily since 2026-07-20)
+## `dim_sale_representative` — stable SK sync over two source branches
 
-Full-rebuild file with two CTE sources UNION ALL'd, single `ROW_NUMBER()` over the union:
+The complete source snapshot preserves the two CTE sources UNION ALL'd below. The
+natural key includes the validity and order-window dates; matching rows keep their SK, and
+new rows receive an SK after the current maximum.
 
 - **`mds_rep`**: reps from `mds_data_sales_representative_master` (full org structure,
   StartDate/EndDate intervals, MdsID populated), built through three CTEs —
@@ -14,13 +17,14 @@ Full-rebuild file with two CTE sources UNION ALL'd, single `ROW_NUMBER()` over t
   `pernamet` parsed via `REGEXP_EXTRACT` into name/surname/nickname;
   DepartmentID/DepCode/CostChannelID/ProvinceID/flags = NULL;
   sentinel dates `1900-01-01` → `2499-12-31`; `MdsID = NULL`.
-SK ordering puts mds rows first (`CASE WHEN MdsID IS NULL THEN 1 ELSE 0 END`).
+The source ordering expression is used only when allocating SKs to new rows; existing SKs
+are matched by the natural key.
 
 ### Order windows (2026-10-28)
 
 `OrderStartDate` / `OrderEndDate` are DATE fields carried from MDS through
 `mds_base`, `mds_rep`, and the final dimension. Ledger rows carry typed DATE NULLs;
-the existing SaleRepSK ordering is unchanged. Classification of CustomerFlag-only
+the order-window fields remain part of the SaleRepSK natural key. Classification of CustomerFlag-only
 rows is defined in the CTE table below; order-window rows stay as standalone rules.
 
 `dim_sale_representative_last` includes both fields in its raw latest-row partition
@@ -28,8 +32,13 @@ alongside the existing company / department / employee / rule keys. `agg_normal`
 only considers rows without OrderStartDate, with both window fields added to its
 company / employee partition. `final` retains window rows even when a normal
 fallback exists, so distinct windows and the fallback survive together. Its ledger
-INSERT leaves both window fields NULL. `update_sk_sale_rep_group` still backfills
+snapshot leaves both window fields NULL. `update_sk_sale_rep_group` still backfills
 the hierarchy after the snapshot rebuild.
+
+The `_last` snapshot combines current rule rows with current ledger employees from
+`validated_mac5.per` before one stable-key MERGE. Matching keys reuse their SKs;
+employees absent from `per` are removed from the ledger rows. Ledger rows have NULL
+department, hierarchy, rule attributes and validity dates.
 
 The shared bill-matching contract is owned by
 [fact-layer.md](../fact/fact-layer.md#sale-rep-order-window-matching-2026-10-28).
@@ -67,13 +76,13 @@ explicitly because `combined` UNION ALLs it with `ledger_rep` positionally.
 Verified 2026-09-15: with 0 flag-only rows in mds, new and current output are identical
 (2,349 rows, `EXCEPT DISTINCT` = 0 both directions).
 
-## `dim_stk_mkt` — 'Waiting Master' placeholders (rebuilt daily since 2026-07-20)
+## `dim_stk_mkt` — 'Waiting Master' placeholders
 
-Full-rebuild file: CTE `mds_mkt` (active mds rows) UNION ALL CTE `waiting_master` —
+The complete source preserves CTE `mds_mkt` (active MDS rows) UNION ALL CTE `waiting_master` —
 every distinct `stkcode` from `ref(databuffet.VALIDATED_MAC5, "stk")` that
 `NOT EXISTS` in `mds_mkt` (matched on StkCode + companyID), with
 `MarketingGroupID='999'`, `SubMarketingID='9999'`, `SegmentID='99999'`, names
-`'Waiting Master'`, `MdsID = NULL`. Single `ROW_NUMBER()` over the union.
+`'Waiting Master'`, `MdsID = NULL`. The daily rebuild numbers both branches together; see the [table card](../../okf/dimension/dim_stk_mkt.md#grain-and-key).
 
 ## `dim_doctype` / `dim_holiday` — no surrogate key
 
@@ -86,18 +95,15 @@ Both keep `bigquery.clusterBy` matching the pre-existing BigQuery tables
 `CREATE OR REPLACE TABLE` cannot change an existing table's clustering spec
 (first-night failure 2026-07-21, fixed by adding the clusterBy back).
 
-## `dim_rate_target` — MDT percent reallocation in post_operations (activated 2026-07-20)
+## `dim_rate_target` — MDT percent reallocation
 
-The only full-rebuild mds dim with a real `post_operations { BEGIN ... END }` block:
-after the daily rebuild it recomputes `Percent` for departments under director
-'MDT' — temp `mdt_base_data` (rows joined to `dim_department_last` →
-`dim_director_last`, filter `DirectorName = 'MDT'`), head-count per month
-(`COUNT(DISTINCT employee-dept) / 6` + share of NULL-month rows), then two UPDATEs
-on `${self()}` (per-month rows, and NULL-month rows using the max total).
-This is why its `dependencies` include `dim_department_last`, `dim_director_last`
-**and `update_sk_sale_rep_group`** — `dim_department_last.DirectorSK` is created as
-NULL and backfilled by `update_sk_sale_rep_group`, so the post_op must run after
-that backfill or the MDT join matches nothing.
+The stable-key sync keeps the source rows and dependencies. The same action then recomputes
+`Percent` for departments under director 'MDT' using `mdt_base_data` (rows joined to
+`dim_department_last` and `dim_director_last`, filtered to `DirectorName = 'MDT'`),
+head-count per month, and the existing updates for per-month rows and NULL-month rows.
+Its `dependencies` include `dim_department_last`, `dim_director_last`, and
+`update_sk_sale_rep_group` because `dim_department_last.DirectorSK` is filled by that
+step before the MDT calculation.
 
 ## `dim_customer_report_info` — mds + every invoice name (2026-10-01)
 
@@ -119,26 +125,23 @@ For its view-backed build dependencies, follow [view-layer.md](../view/view-laye
 joined to dim_company, filtered `WHERE t1.is_active = true`. No SK, no BEGIN, no
 tombstone needed (inactive rows drop out on every rebuild).
 
-## `dim_product_series` — hard-coded rows (pending move to mds)
+## `dim_product_series` — active series master
 
-`type: "table"`, added 2026-10-02 (`e57d635`). It does **not** read `mds_dataset`: the
-rows are typed into the file with `UNNEST([...])` from BI's `dim_product_series.xlsx`
-(`100001` TITAN, `999999` OTHERS). `SeriesSK = ROW_NUMBER() OVER(ORDER BY SeriesCode)`,
-so it regenerates daily like the full-rebuild dims. There is no `-1` row:
-`dim_target_series_mdt` maps unknown series codes to `OTHERS` instead.
+The source is `mds_data_product_series_master`; `SeriesCode` is the natural key. The stable
+key sync retains the source rows, and `dim_target_series_mdt` maps unknown series codes to
+`OTHERS`.
 
-Pending: move it to `mds_dataset` once BI loads the series master there (the file's
-own comment). Until then a new series means editing the `.sqlx` by hand. Tracked in
-[known-issues](../../operations/known-issues.md).
+## `dim_target_product_group_by_sale` / `_dayofwork` — target snapshots
 
-## `dim_target_product_group_by_sale` / `_dayofwork` — daily full rebuilds
+`dim_target_product_group_by_sale` synchronizes its complete source snapshot on the
+established natural key and retains matching SKs. Both dimensions keep their existing
+source calculations and joins.
 
-`type: "table"` with `uniqueKey`/`clusterBy` on their SK. `_dayofwork` joins
-`dim_calendar` to expand targets over working days and joins
-`dim_sale_representative` by **natural keys** (employeeid/DepartmentID/CompanySK/date
-range) — so it self-heals the day after any upstream dim change/delete. SKs in these
-two tables are ROW_NUMBER-based and **not stable across runs**; do not persist them
-outside same-day joins.
+`dim_target_product_group_by_sale_dayofwork` is held: it retains its original daily
+full rebuild and regenerates `TargetBySaleDayofworkSK` with `ROW_NUMBER()`. Consumers
+must not persist that key across runs. It joins `dim_calendar` to expand targets over
+working days and joins `dim_sale_representative` by natural keys (employee, department,
+company, and date range).
 
 ## `update_sk_sale_rep_group` — imperative UPDATE step
 
@@ -158,4 +161,7 @@ weekend/holiday/long-weekend flags via window functions; TEMP → DELETE matchin
 (`dim_aging_history`), a view (`view_dim_aging`), `fact_mir_vs` (repo-managed since
 2026-07-20 and declared in `dependencies[]` — see
 [fact/fact-layer.md](../fact/fact-layer.md)), and `onetime.cfsinvclose2024`.
-Read it fully before touching; it is not template-shaped.
+The original AR rebuild and history writer remain unchanged; see the
+[aging card](../../okf/dimension/dim_aging.md#how-it-is-built) and
+[history card](../../okf/dimension/dim_aging_history.md#how-it-is-built) for their contracts.
+Read the whole action before editing: it is not template-shaped.

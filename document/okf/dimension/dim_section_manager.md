@@ -26,13 +26,13 @@ Read by: [dim_section_manager_last](/dimension/dim_section_manager_last.md), [di
 
 # Grain and key
 
-One row = one active MDS section manager assignment: key `SectionManagerSK`, `ROW_NUMBER()` ordered by companyID, SectionID, StartDate, EndDate. A section that changed manager has one row per interval. No -1 row.
+One row = one active MDS section manager assignment. Natural key: (`companyID`, `SectionID`, `StartDate`, `EndDate`). `SectionManagerSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `SectionManagerSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by companyID, SectionID, StartDate, EndDate. Regenerated every run. |
+| `SectionManagerSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `SectionID` | STRING | Section code managed; joins to dim_section.SectionID and dim_department.SectionID. |
@@ -44,15 +44,11 @@ One row = one active MDS section manager assignment: key `SectionManagerSK`, `RO
 | `StartDate` | DATE | First date this assignment is valid (MDS DATE). |
 | `EndDate` | DATE | Last date this assignment is valid (MDS DATE). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_section_manager_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_section_manager.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `SectionManagerSK`.
-- Storage options: `{"clusterBy": ["SectionManagerSK"]}`.
+- Definition: `definitions/dimension/dim_section_manager.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_sales_section_manager_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Current manager of each section.

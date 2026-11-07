@@ -158,8 +158,8 @@ GCS saleout_mdt/{bt,dh,gb,hp,tw,so_mdt_eom,lastyear}
 - **ไม่ได้สร้างโดย repo นี้** ตารางชื่อ `mds_data_<entity>_master`
 - คอลัมน์มาตรฐานทุกตาราง: `id` (row id → เก็บใน dim เป็น `MdsID`),
   `is_active` (soft-delete flag), `updated_at`
-- เป็นต้นทางของ dims ส่วนใหญ่ (full rebuild + 2 MERGE legacy) — รายชื่อดู
+- เป็นต้นทางของ MDS dimensions — รายชื่อดู
   [dimension/inventory.md](../dimension/inventory.md)
-- dim แบบ full rebuild อ่านเฉพาะ `is_active = TRUE` ทั้งตารางทุกคืน soft delete และ
-  overwrite import จึงหายเองอัตโนมัติ · dim แบบ MERGE (2 ตัว) ต้องมี tombstone DELETE
-  ปิดท้าย ดู [dimension/mds-delete-pattern.md](../dimension/mds-delete-pattern.md)
+- stable-key dimensions sync จาก complete source ที่ `is_active = TRUE`: matching keys
+  update, new keys insert, inactive or missing rows delete. See
+  [dimension/mds-delete-pattern.md](../dimension/mds-delete-pattern.md)

@@ -86,7 +86,7 @@ work on Opus, pattern-following work on Sonnet):
 | Initial | `definitions/initial/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `raw_*`, `function_dataset` | operations (external tables, UDFs) |
 | Validated | `definitions/validated/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `validated_<source>` | incremental / table + QUALIFY dedup |
 | Curated | `definitions/curated/` | 15 | `curated_<source>` | incremental (+ post_operations) |
-| Dimension | `definitions/dimension/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_table` | **table rebuild** (mds + other; per-group counts in `document/project_wiki/dimension/inventory.md`) / operations MERGE (2 mds legacy + 10 lake + `dim_customer_report_info`) / other (3) |
+| Dimension | `definitions/dimension/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_table` | Dimension patterns and conversion scope: see inventory |
 | Fact | `definitions/fact/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `fact_table` | table rebuild / operations upsert — **no MERGE** |
 | View | `definitions/view/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset`, `pub_sub` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |
 | CDC | `definitions/cdc/` | 2 | `cdc_dataset` | operations, generated from `cdc-config.json` |
@@ -146,32 +146,10 @@ Full write-up: `document/project_wiki/validated/validated-layer.md`.
 ag01 rebuild now DELETEs at doc grain. `curated_mih` needs nothing — its `uniqueKey`
 already **is** the document key (0 stale rows).
 
-### Dimension (patterns split 2026-07-20)
-**Default for mds dims — full daily rebuild**
-(`document/project_wiki/dimension/full-rebuild-pattern.md`): `type: "table"`,
-SK = `ROW_NUMBER() OVER(ORDER BY <natural key>)`, `WHERE is_active = TRUE` only,
-`MdsID` kept as trace column. **SKs regenerate every run — never persist them across
-days.** No MERGE/tombstone/backfill window; handles mds overwrite imports natively.
-Reference: `dim_waterpac.sqlx`. Consumer safety verified 2026-07-20 (all SK consumers
-re-derive daily; `fact_transcation` covers its full 4-year window nightly, 0 orphans).
-Condition on `dim_collection_status` satisfied 2026-07-20: `fact_chq`/`fact_mir_vs`/
-`fact_mir_rs` now live in `definitions/fact/` as daily `type: "table"` rebuilds.
-
-**Legacy MERGE (2 mds files: `dim_company`, `dim_aging_rang` — stable SKs)**
-(`document/project_wiki/dimension/merge-sk-pattern.md`): `type: "operations"`, target
-pre-exists in BigQuery; `max_sk` → MERGE with CASE t3 (MdsID) → t2 (natural key) →
-`max_sk + ROW_NUMBER()`; source window `MDS_BACKFILL_DAYS`; mandatory tombstone
-`DELETE ... WHERE MdsID IN (SELECT id FROM mds WHERE is_active = FALSE)` before `END;`.
-Their SKs are stable forever — never regenerate. The 10 lake-sourced dims
-(dim_customer, dim_invoice, ...) also use MERGE with stable SKs, and so does
-`dim_customer_report_info` (since 2026-10-28: mds + invoice names, MERGE ON
-`CompanyID` + `CustomerReportKey`, no window, no delete — never full-rebuild it).
-
-Dimension build dependencies: [full-rebuild properties](document/project_wiki/dimension/full-rebuild-pattern.md#properties).
-Special cases (UNION-block dim_sale_representative / dim_stk_mkt,
-SK-less dim_doctype/dim_holiday, dim_rate_target's reserved commented block,
-`_last` snapshots + `update_sk_sale_rep_group`):
-`document/project_wiki/dimension/special-cases.md`.
+### Dimension keys and source synchronization
+Dimension synchronization rules and conversion scope are documented in
+`document/project_wiki/dimension/merge-sk-pattern.md` and
+`document/project_wiki/dimension/inventory.md`. Preserve held and unchanged actions.
 
 ### Fact
 No MERGE. Three styles: Dataform `table` (`fact_order`, `fact_invoice`, + AR chain
@@ -197,13 +175,10 @@ addresses, gated on today's CDC changes (cost control — don't remove the gate)
    wrap it `IFNULL(cleanString(...), '')`, because Dataform's MERGE matches with `=` and a
    NULL key is re-inserted every run (`mie.miecus`, 98,474 duplicate rows, fixed 2026-10-12).
 3. No hardcoded dataset names/tags — use `databuffet.*`.
-4. SK stability is per-pattern: MERGE dims (`dim_company`, `dim_aging_rang`, 10 lake
-   dims, `dim_customer_report_info`) have SKs that are stable forever — never regenerate or update them. The
-   full-rebuild mds dims regenerate SKs daily — never persist those SKs across days,
-   and any new consumer that stores them must itself rebuild daily after `dimension_daily`.
-5. MERGE-pattern mds dims must end with the tombstone DELETE before `END;`
-   (full-rebuild dims need no tombstone; `dim_customer_report_info` keeps names that
-   leave its source, so it has no delete).
+4. Converted dimensions retain their SK by natural key. When a key disappears from a
+   complete source snapshot, its dimension row is deleted; do not preserve a tombstone.
+5. Stable-key dimensions require a complete source for delete-by-source.
+   `dim_customer_report_info` retains its distinct no-delete behavior.
 6. **Load-bearing typos — keep verbatim**: `fact_transcation` (file + table),
    `CDC_DATESET` (variables.json key), `prdDiminsionData` (MASTERSKU JSON field).
 7. `dataform format` before committing when available.
@@ -276,7 +251,7 @@ saleout_mdt, allkons_commission and derp — to add/refresh raw tables run only 
 | Onboard a new developer / check a machine | `document/getting-started/onboarding.md`, skill `verify-setup` |
 | Add validated table | `document/how-to/add-validated-table.md` |
 | Add curated table | `document/how-to/add-curated-table.md` |
-| Add dimension (default = full rebuild) | `document/how-to/add-dimension.md` |
+| Add dimension (stable surrogate key) | `document/how-to/add-dimension.md` |
 | Add / deploy a view | `document/how-to/add-view.md`, `document/how-to/deploy-view.md` |
 | ธงเชิงธุรกิจ (FlagFree, FlagExpire, item_status, seq_condition) | `document/project_wiki/overview/business-flags.md` |
 | Add fact table | `document/how-to/add-fact-table.md` |

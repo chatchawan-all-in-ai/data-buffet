@@ -34,7 +34,7 @@ One row = one receipt (RS) line or cheque of [fact_mir_rs](/fact/fact_mir_rs.md)
 | `ReceiveSK` | INT64 | Row key of `fact_mir_rs` = `ROW_NUMBER()` over (BillingSK, FactChqSK, company_id, mirtype, mirvnos, mirlistno, mirbinvno). Unique in this view. Regenerated daily. |
 | `BillingSK` | INT64 | SK of the matching billing row in `fact_mir_vs` (match company + `mirbinvno`); NULL when the paid invoice was never billed. Regenerated daily. |
 | `FactChqSK` | INT64 | SK of the matching cheque row in `fact_chq` (match `cqlvnos = mirvnos`, customer, company). `fact_mir_rs` uses a FULL JOIN with `fact_chq`, so cheque rows without a receipt line also appear (the receipt-side columns are then NULL). Regenerated daily. |
-| `CollectSK` | INT64 | SK of `dim_collection_status`, matched on company + year + month + customer of the document; NULL when no collection-status row exists. Regenerated daily like all full-rebuild dim SKs. |
+| `CollectSK` | INT64 | Stable SK of `dim_collection_status`, matched on company + year + month + customer of the document; NULL when no collection-status row exists. |
 | `Actions` | STRING | Collection action text from `dim_collection_status` (matched as for CollectSK). |
 | `Justification` | STRING | Collection justification text from `dim_collection_status`. |
 | `Responsible` | STRING | Person/role responsible for collection, from `dim_collection_status`. |

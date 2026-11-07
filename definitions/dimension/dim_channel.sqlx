@@ -1,15 +1,34 @@
 config {
-  type: "table",
+  type: "operations",
+  hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_company"],
   tags: [databuffet.TAG_DIM_DAILY],
-  uniqueKey: ["ChannelSK"],
-  bigquery: {
-    clusterBy: ["ChannelSK"],
-  },
 }
 
 js {
+    const DimChannelTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimChannelTableRef = `${DimChannelTable.database}.${DimChannelTable.schema}.${DimChannelTable.name}`;
+
+    const stableDimensionColumns = ['ChannelSK', 'CompanySK', 'companyID', 'DepCode', 'DepGroup', 'DepDesct', 'DepDesce', 'ChannelGroup', 'ChannelSubGroupName1', 'ChannelSubGroupName2', 'ChannelSubGroupName3', 'ChannelID', 'ChannelName', 'ChannelCostID', 'ChannelCostName', 'ChannelGroupFinance', 'ChannelSubGroupFinance1', 'ChannelSubGroupFinance2', 'ChannelSubGroupFinance3', 'ChannelIDFinance', 'ChannelNameFinance', 'ChannelDSite01', 'ChannelDDepartment02', 'ChannelDDivision03', 'ChannelDSubDivision04', 'DummyChannel', 'MdsID'];
+    const stableDimensionKeyColumns = ['companyID', 'DepCode'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`ChannelSK` = S.`ChannelSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'ChannelSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -25,43 +44,116 @@ js {
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 }
 
-SELECT
-  ROW_NUMBER() OVER(
-    ORDER BY
-      ${databuffet.functionData.cleanString("t1.companyID")},
-      ${databuffet.functionData.cleanString("t1.DepCode")}
-  ) AS ChannelSK,
-  dim_com.CompanySK,
-  ${databuffet.functionData.cleanString("t1.companyID")} AS companyID,
-  ${databuffet.functionData.cleanString("t1.DepCode")} AS DepCode,
-  ${databuffet.functionData.cleanString("t1.DepGroup")} AS DepGroup,
-  ${databuffet.functionData.cleanString("t1.DepDesct")} AS DepDesct,
-  ${databuffet.functionData.cleanString("t1.DepDesce")} AS DepDesce,
-  ${databuffet.functionData.cleanString("t1.ChannelGroup")} AS ChannelGroup,
-  ${databuffet.functionData.cleanString("t1.ChannelSubGroupName1")} AS ChannelSubGroupName1,
-  ${databuffet.functionData.cleanString("t1.ChannelSubGroupName2")} AS ChannelSubGroupName2,
-  ${databuffet.functionData.cleanString("t1.ChannelSubGroupName3")} AS ChannelSubGroupName3,
-  ${databuffet.functionData.cleanString("t1.ChannelID")} AS ChannelID,
-  ${databuffet.functionData.cleanString("t1.ChannelName")} AS ChannelName,
-  ${databuffet.functionData.cleanString("t1.ChannelCostID")} AS ChannelCostID,
-  ${databuffet.functionData.cleanString("t1.ChannelCostName")} AS ChannelCostName,
-  ${databuffet.functionData.cleanString("t1.ChannelGroupFinance")} AS ChannelGroupFinance,
-  ${databuffet.functionData.cleanString("t1.ChannelSubGroupFinance1")} AS ChannelSubGroupFinance1,
-  ${databuffet.functionData.cleanString("t1.ChannelSubGroupFinance2")} AS ChannelSubGroupFinance2,
-  ${databuffet.functionData.cleanString("t1.ChannelSubGroupFinance3")} AS ChannelSubGroupFinance3,
-  ${databuffet.functionData.cleanString("t1.ChannelIDFinance")} AS ChannelIDFinance,
-  ${databuffet.functionData.cleanString("t1.ChannelNameFinance")} AS ChannelNameFinance,
-  ${databuffet.functionData.cleanString("t1.ChannelDSite01")} AS ChannelDSite01,
-  ${databuffet.functionData.cleanString("t1.ChannelDDepartment02")} AS ChannelDDepartment02,
-  ${databuffet.functionData.cleanString("t1.ChannelDDivision03")} AS ChannelDDivision03,
-  ${databuffet.functionData.cleanString("t1.ChannelDSubDivision04")} AS ChannelDSubDivision04,
-  ${databuffet.functionData.cleanString("t1.DummyChannel")} AS DummyChannel,
-  ${databuffet.functionData.cleanString("t1.id")} as MdsID
-FROM `${MdsSourceTableRef}` AS t1
-LEFT JOIN `${DimCompanyTableRef}` AS dim_com
-  ON ${databuffet.functionData.cleanString("t1.companyID")} = dim_com.companyID
-WHERE t1.is_active = TRUE
 
-pre_operations {}
 
-post_operations {}
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    SELECT
+      ROW_NUMBER() OVER(
+        ORDER BY
+          ${databuffet.functionData.cleanString("t1.companyID")},
+          ${databuffet.functionData.cleanString("t1.DepCode")}
+      ) AS ChannelSK,
+      dim_com.CompanySK,
+      ${databuffet.functionData.cleanString("t1.companyID")} AS companyID,
+      ${databuffet.functionData.cleanString("t1.DepCode")} AS DepCode,
+      ${databuffet.functionData.cleanString("t1.DepGroup")} AS DepGroup,
+      ${databuffet.functionData.cleanString("t1.DepDesct")} AS DepDesct,
+      ${databuffet.functionData.cleanString("t1.DepDesce")} AS DepDesce,
+      ${databuffet.functionData.cleanString("t1.ChannelGroup")} AS ChannelGroup,
+      ${databuffet.functionData.cleanString("t1.ChannelSubGroupName1")} AS ChannelSubGroupName1,
+      ${databuffet.functionData.cleanString("t1.ChannelSubGroupName2")} AS ChannelSubGroupName2,
+      ${databuffet.functionData.cleanString("t1.ChannelSubGroupName3")} AS ChannelSubGroupName3,
+      ${databuffet.functionData.cleanString("t1.ChannelID")} AS ChannelID,
+      ${databuffet.functionData.cleanString("t1.ChannelName")} AS ChannelName,
+      ${databuffet.functionData.cleanString("t1.ChannelCostID")} AS ChannelCostID,
+      ${databuffet.functionData.cleanString("t1.ChannelCostName")} AS ChannelCostName,
+      ${databuffet.functionData.cleanString("t1.ChannelGroupFinance")} AS ChannelGroupFinance,
+      ${databuffet.functionData.cleanString("t1.ChannelSubGroupFinance1")} AS ChannelSubGroupFinance1,
+      ${databuffet.functionData.cleanString("t1.ChannelSubGroupFinance2")} AS ChannelSubGroupFinance2,
+      ${databuffet.functionData.cleanString("t1.ChannelSubGroupFinance3")} AS ChannelSubGroupFinance3,
+      ${databuffet.functionData.cleanString("t1.ChannelIDFinance")} AS ChannelIDFinance,
+      ${databuffet.functionData.cleanString("t1.ChannelNameFinance")} AS ChannelNameFinance,
+      ${databuffet.functionData.cleanString("t1.ChannelDSite01")} AS ChannelDSite01,
+      ${databuffet.functionData.cleanString("t1.ChannelDDepartment02")} AS ChannelDDepartment02,
+      ${databuffet.functionData.cleanString("t1.ChannelDDivision03")} AS ChannelDDivision03,
+      ${databuffet.functionData.cleanString("t1.ChannelDSubDivision04")} AS ChannelDSubDivision04,
+      ${databuffet.functionData.cleanString("t1.DummyChannel")} AS DummyChannel,
+      ${databuffet.functionData.cleanString("t1.id")} as MdsID
+    FROM `${MdsSourceTableRef}` AS t1
+    LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+      ON ${databuffet.functionData.cleanString("t1.companyID")} = dim_com.companyID
+    WHERE t1.is_active = TRUE
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_channel source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimChannelTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_channel target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimChannelTableRef}`
+    WHERE `ChannelSK` IS NULL
+  ) AS 'dim_channel target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimChannelTableRef}`
+    GROUP BY `ChannelSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_channel target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`ChannelSK`)
+    FROM `${DimChannelTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`ChannelSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `ChannelSK`
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.`ChannelSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`ChannelSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimChannelTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
+
+  MERGE `${DimChannelTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

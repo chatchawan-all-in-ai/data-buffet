@@ -580,7 +580,7 @@ BEGIN
 
     QUALIFY ROW_NUMBER() OVER(
       PARTITION BY trans.CompanySK, trans.milType, trans.milVnos, trans.milCus, LOWER(trans.milStk), trans.milPer, trans.milListno
-      ORDER BY sale_sk.seq_condition, sale_sk.SaleRepSK DESC) = 1
+      ORDER BY sale_sk.seq_condition, (CASE WHEN sale_sk.MdsID IS NULL THEN 1 ELSE 0 END) DESC, sale_sk.companyID DESC, sale_sk.DepartmentID DESC, sale_sk.EmployeeID DESC, sale_sk.DepCode DESC, sale_sk.CostChannelID DESC, sale_sk.ProvinceID DESC, sale_sk.StartDate DESC, sale_sk.EndDate DESC) = 1
 
   ), final_part2 AS (
     SELECT
@@ -743,7 +743,7 @@ BEGIN
 
     QUALIFY ROW_NUMBER() OVER(
       PARTITION BY trans.CompanySK, trans.milType, trans.milVnos, trans.milCus, LOWER(trans.milStk), trans.milPer, trans.milListno
-      ORDER BY sale_sk.seq_condition, sale_sk.SaleRepSK DESC) = 1
+      ORDER BY sale_sk.seq_condition, (CASE WHEN sale_sk.MdsID IS NULL THEN 1 ELSE 0 END) DESC, sale_sk.companyID DESC, sale_sk.DepartmentID DESC, sale_sk.EmployeeID DESC, sale_sk.DepCode DESC, sale_sk.CostChannelID DESC, sale_sk.ProvinceID DESC, sale_sk.StartDate DESC, sale_sk.EndDate DESC) = 1
 
   ), mix_table AS (
     SELECT * EXCEPT(ProductGroupACC, debgroup)

@@ -49,7 +49,7 @@ Per-source context (what each system is, who reads it):
 | Initial | `raw_*`, `function_dataset` | operations (external tables, UDFs) | [initial/initial-layer.md](../initial/initial-layer.md) |
 | Validated | `validated_*` | incremental / table + QUALIFY dedup | [validated/validated-layer.md](../validated/validated-layer.md) |
 | Curated | `curated_*` | incremental / table / operations | [curated/curated-layer.md](../curated/curated-layer.md) |
-| Dimension | `dimension_table`, `dimension_view` | table rebuild (mds full rebuild + other tables) / operations MERGE (2 mds + 10 lake + `dim_customer_report_info`) / 3 other operations | [dimension/dimension-layer.md](../dimension/dimension-layer.md) |
+| Dimension | `dimension_table`, `dimension_view` | operations / table; scope and exceptions in the [inventory](../dimension/inventory.md) | [dimension/dimension-layer.md](../dimension/dimension-layer.md) |
 | Fact | `fact_table`, `fact_view` | table rebuild / operations upsert | [fact/fact-layer.md](../fact/fact-layer.md) |
 | CDC | `cdc_dataset` | operations (config-generated) | [cdc-process/cdc.md](../cdc-process/cdc.md) |
 | Process | `process_dataset` | incremental (`deb_address_data`, AI.GENERATE) + table (RLS access maps; see detail page) + Pub/Sub export pilot (operations, tag `pub_sub`) | [cdc-process/process.md](../cdc-process/process.md) |
@@ -83,10 +83,10 @@ Per-source context (what each system is, who reads it):
 3. **Config through `databuffet.*`** — no hardcoded dataset names/tags. The last
    holdout (`"mds_dataset"` as a literal in 36 dim files) was converted to
    `databuffet.MDS_DATASET` on 2026-08-26; there are now **zero** literals.
-4. **`type: "operations"` tables are NOT created by Dataform** — they must pre-exist
-   in BigQuery (the 12 MERGE dims, `fact_transcation`). The full-rebuild mds dims
-   are Dataform-managed tables whose **SKs regenerate daily** (see
-   [dimension/full-rebuild-pattern.md](../dimension/full-rebuild-pattern.md)).
+4. **`type: "operations"` tables are not created by Dataform** — they must pre-exist
+   in BigQuery. The common stable-key sync uses operation actions; two dimensions keep
+   distinct source behavior and 13 files were unchanged. See
+   [dimension/dimension-layer.md](../dimension/dimension-layer.md).
 5. **Load-bearing typos** — keep verbatim: `fact_transcation` (table + file),
    `CDC_DATESET` (variables.json key), `prdDiminsionData` (JSON field).
 6. **No Dataform assertions exist** — quality is enforced via casting, QUALIFY dedup,

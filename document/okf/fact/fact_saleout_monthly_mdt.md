@@ -28,6 +28,8 @@ Read by: [view_fact_saleout_pc_mdt](/view/fact_view/view_fact_saleout_pc_mdt.md)
 
 One row = one chain x branch x sales channel x product total of sell-out per `month_date`: key (`month_date`, `store_code`, `branch_code`, `sales_channel`, `product_code`) - the uniqueKey. Mixed grain: for the current (in-progress) month `month_date` is the daily sale date; for closed months it is the month-end date.
 
+Exact and fallback report lookups use companyID, ReportID, RegionID, MarketingGroupID in ascending order. Period lookups choose the lowest SubRegionID, then the former dimension business order (companyID, RegionID, SubRegionID, StartDate, EndDate); director lookups use companyID, DirectorID, StartDate, EndDate.
+
 # Schema
 
 | Column | Type | Description |

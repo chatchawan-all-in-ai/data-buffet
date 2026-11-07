@@ -26,13 +26,13 @@ Read by: [dim_target_product_group_by_sale](/dimension/dim_target_product_group_
 
 # Grain and key
 
-One row = one active MDS row: key `RateTargetSK`, `ROW_NUMBER()` ordered by companyID, Year, Month, ProductGroupID, TargetID, TargetDepartmentID, DepartmentID, EmployeeID. Downstream code uses three rule shapes: Month NULL and ProductGroupID NULL (applies to the whole year), Month set and ProductGroupID NULL (applies to a month), Month and ProductGroupID both set (applies to a marketing group in a month). No -1 row.
+One row = one active MDS row. Natural key: (`companyID`, `Year`, `Month`, `StartDate`, `EndDate`, `ProductGroupID`, `TargetID`, `TargetDepartmentID`, `DepartmentID`, `EmployeeID`). `RateTargetSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `RateTargetSK` | INT64 | Surrogate key, `ROW_NUMBER()` over the ordering columns above. Regenerated every run. |
+| `RateTargetSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `Year` | INT64 | Target year (INT64 via `castInt64`). |
@@ -50,15 +50,11 @@ One row = one active MDS row: key `RateTargetSK`, `ROW_NUMBER()` ordered by comp
 | `EmployeeName` | STRING | Employee name as entered in MDS. |
 | `Percent` | FLOAT64 | Share of the target in percent (FLOAT64 via `castFloat64`; the consumer divides by 100). After the build, rows with the same Year, Month (not NULL) and TargetID as a row whose department belongs to director 'MDT' get 100 divided by the number of distinct EmployeeID-DepartmentID pairs among those MDT rows. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_target_rate_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_rate_target.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `RateTargetSK`.
-- Storage options: `{"clusterBy": ["RateTargetSK"]}`.
+- Definition: `definitions/dimension/dim_rate_target.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_target_rate_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_department_last](/dimension/dim_department_last.md), [dimension_table.dim_director_last](/dimension/dim_director_last.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company, dim_department_last, dim_director_last and `update_sk_sale_rep_group`. A `post_operations` block then recalculates `Percent` using the rule in the [schema](#schema).
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company, dim_department_last, dim_director_last and `update_sk_sale_rep_group`. A `post_operations` block then recalculates `Percent` using the rule in the [schema](#schema).
 # Examples
 
 Share rules for one target in a month.

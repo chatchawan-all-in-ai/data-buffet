@@ -26,13 +26,13 @@ Read by: [dim_customer_report_info](/dimension/dim_customer_report_info.md), [ex
 
 # Grain and key
 
-One row = one segment of a company: key `CustomerSegmentSK` (surrogate for mds rows, regenerated every run); natural key `companyID` + `Segment3`, from active mds rows, plus exactly one sentinel row with `CustomerSegmentSK = -1` (stable).
+One row = one segment of a company. Natural key: (`CompanyID`, `Segment3`). `CustomerSegmentSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `CustomerSegmentSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, Segment3)` over active mds rows. Regenerated every run; the fixed value `-1` is reserved for the 'Non-Segment' fallback row. |
+| `CustomerSegmentSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. NULL on the -1 row. |
 | `CompanyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. NULL on the -1 row. |
 | `Segment1` | STRING | Pass-through of mds `Segment1`, cleaned with `cleanString` (empty string becomes NULL). Top level of the three-level segment code; 'Non-Segment' on the -1 row. |
@@ -42,15 +42,11 @@ One row = one segment of a company: key `CustomerSegmentSK` (surrogate for mds r
 | `DescriptionEng` | STRING | Pass-through of mds `DescriptionEng`, cleaned with `cleanString` (empty string becomes NULL); `Non-Segment` on the reserved -1 row. English description of the segment. |
 | `SortOrder` | INT64 | Display sort order (`castInt64` of mds `SortOrder`); the -1 row uses 99 so it sorts last. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_customer_segment_master`, cleaned with `cleanString`; trace column back to MDS. NULL on the -1 row. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_customer_segment.sqlx` (`type: "table"`, tag `dimension_daily`); CTE `segment_master` is the active mds rows UNION ALL the literal `non_segment` row (SK -1).
-- `uniqueKey`: `CustomerSegmentSK`.
-- Storage options: `{"clusterBy": ["CustomerSegmentSK"]}`.
+- Definition: `definitions/dimension/dim_customer_segment.sqlx` (`type: "operations"`, `hasOutput: true`, tag `dimension_daily`); CTE `segment_master` is the active mds rows UNION ALL the literal `non_segment` row (SK -1).
 - Reads: `mds_dataset.mds_data_customer_segment_master` (master data loaded outside this repo; only rows with `is_active = TRUE`), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Real segments of one company in display order.

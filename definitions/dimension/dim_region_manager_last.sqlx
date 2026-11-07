@@ -1,17 +1,36 @@
 config {
-    type: "table",
+    type: "operations",
+  hasOutput: true,
     schema: databuffet.DIMENSION_TABLE,
-    dependencies: [ 
+    dependencies: [
                     "dim_company", "dim_region_manager"
                 ],
     tags: [databuffet.TAG_DIM_DAILY],
-    uniqueKey: ["RegionManagerSK"],
-    bigquery: {
-        clusterBy: ["RegionManagerSK"]
-    },
 }
 
 js {
+    const DimRegionManagerLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimRegionManagerLastTableRef = `${DimRegionManagerLastTable.database}.${DimRegionManagerLastTable.schema}.${DimRegionManagerLastTable.name}`;
+
+    const stableDimensionColumns = ['RegionManagerSK', 'CompanySK', 'companyID', 'RegionID', 'SubRegionID', 'RegionName', 'RegionManagerEmployeeID', 'RegionManagerName', 'RegionManagerSurname', 'RegionManagerNickname', 'StartDate', 'EndDate'];
+    const stableDimensionKeyColumns = ['companyID', 'RegionID', 'SubRegionID', 'StartDate', 'EndDate'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`RegionManagerSK` = S.`RegionManagerSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'RegionManagerSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -28,32 +47,102 @@ js {
 
 }
 
-SELECT
-    ROW_NUMBER() OVER (ORDER BY dim_com.CompanySK, t1.RegionID, t1.SubRegionID) AS RegionManagerSK,
-    dim_com.CompanySK,
-    dim_com.companyID,
-    t1.RegionID,
-    t1.SubRegionID,
-    t1.RegionName,
-    t1.RegionManagerEmployeeID,
-    t1.RegionManagerName,
-    t1.RegionManagerSurname,
-    t1.RegionManagerNickname,
-    t1.StartDate, 
-    t1.EndDate,
+
+
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY dim_com.CompanySK, t1.RegionID, t1.SubRegionID) AS RegionManagerSK,
+        dim_com.CompanySK,
+        dim_com.companyID,
+        t1.RegionID,
+        t1.SubRegionID,
+        t1.RegionName,
+        t1.RegionManagerEmployeeID,
+        t1.RegionManagerName,
+        t1.RegionManagerSurname,
+        t1.RegionManagerNickname,
+        t1.StartDate,
+        t1.EndDate,
+      FROM (
+        SELECT
+          *
+        FROM `${DimRegionManagerTableRef}`
+        -- WHERE CURRENT_DATE('Asia/Bangkok') between StartDate and EndDate
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, RegionID, SubRegionID ORDER BY EndDate DESC, StartDate DESC) = 1
+      ) as t1
+      LEFT JOIN `${DimCompanyTableRef}` as dim_com
+        on t1.CompanyID = dim_com.CompanyID
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_region_manager_last source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimRegionManagerLastTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_region_manager_last target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimRegionManagerLastTableRef}`
+    WHERE `RegionManagerSK` IS NULL
+  ) AS 'dim_region_manager_last target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimRegionManagerLastTableRef}`
+    GROUP BY `RegionManagerSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_region_manager_last target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`RegionManagerSK`)
+    FROM `${DimRegionManagerLastTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`RegionManagerSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `RegionManagerSK`
+    )
   FROM (
     SELECT
-      *
-    FROM `${DimRegionManagerTableRef}`
-    -- WHERE CURRENT_DATE('Asia/Bangkok') between StartDate and EndDate
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, RegionID, SubRegionID ORDER BY EndDate DESC, StartDate DESC) = 1
-  ) as t1
-  LEFT JOIN `${DimCompanyTableRef}` as dim_com
-    on t1.CompanyID = dim_com.CompanyID
+      source_row.*,
+      target_row.`RegionManagerSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`RegionManagerSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimRegionManagerLastTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
 
-
-pre_operations {
-}
-
-post_operations {
-}
+  MERGE `${DimRegionManagerLastTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

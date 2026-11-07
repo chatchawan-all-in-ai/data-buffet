@@ -458,7 +458,7 @@ flowchart TB
     direction TB
     V["validated | {tc('TAG_VALIDATED')}<br/>clean - cast - dedup<br/>tag: validated"]
     C["curated | {tc('TAG_CURATED')}<br/>business joins<br/>tag: curated"]
-    D["dimension_daily | {tc('TAG_DIM_DAILY')}<br/>SK + SCD rebuild<br/>tag: dimension_daily"]
+    D["dimension_daily | {tc('TAG_DIM_DAILY')}<br/>stable SK sync + dimension refresh<br/>tag: dimension_daily"]
     Fd["fact_daily | {tc('TAG_FACT_DAILY')}<br/>star-schema load<br/>tag: fact_daily"]
     CDC["cdc_incremental | {tc('TAG_CDC_INCREMENTAL')}<br/>change log<br/>tag: cdc_incremental"]
     P["process | {tc('TAG_PROCESS')}<br/>AI address parse - CDC gated + RLS map<br/>tag: process"]

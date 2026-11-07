@@ -56,8 +56,12 @@ END;
 
 - dim อ้างด้วย string interpolation → **ต้องใส่ชื่อ dim ใน `dependencies` เอง**
   (ref() ใช้ได้เฉพาะ curated/validated)
-- SK จาก dim กลุ่ม full-rebuild (`dim_target_product_group_by_sale*`, `dim_*_last`)
-  ไม่เสถียรข้ามวัน — join วันต่อวันเท่านั้น ห้ามเก็บถาวรข้าม refresh
+- Converted dimensions synchronize SKs by natural key; their SKs remain stable while
+  the source key remains present. Check the [dimension inventory](../project_wiki/dimension/inventory.md)
+  for exceptions: `dim_target_product_group_by_sale_dayofwork` is held and still
+  regenerates `TargetBySaleDayofworkSK` on each rebuild, so do not persist that key
+  across runs. Keep the dimension in `dependencies[]`; fact surrogate keys may still
+  regenerate when the fact is rebuilt.
 - ถ้า dim อาจไม่มี match ให้ LEFT JOIN (SK เป็น NULL แทนที่จะ drop row)
 - SCD dims (มี StartDate/EndDate): join ด้วยช่วงวันที่ให้ตรงกับ `mix_date`
 

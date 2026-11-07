@@ -26,13 +26,13 @@ Read by: [dim_region_manager_last](/dimension/dim_region_manager_last.md), [dim_
 
 # Grain and key
 
-One row = one active MDS region manager assignment: key `RegionManagerSK`, `ROW_NUMBER()` ordered by companyID, RegionID, SubRegionID, StartDate, EndDate. A region that changed manager has one row per interval; the natural key is `(companyID, RegionID, SubRegionID, StartDate, EndDate)`. No -1 row.
+One row = one active MDS region manager assignment. Natural key: (`companyID`, `RegionID`, `SubRegionID`, `StartDate`, `EndDate`). `RegionManagerSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `RegionManagerSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by companyID, RegionID, SubRegionID, StartDate, EndDate. Regenerated every run. |
+| `RegionManagerSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `RegionID` | STRING | Region code managed; joins to dim_region.RegionID. |
@@ -45,15 +45,11 @@ One row = one active MDS region manager assignment: key `RegionManagerSK`, `ROW_
 | `StartDate` | DATE | First date this manager assignment is valid (MDS DATE). |
 | `EndDate` | DATE | Last date this manager assignment is valid (MDS DATE). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_region_manager_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_region_manager.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `RegionManagerSK`.
-- Storage options: `{"clusterBy": ["RegionManagerSK"]}`.
+- Definition: `definitions/dimension/dim_region_manager.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_sales_region_manager_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Current manager of every region.

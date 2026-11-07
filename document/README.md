@@ -32,7 +32,7 @@
 |---|---|
 | เพิ่มตาราง validated | [how-to/add-validated-table.md](how-to/add-validated-table.md) |
 | เพิ่มตาราง curated | [how-to/add-curated-table.md](how-to/add-curated-table.md) |
-| เพิ่ม dimension (default = full rebuild) | [how-to/add-dimension.md](how-to/add-dimension.md) |
+| เพิ่ม dimension (stable surrogate key) | [how-to/add-dimension.md](how-to/add-dimension.md) |
 | เพิ่ม fact table | [how-to/add-fact-table.md](how-to/add-fact-table.md) |
 | เพิ่ม view | [how-to/add-view.md](how-to/add-view.md) |
 | **deploy view ขึ้น BigQuery (ทำมือ)** | [how-to/deploy-view.md](how-to/deploy-view.md) |

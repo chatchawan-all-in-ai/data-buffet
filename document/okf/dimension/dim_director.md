@@ -26,13 +26,13 @@ Read by: [dim_director_last](/dimension/dim_director_last.md), [dim_target_produ
 
 # Grain and key
 
-One row = one director period: key (company, DirectorID, StartDate, EndDate) among active mds rows; `DirectorSK` is the surrogate key, regenerated every run.
+One row = one director period. Natural key: (`companyID`, `DirectorID`, `StartDate`, `EndDate`). `DirectorSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `DirectorSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, DirectorID, StartDate, EndDate)` over the active mds rows. Regenerated every run. |
+| `DirectorSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `DirectorID` | STRING | Pass-through of mds `DirectorID`, cleaned with `cleanString` (empty string becomes NULL). Director code; with company it identifies the director over time. |
@@ -42,15 +42,11 @@ One row = one director period: key (company, DirectorID, StartDate, EndDate) amo
 | `StartDate` | DATE | First day the director assignment is valid (mds `StartDate`, DATE). |
 | `EndDate` | DATE | Last day the assignment is valid (mds `EndDate`, DATE). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_director_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_director.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `DirectorSK`.
-- Storage options: `{"clusterBy": ["DirectorSK"]}`.
+- Definition: `definitions/dimension/dim_director.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_sales_director_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Directors valid today with their director of sales.

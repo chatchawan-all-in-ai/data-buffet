@@ -96,13 +96,15 @@ Rules:
 5. Dataset → constant map is the same registry as everywhere else
    (`includes/controller/variables.json`).
 
-### Snapshot table + regenerated SK → derive ที่ view (2026-08-11)
+### Snapshot history and regenerated keys
 
-`view_dim_aging_history` เป็นเคสตัวอย่าง: ตารางต้นทาง `dim_aging_history` เป็น snapshot
-สะสมที่ freeze `AgingSK`/`BillingSK` ไว้ แต่ต้นทางทั้งสอง (`dim_aging`, `fact_mir_vs`)
-ปั้น SK ด้วย `ROW_NUMBER()` ใหม่ทุกคืน → เลขเก่าชี้คนละใบ 97%
+`view_dim_aging_history` reads accumulated snapshots from `dim_aging_history`. The
+daily rebuild of `dim_aging` regenerates `AgingSK`, and `fact_mir_vs` regenerates
+`BillingSK`. Each history row keeps the values captured for that snapshot; the view
+looks up current keys using the stored natural keys. A document absent from the current
+`dim_aging` or `fact_mir_vs` has no current key in the view.
 
-แก้โดย **ทิ้งค่าที่เก็บไว้แล้ว join กลับหาต้นทางด้วย natural key ที่ snapshot เก็บไว้อยู่แล้ว**:
+The view joins the current dimension and fact with the natural keys stored in history:
 
 ```sql
 select
@@ -122,13 +124,10 @@ qualify row_number() over(partition by asatdate, dim_aging.companyID,
                           order by ChannelSK, cur_vs.BillingSK) = 1
 ```
 
-ใช้ท่านี้ได้เมื่อ snapshot เก็บ natural key ครบ — ถูกกว่าการเปลี่ยน dim/fact ต้นทางเป็น
-MERGE มาก (ไม่ต้องแตะ pipeline เลย) เหตุผลเต็ม + ตัวเลขที่วัดได้อยู่ใน
-[known-issues.md](../../operations/known-issues.md) หัวข้อ "การตัดสินใจเชิงออกแบบ"
+Keep the `QUALIFY` because joins can still return multiple rows for the same history
+snapshot key.
 
-**ห้ามเอา `QUALIFY` ออก** — ต้นทางทั้งสองมีคีย์ซ้ำอย่างละ 1 คู่ ถ้าเอาออกแถวจะบาน
-
-### `QUALIFY` ที่กันแถวบานใน view เหนือ fact (2026-08-11)
+### `QUALIFY` prevents duplicate rows in views over facts
 
 `view_fact_mir_vs` / `view_fact_mir_rs` join `dim_aging` ด้วย `cfsvnosid` + `company_id`
 อย่างเดียว แต่ `dim_aging` มีได้หลายแถวต่อใบ (คนละ `cfsTypeID`) จึงต้องปิดท้ายด้วย
@@ -138,12 +137,8 @@ qualify row_number() over(partition by t1.BillingSK order by t2.AgingSK desc) = 
 qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 1  -- rs
 ```
 
-`QUALIFY` นี้ทำให้ view เป็น **1 แถวต่อ 1 SK** เท่ากับจำนวนแถวใน fact ต้นทางเป๊ะ
-(1,234,886 / 1,733,446) ถ้าเอาออกจะเกินมา 2 และ 4 แถวตามลำดับ แล้วใครเอาไป `SUM`
-จะได้ยอดเบิ้ล
-
-> เคยแก้ไว้บน BigQuery console เท่านั้นและไม่ได้เข้า git — พบตอนสแกน drift 2026-08-11
-> **ถ้ารัน tag `view` ตอนนั้นจะโดนเขียนทับหายทันที** ตอนนี้อยู่ใน `.sqlx` แล้ว
+This keeps one view row per source fact key after the aging join. Keep it when changing
+the view source or its natural-key matching.
 
 ### Run order: ประกาศ dependency เป็น "ตาราง" ไม่ใช่ "view" (ตัดสินใจ 2026-08-11)
 
@@ -160,11 +155,9 @@ qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 
 | `dim_customer` | `view_deb_address_data` | `deb_address_data` |
 | `fact_transcation` | `view_dim_channel`, `view_deb_address_data` | `dim_channel_finance`, `dim_channel_sales`, `deb_address_data` (`dim_channel` + `dim_channel_cost` มีอยู่แล้ว) |
 
-> ก่อนหน้านี้ 15 ไฟล์อ้างตารางของ repo ผ่าน js ref แต่ไม่ประกาศใน `dependencies[]`
-> รวม 27 เส้น — เติมครบเมื่อ 2026-08-11 (เหลือ 3 เส้นที่เป็น view โดยตั้งใจตามกฎข้างบน)
-> เส้นที่เสี่ยงที่สุดคือ `dim_target_product_group_by_sale(_dayofwork)` → `dim_*`/`dim_*_last`
-> 13 เส้น เพราะ dims เหล่านั้นปั้น SK ใหม่ทุกคืน ถ้ารันสลับลำดับจะได้ SK ของเมื่อวาน
-> ตรวจ timestamp แล้วที่ผ่านมาเรียงถูกตลอด — เป็นการกันไว้ ไม่ใช่แก้ของที่พังอยู่
+> Keep declared table dependencies so dimension keys are synchronized before consumers
+> run, including `dim_target_product_group_by_sale(_dayofwork)` and their upstream
+> dimensions.
 
 ## Inventory
 
@@ -281,7 +274,7 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 ## Customer Report Info + Customer Segment (2026-10-01)
 
 ข้อมูลร้านค้าตาม `CustomerReportName` (MDS `Customer_Report_Master`) และ Segment ลูกค้า
-(MDS `Customer_Segment_Master`) — dim 2 ตัว (`dim_customer_segment` full rebuild รายวัน · `dim_customer_report_info` MERGE SK เสถียรตั้งแต่ 2026-10-28) · ใน Power BI ผูกเป็นทอด:
+(MDS `Customer_Segment_Master`) — dim 2 ตัว (`dim_customer_segment` stable SK sync · `dim_customer_report_info` MERGE with retained names) · ใน Power BI ผูกเป็นทอด:
 `view_fact_transcation` → `view_dim_customer_report_info` (`CustomerReportInfoSK`) → `dim_customer_segment` (`CustomerSegmentSK`)
 · ตั้งแต่ 2026-10-07 ตาราง Power BI `Dimension Customer Report Info` ควรอ่านจาก **`view_dim_customer_report_info`**
 (`SELECT` ธรรมดา ไม่ต้อง left join เอง) — สลับ source เป็นขั้นตอนแยกหลัง merge + deploy view
@@ -417,7 +410,8 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
     MDS 1,631 · DEBSALESP 13,349 · ว่าง 26,377 (ไม่มี `debsalesp` 15,340 · พนักงานปกติไม่มี TA ที่ใช้ได้หรือมีหลาย TA 9,646 ·
     ไม่มีรหัสที่ชื่อตรง 845 · พนักงาน MDT 546) ·
     SK/จำนวนแถว/คอลัมน์ Segment เท่าเดิมทุกแถว · แถว MDS เดิมได้ TA เดิม
-- `CustomerReportInfoSK` ของแถวร้านออกใหม่ทุกครั้งที่ rebuild จึง join ที่ view ด้วย natural key ไม่เก็บลงตาราง fact;
+- `CustomerReportInfoSK` is retained for matching `CompanyID` + `CustomerReportKey`;
+  the view still joins by natural key rather than storing it in the fact;
   แถวสงวนใช้สัญญาข้างต้น
 - **`view_dim_invoice.CustomerReportName` เลือกตามลำดับ** (`CASE` ใน [view_dim_invoice.sqlx](../../../definitions/view/dimension_view/view_dim_invoice.sqlx), แก้ 2026-10-02):
   1. บิล SCG (`fn_flag_scg(RefOrder, mihCus) IS NOT NULL`) **และ** `mec.mecdesc IS NOT NULL`
@@ -459,14 +453,8 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
      (แก้ 2026-10-02 — เดิมได้ NULL)
   - `dim_customer_segment` มีแถว default `CustomerSegmentSK = -1` (`UNION ALL` ตาม convention แถว Unknown ของ
     `dim_store`/MDT dims): `Segment1/2/3` และ `DescriptionThai/Eng` = `Non-Segment`, `SortOrder = 99`,
-    `CompanySK`/`CompanyID`/`MdsID` NULL · SK ของแถว MDS ยัง `ROW_NUMBER()` 1..n เหมือนเดิม
+    `CompanySK`/`CompanyID`/`MdsID` NULL · matching MDS segment keys retain their SK.
   - trace: `SegmentDebcode`, `SegmentChannel`
-- ผลวัด 2026-10-01 (ag01 40,921 ชื่อ): MDS 1,872 (SILVER 1,145 · PLATINUM 458 · GOLD 269) ·
-  CHANNEL 11,136 (DC 4,454 · DD 1,976 · DT 1,974 · SILVER 1,503 · DG 1,061 · DA 168) · DEFAULT (DC) 27,913 ·
-  `view_fact_transcation` จำนวนแถวเท่าเดิมทุกบริษัท (ag01 2,657,912)
-- ผลจำลอง Non-Segment 2026-10-02 (inline SQL ที่ compile แล้ว เทียบตาราง live 41,325 แถว): `CustomerReportInfoSK`
-  ไม่ซ้ำและจำนวนแถวเท่าเดิม · NULL → Non-Segment **512** ชื่อ (ac02 377 · ak02 91 · aa05 43 · ab01 1) ·
-  ag01 ไม่เปลี่ยนเลย (0 แถวเปลี่ยน SK, DEFAULT/DC ยัง 27,827) · `CustomerSegmentSK` NULL เหลือ 0
 - `CURRENT_DATE` ถูกประเมินตอน dim รัน → BRONZE→SILVER ขยับวันละครั้งตามรอบ `dimension_daily`
 
 ### ผลกระทบสูตร SCG (2026-10-02)
@@ -482,9 +470,6 @@ page filter "วันล่าสุด" ใน Power BI ทุก model — **
 
 - ยอดที่ย้ายชื่อรายงาน: 41,190 แถว fact / 265,328,119.43 บาท · จำนวนแถว fact ไม่เปลี่ยน
 - MDS match เท่าเดิม **1,850/1,872** · แถว fact ที่ไม่มี `CustomerReportInfoSK` เท่าเดิม **44** · join key ไม่ซ้ำ
-- ผลจำลองก่อน **full rebuild (2026-10-02)**: `dim_customer_report_info` ลดจาก **41,456 → 41,325 แถว**
-  (ag01 **40,921 → 40,790**) เพราะชื่อ invoice-only รวมกัน · `SegmentSource = 'CHANNEL'` ลด 27 ชื่อ
-  และ `'DEFAULT'` ลด 104 ชื่อ · จำนวนชื่อจาก MDS ไม่เปลี่ยน
 
 ## Compile-verification checklist
 

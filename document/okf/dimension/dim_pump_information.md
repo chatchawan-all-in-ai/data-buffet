@@ -26,28 +26,24 @@ Read by: [view_fact_transcation](/view/fact_view/view_fact_transcation.md), [exp
 
 # Grain and key
 
-One row = one distinct combination `(CompanySK, CompanyID, milstk, RegionID, FlagNewProductMKT, PumpSegment)` taken with `SELECT DISTINCT` over fact_transcation lines with `milStk` not NULL, joined to the product master view, dim_region and dim_product_mkt. Readers join on `(LOWER(milstk), FlagNewProductMKT, RegionID, CompanySK)`. `PumpSK` is ordered by lower(milstk), RegionID, FlagNewProductMKT. No -1 row.
+One row = one distinct combination `(CompanySK, CompanyID, milstk, RegionID, FlagNewProductMKT, PumpSegment)` taken with `SELECT DISTINCT` over fact_transcation lines with `milStk` not NULL, joined to the product master view, dim_region and dim_product_mkt. Natural key: (`CompanyID`, `milstk`, `RegionID`, `FlagNewProductMKT`, `PumpSegment`). `PumpSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `PumpSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by lower(milstk), RegionID, FlagNewProductMKT. Regenerated every run. |
+| `PumpSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Copied from `fact_transcation.CompanySK`; NULL when that source value is NULL. |
 | `CompanyID` | STRING | Company code copied from `fact_transcation.CompanyID`. |
 | `milstk` | STRING | Product (stock) code of the line, matching `stk.stkcode`. |
 | `RegionID` | STRING | Region code of the line, from dim_region via `fact_transcation.RegionSK`; NULL when the line has no region. |
 | `FlagNewProductMKT` | BOOL | BOOL flag copied from `fact_transcation.FlagNewProductMKT`; true when the line uses the new product-market mapping (`NewProductMktSK`). |
 | `PumpSegment` | STRING | Pump segment: `dim_product_mkt.Segment` when RegionID is 'PS1' and FlagNewProductMKT is true, otherwise `view_dim_product_master.PumpSegment`. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_pump_information.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `PumpSK`.
-- Storage options: `{"clusterBy": ["PumpSK"]}`.
+- Definition: `definitions/dimension/dim_pump_information.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: [fact_table.fact_transcation](/fact/fact_transcation.md), [dimension_view.view_dim_product_master](/view/dimension_view/view_dim_product_master.md), [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after fact_transcation, dim_product_mkt, dim_product_master and dim_region.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after fact_transcation, dim_product_mkt, dim_product_master and dim_region.
 # Examples
 
 Pump segment per product and region.

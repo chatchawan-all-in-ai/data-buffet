@@ -1,15 +1,34 @@
 config {
-  type: "table",
+  type: "operations",
+  hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_zone_mdt", "dim_zone_ta_mdt", "dim_region_last", "dim_section_last"],
   tags: [databuffet.TAG_DIM_DAILY, databuffet.TAG_SALEOUT_DAILY],
-  uniqueKey: ["BranchMdtSK"],
-  bigquery: {
-    clusterBy: ["BranchMdtSK"],
-  },
 }
 
 js {
+    const DimSalesBranchMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimSalesBranchMdtTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
+
+    const stableDimensionColumns = ['BranchMdtSK', 'RegionSK', 'RegionManagerSK', 'SectionSK', 'SectionManagerSK', 'ZoneMdtSK', 'ZoneTaMdtSK', 'StoreCode', 'RegionName', 'SubRegionID', 'BranchCode', 'BranchCodeMdt', 'BranchName', 'ZoneCode', 'ZoneName', 'Warehouse', 'StartDate', 'EndDate', 'MdsID'];
+    const stableDimensionKeyColumns = ['StoreCode', 'BranchCode', 'StartDate', 'EndDate'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`BranchMdtSK` = S.`BranchMdtSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'BranchMdtSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const DimSectionLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -46,173 +65,246 @@ js {
     const DimRegionLastTableRef = `${DimRegionLastTable.database}.${DimRegionLastTable.schema}.${DimRegionLastTable.name}`;
 }
 
-WITH section_lookup AS (
-  -- 1 แถวต่อ SectionID — กัน fan-out เผื่อ dim มีรหัสซ้ำ
-  SELECT SectionID, SectionSK, SectionManagerSK
-  FROM `${DimSectionLastTableRef}`
-  WHERE companyID = 'ag01'
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY SectionID ORDER BY SectionSK) = 1
 
-), zone_ta_current AS (
 
-  SELECT ZoneTaMdtSK, ZoneCode
-  FROM `${DimZoneTaMdtTableRef}`
-  WHERE ZoneTaMdtSK <> -1
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY ZoneCode ORDER BY ZoneTaMdtSK) = 1
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
 
-), branch_master AS (
-  SELECT
-    ROW_NUMBER() OVER(
-      ORDER BY
-        NULLIF(CAST(TRIM(t1.region_id) AS STRING), ''),
-        NULLIF(CAST(TRIM(t1.store_id) AS STRING), '')
-    ) AS BranchMdtSK,
-    IFNULL(dim_region.RegionSK, -1)           AS RegionSK,
-    IFNULL(dim_region.RegionManagerSK, -1)    AS RegionManagerSK,
-    IFNULL(dim_section.SectionSK, -1)         AS SectionSK,
-    IFNULL(dim_section.SectionManagerSK, -1)  AS SectionManagerSK,
-    IFNULL(dim_zone.ZoneMdtSK, -1)            AS ZoneMdtSK,
-    IFNULL(dim_zone_ta.ZoneTaMdtSK, -1) AS ZoneTaMdtSK,
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    WITH section_lookup AS (
+      -- 1 แถวต่อ SectionID — กัน fan-out เผื่อ dim มีรหัสซ้ำ
+      SELECT SectionID, SectionSK, SectionManagerSK
+      FROM `${DimSectionLastTableRef}`
+      WHERE companyID = 'ag01'
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY SectionID ORDER BY companyID, SectionID) = 1
 
-    NULLIF(CAST(TRIM(t1.region_id) AS STRING), '')   AS StoreCode,
-    dim_region.RegionName                                    AS RegionName,
-    dim_region.SubRegionID                                   AS SubRegionID,
-    NULLIF(CAST(TRIM(t1.store_id) AS STRING), '')    AS BranchCode,
-    NULLIF(CAST(TRIM(t1.branch_code) AS STRING), '') AS BranchCodeMdt,
-    NULLIF(CAST(TRIM(t1.branch_name) AS STRING), '') AS BranchName,
-    NULLIF(CAST(TRIM(t1.zone_id) AS STRING), '')     AS ZoneCode,
-    dim_zone.ZoneName                                        AS ZoneName,
-    NULLIF(CAST(TRIM(t1.warehouse) AS STRING), '')   AS Warehouse,
-    t1.start_date AS StartDate,
-    t1.end_date   AS EndDate,
-    t1.id         AS MdsID,
-  FROM (
-    -- ยุบซ้ำที่ต้นทางก่อน join — ถ้าไปทำหลัง join แถวที่บวมเพราะ join จะถูกกลบไปด้วยเงียบ ๆ
-    SELECT *
-    FROM `${MdsSourceTableRef}`
-    WHERE is_active = TRUE
-    QUALIFY ROW_NUMBER() OVER(
-      PARTITION BY TRIM(region_id), TRIM(store_id)
-      ORDER BY start_date DESC, id
-    ) = 1
-  ) AS t1
-  LEFT JOIN `${DimZoneMdtTableRef}` AS dim_zone
-    ON NULLIF(CAST(TRIM(t1.zone_id) AS STRING), '') = dim_zone.ZoneCode
-  -- ผู้จัดการโซน join ด้วย zone_id แบบเดียวกับ dim_zone_mdt
-  LEFT JOIN zone_ta_current AS dim_zone_ta
-    ON NULLIF(CAST(TRIM(t1.zone_id) AS STRING), '') = dim_zone_ta.ZoneCode
-  -- Section แกะจาก BranchCodeMdt (<ห้าง>_<Section>_<ลำดับ>) ต้องเติมศูนย์และแปลง CEN ให้ตรง dim
-  LEFT JOIN section_lookup AS dim_section
-    ON CONCAT(
-         NULLIF(CAST(TRIM(t1.region_id) AS STRING), ''), '_',
-         CASE
-           WHEN REGEXP_EXTRACT(NULLIF(CAST(TRIM(t1.branch_code) AS STRING), ''), r'^[A-Z]+_([A-Z0-9]+)_') = 'CEN' THEN ''
-           WHEN REGEXP_CONTAINS(REGEXP_EXTRACT(NULLIF(CAST(TRIM(t1.branch_code) AS STRING), ''), r'^[A-Z]+_([A-Z0-9]+)_'), r'^[A-Z][0-9]$')
-             THEN CONCAT(
-                    SUBSTR(REGEXP_EXTRACT(NULLIF(CAST(TRIM(t1.branch_code) AS STRING), ''), r'^[A-Z]+_([A-Z0-9]+)_'), 1, 1), '0',
-                    SUBSTR(REGEXP_EXTRACT(NULLIF(CAST(TRIM(t1.branch_code) AS STRING), ''), r'^[A-Z]+_([A-Z0-9]+)_'), 2, 1))
-           ELSE REGEXP_EXTRACT(NULLIF(CAST(TRIM(t1.branch_code) AS STRING), ''), r'^[A-Z]+_([A-Z0-9]+)_')
-         END
-       ) = dim_section.SectionID
-  -- dim_region_last มีแถวเดียวต่อรหัส จึง join ตรงได้ ไม่ต้องมี CTE กรองช่วงเวลา
-  LEFT JOIN `${DimRegionLastTableRef}` AS dim_region
-    ON NULLIF(CAST(TRIM(t1.region_id) AS STRING), '') = dim_region.RegionID
-   AND dim_region.companyID = 'ag01'
-), feed_branch AS (
+    ), zone_ta_current AS (
 
-  -- สาขาที่โผล่ในฟีดขายจริงแล้ว — ใช้เป็นตัวตรวจว่า master ตามทันหรือยัง
-  -- ยุบเป็น 1 แถวต่อสาขา เพราะ curated เป็นเกรนรายวัน-รายสินค้า
-  SELECT
-    store_code,
-    branch_code,
-    ANY_VALUE(branch_name) AS branch_name,
-    MIN(sale_date)         AS first_sale
-   FROM (
-    SELECT store_code, branch_code, branch_name, sale_date
-    FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_mdt")}
+      SELECT ZoneTaMdtSK, ZoneCode
+      FROM `${DimZoneTaMdtTableRef}`
+      WHERE ZoneTaMdtSK <> -1
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY ZoneCode ORDER BY ZoneCode, CAST(EmployeeID AS INT64)) = 1
+
+    ), branch_master AS (
+      SELECT
+        ROW_NUMBER() OVER(
+          ORDER BY
+            NULLIF(CAST(TRIM(t1.region_id) AS STRING), ''),
+            NULLIF(CAST(TRIM(t1.store_id) AS STRING), '')
+        ) AS BranchMdtSK,
+        IFNULL(dim_region.RegionSK, -1)           AS RegionSK,
+        IFNULL(dim_region.RegionManagerSK, -1)    AS RegionManagerSK,
+        IFNULL(dim_section.SectionSK, -1)         AS SectionSK,
+        IFNULL(dim_section.SectionManagerSK, -1)  AS SectionManagerSK,
+        IFNULL(dim_zone.ZoneMdtSK, -1)            AS ZoneMdtSK,
+        IFNULL(dim_zone_ta.ZoneTaMdtSK, -1) AS ZoneTaMdtSK,
+
+        NULLIF(CAST(TRIM(t1.region_id) AS STRING), '')   AS StoreCode,
+        dim_region.RegionName                                    AS RegionName,
+        dim_region.SubRegionID                                   AS SubRegionID,
+        NULLIF(CAST(TRIM(t1.store_id) AS STRING), '')    AS BranchCode,
+        NULLIF(CAST(TRIM(t1.branch_code) AS STRING), '') AS BranchCodeMdt,
+        NULLIF(CAST(TRIM(t1.branch_name) AS STRING), '') AS BranchName,
+        NULLIF(CAST(TRIM(t1.zone_id) AS STRING), '')     AS ZoneCode,
+        dim_zone.ZoneName                                        AS ZoneName,
+        NULLIF(CAST(TRIM(t1.warehouse) AS STRING), '')   AS Warehouse,
+        t1.start_date AS StartDate,
+        t1.end_date   AS EndDate,
+        t1.id         AS MdsID,
+      FROM (
+        -- ยุบซ้ำที่ต้นทางก่อน join — ถ้าไปทำหลัง join แถวที่บวมเพราะ join จะถูกกลบไปด้วยเงียบ ๆ
+        SELECT *
+        FROM `${MdsSourceTableRef}`
+        WHERE is_active = TRUE
+        QUALIFY ROW_NUMBER() OVER(
+          PARTITION BY TRIM(region_id), TRIM(store_id)
+          ORDER BY start_date DESC, id
+        ) = 1
+      ) AS t1
+      LEFT JOIN `${DimZoneMdtTableRef}` AS dim_zone
+        ON NULLIF(CAST(TRIM(t1.zone_id) AS STRING), '') = dim_zone.ZoneCode
+      -- ผู้จัดการโซน join ด้วย zone_id แบบเดียวกับ dim_zone_mdt
+      LEFT JOIN zone_ta_current AS dim_zone_ta
+        ON NULLIF(CAST(TRIM(t1.zone_id) AS STRING), '') = dim_zone_ta.ZoneCode
+      -- Section แกะจาก BranchCodeMdt (<ห้าง>_<Section>_<ลำดับ>) ต้องเติมศูนย์และแปลง CEN ให้ตรง dim
+      LEFT JOIN section_lookup AS dim_section
+        ON CONCAT(
+             NULLIF(CAST(TRIM(t1.region_id) AS STRING), ''), '_',
+             CASE
+               WHEN REGEXP_EXTRACT(NULLIF(CAST(TRIM(t1.branch_code) AS STRING), ''), r'^[A-Z]+_([A-Z0-9]+)_') = 'CEN' THEN ''
+               WHEN REGEXP_CONTAINS(REGEXP_EXTRACT(NULLIF(CAST(TRIM(t1.branch_code) AS STRING), ''), r'^[A-Z]+_([A-Z0-9]+)_'), r'^[A-Z][0-9]$')
+                 THEN CONCAT(
+                        SUBSTR(REGEXP_EXTRACT(NULLIF(CAST(TRIM(t1.branch_code) AS STRING), ''), r'^[A-Z]+_([A-Z0-9]+)_'), 1, 1), '0',
+                        SUBSTR(REGEXP_EXTRACT(NULLIF(CAST(TRIM(t1.branch_code) AS STRING), ''), r'^[A-Z]+_([A-Z0-9]+)_'), 2, 1))
+               ELSE REGEXP_EXTRACT(NULLIF(CAST(TRIM(t1.branch_code) AS STRING), ''), r'^[A-Z]+_([A-Z0-9]+)_')
+             END
+           ) = dim_section.SectionID
+      -- dim_region_last มีแถวเดียวต่อรหัส จึง join ตรงได้ ไม่ต้องมี CTE กรองช่วงเวลา
+      LEFT JOIN `${DimRegionLastTableRef}` AS dim_region
+        ON NULLIF(CAST(TRIM(t1.region_id) AS STRING), '') = dim_region.RegionID
+       AND dim_region.companyID = 'ag01'
+    ), feed_branch AS (
+
+      -- สาขาที่โผล่ในฟีดขายจริงแล้ว — ใช้เป็นตัวตรวจว่า master ตามทันหรือยัง
+      -- ยุบเป็น 1 แถวต่อสาขา เพราะ curated เป็นเกรนรายวัน-รายสินค้า
+      SELECT
+        store_code,
+        branch_code,
+        ANY_VALUE(branch_name) AS branch_name,
+        MIN(sale_date)         AS first_sale
+       FROM (
+        SELECT store_code, branch_code, branch_name, sale_date
+        FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_mdt")}
+            UNION ALL
+        -- รายเดือนไม่มี sale_date ใช้ month_date แทน เป็นวันโดยประมาณอยู่แล้ว
+        SELECT store_code, branch_code, branch_name, month_date
+        FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_monthly_mdt")}
         UNION ALL
-    -- รายเดือนไม่มี sale_date ใช้ month_date แทน เป็นวันโดยประมาณอยู่แล้ว
-    SELECT store_code, branch_code, branch_name, month_date
-    FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_monthly_mdt")}
+        SELECT store_code, branch_code, CAST(NULL AS STRING), stock_date
+        FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_stock_mdt")}
+      )
+      WHERE store_code IS NOT NULL
+        AND branch_code IS NOT NULL
+      GROUP BY store_code, branch_code
+
+    ), new_branch AS (
+
+      SELECT
+
+        IFNULL((SELECT MAX(BranchMdtSK) FROM branch_master), 0)
+          + ROW_NUMBER() OVER(ORDER BY f.store_code, f.branch_code) AS BranchMdtSK,
+
+        IFNULL(dim_region.RegionSK, -1)        AS RegionSK,
+        IFNULL(dim_region.RegionManagerSK, -1) AS RegionManagerSK,
+        -1                                     AS SectionSK,
+        -1                                     AS SectionManagerSK,
+        -1                                     AS ZoneMdtSK,
+        -1                                     AS ZoneTaMdtSK,
+
+        f.store_code           AS StoreCode,
+        dim_region.RegionName  AS RegionName,
+        dim_region.SubRegionID AS SubRegionID,
+        f.branch_code          AS BranchCode,
+        CAST(NULL AS STRING)   AS BranchCodeMdt,
+            -- สาขาที่มีแต่สต็อกไม่มีชื่อมาด้วย ใช้รหัสสาขาแทนไปก่อน ดีกว่าโชว์ช่องว่าง
+        IFNULL(f.branch_name, f.branch_code) AS BranchName,
+        'WAITING'              AS ZoneCode,
+        'Waiting Master'       AS ZoneName,
+        CAST(NULL AS STRING)   AS Warehouse,
+        -- วันขายแรกที่เจอในฟีด ไม่ใช่วันเปิดสาขาจริง — ไว้ให้ลูกค้าไล่ย้อนได้ว่าตกหล่นมาตั้งแต่เมื่อไร
+        f.first_sale           AS StartDate,
+        CAST(NULL AS DATE)     AS EndDate,
+        CAST(NULL AS STRING)   AS MdsID,
+
+      FROM feed_branch AS f
+      -- store_code ของฟีดตรงกับ RegionID ของ dim_region_last ทั้ง 6 ห้าง (ตรวจ 2026-10-05)
+      LEFT JOIN `${DimRegionLastTableRef}` AS dim_region
+        ON f.store_code = dim_region.RegionID
+       AND dim_region.companyID = 'ag01'
+      -- สาขาในฟีดที่ master ยังไม่มี (เทียบห้าง + สาขา)
+      WHERE NOT EXISTS (
+        SELECT 1 FROM branch_master AS b
+        WHERE b.BranchCode = f.branch_code
+          AND b.StoreCode  = f.store_code
+      )
+
+    ), unknown_branch AS (
+      SELECT
+        -1                   AS BranchMdtSK,
+        -1                   AS RegionSK,
+        -1                   AS RegionManagerSK,
+        -1                   AS SectionSK,
+        -1                   AS SectionManagerSK,
+        -1                   AS ZoneMdtSK,
+        -1                   AS ZoneTaMdtSK,
+
+        'NotStore'           AS StoreCode,
+        'ไม่ระบุภูมิภาค'        AS RegionName,
+        'NotSubRegion'       AS SubRegionID,
+        'NotBranch'          AS BranchCode,
+        'NotBranch'          AS BranchCodeMdt,
+        'ไม่ระบุสาขา'          AS BranchName,
+        'NotZone'            AS ZoneCode,
+        'ไม่ระบุโซน'           AS ZoneName,
+        'NotWarehouse'       AS Warehouse,
+        CAST(NULL AS DATE)   AS StartDate,
+        CAST(NULL AS DATE)   AS EndDate,
+        CAST(NULL AS STRING) AS MdsID,
+    )
+
+    SELECT * FROM branch_master
     UNION ALL
-    SELECT store_code, branch_code, CAST(NULL AS STRING), stock_date
-    FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_stock_mdt")}
-  )
-  WHERE store_code IS NOT NULL
-    AND branch_code IS NOT NULL
-  GROUP BY store_code, branch_code
+    SELECT * FROM new_branch
+    UNION ALL
+    SELECT * FROM unknown_branch
+  );
 
-), new_branch AS (
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_sales_branch_mdt source natural key must be unique';
 
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimSalesBranchMdtTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_sales_branch_mdt target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimSalesBranchMdtTableRef}`
+    WHERE `BranchMdtSK` IS NULL
+  ) AS 'dim_sales_branch_mdt target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimSalesBranchMdtTableRef}`
+    GROUP BY `BranchMdtSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_sales_branch_mdt target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`BranchMdtSK`)
+    FROM `${DimSalesBranchMdtTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
   SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`BranchMdtSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `BranchMdtSK`
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.`BranchMdtSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`BranchMdtSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimSalesBranchMdtTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
 
-    IFNULL((SELECT MAX(BranchMdtSK) FROM branch_master), 0)
-      + ROW_NUMBER() OVER(ORDER BY f.store_code, f.branch_code) AS BranchMdtSK,
-
-    IFNULL(dim_region.RegionSK, -1)        AS RegionSK,
-    IFNULL(dim_region.RegionManagerSK, -1) AS RegionManagerSK,
-    -1                                     AS SectionSK,
-    -1                                     AS SectionManagerSK,
-    -1                                     AS ZoneMdtSK,
-    -1                                     AS ZoneTaMdtSK,
-
-    f.store_code           AS StoreCode,
-    dim_region.RegionName  AS RegionName,
-    dim_region.SubRegionID AS SubRegionID,
-    f.branch_code          AS BranchCode,
-    CAST(NULL AS STRING)   AS BranchCodeMdt,
-        -- สาขาที่มีแต่สต็อกไม่มีชื่อมาด้วย ใช้รหัสสาขาแทนไปก่อน ดีกว่าโชว์ช่องว่าง
-    IFNULL(f.branch_name, f.branch_code) AS BranchName,
-    'WAITING'              AS ZoneCode,
-    'Waiting Master'       AS ZoneName,
-    CAST(NULL AS STRING)   AS Warehouse,
-    -- วันขายแรกที่เจอในฟีด ไม่ใช่วันเปิดสาขาจริง — ไว้ให้ลูกค้าไล่ย้อนได้ว่าตกหล่นมาตั้งแต่เมื่อไร
-    f.first_sale           AS StartDate,
-    CAST(NULL AS DATE)     AS EndDate,
-    CAST(NULL AS STRING)   AS MdsID,
-
-  FROM feed_branch AS f
-  -- store_code ของฟีดตรงกับ RegionID ของ dim_region_last ทั้ง 6 ห้าง (ตรวจ 2026-10-05)
-  LEFT JOIN `${DimRegionLastTableRef}` AS dim_region
-    ON f.store_code = dim_region.RegionID
-   AND dim_region.companyID = 'ag01'
-  -- สาขาในฟีดที่ master ยังไม่มี (เทียบห้าง + สาขา)
-  WHERE NOT EXISTS (
-    SELECT 1 FROM branch_master AS b
-    WHERE b.BranchCode = f.branch_code
-      AND b.StoreCode  = f.store_code
-  )
-
-), unknown_branch AS (
-  SELECT
-    -1                   AS BranchMdtSK,
-    -1                   AS RegionSK,
-    -1                   AS RegionManagerSK,
-    -1                   AS SectionSK,
-    -1                   AS SectionManagerSK,
-    -1                   AS ZoneMdtSK,
-    -1                   AS ZoneTaMdtSK,
-
-    'NotStore'           AS StoreCode,
-    'ไม่ระบุภูมิภาค'        AS RegionName,
-    'NotSubRegion'       AS SubRegionID,
-    'NotBranch'          AS BranchCode,
-    'NotBranch'          AS BranchCodeMdt,
-    'ไม่ระบุสาขา'          AS BranchName,
-    'NotZone'            AS ZoneCode,
-    'ไม่ระบุโซน'           AS ZoneName,
-    'NotWarehouse'       AS Warehouse,
-    CAST(NULL AS DATE)   AS StartDate,
-    CAST(NULL AS DATE)   AS EndDate,
-    CAST(NULL AS STRING) AS MdsID,
-)
-
-SELECT * FROM branch_master
-UNION ALL
-SELECT * FROM new_branch
-UNION ALL
-SELECT * FROM unknown_branch
-
-pre_operations {}
-
-post_operations {}
+  MERGE `${DimSalesBranchMdtTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

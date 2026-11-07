@@ -30,7 +30,7 @@ One row = one marketing group, sub group, segment and type combination of a comp
 
 | Column | Type | Description |
 |---|---|---|
-| `ProductMktSK` | INT64 | SK of the marketing classification in dim_product_mkt (regenerated daily). |
+| `ProductMktSK` | INT64 | Stable SK of the marketing classification in [dim_product_mkt](/dimension/dim_product_mkt.md). |
 | `MarketingGroupID` | STRING | Marketing group code (level 2). |
 | `MarketingGroup` | STRING | Marketing group name. |
 | `SubMarketingID` | STRING | Sub-marketing code (level 3). |

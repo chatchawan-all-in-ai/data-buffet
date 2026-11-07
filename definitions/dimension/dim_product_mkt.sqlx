@@ -1,15 +1,34 @@
 config {
-  type: "table",
+  type: "operations",
+  hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_company"],
   tags: [databuffet.TAG_DIM_DAILY],
-  uniqueKey: ["ProductMktSK"],
-  bigquery: {
-    clusterBy: ["ProductMktSK"],
-  },
 }
 
 js {
+    const DimProductMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
+
+    const stableDimensionColumns = ['ProductMktSK', 'CompanySK', 'CompanyID', 'TypeMarketingID', 'TypeMarketing', 'MarketingGroupID', 'MarketingGroup', 'SubMarketingID', 'SubMarketing', 'SegmentID', 'Segment', 'SubMarketingWH', 'MdsID'];
+    const stableDimensionKeyColumns = ['CompanyID', 'TypeMarketingID', 'MarketingGroupID', 'SubMarketingID', 'SegmentID'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`ProductMktSK` = S.`ProductMktSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'ProductMktSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -25,32 +44,105 @@ js {
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 }
 
-SELECT
-  ROW_NUMBER() OVER(
-    ORDER BY
-      ${databuffet.functionData.cleanString("t1.CompanyID")},
-      ${databuffet.functionData.cleanString("t1.TypeMarketingID")},
-      ${databuffet.functionData.cleanString("t1.MarketingGroupID")},
-      ${databuffet.functionData.cleanString("t1.SubMarketingID")},
-      ${databuffet.functionData.cleanString("t1.SegmentID")}
-  ) AS ProductMktSK,
-  dim_com.CompanySK,
-  ${databuffet.functionData.cleanString("t1.CompanyID")} AS CompanyID,
-  ${databuffet.functionData.cleanString("t1.TypeMarketingID")} AS TypeMarketingID,
-  ${databuffet.functionData.cleanString("t1.TypeMarketing")} AS TypeMarketing,
-  ${databuffet.functionData.cleanString("t1.MarketingGroupID")} AS MarketingGroupID,
-  ${databuffet.functionData.cleanString("t1.MarketingGroup")} AS MarketingGroup,
-  ${databuffet.functionData.cleanString("t1.SubMarketingID")} AS SubMarketingID,
-  ${databuffet.functionData.cleanString("t1.SubMarketing")} AS SubMarketing,
-  ${databuffet.functionData.cleanString("t1.SegmentID")} AS SegmentID,
-  ${databuffet.functionData.cleanString("t1.Segment")} AS Segment,
-  ${databuffet.functionData.cleanString("t1.SubMarketingWH")} AS SubMarketingWH,
-  ${databuffet.functionData.cleanString("t1.id")} as MdsID
-FROM `${MdsSourceTableRef}` AS t1
-LEFT JOIN `${DimCompanyTableRef}` AS dim_com
-  ON ${databuffet.functionData.cleanString("t1.CompanyID")} = dim_com.companyID
-WHERE t1.is_active = TRUE
 
-pre_operations {}
 
-post_operations {}
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    SELECT
+      ROW_NUMBER() OVER(
+        ORDER BY
+          ${databuffet.functionData.cleanString("t1.CompanyID")},
+          ${databuffet.functionData.cleanString("t1.TypeMarketingID")},
+          ${databuffet.functionData.cleanString("t1.MarketingGroupID")},
+          ${databuffet.functionData.cleanString("t1.SubMarketingID")},
+          ${databuffet.functionData.cleanString("t1.SegmentID")}
+      ) AS ProductMktSK,
+      dim_com.CompanySK,
+      ${databuffet.functionData.cleanString("t1.CompanyID")} AS CompanyID,
+      ${databuffet.functionData.cleanString("t1.TypeMarketingID")} AS TypeMarketingID,
+      ${databuffet.functionData.cleanString("t1.TypeMarketing")} AS TypeMarketing,
+      ${databuffet.functionData.cleanString("t1.MarketingGroupID")} AS MarketingGroupID,
+      ${databuffet.functionData.cleanString("t1.MarketingGroup")} AS MarketingGroup,
+      ${databuffet.functionData.cleanString("t1.SubMarketingID")} AS SubMarketingID,
+      ${databuffet.functionData.cleanString("t1.SubMarketing")} AS SubMarketing,
+      ${databuffet.functionData.cleanString("t1.SegmentID")} AS SegmentID,
+      ${databuffet.functionData.cleanString("t1.Segment")} AS Segment,
+      ${databuffet.functionData.cleanString("t1.SubMarketingWH")} AS SubMarketingWH,
+      ${databuffet.functionData.cleanString("t1.id")} as MdsID
+    FROM `${MdsSourceTableRef}` AS t1
+    LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+      ON ${databuffet.functionData.cleanString("t1.CompanyID")} = dim_com.companyID
+    WHERE t1.is_active = TRUE
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_mkt source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductMktTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_mkt target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductMktTableRef}`
+    WHERE `ProductMktSK` IS NULL
+  ) AS 'dim_product_mkt target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductMktTableRef}`
+    GROUP BY `ProductMktSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_mkt target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`ProductMktSK`)
+    FROM `${DimProductMktTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`ProductMktSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `ProductMktSK`
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.`ProductMktSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`ProductMktSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimProductMktTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
+
+  MERGE `${DimProductMktTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

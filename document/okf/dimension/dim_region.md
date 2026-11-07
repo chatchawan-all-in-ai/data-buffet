@@ -26,13 +26,13 @@ Read by: [dim_pump_information](/dimension/dim_pump_information.md), [dim_region
 
 # Grain and key
 
-One row = one active MDS row: key `RegionSK`, `ROW_NUMBER()` ordered by companyID, RegionID, SubRegionID, StartDate, EndDate. A region whose director or name changed over time appears once per validity interval, so `(companyID, RegionID, SubRegionID)` is not unique here. When `RegionID` differs from `SubRegionID` the row is a sub-region (section-level) of the region; `dim_target_product_group_by_sale_dayofwork` then matches it on `dep.SectionID = SubRegionID`. No -1 row.
+One row = one active MDS row. Natural key: (`companyID`, `RegionID`, `SubRegionID`, `StartDate`, `EndDate`). `RegionSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `RegionSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by companyID, RegionID, SubRegionID, StartDate, EndDate. Regenerated every run. Referenced by `fact_transcation.RegionSK`, [dim_pump_information](/dimension/dim_pump_information.md) lookups and the MDT facts. |
+| `RegionSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `DirectorID` | STRING | Code of the director that owns the region; join key to `dim_director.DirectorID` (+ CompanySK), as used by `dim_target_product_group_by_sale_dayofwork`. |
@@ -42,15 +42,11 @@ One row = one active MDS row: key `RegionSK`, `ROW_NUMBER()` ordered by companyI
 | `StartDate` | DATE | First date the row is valid, straight from MDS (DATE, no cleaning). |
 | `EndDate` | DATE | Last date the row is valid, straight from MDS (DATE). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_region_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_region.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `RegionSK`.
-- Storage options: `{"clusterBy": ["RegionSK"]}`.
+- Definition: `definitions/dimension/dim_region.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_sales_region_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Regions valid today, with their director.

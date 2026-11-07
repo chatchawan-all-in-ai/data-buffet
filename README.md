@@ -70,7 +70,7 @@ JavaScript-generated actions are outside that diagram's scope.
 | **Initial** | `definitions/initial/` | Create raw external tables over GCS; bootstrap schemas & UDFs; drop files for (re-)initialising validated |
 | **Validated** | `definitions/validated/` | Clean, cast, dedup; one table per source object, plus one `validated_schema_<source>` bootstrap per source |
 | **Curated** | `definitions/curated/` | Business-ready joins, enrichment, JSON parsing, plus one `curated_schema_<source>` bootstrap per source |
-| **Dimension** | `definitions/dimension/` | Conformed dimensions with surrogate keys (full daily rebuild by default; MERGE where SKs must stay stable) |
+| **Dimension** | `definitions/dimension/` | Conformed dimensions; synchronization patterns and exceptions are listed in the [inventory](document/project_wiki/dimension/inventory.md) |
 | **Fact** | `definitions/fact/` | Star-schema fact tables joined to dimensions (4-year retention) |
 | **View** | `definitions/view/` | BI/reporting views (`type: "view"`) over dim/fact/curated: `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset`, `pub_sub` (Pub/Sub export views) |
 | **CDC** | `definitions/cdc/` | Config-driven change log over validated tables |
@@ -88,12 +88,8 @@ SALEOUT_MDT and DERP, each with its own schema-bootstrap file. ALLKONS_COMMISSIO
 has only an initial layer (its validated files were removed). Per-source file lists:
 [source inventory](document/project_wiki/validated/source-inventory.md).
 
-**Dimension patterns:** full-daily-rebuild dims from `mds_dataset` (default since
-2026-07-20) · 2 legacy MERGE mds dims with stable SKs (`dim_company`,
-`dim_aging_rang`) · 10 MERGE dims from validated/curated · other full-rebuild tables
-(`*_last` snapshots, target aggregates, `dim_store`, `dim_pump_information`) · 3 other
-operations (`dim_calendar`, `dim_aging`, `update_sk_sale_rep_group`). Per-dim list:
-[dimension inventory](document/project_wiki/dimension/inventory.md).
+**Dimension patterns:** See the [dimension inventory](document/project_wiki/dimension/inventory.md)
+for conversion scope, held dimensions, and unchanged behaviors.
 
 ---
 
@@ -175,7 +171,7 @@ defaultAssertionDataset: dataform_assertions
 dataformCoreVersion: 3.0.0
 vars:
     RAW_BUCKET: "gs://file-raw-data"
-    MDS_BACKFILL_DAYS: "1"     # updated_at look-back window for mds dimension MERGEs
+    MDS_BACKFILL_DAYS: "1"     # retained project variable; active dimension actions do not use it
     BACKFILL_DAYS: "1"         # incremental look-back window for validated/curated
 ```
 
@@ -308,26 +304,11 @@ config {
 Complex reallocation (e.g. the `ag01` split-sale expansion in `curated_mil`) lives in
 `post_operations { BEGIN ... END }` as a TEMP → DELETE → INSERT on `self()`.
 
-### Dimension — full daily rebuild (default) + legacy MERGE for stable SKs
-Since 2026-07-20 the mds-sourced dims are **full daily rebuilds** by default
-(`type: "table"`): SK = `ROW_NUMBER()` over the natural key, source filtered only
-`is_active = TRUE`. SKs regenerate every run — all consumers re-derive them daily
-(verified), so **never persist these SKs across days**. This natively absorbs mds
-soft-deletes and overwrite imports (no tombstone, no backfill window needed).
-Full pattern: [document/project_wiki/dimension/full-rebuild-pattern.md](document/project_wiki/dimension/full-rebuild-pattern.md).
-
-Two mds dims keep the legacy MERGE pattern with **stable SKs** (`dim_company`,
-`dim_aging_rang` — their SKs are persisted downstream), including the mds tombstone:
-
-```sql
-DELETE FROM `<dim>` WHERE MdsID IN (
-  SELECT id FROM `<mds_data_*_master>` WHERE is_active = FALSE
-);
-```
-
-Dimension build dependencies: [full-rebuild properties](document/project_wiki/dimension/full-rebuild-pattern.md#properties).
-MERGE pattern & invariants:
-[document/project_wiki/dimension/merge-sk-pattern.md](document/project_wiki/dimension/merge-sk-pattern.md).
+### Dimension — stable surrogate-key synchronization
+See the [dimension sync contract](document/project_wiki/dimension/merge-sk-pattern.md)
+for the complete-source pattern and the [inventory](document/project_wiki/dimension/inventory.md)
+for scope and exceptions. Follow the [add-dimension guide](document/how-to/add-dimension.md)
+when implementing a new dimension.
 
 ### Fact — star-schema joins to dimensions (no MERGE)
 Three materialization styles: Dataform `type: "table"` rebuilds (`fact_order`,
@@ -357,7 +338,7 @@ Step-by-step guides with checklists live in [`document/how-to/`](document/how-to
 |------|-------|
 | New validated table | [add-validated-table.md](document/how-to/add-validated-table.md) |
 | New curated table | [add-curated-table.md](document/how-to/add-curated-table.md) |
-| New dimension (full daily rebuild by default) | [add-dimension.md](document/how-to/add-dimension.md) |
+| New dimension (stable surrogate key) | [add-dimension.md](document/how-to/add-dimension.md) |
 | New fact table | [add-fact-table.md](document/how-to/add-fact-table.md) |
 | Run & debug | [run-and-debug.md](document/how-to/run-and-debug.md) |
 
@@ -367,12 +348,12 @@ Step-by-step guides with checklists live in [`document/how-to/`](document/how-to
 
 - **Timezone:** always `Asia/Bangkok` (e.g. `CURRENT_DATE('Asia/Bangkok')`).
 - **NULL handling:** follow the [data-cleaning rules, including incremental string keys](document/coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล).
-- **DDL:** initial/validated/curated objects are created by Dataform; `operations`
-  targets (all MERGE dimensions, `fact_transcation`) pre-exist in BigQuery.
+- **DDL:** initial/validated/curated objects are created by Dataform; dimension sync
+  actions and `fact_transcation` use existing BigQuery targets.
 - **Primary keys:** declared `NOT ENFORCED` for query optimization, not constraints.
-- **Surrogate keys:** MERGE dims (`dim_company`, `dim_aging_rang`, lake dims) have
-  SKs that are stable forever — never regenerate them. Full-rebuild mds dims
-  regenerate SKs daily — never persist those SKs across days.
+- **Surrogate keys:** stable dimension sync keeps an SK attached to its natural key;
+  do not regenerate the whole dimension SK column with `ROW_NUMBER()`. Fact row SKs may
+  still regenerate when their fact tables rebuild.
 - **Partitioning/clustering:** partition incremental tables by `asatdate`; cluster on up to 4 frequently-filtered columns.
 - **Load-bearing typos (keep verbatim):** `fact_transcation` (table/file name),
   `CDC_DATESET` (variables.json key), `prdDiminsionData` (MASTERSKU JSON field).

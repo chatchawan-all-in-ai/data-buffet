@@ -26,13 +26,13 @@ Read by: [dim_target_product_group_by_sale](/dimension/dim_target_product_group_
 
 # Grain and key
 
-One row = one active MDS target row: key `TargetProductGroupSK`, `ROW_NUMBER()` ordered by companyID, Year, Month, MarketingGroupID, SubMarketingID, SegmentID, ChannelTargetGroup, TargetID; natural key is that same tuple (uniqueness is not enforced). No -1 row.
+One row = one active MDS target row. Natural key: (`companyID`, `Year`, `Month`, `MarketingGroupID`, `SubMarketingID`, `SegmentID`, `ChannelTargetGroup`, `TargetID`). `TargetProductGroupSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `TargetProductGroupSK` | INT64 | Surrogate key, `ROW_NUMBER()` over the key tuple above. Regenerated every run. |
+| `TargetProductGroupSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `Year` | INT64 | Target year (INT64 via `castInt64`). |
@@ -48,15 +48,11 @@ One row = one active MDS target row: key `TargetProductGroupSK`, `ROW_NUMBER()` 
 | `Amt` | FLOAT64 | Target sales amount in THB for the month (FLOAT64 via `castFloat64`). |
 | `Qty` | FLOAT64 | Target quantity (FLOAT64 via `castFloat64`). |
 | `MdsId` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_target_by_product_group_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_target_product_group.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `TargetProductGroupSK`.
-- Storage options: `{"clusterBy": ["TargetProductGroupSK"]}`.
+- Definition: `definitions/dimension/dim_target_product_group.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_sales_target_by_product_group_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Target by marketing group for the current year.

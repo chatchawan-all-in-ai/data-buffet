@@ -1,15 +1,34 @@
 config {
-  type: "table",
+  type: "operations",
+  hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_company", "dim_department_last", "dim_director_last", "update_sk_sale_rep_group"],
   tags: [databuffet.TAG_DIM_DAILY],
-  uniqueKey: ["RateTargetSK"],
-  bigquery: {
-    clusterBy: ["RateTargetSK"],
-  },
 }
 
 js {
+    const DimRateTargetTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimRateTargetTableRef = `${DimRateTargetTable.database}.${DimRateTargetTable.schema}.${DimRateTargetTable.name}`;
+
+    const stableDimensionColumns = ['RateTargetSK', 'CompanySK', 'companyID', 'Year', 'Month', 'StartDate', 'EndDate', 'ProductGroupID', 'ProductGroupName', 'TargetID', 'TargetName', 'TargetDepartmentID', 'TargetDepartmentName', 'DepartmentID', 'EmployeeID', 'EmployeeName', 'Percent', 'MdsID'];
+    const stableDimensionKeyColumns = ['companyID', 'Year', 'Month', 'StartDate', 'EndDate', 'ProductGroupID', 'TargetID', 'TargetDepartmentID', 'DepartmentID', 'EmployeeID'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`RateTargetSK` = S.`RateTargetSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'RateTargetSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -39,44 +58,117 @@ js {
     const DimDirectorLastTableRef = `${DimDirectorLastTable.database}.${DimDirectorLastTable.schema}.${DimDirectorLastTable.name}`;
 }
 
-SELECT
-  ROW_NUMBER() OVER(
-    ORDER BY
-      ${databuffet.functionData.cleanString("t1.companyID")},
-      ${databuffet.functionData.castInt64("t1.Year")},
-      ${databuffet.functionData.castInt64("t1.Month")},
-      ${databuffet.functionData.cleanString("t1.ProductGroupID")},
-      ${databuffet.functionData.cleanString("t1.TargetID")},
-      ${databuffet.functionData.cleanString("t1.TargetDepartmentID")},
-      ${databuffet.functionData.cleanString("t1.DepartmentID")},
-      ${databuffet.functionData.cleanString("t1.EmployeeID")}
-  ) AS RateTargetSK,
-  dim_com.CompanySK,
-  ${databuffet.functionData.cleanString("t1.companyID")} AS companyID,
-  ${databuffet.functionData.castInt64("t1.Year")} AS Year,
-  ${databuffet.functionData.castInt64("t1.Month")} AS Month,
-  t1.startdate as StartDate,
-  t1.enddate as EndDate,
-  ${databuffet.functionData.cleanString("t1.ProductGroupID")} AS ProductGroupID,
-  ${databuffet.functionData.cleanString("t1.ProductGroupName")} AS ProductGroupName,
-  ${databuffet.functionData.cleanString("t1.TargetID")} AS TargetID,
-  ${databuffet.functionData.cleanString("t1.TargetName")} AS TargetName,
-  ${databuffet.functionData.cleanString("t1.TargetDepartmentID")} AS TargetDepartmentID,
-  ${databuffet.functionData.cleanString("t1.TargetDepartmentName")} AS TargetDepartmentName,
-  ${databuffet.functionData.cleanString("t1.DepartmentID")} AS DepartmentID,
-  ${databuffet.functionData.cleanString("t1.EmployeeID")} AS EmployeeID,
-  ${databuffet.functionData.cleanString("t1.EmployeeName")} AS EmployeeName,
-  ${databuffet.functionData.castFloat64("t1.Percent")} AS Percent,
-  ${databuffet.functionData.cleanString("t1.id")} as MdsID
-FROM `${MdsSourceTableRef}` AS t1
-LEFT JOIN `${DimCompanyTableRef}` AS dim_com
-  ON ${databuffet.functionData.cleanString("t1.companyID")} = dim_com.companyID
-WHERE t1.is_active = TRUE
 
-pre_operations {}
 
-post_operations {
-  BEGIN
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    SELECT
+      ROW_NUMBER() OVER(
+        ORDER BY
+          ${databuffet.functionData.cleanString("t1.companyID")},
+          ${databuffet.functionData.castInt64("t1.Year")},
+          ${databuffet.functionData.castInt64("t1.Month")},
+          ${databuffet.functionData.cleanString("t1.ProductGroupID")},
+          ${databuffet.functionData.cleanString("t1.TargetID")},
+          ${databuffet.functionData.cleanString("t1.TargetDepartmentID")},
+          ${databuffet.functionData.cleanString("t1.DepartmentID")},
+          ${databuffet.functionData.cleanString("t1.EmployeeID")}
+      ) AS RateTargetSK,
+      dim_com.CompanySK,
+      ${databuffet.functionData.cleanString("t1.companyID")} AS companyID,
+      ${databuffet.functionData.castInt64("t1.Year")} AS Year,
+      ${databuffet.functionData.castInt64("t1.Month")} AS Month,
+      t1.startdate as StartDate,
+      t1.enddate as EndDate,
+      ${databuffet.functionData.cleanString("t1.ProductGroupID")} AS ProductGroupID,
+      ${databuffet.functionData.cleanString("t1.ProductGroupName")} AS ProductGroupName,
+      ${databuffet.functionData.cleanString("t1.TargetID")} AS TargetID,
+      ${databuffet.functionData.cleanString("t1.TargetName")} AS TargetName,
+      ${databuffet.functionData.cleanString("t1.TargetDepartmentID")} AS TargetDepartmentID,
+      ${databuffet.functionData.cleanString("t1.TargetDepartmentName")} AS TargetDepartmentName,
+      ${databuffet.functionData.cleanString("t1.DepartmentID")} AS DepartmentID,
+      ${databuffet.functionData.cleanString("t1.EmployeeID")} AS EmployeeID,
+      ${databuffet.functionData.cleanString("t1.EmployeeName")} AS EmployeeName,
+      ${databuffet.functionData.castFloat64("t1.Percent")} AS Percent,
+      ${databuffet.functionData.cleanString("t1.id")} as MdsID
+    FROM `${MdsSourceTableRef}` AS t1
+    LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+      ON ${databuffet.functionData.cleanString("t1.companyID")} = dim_com.companyID
+    WHERE t1.is_active = TRUE
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_rate_target source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimRateTargetTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_rate_target target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimRateTargetTableRef}`
+    WHERE `RateTargetSK` IS NULL
+  ) AS 'dim_rate_target target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimRateTargetTableRef}`
+    GROUP BY `RateTargetSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_rate_target target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`RateTargetSK`)
+    FROM `${DimRateTargetTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`RateTargetSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `RateTargetSK`
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.`RateTargetSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`RateTargetSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimRateTargetTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
+
+  MERGE `${DimRateTargetTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+
+BEGIN
     -- DECLARE static_count BIGNUMERIC;
     DECLARE max_total_employee BIGNUMERIC;
 
@@ -134,4 +226,4 @@ post_operations {
     DROP TABLE IF EXISTS mdt_base_data;
     DROP TABLE IF EXISTS monthly_summary;
   END;
-}
+END;

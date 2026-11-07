@@ -26,13 +26,13 @@ Read by: [fact_transcation](/fact/fact_transcation.md), [view_fact_transcation](
 
 # Grain and key
 
-One row = one standard-cost rate of a product group and cost channel for a validity period: key `CostGroupSK` (surrogate, regenerated every run); natural key `companyID` + `GAccID` + `ChannelCostID` + `StartDate` + `EndDate`, from active mds rows.
+One row = one standard-cost rate of a product group and cost channel for a validity period. Natural key: (`companyID`, `GAccID`, `ChannelCostID`, `StartDate`, `EndDate`). `CostGroupSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `CostGroupSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, GAccID, ChannelCostID, StartDate, EndDate)` over the active mds rows. Regenerated every run. |
+| `CostGroupSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `GAccID` | STRING | Pass-through of mds `GAccID`, cleaned with `cleanString` (empty string becomes NULL). Product group account code (G-account); the group-level key. |
@@ -43,15 +43,11 @@ One row = one standard-cost rate of a product group and cost channel for a valid
 | `StartDate` | DATE | First day the percentage is valid (mds `StartDate`, DATE). |
 | `EndDate` | DATE | Last day the percentage is valid (mds `EndDate`, DATE). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_standard_cost_by_product_group_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_cost_group.sqlx` (`type: "table"`, tag `dimension_daily`).
-- `uniqueKey`: `CostGroupSK`.
-- Storage options: `{"clusterBy": ["CostGroupSK"]}`.
+- Definition: `definitions/dimension/dim_cost_group.sqlx` (`type: "operations"`, `hasOutput: true`, tag `dimension_daily`).
 - Reads: `mds_dataset.mds_data_standard_cost_by_product_group_master` (master data loaded outside this repo; only rows with `is_active = TRUE`), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Standard-cost percent per group and cost channel valid today.

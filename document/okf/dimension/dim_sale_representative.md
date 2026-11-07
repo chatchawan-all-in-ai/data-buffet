@@ -26,13 +26,13 @@ Read by: [dim_sale_representative_last](/dimension/dim_sale_representative_last.
 
 # Grain and key
 
-One row = one rule row or one ledger row: key `SaleRepSK`, `ROW_NUMBER()` over a UNION ALL of two sources. (a) `mds_rep`: active MDS rows (MdsID set) after the CustomerFlag roll-up (flag-only rows, which have CustomerFlag but no DepCode, CostChannelID, ProvinceID or OrderStartDate, are folded into the rule row of the same company, employee, department and overlapping dates; a flag row with no rule row to join is dropped). (b) `ledger_rep`: every distinct employee of `validated_mac5.per` with names parsed from `pernamet`, DepartmentID and all rule columns NULL, StartDate 1900-01-01, EndDate 2499-12-31, MdsID NULL. SK ordering: MDS rows first, then ledger, then companyID, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID, StartDate, EndDate. `(CompanySK, EmployeeID)` is NOT unique (employee appears in rule rows and in the ledger row). No -1 row.
+One row = one rule row or one ledger row. Natural key: (`companyID`, `DepartmentID`, `EmployeeID`, `DepCode`, `CostChannelID`, `ProvinceID`, `StartDate`, `EndDate`, `OrderStartDate`, `OrderEndDate`, `CustomerFlag`). `SaleRepSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `SaleRepSK` | INT64 | Surrogate key, `ROW_NUMBER()` in the order described under grain. Regenerated every run. |
+| `SaleRepSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `DepartmentID` | STRING | Department code the employee belongs to for this rule (MDS); NULL on ledger rows. Joins to dim_department.DepartmentID. |
@@ -50,15 +50,11 @@ One row = one rule row or one ledger row: key `SaleRepSK`, `ROW_NUMBER()` over a
 | `OrderStartDate` | DATE | Start of an order-date window: a row with an order window wins the match for bills ordered inside the window (`seq_condition` 0). NULL when no window. |
 | `OrderEndDate` | DATE | End of the order-date window; NULL when no window. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_representative_master`, cleaned with `cleanString`; trace column back to MDS; NULL for ledger rows. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_sale_representative.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `SaleRepSK`.
-- Storage options: `{"clusterBy": ["SaleRepSK"]}`.
+- Definition: `definitions/dimension/dim_sale_representative.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_sales_representative_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md), [validated_mac5.per](/validated/validated_mac5/per.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Rule rows (MDS) of one employee valid today.

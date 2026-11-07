@@ -26,27 +26,23 @@ Read by: [view_dim_channel](/view/dimension_view/view_dim_channel.md), [fact_tra
 
 # Grain and key
 
-One row = one cost channel of a company among active mds rows: key `ChannelCostSK` (surrogate, regenerated every run); natural key `companyID` + `ChannelCostID`.
+One row = one cost channel of a company among active mds rows. Natural key: (`companyID`, `ChannelCostID`). `ChannelCostSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ChannelCostSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, ChannelCostID)` over the active mds rows. Regenerated every run. |
+| `ChannelCostSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `ChannelCostID` | STRING | Pass-through of mds `ChannelCostID`, cleaned with `cleanString` (empty string becomes NULL). Natural key with companyID. |
 | `ChannelCostName` | STRING | Pass-through of mds `ChannelCostName`, cleaned with `cleanString` (empty string becomes NULL). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_channel_cost_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_channel_cost.sqlx` (`type: "table"`, tag `dimension_daily`).
-- `uniqueKey`: `ChannelCostSK`.
-- Storage options: `{"clusterBy": ["ChannelCostSK"]}`.
+- Definition: `definitions/dimension/dim_channel_cost.sqlx` (`type: "operations"`, `hasOutput: true`, tag `dimension_daily`).
 - Reads: `mds_dataset.mds_data_channel_cost_master` (master data loaded outside this repo; only rows with `is_active = TRUE`), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Codes and names for one company.

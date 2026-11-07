@@ -26,7 +26,7 @@ Read by: [export_view_dim_aging_history](/view/pub_sub/export_view_dim_aging_his
 
 # Grain and key
 
-One row = one AR document in one snapshot: key `asatdate`, `companyID`, `cfsVnosID`, `cfsTypeID` (QUALIFY ROW_NUMBER over that key, ordered by `ChannelSK`, `BillingSK`). Invoice `BFCN020/47` is excluded.
+One row = one AR document in one snapshot: key `asatdate`, `companyID`, `cfsVnosID`, `cfsTypeID` (QUALIFY ROW_NUMBER over that key, ordered by channel `companyID`, `DepCode`, then `BillingSK`). Invoice `BFCN020/47` is excluded.
 
 # Schema
 

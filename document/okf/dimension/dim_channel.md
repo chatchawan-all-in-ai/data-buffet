@@ -26,13 +26,13 @@ Read by: [view_dim_channel](/view/dimension_view/view_dim_channel.md), [view_fac
 
 # Grain and key
 
-One row = one department code of a company among active mds rows: key `ChannelSK` (surrogate, regenerated every run); natural key `companyID` + `DepCode`.
+One row = one department code of a company among active mds rows. Natural key: (`companyID`, `DepCode`). `ChannelSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ChannelSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, DepCode)` over the active mds rows. Regenerated every run. |
+| `ChannelSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `DepCode` | STRING | Department/cost-centre code from the ledger (`DepCode`); the natural key with companyID and the join key from sales documents. |
@@ -59,15 +59,11 @@ One row = one department code of a company among active mds rows: key `ChannelSK
 | `ChannelDSubDivision04` | STRING | Pass-through of mds `ChannelDSubDivision04`, cleaned with `cleanString` (empty string becomes NULL). Dimension-style channel level 4 (Sub-division). |
 | `DummyChannel` | STRING | Pass-through of mds `DummyChannel`, cleaned with `cleanString` (empty string becomes NULL). Dummy employee id (e.g. `9999991`, `9999994`) that fact_transcation uses in place of the line salesperson when matching sales representatives; `not calculated` when the department has none. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_channel_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_channel.sqlx` (`type: "table"`, tag `dimension_daily`).
-- `uniqueKey`: `ChannelSK`.
-- Storage options: `{"clusterBy": ["ChannelSK"]}`.
+- Definition: `definitions/dimension/dim_channel.sqlx` (`type: "operations"`, `hasOutput: true`, tag `dimension_daily`).
 - Reads: `mds_dataset.mds_data_channel_master` (master data loaded outside this repo; only rows with `is_active = TRUE`), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Sales, cost and finance channels for a department code.

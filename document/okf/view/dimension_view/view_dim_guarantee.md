@@ -31,7 +31,7 @@ One row = one bank guarantee: key `GuaranteeSK` (grain of dim_guarantee: `Compan
 | Column | Type | Description |
 |---|---|---|
 | `CustomerSK` | INT64 | Stable SK of the customer in dim_customer, matched on CustomerCode = debcode and CompanySK; never NULL in this view. |
-| `GuaranteeSK` | INT64 | SK of the guarantee row in dim_guarantee (ROW_NUMBER over companyID, CustomerCode, BankName; regenerated daily). |
+| `GuaranteeSK` | INT64 | Stable SK of the guarantee row in [dim_guarantee](/dimension/dim_guarantee.md). |
 | `CompanySK` | INT64 | SK of the company in dim_company. |
 | `CompanyID` | STRING | MAC5 company code (cleaned). |
 | `Region` | STRING | Sales region text from the MDS guarantee document master (pass-through). |

@@ -238,15 +238,14 @@ gate ใดรัน ถ้าทำจากเครื่องที่ไ�
 
 1. **Timezone Bangkok เสมอ** — `CURRENT_DATE('Asia/Bangkok')`
 2. **การทำความสะอาด string และข้อยกเว้นสำหรับ incremental key** — ดู [coding-standard §4](../coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล)
-3. **SK มี 2 ระบบ** — dim แบบ MERGE (`dim_company`, `dim_aging_rang`, lake dims):
-   SK คงที่ตลอดชีพ ห้าม regenerate / dim mds แบบ full rebuild: SK ออกเลขใหม่
-   ทุกวัน **ห้ามเก็บข้ามวัน**
+3. **Dimension SK** — follow the [sync contract](../project_wiki/dimension/merge-sk-pattern.md)
+   and check the [inventory](../project_wiki/dimension/inventory.md) for held and unchanged actions.
 4. **ตาราง `type: "operations"` Dataform ไม่สร้างให้** — dim แบบ MERGE และ
    `fact_transcation` ต้องมีตารางอยู่ก่อน
 5. **คำผิดที่ห้ามแก้** (เป็นชื่อจริงใน BigQuery): `fact_transcation`, `CDC_DATESET`,
    `prdDiminsionData`
-6. dim mds แบบ MERGE (2 ตัว) ต้องจบด้วย DELETE row ที่ `is_active = FALSE` ก่อน `END;`
-   (แบบ full rebuild ไม่ต้อง)
+6. Stable-key dimension sync requires a complete source snapshot; keep process logic and
+   filters unchanged. Do not add a partial-source delete rule.
 
 ## 7. อ่านต่อ
 

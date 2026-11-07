@@ -30,7 +30,7 @@ One row = one dim_sale_representative row with one distinct matching `Department
 
 | Column | Type | Description |
 |---|---|---|
-| `SaleRepSK` | INT64 | SK of the sales representative assignment in dim_sale_representative (full rebuild, regenerated daily). |
+| `SaleRepSK` | INT64 | Stable SK of the sales representative assignment in [dim_sale_representative](/dimension/dim_sale_representative.md). |
 | `CompanySK` | INT64 | SK of the company in [dim_company](/dimension/dim_company.md). |
 | `companyID` | STRING | MAC5 company code. |
 | `DepartmentID` | STRING | Department code of the representative (department_id in MAC5); NULL for rows without a department. |

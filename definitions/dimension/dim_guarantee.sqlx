@@ -1,15 +1,34 @@
 config {
-  type: "table",
+  type: "operations",
+  hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_company"],
   tags: [databuffet.TAG_DIM_DAILY],
-  uniqueKey: ["GuaranteeSK"],
-  bigquery: {
-    clusterBy: ["GuaranteeSK"],
-  },
 }
 
 js {
+    const DimGuaranteeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimGuaranteeTableRef = `${DimGuaranteeTable.database}.${DimGuaranteeTable.schema}.${DimGuaranteeTable.name}`;
+
+    const stableDimensionColumns = ['GuaranteeSK', 'CompanySK', 'CompanyID', 'Region', 'CustomerCode', 'CustomerName', 'ExpiryDate', 'BankName', 'BG_Limit', 'Renewal', 'Remarks', 'Address', 'PhoneNumber', 'FAX', 'MdsId'];
+    const stableDimensionKeyColumns = ['CompanyID', 'CustomerCode', 'BankName'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`GuaranteeSK` = S.`GuaranteeSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'GuaranteeSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -25,32 +44,105 @@ js {
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 }
 
-SELECT
-  ROW_NUMBER() OVER(
-    ORDER BY
-      ${databuffet.functionData.cleanString("t1.CompanyID")},
-      ${databuffet.functionData.cleanString("t1.CustomerCode")},
-      ${databuffet.functionData.cleanString("t1.BankName")}
-  ) AS GuaranteeSK,
-  dim_com.CompanySK,
-  ${databuffet.functionData.cleanString("t1.CompanyID")} AS CompanyID,
-  ${databuffet.functionData.cleanString("t1.Region")} AS Region,
-  ${databuffet.functionData.cleanString("t1.CustomerCode")} AS CustomerCode,
-  ${databuffet.functionData.cleanString("t1.CustomerName")} AS CustomerName,
-  t1.ExpiryDate AS ExpiryDate,
-  ${databuffet.functionData.cleanString("t1.BankName")} AS BankName,
-  ${databuffet.functionData.castFloat64("t1.BG_Limit")} AS BG_Limit,
-  ${databuffet.functionData.cleanString("t1.Renewal")} AS Renewal,
-  ${databuffet.functionData.cleanString("t1.Remarks")} AS Remarks,
-  ${databuffet.functionData.cleanString("t1.Address")} AS Address,
-  ${databuffet.functionData.cleanString("t1.PhoneNumber")} AS PhoneNumber,
-  ${databuffet.functionData.cleanString("t1.FAX")} AS FAX,
-  ${databuffet.functionData.cleanString("t1.id")} as MdsID
-FROM `${MdsSourceTableRef}` AS t1
-LEFT JOIN `${DimCompanyTableRef}` AS dim_com
-  ON ${databuffet.functionData.cleanString("t1.CompanyID")} = dim_com.companyID
-WHERE t1.is_active = TRUE
 
-pre_operations {}
 
-post_operations {}
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    SELECT
+      ROW_NUMBER() OVER(
+        ORDER BY
+          ${databuffet.functionData.cleanString("t1.CompanyID")},
+          ${databuffet.functionData.cleanString("t1.CustomerCode")},
+          ${databuffet.functionData.cleanString("t1.BankName")}
+      ) AS GuaranteeSK,
+      dim_com.CompanySK,
+      ${databuffet.functionData.cleanString("t1.CompanyID")} AS CompanyID,
+      ${databuffet.functionData.cleanString("t1.Region")} AS Region,
+      ${databuffet.functionData.cleanString("t1.CustomerCode")} AS CustomerCode,
+      ${databuffet.functionData.cleanString("t1.CustomerName")} AS CustomerName,
+      t1.ExpiryDate AS ExpiryDate,
+      ${databuffet.functionData.cleanString("t1.BankName")} AS BankName,
+      ${databuffet.functionData.castFloat64("t1.BG_Limit")} AS BG_Limit,
+      ${databuffet.functionData.cleanString("t1.Renewal")} AS Renewal,
+      ${databuffet.functionData.cleanString("t1.Remarks")} AS Remarks,
+      ${databuffet.functionData.cleanString("t1.Address")} AS Address,
+      ${databuffet.functionData.cleanString("t1.PhoneNumber")} AS PhoneNumber,
+      ${databuffet.functionData.cleanString("t1.FAX")} AS FAX,
+      ${databuffet.functionData.cleanString("t1.id")} as MdsID
+    FROM `${MdsSourceTableRef}` AS t1
+    LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+      ON ${databuffet.functionData.cleanString("t1.CompanyID")} = dim_com.companyID
+    WHERE t1.is_active = TRUE
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_guarantee source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimGuaranteeTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_guarantee target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimGuaranteeTableRef}`
+    WHERE `GuaranteeSK` IS NULL
+  ) AS 'dim_guarantee target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimGuaranteeTableRef}`
+    GROUP BY `GuaranteeSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_guarantee target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`GuaranteeSK`)
+    FROM `${DimGuaranteeTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`GuaranteeSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `GuaranteeSK`
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.`GuaranteeSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`GuaranteeSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimGuaranteeTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
+
+  MERGE `${DimGuaranteeTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

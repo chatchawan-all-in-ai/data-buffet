@@ -46,7 +46,7 @@ GCS files  gs://file-raw-data  (AVRO, Hive partition: ASATDATE=YYYYMMDD · ม�
 | Initial | `raw_*`, `function_dataset` | operations | external table ชี้ GCS, สร้าง schema/UDF, ไฟล์ drop สำหรับ (re-)initial |
 | Validated | `validated_*` | incremental / table | cast type, ลบ string ว่าง, dedup ตาม PK |
 | Curated | `curated_*` | incremental / table | join ข้าม validated, JSON parsing, split-sale (ag01), รวม sell-out ทุกห้าง |
-| Dimension | `dimension_table` | table rebuild / operations MERGE | ออก surrogate key, SCD |
+| Dimension | `dimension_table` | operations / table; see dimension inventory | ออกและ sync surrogate key, SCD |
 | Fact | `fact_table` | table / operations | join SK ทุก dimension, retention 4 ปี |
 | View | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset`, `pub_sub` | view | BI/reporting อ่านจาก dim/fact/curated (`type: "view"`, tag `view`) |
 | CDC | `cdc_dataset` | operations | จับ NEW/CHANGED จาก config |
@@ -56,16 +56,8 @@ GCS files  gs://file-raw-data  (AVRO, Hive partition: ASATDATE=YYYYMMDD · ม�
 
 ### แยกย่อย dimension
 
-| กลุ่ม | ลักษณะ |
-|---|---|
-| mds full daily rebuild (ค่าเริ่มต้น) | `type: "table"` · SK ออกใหม่ทุกวัน |
-| mds MERGE legacy (2) | `dim_company`, `dim_aging_rang` · SK เสถียร |
-| lake MERGE (validated/curated) (10) | SK เสถียร ไม่มี tombstone |
-| mds + invoice MERGE (1) | `dim_customer_report_info` (2026-10-28) · SK เสถียร ไม่มี delete |
-| full rebuild อื่น | `_last` 7 ตัว, target 2 ตัว, `dim_store`, `dim_pump_information`, `dim_product_series` (hard-code) |
-| operations อื่น (3) | `dim_calendar`, `dim_aging`, `update_sk_sale_rep_group` |
-
-จำนวนต่อกลุ่มและรายชื่อทุกไฟล์: [project_wiki/dimension/inventory.md](../project_wiki/dimension/inventory.md)
+[Dimension inventory](../project_wiki/dimension/inventory.md) owns the pattern counts,
+conversion scope, held dimensions, and natural keys.
 
 > วิธีนับที่เชื่อถือได้: จับ `mds_data_\w+` **ทั้งไฟล์** ไม่ใช่แค่ `name: "..."` —
 > dim ชุด MDT อ้าง mds ผ่าน const ใน `js {}` ถ้าจับแค่ `name:` จะนับขาด
@@ -80,26 +72,20 @@ GCS files  gs://file-raw-data  (AVRO, Hive partition: ASATDATE=YYYYMMDD · ม�
 
 ## จุดสำคัญเชิงออกแบบ
 
-### Surrogate key (SK) — 2 ระบบ (ตั้งแต่ 2026-07-20)
+### Surrogate key (SK)
 
-- **SK เสถียร** (MERGE dims: `dim_company`, `dim_aging_rang` + lake dims 10 ตัว + `dim_customer_report_info`):
-  ออกด้วย `max_sk + ROW_NUMBER()` + dual self-join รักษา SK เดิมตลอดชีพ —
-  ห้าม regenerate เด็ดขาด ดู
-  [project_wiki/dimension/merge-sk-pattern.md](../project_wiki/dimension/merge-sk-pattern.md)
-- **SK รายวัน** (mds dims แบบ full rebuild — ปั้น full ใหม่ทุกวัน): `ROW_NUMBER()` ออกเลขใหม่
-  ทุกคืน — consumer ทุกตัว re-derive รายวัน (ตรวจครบแล้ว) **ห้าม persist SK
-  พวกนี้ข้ามวัน** ดู
-  [project_wiki/dimension/full-rebuild-pattern.md](../project_wiki/dimension/full-rebuild-pattern.md)
+See the [stable SK contract](../project_wiki/dimension/merge-sk-pattern.md) and
+[conversion inventory](../project_wiki/dimension/inventory.md), including held and
+unchanged actions.
 
 ### mds_dataset และการจัดการ delete/overwrite
 
 ตาราง `mds_data_*_master` ทุกตัวมี `id`, `is_active`, `updated_at`
 และรองรับ **overwrite import** (ล้างแล้วลงใหม่ = id ใหม่หมด)
 
-- **dims แบบ full rebuild**: อ่านเฉพาะ `is_active = TRUE` ทั้งตารางทุกคืน —
-  soft delete และ overwrite import หายเองอัตโนมัติ (ตัดสินใจ 2026-07-20)
-- **dims 2 ตัว (MERGE)**: window `MDS_BACKFILL_DAYS` (1 วัน) + tombstone DELETE
-  ลบ row ที่ต้นทาง `is_active = FALSE` (hard delete, ตัดสินใจ 2026-07-10)
+- Converted MDS dimensions read the complete active source and synchronize inserts,
+  updates, and deletions each day. Inactive or missing source rows are removed from the
+  dimension; no tombstone column is retained.
 
 ### MAC5 multi-company
 

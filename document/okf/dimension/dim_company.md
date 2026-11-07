@@ -26,25 +26,23 @@ Read by: [dim_aging](/dimension/dim_aging.md), [dim_aging_rang](/dimension/dim_a
 
 # Grain and key
 
-One row = one company: key (`CompanyID`, `CompanyCode`); `CompanySK` is a stable surrogate key (`max_sk + ROW_NUMBER()` for new rows, existing SKs never change). Matched to MDS first by `MdsId`, then by the natural key.
+One row = one company. `CompanySK` retains the legacy identity: match by `MdsId` first, then fall back to (`CompanyID`, `CompanyCode`). A CompanyCode edit with the same MdsId retains CompanySK. New rows are allocated after the current maximum; rows absent from the complete active MDS source are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `CompanySK` | INT64 | Stable surrogate key of the company; referenced as `CompanySK` throughout dimension and fact tables. Never regenerated. |
+| `CompanySK` | INT64 | Stable surrogate key retained by the legacy MdsId-first lookup, with CompanyID/CompanyCode fallback; new keys are allocated after the current maximum. |
 | `CompanyID` | STRING | MAC5 company id such as ag01, aa05, ab01, ac02, ak02; matches `company_id` in validated/curated MAC5 tables. Part of the natural key. |
 | `CompanyCode` | STRING | Short company code from MDS (`CompanyCode`): TM = ag01, TE = ac02, IM = ab01, SHANTA = aa05, SWAS = ak02; second part of the natural key. |
 | `CompanyNameTH` | STRING | Company name in Thai (MDS `CompanyNameTH`). |
 | `CompanyNameEN` | STRING | Company name in English (MDS `CompanyNameEN`). |
-| `MdsId` | STRING | `id` of the source row in `mds_dataset.mds_data_company_master`, cleaned with `cleanString`; trace column back to MDS. Also used to keep the SK when keys are edited and for the tombstone delete. |
-
+| `MdsId` | STRING | `id` of the source row in `mds_dataset.mds_data_company_master`, cleaned with `cleanString`; trace column back to MDS. |
 # How it is built
 
-- Definition: `definitions/dimension/dim_company.sqlx` (`type: "operations"`, tag `dimension_daily`); the operation owns this table.
+- Definition: `definitions/dimension/dim_company.sqlx` (`type: "operations"`, `hasOutput: true`, tag `dimension_daily`); the operation owns this table.
 - Reads: `mds_dataset.mds_data_company_master` (master data loaded outside this repo).
-- MERGE with stable SK (legacy pattern, see [merge-sk-pattern](../../project_wiki/dimension/merge-sk-pattern.md)) in a `type: "operations"` file, tag `dimension_daily`, `dependencies: []`; the target table pre-exists in BigQuery. Source window is `MDS_BACKFILL_DAYS` on `updated_at` with `is_active = TRUE`, then a tombstone DELETE of rows whose MDS row is `is_active = FALSE`. Runs first among dimensions.
-
+- The legacy MdsId-first lookup and CompanyID/CompanyCode fallback run over the complete active MDS source. MERGE matches on CompanySK, updates CompanyNameTH, CompanyNameEN and MdsId, inserts new companies, and hard-deletes companies absent from that source. CompanyID and CompanyCode remain the stored legacy values on matched rows.
 # Examples
 
 Company SK for each MAC5 company id.

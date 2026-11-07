@@ -26,13 +26,13 @@ Read by: [fact_backlog_store](/fact/fact_backlog_store.md), [fact_invoice_store]
 
 # Grain and key
 
-One row = one warehouse: key `(company_id, stocode)` of `validated_mac5.sto`, restricted to companies ag01 and ab01; `StoreSK` is `ROW_NUMBER()` ordered by company_id, stocode. Plus one reserved row `StoreSK = -1` (CompanySK, companyID, StoreCode, StoreGroup all NULL; StoreNameT 'ไม่ระบุคลัง', StoreNameE 'Unknown', ReportStore 'KTB') for store codes not found in `sto`.
+One row = one warehouse. Natural key: (`companyID`, `StoreCode`). `StoreSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `StoreSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by company_id, stocode; -1 for the unknown-store row. Regenerated every run. |
+| `StoreSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. NULL on the -1 row. |
 | `companyID` | STRING | Company code, from `sto.company_id`; NULL on the -1 row. |
 | `StoreCode` | STRING | Warehouse code; NULL on the -1 row. |
@@ -40,15 +40,11 @@ One row = one warehouse: key `(company_id, stocode)` of `validated_mac5.sto`, re
 | `StoreNameT` | STRING | Thai name of the warehouse; 'ไม่ระบุคลัง' on the -1 row. |
 | `StoreNameE` | STRING | English name of the warehouse; 'Unknown' on the -1 row. |
 | `ReportStore` | STRING | Report slicer: `StoreGroup` as is when its lower-case value is one of kk, pk, lp, ub, hy; otherwise (including NULL group) the bucket 'KTB'. The -1 row is 'KTB'. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_store.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `StoreSK`.
-- Storage options: `{"clusterBy": ["StoreSK"]}`.
+- Definition: `definitions/dimension/dim_store.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: [validated_mac5.sto](/validated/validated_mac5/sto.md), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company. The hand-written -1 row is UNION ALL'd in the same statement.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company. The hand-written -1 row is UNION ALL'd in the same statement.
 # Examples
 
 Warehouse group slicer values and counts.

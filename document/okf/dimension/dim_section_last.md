@@ -26,13 +26,13 @@ Read by: [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [dim_target
 
 # Grain and key
 
-One row = one section code: key `(CompanyID, SectionID)`; the row with the greatest EndDate (ties by StartDate) is kept; no current-date filter. `SectionSK` is renumbered here (ordered by CompanySK, SectionID) and differs from `dim_section.SectionSK`. No -1 row.
+One row = one section code. Natural key: (`companyID`, `SectionID`, `StartDate`, `EndDate`). `SectionSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `SectionSK` | INT64 | Surrogate key of this snapshot, `ROW_NUMBER()` ordered by CompanySK, SectionID. Regenerated every run; not the same space as `dim_section.SectionSK`. |
+| `SectionSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `SectionManagerSK` | INT64 | Hierarchy key to [dim_section_manager_last](/dimension/dim_section_manager_last.md).SectionManagerSK. Built NULL, backfilled by `update_sk_sale_rep_group` (via `dim_department_last`). |
 | `RegionSK` | INT64 | Hierarchy key to [dim_region_last](/dimension/dim_region_last.md).RegionSK. Built NULL, backfilled by `update_sk_sale_rep_group` from `dim_department_last`. |
 | `RegionManagerSK` | INT64 | Hierarchy key to dim_region_manager_last. Built NULL, backfilled by `update_sk_sale_rep_group`. |
@@ -43,15 +43,11 @@ One row = one section code: key `(CompanyID, SectionID)`; the row with the great
 | `SectionName` | STRING | Section name from the kept interval. |
 | `StartDate` | DATE | Start of the kept validity interval. |
 | `EndDate` | DATE | End of the kept validity interval. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_section_last.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `SectionSK`.
-- Storage options: `{"clusterBy": ["SectionSK"]}`.
+- Definition: `definitions/dimension/dim_section_last.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: [dimension_table.dim_section](/dimension/dim_section.md), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company and dim_section. The four hierarchy SKs are then filled by the operation `update_sk_sale_rep_group`.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company and dim_section. The four hierarchy SKs are then filled by the operation `update_sk_sale_rep_group`.
 # Examples
 
 Sections with their section manager (via the hierarchy key).

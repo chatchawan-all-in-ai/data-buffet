@@ -1,17 +1,36 @@
 config {
-    type: "table",
+    type: "operations",
+  hasOutput: true,
     schema: databuffet.DIMENSION_TABLE,
-    dependencies: [ 
+    dependencies: [
                     "dim_company", "dim_section_manager"
                 ],
     tags: [databuffet.TAG_DIM_DAILY],
-    uniqueKey: ["SectionManagerSK"],
-    bigquery: {
-        clusterBy: ["SectionManagerSK"]
-    },
 }
 
 js {
+    const DimSectionManagerLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimSectionManagerLastTableRef = `${DimSectionManagerLastTable.database}.${DimSectionManagerLastTable.schema}.${DimSectionManagerLastTable.name}`;
+
+    const stableDimensionColumns = ['SectionManagerSK', 'CompanySK', 'companyID', 'SectionID', 'SectionName', 'SectionManagerEmployeeID', 'SectionManagerName', 'SectionManagerSurname', 'SectionManagerNickname', 'StartDate', 'EndDate'];
+    const stableDimensionKeyColumns = ['companyID', 'SectionID', 'StartDate', 'EndDate'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`SectionManagerSK` = S.`SectionManagerSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'SectionManagerSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -28,31 +47,101 @@ js {
 
 }
 
-SELECT
-    ROW_NUMBER() OVER (ORDER BY dim_com.CompanySK, t1.SectionID) AS SectionManagerSK,
-    dim_com.CompanySK,
-    dim_com.companyID,
-    t1.SectionID,
-    t1.SectionName,
-    t1.SectionManagerEmployeeID,
-    t1.SectionManagerName,
-    t1.SectionManagerSurname,
-    t1.SectionManagerNickname,
-    t1.StartDate, 
-    t1.EndDate,
+
+
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY dim_com.CompanySK, t1.SectionID) AS SectionManagerSK,
+        dim_com.CompanySK,
+        dim_com.companyID,
+        t1.SectionID,
+        t1.SectionName,
+        t1.SectionManagerEmployeeID,
+        t1.SectionManagerName,
+        t1.SectionManagerSurname,
+        t1.SectionManagerNickname,
+        t1.StartDate,
+        t1.EndDate,
+      FROM (
+        SELECT
+          *
+        FROM `${DimSectionManagerTableRef}`
+        -- WHERE CURRENT_DATE('Asia/Bangkok') between StartDate and EndDate
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, SectionID ORDER BY EndDate DESC, StartDate DESC) = 1
+      ) as t1
+      LEFT JOIN `${DimCompanyTableRef}` as dim_com
+        on t1.CompanyID = dim_com.CompanyID
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_section_manager_last source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimSectionManagerLastTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_section_manager_last target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimSectionManagerLastTableRef}`
+    WHERE `SectionManagerSK` IS NULL
+  ) AS 'dim_section_manager_last target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimSectionManagerLastTableRef}`
+    GROUP BY `SectionManagerSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_section_manager_last target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`SectionManagerSK`)
+    FROM `${DimSectionManagerLastTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`SectionManagerSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `SectionManagerSK`
+    )
   FROM (
     SELECT
-      *
-    FROM `${DimSectionManagerTableRef}`
-    -- WHERE CURRENT_DATE('Asia/Bangkok') between StartDate and EndDate
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, SectionID ORDER BY EndDate DESC, StartDate DESC) = 1
-  ) as t1
-  LEFT JOIN `${DimCompanyTableRef}` as dim_com
-    on t1.CompanyID = dim_com.CompanyID
+      source_row.*,
+      target_row.`SectionManagerSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`SectionManagerSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimSectionManagerLastTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
 
-
-pre_operations {
-}
-
-post_operations {
-}
+  MERGE `${DimSectionManagerLastTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

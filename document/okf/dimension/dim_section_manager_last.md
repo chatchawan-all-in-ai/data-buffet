@@ -26,13 +26,13 @@ Read by: [dim_target_product_group_by_sale](/dimension/dim_target_product_group_
 
 # Grain and key
 
-One row = one section code: key `(CompanyID, SectionID)`; the row with the greatest EndDate (ties by StartDate) is kept. `SectionManagerSK` is renumbered here (ordered by CompanySK, SectionID), not equal to `dim_section_manager.SectionManagerSK`. No -1 row.
+One row = one section code. Natural key: (`companyID`, `SectionID`, `StartDate`, `EndDate`). `SectionManagerSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `SectionManagerSK` | INT64 | Surrogate key of this snapshot, `ROW_NUMBER()` ordered by CompanySK, SectionID. Target of the hierarchy keys in `dim_section_last` and `dim_department_last`. Regenerated every run. |
+| `SectionManagerSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code from dim_company.companyID. |
 | `SectionID` | STRING | Section code from dim_section_manager.SectionID. |
@@ -43,15 +43,11 @@ One row = one section code: key `(CompanyID, SectionID)`; the row with the great
 | `SectionManagerNickname` | STRING | Manager nickname (kept interval). |
 | `StartDate` | DATE | Start of the kept interval. |
 | `EndDate` | DATE | End of the kept interval. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_section_manager_last.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `SectionManagerSK`.
-- Storage options: `{"clusterBy": ["SectionManagerSK"]}`.
+- Definition: `definitions/dimension/dim_section_manager_last.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: [dimension_table.dim_section_manager](/dimension/dim_section_manager.md), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company and dim_section_manager.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company and dim_section_manager.
 # Examples
 
 Section manager per section code from the snapshot.

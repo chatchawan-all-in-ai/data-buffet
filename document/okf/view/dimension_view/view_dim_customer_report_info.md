@@ -34,7 +34,7 @@ One row = one report shop name of a company: key `CustomerReportInfoSK` (MERGE k
 |---|---|---|
 | `CustomerReportInfoSK` | INT64 | Stable SK of the report-info row (MERGE key `CompanyID` + `CustomerReportKey` in `dim_customer_report_info`). |
 | `CompanySK` | INT64 | SK of the company in dim_company. |
-| `CustomerSegmentSK` | INT64 | SK of the segment in `dim_customer_segment` (full rebuild, regenerated daily); passed through. |
+| `CustomerSegmentSK` | INT64 | Stable SK of the segment in [dim_customer_segment](/dimension/dim_customer_segment.md); passed through. |
 | `CompanyID` | STRING | MAC5 company code. |
 | `CustomerReportName` | STRING | Report shop name (from MDS Customer_Report_Master / invoice names; matches view_dim_invoice `CustomerReportName`). |
 | `FlagPC` | STRING | 'Yes' if the shop is a PC (flag in MDS), else 'No' (NULL becomes 'No'). |

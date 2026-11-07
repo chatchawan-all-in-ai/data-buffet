@@ -1,82 +1,25 @@
-# MDS Inactive-Row DELETE (tombstone) Pattern
+# MDS inactive and missing row synchronization
 
-> **LLM context**: ⚠️ Scope shrank on **2026-07-20**: 34 mds dims were converted to
-> [full daily rebuild](full-rebuild-pattern.md) (rebuild from `is_active = TRUE`
-> makes the tombstone unnecessary), so this pattern now applies to only the **2
-> remaining MERGE dims: `dim_company` and `dim_aging_rang`**.
-> (ตัวเลข 34 คือจำนวน ณ วันที่แปลง · ปัจจุบันมีมากกว่านั้นเพราะมี dim ใหม่เพิ่มหลังจากนั้น — ดู [inventory](inventory.md))
-> History: implemented 2026-07-10 across all then-MERGE mds dims (commit `e64a62d`).
-> Design decision: **hard DELETE, no downstream FK checks** — chosen explicitly over
-> a soft-delete `IsActive` flag.
+MDS-sourced dimensions converted to the common stable-key pattern build a complete source
+snapshot from active rows on every daily run. The dimension action updates matching
+natural keys, inserts new keys, and deletes target rows that are inactive or missing from
+the complete snapshot. There is no separate tombstone statement or `updated_at` window.
 
-## The problem it solves
+See [stable dimension SK synchronization](merge-sk-pattern.md) for the three-clause
+action and [inventory](inventory.md) for the affected dimensions and their natural keys.
 
-Every mds-sourced dim MERGE filters `WHERE t1.is_active = TRUE`. Rows deactivated at
-the mds source (soft-deleted) therefore stayed in the dimension forever — the dim
-never saw them again.
+## Identity and source rules
 
-## The pattern
+Follow the [common key and synchronization rules](merge-sk-pattern.md#key-and-synchronization-rules)
+and the table's OKF card for identity, source completeness and allocation. Company’s
+legacy identity lookup is an exception described in its
+[card](../../okf/dimension/dim_company.md#how-it-is-built).
 
-Placed as the **last statement before `END;`** of the mds MERGE block:
+## Exceptions
 
-```sql
-  DELETE FROM `${Dim<Name>TableRef}`
-  WHERE MdsID IN (
-    SELECT id FROM `${MdsSourceTableRef}` WHERE is_active = FALSE
-  );
-END;
-```
+- `dim_customer_report_info` intentionally retains rows that leave its current source.
+- `dim_order` remains outside this sync under captain decision; its lake sync has no
+  delete clause and the fix touches many downstream tables.
 
-Properties:
-
-- **No date filter** — intentionally scans the whole mds table so rows deactivated at
-  any time are removed (mds masters are small reference tables).
-- **NULL-safe by construction**: `WHERE MdsID IN (subquery)` never matches rows with
-  `MdsID IS NULL` — this protects placeholder rows such as `dim_stk_mkt`'s
-  'Waiting Master' rows (inserted with `MdsID = NULL`).
-- **No downstream checks**: facts referencing a deleted SK keep the orphan value.
-  Accepted risk per the 2026-07-10 decision; a full live scan of 172 SK relationships
-  (fact_table, dimension_table, bridge_dataset, process_dataset) found **0 dangling
-  SK-FKs** at implementation time.
-
-## Where it applies — **2 ไฟล์เท่านั้น** (ตรวจซ้ำ 2026-09-15)
-
-หลังการแปลงเป็น full rebuild เมื่อ 2026-07-20 **เหลือ dim ที่ต้องมี tombstone DELETE แค่ 2 ตัว**
-คือ dim ที่ยังใช้ MERGE กับ mds:
-
-| File | ทำไมยังต้อง MERGE |
-|---|---|
-| `dim_company` | CompanySK ถูก persist ไว้ทั่วทั้ง warehouse |
-| `dim_aging_rang` | AgingRangSK ถูกแช่แข็งใน `dim_aging_history` |
-
-**dim ที่อ่าน mds แบบ full rebuild ทุกตัวไม่ต้องมี tombstone** — เพราะอ่านเฉพาะ
-`is_active = TRUE` ทั้งตารางทุกคืน แถวที่ต้นทาง soft-delete จึงหายเอง
-ดู [full-rebuild-pattern.md](full-rebuild-pattern.md)
-
-ตรวจซ้ำได้ทุกเมื่อ:
-
-```bash
-grep -l "is_active *= *FALSE" definitions/dimension/*.sqlx
-# ต้องได้แค่ dim_company.sqlx กับ dim_aging_rang.sqlx
-```
-
-> ประวัติ: ชุดแรก 2026-07-10 ครอบคลุม 35 ไฟล์ และตก `dim_rebate` ไป เพราะ grep
-> หา literal `"mds_dataset"` มองไม่เห็น · ต่อมาขยายเป็น 36 ไฟล์ ก่อนจะยุบเหลือ 2
-> ตอน 2026-07-20 · **บทเรียนที่ยังใช้ได้**: grep หา `mds_data_` ทั้งไฟล์ ไม่ใช่แค่
-> `name:` หรือ literal `"mds_dataset"` — dim ชุด MDT อ้างผ่าน const ใน `js {}`
-
-Exclusions:
-- **`dim_change_district`** — mds-sourced but `type: "table"` full rebuild; the
-  `WHERE is_active = true` filter already drops inactive rows every run.
-- **`dim_sale_representative` block 2** — the fallback-reps MERGE from
-  `validated_mac5.per` has no MdsID; the DELETE lives at the end of **block 1 only**.
-- Lake-sourced dims (group b) — no mds master to tombstone against.
-
-## Consequences to remember
-
-| Scenario | Outcome |
-|---|---|
-| mds row set `is_active = FALSE` | Dim row hard-deleted on next daily run |
-| Same row later reactivated | Re-inserted with a **new SK** (old SK is gone) |
-| Fact rows holding the deleted SK | Orphaned (accepted); daily full-rebuild dims (`dim_target_product_group_by_sale*`) self-heal |
-| Placeholder rows (`MdsID IS NULL`) | Never deleted (IN-subquery can't match NULL) |
+The eight existing lake-sourced MERGE dimensions retain their current source-specific
+actions; they do not read MDS and are listed separately in the [inventory](inventory.md).

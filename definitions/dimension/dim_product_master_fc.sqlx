@@ -1,15 +1,34 @@
 config {
-  type: "table",
+  type: "operations",
+  hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_company"],
   tags: [databuffet.TAG_DIM_DAILY],
-  uniqueKey: ["ProductMasterFcSK"],
-  bigquery: {
-    clusterBy: ["ProductMasterFcSK"],
-  },
 }
 
 js {
+    const DimProductMasterFcTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimProductMasterFcTableRef = `${DimProductMasterFcTable.database}.${DimProductMasterFcTable.schema}.${DimProductMasterFcTable.name}`;
+
+    const stableDimensionColumns = ['ProductMasterFcSK', 'CompanySK', 'companyID', 'ProductIDOldMac5', 'ProductNameOldMac5', 'ProductIDNewD365', 'ProductNameNewD365', 'SerchName', 'Size', 'SizeDescription', 'Color', 'ColorDescription', 'Style', 'StyleDescription', 'Config', 'ConfigDescription', 'ProductNumber', 'ProductDescription', 'Unit', 'NetWeight', 'GrossWeight', 'DeepMM', 'WideMM', 'HeightMM', 'DoNotStackOverLayer', 'Barcode', 'ItemGroup', 'ItemGroupName', 'TM1Category', 'TM2Brand', 'TM3Series', 'TM4FactorySection', 'TM5Material', 'TM6PackageShape', 'Remark', 'PurchaseUnit', 'UnitConversions', 'ToUnit', 'SalesUnit', 'PackSize', 'MdsID'];
+    const stableDimensionKeyColumns = ['companyID', 'Barcode'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`ProductMasterFcSK` = S.`ProductMasterFcSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'ProductMasterFcSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -25,57 +44,130 @@ js {
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 }
 
-SELECT
-  ROW_NUMBER() OVER(
-    ORDER BY
-      ${databuffet.functionData.cleanString("t1.companyID")},
-      ${databuffet.functionData.cleanString("t1.Barcode")}
-  ) AS ProductMasterFcSK,
-  dim_com.CompanySK,
-  ${databuffet.functionData.cleanString("t1.companyID")} AS companyID,
-  ${databuffet.functionData.cleanString("t1.ProductIDOldMac5")} AS ProductIDOldMac5,
-  ${databuffet.functionData.cleanString("t1.ProductNameOldMac5")} AS ProductNameOldMac5,
-  ${databuffet.functionData.cleanString("t1.ProductIDNewD365")} AS ProductIDNewD365,
-  ${databuffet.functionData.cleanString("t1.ProductNameNewD365")} AS ProductNameNewD365,
-  ${databuffet.functionData.cleanString("t1.SerchName")} AS SerchName,
-  ${databuffet.functionData.cleanString("t1.Size")} AS Size,
-  ${databuffet.functionData.cleanString("t1.SizeDescription")} AS SizeDescription,
-  ${databuffet.functionData.cleanString("t1.Color")} AS Color,
-  ${databuffet.functionData.cleanString("t1.ColorDescription")} AS ColorDescription,
-  ${databuffet.functionData.cleanString("t1.Style")} AS Style,
-  ${databuffet.functionData.cleanString("t1.StyleDescription")} AS StyleDescription,
-  ${databuffet.functionData.cleanString("t1.Config")} AS Config,
-  ${databuffet.functionData.cleanString("t1.ConfigDescription")} AS ConfigDescription,
-  ${databuffet.functionData.cleanString("t1.ProductNumber")} AS ProductNumber,
-  ${databuffet.functionData.cleanString("t1.ProductDescription")} AS ProductDescription,
-  ${databuffet.functionData.cleanString("t1.Unit")} AS Unit,
-  ${databuffet.functionData.cleanString("t1.NetWeight")} AS NetWeight,
-  ${databuffet.functionData.cleanString("t1.GrossWeight")} AS GrossWeight,
-  ${databuffet.functionData.cleanString("t1.DeepMM")} AS DeepMM,
-  ${databuffet.functionData.cleanString("t1.WideMM")} AS WideMM,
-  ${databuffet.functionData.cleanString("t1.HeightMM")} AS HeightMM,
-  ${databuffet.functionData.castInt64("t1.DoNotStackOverLayer")} AS DoNotStackOverLayer,
-  ${databuffet.functionData.cleanString("t1.Barcode")} AS Barcode,
-  ${databuffet.functionData.cleanString("t1.ItemGroup")} AS ItemGroup,
-  ${databuffet.functionData.cleanString("t1.ItemGroupName")} AS ItemGroupName,
-  ${databuffet.functionData.cleanString("t1.TM1Category")} AS TM1Category,
-  ${databuffet.functionData.cleanString("t1.TM2Brand")} AS TM2Brand,
-  ${databuffet.functionData.cleanString("t1.TM3Series")} AS TM3Series,
-  ${databuffet.functionData.cleanString("t1.TM4FactorySection")} AS TM4FactorySection,
-  ${databuffet.functionData.cleanString("t1.TM5Material")} AS TM5Material,
-  ${databuffet.functionData.cleanString("t1.TM6PackageShape")} AS TM6PackageShape,
-  ${databuffet.functionData.cleanString("t1.Remark")} AS Remark,
-  ${databuffet.functionData.cleanString("t1.PurchaseUnit")} AS PurchaseUnit,
-  ${databuffet.functionData.cleanString("t1.UnitConversions")} AS UnitConversions,
-  ${databuffet.functionData.cleanString("t1.ToUnit")} AS ToUnit,
-  ${databuffet.functionData.cleanString("t1.SalesUnit")} AS SalesUnit,
-  ${databuffet.functionData.cleanString("t1.PackSize")} AS PackSize,
-  ${databuffet.functionData.cleanString("t1.id")} as MdsID
-FROM `${MdsSourceTableRef}` AS t1
-LEFT JOIN `${DimCompanyTableRef}` AS dim_com
-  ON ${databuffet.functionData.cleanString("t1.companyID")} = dim_com.companyID
-WHERE t1.is_active = TRUE
 
-pre_operations {}
 
-post_operations {}
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    SELECT
+      ROW_NUMBER() OVER(
+        ORDER BY
+          ${databuffet.functionData.cleanString("t1.companyID")},
+          ${databuffet.functionData.cleanString("t1.Barcode")}
+      ) AS ProductMasterFcSK,
+      dim_com.CompanySK,
+      ${databuffet.functionData.cleanString("t1.companyID")} AS companyID,
+      ${databuffet.functionData.cleanString("t1.ProductIDOldMac5")} AS ProductIDOldMac5,
+      ${databuffet.functionData.cleanString("t1.ProductNameOldMac5")} AS ProductNameOldMac5,
+      ${databuffet.functionData.cleanString("t1.ProductIDNewD365")} AS ProductIDNewD365,
+      ${databuffet.functionData.cleanString("t1.ProductNameNewD365")} AS ProductNameNewD365,
+      ${databuffet.functionData.cleanString("t1.SerchName")} AS SerchName,
+      ${databuffet.functionData.cleanString("t1.Size")} AS Size,
+      ${databuffet.functionData.cleanString("t1.SizeDescription")} AS SizeDescription,
+      ${databuffet.functionData.cleanString("t1.Color")} AS Color,
+      ${databuffet.functionData.cleanString("t1.ColorDescription")} AS ColorDescription,
+      ${databuffet.functionData.cleanString("t1.Style")} AS Style,
+      ${databuffet.functionData.cleanString("t1.StyleDescription")} AS StyleDescription,
+      ${databuffet.functionData.cleanString("t1.Config")} AS Config,
+      ${databuffet.functionData.cleanString("t1.ConfigDescription")} AS ConfigDescription,
+      ${databuffet.functionData.cleanString("t1.ProductNumber")} AS ProductNumber,
+      ${databuffet.functionData.cleanString("t1.ProductDescription")} AS ProductDescription,
+      ${databuffet.functionData.cleanString("t1.Unit")} AS Unit,
+      ${databuffet.functionData.cleanString("t1.NetWeight")} AS NetWeight,
+      ${databuffet.functionData.cleanString("t1.GrossWeight")} AS GrossWeight,
+      ${databuffet.functionData.cleanString("t1.DeepMM")} AS DeepMM,
+      ${databuffet.functionData.cleanString("t1.WideMM")} AS WideMM,
+      ${databuffet.functionData.cleanString("t1.HeightMM")} AS HeightMM,
+      ${databuffet.functionData.castInt64("t1.DoNotStackOverLayer")} AS DoNotStackOverLayer,
+      ${databuffet.functionData.cleanString("t1.Barcode")} AS Barcode,
+      ${databuffet.functionData.cleanString("t1.ItemGroup")} AS ItemGroup,
+      ${databuffet.functionData.cleanString("t1.ItemGroupName")} AS ItemGroupName,
+      ${databuffet.functionData.cleanString("t1.TM1Category")} AS TM1Category,
+      ${databuffet.functionData.cleanString("t1.TM2Brand")} AS TM2Brand,
+      ${databuffet.functionData.cleanString("t1.TM3Series")} AS TM3Series,
+      ${databuffet.functionData.cleanString("t1.TM4FactorySection")} AS TM4FactorySection,
+      ${databuffet.functionData.cleanString("t1.TM5Material")} AS TM5Material,
+      ${databuffet.functionData.cleanString("t1.TM6PackageShape")} AS TM6PackageShape,
+      ${databuffet.functionData.cleanString("t1.Remark")} AS Remark,
+      ${databuffet.functionData.cleanString("t1.PurchaseUnit")} AS PurchaseUnit,
+      ${databuffet.functionData.cleanString("t1.UnitConversions")} AS UnitConversions,
+      ${databuffet.functionData.cleanString("t1.ToUnit")} AS ToUnit,
+      ${databuffet.functionData.cleanString("t1.SalesUnit")} AS SalesUnit,
+      ${databuffet.functionData.cleanString("t1.PackSize")} AS PackSize,
+      ${databuffet.functionData.cleanString("t1.id")} as MdsID
+    FROM `${MdsSourceTableRef}` AS t1
+    LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+      ON ${databuffet.functionData.cleanString("t1.companyID")} = dim_com.companyID
+    WHERE t1.is_active = TRUE
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_master_fc source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductMasterFcTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_master_fc target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductMasterFcTableRef}`
+    WHERE `ProductMasterFcSK` IS NULL
+  ) AS 'dim_product_master_fc target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductMasterFcTableRef}`
+    GROUP BY `ProductMasterFcSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_master_fc target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`ProductMasterFcSK`)
+    FROM `${DimProductMasterFcTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`ProductMasterFcSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `ProductMasterFcSK`
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.`ProductMasterFcSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`ProductMasterFcSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimProductMasterFcTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
+
+  MERGE `${DimProductMasterFcTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

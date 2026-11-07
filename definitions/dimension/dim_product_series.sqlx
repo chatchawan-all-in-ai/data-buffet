@@ -1,14 +1,33 @@
 config {
-  type: "table",
+  type: "operations",
+  hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
   tags: [databuffet.TAG_DIM_DAILY, databuffet.TAG_SALEOUT_DAILY],
-  uniqueKey: ["SeriesSK"],
-  bigquery: {
-    clusterBy: ["SeriesSK"],
-  },
 }
 
 js {
+    const DimProductSeriesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimProductSeriesTableRef = `${DimProductSeriesTable.database}.${DimProductSeriesTable.schema}.${DimProductSeriesTable.name}`;
+
+    const stableDimensionColumns = ['SeriesSK', 'SeriesCode', 'SeriesName', 'MdsID'];
+    const stableDimensionKeyColumns = ['SeriesCode'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`SeriesSK` = S.`SeriesSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'SeriesSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const MdsSourceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
@@ -17,20 +36,93 @@ js {
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 }
 
-SELECT
-  ROW_NUMBER() OVER(ORDER BY NULLIF(CAST(TRIM(t1.SeriesCode) AS STRING), '')) AS SeriesSK,
 
-  NULLIF(CAST(TRIM(t1.SeriesCode) AS STRING), '') AS SeriesCode,
-  NULLIF(CAST(TRIM(t1.SeriesName) AS STRING), '') AS SeriesName,
-  t1.id                                           AS MdsID,
-FROM `${MdsSourceTableRef}` AS t1
-WHERE t1.is_active = TRUE
--- กัน series ซ้ำที่รหัส ถ้าซ้ำแล้วเป้าใน dim_target_series_mdt จะคูณตาม — เก็บแถวที่แก้ล่าสุด
-QUALIFY ROW_NUMBER() OVER(
-  PARTITION BY TRIM(t1.SeriesCode)
-  ORDER BY t1.updated_at DESC, t1.id
-) = 1
 
-pre_operations {}
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
 
-post_operations {}
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    SELECT
+      ROW_NUMBER() OVER(ORDER BY NULLIF(CAST(TRIM(t1.SeriesCode) AS STRING), '')) AS SeriesSK,
+
+      NULLIF(CAST(TRIM(t1.SeriesCode) AS STRING), '') AS SeriesCode,
+      NULLIF(CAST(TRIM(t1.SeriesName) AS STRING), '') AS SeriesName,
+      t1.id                                           AS MdsID,
+    FROM `${MdsSourceTableRef}` AS t1
+    WHERE t1.is_active = TRUE
+    -- กัน series ซ้ำที่รหัส ถ้าซ้ำแล้วเป้าใน dim_target_series_mdt จะคูณตาม — เก็บแถวที่แก้ล่าสุด
+    QUALIFY ROW_NUMBER() OVER(
+      PARTITION BY TRIM(t1.SeriesCode)
+      ORDER BY t1.updated_at DESC, t1.id
+    ) = 1
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_series source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductSeriesTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_series target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductSeriesTableRef}`
+    WHERE `SeriesSK` IS NULL
+  ) AS 'dim_product_series target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductSeriesTableRef}`
+    GROUP BY `SeriesSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_series target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`SeriesSK`)
+    FROM `${DimProductSeriesTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`SeriesSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `SeriesSK`
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.`SeriesSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`SeriesSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimProductSeriesTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
+
+  MERGE `${DimProductSeriesTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

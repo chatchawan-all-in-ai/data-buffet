@@ -26,13 +26,13 @@ Read by: [dim_product_master](/dimension/dim_product_master.md), [dim_product_md
 
 # Grain and key
 
-One row = one marketing classification per company: key (company, TypeMarketingID, MarketingGroupID, SubMarketingID, SegmentID) among active mds rows; `ProductMktSK` is the surrogate key, regenerated every run.
+One row = one marketing classification per company. Natural key: (`CompanyID`, `TypeMarketingID`, `MarketingGroupID`, `SubMarketingID`, `SegmentID`). `ProductMktSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ProductMktSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY CompanyID, TypeMarketingID, MarketingGroupID, SubMarketingID, SegmentID)` over the active mds rows. Regenerated every run. |
+| `ProductMktSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `CompanyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `CompanyID`; natural join key to dim_company.companyID. |
 | `TypeMarketingID` | STRING | Pass-through of mds `TypeMarketingID`, cleaned with `cleanString` (empty string becomes NULL). Top level id of the marketing hierarchy; joins to [dim_product_mkt_director](/dimension/dim_product_mkt_director.md).TypeMarketingID. |
@@ -45,15 +45,11 @@ One row = one marketing classification per company: key (company, TypeMarketingI
 | `Segment` | STRING | Pass-through of mds `Segment`, cleaned with `cleanString` (empty string becomes NULL). Segment name. |
 | `SubMarketingWH` | STRING | Pass-through of mds `SubMarketingWH`, cleaned with `cleanString` (empty string becomes NULL). Warehouse reporting group of the sub-marketing group, a coarser grouping such as `DIY`, `ROTO`, `BLOW`, `LITE TITE` or `OTHERS`. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_product_marketing_name_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_product_mkt.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `ProductMktSK`.
-- Storage options: `{"clusterBy": ["ProductMktSK"]}`.
+- Definition: `definitions/dimension/dim_product_mkt.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_product_marketing_name_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 The marketing hierarchy for one company.

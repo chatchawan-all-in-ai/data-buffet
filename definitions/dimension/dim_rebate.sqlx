@@ -1,15 +1,34 @@
 config {
-  type: "table",
+  type: "operations",
+  hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_company"],
   tags: [databuffet.TAG_DIM_DAILY],
-  uniqueKey: ["RebateSK"],
-  bigquery: {
-    clusterBy: ["RebateSK"],
-  },
 }
 
 js {
+    const DimRebateTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimRebateTableRef = `${DimRebateTable.database}.${DimRebateTable.schema}.${DimRebateTable.name}`;
+
+    const stableDimensionColumns = ['RebateSK', 'CompanySK', 'companyID', 'rebate', 'rebateName', 'status', 'type', 'salesExc', 'accExc', 'MdsID'];
+    const stableDimensionKeyColumns = ['companyID', 'rebate', 'status'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`RebateSK` = S.`RebateSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'RebateSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -25,27 +44,100 @@ js {
     const MdsRebateTableRef = `${MdsRebateTable.database}.${MdsRebateTable.schema}.${MdsRebateTable.name}`;
 }
 
-SELECT
-  ROW_NUMBER() OVER(
-    ORDER BY
-      ${databuffet.functionData.cleanString('t1.companyID')},
-      ${databuffet.functionData.cleanString('t1.rebate')},
-      ${databuffet.functionData.cleanString('t1.status')}
-  ) AS RebateSK,
-  dim_com.CompanySK,
-  ${databuffet.functionData.cleanString('t1.companyID')}  AS companyID,
-  ${databuffet.functionData.cleanString('t1.rebate')}     AS rebate,
-  ${databuffet.functionData.cleanString('t1.rebateName')} AS rebateName,
-  ${databuffet.functionData.cleanString('t1.status')}     AS status,
-  ${databuffet.functionData.cleanString('t1.type')}       AS type,
-  ${databuffet.functionData.cleanString('t1.salesExc')}   AS salesExc,
-  ${databuffet.functionData.cleanString('t1.accExc')}     AS accExc,
-  ${databuffet.functionData.cleanString("t1.id")} as MdsID
-FROM `${MdsRebateTableRef}` AS t1
-LEFT JOIN `${DimCompanyTableRef}` AS dim_com
-  ON ${databuffet.functionData.cleanString('t1.companyID')} = dim_com.companyID
-WHERE t1.is_active = TRUE
 
-pre_operations {}
 
-post_operations {}
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    SELECT
+      ROW_NUMBER() OVER(
+        ORDER BY
+          ${databuffet.functionData.cleanString('t1.companyID')},
+          ${databuffet.functionData.cleanString('t1.rebate')},
+          ${databuffet.functionData.cleanString('t1.status')}
+      ) AS RebateSK,
+      dim_com.CompanySK,
+      ${databuffet.functionData.cleanString('t1.companyID')}  AS companyID,
+      ${databuffet.functionData.cleanString('t1.rebate')}     AS rebate,
+      ${databuffet.functionData.cleanString('t1.rebateName')} AS rebateName,
+      ${databuffet.functionData.cleanString('t1.status')}     AS status,
+      ${databuffet.functionData.cleanString('t1.type')}       AS type,
+      ${databuffet.functionData.cleanString('t1.salesExc')}   AS salesExc,
+      ${databuffet.functionData.cleanString('t1.accExc')}     AS accExc,
+      ${databuffet.functionData.cleanString("t1.id")} as MdsID
+    FROM `${MdsRebateTableRef}` AS t1
+    LEFT JOIN `${DimCompanyTableRef}` AS dim_com
+      ON ${databuffet.functionData.cleanString('t1.companyID')} = dim_com.companyID
+    WHERE t1.is_active = TRUE
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_rebate source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimRebateTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_rebate target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimRebateTableRef}`
+    WHERE `RebateSK` IS NULL
+  ) AS 'dim_rebate target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimRebateTableRef}`
+    GROUP BY `RebateSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_rebate target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`RebateSK`)
+    FROM `${DimRebateTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`RebateSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `RebateSK`
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.`RebateSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`RebateSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimRebateTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
+
+  MERGE `${DimRebateTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

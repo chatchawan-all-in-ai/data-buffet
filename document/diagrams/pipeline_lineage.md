@@ -91,7 +91,7 @@ flowchart TB
     direction TB
     V["validated | 196<br/>clean - cast - dedup<br/>tag: validated"]
     C["curated | 22<br/>business joins<br/>tag: curated"]
-    D["dimension_daily | 79<br/>SK + SCD rebuild<br/>tag: dimension_daily"]
+    D["dimension_daily | 79<br/>stable SK sync + dimension refresh<br/>tag: dimension_daily"]
     Fd["fact_daily | 18<br/>star-schema load<br/>tag: fact_daily"]
     CDC["cdc_incremental | 1<br/>change log<br/>tag: cdc_incremental"]
     P["process | 2<br/>AI address parse - CDC gated + RLS map<br/>tag: process"]
@@ -771,6 +771,7 @@ flowchart LR
   deb --> fact_delivery
   deb --> fact_transcation
   detail_sales_daily --> curated_saleout_mdt
+  inventory_movement_journal_entries --> curated_invoice_line_cost
   inventory_movement_journal_entries --> curated_journal_invoice
   inventory_movement_journal_headers --> curated_journal_invoice
   match_customer --> dim_customer
@@ -803,6 +804,7 @@ flowchart LR
   product_detail --> curated_product
   product_detail --> dim_product_master
   product_detail --> product_for_aisearch
+  products --> curated_invoice_line_cost
   products --> curated_products
   products --> product_for_aisearch_v3
   report_sale_subscription --> curated_saleout_mdt
@@ -814,6 +816,7 @@ flowchart LR
   stg --> dim_product_master
   stg_report --> stg
   stgacc --> stg
+  stk --> curated_invoice_line_cost
   stk --> dim_product_master
   stk --> dim_stk_mkt
   sto --> dim_store

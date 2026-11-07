@@ -26,13 +26,13 @@ Read by: [dim_customer_report_info](/dimension/dim_customer_report_info.md), [di
 
 # Grain and key
 
-One row = the latest-period row of a department: key (company, DepartmentID). `DepartmentSK` is `ROW_NUMBER() OVER (ORDER BY CompanySK, DepartmentID)`, regenerated every run (numbered independently of dim_department).
+One row = the latest-period row of a department. Natural key: (`companyID`, `DepartmentID`, `StartDate`, `EndDate`). `DepartmentSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `DepartmentSK` | INT64 | `ROW_NUMBER() OVER (ORDER BY CompanySK, DepartmentID)` over the deduped rows. Regenerated every run; differs from `dim_department.DepartmentSK`. |
+| `DepartmentSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `SectionSK` | INT64 | Foreign key to the section `_last` dimension; created as NULL by this build and filled by the later `update_sk_sale_rep_group` UPDATE step. |
 | `SectionManagerSK` | INT64 | Foreign key to the section-manager `_last` dimension; NULL at build, backfilled by `update_sk_sale_rep_group`. |
 | `RegionSK` | INT64 | Foreign key to the region `_last` dimension; NULL at build, backfilled by `update_sk_sale_rep_group`. |
@@ -46,17 +46,13 @@ One row = the latest-period row of a department: key (company, DepartmentID). `D
 | `DepartmentName` | STRING | Department name, pass-through from dim_department. |
 | `StartDate` | DATE | StartDate of the chosen (latest) dim_department period. |
 | `EndDate` | DATE | EndDate of the chosen (latest) dim_department period; it may be in the past for departments that were closed. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_department_last.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `DepartmentSK`.
-- Storage options: `{"clusterBy": ["DepartmentSK"]}`.
+- Definition: `definitions/dimension/dim_department_last.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: [dimension_table.dim_department](/dimension/dim_department.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Rows are chosen with `QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, DepartmentID ORDER BY EndDate DESC, StartDate DESC) = 1`.
 - The five FK SK columns are filled afterwards by the separate `update_sk_sale_rep_group` operation, which depends on all `_last` tables.
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company and dim_department.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company and dim_department.
 # Examples
 
 Latest department rows with their resolved director FK.

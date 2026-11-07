@@ -92,8 +92,8 @@ bq --project_id=databuffet-nonprd query --use_legacy_sql=false 'SELECT ...'
 | Symptom | Likely cause / fix |
 |---|---|
 | Dim MERGE fails: table not found | `type: "operations"` targets pre-exist in BigQuery — a brand-new dim table must be created (DDL) before its first MERGE run |
-| Duplicate SK rows | `max_sk` raced or MERGE ON mismatch; check the t2/t3 CASE and that MERGE is `ON T.<X>SK = S.<X>SK` |
-| Dim missing recent mds edits | `MDS_BACKFILL_DAYS` window (currently 1 day) — a row updated earlier but missed needs a manual backfill run with a larger var value |
+| Duplicate SK rows | Stable-sync assertions failed; inspect duplicate natural keys, the new-key allocator, and the dimension’s matching conditions |
+| Dim missing recent mds edits | Stable-key dimensions read the complete active source on the daily run; check action dependencies and source filters. Active dimension definitions do not use `MDS_BACKFILL_DAYS`. |
 | Validated datetime parse fails | Raw extract switched timestamp format; `parseFlexibleDatetime` handles the two known formats — check for a third (see 2026-05-23/24 incident, self-resolved) |
 | Validated incremental missed data | The window is `ASATDATE >= CURRENT_DATE - BACKFILL_DAYS` (string compare, default 1 day) — for older data raise `BACKFILL_DAYS` and rerun (see below) |
 | PK post-op ALTER fails repeatedly | BigQuery metadata contention — the retry loop (10×) usually recovers; rerun otherwise |

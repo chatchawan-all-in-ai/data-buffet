@@ -32,7 +32,7 @@ One row = one dim_product_mkt row x one dim_product_mkt_director row with the sa
 
 | Column | Type | Description |
 |---|---|---|
-| `ProductMktSK` | INT64 | SK of the marketing classification in dim_product_mkt (regenerated daily). |
+| `ProductMktSK` | INT64 | Stable SK of the marketing classification in [dim_product_mkt](/dimension/dim_product_mkt.md). |
 | `ProductMktDirectorSK` | INT64 | SK of one director record matched on TypeMarketingID + CompanyID without a date filter; NULL if none. Each matching director record yields its own view row. |
 | `CompanySK` | INT64 | SK of the company in dim_company. |
 | `CompanyID` | STRING | MAC5 company code. |

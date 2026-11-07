@@ -41,11 +41,11 @@
 | **Full load** | สร้างตารางใหม่ทั้งก้อนทุกรอบ — ใช้กับ reference data ขนาดเล็ก (tag `validated_full`) |
 | **Incremental** | โหลดเฉพาะ partition ช่วงหลัง (`asatdate >= CURRENT_DATE('Asia/Bangkok') - N`) (tag `validated_incremental`) |
 | **QUALIFY dedup** | `QUALIFY ROW_NUMBER() OVER(PARTITION BY <pk> ORDER BY file_load_datetime DESC) = 1` — เก็บ row ล่าสุดต่อคีย์ |
-| **MERGE upsert** | `MERGE ... WHEN MATCHED UPDATE / WHEN NOT MATCHED INSERT` — ใช้ใน dimension ที่ต้องรักษา SK เดิม (dim_company, dim_aging_rang, lake dims) |
-| **Full rebuild dim** | pattern หลักของ mds dims (ตั้งแต่ 2026-07-20): `type: "table"` ปั้นใหม่ทุกวันจาก `is_active = TRUE` — SK ออกเลขใหม่ทุกวัน ห้ามเก็บข้ามวัน |
-| **mds inactive DELETE (tombstone)** | ท้าย dimension MERGE (เหลือ 2 ตัว): `DELETE FROM dim WHERE MdsID IN (SELECT id FROM mds WHERE is_active = FALSE)` — ลบ row ที่ต้นทาง soft-delete |
-| **Overwrite import** | โหมด import ของ mds ที่ล้างตารางแล้วลงใหม่ (id เปลี่ยนหมด) — full rebuild รองรับเองอัตโนมัติ |
-| **MDS_BACKFILL_DAYS** | ตัวแปรโปรเจกต์ (ปัจจุบัน `1`) จำกัดหน้าต่าง `updated_at` ของ dim แบบ MERGE (full rebuild ไม่ใช้) |
+| **Stable dimension SK sync** | ดู [sync contract](../project_wiki/dimension/merge-sk-pattern.md) และ [ขอบเขตใน inventory](../project_wiki/dimension/inventory.md) |
+| **MERGE upsert** | `MERGE ... WHEN MATCHED UPDATE / WHEN NOT MATCHED INSERT` — มีอยู่ใน source-specific dimension actions; pattern ที่ apply ได้ดู inventory |
+| **MDS inactive/missing row** | ใน stable-key sync แถว `is_active = FALSE` หรือแถวที่หายจาก complete source จะถูกลบจาก dimension |
+| **Overwrite import** | โหมด import ของ mds ที่ล้างตารางแล้วลงใหม่ (id เปลี่ยนหมด) — stable sync ใช้ natural key ที่ประกาศไว้เพื่อเก็บ SK เมื่อเป็นแถวธุรกิจเดิม |
+| **MDS_BACKFILL_DAYS** | ตัวแปรเดิมที่ยังอยู่ใน project config (ปัจจุบัน `1`); active dimension definitions ไม่ได้ใช้ window นี้แล้ว |
 | **BACKFILL_DAYS** | ตัวแปรโปรเจกต์ (ปัจจุบัน `1`) หน้าต่างย้อนหลังของ incremental window ใน validated/curated — ตั้งชั่วคราวเป็นเลขมากขึ้นเพื่อเก็บข้อมูลย้อนหลังหลายวัน แล้วตั้งกลับเป็น `1` |
 | **operations type** | ไฟล์ Dataform ที่รัน raw BigQuery script (`BEGIN...END`) — Dataform ไม่จัดการ schema/lineage ให้ ตารางต้องมีอยู่ก่อน |
 | **cleanString** | helper แปลง `''` → `NULL` + TRIM — มาตรฐานการจัดการ string ทั้งโปรเจกต์ |

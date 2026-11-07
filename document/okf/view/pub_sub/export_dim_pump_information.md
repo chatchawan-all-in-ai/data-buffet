@@ -30,7 +30,7 @@ One row = one pump segment per company, product code, region and new-product fla
 
 | Column | Type | Description |
 |---|---|---|
-| `PumpSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by lower(milstk), RegionID, FlagNewProductMKT. Regenerated every run. |
+| `PumpSK` | INT64 | Passed through from [dim_pump_information](/dimension/dim_pump_information.md#grain-and-key); see that table’s key contract. |
 | `PumpSegment` | STRING | Pump segment: `dim_product_mkt.Segment` when RegionID is 'PS1' and FlagNewProductMKT is true, otherwise `view_dim_product_master.PumpSegment`. |
 | `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |
 | `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |

@@ -640,9 +640,9 @@ SELECT ds, table_id, row_count FROM t ORDER BY ds, table_id;
 
 ---
 
-## Step 23 — เทียบ Surrogate Key ของ 12 dim ที่ใช้ MERGE (ต้องตรงเป๊ะ)
+## Step 23 — ตรวจสรุปจำนวนและช่วง SK ของ 12 dim ที่ติดตาม
 
-SK พวกนี้ต้องคงที่ตลอดไป — ถ้าไม่ตรง Power BI และตารางที่เก็บ SK ไว้จะเพี้ยนทั้งหมด
+SK ของ natural key ที่ยังอยู่ต้องคงที่ข้ามรอบโหลดและข้าม environment ส่วน query ด้านล่างตรวจเพียงจำนวนแถวและช่วง SK ของแต่ละตาราง ไม่ได้ยืนยัน mapping ระดับ natural key ต่อ SK สำหรับการตรวจ mapping ให้เทียบ key columns กับ SK ตาม [dimension inventory](../project_wiki/dimension/inventory.md)
 
 **ไปที่**: BigQuery Studio → รันที่ **nonprd** แล้วรันซ้ำที่ **prd**
 
@@ -662,7 +662,7 @@ UNION ALL SELECT 'dim_quotation', COUNT(*), MIN(QuotationSK), MAX(QuotationSK) F
 ORDER BY dim;
 ```
 
-**ต้องเห็น**: ทั้ง 3 คอลัมน์ (`n`, `mn`, `mx`) **เท่ากันเป๊ะทุกบรรทัด** ระหว่างสองฝั่ง
+**ต้องเห็น**: ทั้ง 3 คอลัมน์ (`n`, `mn`, `mx`) ตรงกันระหว่างสองฝั่ง
 
 **ถ้าไม่ตรง**: หยุด อย่าไปต่อ — รัน Data Transfer `dimension_table_from_nonprd` ใหม่
 (Step 17) แล้วรัน Step 20–21 ซ้ำ
@@ -777,13 +777,14 @@ WORKFLOW CONFIGURATIONS**
 **ทำ**: รัน SQL ของ **Step 22** และ **Step 23** อีกครั้ง
 
 **ต้องเห็น**:
-- Step 23 (SK ของ 12 MERGE dim) ต้อง **ยังตรงเป๊ะ**
+- Step 23's row counts and SK ranges match. This summary check does not compare each
+  natural key to its SK; inspect the full mapping separately when validating a transfer.
 - Step 22 ชื่อตารางครบ ไม่มีตัวไหนหาย
 
-> SK ของ dim ที่เหลือ (ที่เป็น full rebuild ไม่ใช่ 12 ตัวใน Step 23) **จะออกเลขใหม่
-> ไม่ตรงกับ nonprd** — เป็นพฤติกรรมที่ตั้งใจตั้งแต่ 2026-07-20 เพราะ fact ปั้นใหม่ในรอบเดียวกัน
-> ดู [known-issues.md](known-issues.md) และ
-> [full-rebuild-pattern](../project_wiki/dimension/full-rebuild-pattern.md)
+> For converted dimensions, verify each natural-key-to-SK mapping rather than just
+> counts and ranges. Check the [conversion inventory](../project_wiki/dimension/inventory.md)
+> for held and unchanged actions before applying the
+> [stable sync contract](../project_wiki/dimension/merge-sk-pattern.md).
 
 ---
 

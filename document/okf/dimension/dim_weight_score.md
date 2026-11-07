@@ -26,13 +26,13 @@ Read by: none in this repository.
 
 # Grain and key
 
-One row = one active MDS weight-score row: key `WeightSK`, `ROW_NUMBER()` ordered by CompanyID, Typeeng, Typethai, StartDate, EndDate. A score type that changes weight appears once per interval. No -1 row.
+One row = one active MDS weight-score row. Natural key: (`CompanyID`, `Typeeng`, `Typethai`, `StartDate`, `EndDate`). `WeightSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `WeightSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by CompanyID, Typeeng, Typethai, StartDate, EndDate. Regenerated every run. |
+| `WeightSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `CompanyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `Typeeng` | STRING | Score type name in English. |
@@ -42,15 +42,11 @@ One row = one active MDS weight-score row: key `WeightSK`, `ROW_NUMBER()` ordere
 | `StartDate` | DATE | First date the weight applies (MDS DATE). |
 | `EndDate` | DATE | Last date the weight applies (MDS DATE). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_custgrade_weight_score_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_weight_score.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `WeightSK`.
-- Storage options: `{"clusterBy": ["WeightSK"]}`.
+- Definition: `definitions/dimension/dim_weight_score.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_custgrade_weight_score_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Weights valid today.

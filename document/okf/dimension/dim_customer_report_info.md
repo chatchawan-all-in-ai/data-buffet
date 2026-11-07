@@ -50,9 +50,9 @@ One row per (`CompanyID`, `CustomerReportKey`), where the key is the report name
 | `SectionManagerSK` | INT64 | Section manager SK of the TA chain (from `dim_department_last`). |
 | `RegionManagerSK` | INT64 | Region manager SK of the TA chain (from `dim_department_last`). |
 | `DirectorSK` | INT64 | Director SK of the TA chain (from `dim_department_last`). |
-| `TASource` | STRING | How the TA was found: 'DEBSALESP' (the customer's `deb.debsalesp` has exactly one current non-dummy TA and is not a modern-trade employee), 'MDT' (modern-trade chain employee selected from `deb.debgroup`; a single TA is used directly, while multiple TAs are resolved by the latest matching invoice `mihDep`), or NULL (no TA). Not read from MDS. |
+| `TASource` | STRING | How the TA was found: 'DEBSALESP' (the customer's `deb.debsalesp` has exactly one current non-dummy TA and is not a modern-trade employee), 'MDT' (modern-trade chain employee selected from `deb.debgroup`; a single TA is used directly, while multiple TAs are resolved by the latest matching invoice `mihDep`, then department code), or NULL (no TA). Not read from MDS. |
 | `TADebcode` | STRING | Debtor code used to find the TA (a code whose own display name equals the report name; latest invoice if several). |
-| `SaleRepSK` | INT64 | Sale representative SK from `dim_sale_representative_last` for the customer's `deb.debsalesp`, regardless of `TASource`; NULL if none. |
+| `SaleRepSK` | INT64 | Sale representative SK from `dim_sale_representative_last` for the customer's `deb.debsalesp`, regardless of `TASource`; named representatives first, then the snapshot business order (rule rows before ledger rows, company, department, employee, DepCode, CostChannelID, ProvinceID); NULL if none. |
 | `ReportDebcode` | STRING | Representative debtor code of the shop: `SegmentDebcode` if present, else `TADebcode`. |
 | `DEBcreditTerm` | INT64 | Credit term in days, from `validated_mac5.deb.DEBcreditTerm` of `ReportDebcode`. |
 | `InvoiceProvinceSK` | INT64 | Province SK of `ReportDebcode`'s address (from `view_deb_address_data`, one row chosen per debtor: sub-district > district > province, then lowest SK). |

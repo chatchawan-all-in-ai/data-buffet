@@ -26,13 +26,13 @@ Read by: [dim_target_product_group_by_sale](/dimension/dim_target_product_group_
 
 # Grain and key
 
-One row = one region or sub-region code: key `(CompanyID, RegionID, SubRegionID)`; the row with the greatest EndDate (ties by StartDate) is kept. `RegionManagerSK` is renumbered here (ordered by CompanySK, RegionID, SubRegionID) and differs from `dim_region_manager.RegionManagerSK`. No -1 row.
+One row = one region or sub-region code. Natural key: (`companyID`, `RegionID`, `SubRegionID`, `StartDate`, `EndDate`). `RegionManagerSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `RegionManagerSK` | INT64 | Surrogate key of this snapshot, `ROW_NUMBER()` ordered by CompanySK, RegionID, SubRegionID. Target of `dim_region_last.RegionManagerSK` after `update_sk_sale_rep_group`. Regenerated every run. |
+| `RegionManagerSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code from dim_company.companyID. |
 | `RegionID` | STRING | Region code, from dim_region_manager.RegionID. |
@@ -44,15 +44,11 @@ One row = one region or sub-region code: key `(CompanyID, RegionID, SubRegionID)
 | `RegionManagerNickname` | STRING | Manager nickname (kept interval). |
 | `StartDate` | DATE | Start of the kept interval. |
 | `EndDate` | DATE | End of the kept interval. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_region_manager_last.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `RegionManagerSK`.
-- Storage options: `{"clusterBy": ["RegionManagerSK"]}`.
+- Definition: `definitions/dimension/dim_region_manager_last.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: [dimension_table.dim_region_manager](/dimension/dim_region_manager.md), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company and dim_region_manager.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company and dim_region_manager.
 # Examples
 
 Manager per region code from the snapshot.

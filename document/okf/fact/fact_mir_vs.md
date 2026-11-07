@@ -33,7 +33,7 @@ One row = one billing (VS) document line that bills an invoice (`mirbinvno`), re
 | Column | Type | Description |
 |---|---|---|
 | `BillingSK` | INT64 | Surrogate key: ROW_NUMBER over company_id, mirtype, mirvnos, mirlistno, mirbinvno. Regenerates daily; `fact_mir_rs.BillingSK` points to it. |
-| `CollectSK` | INT64 | Surrogate key of [dim_collection_status](/dimension/dim_collection_status.md), joined on company, billing-document year/month and customer (`mircus` cast to STRING = `CustomerID`). NULL when the MDS collection-status master has no row for that month/customer. Regenerates daily. |
+| `CollectSK` | INT64 | Stable surrogate key of [dim_collection_status](/dimension/dim_collection_status.md), joined on company, billing-document year/month and customer (`mircus` cast to STRING = `CustomerID`). NULL when the MDS collection-status master has no row for that month/customer. |
 | `Actions` | STRING | Collection action text, copied from `dim_collection_status.Actions` (MDS collection-status master). |
 | `Justification` | STRING | Collection justification text, copied from `dim_collection_status.Justification`. |
 | `Responsible` | STRING | Person/role responsible for the collection follow-up, copied from `dim_collection_status.Responsible`. |

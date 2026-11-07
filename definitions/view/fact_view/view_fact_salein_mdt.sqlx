@@ -45,7 +45,7 @@ WITH branch_lookup AS (
   QUALIFY ROW_NUMBER() OVER (
     PARTITION BY StoreCode,
       REGEXP_REPLACE(REGEXP_REPLACE(BranchName, r'^(HP|MH|GH|GB|BT|TW|DH)\s+', ''), r'[\s()\-–]', '')
-    ORDER BY BranchMdtSK
+    ORDER BY (CASE WHEN MdsID IS NULL THEN 1 ELSE 0 END), StoreCode, BranchCode
   ) = 1
 
 ), mdt_customer AS (

@@ -1,65 +1,55 @@
-# How-to: เพิ่ม Dimension จาก mds (full-rebuild pattern)
+# How-to: เพิ่ม dimension ที่มี surrogate key
 
-ตั้งแต่ 2026-07-20 pattern มาตรฐานของ dim ที่ source จาก `mds_dataset` คือ
-**full daily rebuild** (`type: "table"`) — ปั้นใหม่ทุกวันจาก `is_active = TRUE`
-ดูเหตุผลและรายละเอียด: [project_wiki/dimension/full-rebuild-pattern.md](../project_wiki/dimension/full-rebuild-pattern.md)
-
-> ⚠️ **SK ของ pattern นี้ออกเลขใหม่ทุกวัน** — ก่อนสร้าง dim ใหม่ ตอบคำถามนี้ก่อน:
-> *"จะมีตารางไหน persist SK ของ dim นี้ข้ามวันไหม?"* ถ้ามี (เช่น fact แบบ incremental
-> ที่ไม่ rebuild ทั้งก้อน) ต้องใช้ [MERGE pattern](../project_wiki/dimension/merge-sk-pattern.md)
-> แบบ `dim_company` แทน และปรึกษาทีมก่อน
+ใช้ stable-key sync สำหรับ dimension ใหม่ที่มี surrogate key โดยอ่าน source ให้ครบและ
+เก็บ SK เดิมตาม natural key ดูกติกาเต็มใน
+[stable dimension SK synchronization](../project_wiki/dimension/merge-sk-pattern.md)
+และตรวจ key/source เดิมใน [dimension inventory](../project_wiki/dimension/inventory.md)
 
 ## ขั้นตอน
 
-### 1. Copy ไฟล์ต้นแบบ
+### 1. กำหนด natural key และ grain
 
-`definitions/dimension/dim_waterpac.sqlx` — copy แล้วเปลี่ยนชื่อเป็น `dim_<entity>.sqlx`
+กำหนด key ตาม [grain-preservation contract](../project_wiki/dimension/merge-sk-pattern.md#key-and-synchronization-rules)
+และระบุ grain/key ของตารางใน OKF card ก่อนเริ่ม implementation
 
-### 2. แก้จุดเหล่านี้
+ถ้า key ยังแยกแถวซ้ำไม่ได้ ให้หยุด dimension นั้นไว้และบันทึกตัวอย่างแถวที่ชนกัน
+อย่าลบหรือรวมข้อมูลซ้ำเพื่อทำให้ assertion ผ่าน
 
-| จุด | เปลี่ยนเป็น |
-|---|---|
-| `uniqueKey` + `clusterBy` | `<Entity>SK` ของคุณ |
-| `MdsSourceTable.name` | `mds_data_<entity>_master` |
-| `ROW_NUMBER() ORDER BY` | natural key ทุกคอลัมน์ (ผ่าน `cleanString`/`castInt64`) — ลำดับ deterministic |
-| SELECT columns | attributes ของ entity (string ผ่าน `cleanString`) + `dim_com.CompanySK` + ปิดท้าย `MdsID` |
-| `WHERE` | `t1.is_active = TRUE` เท่านั้น (ไม่มี window `updated_at`) |
+### 2. เริ่มจาก action dimension ที่ใช้ stable sync
 
-- กฎ `dependencies[]`: [ลำดับ build ของ CompanySK](../project_wiki/dimension/full-rebuild-pattern.md#properties)
-- ไม่ต้องมี MERGE, max_sk, tombstone DELETE, `MDS_BACKFILL_DAYS` — pattern นี้ไม่ใช้
-- Dataform สร้าง/แทนที่ตารางให้เอง — **ไม่ต้องสร้างตารางใน BigQuery ก่อน**
-  (เฉพาะ `type: "table"` · ถ้าภายหลังเปลี่ยนเป็น MERGE แบบ `type: "operations"` ตารางต้องมีอยู่ก่อนเสมอ
-  และคอลัมน์ใหม่ต้อง `ALTER TABLE ... ADD COLUMN` เอง — ตัวอย่าง `dim_customer_report_info` 2026-10-28)
-- ไม่ต้อง backfill — รันครั้งแรกได้ข้อมูลเต็มทันที
+ใช้ `definitions/dimension/dim_waterpac.sqlx` เป็นโครงสร้างตั้งต้น แล้วแก้เฉพาะส่วน
+ที่ประกาศ table references, key, columns และ source query ให้ตรงกับ dimension ใหม่
 
-### 3. กรณีพิเศษ
+- `config` ใช้ `type: "operations"`, `hasOutput: true`, `schema: databuffet.DIMENSION_TABLE`,
+  `dependencies` และ tag ของ dimension ที่ใช้อยู่
+- ประกาศ target เป็น `<Name>Table` และ `<Name>TableRef` ใน `js {}`
+- สร้าง complete source snapshot จาก SELECT/CTE เดิม และคง source joins, UNION,
+  `QUALIFY`, fallback, sentinel `-1`, formulas และคอลัมน์เดิมไว้
+- สำหรับ MDS ให้คงเงื่อนไข `is_active = TRUE`; source snapshot ต้องครอบคลุมทุกแถวที่
+  ควรอยู่ใน dimension ไม่ใช้ `updated_at` window
+- ใช้ nullable-safe `IS NOT DISTINCT FROM` สำหรับ lookup natural key เพื่อหา SK เดิม
+  หลังคง SK เดิมหรือจ่าย SK ใหม่แล้ว ให้ MERGE ด้วย `ON T.<SK> = S.<SK>`
+- ตรวจ source/target natural key ให้ unique และ target SK ให้ non-NULL และ unique
+- คง SK เดิมเมื่อ natural key ตรงกัน; จัดสรร `MAX(SK) + ROW_NUMBER()` เฉพาะแถวใหม่
+- ใช้สามกรณีใน sync เดียว: update เฉพาะ attributes, insert แถวใหม่พร้อม SK, และ delete
+  target ที่ไม่อยู่ใน complete source
+- ห้าม update SK หรือตัว natural key
 
-- ต้องรวมข้อมูลจากตาราง lake (เช่น placeholder): ทำเป็น CTE + `UNION ALL` แล้วค่อยใส่
-  `ROW_NUMBER()` ทับทั้งก้อน — ดู `dim_stk_mkt.sqlx` (Waiting Master) หรือ
-  `dim_sale_representative.sqlx` (ledger reps)
-- ไม่ต้องการ SK เลย (reference ล้วน): ตัด ROW_NUMBER + uniqueKey/clusterBy ออก —
-  ดู `dim_doctype.sqlx`
+ตาราง `operations` ต้องมีอยู่ใน BigQuery ก่อน action ทำงาน; ตรวจสภาพแวดล้อมและวิธี
+เตรียมตารางตาม deployment guide ของทีม
 
-### 4. ถ้า fact จะใช้ SK ของ dim ใหม่
+### 3. รักษา behavior เฉพาะ
 
-- fact ต้องเป็นแบบ rebuild รายวัน หรือ re-derive SK ครอบทุก row ที่เก็บ (แบบ
-  `fact_transcation`) และรันหลัง `dimension_daily` ใน DAG เดียวกัน
-- เพิ่มชื่อ dim ใน `dependencies[]` ของไฟล์ fact (dim อ้างด้วย string interpolation)
+- ทำ source calculations และ filters เดิมให้เหมือนเดิมทุกประการ
+- ห้ามแก้ process หรือ fact logic เพื่อรองรับ dimension
+- ไม่ใช้ stable sync ถ้า source grain ยังไม่ระบุหรือ key ซ้ำโดยไม่มี discriminator ที่
+  คงที่; ดูข้อยกเว้นใน [special cases](../project_wiki/dimension/special-cases.md)
+- dimension ที่ไม่มี SK เช่น `dim_doctype` ให้คงเป็น active-source SELECT ตาม pattern
+  ของไฟล์นั้น ไม่ต้องเพิ่มตัวแทน SK
 
-## Checklist
+### 4. เอกสารและตรวจสอบ
 
-- [ ] ตอบคำถาม "ใคร persist SK ข้ามวัน" แล้ว = ไม่มี
-- [ ] `ROW_NUMBER ORDER BY` ครอบ natural key ครบ ลำดับ deterministic
-- [ ] `WHERE t1.is_active = TRUE` เท่านั้น
-- [ ] คอลัมน์ `MdsID` ปิดท้าย (ไว้ trace)
-- [ ] `dependencies[]` ตาม [กฎลำดับ build](../project_wiki/dimension/full-rebuild-pattern.md#properties) + tag `TAG_DIM_DAILY`
-- [ ] เพิ่มแถวใน `project_wiki/dimension/inventory.md`
-- [ ] สร้างการ์ด OKF ของตารางนี้ใน `document/okf/` (ข้อมูลตารางเท่านั้น ไม่มีคำเตือนหรือบันทึกการคุย) ตาม [okf/README.md](../okf/README.md) ใน commit เดียวกับโค้ด
-- [ ] comment สั้น 1 บรรทัด บอก "ทำไม" — รายละเอียดไปไว้ใน `document/` ([coding-standard §9](../coding-standards/sqlx-coding-standard.md))
-
-## เพิ่ม dim แบบ SK เสถียร (MERGE — เคสพิเศษเท่านั้น)
-
-ใช้เมื่อ SK ต้องคงที่ตลอดชีพ (มี consumer persist ข้ามวัน) — ตาม
-[merge-sk-pattern.md](../project_wiki/dimension/merge-sk-pattern.md):
-ตารางต้องมีใน BigQuery ก่อน, MERGE + dual join t2/t3, tombstone DELETE ก่อน `END;`,
-backfill ครั้งแรกด้วย `MDS_BACKFILL_DAYS` ชั่วคราว — ตัวอย่าง: `dim_company.sqlx`
+- เพิ่ม natural key และ source ใน [dimension inventory](../project_wiki/dimension/inventory.md)
+- อัปเดต OKF card ใน `document/okf/` ให้สะท้อน grain, columns, key และ source
+- คอมไพล์ Dataform และใช้ BigQuery `--dry_run` กับ query ที่รองรับการตรวจแบบ dry run
+- ตรวจ schema และผลจำลอง source sync เทียบกับตารางปัจจุบันแบบอ่านอย่างเดียว

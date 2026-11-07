@@ -26,26 +26,22 @@ Read by: [dim_target_series_mdt](/dimension/dim_target_series_mdt.md), [Product_
 
 # Grain and key
 
-One row = one MDT product series: key `SeriesCode` among active mds rows; duplicates on the trimmed code are collapsed keeping the latest `updated_at` (then lowest id). `SeriesSK` is the surrogate key, regenerated every run. No sentinel row.
+One row = one MDT product series. Natural key: (`SeriesCode`). `SeriesSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `SeriesSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY SeriesCode)` over deduped rows. Regenerated every run. |
+| `SeriesSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `SeriesCode` | STRING | Series code (mds `SeriesCode`, trimmed, empty to NULL); unique key. |
 | `SeriesName` | STRING | Series name (mds `SeriesName`, trimmed, empty to NULL). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_mdt_product_series_master`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_product_series.sqlx` (`type: "table"`, tags `dimension_daily`, `saleout_daily`).
-- `uniqueKey`: `SeriesSK`.
-- Storage options: `{"clusterBy": ["SeriesSK"]}`.
+- Definition: `definitions/dimension/dim_product_series.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`, `saleout_daily`).
 - Reads: `mds_dataset.mds_data_mdt_product_series_master` (master data loaded outside this repo).
 - QUALIFY dedup on trimmed `SeriesCode`.
-- Full daily rebuild (`type: "table"`, tags `dimension_daily`, `saleout_daily`); no declared dependencies.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed.
 # Examples
 
 All product series.

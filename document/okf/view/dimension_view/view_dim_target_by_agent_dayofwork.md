@@ -39,7 +39,7 @@ One row = one allocated target spread to one calendar date: key `TargetBySaleSK`
 | `SectionSK` | INT64 | As-of-date SK of the section in dim_section. |
 | `SectionManagerSK` | INT64 | As-of-date SK of the section manager in dim_section_manager. |
 | `Date` | DATE | Calendar date within the target month (from dim_calendar). |
-| `TargetBySaleSK` | INT64 | SK of the monthly target-by-sale row in dim_target_product_group_by_sale (regenerated daily). |
+| `TargetBySaleSK` | INT64 | Stable SK of the monthly target-by-sale row in dim_target_product_group_by_sale. |
 | `SaleRepSKLast` | INT64 | SK of the target owner in dim_sale_representative_last, matched by EmployeeID + DepartmentID + CompanySK; for owners with no department match falls back to the row with NULL DepartmentID for the same employee. |
 | `DepartmentSKLast` | INT64 | SK of the owner's department in dim_department_last. |
 | `RegionSKLast` | INT64 | SK of the owner's region in dim_region_last. |

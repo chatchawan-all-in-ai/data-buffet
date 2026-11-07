@@ -24,7 +24,7 @@ an additional `ag01` DummyChannel override also stays unchanged. Store TA select
 can still yield PS1-5_OTHER under the unchanged
 [customer-report TA policy](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01).
 
-รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-10-28
+รวมจุดที่รู้แล้วว่า "เป็นแบบนี้โดยตั้งใจ" หรือ "ต้องระวัง" — อัปเดตล่าสุด 2026-11-06
 
 ## `dim_customer_report_info` SK เสถียรแล้ว — ห้าม full rebuild (2026-10-28)
 
@@ -74,8 +74,9 @@ can still yield PS1-5_OTHER under the unchanged
 - **อย่าให้รหัสซ้อนกัน** — พนักงานคนเดียวในบริษัทเดียวกันมีแถว `A|B` และแถว `B` (หรือ `A|B` สองแถว)
   ที่ช่วงวันซ้อนกันและผ่านเงื่อนไขอื่นของบิลเดียวกัน บรรทัด `B` จะชนทั้งสองแถว;
   `fact_transcation` เลือก `seq_condition` ต่ำสุดก่อน
-  แล้วเลือก `SaleRepSK` มากกว่าเมื่อ priority เท่ากัน
-  ซึ่งเปลี่ยนได้ทุกวันเพราะ SK ของ dim rebuild ใหม่ทุกวัน (พฤติกรรมเดียวกับมีแถว `A` ซ้ำสองแถวในปัจจุบัน)
+  แล้วเลือก `SaleRepSK` มากกว่าเมื่อ priority เท่ากัน.
+  Matching assignment keys keep their SK across runs; adding or removing an assignment
+  can still change which row wins a tie.
   · `view_fact_transcation` เรียง `seq_condition`, `dim_report.Segment` แล้ว `SaleRepSK DESC`
   · การเลือก TA ใน `dim_customer_report_info` ใช้กฎเรียงของ
   [Customer Report Info](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01)
@@ -123,22 +124,11 @@ DAG `pipline_saleout_mdt_eom` **รวมทุกไฟล์ในโฟลเ
 
 ## พฤติกรรมที่ตั้งใจ (อย่า "แก้")
 
-- **mds dims 34 ตัวเป็น full daily rebuild** (ตัดสินใจ 2026-07-20 · เลข 34 คือจำนวน ณ วันนั้น ปัจจุบันมีมากกว่านั้น — ดู [inventory](../project_wiki/dimension/inventory.md)): แปลงจาก MERGE
-  เป็น `type: "table"` ปั้นใหม่ทุกวันจาก `is_active = TRUE` — **SK ออกเลขใหม่ทุกวัน
-  ห้าม persist SK พวกนี้ข้ามวัน** เหตุผล: mds มี overwrite import mode (ล้างแล้วลง
-  ใหม่ id ใหม่หมด) ซึ่ง MERGE pattern รับมือไม่ครบ (zombie rows) ตรวจ consumer ครบ
-  ทุกตัวแล้ว (repo + BQ + query history 90 วัน): ทุก consumer re-derive รายวัน
-  ยกเว้นที่ยกเว้นไว้ ดู `project_wiki/dimension/full-rebuild-pattern.md`
-  - **ยกเว้น 2 ตัวที่ยังเป็น MERGE + tombstone**: `dim_company` (CompanySK ฝังถาวรใน
-    dims/facts ทั้งระบบ) และ `dim_aging_rang` (AgingRangSK freeze ใน dim_aging_history)
-  - **เงื่อนไขปิดแล้ว (2026-07-20)**: `fact_mir_vs`/`fact_mir_rs` (+ `fact_chq`)
-    ถูกย้ายเข้า repo เป็น `type: "table"` tag `fact_daily` (rebuild เต็มทุกคืน หลัง
-    dims) — `dim_collection_status` rebuild ได้อย่างปลอดภัยแล้ว
-- **Hard delete tombstone ใน mds MERGE dims** (ตัดสินใจ 2026-07-10 — ปัจจุบันเหลือ
-  ใช้กับ dim_company + dim_aging_rang เท่านั้น): row ที่ mds `is_active = FALSE`
-  ถูกลบจริงจาก dim โดยไม่เช็ก FK ปลายทาง; DELETE ไม่มี date filter (ตั้งใจ)
-- **`dim_doctype` / `dim_holiday` ไม่มี SK** — โค้ด SK ถูก comment ไว้ MERGE ด้วย
-  natural key แทน
+- **Dimension SK policy**: follow the [stable SK contract](../project_wiki/dimension/merge-sk-pattern.md)
+  and [conversion inventory](../project_wiki/dimension/inventory.md), including held actions.
+- `fact_mir_vs` / `fact_mir_rs` / `fact_chq` remain daily fact rebuilds.
+- **`dim_doctype` / `dim_holiday` have no SK** — they remain active-source SELECT actions
+  and return natural-keyed reference rows.
 - **`dim_stk_mkt` มี row 'Waiting Master'** (`MdsID = NULL`, MarketingGroupID='999') —
   placeholder สำหรับ stkcode ที่ยังไม่มี master ปลอดภัยจาก DELETE เพราะ
   `IN (subquery)` ไม่ match NULL
@@ -699,7 +689,7 @@ DAG `pipline_saleout_mdt_eom` **รวมทุกไฟล์ในโฟลเ
   `dependencies: ["fact_transcation", ...]` แต่ tag เป็น `dimension_daily` ส่วน
   `fact_transcation` เป็น `fact_daily` → **ถ้ารัน tag แยกกันโดยไม่ติ๊ก dependencies
   จะอ่าน fact ของเมื่อวาน** (คลาสเดียวกับ `dim_aging` ที่ขึ้นกับ `fact_mir_vs`)
-  SK (`PumpSK`) ปั้นใหม่ทุกวันด้วย `ROW_NUMBER()` — ห้าม persist ข้ามวัน
+  กติกา `PumpSK` ดูที่ [table card](../okf/dimension/dim_pump_information.md#grain-and-key)
   consumer เดียวคือ `view_fact_transcation` ซึ่ง join กลับด้วย natural key 4 ตัว
   `CompanySK` × `IFNULL(milStk,'')` × `FlagNewProductMKT` × `IFNULL(RegionID,'')`
   จึง re-derive สดทุก query — ไม่ได้เก็บ `PumpSK` ไว้

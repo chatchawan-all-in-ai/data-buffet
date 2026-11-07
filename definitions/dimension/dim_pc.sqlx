@@ -1,15 +1,34 @@
 config {
-  type: "table",
+  type: "operations",
+  hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_sales_branch_mdt"],
   tags: [databuffet.TAG_DIM_DAILY, databuffet.TAG_SALEOUT_DAILY],
-  uniqueKey: ["PcSK"],
-  bigquery: {
-    clusterBy: ["PcSK", "BranchMdtSK", "MarketingGroupID"],
-  },
 }
 
 js {
+    const DimPcTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimPcTableRef = `${DimPcTable.database}.${DimPcTable.schema}.${DimPcTable.name}`;
+
+    const stableDimensionColumns = ['PcSK', 'BranchMdtSK', 'BranchCodeMdt', 'EmployeeID', 'EmployeeName', 'EmployeeSurname', 'EmployeeType', 'MarketingGroupID', 'MarketingGroupName', 'StartDate', 'EndDate', 'IsPlaceholder', 'MdsID'];
+    const stableDimensionKeyColumns = ['EmployeeID', 'BranchCodeMdt', 'MarketingGroupID', 'StartDate', 'EndDate'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`PcSK` = S.`PcSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'PcSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+
     const MdsSourceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
@@ -25,70 +44,143 @@ js {
     const DimBranchTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
 }
 
-WITH pc_source AS (
+
+
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    WITH pc_source AS (
+      SELECT
+        NULLIF(CAST(TRIM(t1.branch_code) AS STRING), '')      AS BranchCodeMdt,
+        NULLIF(CAST(TRIM(t1.employee_id) AS STRING), '')      AS EmployeeID,
+        NULLIF(CAST(TRIM(t1.employee_name) AS STRING), '')    AS EmployeeName,
+        NULLIF(CAST(TRIM(t1.employee_surname) AS STRING), '') AS EmployeeSurname,
+        NULLIF(CAST(TRIM(t1.employee_type) AS STRING), '')    AS EmployeeType,
+        NULLIF(CAST(TRIM(t1.marketinggroupid) AS STRING), '') AS MarketingGroupID,
+        NULLIF(CAST(TRIM(t1.marketinggroup) AS STRING), '')   AS MarketingGroupName,
+        t1.start_date AS StartDate,
+        t1.end_date   AS EndDate,
+
+        (
+          NULLIF(CAST(TRIM(t1.employee_id) AS STRING), '') IS NULL
+          OR NULLIF(CAST(TRIM(t1.employee_id) AS STRING), '') = 'Dummy_NotPC'
+          OR IFNULL(TRIM(t1.employee_name),'') IN ('ไม่มี PC', 'Not PC')
+        ) AS IsPlaceholder,
+
+        t1.id AS MdsID,
+
+      FROM `${MdsSourceTableRef}` AS t1
+      WHERE t1.is_active = TRUE
+      -- ยุบซ้ำที่ระดับการมอบหมาย ไม่ใช่ระดับคน — ถ้า mds มีแถวซ้ำ เก็บแถวที่แก้ล่าสุด
+      QUALIFY ROW_NUMBER() OVER(
+        PARTITION BY t1.employee_id, t1.branch_code, t1.marketinggroupid
+        ORDER BY t1.updated_at DESC, t1.id
+      ) = 1
+
+    ), pc_master AS (
+      SELECT
+        ROW_NUMBER() OVER(
+          ORDER BY src.EmployeeID, src.BranchCodeMdt, src.MarketingGroupID
+        ) AS PcSK,
+        IFNULL(dim_br.BranchMdtSK, -1) AS BranchMdtSK,
+        src.*
+      FROM pc_source AS src
+      LEFT JOIN `${DimBranchTableRef}` AS dim_br
+        ON src.BranchCodeMdt = dim_br.BranchCodeMdt
+
+    ), unknown_pc AS (
+      SELECT
+        -1                      AS PcSK,
+        -1                      AS BranchMdtSK,
+
+        -- ⚠️ ห้ามเป็น NULL — BI ใช้คอลัมน์นี้เป็น ID แล้วจะโชว์เป็นช่องว่าง (Wisut 2026-10-09)
+        'NotBranch'             AS BranchCodeMdt,
+        'NotEmployee'           AS EmployeeID,
+        'ไม่ระบุ'                 AS EmployeeName,
+        CAST(NULL AS STRING)    AS EmployeeSurname,
+        'NotType'               AS EmployeeType,
+        'NotGroup'              AS MarketingGroupID,
+        'ไม่ระบุกลุ่มการตลาด'        AS MarketingGroupName,
+        CAST(NULL AS DATE)      AS StartDate,
+        CAST(NULL AS DATE)      AS EndDate,
+
+        CAST(NULL AS BOOL)      AS IsPlaceholder,
+        CAST(NULL AS STRING)    AS MdsID,
+
+    )
+
+    SELECT * FROM pc_master
+    UNION ALL
+    SELECT * FROM unknown_pc
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_pc source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPcTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_pc target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPcTableRef}`
+    WHERE `PcSK` IS NULL
+  ) AS 'dim_pc target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPcTableRef}`
+    GROUP BY `PcSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_pc target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`PcSK`)
+    FROM `${DimPcTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
   SELECT
-    NULLIF(CAST(TRIM(t1.branch_code) AS STRING), '')      AS BranchCodeMdt,
-    NULLIF(CAST(TRIM(t1.employee_id) AS STRING), '')      AS EmployeeID,
-    NULLIF(CAST(TRIM(t1.employee_name) AS STRING), '')    AS EmployeeName,
-    NULLIF(CAST(TRIM(t1.employee_surname) AS STRING), '') AS EmployeeSurname,
-    NULLIF(CAST(TRIM(t1.employee_type) AS STRING), '')    AS EmployeeType,
-    NULLIF(CAST(TRIM(t1.marketinggroupid) AS STRING), '') AS MarketingGroupID,
-    NULLIF(CAST(TRIM(t1.marketinggroup) AS STRING), '')   AS MarketingGroupName,
-    t1.start_date AS StartDate,
-    t1.end_date   AS EndDate,
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`PcSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `PcSK`
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.`PcSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`PcSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimPcTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
 
-    (
-      NULLIF(CAST(TRIM(t1.employee_id) AS STRING), '') IS NULL
-      OR NULLIF(CAST(TRIM(t1.employee_id) AS STRING), '') = 'Dummy_NotPC'
-      OR IFNULL(TRIM(t1.employee_name),'') IN ('ไม่มี PC', 'Not PC')
-    ) AS IsPlaceholder,
-
-    t1.id AS MdsID,
-
-  FROM `${MdsSourceTableRef}` AS t1
-  WHERE t1.is_active = TRUE
-  -- ยุบซ้ำที่ระดับการมอบหมาย ไม่ใช่ระดับคน — ถ้า mds มีแถวซ้ำ เก็บแถวที่แก้ล่าสุด
-  QUALIFY ROW_NUMBER() OVER(
-    PARTITION BY t1.employee_id, t1.branch_code, t1.marketinggroupid
-    ORDER BY t1.updated_at DESC, t1.id
-  ) = 1
-
-), pc_master AS (
-  SELECT
-    ROW_NUMBER() OVER(
-      ORDER BY src.EmployeeID, src.BranchCodeMdt, src.MarketingGroupID
-    ) AS PcSK,
-    IFNULL(dim_br.BranchMdtSK, -1) AS BranchMdtSK,
-    src.*
-  FROM pc_source AS src
-  LEFT JOIN `${DimBranchTableRef}` AS dim_br
-    ON src.BranchCodeMdt = dim_br.BranchCodeMdt
-
-), unknown_pc AS (
-  SELECT
-    -1                      AS PcSK,
-    -1                      AS BranchMdtSK,
-
-    -- ⚠️ ห้ามเป็น NULL — BI ใช้คอลัมน์นี้เป็น ID แล้วจะโชว์เป็นช่องว่าง (Wisut 2026-10-09)
-    'NotBranch'             AS BranchCodeMdt,
-    'NotEmployee'           AS EmployeeID,
-    'ไม่ระบุ'                 AS EmployeeName,
-    CAST(NULL AS STRING)    AS EmployeeSurname,
-    'NotType'               AS EmployeeType,
-    'NotGroup'              AS MarketingGroupID,
-    'ไม่ระบุกลุ่มการตลาด'        AS MarketingGroupName,
-    CAST(NULL AS DATE)      AS StartDate,
-    CAST(NULL AS DATE)      AS EndDate,
-
-    CAST(NULL AS BOOL)      AS IsPlaceholder,
-    CAST(NULL AS STRING)    AS MdsID,
-
-)
-
-SELECT * FROM pc_master
-UNION ALL
-SELECT * FROM unknown_pc
-
-pre_operations {}
-
-post_operations {}
+  MERGE `${DimPcTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

@@ -26,13 +26,13 @@ Read by: [fact_saleout_mdt](/fact/fact_saleout_mdt.md), [fact_saleout_monthly_md
 
 # Grain and key
 
-One row = one MDT product code: key `ProductCode` (the integer MDT code as text). Mds rows are deduped on `product_mdt_code` (preferring rows that have a MAC5 code, then lowest region id, then id). `ProductMdtSK` is the surrogate key, regenerated every run, plus the reserved `-1` row (ProductCode 'NotProduct').
+One row = one MDT product code. Natural key: (`ProductCode`). `ProductMdtSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ProductMdtSK` | INT64 | For mds rows `ROW_NUMBER() OVER(ORDER BY CAST(product_mdt_code AS INT64))`; for feed-only placeholder rows `MAX(mds SK) + ROW_NUMBER()` ordered by product code; `-1` for the unknown row. Regenerated every run. |
+| `ProductMdtSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `ProductSK` | INT64 | Foreign key to [dim_product_master](/dimension/dim_product_master.md): the MAC5 product matched on (MAC5 code, company); the company's 'WAITING999' product if none; `-1` if even that is missing. |
 | `ProductMktSK` | INT64 | Foreign key to [dim_product_mkt](/dimension/dim_product_mkt.md): from the matched MAC5 product's marketing group, else from the stk-to-marketing mapping ([dim_stk_mkt](/dimension/dim_stk_mkt.md)), else the company's WAITING999 marketing row, else `-1`. |
 | `ProductCode` | STRING | MDT product code: mds `product_mdt_code` cast to INT64 and back to STRING (leading zeros stripped); for placeholder rows the feed `product_code` with leading zeros trimmed. 'NotProduct' on the -1 row. |
@@ -41,16 +41,12 @@ One row = one MDT product code: key `ProductCode` (the integer MDT code as text)
 | `StoreCode` | STRING | Store/region code of the MDT product (mds `region_id`, or the minimum `store_code` seen in the feeds for placeholders); 'NotStore' on the -1 row. |
 | `CompanyID` | STRING | Company code (mds `commpy`, trimmed); placeholders are hard-coded to 'ag01'; 'NotCompany' on the -1 row. Capitalised, as in the source. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_mdt_product_master`; trace column back to MDS. NULL on placeholder and -1 rows (they have no mds source). |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_product_mdt.sqlx` (`type: "table"`, tags `dimension_daily`, `saleout_daily`).
-- `uniqueKey`: `ProductMdtSK`.
-- Storage options: `{"clusterBy": ["ProductMdtSK"]}`.
+- Definition: `definitions/dimension/dim_product_mdt.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`, `saleout_daily`).
 - Reads: [dimension_table.dim_product_master](/dimension/dim_product_master.md), [dimension_table.dim_stk_mkt](/dimension/dim_stk_mkt.md), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), `mds_dataset.mds_data_mdt_product_master` (master data loaded outside this repo), [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md), [curated_saleout_mdt.curated_saleout_monthly_mdt](/curated/curated_saleout_mdt/curated_saleout_monthly_mdt.md), [curated_saleout_mdt.curated_stock_mdt](/curated/curated_saleout_mdt/curated_stock_mdt.md).
 - CTEs `product_master` (mds), `new_product` (feed-only codes) and `unknown_product` are UNION ALL'd.
-- Full daily rebuild (`type: "table"`, tags `dimension_daily`, `saleout_daily`); runs after dim_product_master, dim_stk_mkt and dim_product_mkt.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_product_master, dim_stk_mkt and dim_product_mkt.
 # Examples
 
 MDT products not yet mapped to a MAC5 product.

@@ -26,15 +26,15 @@ Read by: [fact_target_series_mdt](/fact/fact_target_series_mdt.md).
 
 # Grain and key
 
-One row = one MDT branch and product series on one calendar day: key `TargetSeriesMdtSK`. Monthly MDS rows de-duplicated per `(BranchCode, SeriesCode, Year, Month)` (latest `updated_at`), expanded to one row per calendar day. SK ordered by TargetDate, BranchCodeMdt, SeriesCode. Reserved row `TargetSeriesMdtSK = -1` (BranchCodeMdt 'NotBranch', SeriesCode 'NotSeries', SeriesName 'ไม่ระบุซีรีส์', NULL date and amounts). Partitioned by TargetDate.
+One row = one MDT branch and product series on one calendar day. Natural key: (`TargetDate`, `BranchCodeMdt`, `SeriesCode`). `TargetSeriesMdtSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `TargetSeriesMdtSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by TargetDate, BranchCodeMdt, SeriesCode; -1 for the reserved row. Regenerated every run. |
+| `TargetSeriesMdtSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `BranchMdtSK` | INT64 | SK from dim_sales_branch_mdt joined on BranchCodeMdt (leading `GH_` rewritten to `GB_`); -1 when not found. |
-| `SeriesSK` | INT64 | SK from [dim_product_series](/dimension/dim_product_series.md) by SeriesCode; unknown codes fall back to the OTHERS series (code 999999), or -1 if that row is missing. Regenerated every run. |
+| `SeriesSK` | INT64 | SK from [dim_product_series](/dimension/dim_product_series.md) by SeriesCode; unknown codes fall back to the OTHERS series (code 999999), or -1 if that row is missing. Stable value from dim_product_series. |
 | `StoreCode` | STRING | Store chain code from dim_sales_branch_mdt (NULL if unmatched); 'NotStore' on the -1 row. |
 | `BranchCodeMdt` | STRING | MDT branch code from the target file; 'NotBranch' on the -1 row. |
 | `SeriesCode` | STRING | Series code from the target file (trimmed); 'NotSeries' on the -1 row. It keeps the original code even when SeriesSK maps to OTHERS. |
@@ -46,15 +46,11 @@ One row = one MDT branch and product series on one calendar day: key `TargetSeri
 | `Amt` | FLOAT64 | Daily target amount = monthly `Value` / DaysInMonth (FLOAT64); NULL on the -1 row. |
 | `Qty` | FLOAT64 | Daily target quantity = monthly `Quantity` / DaysInMonth (FLOAT64); NULL on the -1 row. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_mdt_sales_target_by_series`; trace column back to MDS. NULL on the -1 row. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_target_series_mdt.sqlx` (`type: "table"`, tags `dimension_daily`, `saleout_daily`).
-- `uniqueKey`: `TargetSeriesMdtSK`.
-- Storage options: `{"partitionBy": "TargetDate", "clusterBy": ["BranchMdtSK", "SeriesSK"]}`.
+- Definition: `definitions/dimension/dim_target_series_mdt.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`, `saleout_daily`).
 - Reads: `mds_dataset.mds_data_mdt_sales_target_by_series` (master data loaded outside this repo), [dimension_table.dim_product_series](/dimension/dim_product_series.md), [dimension_table.dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md).
-- Full daily rebuild (`type: "table"`, tags `dimension_daily`, `saleout_daily`); runs after dim_sales_branch_mdt and dim_product_series.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_sales_branch_mdt and dim_product_series.
 # Examples
 
 Series target by month.

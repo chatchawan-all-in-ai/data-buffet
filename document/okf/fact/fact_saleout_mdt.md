@@ -28,6 +28,8 @@ Read by: [view_fact_stock_nonmove_mdt](/view/fact_view/view_fact_stock_nonmove_m
 
 One row = one sell-out (sale or return) document-type total per sale date, chain, branch and product: key (`sale_date`, `store_code`, `branch_code`, `product_code`, `doc_type`) - the uniqueKey, taken from `curated_saleout_mdt`. `doc_type` is 'SALE' or 'RETURN' (returns typically carry negative amounts). Excluded: store 'GB' rows whose marketing segment is 00221 or 00222.
 
+Exact and fallback report lookups use companyID, ReportID, RegionID, MarketingGroupID in ascending order. Period lookups choose the lowest SubRegionID, then the former dimension business order (companyID, RegionID, SubRegionID, StartDate, EndDate); director lookups use companyID, DirectorID, StartDate, EndDate.
+
 # Schema
 
 | Column | Type | Description |

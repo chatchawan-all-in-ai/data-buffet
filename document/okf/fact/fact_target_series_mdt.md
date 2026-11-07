@@ -28,6 +28,8 @@ Read by: none in this repository.
 
 One row = the daily target quantity of one MDT branch for one product series on one date: key (`target_date`, `branch_code`, `series_code`) - the uniqueKey. Monthly targets are split equally over the days of the month; NULL `TargetDate` rows are excluded.
 
+Period lookups choose the lowest SubRegionID, then the former dimension business order (companyID, RegionID, SubRegionID, StartDate, EndDate); director lookups use companyID, DirectorID, StartDate, EndDate.
+
 # Schema
 
 | Column | Type | Description |

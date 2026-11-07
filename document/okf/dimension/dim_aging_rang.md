@@ -26,26 +26,24 @@ Read by: [view_dim_aging](/view/dimension_view/view_dim_aging.md), [view_aging_r
 
 # Grain and key
 
-One row = one aging bucket: key (`companyID`, `AgingDayMin`, `AgingDayMax`); `AgingRangSK` is the surrogate key (`max_sk + ROW_NUMBER()` for new rows, existing SKs never change). Rows are matched to MDS first by `MdsId` and then by the natural key (company + min + max), so editing a label keeps the SK.
+One row = one aging bucket. Natural key: (`companyID`, `AgingDayMin`, `AgingDayMax`). `AgingRangSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `AgingRangSK` | INT64 | Stable surrogate key of the bucket. Assigned once (MERGE with `max_sk`) and never regenerated. |
-| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. Set at insert only (not updated by the MATCHED branch). |
+| `AgingRangSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
+| `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. refreshed from dim_company by CompanyID. |
 | `companyID` | STRING | MAC5 company code the bucket belongs to (MDS `companyID`, cleaned). Part of the natural key. |
 | `AgingDayMin` | INT64 | Lower bound of the bucket in days past due (inclusive; cast to INT64 from MDS). Used as `DayRange BETWEEN AgingDayMin AND AgingDayMax`. |
 | `AgingDayMax` | INT64 | Upper bound of the bucket in days past due (inclusive; cast to INT64 from MDS). |
 | `ReportName` | STRING | Display label of the bucket as shown on aging reports (MDS `ReportName`). |
-| `MdsId` | STRING | `id` of the source row in `mds_dataset.mds_data_aging_rang_master`, cleaned with `cleanString`; trace column back to MDS. Also used to keep the SK when the natural key is edited and for the tombstone delete. |
-
+| `MdsId` | STRING | `id` of the source row in `mds_dataset.mds_data_aging_rang_master`, cleaned with `cleanString`; trace column back to MDS. |
 # How it is built
 
-- Definition: `definitions/dimension/dim_aging_rang.sqlx` (`type: "operations"`, tag `dimension_daily`); the operation owns this table.
+- Definition: `definitions/dimension/dim_aging_rang.sqlx` (`type: "operations"`, `hasOutput: true`, tag `dimension_daily`); the operation owns this table.
 - Reads: `mds_dataset.mds_data_aging_rang_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- MERGE with stable SK (legacy pattern, see [merge-sk-pattern](../../project_wiki/dimension/merge-sk-pattern.md)) in a `type: "operations"` file, tag `dimension_daily`; the target table pre-exists in BigQuery. Source window is `MDS_BACKFILL_DAYS` on `updated_at` with `is_active = TRUE`, then a tombstone DELETE of rows whose MDS row is `is_active = FALSE`. Runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed.
 # Examples
 
 Buckets per company in order.

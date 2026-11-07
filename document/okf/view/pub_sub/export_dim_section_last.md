@@ -30,7 +30,7 @@ One row = one sales section in its latest period: key `companyID`, `SectionID` (
 
 | Column | Type | Description |
 |---|---|---|
-| `SectionSK` | INT64 | Surrogate key of this snapshot, `ROW_NUMBER()` ordered by CompanySK, SectionID. Regenerated every run; not the same space as `dim_section.SectionSK`. |
+| `SectionSK` | INT64 | Stable surrogate key of this snapshot; not the same key space as `dim_section.SectionSK`. |
 | `SectionID` | STRING | Section code, from dim_section.SectionID. |
 | `SectionName` | STRING | Section name from the kept interval. |
 | `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |

@@ -30,7 +30,7 @@ One row = one customer segment: key `CompanyID`, `Segment3` (unique); `row_key` 
 
 | Column | Type | Description |
 |---|---|---|
-| `CustomerSegmentSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, Segment3)` over active mds rows (regenerates every run); the fixed value `-1` is reserved for the 'Non-Segment' fallback row. |
+| `CustomerSegmentSK` | INT64 | Stable surrogate key for the active `companyID`, `Segment3` natural key; the fixed value `-1` is reserved for the 'Non-Segment' fallback row. |
 | `Segment1` | STRING | Pass-through of mds `Segment1`, cleaned with `cleanString` (empty string becomes NULL). Top level of the three-level segment code; 'Non-Segment' on the -1 row. |
 | `Segment2` | STRING | Pass-through of mds `Segment2`, cleaned with `cleanString` (empty string becomes NULL). Middle segment level; 'Non-Segment' on the -1 row. |
 | `Segment3` | STRING | Pass-through of mds `Segment3`, cleaned with `cleanString` (empty string becomes NULL). Leaf segment level (the row key together with company); 'Non-Segment' on the -1 row. |

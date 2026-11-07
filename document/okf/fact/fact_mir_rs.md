@@ -35,7 +35,7 @@ One row = one receipt (RS) document line against an invoice, with its billing ro
 | `ReceiveSK` | INT64 | Surrogate key: ROW_NUMBER over BillingSK, FactChqSK, company_id, mirtype, mirvnos, mirlistno, mirbinvno. Regenerates daily. |
 | `BillingSK` | INT64 | [fact_mir_vs](/fact/fact_mir_vs.md).BillingSK for the same company and `mirbinvno`; NULL when the invoice has no billing (VS) row. |
 | `FactChqSK` | INT64 | [fact_chq](/fact/fact_chq.md).FactChqSK of the cheque matched on receipt number (`cqlvnos = mirvnos`), customer and company; NULL when no cheque matches. |
-| `CollectSK` | INT64 | Surrogate key of [dim_collection_status](/dimension/dim_collection_status.md), joined on company, receipt year/month and customer (`mircus` cast to STRING = `CustomerID`). NULL when the MDS collection-status master has no row for that month/customer. Regenerates daily. |
+| `CollectSK` | INT64 | Stable surrogate key of [dim_collection_status](/dimension/dim_collection_status.md), joined on company, receipt year/month and customer (`mircus` cast to STRING = `CustomerID`). NULL when the MDS collection-status master has no row for that month/customer. |
 | `Actions` | STRING | Collection action text, copied from `dim_collection_status.Actions` (MDS collection-status master). |
 | `Justification` | STRING | Collection justification text, copied from `dim_collection_status.Justification`. |
 | `Responsible` | STRING | Person/role responsible for the collection follow-up, copied from `dim_collection_status.Responsible`. |

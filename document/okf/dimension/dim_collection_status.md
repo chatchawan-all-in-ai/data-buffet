@@ -26,13 +26,13 @@ Read by: [fact_mir_vs](/fact/fact_mir_vs.md), [fact_mir_rs](/fact/fact_mir_rs.md
 
 # Grain and key
 
-One row = one active mds record (company, Year, Month, CustomerID): key `CollectSK` (surrogate, regenerated every run).
+One row = one active MDS record (company, Year, Month, CustomerID). Natural key: (`CompanyID`, `CustomerID`, `Month`, `Year`). `CollectSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `CollectSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY CompanyID, Year, Month, CustomerID)` over the active mds rows. Regenerated every run. |
+| `CollectSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `CompanyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `CompanyID`; natural join key to dim_company.companyID. |
 | `Year` | INT64 | Calendar year of the follow-up record (`castInt64` of mds `Year`). |
@@ -43,15 +43,11 @@ One row = one active mds record (company, Year, Month, CustomerID): key `Collect
 | `Justification` | STRING | Reason or explanation recorded for the status (free text from MDS). |
 | `Responsible` | STRING | Person or team responsible for the collection follow-up (free text from MDS). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_collection_status_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_collection_status.sqlx` (`type: "table"`, tag `dimension_daily`).
-- `uniqueKey`: `CollectSK`.
-- Storage options: `{"clusterBy": ["CollectSK"]}`.
+- Definition: `definitions/dimension/dim_collection_status.sqlx` (`type: "operations"`, `hasOutput: true`, tag `dimension_daily`).
 - Reads: `mds_dataset.mds_data_collection_status_master` (master data loaded outside this repo; only rows with `is_active = TRUE`), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Collection notes for one company and month.

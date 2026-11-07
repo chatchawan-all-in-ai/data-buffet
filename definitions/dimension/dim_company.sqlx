@@ -1,5 +1,7 @@
 config {
   type: "operations",
+  hasOutput: true,
+  schema: databuffet.DIMENSION_TABLE,
   dependencies: [],
   tags: [databuffet.TAG_DIM_DAILY],
 }
@@ -51,10 +53,6 @@ BEGIN
     LEFT JOIN `${DimCompanyTableRef}` AS t3
       ON ${databuffet.functionData.cleanString("t1.id")} = t3.MdsID
     WHERE t1.is_active = TRUE
-      AND DATE(t1.updated_at) >= DATE_SUB(
-            CURRENT_DATE("Asia/Bangkok"),
-            INTERVAL ${databuffet.MDS_BACKFILL_DAYS} DAY
-          )
   ) AS S
   ON T.CompanySK = S.CompanySK
 
@@ -80,10 +78,8 @@ BEGIN
       S.CompanyNameTH,
       S.CompanyNameEN,
       S.MdsID
-    );
+    )
 
-  DELETE FROM `${DimCompanyTableRef}`
-  WHERE MdsID IN (
-    SELECT id FROM `${MdsSourceTableRef}` WHERE is_active = FALSE
-  );
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
 END;

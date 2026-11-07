@@ -26,27 +26,23 @@ Read by: [dim_aging](/dimension/dim_aging.md), [dim_customer_grade](/dimension/d
 
 # Grain and key
 
-One row = one active MDS status row: key `NotReceiveSK`, `ROW_NUMBER()` ordered by CompanyID, StatusID; natural key `(CompanyID, StatusID)`. There is no `CompanySK`; joins use the CompanyID code. No -1 row.
+One row = one active MDS status row. Natural key: (`CompanyID`, `StatusID`). `NotReceiveSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `NotReceiveSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by CompanyID, StatusID. Regenerated every run. |
+| `NotReceiveSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanyID` | STRING | Company code (cleaned string); join to `mih.company_id` / dim_company.companyID. No CompanySK column in this table. |
 | `StatusID` | INT64 | Invoice status code (INT64 via `castInt64`, fails the run on a non-numeric value); compared with `mihstatus` of the invoice header. |
 | `StatusNameTH` | STRING | Thai name of the status. |
 | `StatusNameENG` | STRING | English name of the status. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_payment_status_not_receive_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_status_not_receive.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `NotReceiveSK`.
-- Storage options: `{"clusterBy": ["NotReceiveSK"]}`.
+- Definition: `definitions/dimension/dim_status_not_receive.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_payment_status_not_receive_master` (master data loaded outside this repo).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Status codes treated as not-received for one company.

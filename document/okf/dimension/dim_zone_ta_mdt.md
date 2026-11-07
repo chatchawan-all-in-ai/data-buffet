@@ -26,13 +26,13 @@ Read by: [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md).
 
 # Grain and key
 
-One row = one active MDS zone manager assignment (no de-duplication): key `ZoneTaMdtSK`, `ROW_NUMBER()` ordered by zone_id then employee id. A zone can have several rows (several managers or intervals); `dim_sales_branch_mdt` keeps the lowest ZoneTaMdtSK per ZoneCode. Reserved row `ZoneTaMdtSK = -1` with ZoneMdtSK -1, ZoneCode 'NotZone', EmployeeID 'NotEmployee', EmployeeName 'ไม่ระบุผู้จัดการโซน'.
+One row = one active MDS zone manager assignment (no de-duplication). Natural key: (`ZoneCode`, `EmployeeID`, `StartDate`, `EndDate`). `ZoneTaMdtSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ZoneTaMdtSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by ZoneCode and employee id; -1 for the reserved row. Regenerated every run. |
+| `ZoneTaMdtSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `ZoneMdtSK` | INT64 | SK of the zone in [dim_zone_mdt](/dimension/dim_zone_mdt.md) (join on ZoneCode); -1 when the zone code is not in dim_zone_mdt. |
 | `ZoneCode` | STRING | Zone code (`zone_id` trimmed); 'NotZone' on the -1 row. |
 | `ZoneName` | STRING | Zone name as entered in the manager master; 'ไม่ระบุโซน' on the -1 row. |
@@ -43,15 +43,11 @@ One row = one active MDS zone manager assignment (no de-duplication): key `ZoneT
 | `StartDate` | DATE | MDS start_date of the assignment; NULL on the -1 row. |
 | `EndDate` | DATE | MDS end_date of the assignment; NULL on the -1 row. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_mdt_sales_zone_ta_master`; trace column back to MDS. NULL on the -1 row. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_zone_ta_mdt.sqlx` (`type: "table"`, tags `dimension_daily`, `saleout_daily`).
-- `uniqueKey`: `ZoneTaMdtSK`.
-- Storage options: `{"clusterBy": ["ZoneTaMdtSK"]}`.
+- Definition: `definitions/dimension/dim_zone_ta_mdt.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`, `saleout_daily`).
 - Reads: `mds_dataset.mds_data_mdt_sales_zone_ta_master` (master data loaded outside this repo), [dimension_table.dim_zone_mdt](/dimension/dim_zone_mdt.md).
-- Full daily rebuild (`type: "table"`, tags `dimension_daily`, `saleout_daily`); runs after dim_zone_mdt.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_zone_mdt.
 # Examples
 
 Zone managers per zone (excluding the reserved row).

@@ -30,7 +30,7 @@ dataset กลางตาม [registry reference](../project_wiki/includes/vari
 | curated | camelCase | `mihVnos`, `prdSku` |
 | dimension/fact | PascalCase | `CompanyID`, `WaterPacName` |
 | org_center | snake_case, ชื่อเอกพจน์เสมอ แม้เป็นคอลัมน์ list (ARRAY) — ไม่ใช้ `_ids` / `_codes` | `company_id`, `department_id`, `section_code` |
-| Surrogate key | `<Entity>SK` PascalCase | `CompanySK`, `SaleRepSK`, `FactOrderSK` |
+| Surrogate key | Keep the dimension’s established `<Entity>SK` name in PascalCase | `CompanySK`, `SaleRepSK`, `FactOrderSK` |
 | mds row id ใน dim | `MdsID` | |
 | คอลัมน์ก่อนปรับเครื่องหมาย | `<ชื่อ>_raw` | `mihnetsum_raw` |
 | วันที่ snapshot | `asatdate` (DATE) | |
@@ -40,6 +40,10 @@ dataset กลางตาม [registry reference](../project_wiki/includes/vari
 หมายเหตุ: SK ไม่จำเป็นต้องแปลตรงจากชื่อตาราง — `dim_collection_status → CollectSK`,
 `dim_status_not_receive → NotReceiveSK`, `dim_avg_collection_score → AvgCollectSK`,
 `dim_product_master → ProductSK`
+
+For dimension key selection and allocation, follow the
+[stable-key synchronization contract](../project_wiki/dimension/merge-sk-pattern.md);
+conversion scope and exceptions are owned by the [inventory](../project_wiki/dimension/inventory.md).
 
 ## ตัวแปร JavaScript ใน js block
 

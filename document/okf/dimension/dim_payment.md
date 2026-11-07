@@ -26,13 +26,13 @@ Read by: [fact_transcation](/fact/fact_transcation.md), [Model_Invoice_Transacti
 
 # Grain and key
 
-One row = one payment memo code per company: key (company, CodeMemo) among active mds rows; `PaymentSK` is the surrogate key, regenerated every run.
+One row = one payment memo code per company. Natural key: (`companyID`, `CodeMemo`). `PaymentSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `PaymentSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, CodeMemo)` over the active mds rows. Regenerated every run. |
+| `PaymentSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `CodeMemo` | STRING | Pass-through of mds `CodeMemo`, cleaned with `cleanString` (empty string becomes NULL). Memo code from the sales document that identifies the payment term; the natural key with companyID. |
@@ -42,15 +42,11 @@ One row = one payment memo code per company: key (company, CodeMemo) among activ
 | `PaymentMethodTH` | STRING | Pass-through of mds `PaymentMethodTH`, cleaned with `cleanString` (empty string becomes NULL). Payment method, Thai. |
 | `PaymentType` | STRING | Pass-through of mds `PaymentType`, cleaned with `cleanString` (empty string becomes NULL). Payment term category: `Cash`, `Credit` or `No Memo Code` (the default ฿00฿ row). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_payment_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_payment.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `PaymentSK`.
-- Storage options: `{"clusterBy": ["PaymentSK"]}`.
+- Definition: `definitions/dimension/dim_payment.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_payment_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Payment codes of one company.

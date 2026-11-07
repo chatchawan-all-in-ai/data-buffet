@@ -26,13 +26,13 @@ Read by: [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [dim_target
 
 # Grain and key
 
-One row = one region or sub-region code: key `(CompanyID, RegionID, SubRegionID)`; the row with the greatest EndDate (ties by StartDate) is kept, with no current-date filter. `RegionSK` is renumbered by this table (ordered by CompanySK, RegionID, SubRegionID) and is **not** the SK of dim_region. No -1 row.
+One row = one region or sub-region code. Natural key: (`companyID`, `RegionID`, `SubRegionID`, `StartDate`, `EndDate`). `RegionSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `RegionSK` | INT64 | Surrogate key of this snapshot, `ROW_NUMBER()` ordered by CompanySK, RegionID, SubRegionID. Different from `dim_region.RegionSK`. Regenerated every run. |
+| `RegionSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `RegionManagerSK` | INT64 | Hierarchy key to [dim_region_manager_last](/dimension/dim_region_manager_last.md).RegionManagerSK. Built as NULL, then backfilled by `update_sk_sale_rep_group` (join on RegionID, SubRegionID, CompanySK). |
 | `DirectorSK` | INT64 | Hierarchy key to [dim_director_last](/dimension/dim_director_last.md).DirectorSK. Built as NULL, then backfilled by `update_sk_sale_rep_group` (join on DirectorID + CompanySK). |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
@@ -43,15 +43,11 @@ One row = one region or sub-region code: key `(CompanyID, RegionID, SubRegionID)
 | `RegionName` | STRING | Region name of the kept (latest) interval, from dim_region.RegionName. |
 | `StartDate` | DATE | Start of the kept validity interval (dim_region.StartDate). |
 | `EndDate` | DATE | End of the kept validity interval (dim_region.EndDate). |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_region_last.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `RegionSK`.
-- Storage options: `{"clusterBy": ["RegionSK"]}`.
+- Definition: `definitions/dimension/dim_region_last.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company and dim_region. `RegionManagerSK` and `DirectorSK` are then UPDATEd in place by the operation `update_sk_sale_rep_group`.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company and dim_region. `RegionManagerSK` and `DirectorSK` are then UPDATEd in place by the operation `update_sk_sale_rep_group`.
 # Examples
 
 One row per region code with its manager and director keys resolved.

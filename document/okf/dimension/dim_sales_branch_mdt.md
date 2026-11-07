@@ -26,19 +26,19 @@ Read by: [dim_pc](/dimension/dim_pc.md), [dim_target_saleout_mdt](/dimension/dim
 
 # Grain and key
 
-One row = one MDT branch: key `BranchMdtSK`, from three blocks UNION ALL'd. (1) `branch_master`: active MDS rows de-duplicated to one per `(region_id, store_id)` (latest start_date, then id) before any join. (2) `new_branch`: every `(store_code, branch_code)` seen in curated_saleout_mdt, curated_saleout_monthly_mdt or curated_stock_mdt that is absent from branch_master gets a row with SK = MAX(branch_master SK) + row number, `ZoneCode 'WAITING'`, `ZoneName 'Waiting Master'`, section/zone keys -1, BranchCodeMdt NULL and StartDate = first sale date in the feed. (3) reserved `BranchMdtSK = -1` row (StoreCode 'NotStore', BranchCode / BranchCodeMdt 'NotBranch', BranchName 'ไม่ระบุสาขา', ZoneCode 'NotZone', Warehouse 'NotWarehouse', NULL dates).
+One row = one MDT branch. Natural key: (`StoreCode`, `BranchCode`, `StartDate`, `EndDate`). `BranchMdtSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `BranchMdtSK` | INT64 | Surrogate key: `ROW_NUMBER()` ordered by StoreCode (region_id), BranchCode (store_id) for master rows; MAX + row number for waiting rows; -1 for the reserved row. Regenerated every run. |
+| `BranchMdtSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `RegionSK` | INT64 | SK in [dim_region_last](/dimension/dim_region_last.md) (the `_last` numbering), joined on StoreCode = RegionID for company ag01; -1 when not found. |
 | `RegionManagerSK` | INT64 | Region manager SK, read from `dim_region_last.RegionManagerSK` (backfilled there by `update_sk_sale_rep_group`); -1 when NULL or not found. |
 | `SectionSK` | INT64 | SK in [dim_section_last](/dimension/dim_section_last.md) for ag01, joined on `StoreCode_<parsed section>` = `dim_section_last.SectionID`, where the section is parsed from BranchCodeMdt (pattern `<chain>_<Section>_<seq>`, with single-letter-digit codes zero-padded and CEN treated as empty); -1 for waiting rows or no match. |
 | `SectionManagerSK` | INT64 | Section manager SK, read from `dim_section_last.SectionManagerSK` (backfilled there by `update_sk_sale_rep_group`); -1 when NULL or not found. |
 | `ZoneMdtSK` | INT64 | SK in [dim_zone_mdt](/dimension/dim_zone_mdt.md), joined on ZoneCode; -1 when the zone is unknown or waiting. |
-| `ZoneTaMdtSK` | INT64 | SK of the zone manager in [dim_zone_ta_mdt](/dimension/dim_zone_ta_mdt.md) (lowest ZoneTaMdtSK per ZoneCode, excluding -1); -1 when none. |
+| `ZoneTaMdtSK` | INT64 | SK of the zone manager in [dim_zone_ta_mdt](/dimension/dim_zone_ta_mdt.md) (first numeric EmployeeID per ZoneCode, excluding -1); -1 when none. |
 | `StoreCode` | STRING | Store chain (department store) code: MDS `region_id` for master rows, `store_code` of the feed for waiting rows. Equals `dim_region_last.RegionID` of ag01; 'NotStore' on the -1 row. |
 | `RegionName` | STRING | Name of the region, from dim_region_last.RegionName; 'ไม่ระบุภูมิภาค' on the -1 row. |
 | `SubRegionID` | STRING | Sub-region code, from dim_region_last.SubRegionID; 'NotSubRegion' on the -1 row. |
@@ -51,15 +51,11 @@ One row = one MDT branch: key `BranchMdtSK`, from three blocks UNION ALL'd. (1) 
 | `StartDate` | DATE | MDS start_date for master rows; first sale date seen in the feeds for waiting rows; NULL on the -1 row. |
 | `EndDate` | DATE | MDS end_date for master rows; NULL for waiting and -1 rows. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_mdt_sales_branch_master`; trace column back to MDS. NULL on waiting and -1 rows. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_sales_branch_mdt.sqlx` (`type: "table"`, tags `dimension_daily`, `saleout_daily`).
-- `uniqueKey`: `BranchMdtSK`.
-- Storage options: `{"clusterBy": ["BranchMdtSK"]}`.
+- Definition: `definitions/dimension/dim_sales_branch_mdt.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`, `saleout_daily`).
 - Reads: [dimension_table.dim_section_last](/dimension/dim_section_last.md), [dimension_table.dim_zone_ta_mdt](/dimension/dim_zone_ta_mdt.md), `mds_dataset.mds_data_mdt_sales_branch_master` (master data loaded outside this repo), [dimension_table.dim_zone_mdt](/dimension/dim_zone_mdt.md), [dimension_table.dim_region_last](/dimension/dim_region_last.md), [curated_saleout_mdt.curated_saleout_mdt](/curated/curated_saleout_mdt/curated_saleout_mdt.md), [curated_saleout_mdt.curated_saleout_monthly_mdt](/curated/curated_saleout_mdt/curated_saleout_monthly_mdt.md), [curated_saleout_mdt.curated_stock_mdt](/curated/curated_saleout_mdt/curated_stock_mdt.md).
-- Full daily rebuild (`type: "table"`, tags `dimension_daily`, `saleout_daily`); runs after dim_zone_mdt, dim_zone_ta_mdt, dim_region_last and dim_section_last.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_zone_mdt, dim_zone_ta_mdt, dim_region_last and dim_section_last.
 # Examples
 
 Branches that still wait for master data.

@@ -26,13 +26,13 @@ Read by: [dim_rate_target](/dimension/dim_rate_target.md), [org_center_member](/
 
 # Grain and key
 
-One row = the latest-period row of a director: key (company, DirectorID). `DirectorSK` is `ROW_NUMBER() OVER (ORDER BY CompanySK, DirectorID)`, regenerated every run and numbered independently of dim_director.
+One row = the latest-period row of a director. Natural key: (`companyID`, `DirectorID`, `StartDate`, `EndDate`). `DirectorSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `DirectorSK` | INT64 | `ROW_NUMBER() OVER (ORDER BY CompanySK, DirectorID)`. Regenerated every run; differs from `dim_director.DirectorSK`. `dim_department_last.DirectorSK` is backfilled to point at this value. |
+| `DirectorSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code from dim_company. |
 | `DirectorID` | STRING | Director code, pass-through from dim_director. |
@@ -41,17 +41,13 @@ One row = the latest-period row of a director: key (company, DirectorID). `Direc
 | `DirectorOfSalesName` | STRING | Director-of-sales name, pass-through from dim_director. |
 | `StartDate` | DATE | StartDate of the chosen (latest) dim_director period. |
 | `EndDate` | DATE | EndDate of the chosen (latest) dim_director period; may be in the past. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_director_last.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `DirectorSK`.
-- Storage options: `{"clusterBy": ["DirectorSK"]}`.
+- Definition: `definitions/dimension/dim_director_last.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: [dimension_table.dim_director](/dimension/dim_director.md), [dimension_table.dim_company](/dimension/dim_company.md).
 - Rows are chosen with `QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, DirectorID ORDER BY EndDate DESC, StartDate DESC) = 1`.
 - The `update_sk_sale_rep_group` step fills `dim_region_last.DirectorSK` from this table on `DirectorID` + `CompanySK`; `dim_department_last` then copies that key.
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company and dim_director.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company and dim_director.
 # Examples
 
 One row per director with their director of sales.

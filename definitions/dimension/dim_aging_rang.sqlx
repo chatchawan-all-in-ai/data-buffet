@@ -1,5 +1,7 @@
 config {
   type: "operations",
+  hasOutput: true,
+  schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_company"],
   tags: [databuffet.TAG_DIM_DAILY],
 }
@@ -25,79 +27,134 @@ js {
         name: "mds_data_aging_rang_master",
     };
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
+
+    const stableDimensionColumns = ['AgingRangSK', 'CompanySK', 'companyID', 'AgingDayMin', 'AgingDayMax', 'ReportName', 'MdsId'];
+    const stableDimensionKeyColumns = ['companyID', 'AgingDayMin', 'AgingDayMax'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableNaturalKeyMatch = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionLookupCondition = stableNaturalKeyMatch;
+    const stableDimensionMergeCondition = 'T.`AgingRangSK` = S.`AgingRangSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'AgingRangSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
 }
+
 
 BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
 
-  SET max_sk = (SELECT IFNULL(MAX(AgingRangSK), 0) FROM `${DimAgingRangTableRef}`);
-
-  MERGE `${DimAgingRangTableRef}` AS T
-  USING (
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
     SELECT
-      (CASE
-        WHEN t3.AgingRangSK IS NOT NULL THEN t3.AgingRangSK
-        WHEN t2.AgingRangSK IS NOT NULL THEN t2.AgingRangSK
-        ELSE max_sk + ROW_NUMBER() OVER(
-          PARTITION BY (CASE WHEN t2.AgingRangSK IS NULL AND t3.AgingRangSK IS NULL THEN 1 ELSE 0 END)
-          ORDER BY
-            ${databuffet.functionData.cleanString("t1.companyID")},
-            ${databuffet.functionData.castInt64("t1.AgingDayMin")},
-            ${databuffet.functionData.castInt64("t1.AgingDayMax")}
-        )
-      END) AS AgingRangSK,
+      CAST(NULL AS INT64) AS AgingRangSK,
       dim_com.CompanySK,
       ${databuffet.functionData.cleanString("t1.companyID")} AS companyID,
       ${databuffet.functionData.castInt64("t1.AgingDayMin")} AS AgingDayMin,
       ${databuffet.functionData.castInt64("t1.AgingDayMax")} AS AgingDayMax,
       ${databuffet.functionData.cleanString("t1.ReportName")} AS ReportName,
-      ${databuffet.functionData.cleanString("t1.id")} as MdsID
+      ${databuffet.functionData.cleanString("t1.id")} AS MdsId
     FROM `${MdsSourceTableRef}` AS t1
     LEFT JOIN `${DimCompanyTableRef}` AS dim_com
       ON ${databuffet.functionData.cleanString("t1.companyID")} = dim_com.companyID
-    LEFT JOIN `${DimAgingRangTableRef}` AS t2
-      ON ${databuffet.functionData.cleanString("t1.companyID")} = t2.companyID
-      AND ${databuffet.functionData.castInt64("t1.AgingDayMin")} = t2.AgingDayMin
-      AND ${databuffet.functionData.castInt64("t1.AgingDayMax")} = t2.AgingDayMax
-    LEFT JOIN `${DimAgingRangTableRef}` AS t3
-      ON ${databuffet.functionData.cleanString("t1.id")} = t3.MdsID
     WHERE t1.is_active = TRUE
-      AND DATE(t1.updated_at) >= DATE_SUB(
-            CURRENT_DATE("Asia/Bangkok"),
-            INTERVAL ${databuffet.MDS_BACKFILL_DAYS} DAY
-          )
-  ) AS S
-  ON T.AgingRangSK = S.AgingRangSK
+  );
 
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_aging_rang source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimAgingRangTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_aging_rang target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    WHERE MdsId IS NOT NULL
+    GROUP BY MdsId
+    HAVING COUNT(*) > 1
+  ) AS 'dim_aging_rang source MDS identity must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimAgingRangTableRef}`
+    WHERE MdsId IS NOT NULL
+    GROUP BY MdsId
+    HAVING COUNT(*) > 1
+  ) AS 'dim_aging_rang target MDS identity must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    JOIN `${DimAgingRangTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+    GROUP BY TO_JSON_STRING(STRUCT(source_row.MdsId, source_row.companyID, source_row.AgingDayMin, source_row.AgingDayMax))
+    HAVING COUNT(*) > 1
+  ) AS 'dim_aging_rang source must match at most one target row';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimAgingRangTableRef}`
+    WHERE AgingRangSK IS NULL
+  ) AS 'dim_aging_rang target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimAgingRangTableRef}`
+    GROUP BY AgingRangSK
+    HAVING COUNT(*) > 1
+  ) AS 'dim_aging_rang target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(AgingRangSK)
+    FROM `${DimAgingRangTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      CASE
+        WHEN allocated_row.`AgingRangSK` = -1 THEN -1
+        ELSE COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        )
+      END AS `AgingRangSK`
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.`AgingRangSK` AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.`AgingRangSK` IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimAgingRangTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
+
+  MERGE `${DimAgingRangTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
   WHEN MATCHED THEN
     UPDATE SET
-      T.AgingDayMin = S.AgingDayMin,
-      T.AgingDayMax = S.AgingDayMax,
-      T.ReportName = S.ReportName,
-      T.MdsID = S.MdsID
-
+      ${stableDimensionUpdateSet}
   WHEN NOT MATCHED THEN
-    INSERT (
-      AgingRangSK,
-      CompanySK,
-      companyID,
-      AgingDayMin,
-      AgingDayMax,
-      ReportName,
-      MdsID
-    )
-    VALUES (
-      S.AgingRangSK,
-      S.CompanySK,
-      S.companyID,
-      S.AgingDayMin,
-      S.AgingDayMax,
-      S.ReportName,
-      S.MdsID
-    );
-
-  DELETE FROM `${DimAgingRangTableRef}`
-  WHERE MdsID IN (
-    SELECT id FROM `${MdsSourceTableRef}` WHERE is_active = FALSE
-  );
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
 END;

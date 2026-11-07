@@ -26,13 +26,13 @@ Read by: [Product_Master_ALL](/view/onetime/Product_Master_ALL.md), [view_dim_pr
 
 # Grain and key
 
-One row = one active MDS marketing-director record with its StartDate/EndDate interval. No deduplication or current-date selection is applied, so (CompanyID, TypeMarketingID) can repeat across intervals or overlapping source records. `ProductMktDirectorSK` is `ROW_NUMBER()` over company and type, regenerated every run.
+One row = one active MDS marketing-director record with its StartDate/EndDate interval. Natural key: (`CompanyID`, `TypeMarketingID`, `StartDate`, `EndDate`). `ProductMktDirectorSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ProductMktDirectorSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY CompanyID, TypeMarketingID)` over the active mds rows. Regenerated every run. |
+| `ProductMktDirectorSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `CompanyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `CompanyID`; natural join key to dim_company.companyID. |
 | `TypeMarketingID` | STRING | Pass-through of mds `TypeMarketingID`, cleaned with `cleanString` (empty string becomes NULL). Marketing type id; joins to [dim_product_mkt](/dimension/dim_product_mkt.md).TypeMarketingID. |
@@ -42,15 +42,11 @@ One row = one active MDS marketing-director record with its StartDate/EndDate in
 | `StartDate` | DATE | First day the director assignment is valid (mds `StartDate`, DATE). |
 | `EndDate` | DATE | Last day the assignment is valid (mds `EndDate`, DATE). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_product_marketing_director_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_product_mkt_director.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `ProductMktDirectorSK`.
-- Storage options: `{"clusterBy": ["ProductMktDirectorSK"]}`.
+- Definition: `definitions/dimension/dim_product_mkt_director.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_product_marketing_director_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Marketing directors valid today per marketing type.

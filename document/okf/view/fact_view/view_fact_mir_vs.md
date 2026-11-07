@@ -32,7 +32,7 @@ One row = one billing (VS) line of [fact_mir_vs](/fact/fact_mir_vs.md): key `Bil
 |---|---|---|
 | `AgingSK` | INT64 | SK of `dim_aging` for the invoice, joined on `mirbinvno = cfsvnosid` and `company_id = companyID`. When several `dim_aging` rows match (different `cfsTypeID`) the highest AgingSK is kept. NULL when the invoice has no aging row. Regenerated daily. |
 | `BillingSK` | INT64 | Row key of `fact_mir_vs` = `ROW_NUMBER()` over (company_id, mirtype, mirvnos, mirlistno, mirbinvno). Unique in this view (one row per `BillingSK` by QUALIFY). Regenerated daily. |
-| `CollectSK` | INT64 | SK of `dim_collection_status`, matched on company + year + month + customer of the document; NULL when no collection-status row exists. Regenerated daily like all full-rebuild dim SKs. |
+| `CollectSK` | INT64 | Stable SK of `dim_collection_status`, matched on company + year + month + customer of the document; NULL when no collection-status row exists. |
 | `Actions` | STRING | Collection action text from `dim_collection_status` (matched as for CollectSK). |
 | `Justification` | STRING | Collection justification text from `dim_collection_status`. |
 | `Responsible` | STRING | Person/role responsible for collection, from `dim_collection_status`. |

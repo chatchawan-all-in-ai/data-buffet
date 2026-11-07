@@ -26,13 +26,13 @@ Read by: [dim_section_last](/dimension/dim_section_last.md), [dim_target_product
 
 # Grain and key
 
-One row = one active MDS section row: key `SectionSK`, `ROW_NUMBER()` ordered by companyID, SectionID, StartDate, EndDate. A section appears once per validity interval, so `(companyID, SectionID)` is not unique here. No -1 row.
+One row = one active MDS section row. Natural key: (`companyID`, `SectionID`, `StartDate`, `EndDate`). `SectionSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `SectionSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by companyID, SectionID, StartDate, EndDate. Regenerated every run. |
+| `SectionSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (ag01, aa05, ab01, ac02, ak02 style), cleaned with `cleanString`; natural join key with dim_company.companyID. |
 | `SectionID` | STRING | Section code; joins to `dim_department.SectionID` and to `dim_section_manager.SectionID`. |
@@ -40,15 +40,11 @@ One row = one active MDS section row: key `SectionSK`, `ROW_NUMBER()` ordered by
 | `StartDate` | DATE | First date the row is valid (MDS DATE). |
 | `EndDate` | DATE | Last date the row is valid (MDS DATE). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_sales_section_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_section.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `SectionSK`.
-- Storage options: `{"clusterBy": ["SectionSK"]}`.
+- Definition: `definitions/dimension/dim_section.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_sales_section_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Sections valid today.

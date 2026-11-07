@@ -75,7 +75,7 @@ WITH monthly AS (
   WHERE CompanyID = 'ag01'
   -- กัน fan-out เผื่อวันหน้าต้นทางมีชุดซ้ำ สาขาจะได้ไม่บวมเงียบ ๆ
   QUALIFY ROW_NUMBER() OVER(
-    PARTITION BY MarketingGroupID, SubMarketingID, SegmentID ORDER BY ProductMktSK
+    PARTITION BY MarketingGroupID, SubMarketingID, SegmentID ORDER BY CompanyID, TypeMarketingID, MarketingGroupID, SubMarketingID, SegmentID
   ) = 1
 
 ), target_master AS (

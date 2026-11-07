@@ -35,7 +35,7 @@ config {
 - เลือก `type` ตาม layer:
   - validated: `incremental` (transactional) หรือ `table` (full-load reference)
   - curated: `incremental`
-  - dimension MERGE: `operations` / dimension rebuild: `table`
+  - dimension stable-key sync: `operations` with a complete source snapshot
   - fact: `table` หรือ `operations`
 - `dependencies` ใช้กับ action ที่อ้างด้วย string interpolation (dim, schema bootstrap)
   ส่วนตารางที่อ่านผ่าน `${ref(...)}` Dataform จัด dependency ให้เอง — ไม่ต้องใส่ซ้ำ
@@ -93,8 +93,8 @@ FROM `${DimCompanyTableRef}`
 
 > ทำไม dim/fact ไม่ใช้ `ref()`: MERGE dims และ `fact_transcation` เป็น
 > `type: "operations"` ที่ target มีอยู่ก่อนใน BigQuery — Dataform ไม่ได้เป็นเจ้าของ
-> target จึง `ref()` ไม่ได้ ส่วน dim full-rebuild ที่เป็น `type: "table"` ยังคง js-block
-> ตามของเดิมเพื่อให้ทั้ง layer เขียนเหมือนกัน
+> target จึง `ref()` ไม่ได้ ส่วน dimension operation actions ก็ใช้ js-block กับ target
+> ที่มีอยู่ก่อนใน BigQuery
 >
 > กฎนี้ใช้กับทุก view ใน `definitions/view/` — ดู [View Layer](../project_wiki/view/view-layer.md#pattern)
 
@@ -188,7 +188,7 @@ ${databuffet.functionData.parseAsatDate()}             AS asatdate,
   ```sql
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
   ```
-- mds window: `DATE(t1.updated_at) >= DATE_SUB(CURRENT_DATE("Asia/Bangkok"), INTERVAL ${databuffet.MDS_BACKFILL_DAYS} DAY)`
+- Dimension sync uses a complete active-source snapshot rather than an `updated_at` window.
 
 ## 6. Deduplication
 
@@ -213,18 +213,12 @@ post_operations { ${ when(!incremental(), post_operations_statement) } }
 
 PK เป็น `NOT ENFORCED` — เป็น hint ให้ optimizer ไม่ใช่ constraint จริง
 
-## 8. Dimension patterns (สรุปย่อ)
+## 8. Dimension SK synchronization
 
-**Default — full rebuild** (mds dims เกือบทุกตัว — รายชื่อดู [inventory](../project_wiki/dimension/inventory.md)):
-[project_wiki/dimension/full-rebuild-pattern.md](../project_wiki/dimension/full-rebuild-pattern.md)
-`type: "table"` → SELECT เดียว: `ROW_NUMBER() OVER(ORDER BY natural key)` AS SK →
-join dim_company → `WHERE is_active = TRUE` → `MdsID` ปิดท้าย — SK ใหม่ทุกวัน
-
-**Legacy — MERGE SK เสถียร** (dim_company, dim_aging_rang + lake dims):
-[project_wiki/dimension/merge-sk-pattern.md](../project_wiki/dimension/merge-sk-pattern.md)
-ลำดับใน `BEGIN...END`: `DECLARE max_sk` → `SET max_sk` → `MERGE` (CASE t3→t2→ใหม่)
-→ `WHEN MATCHED UPDATE` (เฉพาะ attribute, ห้ามแตะ key) → `WHEN NOT MATCHED INSERT`
-→ **DELETE row ที่ mds `is_active = FALSE`** → `END;`
+Follow the [stable-key synchronization contract](../project_wiki/dimension/merge-sk-pattern.md)
+for key selection, complete-source requirements, assertions, allocation and the three
+MERGE clauses. The [inventory](../project_wiki/dimension/inventory.md) owns conversion
+scope and held actions; each table's OKF card owns its grain and key.
 
 ## 9. คอมเมนต์
 
@@ -246,9 +240,9 @@ join dim_company → `WHERE is_active = TRUE` → `MdsID` ปิดท้าย 
 | inline `` `${databuffet.DATABASE}.${databuffet.X}.tbl` `` ใน SQL body | ต้องประกาศ object + `XxxTableRef` ใน `js {}` แล้วอ้าง `` `${XxxTableRef}` `` (§3.2) |
 | ใช้ js-block Ref กับ `validated_*` / `curated_*` | ต้องใช้ `${ref(...)}` เพื่อให้ Dataform ผูก dependency ให้ (§3.1) |
 | เขียน `\` เดี่ยวใน SQL body (regex, `\n`) | body เป็น JS template literal — `\1` = compile error, `\(`/`\d` โดนกลืน backslash เงียบ ต้อง `\\` (§3.3) |
-| แก้/regenerate SK ของ MERGE dims | fact/dim อื่น persist SK พวกนั้นไว้ ข้อมูลจะชี้ผิด |
-| persist SK ของ full-rebuild dims ข้ามวัน | SK ออกเลขใหม่ทุกคืน — consumer ใหม่ต้อง rebuild รายวันตาม |
+| เปลี่ยน SK ของ dimension ที่ downstream persist ไว้โดยไม่ sync ตาม natural key | fact/dim อื่นอาจชี้ไปยัง key ที่ไม่มีอยู่หรือผิดแถว |
+| recreate a stable dimension from a fresh SELECT | assigning keys again can break downstream references |
 | `CURRENT_DATE()` ไม่ระบุ timezone | เที่ยงคืน UTC ≠ เที่ยงคืนไทย ข้อมูลคลาดวัน |
 | แก้คำผิด `fact_transcation`, `CDC_DATESET`, `prdDiminsionData` | เป็น identifier จริงใน BigQuery |
 | ใส่ dependency ของตารางที่อ่านผ่าน `ref()` ซ้ำ | graph ซ้ำซ้อน สับสน |
-| ลืม DELETE ท้าย mds dim แบบ MERGE (dim_company/dim_aging_rang) | row ที่ถูก soft-delete จะค้างตลอดไป |
+| use a partial source with delete-by-source in a stable dimension | active rows outside the source window would be removed |

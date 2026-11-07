@@ -895,7 +895,7 @@ with dim_calendar as (
 
   -- where UPPER(left(milLinkvcno,3)) = 'CRC'
 
-  qualify row_number() over(partition by trans.CompanySK, trans.milType,trans.milVnos,trans.milCus,LOWER(trans.milStk),trans.milPer,trans.milListno order by seq_condition, dim_report.Segment, sale_sk.SaleRepSK desc) = 1
+  qualify row_number() over(partition by trans.CompanySK, trans.milType,trans.milVnos,trans.milCus,LOWER(trans.milStk),trans.milPer,trans.milListno order by seq_condition, dim_report.Segment, (CASE WHEN sale_sk.DepartmentID IS NULL THEN 1 ELSE 0 END) DESC, sale_sk.CompanySK DESC, sale_sk.DepartmentID DESC, sale_sk.EmployeeID DESC, sale_sk.DepCode DESC, sale_sk.CostChannelID DESC, sale_sk.ProvinceID DESC) = 1
 
 ), final as (
   select 

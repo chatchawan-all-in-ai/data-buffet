@@ -114,8 +114,8 @@ the positional DELETE/INSERT flow and fact-table column schema remain unchanged.
 
 > `fact_chq` / `fact_mir_vs` / `fact_mir_rs` were migrated into the repo **2026-07-20**
 > (previously ad-hoc SQL, last rebuilt May 2026). They rebuild fully every night —
-> this is what makes it safe for them to store `CollectSK` from the daily-rebuild
-> `dim_collection_status` (see the condition in
+> this keeps their source data current; `CollectSK` from `dim_collection_status` is now
+> stable by natural key (see
 > [dimension/full-rebuild-pattern.md](../dimension/full-rebuild-pattern.md)).
 > Build order via `dependencies[]`: dims → `fact_chq` → `fact_mir_vs` → `fact_mir_rs`;
 > `dim_aging` (dimension_daily) reads `fact_mir_vs` and declares it as a dependency.

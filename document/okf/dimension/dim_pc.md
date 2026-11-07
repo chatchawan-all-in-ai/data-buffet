@@ -26,13 +26,13 @@ Read by: [view_fact_saleout_pc_mdt](/view/fact_view/view_fact_saleout_pc_mdt.md)
 
 # Grain and key
 
-One row = one PC assignment: key (EmployeeID, BranchCodeMdt, MarketingGroupID) among active mds rows (duplicates collapsed, keeping the most recently updated row), plus one sentinel row with `PcSK = -1`. `PcSK` is the surrogate key for mds rows, regenerated every run.
+One row = one PC assignment. Natural key: (`EmployeeID`, `BranchCodeMdt`, `MarketingGroupID`, `StartDate`, `EndDate`). `PcSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `PcSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY EmployeeID, BranchCodeMdt, MarketingGroupID)` over deduped mds rows. Regenerated every run. `-1` is the reserved unknown PC. |
+| `PcSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `BranchMdtSK` | INT64 | Branch surrogate key from [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md) matched on `BranchCodeMdt`; `-1` when the branch code is not found (`IFNULL(..., -1)`) and on the -1 row. |
 | `BranchCodeMdt` | STRING | Branch code of the MDT store (mds `branch_code`, trimmed, empty to NULL). The -1 row uses the sentinel 'NotBranch' (never NULL). |
 | `EmployeeID` | STRING | PC employee id (mds `employee_id`, trimmed, empty to NULL); the -1 row uses 'NotEmployee'. 'Dummy_NotPC' marks a placeholder assignment. |
@@ -45,16 +45,12 @@ One row = one PC assignment: key (EmployeeID, BranchCodeMdt, MarketingGroupID) a
 | `EndDate` | DATE | Last day of the assignment (mds `end_date`, DATE); NULL on the -1 row. |
 | `IsPlaceholder` | BOOL | TRUE when the row is not a real PC: employee_id empty or 'Dummy_NotPC', or the name is 'ไม่มี PC' / 'Not PC'. NULL on the -1 row. The PC views filter `PcSK <> -1 AND IsPlaceholder = FALSE`. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_mdt_sales_pc_master`; trace column back to MDS. NULL on the -1 row. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_pc.sqlx` (`type: "table"`, tags `dimension_daily`, `saleout_daily`).
-- `uniqueKey`: `PcSK`.
-- Storage options: `{"clusterBy": ["PcSK", "BranchMdtSK", "MarketingGroupID"]}`.
+- Definition: `definitions/dimension/dim_pc.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`, `saleout_daily`).
 - Reads: `mds_dataset.mds_data_mdt_sales_pc_master` (master data loaded outside this repo), [dimension_table.dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md).
 - CTE `pc_source` (active mds rows, QUALIFY dedup on employee_id + branch_code + marketinggroupid keeping latest `updated_at`), `pc_master` (SK + branch SK) UNION ALL the literal `unknown_pc` row.
-- Full daily rebuild (`type: "table"`, tags `dimension_daily`, `saleout_daily`); runs after dim_sales_branch_mdt.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_sales_branch_mdt.
 # Examples
 
 Real PCs assigned to each branch and marketing group today.

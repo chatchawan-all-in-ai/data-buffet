@@ -26,27 +26,23 @@ Read by: [dim_sales_branch_mdt](/dimension/dim_sales_branch_mdt.md), [dim_zone_t
 
 # Grain and key
 
-One row = one MDT sales zone: key trimmed `zone_id` (`ZoneCode`); duplicates are collapsed keeping the row with the latest start_date (ties by id). `ZoneMdtSK` is `ROW_NUMBER()` ordered by ZoneCode. Reserved row `ZoneMdtSK = -1` with ZoneCode 'NotZone', ZoneName 'ไม่ระบุโซน' and NULL dates/MdsID.
+One row = one MDT sales zone. Natural key: (`ZoneCode`). `ZoneMdtSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ZoneMdtSK` | INT64 | Surrogate key, `ROW_NUMBER()` ordered by ZoneCode; -1 for the NotZone row. Regenerated every run. |
+| `ZoneMdtSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `ZoneCode` | STRING | Zone code (`zone_id` trimmed, empty becomes NULL); 'NotZone' on the -1 row. Join key used by dim_sales_branch_mdt and dim_zone_ta_mdt. |
 | `ZoneName` | STRING | Zone name; 'ไม่ระบุโซน' on the -1 row. |
 | `StartDate` | DATE | MDS start_date of the kept row; NULL on the -1 row. |
 | `EndDate` | DATE | MDS end_date of the kept row; NULL on the -1 row. |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_mdt_sales_zone_master`; trace column back to MDS. NULL on the -1 row. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_zone_mdt.sqlx` (`type: "table"`, tags `dimension_daily`, `saleout_daily`).
-- `uniqueKey`: `ZoneMdtSK`.
-- Storage options: `{"clusterBy": ["ZoneMdtSK"]}`.
+- Definition: `definitions/dimension/dim_zone_mdt.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`, `saleout_daily`).
 - Reads: `mds_dataset.mds_data_mdt_sales_zone_master` (master data loaded outside this repo).
-- Full daily rebuild (`type: "table"`, tags `dimension_daily`, `saleout_daily`); no declared dependencies.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed.
 # Examples
 
 All MDT zones including the reserved row.

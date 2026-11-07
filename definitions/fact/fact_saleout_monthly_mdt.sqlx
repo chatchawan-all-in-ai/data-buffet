@@ -94,14 +94,14 @@ WITH branch_lookup AS (
   -- dim_report.RegionID ฝั่ง MDT คือรหัสห้าง ไม่ใช่ภูมิภาค (เหมือน fact_saleout_mdt)
   SELECT RegionID AS store_code, MarketingGroupID, ReportSK
   FROM `${DimReportTableRef}` WHERE companyID = 'ag01' AND MarketingGroupID IS NOT NULL
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, MarketingGroupID ORDER BY ReportSK) = 1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, MarketingGroupID ORDER BY companyID, ReportID, RegionID, MarketingGroupID) = 1
 
 ), report_fallback AS (
 
   -- แถว Other ของแต่ละห้าง — แยก CTE เพราะ join ด้วย NULL = NULL ไม่เป็นจริง
   SELECT RegionID AS store_code, ReportSK
   FROM `${DimReportTableRef}` WHERE companyID = 'ag01' AND MarketingGroupID IS NULL
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID ORDER BY ReportSK) = 1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID ORDER BY companyID, ReportID, RegionID, MarketingGroupID) = 1
 
 ), product_lookup AS (
 
@@ -117,21 +117,21 @@ WITH branch_lookup AS (
   SELECT RegionID, SubRegionID, RegionSK, DirectorID, StartDate, EndDate
   FROM `${DimRegionTableRef}`
   WHERE companyID = 'ag01'
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionSK) = 1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, companyID, RegionID, StartDate, EndDate) = 1
 
 ), region_manager_at_month AS (
 
   SELECT RegionID, RegionManagerSK, StartDate, EndDate
   FROM `${DimRegionManagerTableRef}`
   WHERE companyID = 'ag01'
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, RegionManagerSK) = 1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY RegionID, StartDate ORDER BY SubRegionID, companyID, RegionID, StartDate, EndDate) = 1
 
 ), director_at_month AS (
   -- ต้องผ่าน dim_region ก่อนเพราะ DirectorID อยู่ที่นั่น ไม่ได้อยู่กับ store_code
   SELECT DirectorID, DirectorSK, StartDate, EndDate
   FROM `${DimDirectorTableRef}`
   WHERE companyID = 'ag01'
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY DirectorID, StartDate ORDER BY DirectorSK) = 1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY DirectorID, StartDate ORDER BY companyID, DirectorID, StartDate, EndDate) = 1
 
 )
 

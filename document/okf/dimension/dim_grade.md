@@ -26,13 +26,13 @@ Read by: [dim_customer_grade](/dimension/dim_customer_grade.md), [dim_group_cust
 
 # Grain and key
 
-One row = one grade band: key (company, Percentmin, Percentmax, StartDate, EndDate) from mds; `GradeSK` is the surrogate key, regenerated every run.
+One row = one grade band. Natural key: (`companyID`, `Percentmin`, `Percentmax`, `StartDate`, `EndDate`). `GradeSK` is retained for a matching key; new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `GradeSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY companyID, Percentmin, Percentmax, StartDate, EndDate)` over the active mds rows. Regenerated every run. |
+| `GradeSK` | INT64 | Stable surrogate key for the natural key; new keys are allocated after the current maximum. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | Company code (e.g. `ag01`), passed through `cleanString` from the mds column `companyID`; natural join key to dim_company.companyID. |
 | `Percentmin` | FLOAT64 | Lower bound (inclusive) of the band for the customer's total score percentage, cast with `castFloat64` from the mds column. |
@@ -41,15 +41,11 @@ One row = one grade band: key (company, Percentmin, Percentmax, StartDate, EndDa
 | `StartDate` | DATE | First day the band row is valid (mds `StartDate`, passed through as DATE). |
 | `EndDate` | DATE | Last day the band row is valid (mds `EndDate`, passed through as DATE). |
 | `MdsID` | STRING | `id` of the source row in `mds_dataset.mds_data_custgrade_master`, cleaned with `cleanString`; trace column back to MDS. |
-
 # How it is built
 
-- Definition: `definitions/dimension/dim_grade.sqlx` (`type: "table"`, tags `dimension_daily`).
-- `uniqueKey`: `GradeSK`.
-- Storage options: `{"clusterBy": ["GradeSK"]}`.
+- Definition: `definitions/dimension/dim_grade.sqlx` (`type: "operations"`, `hasOutput: true`, tags `dimension_daily`).
 - Reads: `mds_dataset.mds_data_custgrade_master` (master data loaded outside this repo), [dimension_table.dim_company](/dimension/dim_company.md).
-- Full daily rebuild (`type: "table"`, tag `dimension_daily`); runs after dim_company.
-
+- Stable-key sync from a complete source snapshot; matching keys retain their SK and update attributes, new rows are inserted, and absent rows are removed; runs after dim_company.
 # Examples
 
 Grade bands valid today.
