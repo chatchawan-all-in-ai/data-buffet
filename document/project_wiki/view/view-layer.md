@@ -99,8 +99,10 @@ Rules:
 ### Snapshot history and regenerated keys
 
 `view_dim_aging_history` reads accumulated snapshots from `dim_aging_history`. The
-daily rebuild of `dim_aging` regenerates `AgingSK`, and `fact_mir_vs` regenerates
-`BillingSK`. Each history row keeps the values captured for that snapshot; the view
+daily rebuild of `dim_aging` regenerates `AgingSK`; `BillingSK` follows the
+[fact_mir_vs key contract](../../okf/fact/fact_mir_vs.md#grain-and-key).
+Each history row keeps the values captured for that snapshot, including pre-migration
+billing keys; the view
 looks up current keys using the stored natural keys. A document absent from the current
 `dim_aging` or `fact_mir_vs` has no current key in the view.
 

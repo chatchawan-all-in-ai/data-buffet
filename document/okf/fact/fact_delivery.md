@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-07T02:04:05+07:00" }
 status: draft
 ---
 
@@ -26,13 +26,13 @@ Read by: [export_fact_delivery](/view/pub_sub/export_fact_delivery.md).
 
 # Grain and key
 
-One row = the delivery status counts of one invoice item for one vehicle, delivery date and location per matching invoice product candidate: key `FactDeliverySK` (ROW_NUMBER over CompanySK, documentID, DeliveryDate, item). Business grain of the status aggregation: company + documentID (invoice number) + item + vehicle + DeliveryDate + location. Items come from `ttrip_document.fitem`; if (document, trip code, item) is not matched to `curated_mil`, the alternate item `fitem2` is used. The later join to fact_transaction_delivery emits every matching invoice/ProductSK candidate. Retained barcode versions therefore repeat all status counts and totalItems as well as invoice measures; FactDeliverySK identifies an expanded row. Only items present in `curated_mil` for the same document (case-insensitive) are kept; items starting with '8' are excluded; documents are restricted to IS lines with a link number.
+One row = the delivery status counts of one invoice item for one vehicle, delivery date and location per matching invoice product candidate: key `FactDeliverySK` (see [Schema](#schema) for key generation). Business grain of the status aggregation: company + documentID (invoice number) + item + vehicle + DeliveryDate + location. Items come from `ttrip_document.fitem`; if (document, trip code, item) is not matched to `curated_mil`, the alternate item `fitem2` is used. The later join to fact_transaction_delivery emits every matching invoice/ProductSK candidate. Retained barcode versions therefore repeat all status counts and totalItems as well as invoice measures; FactDeliverySK identifies an expanded row. Only items present in `curated_mil` for the same document (case-insensitive) are kept; items starting with '8' are excluded; documents are restricted to IS lines with a link number.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `FactDeliverySK` | INT64 | Surrogate key: ROW_NUMBER over CompanySK, documentID, DeliveryDate, item. Regenerates every run. |
+| `FactDeliverySK` | INT64 | Stable row key: FARM_FINGERPRINT of the company, document, delivery date and item plus `occ`; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). |
 | `DeliverySK` | INT64 | Surrogate key of [dim_delivery](/dimension/dim_delivery.md) (join `documentID`, company); NULL if unmatched. |
 | `FactTransDeliverySK` | INT64 | [fact_transaction_delivery](/fact/fact_transaction_delivery.md).FactTransDeliverySK of the invoice line (join documentID = milvnos, case-insensitive item); NULL if unmatched. |
 | `InvoiceSK` | INT64 | InvoiceSK carried from fact_transaction_delivery. |
@@ -74,8 +74,8 @@ One row = the delivery status counts of one invoice item for one vehicle, delive
 # How it is built
 
 - Definition: `definitions/fact/fact_delivery.sqlx` (`type: "operations"`, tags `fact_daily`); the operation owns this table.
-- Reads: [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [validated_mac5.ttrip_document](/validated/validated_mac5/ttrip_document.md), [validated_mac5.ttrip](/validated/validated_mac5/ttrip.md), [validated_mac5.tdelivery](/validated/validated_mac5/tdelivery.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [validated_mac5.deb](/validated/validated_mac5/deb.md), [fact_table.fact_transaction_delivery](/fact/fact_transaction_delivery.md), [dimension_table.dim_delivery](/dimension/dim_delivery.md), [dimension_table.dim_company](/dimension/dim_company.md).
-- Refresh: full refresh each run (`type: "operations"`: `CREATE OR REPLACE TABLE ... CLUSTER BY FactDeliverySK`, no partition), tag `fact_daily`, after `dim_delivery`, `fact_transaction_delivery`, `dim_company`.
+- Reads: [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [validated_mac5.ttrip_document](/validated/validated_mac5/ttrip_document.md), [validated_mac5.ttrip](/validated/validated_mac5/ttrip.md), [validated_mac5.tdelivery](/validated/validated_mac5/tdelivery.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [validated_mac5.deb](/validated/validated_mac5/deb.md), [fact_table.fact_transaction_delivery](/fact/fact_transaction_delivery.md), [dimension_table.dim_delivery](/dimension/dim_delivery.md), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md), [dimension_table.dim_invoice](/dimension/dim_invoice.md).
+- Refresh: full refresh each run (`type: "operations"`: `CREATE OR REPLACE TABLE ... CLUSTER BY FactDeliverySK`, no partition), tag `fact_daily`, after `dim_delivery`, `fact_transaction_delivery`, `dim_company`, `dim_product_master`, `dim_invoice`.
 
 # Examples
 

@@ -32,7 +32,7 @@ One row = one sales document line (IS/AS/BS/QS): intended key `CompanySK`, `milT
 
 | Column | Type | Description |
 |---|---|---|
-| `FactInvoiceSK` | INT64 | SK of `fact_invoice` matched on year, month, day, type, document no, customer, `milLinkVcno` and product (case-insensitive) and company; NULL when the line has no invoice row. Regenerated daily. |
+| `FactInvoiceSK` | INT64 | Row key of [fact_invoice](/fact/fact_invoice.md#grain-and-key), matched on year, month, day, type, document no, customer, `milLinkVcno` and product (case-insensitive) and company; NULL when the line has no invoice row. |
 | `InvoiceSK` | INT64 | SK of `dim_invoice` carried through `fact_invoice`; stable (MERGE dim). NULL for lines without an invoice row. |
 | `AgingSK` | INT64 | SK of `dim_aging` via `view_dim_aging` (company + document number = `cfsVnosID`); regenerated daily; NULL when no aging row. |
 | `AgingRangSK` | INT64 | SK of the aging bucket (`dim_aging_rang`) from `view_dim_aging`; NULL for companies without ranges. |

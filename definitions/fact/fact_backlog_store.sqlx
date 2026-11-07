@@ -60,8 +60,22 @@ js {
     };
     const MDSStatusTableRef = `${MDSStatusTable.database}.${MDSStatusTable.schema}.${MDSStatusTable.name}`;
 }
-
-
+SELECT
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(
+    output_row.company_id AS company_id,
+    output_row.mihYear AS mihYear,
+    output_row.mihMonth AS mihMonth,
+    output_row.mihDay AS mihDay,
+    output_row.cpsVnosID AS cpsVnosID,
+    output_row.cpsCusID AS cpsCusID,
+    output_row.cpsStkID AS cpsStkID,
+    ROW_NUMBER() OVER (
+      PARTITION BY output_row.company_id, output_row.mihYear, output_row.mihMonth, output_row.mihDay, output_row.cpsVnosID, output_row.cpsCusID, output_row.cpsStkID
+      ORDER BY TO_JSON_STRING(output_row)
+    ) AS occ
+  ))) AS FactBacklogStoreSK,
+  output_row.*
+FROM (
 WITH cps_latest AS (
   SELECT cps.*
   FROM ${ref(databuffet.VALIDATED_MAC5, 'cps')} AS cps
@@ -165,11 +179,9 @@ WITH cps_latest AS (
 )
 
 SELECT
-  ROW_NUMBER() OVER(
-    ORDER BY CompanySK, mihYear, mihMonth, mihDay, cpsVnosID, cpsCusID, cpsStkID
-  ) AS FactBacklogStoreSK,
   source_data.*,
 FROM source_data
+) AS output_row
 
 pre_operations {}
 

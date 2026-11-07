@@ -33,7 +33,7 @@ One row = one AR document (invoice, credit note or debit note): key (`companyID`
 | Column | Type | Description |
 |---|---|---|
 | `AgingSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY CompanySK, InvoiceNo, InvoiceDate)` over the whole table. Regenerated every run. |
-| `BillingSK` | INT64 | Surrogate key of the billing-document row in [fact_mir_vs](/fact/fact_mir_vs.md), joined on `InvoiceNo = mirbinvno` and company; NULL when the invoice has no billing row. Regenerated every run in fact_mir_vs. |
+| `BillingSK` | INT64 | Row key of the billing-document row in [fact_mir_vs](/fact/fact_mir_vs.md#grain-and-key), joined on `InvoiceNo = mirbinvno` and company; NULL when the invoice has no billing row. |
 | `CustomerSK` | INT64 | Customer surrogate key from [dim_customer](/dimension/dim_customer.md), joined on `debcode` (the invoice's `mihCus`) and `CompanySK`. NULL when no customer matches. |
 | `InvoiceSK` | INT64 | Invoice surrogate key from [dim_invoice](/dimension/dim_invoice.md), joined on document number (`mihVnos`) and `CompanySK` (first SK per company and document number). |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |

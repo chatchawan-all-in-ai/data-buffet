@@ -38,7 +38,7 @@ One row = one invoice in the current aging: key `AgingSK` (QUALIFY ROW_NUMBER ov
 | `ChannelFinanceSK` | INT64 | SK of the finance channel (`dim_channel_finance`), from view_dim_channel. |
 | `ChannelSaleSK` | INT64 | SK of the sales channel (`dim_channel_sales`), from view_dim_channel. |
 | `ChannelCostSK` | INT64 | SK of the cost channel (`dim_channel_cost`), from view_dim_channel. |
-| `BillingSK` | INT64 | SK of the billing document in [fact_mir_vs](/fact/fact_mir_vs.md) (joined by invoice number); regenerated nightly. |
+| `BillingSK` | INT64 | Stable row key of the billing document in [fact_mir_vs](/fact/fact_mir_vs.md#grain-and-key) (joined by invoice number). |
 | `CustomerSK` | INT64 | SK of the customer in [dim_customer](/dimension/dim_customer.md) (stable MERGE SK). |
 | `InvoiceSK` | INT64 | SK of the invoice in [dim_invoice](/dimension/dim_invoice.md) (stable MERGE SK). |
 | `CompanySK` | INT64 | SK of the company in [dim_company](/dimension/dim_company.md). |

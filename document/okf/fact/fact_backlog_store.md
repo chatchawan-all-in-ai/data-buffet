@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-07T02:04:05+07:00" }
 status: draft
 ---
 
@@ -26,13 +26,13 @@ Read by: none in this repository.
 
 # Grain and key
 
-One row = one product on one open PS sales order per customer and store: key `FactBacklogStoreSK` (ROW_NUMBER over CompanySK, mihYear, mihMonth, mihDay, cpsVnosID, cpsCusID, cpsStkID). Rows are SUMs grouped by company, order date, order/customer/product/store and `FlagFree`. Only the latest `asatdate` of cps per company is read (snapshot, not history). Order header filters: `mihType = 'PS'`, `mihCancel = 0`, `mihClearUM = 0`, `mihExtraSUM = 0`, description not LIKE '%PO.วางบิล%', order date within the 4-year window (truncated to start-of-year); the order must also be in `dim_order` with an active MDS status that has `flagwarehouse = true`. Lines are restricted to PS lines of `curated_mil` with `milstype <> 3`, product code not starting with the Thai letter bo and not `TEST%`. Only company_id ag01 and ab01; only products whose `TypeMarketing` is not 'Sourcing' (products with no marketing type are dropped too).
+One row = one product on one open PS sales order per customer and store: key `FactBacklogStoreSK` (see [Schema](#schema) for key generation). Rows are SUMs grouped by company, order date, order/customer/product/store and `FlagFree`. Only the latest `asatdate` of cps per company is read (snapshot, not history). Order header filters: `mihType = 'PS'`, `mihCancel = 0`, `mihClearUM = 0`, `mihExtraSUM = 0`, description not LIKE '%PO.วางบิล%', order date within the 4-year window (truncated to start-of-year); the order must also be in `dim_order` with an active MDS status that has `flagwarehouse = true`. Lines are restricted to PS lines of `curated_mil` with `milstype <> 3`, product code not starting with the Thai letter bo and not `TEST%`. Only company_id ag01 and ab01; only products whose `TypeMarketing` is not 'Sourcing' (products with no marketing type are dropped too).
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `FactBacklogStoreSK` | INT64 | Surrogate key: ROW_NUMBER over CompanySK, date parts, cpsVnosID, cpsCusID, cpsStkID. Regenerates daily. |
+| `FactBacklogStoreSK` | INT64 | Stable row key: FARM_FINGERPRINT of the typed company/date/order/customer/product grain plus `occ`; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `company_id` | STRING | MAC5 company code; only 'ag01' and 'ab01' are loaded. |
 | `sDate` | DATE | Order date: SAFE.PARSE_DATE of mihYear, mihMonth, mihDay of the order header; partition column. |

@@ -26,16 +26,16 @@ Read by: [view_fact_transcation](/view/fact_view/view_fact_transcation.md).
 
 # Grain and key
 
-One row = one product on one invoice-type document (IS/BS/AS/QS) per customer and link number (`milLinkVcno`), per company: key `FactInvoiceSK` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay, milType, milVnos, milCus, LOWER(milStk)); the group-by also includes `milLinkVcno`, the SK ORDER BY does not. Lines are INNER JOINed to `view_dim_invoice` (date, type, vnos, customer, milLinkVcno, company), so lines whose invoice is not found there are dropped. Window: `mix_date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)`.
+One row = one product on one invoice-type document (IS/BS/AS/QS) per customer and link number (`milLinkVcno`), per company: key `FactInvoiceSK`. Its stable value is a typed business-key hash over company, invoice date, type, invoice number, customer, lower-case stock code and `occ`; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). The group-by also includes `milLinkVcno`. Lines are INNER JOINed to `view_dim_invoice` (date, type, vnos, customer, milLinkVcno, company), so lines whose invoice is not found there are dropped. Window: `mix_date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)`.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `FactInvoiceSK` | INT64 | Surrogate key: ROW_NUMBER over CompanySK, date, milType, milVnos, milCus, LOWER(milStk). Regenerates daily. |
+| `FactInvoiceSK` | INT64 | Stable row key: FARM_FINGERPRINT of typed company/date/type/invoice/customer/stock fields plus `occ`; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). |
 | `InvoiceSK` | INT64 | Surrogate key from `view_dim_invoice` (join on date, type, vnos, customer, milLinkVcno, company). |
 | `OrderSK` | INT64 | OrderSK of the linked order line from [fact_order](/fact/fact_order.md); NULL if none. |
-| `FactOrderSK` | INT64 | [fact_order](/fact/fact_order.md).FactOrderSk of the linked order line. |
+| `FactOrderSK` | INT64 | [fact_order](/fact/fact_order.md).FactOrderSk of the linked order line selected by highest `occ` within the matching order grain. |
 | `QuotationSK` | INT64 | QuotationSK inherited via fact_order. |
 | `FactQuotationSK` | INT64 | FactQuotationSK inherited via fact_order ([fact_quotation](/fact/fact_quotation.md)). |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md). |
@@ -63,7 +63,7 @@ One row = one product on one invoice-type document (IS/BS/AS/QS) per customer an
 - `uniqueKey`: `FactInvoiceSK`.
 - Storage options: `{"partitionBy": "asatdate", "clusterBy": ["FactInvoiceSK"]}`.
 - Reads: [dimension_view.view_dim_invoice](/view/dimension_view/view_dim_invoice.md), [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [dimension_table.dim_company](/dimension/dim_company.md), [fact_table.fact_order](/fact/fact_order.md), [dimension_table.dim_customer](/dimension/dim_customer.md).
-- Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `FactInvoiceSK`, partition `asatdate`), after `dim_invoice`, `dim_customer`, `dim_company` and `fact_order`.
+- Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `FactInvoiceSK`, partition `asatdate`), after `dim_invoice`, `dim_customer`, `dim_company` and `fact_order`; row keys stay stable across rebuilds.
 
 # Examples
 

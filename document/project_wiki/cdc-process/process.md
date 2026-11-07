@@ -189,8 +189,9 @@ sample data: the 31 tables of the 2026-10-26 package, `rls_ta_customer` (rls sam
 lower case. Topic routing and triggers are owned by
 [`mart-export-config.json`](../../../includes/controller/mart-export-config.json). Columns, names and order are the
 sample CSV header, read from the same source for the whole table (the sample filters are not applied), so they
-keep the SK columns of the sample: dimension SKs remain stable for matching natural keys, while fact SKs
-that use `ROW_NUMBER()` can regenerate and move rows whose data did not change otherwise. Where a table has no unique business key the key is the business
+keep the SK columns of the sample. Dimension SKs remain stable for matching natural keys; current fact row-key
+rules and migration scope are owned by the
+[coding standard](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). Where a table has no unique business key the key is the business
 columns plus `occurrence` (position of the row among rows with the same key, ordered by their data JSON).
 `view_dim_company` has its own view because its sample columns differ from `export_dim_company`.
 
@@ -204,8 +205,8 @@ Measured 2026-11-02 against the limits of the Cloud Workflows publisher the Clou
 consecutive nights, time travel of the base tables) are a few hundred or fewer for the dims and `rls`/`mds` tables,
 about 20,000 for `view_fact_transcation`, 13,000-29,000 for `dim_pump_information`, about 53,000 for
 `view_dim_aging_history` (a new as-at snapshot of about 27,000 rows each night and the previous day's snapshot
-deleted), and 0.7-2.7 million for `fact_order`, `fact_delivery` and `fact_transaction_delivery` (their SKs are
-`ROW_NUMBER()` over the whole table); `fact_quotation` shifts the same way (67 of 1,624 sample rows still match
+deleted), and 0.7-2.7 million for `fact_order`, `fact_delivery` and `fact_transaction_delivery` (their SKs were
+`ROW_NUMBER()` over the whole table at measurement time); `fact_quotation` shifted the same way (67 of 1,624 sample rows still match
 8 days later). Row counts and key uniqueness were checked on the compiled views; each sample is contained in its view on the
 sample columns except where an SK was regenerated since the sample was cut.
 
@@ -346,7 +347,7 @@ image (the required group and table order is read from it), so a new group takes
 - data columns first, under the **source table's column names** (no renaming, no
   `company_source_id`) — except the commission, TA app and AI team sample sets, which keep the names
   agreed in their respective samples. The AI team sample sets retain their sample SK columns,
-  including regenerated fact SKs; other exports exclude dimension SKs and incidental daily values
+  including fact row SKs; other exports exclude dimension SKs and incidental daily values
   that make unchanged rows look changed. Date-driven membership status is intentional;
   its transition rules are owned by the
   [`export_memberships` schema](../../okf/view/pub_sub/export_memberships.md#schema);

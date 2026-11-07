@@ -61,7 +61,22 @@ js {
     const MDSStatusTableRef = `${MDSStatusTable.database}.${MDSStatusTable.schema}.${MDSStatusTable.name}`;
 
 }
-
+SELECT
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(
+    output_row.company_id AS company_id,
+    output_row.mihYear AS mihYear,
+    output_row.mihMonth AS mihMonth,
+    output_row.mihDay AS mihDay,
+    output_row.milType AS milType,
+    output_row.milVnos AS milVnos,
+    output_row.milListNo AS milListNo,
+    ROW_NUMBER() OVER (
+      PARTITION BY output_row.company_id, output_row.mihYear, output_row.mihMonth, output_row.mihDay, output_row.milType, output_row.milVnos, output_row.milListNo
+      ORDER BY TO_JSON_STRING(output_row)
+    ) AS occ
+  ))) AS FactOrderStoreSK,
+  output_row.*
+FROM (
 WITH dim_order_dedup AS (
   SELECT ord.OrderSK, ord.CompanySK, ord.mihVnos
   FROM `${DimOrderTableRef}` as ord
@@ -146,11 +161,9 @@ WITH dim_order_dedup AS (
 )
 
 SELECT
-  ROW_NUMBER() OVER(
-    ORDER BY CompanySK, mihYear, mihMonth, mihDay, milType, milVnos, milListNo
-  ) AS FactOrderStoreSK,
   source_data.*
 FROM source_data
+) AS output_row
 
 pre_operations {}
 

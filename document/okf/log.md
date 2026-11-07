@@ -1,5 +1,8 @@
 # Directory Update Log
 
+* **Update**: Applied review corrections to stable fact row keys, full BillingSK natural keys, invoice order-occurrence selection and affected consumer cards.
+* **Update**: Documented stable row keys for all 11 scoped facts and refreshed the affected fact OKF cards.
+* **Update**: Updated the seven retained fact cards for stable row keys and the OKF cards of their direct consumers.
 * **Update**: Aligned the shared reader rule with omitted empty reader lists, used the TITAN series code in the product-attribute example, and replaced stale export and aggregation descriptions with pointers to the source cards.
 
 * **Update**: Clarified CIS360 `ag01` profile matching, stored aging-history values, ordered latest-section rules and transaction join multiplicity in the view cards and their exports.

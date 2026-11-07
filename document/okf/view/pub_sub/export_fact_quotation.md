@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T16:47:32+07:00" }
+generated: { by: "agent:codex", at: "2026-11-07T07:42:49+07:00" }
 status: draft
 ---
 
@@ -30,7 +30,7 @@ One row = one quotation line: key `companyID`, `Running`, `StkCode`, `occurrence
 
 | Column | Type | Description |
 |---|---|---|
-| `FactQuotationSK` | INT64 | Surrogate key: ROW_NUMBER over CompanySK, Running, StkCode. Regenerates every run. |
+| `FactQuotationSK` | INT64 | Row key of [fact_quotation](/fact/fact_quotation.md#schema). |
 | `QuotationSK` | INT64 | Surrogate key of [dim_quotation](/dimension/dim_quotation.md) (join `dim_quotation.id = tbook_quodetail.linkid`, same company). |
 | `SDate` | DATE | Quotation date from dim_quotation (`SDate`). |
 | `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md) (`stkcode = ProductCode`, company). |

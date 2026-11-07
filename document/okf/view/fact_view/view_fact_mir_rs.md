@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-07T02:04:05+07:00" }
 status: draft
 ---
 
@@ -31,9 +31,9 @@ One row = one receipt (RS) line or cheque of [fact_mir_rs](/fact/fact_mir_rs.md)
 | Column | Type | Description |
 |---|---|---|
 | `AgingSK` | INT64 | SK of `dim_aging` for the invoice paid (join `mirbinvno = cfsvnosid`, `company_id = companyID`); highest AgingSK kept when several rows match. NULL when the invoice has no aging row or on cheque-only rows. Regenerated daily. |
-| `ReceiveSK` | INT64 | Row key of `fact_mir_rs` = `ROW_NUMBER()` over (BillingSK, FactChqSK, company_id, mirtype, mirvnos, mirlistno, mirbinvno). Unique in this view. Regenerated daily. |
-| `BillingSK` | INT64 | SK of the matching billing row in `fact_mir_vs` (match company + `mirbinvno`); NULL when the paid invoice was never billed. Regenerated daily. |
-| `FactChqSK` | INT64 | SK of the matching cheque row in `fact_chq` (match `cqlvnos = mirvnos`, customer, company). `fact_mir_rs` uses a FULL JOIN with `fact_chq`, so cheque rows without a receipt line also appear (the receipt-side columns are then NULL). Regenerated daily. |
+| `ReceiveSK` | INT64 | Stable row key of [fact_mir_rs](/fact/fact_mir_rs.md#grain-and-key), passed through unchanged. Unique in this view. |
+| `BillingSK` | INT64 | Stable row key of the matching billing row in [fact_mir_vs](/fact/fact_mir_vs.md#grain-and-key) (match company + `mirbinvno`); NULL when the paid invoice was never billed. |
+| `FactChqSK` | INT64 | Row key of [fact_chq](/fact/fact_chq.md#schema) (match `cqlvnos = mirvnos`, customer, company). `fact_mir_rs` uses a FULL JOIN with `fact_chq`, so cheque rows without a receipt line also appear (the receipt-side columns are then NULL). |
 | `CollectSK` | INT64 | Stable SK of `dim_collection_status`, matched on company + year + month + customer of the document; NULL when no collection-status row exists. |
 | `Actions` | STRING | Collection action text from `dim_collection_status` (matched as for CollectSK). |
 | `Justification` | STRING | Collection justification text from `dim_collection_status`. |

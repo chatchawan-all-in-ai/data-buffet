@@ -569,6 +569,8 @@ DAG `pipline_saleout_mdt_eom` **รวมทุกไฟล์ในโฟลเ
 
 - **2026-08-11 — `view_dim_aging_history` derive `AgingSK`/`BillingSK` สดแทนที่จะเชื่อค่าที่เก็บไว้**
 
+  Current billing-key contract: [fact_mir_vs](../okf/fact/fact_mir_vs.md#grain-and-key). The measurements below predate that migration.
+
   **ปัญหา**: `dim_aging_history` เป็น snapshot สะสม (สิ้นเดือน + เมื่อวาน รวม 33
   snapshot / 1,023,308 แถว) แต่ `dim_aging.AgingSK` และ `fact_mir_vs.BillingSK`
   ปั้นด้วย `ROW_NUMBER()` ใหม่ทุกคืน → เลขที่ freeze ไว้ไปชี้คนละใบ

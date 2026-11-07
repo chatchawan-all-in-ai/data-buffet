@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T16:47:32+07:00" }
+generated: { by: "agent:codex", at: "2026-11-07T07:42:49+07:00" }
 status: draft
 ---
 
@@ -30,7 +30,7 @@ One row = one invoice line that is delivered: key `companyID`, `milType`, `milvn
 
 | Column | Type | Description |
 |---|---|---|
-| `FactTransDeliverySK` | INT64 | Surrogate key: ROW_NUMBER over CompanySK, date parts, milType, milvnos, lower(milStk). Regenerates every run. |
+| `FactTransDeliverySK` | INT64 | Row key of [fact_transaction_delivery](/fact/fact_transaction_delivery.md#schema). |
 | `InvoiceSK` | INT64 | Surrogate key of [dim_invoice](/dimension/dim_invoice.md) (join on date, type, vnos, customer, company; only milType 'IS'). |
 | `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md) (company + case-insensitive product code); NULL if unmatched. |
 | `company_id` | STRING | MAC5 company code from curated_mil (same value as companyID). |

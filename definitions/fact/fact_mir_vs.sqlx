@@ -39,7 +39,20 @@ js {
     };
     const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 }
-
+SELECT
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(
+    output_row.company_id AS company_id,
+    output_row.mirtype AS mirtype,
+    output_row.mirvnos AS mirvnos,
+    output_row.mirlistno AS mirlistno,
+    output_row.mirbinvno AS mirbinvno,
+    ROW_NUMBER() OVER (
+      PARTITION BY output_row.company_id, output_row.mirtype, output_row.mirvnos, output_row.mirlistno, output_row.mirbinvno
+      ORDER BY TO_JSON_STRING(output_row)
+    ) AS occ
+  ))) AS BillingSK,
+  output_row.*
+FROM (
 with dim_invoice as (
   select InvoiceSK, companyID, mihVnos, mihType, mihCus, mix_date, mihCancel
   from `${DimInvoiceTableRef}`
@@ -93,6 +106,6 @@ with dim_invoice as (
 
 )
   select
-    row_number() over(order by company_id, mirtype, mirvnos, mirlistno, mirbinvno) as BillingSK,
     t1.*
   from fact_mir as t1
+) AS output_row

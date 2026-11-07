@@ -30,7 +30,7 @@ dataset กลางตาม [registry reference](../project_wiki/includes/vari
 | curated | camelCase | `mihVnos`, `prdSku` |
 | dimension/fact | PascalCase | `CompanyID`, `WaterPacName` |
 | org_center | snake_case, ชื่อเอกพจน์เสมอ แม้เป็นคอลัมน์ list (ARRAY) — ไม่ใช้ `_ids` / `_codes` | `company_id`, `department_id`, `section_code` |
-| Surrogate key | Keep the dimension’s established `<Entity>SK` name in PascalCase | `CompanySK`, `SaleRepSK`, `FactOrderSK` |
+| Surrogate key | Keep the dimension’s established `<Entity>SK` name in PascalCase; fact row keys normally use `Fact<Entity>SK` (retain legacy `FactOrderSk`, `BillingSK` and `ReceiveSK`) | `CompanySK`, `SaleRepSK`, `FactQuotationSK` |
 | mds row id ใน dim | `MdsID` | |
 | คอลัมน์ก่อนปรับเครื่องหมาย | `<ชื่อ>_raw` | `mihnetsum_raw` |
 | วันที่ snapshot | `asatdate` (DATE) | |
@@ -40,6 +40,10 @@ dataset กลางตาม [registry reference](../project_wiki/includes/vari
 หมายเหตุ: SK ไม่จำเป็นต้องแปลตรงจากชื่อตาราง — `dim_collection_status → CollectSK`,
 `dim_status_not_receive → NotReceiveSK`, `dim_avg_collection_score → AvgCollectSK`,
 `dim_product_master → ProductSK`
+
+The 11 facts with row-level SKs keep their existing column names and use a typed
+business-key STRUCT plus an occurrence number for stable key values; see the
+[fact row-key standard](sqlx-coding-standard.md#fact-row-surrogate-keys).
 
 For dimension key selection and allocation, follow the
 [stable-key synchronization contract](../project_wiki/dimension/merge-sk-pattern.md);

@@ -220,6 +220,45 @@ for key selection, complete-source requirements, assertions, allocation and the 
 MERGE clauses. The [inventory](../project_wiki/dimension/inventory.md) owns conversion
 scope and held actions; each table's OKF card owns its grain and key.
 
+### Fact row surrogate keys
+
+All 11 facts with a row-level SK use stable row keys: `fact_order`,
+`fact_quotation`, `fact_invoice`, `fact_delivery`,
+`fact_transaction_delivery`, `fact_mir_vs`, `fact_chq`, `fact_mir_rs`,
+`fact_order_store`, `fact_invoice_store`, and `fact_backlog_store`. Derive
+each key as `FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(<typed business key fields>, occ)))`.
+Build `occ` with `ROW_NUMBER()` partitioned by the fact's natural business grain,
+ordered by `TO_JSON_STRING` of all public output columns except that fact's own
+row SK. Include FK SK columns, business dates, run dates such as `asatdate`, and
+every other output field. Project the public row before ranking so derived values
+and joined candidates use the same rule. Ties represent identical output rows.
+Internal grain fields, such as the cheque natural key in `fact_mir_rs` and the
+source company in `fact_delivery`, are not
+public output and do not participate in the ordering. Preserve output columns,
+field types, row multiplicity, non-key values, and materialization config.
+
+`includes/fact_occurrence.js`'s `assignedOccurrences` recovers `fact_order`'s
+assigned ordinal for `fact_invoice` by matching its stored hash against ordinals
+1 through the natural-grain count. Reconstruct the producer's identical typed
+STRUCT, including field names and normalization; do not independently rerank
+stored order rows. The ordinal remains internal and is omitted from public output.
+Delivery and receipt joins use their FK SK columns directly in the output ordering
+and do not need upstream ordinal recovery.
+
+`fact_order` keeps its base SELECT unchanged because changing its aggregation
+order changes FLOAT results; it assigns the stable key in `post_operations`.
+`fact_invoice` selects its linked order row by `occ DESC`. Keep the existing
+latest-billing candidate selection in `fact_mir_vs`, including its existing arbitrary
+choice among latest-date ties; do not add a new tie-breaker.
+`fact_mir_vs` hashes `(company_id, mirtype, mirvnos, mirlistno, mirbinvno, occ)`;
+its occurrence partition uses those five business fields.
+`fact_mir_rs` hashes the receipt natural key and cheque natural key in one typed
+STRUCT with `occ`, so cheque-only rows also receive distinct keys.
+
+There is no legacy key map: row-level fact SKs change once at rollout, then remain
+stable across rebuilds. `fact_transcation` and the six MDT facts have no row-level SK.
+Live comparison evidence is kept outside the repository.
+
 ## 9. คอมเมนต์
 
 - คอมเมนต์ไทยหรืออังกฤษได้ ให้อธิบาย "ทำไม" ไม่ใช่ "ทำอะไร"

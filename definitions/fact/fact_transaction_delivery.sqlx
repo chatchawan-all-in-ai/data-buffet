@@ -40,6 +40,22 @@ CREATE OR REPLACE TABLE `${FactTransDeliveryTableRef}`
 PARTITION BY mix_date
 CLUSTER BY FactTransDeliverySK
 AS
+SELECT
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(
+    output_row.company_id AS company_id,
+    output_row.milYear AS milYear,
+    output_row.milMonth AS milMonth,
+    output_row.milDay AS milDay,
+    output_row.milType AS milType,
+    output_row.milvnos AS milvnos,
+    LOWER(output_row.milStk) AS milStk,
+    ROW_NUMBER() OVER (
+      PARTITION BY output_row.company_id, output_row.milYear, output_row.milMonth, output_row.milDay, output_row.milType, output_row.milvnos, LOWER(output_row.milStk)
+      ORDER BY TO_JSON_STRING(output_row)
+    ) AS occ
+  ))) AS FactTransDeliverySK,
+  output_row.*
+FROM (
 WITH mil_source AS (
   SELECT
     mil.company_id,
@@ -76,7 +92,6 @@ WITH mil_source AS (
 
 )
   SELECT
-    ROW_NUMBER() OVER(ORDER BY dim_com.CompanySK, mil.milYear, mil.milMonth, mil.milDay, mil.milType, mil.milvnos, lower(mil.milStk)) as FactTransDeliverySK,
     mil.InvoiceSK,
     mil.ProductSK,
     dim_com.CompanySK,
@@ -87,3 +102,4 @@ WITH mil_source AS (
   FROM mil_source AS mil
   LEFT JOIN `${DimCompanyTableRef}` as dim_com
     on mil.company_id = dim_com.companyID
+) AS output_row

@@ -116,3 +116,29 @@ with mil as (
   LEFT JOIN `${DimCustomerTableRef}` as dim_cust
     ON mil.milCus = dim_cust.debcode
     AND mil.CompanySK = dim_cust.CompanySK
+
+post_operations {
+  UPDATE ${self()} AS order_row
+  SET FactOrderSk = stable_key.FactOrderSk
+  FROM (
+    SELECT
+      FactOrderSk AS old_FactOrderSk,
+      FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(
+        companyID AS companyID,
+        milYear AS milYear,
+        milMonth AS milMonth,
+        milDay AS milDay,
+        milType AS milType,
+        milVnos AS milVnos,
+        milCus AS milCus,
+        LOWER(milStk) AS milStk,
+        ROW_NUMBER() OVER (
+          PARTITION BY companyID, milYear, milMonth, milDay, milType,
+                       milVnos, milCus, LOWER(milStk)
+          ORDER BY TO_JSON_STRING((SELECT AS STRUCT stored.* EXCEPT(FactOrderSk)))
+        ) AS occ
+      ))) AS FactOrderSk
+    FROM ${self()} AS stored
+  ) AS stable_key
+  WHERE order_row.FactOrderSk = stable_key.old_FactOrderSk
+}

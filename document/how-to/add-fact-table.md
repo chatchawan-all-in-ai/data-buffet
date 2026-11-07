@@ -60,8 +60,8 @@ END;
   the source key remains present. Check the [dimension inventory](../project_wiki/dimension/inventory.md)
   for exceptions: `dim_target_product_group_by_sale_dayofwork` is held and still
   regenerates `TargetBySaleDayofworkSK` on each rebuild, so do not persist that key
-  across runs. Keep the dimension in `dependencies[]`; fact surrogate keys may still
-  regenerate when the fact is rebuilt.
+  across runs. Keep the dimension in `dependencies[]`.
+- For fact row keys, follow the [fact row-key contract](../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys).
 - ถ้า dim อาจไม่มี match ให้ LEFT JOIN (SK เป็น NULL แทนที่จะ drop row)
 - SCD dims (มี StartDate/EndDate): join ด้วยช่วงวันที่ให้ตรงกับ `mix_date`
 

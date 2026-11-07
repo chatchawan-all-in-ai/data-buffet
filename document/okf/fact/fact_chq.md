@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-07T02:04:05+07:00" }
 status: draft
 ---
 
@@ -26,13 +26,13 @@ Read by: [fact_mir_rs](/fact/fact_mir_rs.md).
 
 # Grain and key
 
-One row = one cheque (`chqno`) of one customer on one receipt document (`cqlvnos`) per company: key `FactChqSK` (`ROW_NUMBER()` over `company_id, chqno, cqlcus, cqlvnos`). Only cheque rows matching a `cql` row (`chqno = cqlno`, `chqcus = cqlcus`, `chqtotal = cqlsuml`, company) with `cqlbook = 0` appear; the WHERE on the left-joined `cql` makes it an inner join.
+One row = one cheque (`chqno`) of one customer on one receipt document (`cqlvnos`) per company: key `FactChqSK` (see [Schema](#schema) for key generation). Only cheque rows matching a `cql` row (`chqno = cqlno`, `chqcus = cqlcus`, `chqtotal = cqlsuml`, company) with `cqlbook = 0` appear; the WHERE on the left-joined `cql` makes it an inner join.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `FactChqSK` | INT64 | Surrogate key: ROW_NUMBER over company_id, chqno, cqlcus, cqlvnos. Regenerates daily. |
+| `FactChqSK` | INT64 | Stable row key: FARM_FINGERPRINT of the typed company/cheque/customer/receipt grain plus `occ`; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md) via `chqcus = debcode` and company; NULL if unmatched. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `company_id` | STRING | MAC5 company code. Pass-through of validated `chq.company_id`. |
@@ -57,7 +57,7 @@ One row = one cheque (`chqno`) of one customer on one receipt document (`cqlvnos
 - `uniqueKey`: `FactChqSK`.
 - Storage options: `{"clusterBy": ["FactChqSK"]}`.
 - Reads: [validated_mac5.chq](/validated/validated_mac5/chq.md), [validated_mac5.cql](/validated/validated_mac5/cql.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_company](/dimension/dim_company.md).
-- Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`), runs after `dim_customer` and `dim_company` (dependencies[]). Runs before `fact_mir_rs`. `FactChqSK` regenerates every run.
+- Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`), runs after `dim_customer` and `dim_company` (dependencies[]). Runs before `fact_mir_rs`.
 
 # Examples
 

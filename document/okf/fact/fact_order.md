@@ -26,13 +26,13 @@ Read by: [fact_invoice](/fact/fact_invoice.md), [view_fact_transcation](/view/fa
 
 # Grain and key
 
-One row = the summed lines of one product on one PS sales order (company, order date, `milvnos`, customer) per matched ProductSK and quotation line: key `FactOrderSk` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay, milType, milVnos, milCus, lower(milStk)). `curated_mil` lines are summed (GROUP BY 12 keys incl. ProductSK, OrderSK, mihRef1). ProductSK is part of the grouping: company/code matches to retained barcode versions each receive the same source totals. The subsequent quotation join can repeat each grouped row again for every matching Running + StkCode + CompanySK. FactOrderSk identifies these expanded candidates, not a unique business-line total. No date retention filter.
+One row = the summed lines of one product on one PS sales order (company, order date, `milvnos`, customer) per matched ProductSK and quotation line: key `FactOrderSk`. Its stable value is a typed business-key hash over company, order date, type, order number, customer, lower-case stock code and `occ`; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). `curated_mil` lines are summed (GROUP BY 12 keys incl. ProductSK, OrderSK, mihRef1). ProductSK is part of the grouping: company/code matches to retained barcode versions each receive the same source totals. The subsequent quotation join can repeat each grouped row again for every matching Running + StkCode + CompanySK. FactOrderSk identifies these expanded candidates, not a unique business-line total. No date retention filter.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `FactOrderSk` | INT64 | Surrogate key: ROW_NUMBER over CompanySK, date, milType, milVnos, milCus, lower(milStk). Regenerates daily. |
+| `FactOrderSk` | INT64 | Stable row key: FARM_FINGERPRINT of typed company/date/type/order/customer/stock fields plus `occ`; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). Assigned in post_operations so the base aggregation order and FLOAT values stay unchanged. |
 | `OrderSK` | INT64 | Surrogate key of [dim_order](/dimension/dim_order.md) (join on date, type, vnos, customer, company). |
 | `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md), joined on company and `lower(milStk) = lower(ProductCode)`; NULL if unmatched. |
 | `QuotationSK` | INT64 | Surrogate key of dim_quotation carried from [fact_quotation](/fact/fact_quotation.md); NULL when no quotation line matches. |
@@ -61,7 +61,7 @@ One row = the summed lines of one product on one PS sales order (company, order 
 - `uniqueKey`: `FactOrderSk`.
 - Storage options: `{"partitionBy": "asatdate", "clusterBy": ["FactOrderSk"]}`.
 - Reads: [curated_mac5.curated_mil](/curated/curated_mac5/curated_mil.md), [dimension_table.dim_order](/dimension/dim_order.md), [dimension_table.dim_company](/dimension/dim_company.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md), [fact_table.fact_quotation](/fact/fact_quotation.md), [dimension_table.dim_customer](/dimension/dim_customer.md).
-- Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `FactOrderSk`, partition `asatdate`, cluster `FactOrderSk`), after `dim_order`, `dim_customer`, `dim_product_master`, `dim_company` and `fact_quotation`. `FactOrderSk` regenerates daily; `fact_invoice` and `view_fact_transcation` rebuild after it.
+- Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `FactOrderSk`, partition `asatdate`, cluster `FactOrderSk`), after `dim_order`, `dim_customer`, `dim_product_master`, `dim_company` and `fact_quotation`. The row key stays stable across rebuilds; `fact_invoice` and `view_fact_transcation` rebuild after it.
 
 # Examples
 

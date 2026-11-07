@@ -53,7 +53,24 @@ js {
     };
     const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 }
-
+SELECT
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(
+    output_row.company_id AS receipt_company_id,
+    output_row.mirtype AS receipt_mirtype,
+    output_row.mirvnos AS receipt_mirvnos,
+    output_row.mirlistno AS receipt_mirlistno,
+    output_row.mirbinvno AS receipt_mirbinvno,
+    output_row._cheque_key.company_id AS cheque_company_id,
+    output_row._cheque_key.chqno AS cheque_chqno,
+    output_row._cheque_key.chqcus AS cheque_chqcus,
+    output_row._cheque_key.cqlvnos AS cheque_cqlvnos,
+    ROW_NUMBER() OVER (
+      PARTITION BY output_row.company_id, output_row.mirtype, output_row.mirvnos, output_row.mirlistno, output_row.mirbinvno, output_row._cheque_key.company_id, output_row._cheque_key.chqno, output_row._cheque_key.chqcus, output_row._cheque_key.cqlvnos
+      ORDER BY TO_JSON_STRING((SELECT AS STRUCT output_row.* EXCEPT(_cheque_key)))
+    ) AS occ
+  ))) AS ReceiveSK,
+  output_row.* EXCEPT(_cheque_key)
+FROM (
 with dim_invoice as (
   select InvoiceSK, companyID, mihVnos, mihType, mihCus, mix_date, mihCancel
   from `${DimInvoiceTableRef}`
@@ -106,7 +123,7 @@ with dim_invoice as (
 
 )
   select
-    row_number() over(order by vs.BillingSK, t2.FactChqSK, t1.company_id, t1.mirtype, t1.mirvnos, t1.mirlistno, t1.mirbinvno) as ReceiveSK,
+    STRUCT(t2.company_id, t2.chqno, t2.chqcus, t2.cqlvnos) AS _cheque_key,
     vs.BillingSK,
     t2.FactChqSK,
     t1.*
@@ -119,3 +136,4 @@ with dim_invoice as (
     and t2.chqcus = t1.mircus
     and t2.company_id = t1.company_id
     and t1.mirType = 'RS'
+) AS output_row

@@ -25,9 +25,20 @@ js {
     };
     const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 }
-
+SELECT
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(
+    output_row.company_id AS company_id,
+    output_row.chqno AS chqno,
+    output_row.chqcus AS chqcus,
+    output_row.cqlvnos AS cqlvnos,
+    ROW_NUMBER() OVER (
+      PARTITION BY output_row.company_id, output_row.chqno, output_row.chqcus, output_row.cqlvnos
+      ORDER BY TO_JSON_STRING(output_row)
+    ) AS occ
+  ))) AS FactChqSK,
+  output_row.*
+FROM (
 select
-  row_number() over(order by chq.company_id, chq.chqno, cql.cqlcus, cql.cqlvnos) as FactChqSK,
   dim_cus.CustomerSK,
   dim_com.CompanySK,
   chq.company_id,
@@ -73,3 +84,4 @@ left join `${DimCustomerTableRef}` as dim_cus
 left join `${DimCompanyTableRef}` as dim_com
   on chq.company_id = dim_com.companyID
 where cql.cqlbook = 0
+) AS output_row

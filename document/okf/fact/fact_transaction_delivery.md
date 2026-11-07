@@ -26,13 +26,13 @@ Read by: [fact_delivery](/fact/fact_delivery.md), [export_fact_transaction_deliv
 
 # Grain and key
 
-One row = the invoiced totals of one product on one IS invoice (company, date, `milvnos`, customer) per matched ProductSK: key `FactTransDeliverySK` (ROW_NUMBER over CompanySK, milYear, milMonth, milDay, milType, milvnos, lower(milStk)); the group-by also includes InvoiceSK and ProductSK. The INNER JOIN to `dim_invoice` drops lines without a matching invoice; the invoice join matches every InvoiceSK for the same company, date, type, invoice number and customer, regardless of linked order. The company + case-insensitive product-code join matches every retained barcode version; each InvoiceSK/ProductSK group repeats the source measures. FactTransDeliverySK is an expanded-row key, not a unique invoice/product total. Window: invoice date >= start of the year 4 years ago (Asia/Bangkok).
+One row = the invoiced totals of one product on one IS invoice (company, date, `milvnos`, customer) per matched ProductSK: key `FactTransDeliverySK` (see [Schema](#schema) for key generation); the group-by also includes InvoiceSK and ProductSK. The INNER JOIN to `dim_invoice` drops lines without a matching invoice; the invoice join matches every InvoiceSK for the same company, date, type, invoice number and customer, regardless of linked order. The company + case-insensitive product-code join matches every retained barcode version; each InvoiceSK/ProductSK group repeats the source measures. FactTransDeliverySK is an expanded-row key, not a unique invoice/product total. Window: invoice date >= start of the year 4 years ago (Asia/Bangkok).
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `FactTransDeliverySK` | INT64 | Surrogate key: ROW_NUMBER over CompanySK, date parts, milType, milvnos, lower(milStk). Regenerates every run. |
+| `FactTransDeliverySK` | INT64 | Stable row key: FARM_FINGERPRINT of the company/date/type/document/lower-case-stock plus `occ`; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). |
 | `InvoiceSK` | INT64 | Surrogate key of [dim_invoice](/dimension/dim_invoice.md) (join on date, type, vnos, customer, company; only milType 'IS'). |
 | `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md) (company + case-insensitive product code); NULL if unmatched. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |

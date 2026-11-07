@@ -26,13 +26,13 @@ Read by: [view_fact_mir_rs](/view/fact_view/view_fact_mir_rs.md).
 
 # Grain and key
 
-One row = one receipt (RS) document line against an invoice, with its billing row and the cheque that paid it, or one cheque with no receipt line: key `ReceiveSK` (ROW_NUMBER over BillingSK, FactChqSK, company_id, mirtype, mirvnos, mirlistno, mirbinvno). Base grain is an RS `mir` line (company_id, mirtype, mirvnos, mirlistno) whose header is in `curated_mih` with `mihcancel = 0`; `WHERE inv.mihCancel = 0` turns the LEFT JOIN to `dim_invoice` into an inner join, so lines whose invoice is not found in `dim_invoice` are dropped. The FULL JOIN to `fact_chq` on `cqlvnos = mirvnos` AND `chqcus = mircus` AND company AND `mirtype = 'RS'` can add cheque-only rows, on which every receipt-side column is NULL (all `mir*` columns, BillingSK, CustomerSK, InvoiceSK, CompanySK, CollectSK, Actions, Justification, Responsible, duedate, company_id, asatdate), and can multiply a receipt line when several cheques share the receipt number.
+One row = one receipt (RS) document line against an invoice, with its billing row and the cheque that paid it, or one cheque with no receipt line: key `ReceiveSK`, a stable typed hash of receipt natural key (`company_id, mirtype, mirvnos, mirlistno, mirbinvno`), cheque natural key (`company_id, chqno, chqcus, cqlvnos`) and `occ`. The cheque key keeps cheque-only rows distinct when receipt fields are NULL. Base grain is an RS `mir` line (company_id, mirtype, mirvnos, mirlistno) whose header is in `curated_mih` with `mihcancel = 0`; `WHERE inv.mihCancel = 0` turns the LEFT JOIN to `dim_invoice` into an inner join, so lines whose invoice is not found in `dim_invoice` are dropped. The FULL JOIN to `fact_chq` on `cqlvnos = mirvnos` AND `chqcus = mircus` AND company AND `mirtype = 'RS'` can add cheque-only rows, on which every receipt-side column is NULL (all `mir*` columns, BillingSK, CustomerSK, InvoiceSK, CompanySK, CollectSK, Actions, Justification, Responsible, duedate, company_id, asatdate), and can multiply a receipt line when several cheques share the receipt number.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ReceiveSK` | INT64 | Surrogate key: ROW_NUMBER over BillingSK, FactChqSK, company_id, mirtype, mirvnos, mirlistno, mirbinvno. Regenerates daily. |
+| `ReceiveSK` | INT64 | Stable row key: FARM_FINGERPRINT of the typed receipt natural key, cheque natural key and `occ`; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). Cheque-only rows use NULL receipt-key fields and their cheque natural key. |
 | `BillingSK` | INT64 | [fact_mir_vs](/fact/fact_mir_vs.md).BillingSK for the same company and `mirbinvno`; NULL when the invoice has no billing (VS) row. |
 | `FactChqSK` | INT64 | [fact_chq](/fact/fact_chq.md).FactChqSK of the cheque matched on receipt number (`cqlvnos = mirvnos`), customer and company; NULL when no cheque matches. |
 | `CollectSK` | INT64 | Stable surrogate key of [dim_collection_status](/dimension/dim_collection_status.md), joined on company, receipt year/month and customer (`mircus` cast to STRING = `CustomerID`). NULL when the MDS collection-status master has no row for that month/customer. |
@@ -71,7 +71,7 @@ One row = one receipt (RS) document line against an invoice, with its billing ro
 - `uniqueKey`: `ReceiveSK`.
 - Storage options: `{"clusterBy": ["ReceiveSK", "FactChqSK", "InvoiceSK"]}`.
 - Reads: [dimension_table.dim_invoice](/dimension/dim_invoice.md), [validated_mac5.mir](/validated/validated_mac5/mir.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_collection_status](/dimension/dim_collection_status.md), [validated_mac5.mie](/validated/validated_mac5/mie.md), [dimension_table.dim_company](/dimension/dim_company.md), [fact_table.fact_mir_vs](/fact/fact_mir_vs.md), [fact_table.fact_chq](/fact/fact_chq.md).
-- Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `ReceiveSK`), after `fact_mir_vs` and `fact_chq` plus the dims (dependencies[]). `ReceiveSK` regenerates daily.
+- Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `ReceiveSK`), after `fact_mir_vs` and `fact_chq` plus the dims (dependencies[]). `ReceiveSK` remains stable across rebuilds.
 
 # Examples
 

@@ -26,13 +26,13 @@ Read by: [fact_mir_rs](/fact/fact_mir_rs.md), [dim_aging](/dimension/dim_aging.m
 
 # Grain and key
 
-One row = one billing (VS) document line that bills an invoice (`mirbinvno`), reduced to the latest billing document per invoice number: key `BillingSK` (ROW_NUMBER over company_id, mirtype, mirvnos, mirlistno, mirbinvno). Source `mir` is restricted to `mirtype = 'VS'` and to headers present in `curated_mih` (joined on `mirvnos = mihvnos` and `mirtype = mihtype`) with `mihcancel = 0`, then de-duplicated with `QUALIFY ROW_NUMBER() OVER(PARTITION BY mir.mirbinvno ORDER BY miryear DESC, mirmonth DESC, mirday DESC) = 1` before the enrichment joins; the partition ignores `company_id`. `WHERE inv.mihCancel = 0` turns the LEFT JOIN to `dim_invoice` into an inner join: lines whose invoice is not found in `dim_invoice` are dropped.
+One row = one billing (VS) document line that bills an invoice (`mirbinvno`), reduced to the latest billing document per invoice number: key `BillingSK`, a stable typed hash of `(company_id, mirtype, mirvnos, mirlistno, mirbinvno, occ)`; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). Source `mir` is restricted to `mirtype = 'VS'` and to headers present in `curated_mih` (joined on `mirvnos = mihvnos` and `mirtype = mihtype`) with `mihcancel = 0`, then de-duplicated with `QUALIFY ROW_NUMBER() OVER(PARTITION BY mir.mirbinvno ORDER BY miryear DESC, mirmonth DESC, mirday DESC) = 1` before the enrichment joins; the partition ignores `company_id` and existing latest-date ties remain unresolved by an additional tie-breaker. `WHERE inv.mihCancel = 0` turns the LEFT JOIN to `dim_invoice` into an inner join: lines whose invoice is not found in `dim_invoice` are dropped.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `BillingSK` | INT64 | Surrogate key: ROW_NUMBER over company_id, mirtype, mirvnos, mirlistno, mirbinvno. Regenerates daily; `fact_mir_rs.BillingSK` points to it. |
+| `BillingSK` | INT64 | Stable row key: FARM_FINGERPRINT of typed `(company_id, mirtype, mirvnos, mirlistno, mirbinvno, occ)`, partitioned by those five business fields; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys); `fact_mir_rs.BillingSK` points to it. |
 | `CollectSK` | INT64 | Stable surrogate key of [dim_collection_status](/dimension/dim_collection_status.md), joined on company, billing-document year/month and customer (`mircus` cast to STRING = `CustomerID`). NULL when the MDS collection-status master has no row for that month/customer. |
 | `Actions` | STRING | Collection action text, copied from `dim_collection_status.Actions` (MDS collection-status master). |
 | `Justification` | STRING | Collection justification text, copied from `dim_collection_status.Justification`. |
@@ -69,7 +69,7 @@ One row = one billing (VS) document line that bills an invoice (`mirbinvno`), re
 - `uniqueKey`: `BillingSK`.
 - Storage options: `{"clusterBy": ["BillingSK", "InvoiceSK", "CustomerSK"]}`.
 - Reads: [dimension_table.dim_invoice](/dimension/dim_invoice.md), [validated_mac5.mir](/validated/validated_mac5/mir.md), [curated_mac5.curated_mih](/curated/curated_mac5/curated_mih.md), [dimension_table.dim_customer](/dimension/dim_customer.md), [dimension_table.dim_collection_status](/dimension/dim_collection_status.md), [validated_mac5.mie](/validated/validated_mac5/mie.md), [dimension_table.dim_company](/dimension/dim_company.md).
-- Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `BillingSK`), after `dim_invoice`, `dim_customer`, `dim_collection_status`, `dim_company` and before `fact_mir_rs` and `dim_aging`. `BillingSK` regenerates daily.
+- Refresh: full daily rebuild (`type: "table"`, tag `fact_daily`, uniqueKey `BillingSK`), after `dim_invoice`, `dim_customer`, `dim_collection_status`, `dim_company` and before `fact_mir_rs` and `dim_aging`. `BillingSK` remains stable across rebuilds.
 
 # Examples
 

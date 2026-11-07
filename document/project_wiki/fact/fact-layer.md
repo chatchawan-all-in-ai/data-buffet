@@ -119,8 +119,14 @@ the positional DELETE/INSERT flow and fact-table column schema remain unchanged.
 > [dimension/full-rebuild-pattern.md](../dimension/full-rebuild-pattern.md)).
 > Build order via `dependencies[]`: dims → `fact_chq` → `fact_mir_vs` → `fact_mir_rs`;
 > `dim_aging` (dimension_daily) reads `fact_mir_vs` and declares it as a dependency.
-> Their SKs (`FactChqSK`, `BillingSK`, `ReceiveSK`) are ROW_NUMBER-based and regenerate
-> daily — never persist them across days.
+> Row-key contracts are owned by the [OKF cards](../../okf/fact/index.md).
+> The `CollectSK` FK follows the `dim_collection_status` refresh policy.
+
+## Stable fact row SKs
+
+The [coding standard](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys)
+owns migration scope, the shared occurrence rule and producer/consumer exceptions;
+each fact's [OKF card](../../okf/fact/index.md) owns its grain and schema.
 
 ## `fact_transcation` walkthrough (canonical upsert fact)
 
@@ -289,7 +295,7 @@ join ปลายลูกโซ่ใช้ CompanySK ของ **dim ตัว
 
 ## Conventions
 
-- Fact PK column: `Fact<Entity>SK` (PascalCase; casing occasionally inconsistent — `FactOrderSk`).
+- Fact row-SK names follow the [naming conventions](../../coding-standards/naming-conventions.md).
 - `mix_date` = business date derived by `PARSE_DATE('%Y%m%d', CONCAT(milYear, milMonth, milDay))`.
 - `asatdate` = `CURRENT_DATE('Asia/Bangkok')` snapshot column.
 - Retention = rolling 4 years, truncated to start-of-year.

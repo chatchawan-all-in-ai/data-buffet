@@ -30,7 +30,7 @@ One row = one order line: key `companyID`, `milType`, `milvnos`, `milStk`, `occu
 
 | Column | Type | Description |
 |---|---|---|
-| `FactOrderSk` | INT64 | Surrogate key: ROW_NUMBER over CompanySK, date, milType, milVnos, milCus, lower(milStk). Regenerates daily. |
+| `FactOrderSk` | INT64 | Stable row key of [fact_order](/fact/fact_order.md#grain-and-key), passed through unchanged. |
 | `OrderSK` | INT64 | Surrogate key of [dim_order](/dimension/dim_order.md) (join on date, type, vnos, customer, company). |
 | `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md), joined on company and `lower(milStk) = lower(ProductCode)`; NULL if unmatched. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |

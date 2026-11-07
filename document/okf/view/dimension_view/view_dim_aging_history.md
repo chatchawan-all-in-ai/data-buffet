@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-Reporting view over [dim_aging_history](/dimension/dim_aging_history.md), the accumulating snapshot of AR documents in non-completed groups (prior-day labels retained for the latest day and month-ends). The source dims renumber `AgingSK` and `BillingSK` every night, so the view discards the stored keys and re-derives both from the natural key by joining the current [dim_aging](/dimension/dim_aging.md) and [fact_mir_vs](/fact/fact_mir_vs.md). It also adds the channel SKs from [view_dim_channel](/view/dimension_view/view_dim_channel.md).
+Reporting view over [dim_aging_history](/dimension/dim_aging_history.md), the accumulating snapshot of AR documents in non-completed groups (prior-day labels retained for the latest day and month-ends). The view discards the stored `AgingSK` and `BillingSK` and re-derives both from the natural key by joining the current [dim_aging](/dimension/dim_aging.md) and [fact_mir_vs](/fact/fact_mir_vs.md#grain-and-key). `BillingSK` follows the stable fact row-key contract. It also adds the channel SKs from [view_dim_channel](/view/dimension_view/view_dim_channel.md).
 
 Read by: [export_view_dim_aging_history](/view/pub_sub/export_view_dim_aging_history.md).
 
@@ -37,7 +37,7 @@ One row = one AR document in one snapshot: key `asatdate`, `companyID`, `cfsVnos
 | `ChannelSaleSK` | INT64 | SK of the sales channel (`dim_channel_sales`), from view_dim_channel. |
 | `ChannelCostSK` | INT64 | SK of the cost channel (`dim_channel_cost`), from view_dim_channel. |
 | `AgingSK` | INT64 | Re-derived: SK of the same invoice in the current [dim_aging](/dimension/dim_aging.md) via companyID + cfsVnosID + cfsTypeID; NULL if the invoice has since closed. |
-| `BillingSK` | INT64 | Re-derived: BillingSK in [fact_mir_vs](/fact/fact_mir_vs.md) matched on companyID = company_id and cfsVnosID = mirbinvno; NULL if none. |
+| `BillingSK` | INT64 | Re-derived: stable row key in [fact_mir_vs](/fact/fact_mir_vs.md#grain-and-key) matched on companyID = company_id and cfsVnosID = mirbinvno; NULL if none. |
 | `asatdate` | DATE | Stored prior-day snapshot label (latest label or a retained month-end); values were captured on `asatdate + 1 day`. |
 | `AgingRangSK` | INT64 | Stored aging-bucket SK passed through from `dim_aging_history` (stable MERGE SK from `dim_aging_rang`), corresponding to the stored `DayRange`. |
 | `CustomerSK` | INT64 | SK of the customer in [dim_customer](/dimension/dim_customer.md) (stable MERGE SK). |

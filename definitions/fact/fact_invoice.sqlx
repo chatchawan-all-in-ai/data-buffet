@@ -11,6 +11,8 @@ config {
 }
 
 js {
+    const fact_occurrence = require("../../includes/fact_occurrence");
+
     // Define table references
     // ref ชี้กลับมาที่ตัวเอง (name()) — ยังไม่ได้ใช้ เพราะ config เป็น type: "table"
     // Dataform จึงสร้าง/เขียนตารางให้เอง ไม่ต้องเขียน DDL อ้างชื่อตัวเองใน body
@@ -51,7 +53,23 @@ js {
     const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 
 }
-
+SELECT
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(
+    output_row.companyID AS companyID,
+    output_row.milYear AS milYear,
+    output_row.milMonth AS milMonth,
+    output_row.milDay AS milDay,
+    output_row.milType AS milType,
+    output_row.milVnos AS milVnos,
+    output_row.milCus AS milCus,
+    LOWER(output_row.milStk) AS milStk,
+    ROW_NUMBER() OVER (
+      PARTITION BY output_row.companyID, output_row.milYear, output_row.milMonth, output_row.milDay, output_row.milType, output_row.milVnos, output_row.milCus, LOWER(output_row.milStk)
+      ORDER BY TO_JSON_STRING(output_row)
+    ) AS occ
+  ))) AS FactInvoiceSK,
+  output_row.*
+FROM (
 with dim_invoice as (
   select * from `${ViewDimInvoiceTableRef}`
 
@@ -92,7 +110,6 @@ with dim_invoice as (
 )
 
 select
-  row_number() over(order by mil.CompanySK, mil.milYear, mil.milMonth, mil.milDay, mil.milType, mil.milVnos, mil.milCus, LOWER(mil.milStk)) as FactInvoiceSK, --, mil.milListno)
   mil.InvoiceSK,
   fact_ord.OrderSK,
   fact_ord.FactOrderSK,
@@ -116,8 +133,17 @@ LEFT JOIN dim_invoice as t
     and IFNULL(t.milLinkVcno, '') = IFNULL(mil.milLinkVcno, '')
     and t.companyID = mil.companyID
 LEFT JOIN (
-  SELECT * FROM `${FactOrderTableRef}`
-  qualify row_number() over(partition by CompanySK, milYear, milMonth, milDay, milType, milVnos, milCus, LOWER(milStk) order by FactOrderSK desc) = 1
+  SELECT * EXCEPT(_occ)
+  FROM (
+    ${fact_occurrence.assignedOccurrences(`SELECT * FROM \`${FactOrderTableRef}\``, 'FactOrderSk',
+      ['companyID', 'milYear', 'milMonth', 'milDay', 'milType', 'milVnos', 'milCus',
+       ['milStk', 'LOWER(stored.milStk)']])}
+  )
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY CompanySK, milYear, milMonth, milDay,
+                 milType, milVnos, milCus, LOWER(milStk)
+    ORDER BY _occ DESC
+  ) = 1
 ) AS fact_ord
   ON IFNULL(t.RefOrder, '') = IFNULL(fact_ord.milVnos, '')
   AND LOWER(mil.milStk) = LOWER(fact_ord.milStk)
@@ -125,3 +151,4 @@ LEFT JOIN (
 LEFT JOIN `${DimCustomerTableRef}` as dim_cust
   ON mil.milCus = dim_cust.debcode
   AND mil.CompanySK = dim_cust.CompanySK
+) AS output_row

@@ -39,6 +39,19 @@ js {
 CREATE OR REPLACE TABLE `${FactDeliveryTableRef}`
 CLUSTER BY FactDeliverySK
 AS
+SELECT
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(
+    output_row._delivery_companyID AS companyID,
+    output_row.documentID AS documentID,
+    output_row.DeliveryDate AS DeliveryDate,
+    output_row.item AS item,
+    ROW_NUMBER() OVER (
+      PARTITION BY output_row._delivery_companyID, output_row.documentID, output_row.DeliveryDate, output_row.item
+      ORDER BY TO_JSON_STRING((SELECT AS STRUCT output_row.* EXCEPT(_delivery_companyID)))
+    ) AS occ
+  ))) AS FactDeliverySK,
+  output_row.* EXCEPT(_delivery_companyID)
+FROM (
 with mil_is as (
   select distinct company_id, milvnos 
   from ${ref(databuffet.CURATED_MAC5, 'curated_mil')}
@@ -229,7 +242,7 @@ with mil_is as (
 
 )
   select 
-    row_number() over(order by dim_com.CompanySK, t1.documentID, t1.DeliveryDate, t1.item) as FactDeliverySK,
+    t1.companyID AS _delivery_companyID,
     dl.DeliverySK,
     t2.FactTransDeliverySK,
     t2.InvoiceSK,
@@ -250,3 +263,4 @@ with mil_is as (
   LEFT JOIN `${DimCompanyTableRef}` as dim_com
     on t1.companyID = dim_com.companyID
   -- order by 1,2,3
+) AS output_row

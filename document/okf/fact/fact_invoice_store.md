@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:44:47+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-07T02:04:05+07:00" }
 status: draft
 ---
 
@@ -26,13 +26,13 @@ Read by: none in this repository.
 
 # Grain and key
 
-One row = one product line of an IS invoice per salesperson share (`milPer`): key `FactInvoiceStoreSK` (ROW_NUMBER over CompanySK, mihYear, mihMonth, mihDay, milType, mihVnos, milListNo, milPer). The IS side of `curated_mil` splits a line across salespeople by `percent_sale`, one row per share. Window: 4 years truncated to start-of-year on the invoice date (not filtered by order). Only company_id ag01 and ab01; only products whose `TypeMarketing` is not 'Sourcing' (products with no marketing type are dropped too); lines with `milstype <> 3`, product code not starting with the Thai letter bo and not `TEST%`.
+One row = one product line of an IS invoice per salesperson share (`milPer`): key `FactInvoiceStoreSK` (see [Schema](#schema) for key generation). The IS side of `curated_mil` splits a line across salespeople by `percent_sale`, one row per share. Window: 4 years truncated to start-of-year on the invoice date (not filtered by order). Only company_id ag01 and ab01; only products whose `TypeMarketing` is not 'Sourcing' (products with no marketing type are dropped too); lines with `milstype <> 3`, product code not starting with the Thai letter bo and not `TEST%`.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `FactInvoiceStoreSK` | INT64 | Surrogate key: ROW_NUMBER over CompanySK, date parts, milType, mihVnos, milListNo, milPer. Regenerates daily. |
+| `FactInvoiceStoreSK` | INT64 | Stable row key: FARM_FINGERPRINT of the typed company/date/type/invoice/line/salesperson-share grain plus `occ`; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `company_id` | STRING | MAC5 company code; only 'ag01' and 'ab01' are loaded. |
 | `mix_date` | DATE | Invoice date: SAFE.PARSE_DATE of mihYear, mihMonth, mihDay; partition column. |

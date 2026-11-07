@@ -352,8 +352,8 @@ Step-by-step guides with checklists live in [`document/how-to/`](document/how-to
   actions and `fact_transcation` use existing BigQuery targets.
 - **Primary keys:** declared `NOT ENFORCED` for query optimization, not constraints.
 - **Surrogate keys:** stable dimension sync keeps an SK attached to its natural key;
-  do not regenerate the whole dimension SK column with `ROW_NUMBER()`. Fact row SKs may
-  still regenerate when their fact tables rebuild.
+  do not regenerate the whole dimension SK column with `ROW_NUMBER()`. Fact row keys
+  follow the [fact row-key contract](document/coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys).
 - **Partitioning/clustering:** partition incremental tables by `asatdate`; cluster on up to 4 frequently-filtered columns.
 - **Load-bearing typos (keep verbatim):** `fact_transcation` (table/file name),
   `CDC_DATESET` (variables.json key), `prdDiminsionData` (MASTERSKU JSON field).
