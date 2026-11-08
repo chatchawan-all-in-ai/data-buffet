@@ -1,0 +1,74 @@
+// Audit events have no updated_at; use created_at as the deduplication tie-breaker.
+config {
+    type: "incremental",
+    schema: databuffet.VALIDATED_MASTER_SKU,
+    dependencies: ["validated_schema_master_sku", "create_all_table_raw_master_sku"],
+    tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+    uniqueKey: ["id"],
+    bigquery: {
+        partitionBy : "asatdate",
+        clusterBy: ["id"]
+    },
+}
+
+js {
+    const sourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTER_SKU,
+        name: name(),
+    };
+
+    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+    const pk_key = ["id"]
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY asatdate DESC, created_at DESC) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
+}
+
+SELECT
+  IFNULL(${databuffet.functionData.cleanString('id')}, '') AS id,
+  ${databuffet.functionData.cleanString('entity_type')} AS entity_type,
+  ${databuffet.functionData.cleanString('entity_id')} AS entity_id,
+  ${databuffet.functionData.cleanString('action')} AS action,
+  ${databuffet.functionData.cleanString('action_id')} AS action_id,
+  ${databuffet.functionData.cleanString('user_id')} AS user_id,
+  ${databuffet.functionData.cleanString('changes')} AS changes,
+  ${databuffet.functionData.cleanString('metadata')} AS metadata,
+  ${databuffet.functionData.cleanString('scope_business_unit_id')} AS scope_business_unit_id,
+  ${databuffet.functionData.cleanString('scope_vendor_id')} AS scope_vendor_id,
+  ${databuffet.functionData.cleanString('correlation_id')} AS correlation_id,
+  ${databuffet.functionData.castBool('is_from_master_sku_v2')} AS is_from_master_sku_v2,
+  ${databuffet.functionData.parseFlexibleUtcDatetime('created_at')} AS created_at,
+  ${databuffet.functionData.parseAsatDate()} AS asatdate,
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+    ${ when(!incremental(), post_operations_statement) }
+}

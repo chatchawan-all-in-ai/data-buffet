@@ -1,6 +1,6 @@
 # raw_master_sku
 
-16 cards in BigQuery dataset `raw_master_sku`.
+30 cards in BigQuery dataset `raw_master_sku`.
 
 # Tables
 
@@ -20,3 +20,17 @@
 * [specifications](specifications.md) - One row = one attribute assigned to one specification group, a record of source table `specifications` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [synonyms](synonyms.md) - One row = one search term with its synonyms, a record of source table `synonyms` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [vendors](vendors.md) - One row = one vendor, a record of source table `vendors` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [audit_logs](audit_logs.md) - One row = one audit events for entities in the master_sku 3.0 product master, a record of source table `audit_logs` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [business_units](business_units.md) - One row = one business units configured in the master_sku 3.0 source, a record of source table `business_units` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [channels](channels.md) - One row = one sales channels configured in the product master, a record of source table `channels` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [customers](customers.md) - One row = one customer records linked to product information, a record of source table `customers` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [functional_group_translations](functional_group_translations.md) - One row = one localized names and descriptions for product functional groups, a record of source table `functional_group_translations` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [functional_groups](functional_groups.md) - One row = one functional group hierarchy used by the product master, a record of source table `functional_groups` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [product_assets](product_assets.md) - One row = one digital assets and files associated with products or other source references, a record of source table `product_assets` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [product_channels](product_channels.md) - One row = one product-to-sales-channel assignments, a record of source table `product_channels` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [product_codes](product_codes.md) - One row = one alternate business codes associated with products, a record of source table `product_codes` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [product_groups](product_groups.md) - One row = one named groups used to organize products, a record of source table `product_groups` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [product_vendors](product_vendors.md) - One row = one product-to-vendor assignments and vendor-side product details, a record of source table `product_vendors` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [variant_definitions](variant_definitions.md) - One row = one definitions for product or media variants, a record of source table `variant_definitions` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [users](users.md) - One row = one user accounts registered in the master_sku source, a record of source table `users` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [user_preferences](user_preferences.md) - One row = one preference settings associated with source users, a record of source table `user_preferences` (MASTER_SKU) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).

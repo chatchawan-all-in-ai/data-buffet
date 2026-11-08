@@ -12,6 +12,6 @@ External tables over the AVRO/CSV files in `gs://file-raw-data`, one folder per 
 * [raw_mac5_ac02](raw_mac5_ac02/) - 14 cards
 * [raw_mac5_ag01](raw_mac5_ag01/) - 86 cards
 * [raw_mac5_ak02](raw_mac5_ak02/) - 14 cards
-* [raw_master_sku](raw_master_sku/) - 16 cards
+* [raw_master_sku](raw_master_sku/) - 30 cards
 * [raw_mastersku](raw_mastersku/) - 11 cards
 * [raw_saleout_mdt](raw_saleout_mdt/) - 19 cards

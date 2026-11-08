@@ -1,6 +1,6 @@
 # validated_master_sku
 
-16 cards in BigQuery dataset `validated_master_sku`.
+30 cards in BigQuery dataset `validated_master_sku`.
 
 # Tables
 
@@ -20,3 +20,17 @@
 * [specifications](specifications.md) - One row = one attribute assigned to one specification group from source table `specifications`, unique on (group_id, attribute_id).
 * [synonyms](synonyms.md) - One row = one search term with its synonyms from source table `synonyms`, unique on (id).
 * [vendors](vendors.md) - One row = one vendor from source table `vendors`, unique on (id).
+* [audit_logs](audit_logs.md) - One row per audit events for entities in the master_sku 3.0 product master from source table `audit_logs`, unique on (id).
+* [business_units](business_units.md) - One row per business units configured in the master_sku 3.0 source from source table `business_units`, unique on (id).
+* [channels](channels.md) - One row per sales channels configured in the product master from source table `channels`, unique on (id).
+* [customers](customers.md) - One row per customer records linked to product information from source table `customers`, unique on (id).
+* [functional_group_translations](functional_group_translations.md) - One row per localized names and descriptions for product functional groups from source table `functional_group_translations`, unique on (functional_group_id, language_id).
+* [functional_groups](functional_groups.md) - One row per functional group hierarchy used by the product master from source table `functional_groups`, unique on (id).
+* [product_assets](product_assets.md) - One row per digital assets and files associated with products or other source references from source table `product_assets`, unique on (id).
+* [product_channels](product_channels.md) - One row per product-to-sales-channel assignments from source table `product_channels`, unique on (product_id, sales_channel_id).
+* [product_codes](product_codes.md) - One row per alternate business codes associated with products from source table `product_codes`, unique on (id).
+* [product_groups](product_groups.md) - One row per named groups used to organize products from source table `product_groups`, unique on (id).
+* [product_vendors](product_vendors.md) - One row per product-to-vendor assignments and vendor-side product details from source table `product_vendors`, unique on (id).
+* [variant_definitions](variant_definitions.md) - One row per definitions for product or media variants from source table `variant_definitions`, unique on (id).
+* [users](users.md) - One row per user accounts registered in the master_sku source from source table `users`, unique on (id).
+* [user_preferences](user_preferences.md) - One row per preference settings associated with source users from source table `user_preferences`, unique on (id).

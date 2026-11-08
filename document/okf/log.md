@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-08 (MASTER_SKU expansion)
+
+* **Creation**: Added the 14 new table cards linked from the [raw MASTER_SKU index](initial/raw_master_sku/index.md) and [validated MASTER_SKU index](validated/validated_master_sku/index.md), and refreshed their dataset and layer indexes.
+
 * **Update**: Applied review corrections to stable fact row keys, full BillingSK natural keys, invoice order-occurrence selection and affected consumer cards.
 * **Update**: Documented stable row keys for all 11 scoped facts and refreshed the affected fact OKF cards.
 * **Update**: Updated the seven retained fact cards for stable row keys and the OKF cards of their direct consumers.

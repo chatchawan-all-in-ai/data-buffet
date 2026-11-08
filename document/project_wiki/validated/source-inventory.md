@@ -101,28 +101,30 @@ Downstream readers (since 2026-09/10): `curated_saleout_mdt` (sale feeds
 `sales_by_branch`, `sale_by_branch_mch3`, `stock_aging`, `turnover` and `turnover_brand`
 have no reader in the repo.
 
-## MASTER_SKU — `master_sku` 3.0 (17 = 16 incremental + 1 schema)
+## MASTER_SKU — `master_sku` 3.0 (31 = 30 incremental + 1 schema)
 
 Product master (`raw_master_sku` → `validated_master_sku` → `curated_master_sku`),
-added 2026-10-12. All 16 tables follow the standard incremental pattern (tags
-`validated`, `validated_incremental`) and parse datetimes with
-`parseFlexibleUtcDatetime` (raw is UTC).
+added 2026-10-12 and expanded 2026-11-08. All 30 table definitions use the standard
+incremental pattern (tags `validated`, `validated_incremental`) and parse source UTC
+datetimes with `parseFlexibleUtcDatetime`; `audit_logs` has no `updated_at`, so it
+deduplicates by `created_at` after `asatdate`.
 
-Raw column names are retained. Tables partition by `asatdate` and cluster by their
-keys; string key columns use `IFNULL(cleanString(...), '')` to avoid NULL MERGE
-keys. Dedup orders by `asatdate DESC, updated_at DESC`.
+Raw source columns are retained. Tables partition by `asatdate` and cluster by their
+keys; string key columns use `IFNULL(cleanString(...), '')` to avoid NULL MERGE keys.
 
 | Group | Tables (PK) |
 |---|---|
-| Product | `products` (`id`), `product_translations` (`product_id`, `language_id`) |
+| Product | `products` (`id`), `product_translations` (`product_id`, `language_id`), `product_assets` (`id`), `product_channels` (`product_id`, `sales_channel_id`), `product_codes` (`id`), `product_groups` (`id`), `product_vendors` (`id`), `variant_definitions` (`id`) |
 | Brand / vendor | `brands`, `vendors`, `brand_vendors` (`id`), `brand_translations` (`brand_id`, `language_id`) |
 | Category | `categories` (`id`), `category_translations` (`category_id`, `language_id`) |
+| Business / customer | `business_units` (`id`), `channels` (`id`), `customers` (`id`) |
+| Functional groups | `functional_groups` (`id`), `functional_group_translations` (`functional_group_id`, `language_id`) |
 | Codes | `common_codes` (`id`), `common_code_translations` (`common_code_id`, `language_id`) |
 | Specs | `spec_groups`, `spec_attributes` (`id`), `spec_group_translations`, `spec_attribute_translations` (`*_id`, `language_id`), `specifications` (`group_id`, `attribute_id`) |
+| Audit / access | `audit_logs` (`id`), `users` (`id`), `user_preferences` (`id`) |
 | Search | `synonyms` (`id`) |
 
-Readers: `curated_master_sku.curated_products` and `product_for_aisearch_v3` only
-(see [curated-layer](../curated/curated-layer.md)).
+Direct readers are listed in each [validated MASTER_SKU card](../../okf/validated/validated_master_sku/index.md).
 `products` carries the D365 cross-reference columns `d365_code`, `d365_size`,
 `d365_style`, `d365_color`, `d365_configuration`, `d365_variant`
 (`curated_products.prdD365Sku` = `d365_code`) — the likely join key to DERP
