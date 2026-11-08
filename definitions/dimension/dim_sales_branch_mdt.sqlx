@@ -7,12 +7,45 @@ config {
 }
 
 js {
+    const DimSectionLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_section_last",
+    };
+    const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
+    const DimZoneTaMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_zone_ta_mdt",
+    };
+    const DimZoneTaMdtTableRef = `${DimZoneTaMdtTable.database}.${DimZoneTaMdtTable.schema}.${DimZoneTaMdtTable.name}`;
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_sales_branch_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
+    const DimZoneMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_zone_mdt",
+    };
+    const DimZoneMdtTableRef = `${DimZoneMdtTable.database}.${DimZoneMdtTable.schema}.${DimZoneMdtTable.name}`;
+    const DimRegionLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region_last",
+    };
+    const DimRegionLastTableRef = `${DimRegionLastTable.database}.${DimRegionLastTable.schema}.${DimRegionLastTable.name}`;
     const DimSalesBranchMdtTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimSalesBranchMdtTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
+
+
+
 
     const stableDimensionColumns = ['BranchMdtSK', 'RegionSK', 'RegionManagerSK', 'SectionSK', 'SectionManagerSK', 'ZoneMdtSK', 'ZoneTaMdtSK', 'StoreCode', 'RegionName', 'SubRegionID', 'BranchCode', 'BranchCodeMdt', 'BranchName', 'ZoneCode', 'ZoneName', 'Warehouse', 'StartDate', 'EndDate', 'MdsID'];
     const stableDimensionKeyColumns = ['StoreCode', 'BranchCode', 'StartDate', 'EndDate'];
@@ -29,43 +62,7 @@ js {
     const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
     const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
 
-    const DimSectionLastTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_section_last",
-    };
-    const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
-
-    const DimZoneTaMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_zone_ta_mdt",
-    };
-    const DimZoneTaMdtTableRef = `${DimZoneTaMdtTable.database}.${DimZoneTaMdtTable.schema}.${DimZoneTaMdtTable.name}`;
-
-    const MdsSourceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_mdt_sales_branch_master",
-    };
-    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
-
-    const DimZoneMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_zone_mdt",
-    };
-    const DimZoneMdtTableRef = `${DimZoneMdtTable.database}.${DimZoneMdtTable.schema}.${DimZoneMdtTable.name}`;
-
-    const DimRegionLastTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_region_last",
-    };
-    const DimRegionLastTableRef = `${DimRegionLastTable.database}.${DimRegionLastTable.schema}.${DimRegionLastTable.name}`;
 }
-
-
 
 BEGIN
   DECLARE max_sk INT64 DEFAULT 0;

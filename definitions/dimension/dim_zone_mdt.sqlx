@@ -7,12 +7,21 @@ config {
 }
 
 js {
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_sales_zone_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
     const DimZoneMdtTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimZoneMdtTableRef = `${DimZoneMdtTable.database}.${DimZoneMdtTable.schema}.${DimZoneMdtTable.name}`;
+
+
+
 
     const stableDimensionColumns = ['ZoneMdtSK', 'ZoneCode', 'ZoneName', 'StartDate', 'EndDate', 'MdsID'];
     const stableDimensionKeyColumns = ['ZoneCode'];
@@ -29,16 +38,7 @@ js {
     const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
     const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
 
-    const MdsSourceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_mdt_sales_zone_master",
-    };
-    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
-
 }
-
-
 
 BEGIN
   DECLARE max_sk INT64 DEFAULT 0;

@@ -7,12 +7,27 @@ config {
 }
 
 js {
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_sales_pc_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
+    const DimSalesBranchMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimSalesBranchMdtTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
     const DimPcTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimPcTableRef = `${DimPcTable.database}.${DimPcTable.schema}.${DimPcTable.name}`;
+
+
+
 
     const stableDimensionColumns = ['PcSK', 'BranchMdtSK', 'BranchCodeMdt', 'EmployeeID', 'EmployeeName', 'EmployeeSurname', 'EmployeeType', 'MarketingGroupID', 'MarketingGroupName', 'StartDate', 'EndDate', 'IsPlaceholder', 'MdsID'];
     const stableDimensionKeyColumns = ['EmployeeID', 'BranchCodeMdt', 'MarketingGroupID', 'StartDate', 'EndDate'];
@@ -29,22 +44,7 @@ js {
     const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
     const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
 
-    const MdsSourceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_mdt_sales_pc_master",
-    };
-    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
-
-    const DimSalesBranchMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_sales_branch_mdt",
-    };
-    const DimBranchTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
 }
-
-
 
 BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
@@ -86,7 +86,7 @@ BEGIN
         IFNULL(dim_br.BranchMdtSK, -1) AS BranchMdtSK,
         src.*
       FROM pc_source AS src
-      LEFT JOIN `${DimBranchTableRef}` AS dim_br
+      LEFT JOIN `${DimSalesBranchMdtTableRef}` AS dim_br
         ON src.BranchCodeMdt = dim_br.BranchCodeMdt
 
     ), unknown_pc AS (

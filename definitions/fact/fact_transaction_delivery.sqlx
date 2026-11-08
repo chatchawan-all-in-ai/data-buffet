@@ -5,14 +5,24 @@ config {
 }
 
 js {
-    // Define table references
-    const FactTransDeliveryTable = {
+    const FactTransactionDeliveryTable = {
         database: databuffet.DATABASE,
         schema: databuffet.FACT_TABLE,
         name: name(),
     };
-    const FactTransDeliveryTableRef = `${FactTransDeliveryTable.database}.${FactTransDeliveryTable.schema}.${FactTransDeliveryTable.name}`;
-    
+    const FactTransactionDeliveryTableRef = `${FactTransactionDeliveryTable.database}.${FactTransactionDeliveryTable.schema}.${FactTransactionDeliveryTable.name}`;
+    const DimInvoiceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_invoice",
+    };
+    const DimInvoiceTableRef = `${DimInvoiceTable.database}.${DimInvoiceTable.schema}.${DimInvoiceTable.name}`;
+    const DimProductMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_master",
+    };
+    const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
     const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -20,23 +30,10 @@ js {
     };
     const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 
-    const DimInvoiceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_invoice",
-    };
-    const DimInvoiceTableRef = `${DimInvoiceTable.database}.${DimInvoiceTable.schema}.${DimInvoiceTable.name}`;
-    
-    const DimProductMasterTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_product_master",
-    };
-    const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
 
 }
 
-CREATE OR REPLACE TABLE `${FactTransDeliveryTableRef}`
+CREATE OR REPLACE TABLE `${FactTransactionDeliveryTableRef}`
 PARTITION BY mix_date
 CLUSTER BY FactTransDeliverySK
 AS
@@ -72,7 +69,7 @@ WITH mil_source AS (
     SUM(mil.milDisca) AS milDisca,
     SUM(mil.milSum) AS milSum
   FROM ${ref(databuffet.CURATED_MAC5, 'curated_mil')} AS mil
-  INNER JOIN `${DimInvoiceTableRef}` AS t 
+  INNER JOIN `${DimInvoiceTableRef}` AS t
     ON t.mihYear = mil.milYear
     AND t.mihMonth = mil.milMonth
     AND t.mihDay = mil.milDay

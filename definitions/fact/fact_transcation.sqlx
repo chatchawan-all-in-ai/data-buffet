@@ -16,7 +16,150 @@ config {
 }
 
 js {
-    // ---------- target ----------
+    const DimDepartmentTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_department",
+    };
+    const DimDepartmentTableRef = `${DimDepartmentTable.database}.${DimDepartmentTable.schema}.${DimDepartmentTable.name}`;
+    const DimSectionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_section",
+    };
+    const DimSectionTableRef = `${DimSectionTable.database}.${DimSectionTable.schema}.${DimSectionTable.name}`;
+    const DimSectionManagerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_section_manager",
+    };
+    const DimSectionManagerTableRef = `${DimSectionManagerTable.database}.${DimSectionManagerTable.schema}.${DimSectionManagerTable.name}`;
+    const DimRegionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region",
+    };
+    const DimRegionTableRef = `${DimRegionTable.database}.${DimRegionTable.schema}.${DimRegionTable.name}`;
+    const DimRegionManagerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region_manager",
+    };
+    const DimRegionManagerTableRef = `${DimRegionManagerTable.database}.${DimRegionManagerTable.schema}.${DimRegionManagerTable.name}`;
+    const DimDirectorTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_director",
+    };
+    const DimDirectorTableRef = `${DimDirectorTable.database}.${DimDirectorTable.schema}.${DimDirectorTable.name}`;
+    const DimCostStkTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_cost_stk",
+    };
+    const DimCostStkTableRef = `${DimCostStkTable.database}.${DimCostStkTable.schema}.${DimCostStkTable.name}`;
+    const DimCostGroupTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_cost_group",
+    };
+    const DimCostGroupTableRef = `${DimCostGroupTable.database}.${DimCostGroupTable.schema}.${DimCostGroupTable.name}`;
+    const DimChangeDistrictTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_change_district",
+    };
+    const DimChangeDistrictTableRef = `${DimChangeDistrictTable.database}.${DimChangeDistrictTable.schema}.${DimChangeDistrictTable.name}`;
+    const MdsDataChangeMarketinggroupMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_change_marketinggroup_master",
+    };
+    const MdsDataChangeMarketinggroupMasterTableRef = `${MdsDataChangeMarketinggroupMasterTable.database}.${MdsDataChangeMarketinggroupMasterTable.schema}.${MdsDataChangeMarketinggroupMasterTable.name}`;
+    const DimProductMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mkt",
+    };
+    const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
+    const DimSaleRepresentativeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sale_representative",
+    };
+    const DimSaleRepresentativeTableRef = `${DimSaleRepresentativeTable.database}.${DimSaleRepresentativeTable.schema}.${DimSaleRepresentativeTable.name}`;
+    const TransactionDataMartTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.ONETIME,
+        name: "Transaction_Data_Mart",
+    };
+    const TransactionDataMartTableRef = `${TransactionDataMartTable.database}.${TransactionDataMartTable.schema}.${TransactionDataMartTable.name}`;
+    const ViewDimInvoiceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_VIEW,
+        name: "view_dim_invoice",
+    };
+    const ViewDimInvoiceTableRef = `${ViewDimInvoiceTable.database}.${ViewDimInvoiceTable.schema}.${ViewDimInvoiceTable.name}`;
+    const DimOrderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_order",
+    };
+    const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
+    const DimProductMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_master",
+    };
+    const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
+    const DimPaymentTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_payment",
+    };
+    const DimPaymentTableRef = `${DimPaymentTable.database}.${DimPaymentTable.schema}.${DimPaymentTable.name}`;
+    const ViewDimChannelTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_VIEW,
+        name: "view_dim_channel",
+    };
+    const ViewDimChannelTableRef = `${ViewDimChannelTable.database}.${ViewDimChannelTable.schema}.${ViewDimChannelTable.name}`;
+    const MappingInvoiceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.ONETIME,
+        name: "mapping_invoice",
+    };
+    const MappingInvoiceTableRef = `${MappingInvoiceTable.database}.${MappingInvoiceTable.schema}.${MappingInvoiceTable.name}`;
+    const DimChannelCostTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_channel_cost",
+    };
+    const DimChannelCostTableRef = `${DimChannelCostTable.database}.${DimChannelCostTable.schema}.${DimChannelCostTable.name}`;
+    const ViewDebAddressDataTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.PROCESS_DATASET,
+        name: "view_deb_address_data",
+    };
+    const ViewDebAddressDataTableRef = `${ViewDebAddressDataTable.database}.${ViewDebAddressDataTable.schema}.${ViewDebAddressDataTable.name}`;
+    const DimStkMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_stk_mkt",
+    };
+    const DimStkMktTableRef = `${DimStkMktTable.database}.${DimStkMktTable.schema}.${DimStkMktTable.name}`;
+    const DimTargetProductGroupBySaleDayofworkTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_target_product_group_by_sale_dayofwork",
+    };
+    const DimTargetProductGroupBySaleDayofworkTableRef = `${DimTargetProductGroupBySaleDayofworkTable.database}.${DimTargetProductGroupBySaleDayofworkTable.schema}.${DimTargetProductGroupBySaleDayofworkTable.name}`;
+    const DimCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer",
+    };
+    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
     const FactTranscationTable = {
         database: databuffet.DATABASE,
         schema: databuffet.FACT_TABLE,
@@ -24,174 +167,9 @@ js {
     };
     const FactTranscationTableRef = `${FactTranscationTable.database}.${FactTranscationTable.schema}.${FactTranscationTable.name}`;
 
-    const DimDepartmentTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_department",
-    };
-    const DimDepartmentTableRef = `${DimDepartmentTable.database}.${DimDepartmentTable.schema}.${DimDepartmentTable.name}`;
 
-    const DimSectionTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_section",
-    };
-    const DimSectionTableRef = `${DimSectionTable.database}.${DimSectionTable.schema}.${DimSectionTable.name}`;
 
-    const DimSectionManagerTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_section_manager",
-    };
-    const DimSectionManagerTableRef = `${DimSectionManagerTable.database}.${DimSectionManagerTable.schema}.${DimSectionManagerTable.name}`;
-
-    const DimRegionTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_region",
-    };
-    const DimRegionTableRef = `${DimRegionTable.database}.${DimRegionTable.schema}.${DimRegionTable.name}`;
-
-    const DimRegionManagerTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_region_manager",
-    };
-    const DimRegionManagerTableRef = `${DimRegionManagerTable.database}.${DimRegionManagerTable.schema}.${DimRegionManagerTable.name}`;
-
-    const DimDirectorTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_director",
-    };
-    const DimDirectorTableRef = `${DimDirectorTable.database}.${DimDirectorTable.schema}.${DimDirectorTable.name}`;
-
-    const DimCostStkTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_cost_stk",
-    };
-    const DimCostStkTableRef = `${DimCostStkTable.database}.${DimCostStkTable.schema}.${DimCostStkTable.name}`;
-
-    const DimCostGroupTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_cost_group",
-    };
-    const DimCostGroupTableRef = `${DimCostGroupTable.database}.${DimCostGroupTable.schema}.${DimCostGroupTable.name}`;
-
-    const DimChangeDistrictTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_change_district",
-    };
-    const DimChangeDistrictTableRef = `${DimChangeDistrictTable.database}.${DimChangeDistrictTable.schema}.${DimChangeDistrictTable.name}`;
-
-    const DimSaleRepresentativeTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_sale_representative",
-    };
-    const DimSaleRepresentativeTableRef = `${DimSaleRepresentativeTable.database}.${DimSaleRepresentativeTable.schema}.${DimSaleRepresentativeTable.name}`;
-
-    const TransactionDataMartTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.ONETIME,
-        name: "Transaction_Data_Mart",
-    };
-    const TransactionDataMartTableRef = `${TransactionDataMartTable.database}.${TransactionDataMartTable.schema}.${TransactionDataMartTable.name}`;
-
-    const ViewDimInvoiceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_VIEW,
-        name: "view_dim_invoice",
-    };
-    const ViewDimInvoiceTableRef = `${ViewDimInvoiceTable.database}.${ViewDimInvoiceTable.schema}.${ViewDimInvoiceTable.name}`;
-
-    const DimOrderTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_order",
-    };
-    const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
-
-    const DimProductMasterTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_product_master",
-    };
-    const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
-
-    const DimPaymentTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_payment",
-    };
-    const DimPaymentTableRef = `${DimPaymentTable.database}.${DimPaymentTable.schema}.${DimPaymentTable.name}`;
-
-    const ViewDimChannelTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_VIEW,
-        name: "view_dim_channel",
-    };
-    const ViewDimChannelTableRef = `${ViewDimChannelTable.database}.${ViewDimChannelTable.schema}.${ViewDimChannelTable.name}`;
-
-    const MappingInvoiceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.ONETIME,
-        name: "mapping_invoice",
-    };
-    const MappingInvoiceTableRef = `${MappingInvoiceTable.database}.${MappingInvoiceTable.schema}.${MappingInvoiceTable.name}`;
-
-    const DimChannelCostTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_channel_cost",
-    };
-    const DimChannelCostTableRef = `${DimChannelCostTable.database}.${DimChannelCostTable.schema}.${DimChannelCostTable.name}`;
-
-    const ViewDebAddressDataTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.PROCESS_DATASET,
-        name: "view_deb_address_data",
-    };
-    const ViewDebAddressDataTableRef = `${ViewDebAddressDataTable.database}.${ViewDebAddressDataTable.schema}.${ViewDebAddressDataTable.name}`;
-
-    const DimStkMktTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_stk_mkt",
-    };
-    const DimStkMktTableRef = `${DimStkMktTable.database}.${DimStkMktTable.schema}.${DimStkMktTable.name}`;
-
-    const DimProductMktTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_product_mkt",
-    };
-    const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
-
-    const DimTargetProductGroupBySaleDayofworkTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_target_product_group_by_sale_dayofwork",
-    };
-    const DimTargetProductGroupBySaleDayofworkTableRef = `${DimTargetProductGroupBySaleDayofworkTable.database}.${DimTargetProductGroupBySaleDayofworkTable.schema}.${DimTargetProductGroupBySaleDayofworkTable.name}`;
-
-    const DimCustomerTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_customer",
-    };
-    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
-
-    const MdsChaMKTGroupMasterTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_change_marketinggroup_master",
-    };
-    const MdsChaMKTGroupMasterTableRef = `${MdsChaMKTGroupMasterTable.database}.${MdsChaMKTGroupMasterTable.schema}.${MdsChaMKTGroupMasterTable.name}`;
-
+    // ---------- target ----------
 
     // ---------------------------------------------------------------------------------
     // เงื่อนไข match sale representative
@@ -293,7 +271,7 @@ BEGIN
       oldmarketinggroupid, oldsubmarketinggroupid, oldsegmentid, 
       new_mktgroup.ProductMktSK as NewProductMktSK,
       newmarketinggroupid, newsubmarketinggroupid, newsegmentid
-    FROM `${MdsChaMKTGroupMasterTableRef}` as chg
+    FROM `${MdsDataChangeMarketinggroupMasterTableRef}` as chg
     LEFT JOIN `${DimProductMktTableRef}` as new_mktgroup
       on chg.companyid = new_mktgroup.CompanyID
       and chg.newmarketinggroupid = new_mktgroup.MarketingGroupID

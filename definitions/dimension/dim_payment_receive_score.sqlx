@@ -7,12 +7,27 @@ config {
 }
 
 js {
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_custgrade_payment_receive_score_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
     const DimPaymentReceiveScoreTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimPaymentReceiveScoreTableRef = `${DimPaymentReceiveScoreTable.database}.${DimPaymentReceiveScoreTable.schema}.${DimPaymentReceiveScoreTable.name}`;
+
+
+
 
     const stableDimensionColumns = ['PaymentReceiveSK', 'CompanySK', 'companyID', 'PaymentReceivedMin', 'PaymentReceivedMax', 'Score', 'StartDate', 'EndDate', 'MdsID'];
     const stableDimensionKeyColumns = ['companyID', 'PaymentReceivedMin', 'PaymentReceivedMax', 'StartDate', 'EndDate'];
@@ -29,22 +44,7 @@ js {
     const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
     const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
 
-    const DimCompanyTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_company",
-    };
-    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
-
-    const MdsSourceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_custgrade_payment_receive_score_master",
-    };
-    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 }
-
-
 
 BEGIN
   DECLARE max_sk INT64 DEFAULT 0;

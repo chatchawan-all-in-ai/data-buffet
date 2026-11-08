@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:codex", at: "2026-11-07T07:42:49+07:00" }
+generated: { by: "agent:codex", at: "2026-11-08T22:57:16+07:00" }
 status: draft
 ---
 

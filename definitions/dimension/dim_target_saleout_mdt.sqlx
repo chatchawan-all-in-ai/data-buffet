@@ -17,34 +17,36 @@ js {
         name: "mds_data_mdt_sales_target_by_product_master",
     };
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
-
-    const DimSalesBranchMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_sales_branch_mdt",
-    };
-    const DimBranchTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
-
     const DimProductMktTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_product_mkt",
     };
     const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
+    const DimSalesBranchMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimSalesBranchMdtTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
+
+
+
+
 }
 
 WITH monthly AS (
   SELECT
-    CAST(t1.year  AS INT64) AS TargetYear,
-    CAST(t1.month AS INT64) AS TargetMonth,
-    DATE(CAST(t1.year AS INT64), CAST(t1.month AS INT64), 1) AS MonthStart,
-    NULLIF(CAST(TRIM(t1.branch_code) AS STRING), '')      AS BranchCodeMdt,
-    NULLIF(CAST(TRIM(t1.marketinggroupid) AS STRING), '') AS MarketingGroupID,
-    NULLIF(CAST(TRIM(t1.marketinggroup) AS STRING), '')   AS MarketingGroupName,
-    NULLIF(CAST(TRIM(t1.submarketingid) AS STRING), '')   AS SubMarketingID,
-    NULLIF(CAST(TRIM(t1.submarketing) AS STRING), '')     AS SubMarketingName,
-    NULLIF(CAST(TRIM(t1.segmentid) AS STRING), '')        AS SegmentID,
-    NULLIF(CAST(TRIM(t1.segment) AS STRING), '')          AS SegmentName,
+    ${databuffet.functionData.castInt64("t1.year")} AS TargetYear,
+    ${databuffet.functionData.castInt64("t1.month")} AS TargetMonth,
+    DATE(${databuffet.functionData.castInt64("t1.year")}, ${databuffet.functionData.castInt64("t1.month")}, 1) AS MonthStart,
+    ${databuffet.functionData.cleanString("t1.branch_code")}      AS BranchCodeMdt,
+    ${databuffet.functionData.cleanString("t1.marketinggroupid")} AS MarketingGroupID,
+    ${databuffet.functionData.cleanString("t1.marketinggroup")}   AS MarketingGroupName,
+    ${databuffet.functionData.cleanString("t1.submarketingid")}   AS SubMarketingID,
+    ${databuffet.functionData.cleanString("t1.submarketing")}     AS SubMarketingName,
+    ${databuffet.functionData.cleanString("t1.segmentid")}        AS SegmentID,
+    ${databuffet.functionData.cleanString("t1.segment")}          AS SegmentName,
     t1.value AS MonthAmt,
     t1.Quantity AS MonthQty,
     t1.id AS MdsID
@@ -56,7 +58,7 @@ WITH monthly AS (
   QUALIFY ROW_NUMBER() OVER(
     PARTITION BY TRIM(t1.branch_code), TRIM(t1.marketinggroupid),
                  TRIM(t1.submarketingid), TRIM(t1.segmentid),
-                 CAST(t1.year AS INT64), CAST(t1.month AS INT64)
+                 ${databuffet.functionData.castInt64("t1.year")}, ${databuffet.functionData.castInt64("t1.month")}
     ORDER BY t1.updated_at DESC, t1.id
   ) = 1
 
@@ -102,7 +104,7 @@ WITH monthly AS (
     d.MonthQty / d.DaysInMonth AS Qty,
     d.MdsID
   FROM daily AS d
-  LEFT JOIN `${DimBranchTableRef}` AS dim_br
+  LEFT JOIN `${DimSalesBranchMdtTableRef}` AS dim_br
     ON IF(STARTS_WITH(d.BranchCodeMdt, 'GH_'),
           CONCAT('GB_', SUBSTR(d.BranchCodeMdt, 4)),
           d.BranchCodeMdt) = dim_br.BranchCodeMdt

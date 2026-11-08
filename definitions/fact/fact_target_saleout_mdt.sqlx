@@ -11,19 +11,6 @@ config {
 }
 
 js {
-    const DimTargetSaleoutMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_target_saleout_mdt",
-    };
-    const DimTargetTableRef = `${DimTargetSaleoutMdtTable.database}.${DimTargetSaleoutMdtTable.schema}.${DimTargetSaleoutMdtTable.name}`;
-
-    const DimSalesBranchMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_sales_branch_mdt",
-    };
-    const DimBranchTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
     const DimRegionTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -42,6 +29,20 @@ js {
         name: "dim_director",
     };
     const DimDirectorTableRef = `${DimDirectorTable.database}.${DimDirectorTable.schema}.${DimDirectorTable.name}`;
+    const DimTargetSaleoutMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_target_saleout_mdt",
+    };
+    const DimTargetSaleoutMdtTableRef = `${DimTargetSaleoutMdtTable.database}.${DimTargetSaleoutMdtTable.schema}.${DimTargetSaleoutMdtTable.name}`;
+    const DimSalesBranchMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimSalesBranchMdtTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
+
+
 
 }
 
@@ -97,8 +98,8 @@ SELECT
   -- degenerate: รหัสสาขาจาก MDS ใช้สืบกลับตอน branch_sk = -1
   t.BranchCodeMdt AS branch_code,
   t.MdsID         AS mds_id
-FROM `${DimTargetTableRef}` AS t
-LEFT JOIN `${DimBranchTableRef}` AS dim_br
+FROM `${DimTargetSaleoutMdtTableRef}` AS t
+LEFT JOIN `${DimSalesBranchMdtTableRef}` AS dim_br
   ON t.BranchMdtSK = dim_br.BranchMdtSK
   LEFT JOIN region_at_date AS rg
   ON  t.StoreCode = rg.RegionID

@@ -9,12 +9,27 @@ config {
 }
 
 js {
+    const DimSaleRepresentativeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sale_representative",
+    };
+    const DimSaleRepresentativeTableRef = `${DimSaleRepresentativeTable.database}.${DimSaleRepresentativeTable.schema}.${DimSaleRepresentativeTable.name}`;
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
     const DimSaleRepresentativeLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimSaleRepresentativeLastTableRef = `${DimSaleRepresentativeLastTable.database}.${DimSaleRepresentativeLastTable.schema}.${DimSaleRepresentativeLastTable.name}`;
+
+
+
 
     const stableDimensionColumns = ['SaleRepSK', 'DepartmentSK', 'SectionSK', 'SectionManagerSK', 'RegionSK', 'RegionManagerSK', 'DirectorSK', 'CompanySK', 'companyID', 'DepartmentID', 'EmployeeID', 'EmployeeName', 'EmployeeSurname', 'EmployeeNickname', 'DepCode', 'CostChannelID', 'ProvinceID', 'ChangeSectionFlag', 'CustomerFlag', 'StartDate', 'EndDate', 'OrderStartDate', 'OrderEndDate'];
     const stableDimensionKeyColumns = ['companyID', 'DepartmentID', 'EmployeeID', 'DepCode', 'CostChannelID', 'ProvinceID', 'StartDate', 'EndDate', 'OrderStartDate', 'OrderEndDate', 'CustomerFlag'];
@@ -31,23 +46,7 @@ js {
     const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
     const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
 
-
-    const DimCompanyTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_company",
-    };
-    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
-
-    const DimSaleRepTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_sale_representative",
-    };
-    const DimSaleRepTableRef = `${DimSaleRepTable.database}.${DimSaleRepTable.schema}.${DimSaleRepTable.name}`;
-
 }
-
 
 BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
@@ -82,7 +81,7 @@ BEGIN
             t1.OrderEndDate,
         FROM (
             SELECT *
-            FROM `${DimSaleRepTableRef}`
+            FROM `${DimSaleRepresentativeTableRef}`
             -- WHERE CURRENT_DATE('Asia/Bangkok') between StartDate and EndDate
             WHERE DepartmentID is not null
             QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID, OrderStartDate, OrderEndDate ORDER BY EndDate DESC, StartDate DESC) = 1

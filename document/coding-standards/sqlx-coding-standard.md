@@ -280,7 +280,7 @@ join ของ delivery และ receipt ใช้ FK SK ใน output ordering
 | hardcode ชื่อ dataset/project | ต้องผ่าน `databuffet.*` เพื่อย้าย environment ได้ |
 | inline `` `${databuffet.DATABASE}.${databuffet.X}.tbl` `` ใน SQL body | ต้องประกาศ object + `XxxTableRef` ใน `js {}` แล้วอ้าง `` `${XxxTableRef}` `` (§3.2) |
 | ใช้ js-block Ref กับ `validated_*` / `curated_*` | ต้องใช้ `${ref(...)}` เพื่อให้ Dataform ผูก dependency ให้ (§3.1) |
-| escape backslash ผิดบริบท | ใช้กฎ SQL body, `--` comment และไฟล์ `.js` ตาม [§3.3](#33-backslash-ใน-sql-body--เขียนตรง-ๆ-ตัวเดียว) |
+| escape backslash ผิดบริบท (ใน SQL body เขียนตัวเดียว / ใน `--` comment ต้อง double) | SQL body ใช้ตัวเดียว; `--` comment และไฟล์ `.js` ใช้กฎ escape ตาม [§3.3](#33-backslash-ใน-sql-body--เขียนตรง-ๆ-ตัวเดียว) |
 | เปลี่ยน SK ของ dimension ที่ downstream persist ไว้โดยไม่ sync ตาม natural key | fact/dim อื่นอาจชี้ไปยัง key ที่ไม่มีอยู่หรือผิดแถว |
 | recreate a stable dimension from a fresh SELECT | assigning keys again can break downstream references |
 | `CURRENT_DATE()` ไม่ระบุ timezone | เที่ยงคืน UTC ≠ เที่ยงคืนไทย ข้อมูลคลาดวัน |

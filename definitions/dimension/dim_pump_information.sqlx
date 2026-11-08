@@ -7,12 +7,39 @@ config {
 }
 
 js {
+    const FactTranscationTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FACT_TABLE,
+        name: "fact_transcation",
+    };
+    const FactTranscationTableRef = `${FactTranscationTable.database}.${FactTranscationTable.schema}.${FactTranscationTable.name}`;
+    const ViewDimProductMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_VIEW,
+        name: "view_dim_product_master",
+    };
+    const ViewDimProductMasterTableRef = `${ViewDimProductMasterTable.database}.${ViewDimProductMasterTable.schema}.${ViewDimProductMasterTable.name}`;
+    const DimRegionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region",
+    };
+    const DimRegionTableRef = `${DimRegionTable.database}.${DimRegionTable.schema}.${DimRegionTable.name}`;
+    const DimProductMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mkt",
+    };
+    const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
     const DimPumpInformationTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimPumpInformationTableRef = `${DimPumpInformationTable.database}.${DimPumpInformationTable.schema}.${DimPumpInformationTable.name}`;
+
+
+
 
     const stableDimensionColumns = ['PumpSK', 'CompanySK', 'CompanyID', 'milstk', 'RegionID', 'FlagNewProductMKT', 'PumpSegment'];
     const stableDimensionKeyColumns = ['CompanyID', 'milstk', 'RegionID', 'FlagNewProductMKT', 'PumpSegment'];
@@ -29,37 +56,8 @@ js {
     const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
     const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
 
-    const FactTranscationTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.FACT_TABLE,
-        name: "fact_transcation",
-    };
-    const FactTranscationTableRef = `${FactTranscationTable.database}.${FactTranscationTable.schema}.${FactTranscationTable.name}`;
-
-    const ProductMasterView = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_VIEW,
-        name: "view_dim_product_master",
-    };
-    const ProductMasterViewRef = `${ProductMasterView.database}.${ProductMasterView.schema}.${ProductMasterView.name}`;
-
-    const DimRegionTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_region",
-    };
-    const DimRegionTableRef = `${DimRegionTable.database}.${DimRegionTable.schema}.${DimRegionTable.name}`;
-
-    const DimProductMktTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_product_mkt",
-    };
-    const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
 
 }
-
-
 
 BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
@@ -79,7 +77,7 @@ BEGIN
         END) as PumpSegment
 
       from `${FactTranscationTableRef}` as fact
-      left join `${ProductMasterViewRef}` as prd
+      left join `${ViewDimProductMasterTableRef}` as prd
         on fact.ProductSK = prd.ProductSK
       left join `${DimRegionTableRef}` as reg
         on fact.RegionSK = reg.RegionSK

@@ -2,9 +2,7 @@ config {
     type: "table",
     schema: databuffet.FACT_TABLE,
     dependencies: ["dim_sales_branch_mdt", "dim_product_mdt", "dim_product_mkt", "dim_report", "dim_region", "dim_region_manager", "dim_director"],
-    // fact_daily ไม่ใช่ fact_monthly — ตารางนี้สร้างใหม่ทุกวันเพราะต้นทาง
-    // curated_saleout_monthly_mdt เปลี่ยนทุกวัน · แท็ก fact_monthly ไม่มีใครเรียกเลย
-    // ทำให้ตารางค้างขณะที่ต้นทางเดินหน้าไปแล้ว (เจอ 2026-10-06 รอบอัตโนมัติรอบแรก)
+    // Refresh daily because the curated monthly feed changes daily.
     tags: [databuffet.TAG_FACT_DAILY, databuffet.TAG_SALEOUT_DAILY],
     uniqueKey: ["month_date", "store_code", "branch_code", "sales_channel", "product_code"],
     bigquery: {
@@ -13,28 +11,15 @@ config {
     },
 }
 
-/*
-  ยอดขายออกรายเดือนที่ห้างส่งมาเอง — ไว้เทียบกับ fact_saleout_mdt ที่มาจากฟีดรายวัน
-  1 แถว = 1 ห้าง x 1 สาขา x 1 ช่องทางขาย x 1 สินค้า x 1 เดือน
-  ที่มาของแต่ละห้าง / ข้อจำกัด / กับดัก: document/how-to/saleout-monthly-fact-design.md
-*/
+-- Monthly reports reconcile mall figures with the daily sales feed.
 
 js {
-    // ต้นทางอยู่ใน Dataform แล้วตั้งแต่ 2026-10-05 — เลิกใช้ onetime.saleout_monthly_mdt
-    // ที่ปั้นด้วยมือและสร้างใหม่จากโค้ดไม่ได้ · ตัวใหม่เลือกแหล่งเองต่อ (เดือน, ห้าง):
-    // ไฟล์ปิดงวดจากห้าง > ไฟล์ BI > ยุบจากฟีดรายวัน — ดู curated_saleout_monthly_mdt.sqlx
     const DimSalesBranchMdtTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_sales_branch_mdt",
     };
     const DimSalesBranchMdtTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
-    const DimProductMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_product_mdt",
-    };
-    const DimProductMdtTableRef = `${DimProductMdtTable.database}.${DimProductMdtTable.schema}.${DimProductMdtTable.name}`;
     const DimProductMktTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -47,6 +32,12 @@ js {
         name: "dim_report",
     };
     const DimReportTableRef = `${DimReportTable.database}.${DimReportTable.schema}.${DimReportTable.name}`;
+    const DimProductMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mdt",
+    };
+    const DimProductMdtTableRef = `${DimProductMdtTable.database}.${DimProductMdtTable.schema}.${DimProductMdtTable.name}`;
     const DimRegionTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -66,6 +57,12 @@ js {
     };
     const DimDirectorTableRef = `${DimDirectorTable.database}.${DimDirectorTable.schema}.${DimDirectorTable.name}`;
 
+
+
+    // ต้นทางอยู่ใน Dataform แล้วตั้งแต่ 2026-10-05 — เลิกใช้ onetime.saleout_monthly_mdt
+    // ที่ปั้นด้วยมือและสร้างใหม่จากโค้ดไม่ได้ · ตัวใหม่เลือกแหล่งเองต่อ (เดือน, ห้าง):
+    // ไฟล์ปิดงวดจากห้าง > ไฟล์ BI > ยุบจากฟีดรายวัน — ดู curated_saleout_monthly_mdt.sqlx
+
 }
 
 WITH branch_lookup AS (
@@ -84,7 +81,7 @@ WITH branch_lookup AS (
   QUALIFY ROW_NUMBER() OVER(PARTITION BY ProductMktSK ORDER BY MarketingGroupID) = 1
 ), waiting_mkt AS (
 
-  -- แถว 999 Waiting Master · หาด้วย MarketingGroupID ไม่ใช่ฮาร์ดโค้ด SK เพราะ SK เปลี่ยนทุกวัน
+  -- Identify Waiting Master by its business code so the lookup follows the intended row.
   SELECT ANY_VALUE(ProductMktSK) AS WaitingMktSK
   FROM `${DimProductMktTableRef}`
   WHERE CompanyID = 'ag01' AND MarketingGroupID = '999'

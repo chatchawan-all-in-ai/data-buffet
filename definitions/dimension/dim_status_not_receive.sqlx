@@ -7,12 +7,21 @@ config {
 }
 
 js {
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_payment_status_not_receive_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
     const DimStatusNotReceiveTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimStatusNotReceiveTableRef = `${DimStatusNotReceiveTable.database}.${DimStatusNotReceiveTable.schema}.${DimStatusNotReceiveTable.name}`;
+
+
+
 
     const stableDimensionColumns = ['NotReceiveSK', 'CompanyID', 'StatusID', 'StatusNameTH', 'StatusNameENG', 'MdsID'];
     const stableDimensionKeyColumns = ['CompanyID', 'StatusID'];
@@ -29,21 +38,7 @@ js {
     const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
     const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
 
-    /*
-    const DimCompanyTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_company",
-    };
-    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
-    */
 
-    const MdsSourceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_payment_status_not_receive_master",
-    };
-    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 }
 
 
@@ -58,15 +53,12 @@ BEGIN
           ${databuffet.functionData.cleanString("t1.CompanyID")},
           ${databuffet.functionData.castInt64("t1.StatusID")}
       ) AS NotReceiveSK,
-      -- dim_com.CompanySK,
       ${databuffet.functionData.cleanString("t1.CompanyID")} AS CompanyID,
       ${databuffet.functionData.castInt64("t1.StatusID")} AS StatusID,
       ${databuffet.functionData.cleanString("t1.StatusNameTH")} AS StatusNameTH,
       ${databuffet.functionData.cleanString("t1.StatusNameENG")} AS StatusNameENG,
       ${databuffet.functionData.cleanString("t1.id")} as MdsID
     FROM `${MdsSourceTableRef}` AS t1
-    -- LEFT JOIN `${DimCompanyTableRef}` AS dim_com
-    --   ON ${databuffet.functionData.cleanString("t1.CompanyID")} = dim_com.companyID
     WHERE t1.is_active = TRUE
   );
 

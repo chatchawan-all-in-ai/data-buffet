@@ -31,7 +31,7 @@ dataset กลางตาม [registry reference](../project_wiki/includes/vari
 | dimension/fact | PascalCase | `CompanyID`, `WaterPacName` |
 | org_center | snake_case, ชื่อเอกพจน์เสมอ แม้เป็นคอลัมน์ list (ARRAY) — ไม่ใช้ `_ids` / `_codes` | `company_id`, `department_id`, `section_code` |
 | Surrogate key | Keep the dimension’s established `<Entity>SK` name in PascalCase; fact row keys normally use `Fact<Entity>SK` (retain legacy `FactOrderSk`, `BillingSK` and `ReceiveSK`) | `CompanySK`, `SaleRepSK`, `FactQuotationSK` |
-| mds row id ใน dim | `MdsID` | |
+| mds row id ใน dim | `MdsID` สำหรับคอลัมน์ใหม่; คอลัมน์เดิมคงตัวพิมพ์ตาม schema ใน [table card](../okf/README.md) ของตารางนั้น | |
 | คอลัมน์ก่อนปรับเครื่องหมาย | `<ชื่อ>_raw` | `mihnetsum_raw` |
 | วันที่ snapshot | `asatdate` (DATE) | |
 | วันที่ business ใน fact | `mix_date` | |

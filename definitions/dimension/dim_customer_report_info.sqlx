@@ -17,35 +17,54 @@ js {
         name: name(),
     };
     const DimCustomerReportInfoTableRef = `${DimCustomerReportInfoTable.database}.${DimCustomerReportInfoTable.schema}.${DimCustomerReportInfoTable.name}`;
-
     const MdsSourceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
         name: "mds_data_customer_report_master",
     };
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
-
     const ViewDimInvoiceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_VIEW,
         name: "view_dim_invoice",
     };
     const ViewDimInvoiceTableRef = `${ViewDimInvoiceTable.database}.${ViewDimInvoiceTable.schema}.${ViewDimInvoiceTable.name}`;
-
-    const DimCompanyTable = {
+    const ViewDimCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_VIEW,
+        name: "view_dim_customer",
+    };
+    const ViewDimCustomerTableRef = `${ViewDimCustomerTable.database}.${ViewDimCustomerTable.schema}.${ViewDimCustomerTable.name}`;
+    const CleanCompanyPrefixTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FUNCTION_DATASET,
+        name: "clean_company_prefix",
+    };
+    const CleanCompanyPrefixTableRef = `${CleanCompanyPrefixTable.database}.${CleanCompanyPrefixTable.schema}.${CleanCompanyPrefixTable.name}`;
+    const DimSaleRepresentativeLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
-        name: "dim_company",
+        name: "dim_sale_representative_last",
     };
-    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
-
+    const DimSaleRepresentativeLastTableRef = `${DimSaleRepresentativeLastTable.database}.${DimSaleRepresentativeLastTable.schema}.${DimSaleRepresentativeLastTable.name}`;
     const DimDepartmentLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_department_last",
     };
     const DimDepartmentLastTableRef = `${DimDepartmentLastTable.database}.${DimDepartmentLastTable.schema}.${DimDepartmentLastTable.name}`;
-
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+    const ViewDebAddressDataTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.PROCESS_DATASET,
+        name: "view_deb_address_data",
+    };
+    const ViewDebAddressDataTableRef = `${ViewDebAddressDataTable.database}.${ViewDebAddressDataTable.schema}.${ViewDebAddressDataTable.name}`;
     const DimCustomerSegmentTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -53,33 +72,10 @@ js {
     };
     const DimCustomerSegmentTableRef = `${DimCustomerSegmentTable.database}.${DimCustomerSegmentTable.schema}.${DimCustomerSegmentTable.name}`;
 
-    const DimSaleRepLastTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_sale_representative_last",
-    };
-    const DimSaleRepLastTableRef = `${DimSaleRepLastTable.database}.${DimSaleRepLastTable.schema}.${DimSaleRepLastTable.name}`;
 
-    const ViewDimCustomerTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_VIEW,
-        name: "view_dim_customer",
-    };
-    const ViewDimCustomerTableRef = `${ViewDimCustomerTable.database}.${ViewDimCustomerTable.schema}.${ViewDimCustomerTable.name}`;
 
-    const DebAddressTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.PROCESS_DATASET,
-        name: "view_deb_address_data",
-    };
-    const DebAddressTableRef = `${DebAddressTable.database}.${DebAddressTable.schema}.${DebAddressTable.name}`;
 
-    const CleanCompanyPrefixTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.FUNCTION_DATASET,
-        name: "clean_company_prefix",
-    };
-    const CleanCompanyPrefixTableRef = `${CleanCompanyPrefixTable.database}.${CleanCompanyPrefixTable.schema}.${CleanCompanyPrefixTable.name}`;
+
     // ชื่อของรหัสลูกค้า สูตรเดียวกับ CustomerReportName ใน view_dim_invoice (ไม่รวมสาขา SCG/CRC)
     const CodeNameExpr = `IF(IFNULL(cust.FlagMDSNickName, FALSE), cust.NicknameCustomer, \`${CleanCompanyPrefixTableRef}\`(cust.debnamet))`;
 }
@@ -141,7 +137,7 @@ with mds as (
 
 ), ta_cus as (
   -- รหัสที่ใช้หา TA: เฉพาะรหัสที่ชื่อของตัวเองตรงกับชื่อรายงาน (สูตรชื่อเดียวกับ view_dim_invoice:
-  -- ชื่อเล่น MDS ถ้ามี ไม่งั้น clean_company_prefix(debnamet)) หลายรหัสใช้บิลล่าสุดแบบ inv_cus · ไม่มีรหัสตรง = ไม่ได้ TA จาก debsalesp
+  -- Prefer MDS nicknames; invoice customer codes recover TA when no direct match exists.
   SELECT r.CompanyID, r.CustomerReportKey, r.mihCus AS debcode
   FROM inv_rows AS r
   JOIN `${ViewDimCustomerTableRef}` AS cust
@@ -153,7 +149,7 @@ with mds as (
 ), rep_cur as (
   -- แถว TA ที่ใช้ได้วันนี้และไม่ใช่ Dummy ของพนักงานทุกคน (ปกติ + MDT)
   SELECT sr.companyID, sr.EmployeeID, sr.DepartmentSK, sr.DepartmentID, sr.DepCode
-  FROM `${DimSaleRepLastTableRef}` AS sr
+  FROM `${DimSaleRepresentativeLastTableRef}` AS sr
   JOIN `${DimDepartmentLastTableRef}` AS dep
     ON sr.CompanySK = dep.CompanySK
     AND sr.DepartmentSK = dep.DepartmentSK
@@ -167,7 +163,7 @@ with mds as (
   -- ห้ามใช้จำนวน TA หลังกรองวันตัดสิน MDT: เชนที่หมดอายุอาจทำให้พนักงาน MDT ดูเหมือนมี TA เดียว
   -- ตรวจแถว non-Dummy ทั้งปัจจุบันและหมดอายุของบริษัท + พนักงาน ก่อนเลือก TA ที่ใช้ได้วันนี้
   SELECT DISTINCT history.companyID, history.EmployeeID
-  FROM `${DimSaleRepLastTableRef}` AS history
+  FROM `${DimSaleRepresentativeLastTableRef}` AS history
   WHERE history.DepartmentID IS NOT NULL
     AND NOT STARTS_WITH(LOWER(history.DepartmentID), 'dummy')
     AND (history.CostChannelID IS NOT NULL OR history.DepCode IS NOT NULL)
@@ -182,7 +178,6 @@ with mds as (
     WHERE m.companyID = r.companyID
       AND m.EmployeeID = r.EmployeeID
   )
-
 
 ), deb_ta as (
   -- deb.debsalesp -> TA; พนักงานที่มีหลาย TA ที่ใช้ได้วันนี้ = ไม่ให้ TA
@@ -327,7 +322,7 @@ with mds as (
   FROM with_ta_code AS t
   LEFT JOIN (
     SELECT CompanySK, EmployeeID, SaleRepSK
-    FROM `${DimSaleRepLastTableRef}`
+    FROM `${DimSaleRepresentativeLastTableRef}`
     QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, EmployeeID
       ORDER BY IF(EmployeeName IS NOT NULL, 0, 1), (CASE WHEN DepartmentID IS NULL THEN 1 ELSE 0 END), CompanySK, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID) = 1
   ) AS sr
@@ -338,7 +333,7 @@ with mds as (
   -- ที่อยู่ของรหัสลูกค้า (แบบเดียวกับ Invoice*SK ใน dim_customer) · view คืนได้หลายแถวต่อรหัส
   -- (ชื่อตำบลซ้ำใน dim_sub_districts) เลือกแถวเดียว: sub_districts > districts > provinces แล้ว SK น้อยสุด
   SELECT company_id, debcode, ProvinceSK, DistrictSK, SubDistrictSK
-  FROM `${DebAddressTableRef}`
+  FROM `${ViewDebAddressDataTableRef}`
   QUALIFY ROW_NUMBER() OVER(PARTITION BY company_id, debcode
     ORDER BY (CASE condition WHEN 'sub_districts' THEN 1 WHEN 'districts' THEN 2 ELSE 3 END),
       SubDistrictSK, DistrictSK, ProvinceSK) = 1
@@ -463,7 +458,7 @@ LEFT JOIN `${DimCustomerReportInfoTableRef}` AS t2
     );
 
   -- แถวสงวน SK -1: view_fact_transcation ใส่ -1 ให้บิลจริงที่ชื่อร้าน join ไม่เจอ (ชื่อว่าง/รหัสลูกค้าไม่อยู่ใน deb)
-  -- ชื่อว่าง · Non-Segment (-1 ของ dim_customer_segment) · ไม่มี TA/ข้อมูล MDS · อยู่นอก MERGE (CompanyID NULL ไม่ match) จึงไม่ซ้ำ ไม่ขยับ max_sk
+  -- Keep unmatched blank-name rows outside the merge so they do not duplicate or advance max_sk.
   INSERT INTO `${DimCustomerReportInfoTableRef}` (CustomerReportInfoSK, CustomerSegmentSK, SegmentSource)
   SELECT -1, -1, 'DEFAULT'
   FROM (SELECT 1)

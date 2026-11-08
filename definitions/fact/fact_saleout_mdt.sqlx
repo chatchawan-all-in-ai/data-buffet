@@ -11,27 +11,12 @@ config {
 }
 
 js {
-    const DimSalesBranchMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_sales_branch_mdt",
-    };
-    const DimBranchTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
-
-    const DimProductMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_product_mdt",
-    };
-    const DimProductMdtTableRef = `${DimProductMdtTable.database}.${DimProductMdtTable.schema}.${DimProductMdtTable.name}`;
-
     const DimProductMktTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_product_mkt",
     };
     const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
-
     const DimReportTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -56,6 +41,22 @@ js {
         name: "dim_director",
     };
     const DimDirectorTableRef = `${DimDirectorTable.database}.${DimDirectorTable.schema}.${DimDirectorTable.name}`;
+    const DimSalesBranchMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimSalesBranchMdtTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
+    const DimProductMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_mdt",
+    };
+    const DimProductMdtTableRef = `${DimProductMdtTable.database}.${DimProductMdtTable.schema}.${DimProductMdtTable.name}`;
+
+
+
+
 }
 WITH mkt_group AS (
   -- ProductMktSK -> MarketingGroupID เพื่อเอาไปหาบรรทัดรายงาน
@@ -138,7 +139,7 @@ SELECT
 
   c.asatdate
 FROM ${ref(databuffet.CURATED_SALEOUT_MDT, "curated_saleout_mdt")} AS c
-LEFT JOIN `${DimBranchTableRef}` AS dim_br
+LEFT JOIN `${DimSalesBranchMdtTableRef}` AS dim_br
   ON  c.store_code  = dim_br.StoreCode
   AND c.branch_code = dim_br.BranchCode
 LEFT JOIN `${DimProductMdtTableRef}` AS dim_pr

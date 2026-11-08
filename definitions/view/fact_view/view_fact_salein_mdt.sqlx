@@ -5,28 +5,27 @@ config {
   tags: [databuffet.TAG_VIEW],
 }
 
-
-
 js {
+    const DimSalesBranchMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimSalesBranchMdtTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
     const DimCustomerTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_customer",
     };
-    const DimCustomerRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
-
+    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
     const FactTranscationTable = {
         database: databuffet.DATABASE,
         schema: databuffet.FACT_TABLE,
         name: "fact_transcation",
     };
-    const FactTranscationRef = `${FactTranscationTable.database}.${FactTranscationTable.schema}.${FactTranscationTable.name}`;
-    const DimBranchTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_sales_branch_mdt",
-    };
-    const DimBranchRef = `${DimBranchTable.database}.${DimBranchTable.schema}.${DimBranchTable.name}`;
+    const FactTranscationTableRef = `${FactTranscationTable.database}.${FactTranscationTable.schema}.${FactTranscationTable.name}`;
+
+
 }
 
 WITH branch_lookup AS (
@@ -40,7 +39,7 @@ WITH branch_lookup AS (
     ) AS branch_key,
     BranchMdtSK,
     ZoneMdtSK
-  FROM `${DimBranchRef}`
+  FROM `${DimSalesBranchMdtTableRef}`
   WHERE BranchMdtSK <> -1
   QUALIFY ROW_NUMBER() OVER (
     PARTITION BY StoreCode,
@@ -76,7 +75,7 @@ WITH branch_lookup AS (
         r'^\s*เมกา\s*โฮม\s*[-–]?\s*|^\s*เมกา\s*[-–]?\s*', ''),
       r'[\s()\-–]', ''
     ) AS branch_key
-  FROM `${DimCustomerRef}`
+  FROM `${DimCustomerTableRef}`
 
 )
 
@@ -108,7 +107,7 @@ SELECT
   f.milsum_incvat   AS sale_amount_incvat, -- รวม VAT — ใช้ตัวนี้เทียบกับขายออก
 
   f.asatdate
-FROM `${FactTranscationRef}` AS f
+FROM `${FactTranscationTableRef}` AS f
 INNER JOIN mdt_customer AS c
   ON f.CustomerSK = c.CustomerSK
 LEFT JOIN branch_lookup AS b

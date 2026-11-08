@@ -11,46 +11,36 @@ config {
 }
 
 js {
-    const fact_occurrence = require("../../includes/fact_occurrence");
-
-    // Define table references
-    // ref ชี้กลับมาที่ตัวเอง (name()) — ยังไม่ได้ใช้ เพราะ config เป็น type: "table"
-    // Dataform จึงสร้าง/เขียนตารางให้เอง ไม่ต้องเขียน DDL อ้างชื่อตัวเองใน body
-    // เก็บไว้เผื่อวันไหนเปลี่ยนเป็น type: "operations"
-    const FactInvoiceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.FACT_TABLE,
-        name: name(),
-    };
-    const FactInvoiceTableRef = `${FactInvoiceTable.database}.${FactInvoiceTable.schema}.${FactInvoiceTable.name}`;
-
-    const FactOrderTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.FACT_TABLE,
-        name: "fact_order",
-    };
-    const FactOrderTableRef = `${FactOrderTable.database}.${FactOrderTable.schema}.${FactOrderTable.name}`;
-
     const ViewDimInvoiceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_VIEW,
         name: "view_dim_invoice",
     };
     const ViewDimInvoiceTableRef = `${ViewDimInvoiceTable.database}.${ViewDimInvoiceTable.schema}.${ViewDimInvoiceTable.name}`;
-
-    const DimCustomerTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_customer",
-    };
-    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
-    
     const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_company",
     };
     const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+    const FactOrderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FACT_TABLE,
+        name: "fact_order",
+    };
+    const FactOrderTableRef = `${FactOrderTable.database}.${FactOrderTable.schema}.${FactOrderTable.name}`;
+    const DimCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer",
+    };
+    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
+
+    const fact_occurrence = require("../../includes/fact_occurrence");
+
+
+
+
 
 }
 SELECT
@@ -118,7 +108,7 @@ select
   dim_cust.CustomerSK,
   mil.CompanySK,
   mil.companyID,
-  
+
   PARSE_DATE('%Y%m%d', CONCAT(mil.milYear, FORMAT("%02d", mil.milMonth),  mil.milDay)) as mix_date,
   mil.* except(InvoiceSk, CompanySK, companyID),
   current_date('Asia/Bangkok') as asatdate

@@ -5,34 +5,31 @@ config {
 }
 
 js {
-    // Define table references
     const FactDeliveryTable = {
         database: databuffet.DATABASE,
         schema: databuffet.FACT_TABLE,
         name: name(),
     };
     const FactDeliveryTableRef = `${FactDeliveryTable.database}.${FactDeliveryTable.schema}.${FactDeliveryTable.name}`;
-    
-    const DimCompanyTable = {
+    const FactTransactionDeliveryTable = {
         database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_company",
+        schema: databuffet.FACT_TABLE,
+        name: "fact_transaction_delivery",
     };
-    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
-    
+    const FactTransactionDeliveryTableRef = `${FactTransactionDeliveryTable.database}.${FactTransactionDeliveryTable.schema}.${FactTransactionDeliveryTable.name}`;
     const DimDeliveryTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_delivery",
     };
     const DimDeliveryTableRef = `${DimDeliveryTable.database}.${DimDeliveryTable.schema}.${DimDeliveryTable.name}`;
-
-    const FactTransDeliveryTable = {
+    const DimCompanyTable = {
         database: databuffet.DATABASE,
-        schema: databuffet.FACT_TABLE,
-        name: "fact_transaction_delivery",
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
     };
-    const FactTransDeliveryTableRef = `${FactTransDeliveryTable.database}.${FactTransDeliveryTable.schema}.${FactTransDeliveryTable.name}`;
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+
 
 }
 
@@ -53,7 +50,7 @@ SELECT
   output_row.* EXCEPT(_delivery_companyID)
 FROM (
 with mil_is as (
-  select distinct company_id, milvnos 
+  select distinct company_id, milvnos
   from ${ref(databuffet.CURATED_MAC5, 'curated_mil')}
   where miltype = 'IS' and millinkvcno is not null
 
@@ -65,23 +62,23 @@ with mil_is as (
     ,d.flattitude, d.flongtitude ,d.fzone ,d.fpoi
     ,td.fitem
     ,td.fitem2
-    ,(case 
-        when IFNULL(td.fdocument,'0') = '0' then 'ยังไม่จัดของ' 
-        else 'จัดของขึ้นรถ' 
-      end) S1 
-    ,(case 
-        when IFNULL(t.fpass_Date,'0') = '0' then 'ไม่ปล่อยรถ' 
-        else 'ปล่อยรถแล้ว' 
-      end) S2  
-    ,(case 
-        when IFNULL(d.fserial_no,'0') = '0' then 'ยังไม่ส่งของ' 
-        else (case 
-                when td.fcancel = '0' then 'รับสินค้าแล้ว' 
-                else 'ลูกค้าไม่รับ' 
-              end) 
+    ,(case
+        when IFNULL(td.fdocument,'0') = '0' then 'ยังไม่จัดของ'
+        else 'จัดของขึ้นรถ'
+      end) S1
+    ,(case
+        when IFNULL(t.fpass_Date,'0') = '0' then 'ไม่ปล่อยรถ'
+        else 'ปล่อยรถแล้ว'
+      end) S2
+    ,(case
+        when IFNULL(d.fserial_no,'0') = '0' then 'ยังไม่ส่งของ'
+        else (case
+                when td.fcancel = '0' then 'รับสินค้าแล้ว'
+                else 'ลูกค้าไม่รับ'
+              end)
       end) S3
-    ,count(td.fitem) as qty2  
-    
+    ,count(td.fitem) as qty2
+
   from ${ref(databuffet.VALIDATED_MAC5, 'ttrip_document')} as td
   inner join ${ref(databuffet.VALIDATED_MAC5, 'ttrip')} as t
     on t.frun = td.fmaster
@@ -90,14 +87,14 @@ with mil_is as (
     on td.fdocument = milIS.milvnos
     and td.company_id = milIS.company_id
   left join (
-    select 
+    select
       dl.company_id, dl.fserial_no, dl.fmaster,
       dl.flattitude, dl.flongtitude, dl.fzone, dl.fpoi
     from ${ref(databuffet.VALIDATED_MAC5, 'tdelivery')} as dl
     inner join mil_is as milIS2
       on dl.fserial_no = milIS2.milvnos
       and dl.company_id = milIS2.company_id
-  ) d 
+  ) d
     on td.fmaster = d.fmaster
     and td.company_id = d.company_id
   left join ${ref(databuffet.CURATED_MAC5, 'curated_mih')} as mh
@@ -107,25 +104,24 @@ with mil_is as (
     on mh.mihCus = deb.debcode
     and mh.company_id = deb.company_id
 
-  where td.fdocument like (case when IFNULL(d.fserial_no,'0') = '0' then '%' else  d.fserial_no end)  
+  where td.fdocument like (case when IFNULL(d.fserial_no,'0') = '0' then '%' else  d.fserial_no end)
     -- and fdocument = 'L6601000167'
     -- and fitem = '3G-X3-W03-00'
     and left(fitem, 1) <> '8'
 
   group by td.company_id, td.fdocument,t.fcode,t.fvehicle,td.fitem,td.fitem2,d.flattitude , d.flongtitude ,d.fzone ,d.fpoi
-    ,(case when IFNULL(td.fdocument,'0') = '0' then 'ยังไม่จัดของ' else 'จัดของขึ้นรถ' end)   
-    ,(case when IFNULL(t.fpass_Date,'0') = '0' then 'ไม่ปล่อยรถ' else 'ปล่อยรถแล้ว' end)  
-    ,(case 
+    ,(case when IFNULL(td.fdocument,'0') = '0' then 'ยังไม่จัดของ' else 'จัดของขึ้นรถ' end)
+    ,(case when IFNULL(t.fpass_Date,'0') = '0' then 'ไม่ปล่อยรถ' else 'ปล่อยรถแล้ว' end)
+    ,(case
       when IFNULL(d.fserial_no,'0') = '0' then 'ยังไม่ส่งของ'
       else (case when td.fcancel = '0' then 'รับสินค้าแล้ว' else 'ลูกค้าไม่รับ' end)
-    end)  
+    end)
     ,d.fserial_no
-    ,PARSE_DATE('%Y%m%d', LEFT(CAST(td.fdatetime AS STRING), 8))  
+    ,PARSE_DATE('%Y%m%d', LEFT(CAST(td.fdatetime AS STRING), 8))
     ,mh.mihCus,deb.debnamet
 
 ), raw_delivery_item1 as (
-  -- 1511293
-  select 
+  select
     company_id,
     fdocument,
     fcode,
@@ -144,7 +140,7 @@ with mil_is as (
     sum(qty2) as qty2
   from raw_delivery as raw
   where exists (
-    select 1 
+    select 1
     from ${ref(databuffet.CURATED_MAC5, 'curated_mil')} as mil
     where raw.fdocument = mil.milVnos
       and lower(raw.fitem) = lower(mil.milStk)
@@ -153,8 +149,7 @@ with mil_is as (
   group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 
 ), raw_delivery_item2 as (
-  -- 576602
-  select 
+  select
     company_id,
     fdocument,
     fcode,
@@ -181,7 +176,7 @@ with mil_is as (
       and t1.company_id = raw.company_id
   )
     and exists (
-      select 1 
+      select 1
       from ${ref(databuffet.CURATED_MAC5, 'curated_mil')} as mil
       where raw.fdocument = mil.milVnos
         and lower(raw.fitem2) = lower(mil.milStk)
@@ -190,7 +185,7 @@ with mil_is as (
   group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 
 ), agg_tabe as (
-  select 
+  select
     company_id,
     fdocument,
     fitem,
@@ -209,10 +204,10 @@ with mil_is as (
     SUM(IF(S3 = 'ลูกค้าไม่รับ', qty2, 0)) as shipmentStatus_3,
     sum(qty2) as qty2
   from (
-    select * 
+    select *
     from raw_delivery_item1
     union all
-    select * 
+    select *
     from raw_delivery_item2
   ) as a
   group by 1,2,3,4,5,6,7,8,9
@@ -241,7 +236,7 @@ with mil_is as (
   --   and fitem = '3G-X3-W03-00'
 
 )
-  select 
+  select
     t1.companyID AS _delivery_companyID,
     dl.DeliverySK,
     t2.FactTransDeliverySK,
@@ -253,7 +248,7 @@ with mil_is as (
     t1.* except(companyID),
     t2.* except(FactTransDeliverySK, InvoiceSK, companyID, CompanySK)
   from final_delivery as t1
-  left join `${FactTransDeliveryTableRef}` as t2
+  left join `${FactTransactionDeliveryTableRef}` as t2
     on t1.documentID = t2.milVnos
     AND LOWER(t1.item) = LOWER(t2.milStk)
     AND t1.companyID = t2.companyID

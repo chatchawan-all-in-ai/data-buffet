@@ -5,47 +5,43 @@ config {
 }
 
 js {
-    // Define table references
     const FactQuotationTable = {
         database: databuffet.DATABASE,
         schema: databuffet.FACT_TABLE,
         name: name(),
     };
     const FactQuotationTableRef = `${FactQuotationTable.database}.${FactQuotationTable.schema}.${FactQuotationTable.name}`;
-
     const DimQuotationTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_quotation",
     };
     const DimQuotationTableRef = `${DimQuotationTable.database}.${DimQuotationTable.schema}.${DimQuotationTable.name}`;
-
-    const DimCustomerTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_customer",
-    };
-    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
-    
     const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_company",
     };
     const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
-    
     const DimProductMasterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_product_master",
     };
     const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
+    const DimCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer",
+    };
+    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
+
 
 }
 
 BEGIN
   drop table if exists `${FactQuotationTableRef}`;
-  
+
   create or replace table `${FactQuotationTableRef}`
   partition by asatdate
   cluster by FactQuotationSK
@@ -66,7 +62,7 @@ SELECT
   output_row.*
 FROM (
 with quotation_detail as (
-    select 
+    select
       dim_product.ProductSK,
       dim_com.CompanySK,
       dim_com.companyID,
@@ -75,7 +71,7 @@ with quotation_detail as (
       qt.Year,
       qt.Month,
       qt.Day,
-      qt.Running, 
+      qt.Running,
       stkcode as StkCode,
       qt.CustomerId,
       qt.ProjectCode,
@@ -94,7 +90,7 @@ with quotation_detail as (
       and qt_detail.stkcode = dim_product.ProductCode
     -- WHERE qt_detail.company_id = 'ag01'
     group by 1,2,3,4,5,6,7,8,9,10,11,12
-    
+
   )
     select
       qtd.QuotationSK,

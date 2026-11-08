@@ -7,12 +7,33 @@ config {
 }
 
 js {
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_sales_target_by_series",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
+    const DimProductSeriesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_series",
+    };
+    const DimProductSeriesTableRef = `${DimProductSeriesTable.database}.${DimProductSeriesTable.schema}.${DimProductSeriesTable.name}`;
+    const DimSalesBranchMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sales_branch_mdt",
+    };
+    const DimSalesBranchMdtTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
     const DimTargetSeriesMdtTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimTargetSeriesMdtTableRef = `${DimTargetSeriesMdtTable.database}.${DimTargetSeriesMdtTable.schema}.${DimTargetSeriesMdtTable.name}`;
+
+
+
 
     const stableDimensionColumns = ['TargetSeriesMdtSK', 'BranchMdtSK', 'SeriesSK', 'StoreCode', 'BranchCodeMdt', 'SeriesCode', 'SeriesName', 'TargetDate', 'TargetYear', 'TargetMonth', 'DaysInMonth', 'Amt', 'Qty', 'MdsID'];
     const stableDimensionKeyColumns = ['TargetDate', 'BranchCodeMdt', 'SeriesCode'];
@@ -29,29 +50,7 @@ js {
     const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
     const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
 
-    const MdsSourceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_mdt_sales_target_by_series",
-    };
-    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
-
-    const DimSalesBranchMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_sales_branch_mdt",
-    };
-    const DimBranchTableRef = `${DimSalesBranchMdtTable.database}.${DimSalesBranchMdtTable.schema}.${DimSalesBranchMdtTable.name}`;
-
-    const DimProductSeriesTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_product_series",
-    };
-    const DimSeriesTableRef = `${DimProductSeriesTable.database}.${DimProductSeriesTable.schema}.${DimProductSeriesTable.name}`;
 }
-
-
 
 BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
@@ -60,12 +59,12 @@ BEGIN
     -- เป้ารายเดือนราย series (ตอนนี้มีแค่ TITAN) — pattern เดียวกับ dim_target_saleout_mdt
     WITH monthly AS (
       SELECT
-        CAST(t1.Year  AS INT64) AS TargetYear,
-        CAST(t1.Month AS INT64) AS TargetMonth,
-        DATE(CAST(t1.Year AS INT64), CAST(t1.Month AS INT64), 1) AS MonthStart,
-        NULLIF(CAST(TRIM(t1.BranchCode) AS STRING), '') AS BranchCodeMdt,
-        NULLIF(CAST(TRIM(t1.SeriesCode) AS STRING), '') AS SeriesCode,
-        NULLIF(CAST(TRIM(t1.SeriesName) AS STRING), '') AS SeriesName,
+        ${databuffet.functionData.castInt64("t1.Year")} AS TargetYear,
+        ${databuffet.functionData.castInt64("t1.Month")} AS TargetMonth,
+        DATE(${databuffet.functionData.castInt64("t1.Year")}, ${databuffet.functionData.castInt64("t1.Month")}, 1) AS MonthStart,
+        ${databuffet.functionData.cleanString("t1.BranchCode")} AS BranchCodeMdt,
+        ${databuffet.functionData.cleanString("t1.SeriesCode")} AS SeriesCode,
+        ${databuffet.functionData.cleanString("t1.SeriesName")} AS SeriesName,
         t1.Value    AS MonthAmt,
         t1.Quantity AS MonthQty,
         t1.id AS MdsID
@@ -76,7 +75,7 @@ BEGIN
       -- กันเป้าซ้ำต่อ (สาขา, series, ปี, เดือน) — เก็บแถวที่แก้ล่าสุด
       QUALIFY ROW_NUMBER() OVER(
         PARTITION BY TRIM(t1.BranchCode), TRIM(t1.SeriesCode),
-                     CAST(t1.Year AS INT64), CAST(t1.Month AS INT64)
+                     ${databuffet.functionData.castInt64("t1.Year")}, ${databuffet.functionData.castInt64("t1.Month")}
         ORDER BY t1.updated_at DESC, t1.id
       ) = 1
 
@@ -97,7 +96,7 @@ BEGIN
         -- รหัสที่ไม่มีใน dim ลง OTHERS (999999) · ไม่มีแถว OTHERS ก็ได้ -1 ไม่ใช่ตารางว่าง
         COALESCE(
           dim_series.SeriesSK,
-          (SELECT MIN(SeriesSK) FROM `${DimSeriesTableRef}` WHERE SeriesCode = '999999'),
+          (SELECT MIN(SeriesSK) FROM `${DimProductSeriesTableRef}` WHERE SeriesCode = '999999'),
           -1) AS SeriesSK,
         dim_br.StoreCode,
         d.BranchCodeMdt,
@@ -111,11 +110,11 @@ BEGIN
         d.MonthQty / d.DaysInMonth AS Qty,
         d.MdsID
       FROM daily AS d
-      LEFT JOIN `${DimBranchTableRef}` AS dim_br
+      LEFT JOIN `${DimSalesBranchMdtTableRef}` AS dim_br
         ON IF(STARTS_WITH(d.BranchCodeMdt, 'GH_'),
               CONCAT('GB_', SUBSTR(d.BranchCodeMdt, 4)),
               d.BranchCodeMdt) = dim_br.BranchCodeMdt
-      LEFT JOIN `${DimSeriesTableRef}` AS dim_series
+      LEFT JOIN `${DimProductSeriesTableRef}` AS dim_series
         ON d.SeriesCode = dim_series.SeriesCode
 
     ), unknown_target AS (

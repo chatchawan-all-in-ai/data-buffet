@@ -7,12 +7,39 @@ config {
 }
 
 js {
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_target_rate_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
     const DimRateTargetTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimRateTargetTableRef = `${DimRateTargetTable.database}.${DimRateTargetTable.schema}.${DimRateTargetTable.name}`;
+    const DimDepartmentLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_department_last",
+    };
+    const DimDepartmentLastTableRef = `${DimDepartmentLastTable.database}.${DimDepartmentLastTable.schema}.${DimDepartmentLastTable.name}`;
+    const DimDirectorLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_director_last",
+    };
+    const DimDirectorLastTableRef = `${DimDirectorLastTable.database}.${DimDirectorLastTable.schema}.${DimDirectorLastTable.name}`;
+
+
+
 
     const stableDimensionColumns = ['RateTargetSK', 'CompanySK', 'companyID', 'Year', 'Month', 'StartDate', 'EndDate', 'ProductGroupID', 'ProductGroupName', 'TargetID', 'TargetName', 'TargetDepartmentID', 'TargetDepartmentName', 'DepartmentID', 'EmployeeID', 'EmployeeName', 'Percent', 'MdsID'];
     const stableDimensionKeyColumns = ['companyID', 'Year', 'Month', 'StartDate', 'EndDate', 'ProductGroupID', 'TargetID', 'TargetDepartmentID', 'DepartmentID', 'EmployeeID'];
@@ -29,36 +56,7 @@ js {
     const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
     const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
 
-    const DimCompanyTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_company",
-    };
-    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
-
-    const MdsSourceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_target_rate_master",
-    };
-    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
-
-    const DimDepartmentLastTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_department_last",
-    };
-    const DimDepartmentLastTableRef = `${DimDepartmentLastTable.database}.${DimDepartmentLastTable.schema}.${DimDepartmentLastTable.name}`;
-
-    const DimDirectorLastTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_director_last",
-    };
-    const DimDirectorLastTableRef = `${DimDirectorLastTable.database}.${DimDirectorLastTable.schema}.${DimDirectorLastTable.name}`;
 }
-
-
 
 BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
@@ -169,10 +167,8 @@ BEGIN
     DELETE;
 
 BEGIN
-    -- DECLARE static_count BIGNUMERIC;
     DECLARE max_total_employee BIGNUMERIC;
 
-    -- 1. สร้าง Temp Table หลักสำหรับ MDT เท่านั้น
     CREATE OR REPLACE TEMP TABLE mdt_base_data AS
     SELECT
       rate.year,
@@ -187,14 +183,6 @@ BEGIN
       ON dep.DirectorSK = dir.DirectorSK
     WHERE dir.DirectorName = 'MDT';
 
-    -- หาค่า count ของเดือนที่เป็น NULL
-    -- SET static_count = (
-    --   SELECT (CAST(COUNT(DISTINCT CONCAT(employeeid, '-', departmentid)) AS BIGNUMERIC) / CAST(6 AS BIGNUMERIC))
-    --   FROM mdt_base_data
-    --   WHERE month IS NULL
-    -- );
-
-    -- 2. คำนวณค่ารายเดือนและหาค่า MAX
     CREATE OR REPLACE TEMP TABLE monthly_summary AS
     SELECT
       year,
@@ -213,16 +201,6 @@ BEGIN
       AND target.month = src.month
       AND target.TargetID = src.targetid;
 
-    -- หาค่า max ของของทุกเดือน
-    -- SET max_total_employee = (SELECT MAX(total_val) FROM monthly_summary);
-
-    -- อัปเดตแถว NULL (ใช้ค่า MAX)
-    -- UPDATE ${self()} AS target
-    -- SET target.Percent = (CAST(100 AS BIGNUMERIC) / max_total_employee)
-    -- WHERE target.month IS NULL
-    --   AND target.DepartmentID IN (SELECT DISTINCT departmentid FROM mdt_base_data);
-
-    -- 3. ล้าง Temp Tables
     DROP TABLE IF EXISTS mdt_base_data;
     DROP TABLE IF EXISTS monthly_summary;
   END;

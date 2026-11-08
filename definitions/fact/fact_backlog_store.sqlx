@@ -17,35 +17,36 @@ js {
         name: "dim_order",
     };
     const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
-
-    const DimCustomerTable = {
+    const MdsDataStatusControlMasterTable = {
         database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_customer",
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_status_control_master",
     };
-    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
-
-    const DimCompanyTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_company",
-    };
-    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
-
+    const MdsDataStatusControlMasterTableRef = `${MdsDataStatusControlMasterTable.database}.${MdsDataStatusControlMasterTable.schema}.${MdsDataStatusControlMasterTable.name}`;
     const DimProductMasterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_product_master",
     };
     const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
-
     const DimProductMktTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_product_mkt",
     };
     const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
-
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+    const DimCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer",
+    };
+    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
     const DimStoreTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -53,12 +54,12 @@ js {
     };
     const DimStoreTableRef = `${DimStoreTable.database}.${DimStoreTable.schema}.${DimStoreTable.name}`;
 
-    const MDSStatusTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_status_control_master",
-    };
-    const MDSStatusTableRef = `${MDSStatusTable.database}.${MDSStatusTable.schema}.${MDSStatusTable.name}`;
+
+
+
+
+
+
 }
 SELECT
   FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(
@@ -90,7 +91,7 @@ WITH cps_latest AS (
 ), dim_order_dedup AS (
   SELECT ord.OrderSK, ord.CompanySK, ord.mihVnos
   FROM `${DimOrderTableRef}` as ord
-  INNER JOIN `${MDSStatusTableRef}` as mds
+  INNER JOIN `${MdsDataStatusControlMasterTableRef}` as mds
     on mds.is_active = true
     and mds.flagwarehouse = true
     and ord.CompanyID = mds.CompanyID

@@ -7,12 +7,27 @@ config {
 }
 
 js {
+    const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_product_finance_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
     const DimProductMasterFcTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimProductMasterFcTableRef = `${DimProductMasterFcTable.database}.${DimProductMasterFcTable.schema}.${DimProductMasterFcTable.name}`;
+
+
+
 
     const stableDimensionColumns = ['ProductMasterFcSK', 'CompanySK', 'companyID', 'ProductIDOldMac5', 'ProductNameOldMac5', 'ProductIDNewD365', 'ProductNameNewD365', 'SerchName', 'Size', 'SizeDescription', 'Color', 'ColorDescription', 'Style', 'StyleDescription', 'Config', 'ConfigDescription', 'ProductNumber', 'ProductDescription', 'Unit', 'NetWeight', 'GrossWeight', 'DeepMM', 'WideMM', 'HeightMM', 'DoNotStackOverLayer', 'Barcode', 'ItemGroup', 'ItemGroupName', 'TM1Category', 'TM2Brand', 'TM3Series', 'TM4FactorySection', 'TM5Material', 'TM6PackageShape', 'Remark', 'PurchaseUnit', 'UnitConversions', 'ToUnit', 'SalesUnit', 'PackSize', 'MdsID'];
     const stableDimensionKeyColumns = ['companyID', 'Barcode'];
@@ -29,22 +44,7 @@ js {
     const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
     const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
 
-    const DimCompanyTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_company",
-    };
-    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
-
-    const MdsSourceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_product_finance_master",
-    };
-    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
 }
-
-
 
 BEGIN
   DECLARE max_sk INT64 DEFAULT 0;

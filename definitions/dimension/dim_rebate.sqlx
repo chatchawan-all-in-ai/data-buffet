@@ -7,12 +7,27 @@ config {
 }
 
 js {
+    const MdsDataSalesKpiConditionMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_sales_kpi_condition_master",
+    };
+    const MdsDataSalesKpiConditionMasterTableRef = `${MdsDataSalesKpiConditionMasterTable.database}.${MdsDataSalesKpiConditionMasterTable.schema}.${MdsDataSalesKpiConditionMasterTable.name}`;
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
     const DimRebateTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimRebateTableRef = `${DimRebateTable.database}.${DimRebateTable.schema}.${DimRebateTable.name}`;
+
+
+
 
     const stableDimensionColumns = ['RebateSK', 'CompanySK', 'companyID', 'rebate', 'rebateName', 'status', 'type', 'salesExc', 'accExc', 'MdsID'];
     const stableDimensionKeyColumns = ['companyID', 'rebate', 'status'];
@@ -29,22 +44,7 @@ js {
     const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
     const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
 
-    const DimCompanyTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_company",
-    };
-    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
-
-    const MdsRebateTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_sales_kpi_condition_master",
-    };
-    const MdsRebateTableRef = `${MdsRebateTable.database}.${MdsRebateTable.schema}.${MdsRebateTable.name}`;
 }
-
-
 
 BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
@@ -66,7 +66,7 @@ BEGIN
       ${databuffet.functionData.cleanString('t1.salesExc')}   AS salesExc,
       ${databuffet.functionData.cleanString('t1.accExc')}     AS accExc,
       ${databuffet.functionData.cleanString("t1.id")} as MdsID
-    FROM `${MdsRebateTableRef}` AS t1
+    FROM `${MdsDataSalesKpiConditionMasterTableRef}` AS t1
     LEFT JOIN `${DimCompanyTableRef}` AS dim_com
       ON ${databuffet.functionData.cleanString('t1.companyID')} = dim_com.companyID
     WHERE t1.is_active = TRUE
