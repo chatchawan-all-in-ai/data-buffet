@@ -43,13 +43,13 @@ One row per source record per `ASATDATE` partition. There is no key at this laye
 | `product_style_id` | STRING | Variant dimension — สไตล์ \| D365: product_style_id (792/998, 79%) |
 | `product_version_id` | STRING | Variant dimension — version สินค้า \| D365: product_version_id (0/998 ปัจจุบันไม่มีค่า) |
 | `is_active` | STRING | สูตรที่ใช้งานอยู่ \| D365: is_active ('Y'/'N' — Mac5 ส่ง 'Yes'/'No' ต้อง normalize ก่อน merge) |
-| `valid_from_date` | STRING | Source valid from date value. |
+| `valid_from_date` | DATETIME | Source valid from date value. |
 | `from_quantity` | FLOAT64 | ขนาด batch ต่ำสุดที่สูตรนี้มีผล (คู่กับ formula_batch_size กำหนดช่วง qty ที่ valid) \| D365: from_quantity |
 | `bulk_item_number` | STRING | รหัสสินค้า bulk (ใช้กับสินค้าที่ผลิตแบบ bulk/ถัง) \| D365: bulk_item_number (0/998 ปัจจุบันไม่มีค่า) |
 | `catch_weight_size` | FLOAT64 | ขนาด catch weight \| D365: catch_weight_size (0 ทุกแถวในข้อมูลปัจจุบัน) |
 | `is_selected_for_designer` | STRING | เลือกใช้แสดงใน Designer tool หรือไม่ \| D365: is_selected_for_designer |
 | `version_name` | STRING | ชื่อ version/สูตร \| D365: version_name |
-| `changed_date` | STRING | วันที่แก้ไขเนื้อหาสูตรล่าสุด (ต่างจาก updated_at ที่เป็น audit ของระบบ) \| D365: changed_date |
+| `changed_date` | DATETIME | วันที่แก้ไขเนื้อหาสูตรล่าสุด (ต่างจาก updated_at ที่เป็น audit ของระบบ) \| D365: changed_date |
 | `formula_batch_size_multiples` | FLOAT64 | batch ต้องเป็นจำนวนเท่าของค่านี้ \| D365: formula_batch_size_multiples |
 | `is_co_product_quantity_variation_allowed` | STRING | อนุญาตให้ co-product แปรผันปริมาณได้หรือไม่ \| D365: is_co_product_quantity_variation_allowed |
 | `from_catch_weight_quantity` | FLOAT64 | จำนวน catch weight ต่ำสุด \| D365: from_catch_weight_quantity |
@@ -58,7 +58,7 @@ One row per source record per `ASATDATE` partition. There is no key at this laye
 | `formula_batch_size` | FLOAT64 | ขนาด batch สูงสุดที่สูตรนี้มีผล \| D365: formula_batch_size |
 | `is_approved` | STRING | ผ่านการ approve แล้ว \| D365: is_approved ('Yes'/'No') |
 | `will_cost_calculation_include_version` | STRING | รวม version นี้ในการคำนวณต้นทุนหรือไม่ \| D365: will_cost_calculation_include_version |
-| `valid_to_date` | STRING | Source valid to date value. |
+| `valid_to_date` | DATETIME | Source valid to date value. |
 | `is_total_cost_allocation_used` | STRING | ใช้การกระจายต้นทุนรวมหรือไม่ \| D365: is_total_cost_allocation_used |
 | `ivzs_bom_accessories` | STRING | Source ivzs bom accessories value. |
 | `remarks` | STRING | หมายเหตุ \| D365: remarks (0/998 ปัจจุบันไม่มีค่า) |

@@ -215,49 +215,51 @@ PK เป็น `NOT ENFORCED` — เป็น hint ให้ optimizer ไม�
 
 ## 8. Dimension SK synchronization
 
-Follow the [stable-key synchronization contract](../project_wiki/dimension/merge-sk-pattern.md)
-for key selection, complete-source requirements, assertions, allocation and the three
-MERGE clauses. The [inventory](../project_wiki/dimension/inventory.md) owns conversion
-scope and held actions; each table's OKF card owns its grain and key.
+การเลือกคีย์ การใช้ source ที่ครบ การตรวจ assertions การจัดสรรคีย์ และ MERGE ทั้งสามส่วน
+ให้ทำตาม [stable-key synchronization contract](../project_wiki/dimension/merge-sk-pattern.md)
+ส่วน [inventory](../project_wiki/dimension/inventory.md) ระบุขอบเขตและตารางที่ยังพักไว้
+และ OKF card ของแต่ละตารางระบุ grain กับ key
+
+ห้ามเลือกรายการด้วยลำดับ SK เช่น `MIN`/`MAX`, `ORDER BY` หรือ `QUALIFY` บน SK ของ dimension
+หรือ fact ให้เรียงด้วยคอลัมน์ธุรกิจที่ `ROW_NUMBER()` เดิมใช้แทน เพราะ SK คงที่จัดสรรด้วย
+`MAX + n` สำหรับแถวใหม่ จึงไม่สื่อถึงลำดับธุรกิจ
 
 ### Fact row surrogate keys
 
-All 11 facts with a row-level SK use stable row keys: `fact_order`,
-`fact_quotation`, `fact_invoice`, `fact_delivery`,
-`fact_transaction_delivery`, `fact_mir_vs`, `fact_chq`, `fact_mir_rs`,
-`fact_order_store`, `fact_invoice_store`, and `fact_backlog_store`. Derive
-each key as `FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(<typed business key fields>, occ)))`.
-Build `occ` with `ROW_NUMBER()` partitioned by the fact's natural business grain,
-ordered by `TO_JSON_STRING` of all public output columns except that fact's own
-row SK. Include FK SK columns, business dates, run dates such as `asatdate`, and
-every other output field. Project the public row before ranking so derived values
-and joined candidates use the same rule. Ties represent identical output rows.
-Internal grain fields, such as the cheque natural key in `fact_mir_rs` and the
-source company in `fact_delivery`, are not
-public output and do not participate in the ordering. Preserve output columns,
-field types, row multiplicity, non-key values, and materialization config.
+fact ทั้ง 11 ตารางที่มี row-level SK ใช้คีย์แถวแบบคงที่ ได้แก่ `fact_order`,
+`fact_quotation`, `fact_invoice`, `fact_delivery`, `fact_transaction_delivery`,
+`fact_mir_vs`, `fact_chq`, `fact_mir_rs`, `fact_order_store`, `fact_invoice_store`
+และ `fact_backlog_store` โดยคำนวณแต่ละคีย์ด้วย
+`FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(<typed business key fields>, occ)))`
+สร้าง `occ` ด้วย `ROW_NUMBER()` ที่แบ่งตาม natural business grain ของ fact
+และเรียงด้วย `TO_JSON_STRING` ของ output ทุกคอลัมน์ที่เปิดเผย ยกเว้น row SK ของ fact นั้น
+ให้รวม FK SK, business date, วันที่รัน เช่น `asatdate` และ output ทุกคอลัมน์
+สร้าง public row ก่อนจัดอันดับ เพื่อให้ค่าที่คำนวณและ candidates จาก join ใช้กติกาเดียวกัน
+แถวที่ค่า output เหมือนกันทั้งหมดถือเป็น tie
+ห้ามใช้ internal grain fields ที่ไม่แสดงใน output มาเรียง เช่น natural key ของ cheque ใน
+`fact_mir_rs` และ source company ใน `fact_delivery`
+ให้คง output columns, field types, จำนวนแถว, ค่า non-key และ materialization config
 
-`includes/fact_occurrence.js`'s `assignedOccurrences` recovers `fact_order`'s
-assigned ordinal for `fact_invoice` by matching its stored hash against ordinals
-1 through the natural-grain count. Reconstruct the producer's identical typed
-STRUCT, including field names and normalization; do not independently rerank
-stored order rows. The ordinal remains internal and is omitted from public output.
-Delivery and receipt joins use their FK SK columns directly in the output ordering
-and do not need upstream ordinal recovery.
+`assignedOccurrences` ใน `includes/fact_occurrence.js` หา ordinal ที่ `fact_order` จัดให้
+สำหรับ `fact_invoice` โดยจับคู่ hash ที่บันทึกไว้กับ ordinal ตั้งแต่ 1 ถึงจำนวนแถวใน grain
+ให้สร้าง typed `STRUCT` เหมือนฝั่งสร้างทุกประการ รวมชื่อ field และ normalization
+ห้ามจัดอันดับแถว order ที่บันทึกไว้อีกครั้ง
+ordinal เป็นค่าภายในและไม่ส่งออกใน public output
+join ของ delivery และ receipt ใช้ FK SK ใน output ordering ได้โดยตรง ไม่ต้องกู้ ordinal ต้นทาง
 
-`fact_order` keeps its base SELECT unchanged because changing its aggregation
-order changes FLOAT results; it assigns the stable key in `post_operations`.
-`fact_invoice` selects its linked order row by `occ DESC`. Keep the existing
-latest-billing candidate selection in `fact_mir_vs`, including its existing arbitrary
-choice among latest-date ties; do not add a new tie-breaker.
-`fact_mir_vs` hashes `(company_id, mirtype, mirvnos, mirlistno, mirbinvno, occ)`;
-its occurrence partition uses those five business fields.
-`fact_mir_rs` hashes the receipt natural key and cheque natural key in one typed
-STRUCT with `occ`, so cheque-only rows also receive distinct keys.
+คง base SELECT ของ `fact_order` ไว้ เพราะการเปลี่ยนลำดับ aggregation เปลี่ยนผล `FLOAT`
+และสร้าง stable key ใน `post_operations`
+`fact_invoice` เลือกแถว order ที่เชื่อมกันด้วย `occ DESC`
+คงการเลือก latest-billing candidate เดิมใน `fact_mir_vs` รวมถึงการเลือกใดก็ได้เมื่อวันที่ล่าสุดเสมอกัน
+และห้ามเพิ่ม tie-breaker ใหม่
+`fact_mir_vs` hash `(company_id, mirtype, mirvnos, mirlistno, mirbinvno, occ)`
+โดย occurrence partition ใช้ business fields ห้าตัวแรก
+`fact_mir_rs` hash receipt natural key กับ cheque natural key ใน typed `STRUCT` เดียวพร้อม `occ`
+เพื่อให้แถวที่มี cheque อย่างเดียวได้คีย์ต่างกันด้วย
 
-There is no legacy key map: row-level fact SKs change once at rollout, then remain
-stable across rebuilds. `fact_transcation` and the six MDT facts have no row-level SK.
-Live comparison evidence is kept outside the repository.
+ไม่มี legacy key map: row-level fact SK เปลี่ยนครั้งเดียวตอน rollout แล้วคงเดิมในการ rebuild
+`fact_transcation` และ fact ของ MDT ทั้งหกไม่มี row-level SK
+เก็บหลักฐาน live comparison ไว้นอก repository
 
 ## 9. คอมเมนต์
 
@@ -278,10 +280,11 @@ Live comparison evidence is kept outside the repository.
 | hardcode ชื่อ dataset/project | ต้องผ่าน `databuffet.*` เพื่อย้าย environment ได้ |
 | inline `` `${databuffet.DATABASE}.${databuffet.X}.tbl` `` ใน SQL body | ต้องประกาศ object + `XxxTableRef` ใน `js {}` แล้วอ้าง `` `${XxxTableRef}` `` (§3.2) |
 | ใช้ js-block Ref กับ `validated_*` / `curated_*` | ต้องใช้ `${ref(...)}` เพื่อให้ Dataform ผูก dependency ให้ (§3.1) |
-| เขียน `\` เดี่ยวใน SQL body (regex, `\n`) | body เป็น JS template literal — `\1` = compile error, `\(`/`\d` โดนกลืน backslash เงียบ ต้อง `\\` (§3.3) |
+| escape backslash ผิดบริบท | ใช้กฎ SQL body, `--` comment และไฟล์ `.js` ตาม [§3.3](#33-backslash-ใน-sql-body--เขียนตรง-ๆ-ตัวเดียว) |
 | เปลี่ยน SK ของ dimension ที่ downstream persist ไว้โดยไม่ sync ตาม natural key | fact/dim อื่นอาจชี้ไปยัง key ที่ไม่มีอยู่หรือผิดแถว |
 | recreate a stable dimension from a fresh SELECT | assigning keys again can break downstream references |
 | `CURRENT_DATE()` ไม่ระบุ timezone | เที่ยงคืน UTC ≠ เที่ยงคืนไทย ข้อมูลคลาดวัน |
+| เลือกแถวด้วย `MIN`/`MAX`, `ORDER BY` หรือ `QUALIFY` บน dimension หรือ fact SK | SK ใหม่จัดสรรด้วย `MAX + n` จึงไม่บอกลำดับธุรกิจ ให้ใช้ business columns ที่ `ROW_NUMBER()` เดิมใช้ |
 | แก้คำผิด `fact_transcation`, `CDC_DATESET`, `prdDiminsionData` | เป็น identifier จริงใน BigQuery |
 | ใส่ dependency ของตารางที่อ่านผ่าน `ref()` ซ้ำ | graph ซ้ำซ้อน สับสน |
 | use a partial source with delete-by-source in a stable dimension | active rows outside the source window would be removed |

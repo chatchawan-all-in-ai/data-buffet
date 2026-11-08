@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-08 (formula datetime parsing)
+
+* **Update**: Corrected formula date-field types in the [raw line](initial/raw_derp/inventory_formula_line.md#schema), [raw version](initial/raw_derp/inventory_formula_versions.md#schema), [validated line](validated/validated_derp/inventory_formula_line.md#schema) and [validated version](validated/validated_derp/inventory_formula_versions.md#schema) cards.
+
 ## 2026-11-08 (MASTER_SKU expansion)
 
 * **Creation**: Added the 14 new table cards linked from the [raw MASTER_SKU index](initial/raw_master_sku/index.md) and [validated MASTER_SKU index](validated/validated_master_sku/index.md), and refreshed their dataset and layer indexes.

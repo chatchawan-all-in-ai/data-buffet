@@ -47,7 +47,7 @@ One row per source record per `ASATDATE` partition. There is no key at this laye
 | `item_number` | STRING | D365: item_number |
 | `product_version_id` | STRING | Variant dimension — version \| D365: product_version_id (0/4,733 ปัจจุบันไม่มีค่า) |
 | `consumption_warehouse_id` | STRING | คลังที่เบิกวัตถุดิบ \| D365: consumption_warehouse_id (4,140/4,733, 87.4%) |
-| `valid_from_date` | STRING | Source valid from date value. |
+| `valid_from_date` | DATETIME | Source valid from date value. |
 | `consumption_site_id` | STRING | Site ที่เบิกวัตถุดิบ \| D365: consumption_site_id |
 | `will_cost_calculation_include_line` | STRING | รวม line นี้ในการคำนวณต้นทุนหรือไม่ \| D365: will_cost_calculation_include_line |
 | `sub_bom_id` | STRING | รหัส sub-BOM (ใช้กับ line_type='Phantom') \| D365: sub_bom_id |
@@ -61,7 +61,7 @@ One row per source record per `ASATDATE` partition. There is no key at this laye
 | `physical_product_height` | FLOAT64 | ความสูง override เฉพาะ line \| D365: physical_product_height (0 ทุกแถว) |
 | `variable_scrap_percentage` | FLOAT64 | % ของเสียแบบผันแปรตามปริมาณ \| D365: variable_scrap_percentage |
 | `physical_product_density` | FLOAT64 | ความหนาแน่น override เฉพาะ line \| D365: physical_product_density (0 ทุกแถว) |
-| `valid_to_date` | STRING | Source valid to date value. |
+| `valid_to_date` | DATETIME | Source valid to date value. |
 | `rounding_up_method` | STRING | วิธีปัดเศษ \| D365: rounding_up_method |
 | `consumption_type` | STRING | 'Variable'=ตามสูตร \| 'Fixed'=คงที่ \| D365: consumption_type |
 | `will_manufactured_item_inherit_shelf_life_dates` | STRING | สินค้าที่ผลิตรับวันที่ shelf life จาก component นี้หรือไม่ \| D365: will_manufactured_item_inherit_shelf_life_dates |

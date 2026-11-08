@@ -202,7 +202,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/vendors/'
 );
 
--- Table : audit_logs
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.audit_logs`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.audit_logs`
 WITH PARTITION COLUMNS (
@@ -214,7 +213,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/audit_logs/'
 );
 
--- Table : business_units
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.business_units`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.business_units`
 WITH PARTITION COLUMNS (
@@ -226,7 +224,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/business_units/'
 );
 
--- Table : channels
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.channels`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.channels`
 WITH PARTITION COLUMNS (
@@ -238,7 +235,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/channels/'
 );
 
--- Table : customers
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.customers`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.customers`
 WITH PARTITION COLUMNS (
@@ -250,7 +246,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/customers/'
 );
 
--- Table : functional_group_translations
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.functional_group_translations`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.functional_group_translations`
 WITH PARTITION COLUMNS (
@@ -262,7 +257,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/functional_group_translations/'
 );
 
--- Table : functional_groups
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.functional_groups`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.functional_groups`
 WITH PARTITION COLUMNS (
@@ -274,7 +268,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/functional_groups/'
 );
 
--- Table : product_assets
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_assets`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_assets`
 WITH PARTITION COLUMNS (
@@ -286,7 +279,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_assets/'
 );
 
--- Table : product_channels
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_channels`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_channels`
 WITH PARTITION COLUMNS (
@@ -298,7 +290,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_channels/'
 );
 
--- Table : product_codes
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_codes`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_codes`
 WITH PARTITION COLUMNS (
@@ -310,7 +301,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_codes/'
 );
 
--- Table : product_groups
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_groups`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_groups`
 WITH PARTITION COLUMNS (
@@ -322,7 +312,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_groups/'
 );
 
--- Table : product_vendors
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_vendors`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_vendors`
 WITH PARTITION COLUMNS (
@@ -334,7 +323,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_vendors/'
 );
 
--- Table : variant_definitions
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.variant_definitions`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.variant_definitions`
 WITH PARTITION COLUMNS (
@@ -346,7 +334,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/variant_definitions/'
 );
 
--- Table : users
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.users`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.users`
 WITH PARTITION COLUMNS (
@@ -358,7 +345,6 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/users/'
 );
 
--- Table : user_preferences
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.user_preferences`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.user_preferences`
 WITH PARTITION COLUMNS (
