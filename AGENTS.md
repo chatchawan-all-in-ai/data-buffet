@@ -1,3 +1,2 @@
-Before changing any code, read `CLAUDE.md` and `document/coding-standards/sqlx-coding-standard.md` and `document/coding-standards/naming-conventions.md`.
-Before committing, check the diff against those standards.
-Follow `CLAUDE.md` for everything else.
+Development rules live only in `document/coding-standards/`: read `README.md`, `sqlx-coding-standard.md`, and `naming-conventions.md` before changing code and check the diff against the standards before committing.
+Project overview, layers, environment and commands are in `CLAUDE.md`.

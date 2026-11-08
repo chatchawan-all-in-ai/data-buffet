@@ -36,7 +36,7 @@ js { /* TableRef ของทุก dim ที่ join */ }
 BEGIN
   CREATE OR REPLACE TEMP TABLE temp_fact_<entity> AS (
     -- CTE: grain source (ref() จาก curated) + join dim เพื่อเอา SK
-    -- join dim ด้วย natural key ที่ถูก cleanString ทั้งสองฝั่ง
+    -- join dim ด้วย natural key ที่ clean แล้วทั้งสองฝั่ง (ไม่ clean ซ้ำเมื่ออ่านจาก validated/curated)
     -- คำนวณ mix_date = PARSE_DATE('%Y%m%d', CONCAT(year, month, day))
     -- กรอง 4 ปี: mix_date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
   );

@@ -167,32 +167,9 @@ interpolation + `dependencies[]`; curated/validated = `ref()`.
 `process/deb_address_data` calls `AI.GENERATE` (gemini-3.5-flash-lite) to parse Thai
 addresses, gated on today's CDC changes (cost control — don't remove the gate).
 
-## Hard rules
+## Development rules
 
-1. Timezone: always `Asia/Bangkok`.
-2. Every string column through `cleanString`/`cleanCode`; empty string → NULL.
-   **Exception**: a string column in an incremental table's `uniqueKey` must never be NULL —
-   wrap it `IFNULL(cleanString(...), '')`, because Dataform's MERGE matches with `=` and a
-   NULL key is re-inserted every run (`mie.miecus`, 98,474 duplicate rows, fixed 2026-10-12).
-3. No hardcoded dataset names/tags — use `databuffet.*`.
-4. Converted dimensions retain their SK by natural key. When a key disappears from a
-   complete source snapshot, its dimension row is deleted; do not preserve a tombstone.
-5. Stable-key dimensions require a complete source for delete-by-source.
-   `dim_customer_report_info` retains its distinct no-delete behavior.
-6. **Load-bearing typos — keep verbatim**: `fact_transcation` (file + table),
-   `CDC_DATESET` (variables.json key), `prdDiminsionData` (MASTERSKU JSON field).
-7. `dataform format` before committing when available.
-8. **Doc-sync (user mandate 2026-07-10)**: every change to `definitions/`,
-   `includes/`, or `workflow_settings.yaml` must be assessed for documentation
-   impact before the turn ends, using the mapping table in
-   `.claude/skills/update-docs/SKILL.md`. If impacted, update `document/` and
-   commit code + docs together. If not impacted (e.g. a bug fix that changes no
-   pattern/inventory), state that assessment briefly to the user. A Stop hook
-   enforces this; a pre-commit warning backs it up.
-   **OKF cards** (`document/okf/README.md`): a card holds only table information (no
-   warnings, discussion or decision notes). New table/view = create its card; changed
-   columns, grain, source or behavior = update its own card; dropped table = delete
-   its card; all in the same commit.
+Development rules live in [`document/coding-standards/README.md`](document/coding-standards/README.md), which indexes `sqlx-coding-standard.md` and `naming-conventions.md`.
 
 ## Tags (in use)
 

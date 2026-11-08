@@ -77,9 +77,7 @@ Per-source context (what each system is, who reads it):
 ## Critical global conventions
 
 1. **Timezone**: always `Asia/Bangkok` (`CURRENT_DATE('Asia/Bangkok')`).
-2. **NULL policy**: empty string → NULL via `cleanString` everywhere — except string
-   columns in an incremental `uniqueKey`, which use `IFNULL(cleanString(...), '')`
-   (MERGE can't match NULL; see `validated/validated-layer.md`, `mie.miecus`).
+2. **Helper scope and NULL policy**: follow [SQLX standard §4](../../coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล).
 3. **Config through `databuffet.*`** — no hardcoded dataset names/tags. The last
    holdout (`"mds_dataset"` as a literal in 36 dim files) was converted to
    `databuffet.MDS_DATASET` on 2026-08-26; there are now **zero** literals.

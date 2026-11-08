@@ -4,6 +4,8 @@
 
 ## 1. โครงไฟล์
 
+ก่อน commit ให้รัน `dataform format` เมื่อมี CLI พร้อมใช้งาน
+
 ทุกไฟล์เรียงเป็น 4 ส่วน:
 
 ```sqlx
@@ -161,6 +163,8 @@ comment จึงถูกประมวลผลเป็น JS template liter
 
 ## 4. การ cast / ทำความสะอาดข้อมูล
 
+ใช้ helper ในชั้น validated/curated และเมื่อ dimension/fact อ่าน raw หรือ `mds_dataset` โดยตรง; คอลัมน์ที่ dimension/fact อ่านจาก validated/curated ผ่านการ clean และ cast แล้ว ไม่ต้องใช้ helper ซ้ำ (แต่ join key ต้องเทียบค่าที่ clean แล้วทั้งสองฝั่งตาม [คู่มือเพิ่ม fact](../how-to/add-fact-table.md))
+
 ใช้ helper จาก `function-data.js` เท่านั้น:
 
 ```sql
@@ -175,13 +179,15 @@ ${databuffet.functionData.parseAsatDate()}             AS asatdate,
 - **ยกเว้น** คอลัมน์ string ที่อยู่ใน `uniqueKey` ของตาราง incremental ห้ามเป็น NULL →
   `IFNULL(cleanString(...), '')` เพราะ MERGE เทียบ key ด้วย `=` และ `NULL = NULL` ไม่จริง
   แถวนั้นจะถูก INSERT ซ้ำทุกรอบ (เคส `mie.miecus` 2026-10-12)
-- ใน JOIN condition ก็ต้องใช้ `cleanString` ฝั่งต้นทางให้ตรงกับค่าที่เก็บ
+- ใน JOIN condition ให้เทียบค่าที่ clean แล้วทั้งสองฝั่ง; ใช้ `cleanString` เฉพาะค่าต้นทางที่ยังไม่ clean
 - datetime จาก raw → `parseFlexibleDatetime` (SAFE, พังเป็น NULL)
 - datetime จาก raw ที่เป็น UTC (`master_sku`, DERP journal headers/entries) → `parseFlexibleUtcDatetime` (SAFE; รับทั้งมีและไม่มี offset `+00:00` แล้วแปลงเป็น DATETIME เวลา `Asia/Bangkok`)
 - date string `YYYY-MM-DD` หรือ `YYYY/MM/DD` → `parseFlexibleDate` (NULL คง NULL; รูปแบบอื่น fail ทั้ง run โดยตั้งใจ) — `parseDateDash`/`parseDateSlash` ถูกลบแล้ว (2026-10-28)
 - `castInt64/castFloat64` ไม่ SAFE — ตั้งใจให้ fail เมื่อ schema เพี้ยน
 
 ## 5. วันที่และ timezone
+
+ทุกการคำนวณวันที่/เวลาใช้ Asia/Bangkok เสมอ.
 
 - `CURRENT_DATE('Asia/Bangkok')` เสมอ — ห้าม `CURRENT_DATE()` เปล่า
 - Incremental window ของ validated กรองบน **string** `ASATDATE`:
@@ -219,6 +225,10 @@ PK เป็น `NOT ENFORCED` — เป็น hint ให้ optimizer ไม�
 ให้ทำตาม [stable-key synchronization contract](../project_wiki/dimension/merge-sk-pattern.md)
 ส่วน [inventory](../project_wiki/dimension/inventory.md) ระบุขอบเขตและตารางที่ยังพักไว้
 และ OKF card ของแต่ละตารางระบุ grain กับ key
+
+dimension ที่แปลงแล้วต้องคง SK ตาม natural key; เมื่อ key หายจาก complete source snapshot
+ให้ลบแถวนั้น ไม่เก็บ tombstone และห้ามใช้ partial source กับ delete-by-source
+ยกเว้น `dim_customer_report_info` ที่คงพฤติกรรมไม่ลบตามเดิม
 
 ห้ามเลือกรายการด้วยลำดับ SK เช่น `MIN`/`MAX`, `ORDER BY` หรือ `QUALIFY` บน SK ของ dimension
 หรือ fact ให้เรียงด้วยคอลัมน์ธุรกิจที่ `ROW_NUMBER()` เดิมใช้แทน เพราะ SK คงที่จัดสรรด้วย
@@ -285,6 +295,5 @@ join ของ delivery และ receipt ใช้ FK SK ใน output ordering
 | recreate a stable dimension from a fresh SELECT | assigning keys again can break downstream references |
 | `CURRENT_DATE()` ไม่ระบุ timezone | เที่ยงคืน UTC ≠ เที่ยงคืนไทย ข้อมูลคลาดวัน |
 | เลือกแถวด้วย `MIN`/`MAX`, `ORDER BY` หรือ `QUALIFY` บน dimension หรือ fact SK | SK ใหม่จัดสรรด้วย `MAX + n` จึงไม่บอกลำดับธุรกิจ ให้ใช้ business columns ที่ `ROW_NUMBER()` เดิมใช้ |
-| แก้คำผิด `fact_transcation`, `CDC_DATESET`, `prdDiminsionData` | เป็น identifier จริงใน BigQuery |
 | ใส่ dependency ของตารางที่อ่านผ่าน `ref()` ซ้ำ | graph ซ้ำซ้อน สับสน |
 | use a partial source with delete-by-source in a stable dimension | active rows outside the source window would be removed |

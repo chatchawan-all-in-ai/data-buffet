@@ -27,19 +27,9 @@
 | Run / debug / env facts / what runs on schedule | [operations/running-and-troubleshooting.md](operations/running-and-troubleshooting.md) |
 | How work reaches `nonprod` (release flow) | `document/getting-started/onboarding.md` § Release flow |
 
-## Hard rules (apply to every change)
+## Development rules
 
-1. Timezone is always `Asia/Bangkok`.
-2. Follow the [data-cleaning rules, including incremental string keys](../coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล).
-3. Never hardcode dataset names/tags — use `databuffet.*` constants.
-4. Follow the [dimension sync contract](dimension/merge-sk-pattern.md) and
-   [inventory](dimension/inventory.md), preserving held and unchanged actions.
-5. `type: "operations"` targets (dimension sync actions and `fact_transcation`) pre-exist in
-   BigQuery — Dataform does not create them.
-6. Preserve load-bearing typos verbatim: `fact_transcation`, `CDC_DATESET`, `prdDiminsionData`.
-7. Stable dimension sync uses a complete active-source snapshot; do not limit delete-by-
-   source to an `updated_at` window.
-8. Dimension build dependencies: see [dimension inventory](dimension/inventory.md).
+Follow the [coding standards](../coding-standards/README.md), which own the development rules for every change.
 
 ## Companion tooling
 

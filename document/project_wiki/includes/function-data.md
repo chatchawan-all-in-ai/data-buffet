@@ -3,7 +3,7 @@
 > **LLM context**: These helpers are JavaScript functions that *return SQL strings*
 > (template expansion happens at Dataform compile time). They are accessed as
 > `databuffet.functionData.<name>(...)` inside `${...}` in SQLX files.
-> Use them instead of hand-writing casts — they encode the project's NULL/empty-string policy.
+> For helper scope and the NULL/empty-string policy, follow [SQLX standard §4](../../coding-standards/sqlx-coding-standard.md#4-การ-cast--ทำความสะอาดข้อมูล).
 
 ## Helpers
 
@@ -31,8 +31,7 @@ SELECT
 
 ## Important behaviors
 
-- `cleanString` is used **both** for SELECT output **and** in JOIN conditions in
-  dimension files, so join keys compare on the cleaned value:
+- Example for a dimension reading an uncleaned raw or MDS source key:
   ```sql
   LEFT JOIN `${DimCompanyTableRef}` AS dim_com
     ON ${databuffet.functionData.cleanString("t1.CompanyID")} = dim_com.companyID

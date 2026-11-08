@@ -682,7 +682,7 @@ DAG `pipline_saleout_mdt_eom` **รวมทุกไฟล์ในโฟลเ
   repo สร้างเองแล้ว
 
 - **2026-08-26 — ล้าง literal `"mds_dataset"` ออกหมดแล้ว** เดิม 36 ไฟล์ใน
-  `definitions/dimension/` เขียน `schema: "mds_dataset"` ตรง ๆ (ผิด hard rule ข้อ 3)
+  `definitions/dimension/` เขียน `schema: "mds_dataset"` ตรง ๆ (ผิด [มาตรฐานการอ้าง schema และ tags](../coding-standards/sqlx-coding-standard.md#2-config-block))
   ทั้งที่ constant `MDS_DATASET` มีอยู่ตั้งแต่ 2026-05-31 — เกิดจาก template ที่ใช้
   generate dim รอบใหญ่ (`694e996` "add process mds to dim - phase2") ยังเป็นตัวเก่า
   แก้เป็น `databuffet.MDS_DATASET` ทั้งหมดใน `b746f93` ค่าเหมือนเดิมเป๊ะ ผล compile ไม่เปลี่ยน
