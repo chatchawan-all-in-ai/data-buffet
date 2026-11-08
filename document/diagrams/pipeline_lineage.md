@@ -7,7 +7,7 @@
 > inline `ref(...)` + `tags: [...]`), so the views — and `topic_flows.md` — always
 > match the repo.
 
-**Objects: 463** — initial 21 · validated 220 · curated 22 · dimension 71 · fact 18 · view 95 · cdc 2 · process 5 · pub_sub 1 · org_center 8
+**Objects: 466** — initial 21 · validated 223 · curated 22 · dimension 71 · fact 18 · view 95 · cdc 2 · process 5 · pub_sub 1 · org_center 8
 
 **Paused (config commented out):** —
 
@@ -25,7 +25,7 @@ The medallion → star-schema map. Counts are live.
 flowchart LR
   raw["Raw AVRO/CSV<br/>gs://file-raw-data"]
   I["initial (21)<br/>ext tables + UDFs + DROPs"]
-  V["validated (220)<br/>clean · cast · dedup"]
+  V["validated (223)<br/>clean · cast · dedup"]
   C["curated (22)<br/>business joins"]
   D["dimension (71)<br/>SK + SCD"]
   F["fact (18)<br/>star-schema"]
@@ -89,7 +89,7 @@ flowchart TB
 
   subgraph nightly["daily_process - daily 06:00 Asia/Bangkok (top to bottom = run order)"]
     direction TB
-    V["validated | 220<br/>clean - cast - dedup<br/>tag: validated"]
+    V["validated | 223<br/>clean - cast - dedup<br/>tag: validated"]
     C["curated | 22<br/>business joins<br/>tag: curated"]
     D["dimension_daily | 79<br/>stable SK sync + dimension refresh<br/>tag: dimension_daily"]
     Fd["fact_daily | 18<br/>star-schema load<br/>tag: fact_daily"]

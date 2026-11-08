@@ -21,6 +21,9 @@ DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.synonyms`;
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.vendors`;
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.audit_logs`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.business_unit_translations`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.product_channel_prices`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.product_customers`;
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.business_units`;
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.channels`;
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.customers`;

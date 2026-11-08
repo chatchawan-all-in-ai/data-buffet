@@ -30,8 +30,8 @@
 | `cis360/drop_all_tables_validated_cis360.sqlx` | initial | DROP 24 validated tables |
 | `mastersku/create_all_table_raw_mastersku.sqlx` | initial | 11 hive-partitioned external tables |
 | `mastersku/drop_all_tables_validated_mastersku.sqlx` | initial | DROP 11 validated tables |
-| `master_sku/create_all_table_raw_master_sku.sqlx` | initial | 30 hive-partitioned external tables in `raw_master_sku` |
-| `master_sku/drop_all_tables_validated_master_sku.sqlx` | initial | DROP the 30 validated_master_sku tables |
+| `master_sku/create_all_table_raw_master_sku.sqlx` | initial | 33 hive-partitioned external tables in `raw_master_sku` |
+| `master_sku/drop_all_tables_validated_master_sku.sqlx` | initial | DROP the 33 validated_master_sku tables |
 | `saleout_mdt/create_all_table_raw_saleout_mdt.sqlx` | initial | 17 external tables แยกตามร้าน: 16 AVRO hive-partitioned (bt/dh/gb/hp/tw + `so_mdt_eom/` ยอดปิดเดือน) + **`saleout_lastyear` เป็น CSV** (`lastyear/*`) |
 | `saleout_mdt/drop_all_tables_validated_saleout_mdt.sqlx` | initial | DROP 11 validated tables (bt 7, gb, hp, tw, dh) — ไม่รวม `eom_*` และ `saleout_lastyear` |
 | `allkons_commission/create_all_table_raw_allkons_commission.sqlx` | initial | 7 hive-partitioned external tables |

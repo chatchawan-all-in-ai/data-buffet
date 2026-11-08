@@ -213,6 +213,17 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/audit_logs/'
 );
 
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.business_unit_translations`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.business_unit_translations`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/business_unit_translations/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/business_unit_translations/'
+);
+
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.business_units`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.business_units`
 WITH PARTITION COLUMNS (
@@ -279,6 +290,17 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_assets/'
 );
 
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_channel_prices`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_channel_prices`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_channel_prices/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_channel_prices/'
+);
+
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_channels`;
 CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_channels`
 WITH PARTITION COLUMNS (
@@ -288,6 +310,17 @@ OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_channels/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_channels/'
+);
+
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_customers`;
+CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_customers`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_customers/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTER_SKU}/product_customers/'
 );
 
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}.product_codes`;

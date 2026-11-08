@@ -6,6 +6,8 @@
 
 ## 2026-11-08 (MASTER_SKU expansion)
 
+* **Creation**: Added the three remaining MASTER_SKU raw and validated table cards; refreshed their dataset indexes and the initial/validated inventories.
+
 * **Creation**: Added the 14 new table cards linked from the [raw MASTER_SKU index](initial/raw_master_sku/index.md) and [validated MASTER_SKU index](validated/validated_master_sku/index.md), and refreshed their dataset and layer indexes.
 
 * **Update**: Applied review corrections to stable fact row keys, full BillingSK natural keys, invoice order-occurrence selection and affected consumer cards.
