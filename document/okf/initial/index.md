@@ -6,7 +6,7 @@ External tables over the AVRO/CSV files in `gs://file-raw-data`, one folder per 
 
 * [raw_allkons_commission](raw_allkons_commission/) - 7 cards
 * [raw_cis360](raw_cis360/) - 25 cards
-* [raw_derp](raw_derp/) - 41 cards
+* [raw_derp](raw_derp/) - 51 cards
 * [raw_mac5_aa05](raw_mac5_aa05/) - 14 cards
 * [raw_mac5_ab01](raw_mac5_ab01/) - 14 cards
 * [raw_mac5_ac02](raw_mac5_ac02/) - 14 cards

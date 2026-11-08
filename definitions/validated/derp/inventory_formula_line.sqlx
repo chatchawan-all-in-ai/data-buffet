@@ -1,0 +1,122 @@
+config {
+  type: "incremental",
+  schema: databuffet.VALIDATED_DERP,
+  dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
+  tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+  uniqueKey: ["formula_line_id"],
+  bigquery: {
+    partitionBy: "asatdate",
+    clusterBy: ["formula_line_id"]
+  },
+}
+
+js {
+  const sourceTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.RAW_DERP,
+    name: name(),
+  };
+
+  const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+  const pk_key = ["formula_line_id"]
+
+  let partition_statement, post_operations_statement;
+
+  if (pk_key && pk_key.length > 0) {
+    partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_datetime DESC, created_datetime DESC, asatdate DESC) = 1`;
+    post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+  } else {
+    partition_statement = "";
+    post_operations_statement = "";
+  }
+}
+
+SELECT
+  IFNULL(${databuffet.functionData.cleanString('formula_line_id')}, '') AS formula_line_id,
+  ${databuffet.functionData.cleanString('id')} AS id,
+  ${databuffet.functionData.cleanString('formula_id')} AS formula_id,
+  ${databuffet.functionData.castFloat64('line_creation_sequence_number')} AS line_creation_sequence_number,
+  ${databuffet.functionData.cleanString('product_configuration_id')} AS product_configuration_id,
+  ${databuffet.functionData.castFloat64('substitution_priority')} AS substitution_priority,
+  ${databuffet.functionData.cleanString('position_number')} AS position_number,
+  ${databuffet.functionData.cleanString('consumption_calculation_method')} AS consumption_calculation_method,
+  ${databuffet.functionData.cleanString('is_consumed_at_operation_complete')} = 'Yes' AS is_consumed_at_operation_complete,
+  ${databuffet.functionData.castFloat64('line_number')} AS line_number,
+  ${databuffet.functionData.castFloat64('consumption_calculation_constant')} AS consumption_calculation_constant,
+  ${databuffet.functionData.cleanString('product_size_id')} AS product_size_id,
+  ${databuffet.functionData.cleanString('item_number')} AS item_number,
+  ${databuffet.functionData.cleanString('product_version_id')} AS product_version_id,
+  ${databuffet.functionData.cleanString('consumption_warehouse_id')} AS consumption_warehouse_id,
+  ${databuffet.functionData.parseFlexibleDate(databuffet.functionData.cleanString('valid_from_date'))} AS valid_from_date,
+  ${databuffet.functionData.cleanString('consumption_site_id')} AS consumption_site_id,
+  ${databuffet.functionData.cleanString('will_cost_calculation_include_line')} = 'Yes' AS will_cost_calculation_include_line,
+  ${databuffet.functionData.cleanString('sub_bom_id')} AS sub_bom_id,
+  ${databuffet.functionData.cleanString('is_resource_consumption_used')} = 'Yes' AS is_resource_consumption_used,
+  ${databuffet.functionData.cleanString('will_manufactured_item_inherit_batch_attributes')} = 'Yes' AS will_manufactured_item_inherit_batch_attributes,
+  ${databuffet.functionData.cleanString('product_unit_symbol')} AS product_unit_symbol,
+  ${databuffet.functionData.cleanString('substitution_group_id')} AS substitution_group_id,
+  ${databuffet.functionData.cleanString('line_type')} AS line_type,
+  ${databuffet.functionData.castFloat64('quantity_rounding_up_multiples')} AS quantity_rounding_up_multiples,
+  ${databuffet.functionData.castFloat64('physical_product_depth')} AS physical_product_depth,
+  ${databuffet.functionData.castFloat64('physical_product_height')} AS physical_product_height,
+  ${databuffet.functionData.castFloat64('variable_scrap_percentage')} AS variable_scrap_percentage,
+  ${databuffet.functionData.castFloat64('physical_product_density')} AS physical_product_density,
+  ${databuffet.functionData.parseFlexibleDate(databuffet.functionData.cleanString('valid_to_date'))} AS valid_to_date,
+  ${databuffet.functionData.cleanString('rounding_up_method')} AS rounding_up_method,
+  ${databuffet.functionData.cleanString('consumption_type')} AS consumption_type,
+  ${databuffet.functionData.cleanString('will_manufactured_item_inherit_shelf_life_dates')} = 'Yes' AS will_manufactured_item_inherit_shelf_life_dates,
+  ${databuffet.functionData.castFloat64('formula_quantity_percentage')} AS formula_quantity_percentage,
+  ${databuffet.functionData.cleanString('warehouse_bom_release_reservation_requirement_rule')} AS warehouse_bom_release_reservation_requirement_rule,
+  ${databuffet.functionData.castFloat64('material_overpick_percentage')} AS material_overpick_percentage,
+  ${databuffet.functionData.cleanString('flushing_principle')} AS flushing_principle,
+  ${databuffet.functionData.castFloat64('quantity_denominator')} AS quantity_denominator,
+  ${databuffet.functionData.cleanString('vendor_account_number')} AS vendor_account_number,
+  ${databuffet.functionData.cleanString('is_percentage_controlled')} = 'Yes' AS is_percentage_controlled,
+  ${databuffet.functionData.cleanString('product_color_id')} AS product_color_id,
+  ${databuffet.functionData.castFloat64('catch_weight_quantity')} AS catch_weight_quantity,
+  ${databuffet.functionData.castFloat64('physical_product_width')} AS physical_product_width,
+  ${databuffet.functionData.cleanString('is_scalable')} = 'Yes' AS is_scalable,
+  ${databuffet.functionData.castFloat64('route_operation_number')} AS route_operation_number,
+  ${databuffet.functionData.castFloat64('constant_scrap_quantity')} AS constant_scrap_quantity,
+  ${databuffet.functionData.cleanString('product_style_id')} AS product_style_id,
+  ${databuffet.functionData.castFloat64('quantity')} AS quantity,
+  ${databuffet.functionData.cleanString('sub_route_id')} AS sub_route_id,
+  ${databuffet.functionData.cleanString('ivzs_bom_accessories')} = 'Yes' AS ivzs_bom_accessories,
+  ${databuffet.functionData.cleanString('qms_allow_over_dispensing')} = 'Yes' AS qms_allow_over_dispensing,
+  ${databuffet.functionData.castFloat64('qms_under_dispense_percentage')} AS qms_under_dispense_percentage,
+  ${databuffet.functionData.castFloat64('qms_over_dispense_percentage')} AS qms_over_dispense_percentage,
+  ${databuffet.functionData.cleanString('is_active')} = 'Y' AS is_active,
+  ${databuffet.functionData.cleanString('remarks')} AS remarks,
+  ${databuffet.functionData.parseFlexibleUtcDatetime('created_datetime')} AS created_datetime,
+  ${databuffet.functionData.cleanString('created_by')} AS created_by,
+  ${databuffet.functionData.parseFlexibleUtcDatetime('updated_datetime')} AS updated_datetime,
+  ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+  ${databuffet.functionData.cleanString('product_id')} AS product_id,
+  ${databuffet.functionData.cleanString('formula_versions_id')} AS formula_versions_id,
+  ${databuffet.functionData.cleanString('site_id')} AS site_id,
+  ${databuffet.functionData.parseAsatDate()} AS asatdate,
+FROM
+  `${sourceTableRef}` ${when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`)} ${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+  ${when(!incremental(), post_operations_statement)}
+}

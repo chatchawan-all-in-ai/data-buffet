@@ -7,8 +7,8 @@ One card per BigQuery table or view built by this repository's Dataform definiti
 
 # Layers
 
-* [Initial (raw)](initial/) - External tables over the AVRO/CSV files in `gs://file-raw-data`, one folder per raw dataset. (261 cards)
-* [Validated](validated/) - Cleaned, typed and deduplicated copies of the raw tables, one folder per source system. (190 cards)
+* [Initial (raw)](initial/) - External tables over the AVRO/CSV files in `gs://file-raw-data`, one folder per raw dataset. (285 cards)
+* [Validated](validated/) - Cleaned, typed and deduplicated copies of the raw tables, one folder per source system. (214 cards)
 * [Curated](curated/) - Business logic over validated tables (MAC5, MASTERSKU, MASTER_SKU, SALEOUT_MDT, DERP). (16 cards)
 * [Dimension](dimension/) - Star-schema dimensions in `dimension_table` (surrogate keys, mds and lake sourced). (71 cards)
 * [Fact](fact/) - Star-schema facts in `fact_table` plus the AR chain. (18 cards)

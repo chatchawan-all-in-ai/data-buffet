@@ -11,6 +11,11 @@
 
 * **Update**: Clarified CIS360 `ag01` profile matching, stored aging-history values, ordered latest-section rules and transaction join multiplicity in the view cards and their exports.
 
+## 2026-11-08 (D-ERP raw and validated tables)
+
+* **Creation**: Added 20 cards for the 10 combo-set, payment, formula and price-sync tables; updated the `raw_derp` and `validated_derp` indexes (51 cards each) and refreshed the source inventories.
+* **Update**: Specified timestamp-first deduplication order in the ten new validated cards and replaced raw-card deduplication summaries with pointers to those cards.
+
 * **Update**: Corrected the [view cards](view/index.md) and [Pub/Sub export cards](view/pub_sub/index.md): table facts, SQL examples, direct readers and export contracts; removed deploy lines and standardized `Read by:` wording.
 * **Update**: Second-round corrections to the scoped core cards and indexes: fixed remaining report findings, standardized `Read by:` to direct readers, documented that rule, and refreshed `generated.at` on edited cards.
 * **Update**: Expanded the six TF commission export views and their cards to include all years for company `ag01`.

@@ -130,7 +130,7 @@ Direct readers are listed in each [validated MASTER_SKU card](../../okf/validate
 (`curated_products.prdD365Sku` = `d365_code`) — the likely join key to DERP
 `item_number`.
 
-## DERP (42 = 41 incremental + 1 schema)
+## DERP (52 = 51 incremental + 1 schema)
 
 DERP inventory, CRM and sales tables (`raw_derp` → `validated_derp`), GCS folder `derp_temp/`.
 In the repo since `7819bef` (2026-10-17); the datasets were built by hand on 2026-10-16
@@ -209,6 +209,44 @@ stability across resyncs or the future feed cadence.
   as supplied, not silently converted between calendars; dedup uses `updated_at`.
 - AVRO booleans use `castBool`, integers `castInt64`, doubles `castFloat64`; string
   keys use `IFNULL(cleanString(...), '')`. No hard-delete purge is added.
+
+**Combo-set, payment, formula and price-sync tables (10, all incremental)** —
+the seven CRM combo-set/payment tables and three inventory tables added after the
+previous 41 DERP tables.
+
+| Table | PK | AVRO columns |
+|---|---|---:|
+| `crm_combo_set` | `combo_set_id` | 14 |
+| `crm_combo_set_customer` | `combo_set_customer_id` | 9 |
+| `crm_combo_set_item` | `combo_set_item_id` | 18 |
+| `crm_combo_set_sale_territory` | `combo_set_sale_territory_id` | 13 |
+| `crm_master_payment_condition` | `master_payment_condition_id` | 14 |
+| `crm_master_payment_method` | `master_payment_method_id` | 17 |
+| `crm_master_payment_term` | `master_payment_term_id` | 16 |
+| `inventory_formula_line` | `formula_line_id` | 62 |
+| `inventory_formula_versions` | `formula_versions_id` | 36 |
+| `sync_mac5_inventory_item_price` | `inventory_item_price_id` | 25 |
+
+- `crm_combo_set`, `crm_combo_set_customer`, `crm_combo_set_item` and
+  `crm_combo_set_sale_territory` use the Excel data-dictionary PKs. Their declared
+  references include audit user IDs, combo-set IDs, customer IDs, product IDs and
+  sales-territory IDs.
+- The three payment tables use their Excel data-dictionary PKs and reference `users(id)`
+  through creator/updater IDs. Formula-table keys also come from the data dictionary.
+  Formula lines reference `formula_versions.formula_id` and `products.item_number`;
+  `formula_versions_id` is a candidate direct link to `formula_versions_id`. Both
+  formula tables carry product identifiers; their D365 timestamp strings use the UTC parser.
+- Formula date strings use `parseFlexibleDate`; their AVRO string flags become booleans
+  using the documented Y/N or Yes/No source values.
+- CRM timestamps use `parseFlexibleDatetime`, consistent with CRM siblings.
+  Combo-set start/end dates use `parseFlexibleDate`.
+- `sync_mac5_inventory_item_price` uses the sibling `inventory_item_price_id` key and
+  incremental load pattern. Its timestamp and active/price flags follow the existing
+  `inventory_item_price` definition; source-timezone interpretation remains unconfirmed.
+- The seven combo-set/payment PKs and both formula PKs are the source keys marked PK in
+  the Excel data dictionary. One `ASATDATE=20261105` partition was observed per feed;
+  file listing metadata alone does not show whether any partition is a complete snapshot
+  or only changes. No row-level key uniqueness scan was run for these new feeds.
 
 The first build of every DERP table dedups by ID across all raw partitions (for the
 journals, this includes the initial 3-day full load). Incremental runs read only the `BACKFILL_DAYS` window,

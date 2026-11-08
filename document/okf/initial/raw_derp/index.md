@@ -1,10 +1,14 @@
 # raw_derp
 
-41 cards in BigQuery dataset `raw_derp`.
+51 cards in BigQuery dataset `raw_derp`.
 
 # Tables
 
 * [crm_business_unit](crm_business_unit.md) - One row = one business unit node, a record of source table `crm_business_unit` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [crm_combo_set](crm_combo_set.md) - One row = one combo-set header, a record of source table `crm_combo_set` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [crm_combo_set_customer](crm_combo_set_customer.md) - One row = one customer entitlement for a combo set, a record of source table `crm_combo_set_customer` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [crm_combo_set_item](crm_combo_set_item.md) - One row = one product line within a combo set, a record of source table `crm_combo_set_item` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [crm_combo_set_sale_territory](crm_combo_set_sale_territory.md) - One row = one sales-territory assignment to a combo set, a record of source table `crm_combo_set_sale_territory` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_customer_address](crm_customer_address.md) - One row = one customer address, a record of source table `crm_customer_address` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_customer_contact](crm_customer_contact.md) - One row = one customer contact, a record of source table `crm_customer_contact` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_customer_contact_channels](crm_customer_contact_channels.md) - One row = one contact channel of a customer, a record of source table `crm_customer_contact_channels` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
@@ -14,6 +18,9 @@
 * [crm_customer_segment](crm_customer_segment.md) - One row = one customer segment record, a record of source table `crm_customer_segment` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_customer_stores](crm_customer_stores.md) - One row = one customer store, a record of source table `crm_customer_stores` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_data_zone](crm_data_zone.md) - One row = one data zone node, a record of source table `crm_data_zone` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [crm_master_payment_condition](crm_master_payment_condition.md) - One row = one payment condition, a record of source table `crm_master_payment_condition` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [crm_master_payment_method](crm_master_payment_method.md) - One row = one payment method, a record of source table `crm_master_payment_method` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [crm_master_payment_term](crm_master_payment_term.md) - One row = one payment term, a record of source table `crm_master_payment_term` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_nd_sd_price](crm_nd_sd_price.md) - One row = one ND/SD price record for a product, a record of source table `crm_nd_sd_price` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_nd_sd_price_territory_group](crm_nd_sd_price_territory_group.md) - One row = one link between an ND/SD price and a sales territory group, a record of source table `crm_nd_sd_price_territory_group` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_nd_sd_price_zone](crm_nd_sd_price_zone.md) - One row = one link between an ND/SD price and a data zone, a record of source table `crm_nd_sd_price_zone` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
@@ -37,6 +44,8 @@
 * [crm_sale_order_revision](crm_sale_order_revision.md) - One row = one saved revision of a sale order, a record of source table `crm_sale_order_revision` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_sale_order_sales_person](crm_sale_order_sales_person.md) - One row = one salesperson assigned to a sale order, a record of source table `crm_sale_order_sales_person` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_sale_order_status_history](crm_sale_order_status_history.md) - One row = one status change or action on a sale order, a record of source table `crm_sale_order_status_history` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [inventory_formula_line](inventory_formula_line.md) - One row = one line of a production formula, a record of source table `inventory_formula_line` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [inventory_formula_versions](inventory_formula_versions.md) - One row = one product formula version, a record of source table `inventory_formula_versions` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [inventory_item_price](inventory_item_price.md) - One row = one item price record per item, site and effective date, a record of source table `inventory_item_price` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [inventory_movement_journal_entries](inventory_movement_journal_entries.md) - One row = one inventory movement journal line (latest version per journal number and line), a record of source table `inventory_movement_journal_entries` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [inventory_movement_journal_headers](inventory_movement_journal_headers.md) - One row = one inventory movement journal header (latest version per journal number), a record of source table `inventory_movement_journal_headers` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
@@ -45,3 +54,4 @@
 * [sales_employee](sales_employee.md) - One row = one employee, a record of source table `sales_employee` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [sales_employee_sale_territory](sales_employee_sale_territory.md) - One row = one assignment of an employee to a sales territory, a record of source table `sales_employee_sale_territory` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [sales_sales_territory](sales_sales_territory.md) - One row = one sales territory node, a record of source table `sales_sales_territory` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [sync_mac5_inventory_item_price](sync_mac5_inventory_item_price.md) - One row = one synchronized item-price record, a record of source table `sync_mac5_inventory_item_price` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).

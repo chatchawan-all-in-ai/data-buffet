@@ -46,3 +46,13 @@ DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_cu
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_customer_segment`;
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_customer_stores`;
 DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_data_zone`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_combo_set`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_combo_set_customer`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_combo_set_item`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_combo_set_sale_territory`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_master_payment_condition`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_master_payment_method`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_master_payment_term`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.inventory_formula_line`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.inventory_formula_versions`;
+DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.sync_mac5_inventory_item_price`;
