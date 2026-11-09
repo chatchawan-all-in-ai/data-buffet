@@ -47,6 +47,13 @@ js {
     };
     const CrmNdSdPriceZoneTableRef = `${CrmNdSdPriceZoneTable.database}.${CrmNdSdPriceZoneTable.schema}.${CrmNdSdPriceZoneTable.name}`;
 
+    const CrmNdSdPriceChannelTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_nd_sd_price_channel",
+    };
+    const CrmNdSdPriceChannelTableRef = `${CrmNdSdPriceChannelTable.database}.${CrmNdSdPriceChannelTable.schema}.${CrmNdSdPriceChannelTable.name}`;
+
     const CrmQuotationTable = {
         database: databuffet.DATABASE,
         schema: databuffet.VALIDATED_DERP,
@@ -88,6 +95,20 @@ js {
         name: "crm_quotation_sale",
     };
     const CrmQuotationSaleTableRef = `${CrmQuotationSaleTable.database}.${CrmQuotationSaleTable.schema}.${CrmQuotationSaleTable.name}`;
+
+    const CrmQuotationTerrCustTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_quotation_terr_cust",
+    };
+    const CrmQuotationTerrCustTableRef = `${CrmQuotationTerrCustTable.database}.${CrmQuotationTerrCustTable.schema}.${CrmQuotationTerrCustTable.name}`;
+
+    const CrmQuotationTerrSaleTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_quotation_terr_sale",
+    };
+    const CrmQuotationTerrSaleTableRef = `${CrmQuotationTerrSaleTable.database}.${CrmQuotationTerrSaleTable.schema}.${CrmQuotationTerrSaleTable.name}`;
 
     const CrmSaleOrderTable = {
         database: databuffet.DATABASE,
@@ -236,6 +257,20 @@ js {
     };
     const CrmCustomerAddressTableRef = `${CrmCustomerAddressTable.database}.${CrmCustomerAddressTable.schema}.${CrmCustomerAddressTable.name}`;
 
+    const CrmCustomerBankAccountTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_customer_bank_account",
+    };
+    const CrmCustomerBankAccountTableRef = `${CrmCustomerBankAccountTable.database}.${CrmCustomerBankAccountTable.schema}.${CrmCustomerBankAccountTable.name}`;
+
+    const CrmCustomerBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_customer_branch",
+    };
+    const CrmCustomerBranchTableRef = `${CrmCustomerBranchTable.database}.${CrmCustomerBranchTable.schema}.${CrmCustomerBranchTable.name}`;
+
     const CrmCustomerContactTable = {
         database: databuffet.DATABASE,
         schema: databuffet.VALIDATED_DERP,
@@ -371,12 +406,15 @@ DROP TABLE IF EXISTS `${InventoryItemPriceTableRef}`;
 DROP TABLE IF EXISTS `${CrmNdSdPriceTableRef}`;
 DROP TABLE IF EXISTS `${CrmNdSdPriceTerritoryGroupTableRef}`;
 DROP TABLE IF EXISTS `${CrmNdSdPriceZoneTableRef}`;
+DROP TABLE IF EXISTS `${CrmNdSdPriceChannelTableRef}`;
 DROP TABLE IF EXISTS `${CrmQuotationTableRef}`;
 DROP TABLE IF EXISTS `${CrmQuotationDeliveryTableRef}`;
 DROP TABLE IF EXISTS `${CrmQuotationDeliveryDetailTableRef}`;
 DROP TABLE IF EXISTS `${CrmQuotationDetailTableRef}`;
 DROP TABLE IF EXISTS `${CrmQuotationHistoryTableRef}`;
 DROP TABLE IF EXISTS `${CrmQuotationSaleTableRef}`;
+DROP TABLE IF EXISTS `${CrmQuotationTerrCustTableRef}`;
+DROP TABLE IF EXISTS `${CrmQuotationTerrSaleTableRef}`;
 DROP TABLE IF EXISTS `${CrmSaleOrderTableRef}`;
 DROP TABLE IF EXISTS `${CrmSaleOrderApprovalLogTableRef}`;
 DROP TABLE IF EXISTS `${CrmSaleOrderApproverTableRef}`;
@@ -398,6 +436,8 @@ DROP TABLE IF EXISTS `${SalesEmployeeSaleTerritoryTableRef}`;
 DROP TABLE IF EXISTS `${SalesSalesTerritoryTableRef}`;
 DROP TABLE IF EXISTS `${CrmBusinessUnitTableRef}`;
 DROP TABLE IF EXISTS `${CrmCustomerAddressTableRef}`;
+DROP TABLE IF EXISTS `${CrmCustomerBankAccountTableRef}`;
+DROP TABLE IF EXISTS `${CrmCustomerBranchTableRef}`;
 DROP TABLE IF EXISTS `${CrmCustomerContactTableRef}`;
 DROP TABLE IF EXISTS `${CrmCustomerContactChannelsTableRef}`;
 DROP TABLE IF EXISTS `${CrmCustomerCreditTableRef}`;

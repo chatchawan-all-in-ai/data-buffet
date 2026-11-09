@@ -47,6 +47,13 @@ js {
     };
     const CrmNdSdPriceZoneTableRef = `${CrmNdSdPriceZoneTable.database}.${CrmNdSdPriceZoneTable.schema}.${CrmNdSdPriceZoneTable.name}`;
 
+    const CrmNdSdPriceChannelTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_nd_sd_price_channel",
+    };
+    const CrmNdSdPriceChannelTableRef = `${CrmNdSdPriceChannelTable.database}.${CrmNdSdPriceChannelTable.schema}.${CrmNdSdPriceChannelTable.name}`;
+
     const CrmQuotationTable = {
         database: databuffet.DATABASE,
         schema: databuffet.RAW_DERP,
@@ -88,6 +95,20 @@ js {
         name: "crm_quotation_sale",
     };
     const CrmQuotationSaleTableRef = `${CrmQuotationSaleTable.database}.${CrmQuotationSaleTable.schema}.${CrmQuotationSaleTable.name}`;
+
+    const CrmQuotationTerrCustTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_quotation_terr_cust",
+    };
+    const CrmQuotationTerrCustTableRef = `${CrmQuotationTerrCustTable.database}.${CrmQuotationTerrCustTable.schema}.${CrmQuotationTerrCustTable.name}`;
+
+    const CrmQuotationTerrSaleTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_quotation_terr_sale",
+    };
+    const CrmQuotationTerrSaleTableRef = `${CrmQuotationTerrSaleTable.database}.${CrmQuotationTerrSaleTable.schema}.${CrmQuotationTerrSaleTable.name}`;
 
     const CrmSaleOrderTable = {
         database: databuffet.DATABASE,
@@ -235,6 +256,20 @@ js {
         name: "crm_customer_address",
     };
     const CrmCustomerAddressTableRef = `${CrmCustomerAddressTable.database}.${CrmCustomerAddressTable.schema}.${CrmCustomerAddressTable.name}`;
+
+    const CrmCustomerBankAccountTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_customer_bank_account",
+    };
+    const CrmCustomerBankAccountTableRef = `${CrmCustomerBankAccountTable.database}.${CrmCustomerBankAccountTable.schema}.${CrmCustomerBankAccountTable.name}`;
+
+    const CrmCustomerBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_customer_branch",
+    };
+    const CrmCustomerBranchTableRef = `${CrmCustomerBranchTable.database}.${CrmCustomerBranchTable.schema}.${CrmCustomerBranchTable.name}`;
 
     const CrmCustomerContactTable = {
         database: databuffet.DATABASE,
@@ -438,6 +473,17 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_nd_sd_price_zone/'
 );
 
+DROP TABLE IF EXISTS `${CrmNdSdPriceChannelTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmNdSdPriceChannelTableRef}`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_nd_sd_price_channel/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_nd_sd_price_channel/'
+);
+
 DROP TABLE IF EXISTS `${CrmQuotationTableRef}`;
 CREATE OR REPLACE EXTERNAL TABLE `${CrmQuotationTableRef}`
 WITH PARTITION COLUMNS (
@@ -502,6 +548,28 @@ OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_sale/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_sale/'
+);
+
+DROP TABLE IF EXISTS `${CrmQuotationTerrCustTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmQuotationTerrCustTableRef}`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_terr_cust/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_terr_cust/'
+);
+
+DROP TABLE IF EXISTS `${CrmQuotationTerrSaleTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmQuotationTerrSaleTableRef}`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_terr_sale/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_terr_sale/'
 );
 
 DROP TABLE IF EXISTS `${CrmSaleOrderTableRef}`;
@@ -735,6 +803,28 @@ OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_address/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_address/'
+);
+
+DROP TABLE IF EXISTS `${CrmCustomerBankAccountTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmCustomerBankAccountTableRef}`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_bank_account/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_bank_account/'
+);
+
+DROP TABLE IF EXISTS `${CrmCustomerBranchTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmCustomerBranchTableRef}`
+WITH PARTITION COLUMNS (
+    ASATDATE STRING
+)
+OPTIONS (
+  format = 'AVRO',
+  uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_branch/*'],
+  hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_branch/'
 );
 
 DROP TABLE IF EXISTS `${CrmCustomerContactTableRef}`;

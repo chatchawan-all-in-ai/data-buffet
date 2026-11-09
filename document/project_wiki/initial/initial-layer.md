@@ -36,8 +36,8 @@
 | `saleout_mdt/drop_all_tables_validated_saleout_mdt.sqlx` | initial | DROP 11 validated tables (bt 7, gb, hp, tw, dh) — ไม่รวม `eom_*` และ `saleout_lastyear` |
 | `allkons_commission/create_all_table_raw_allkons_commission.sqlx` | initial | 7 hive-partitioned external tables |
 | `allkons_commission/drop_all_tables_validated_allkons_commission.sqlx` | initial | DROP 7 validated tables |
-| `derp/create_all_table_raw_derp.sqlx` | initial | สร้าง schema `raw_derp` + 51 AVRO hive-partitioned external tables จาก `gs://file-raw-data/derp_temp/` (journal headers, journal entries, item price + 40 `crm_*` + 5 `sales_*` + 2 formula + 1 MAC5 price sync) — ชื่อตาราง = ชื่อโฟลเดอร์ GCS |
-| `derp/drop_all_tables_validated_derp.sqlx` | initial | DROP 51 validated_derp tables |
+| `derp/create_all_table_raw_derp.sqlx` | initial | สร้าง schema `raw_derp` + 56 AVRO hive-partitioned external tables จาก `gs://file-raw-data/derp_temp/` (journal headers, journal entries, item price + 45 `crm_*` + 5 `sales_*` + 2 formula + 1 MAC5 price sync) — ชื่อตาราง = ชื่อโฟลเดอร์ GCS |
+| `derp/drop_all_tables_validated_derp.sqlx` | initial | DROP 56 validated_derp tables |
 
 > ⚠️ **ALLKONS_COMMISSION หยุดอยู่แค่ชั้นนี้** — ไฟล์ `definitions/validated/allkons_commission/`
 > ถูกลบไปแล้วใน commit `74a10e0 "pause process data layer of commission"` · raw external

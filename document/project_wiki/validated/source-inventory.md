@@ -130,7 +130,7 @@ Direct readers are listed in each [validated MASTER_SKU card](../../okf/validate
 (`curated_products.prdD365Sku` = `d365_code`) — the likely join key to DERP
 `item_number`.
 
-## DERP (52 = 51 incremental + 1 schema)
+## DERP (57 = 56 incremental + 1 schema)
 
 DERP inventory, CRM and sales tables (`raw_derp` → `validated_derp`), GCS folder `derp_temp/`.
 In the repo since `7819bef` (2026-10-17); the datasets were built by hand on 2026-10-16
@@ -248,11 +248,32 @@ previous 41 DERP tables.
   file listing metadata alone does not show whether any partition is a complete snapshot
   or only changes. No row-level key uniqueness scan was run for these new feeds.
 
+**Additional CRM tables (5, all incremental, added 2026-11-09)** — schema columns from
+the delivered AVRO files; each uses its source ID as the validated key.
+
+| Table | PK | AVRO columns |
+|---|---|---:|
+| `crm_customer_bank_account` | `customer_bank_account_id` | 15 |
+| `crm_customer_branch` | `customer_branch_id` | 54 |
+| `crm_nd_sd_price_channel` | `nd_sd_price_channel_id` | 11 |
+| `crm_quotation_terr_cust` | `quotation_terr_cust_id` | 29 |
+| `crm_quotation_terr_sale` | `quotation_terr_sale_id` | 30 |
+
+- Delivery status: all five `ASATDATE=20261109/<table>_20261109_000.avro` files
+  contain schemas with zero rows. D-ERP confirmation of whether the source is actually
+  empty is pending; this delivery does not establish the future feed cadence.
+- CRM timestamps use `parseFlexibleDatetime` without a timezone shift, matching CRM siblings.
+  `quotation_date` is a midnight timestamp stored as DATE. AVRO booleans, doubles and
+  integers use `castBool`, `castFloat64` and `castInt64`; other source strings use
+  `cleanString`. String keys are made non-null with `IFNULL(cleanString(...), '')`.
+- The source ID fields above are used as primary keys; no composite key or document purge
+  is added.
+
 The first build of every DERP table dedups by ID across all raw partitions (for the
 journals, this includes the initial 3-day full load). Incremental runs read only the `BACKFILL_DAYS` window,
 dedup that input, then MERGE by ID; they do not rescan all historical partitions.
 
-Nothing downstream reads `validated_derp` yet (no curated, dim, fact, view or CDC).
+Direct downstream readers are listed in the [validated DERP table cards](../../okf/validated/validated_derp/index.md).
 Source context: [source-systems § DERP](../overview/source-systems.md#derp--inventory).
 
 ## ALLKONS_COMMISSION — ⚠️ **ถูก pause แล้ว ไม่มีไฟล์ validated เหลือเลย**

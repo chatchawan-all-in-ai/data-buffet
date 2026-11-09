@@ -1,6 +1,6 @@
 # raw_derp
 
-51 cards in BigQuery dataset `raw_derp`.
+56 cards in BigQuery dataset `raw_derp`.
 
 # Tables
 
@@ -10,6 +10,8 @@
 * [crm_combo_set_item](crm_combo_set_item.md) - One row = one product line within a combo set, a record of source table `crm_combo_set_item` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_combo_set_sale_territory](crm_combo_set_sale_territory.md) - One row = one sales-territory assignment to a combo set, a record of source table `crm_combo_set_sale_territory` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_customer_address](crm_customer_address.md) - One row = one customer address, a record of source table `crm_customer_address` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [crm_customer_bank_account](crm_customer_bank_account.md) - One row = one customer bank account, a record of source table `crm_customer_bank_account` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [crm_customer_branch](crm_customer_branch.md) - One row = one customer branch, a record of source table `crm_customer_branch` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_customer_contact](crm_customer_contact.md) - One row = one customer contact, a record of source table `crm_customer_contact` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_customer_contact_channels](crm_customer_contact_channels.md) - One row = one contact channel of a customer, a record of source table `crm_customer_contact_channels` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_customer_credit](crm_customer_credit.md) - One row = one customer credit record, a record of source table `crm_customer_credit` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
@@ -22,6 +24,7 @@
 * [crm_master_payment_method](crm_master_payment_method.md) - One row = one payment method, a record of source table `crm_master_payment_method` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_master_payment_term](crm_master_payment_term.md) - One row = one payment term, a record of source table `crm_master_payment_term` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_nd_sd_price](crm_nd_sd_price.md) - One row = one ND/SD price record for a product, a record of source table `crm_nd_sd_price` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [crm_nd_sd_price_channel](crm_nd_sd_price_channel.md) - One row = one sales-channel association for an ND/SD price, a record of source table `crm_nd_sd_price_channel` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_nd_sd_price_territory_group](crm_nd_sd_price_territory_group.md) - One row = one link between an ND/SD price and a sales territory group, a record of source table `crm_nd_sd_price_territory_group` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_nd_sd_price_zone](crm_nd_sd_price_zone.md) - One row = one link between an ND/SD price and a data zone, a record of source table `crm_nd_sd_price_zone` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_quotation](crm_quotation.md) - One row = one quotation (latest revision), a record of source table `crm_quotation` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
@@ -30,6 +33,8 @@
 * [crm_quotation_detail](crm_quotation_detail.md) - One row = one quotation line, a record of source table `crm_quotation_detail` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_quotation_history](crm_quotation_history.md) - One row = one snapshot of a quotation at a revision, a record of source table `crm_quotation_history` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_quotation_sale](crm_quotation_sale.md) - One row = one salesperson on a quotation, a record of source table `crm_quotation_sale` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [crm_quotation_terr_cust](crm_quotation_terr_cust.md) - One row = one customer assignment for a quotation territory, a record of source table `crm_quotation_terr_cust` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
+* [crm_quotation_terr_sale](crm_quotation_terr_sale.md) - One row = one salesperson assignment for a quotation territory, a record of source table `crm_quotation_terr_sale` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_sale_order](crm_sale_order.md) - One row = one sale order, a record of source table `crm_sale_order` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_sale_order_approval_log](crm_sale_order_approval_log.md) - One row = one approval action on a sale order, a record of source table `crm_sale_order_approval_log` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).
 * [crm_sale_order_approver](crm_sale_order_approver.md) - One row = one approver assigned to a sale order revision, a record of source table `crm_sale_order_approver` (DERP) as delivered in the GCS extract for one ASATDATE folder (raw, uncleaned).

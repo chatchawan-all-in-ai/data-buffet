@@ -1,0 +1,118 @@
+config {
+  type: "incremental",
+  schema: databuffet.VALIDATED_DERP,
+  dependencies: ["validated_schema_derp", "create_all_table_raw_derp"],
+  tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
+  uniqueKey: ["customer_branch_id"],
+  bigquery: {
+    partitionBy: "asatdate",
+    clusterBy: ["customer_branch_id"]
+  },
+}
+
+js {
+  const sourceTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.RAW_DERP,
+    name: name(),
+  };
+
+  const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+
+  const pk_key = ["customer_branch_id"]
+
+  let partition_statement, post_operations_statement;
+
+  if (pk_key && pk_key.length > 0) {
+    partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY updated_at DESC, asatdate DESC) = 1`;
+    post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+
+  } else {
+    partition_statement = "";
+    post_operations_statement = "";
+  }
+}
+
+-- CRM timestamps are Bangkok local time, so no timezone shift is applied.
+SELECT
+  IFNULL(${databuffet.functionData.cleanString('customer_branch_id')}, '') AS customer_branch_id,
+  ${databuffet.functionData.cleanString('customer_master_id')} AS customer_master_id,
+  ${databuffet.functionData.cleanString('customer_code')} AS customer_code,
+  ${databuffet.functionData.cleanString('branch_code')} AS branch_code,
+  ${databuffet.functionData.cleanString('branch_name')} AS branch_name,
+  ${databuffet.functionData.cleanString('branch_name_en')} AS branch_name_en,
+  ${databuffet.functionData.cleanString('branch_type')} AS branch_type,
+  ${databuffet.functionData.cleanString('branch_no')} AS branch_no,
+  ${databuffet.functionData.cleanString('tax_branch_code')} AS tax_branch_code,
+  ${databuffet.functionData.cleanString('address_line1')} AS address_line1,
+  ${databuffet.functionData.cleanString('address_line2')} AS address_line2,
+  ${databuffet.functionData.cleanString('sub_district')} AS sub_district,
+  ${databuffet.functionData.cleanString('district')} AS district,
+  ${databuffet.functionData.cleanString('province')} AS province,
+  ${databuffet.functionData.cleanString('postal_code')} AS postal_code,
+  ${databuffet.functionData.cleanString('country')} AS country,
+  ${databuffet.functionData.cleanString('geography_id')} AS geography_id,
+  ${databuffet.functionData.cleanString('geography_code')} AS geography_code,
+  ${databuffet.functionData.cleanString('geography_name')} AS geography_name,
+  ${databuffet.functionData.cleanString('region_id')} AS region_id,
+  ${databuffet.functionData.cleanString('region_code')} AS region_code,
+  ${databuffet.functionData.cleanString('region_name')} AS region_name,
+  ${databuffet.functionData.castFloat64('latitude')} AS latitude,
+  ${databuffet.functionData.castFloat64('longitude')} AS longitude,
+  ${databuffet.functionData.cleanString('google_map_url')} AS google_map_url,
+  ${databuffet.functionData.cleanString('phone')} AS phone,
+  ${databuffet.functionData.cleanString('phone_ext')} AS phone_ext,
+  ${databuffet.functionData.cleanString('mobile')} AS mobile,
+  ${databuffet.functionData.cleanString('fax')} AS fax,
+  ${databuffet.functionData.cleanString('email')} AS email,
+  ${databuffet.functionData.cleanString('line_id')} AS line_id,
+  ${databuffet.functionData.cleanString('website')} AS website,
+  ${databuffet.functionData.cleanString('contact_person')} AS contact_person,
+  ${databuffet.functionData.cleanString('contact_position')} AS contact_position,
+  ${databuffet.functionData.cleanString('contact_phone')} AS contact_phone,
+  ${databuffet.functionData.cleanString('contact_email')} AS contact_email,
+  ${databuffet.functionData.cleanString('delivery_address')} AS delivery_address,
+  ${databuffet.functionData.cleanString('delivery_remark')} AS delivery_remark,
+  ${databuffet.functionData.cleanString('delivery_day')} AS delivery_day,
+  ${databuffet.functionData.cleanString('delivery_time')} AS delivery_time,
+  ${databuffet.functionData.castBool('is_default')} AS is_default,
+  ${databuffet.functionData.castBool('is_billing_address')} AS is_billing_address,
+  ${databuffet.functionData.castBool('is_shipping_address')} AS is_shipping_address,
+  ${databuffet.functionData.castInt64('sort_order')} AS sort_order,
+  ${databuffet.functionData.cleanString('remark')} AS remark,
+  ${databuffet.functionData.cleanString('status')} AS status,
+  ${databuffet.functionData.cleanString('is_active')} AS is_active,
+  ${databuffet.functionData.parseFlexibleDatetime('created_at')} AS created_at,
+  ${databuffet.functionData.cleanString('created_by')} AS created_by,
+  ${databuffet.functionData.parseFlexibleDatetime('updated_at')} AS updated_at,
+  ${databuffet.functionData.cleanString('updated_by')} AS updated_by,
+  ${databuffet.functionData.cleanString('created_by_name')} AS created_by_name,
+  ${databuffet.functionData.cleanString('updated_by_name')} AS updated_by_name,
+  ${databuffet.functionData.castBool('is_sync')} AS is_sync,
+  ${databuffet.functionData.parseAsatDate()} AS asatdate,
+FROM
+  `${sourceTableRef}`
+${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
+${partition_statement}
+
+pre_operations {
+}
+
+post_operations {
+  ${when(!incremental(), post_operations_statement)}
+}

@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-09 (D-ERP CRM tables)
+
+* **Creation**: Added raw and validated cards for five CRM tables; refreshed DERP indexes and source inventory.
+
 ## 2026-11-09 (D-ERP price dimensions)
 
 * **Update**: Added Pub/Sub export views and OKF cards for the three D-ERP price dimensions, resolved ag01 company and unique product matches in `dim_price`, and updated the related OKF cards and indexes.

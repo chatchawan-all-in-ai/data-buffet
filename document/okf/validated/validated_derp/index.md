@@ -1,6 +1,6 @@
 # validated_derp
 
-51 cards in BigQuery dataset `validated_derp`.
+56 cards in BigQuery dataset `validated_derp`.
 
 # Tables
 
@@ -10,6 +10,8 @@
 * [crm_combo_set_item](crm_combo_set_item.md) - One row = one product line within a combo set from source table `crm_combo_set_item`, unique on (combo_set_item_id).
 * [crm_combo_set_sale_territory](crm_combo_set_sale_territory.md) - One row = one sales-territory assignment to a combo set from source table `crm_combo_set_sale_territory`, unique on (combo_set_sale_territory_id).
 * [crm_customer_address](crm_customer_address.md) - One row = one customer address from source table `crm_customer_address`, unique on (customer_address_id).
+* [crm_customer_bank_account](crm_customer_bank_account.md) - One row = one customer bank account from source table `crm_customer_bank_account`, unique on (customer_bank_account_id).
+* [crm_customer_branch](crm_customer_branch.md) - One row = one customer branch from source table `crm_customer_branch`, unique on (customer_branch_id).
 * [crm_customer_contact](crm_customer_contact.md) - One row = one customer contact from source table `crm_customer_contact`, unique on (customer_contact_id).
 * [crm_customer_contact_channels](crm_customer_contact_channels.md) - One row = one contact channel of a customer from source table `crm_customer_contact_channels`, unique on (customer_contact_channels_id).
 * [crm_customer_credit](crm_customer_credit.md) - One row = one customer credit record from source table `crm_customer_credit`, unique on (customer_credit_id).
@@ -22,6 +24,7 @@
 * [crm_master_payment_method](crm_master_payment_method.md) - One row = one payment method from source table `crm_master_payment_method`, unique on (master_payment_method_id).
 * [crm_master_payment_term](crm_master_payment_term.md) - One row = one payment term from source table `crm_master_payment_term`, unique on (master_payment_term_id).
 * [crm_nd_sd_price](crm_nd_sd_price.md) - One row = one ND/SD price record for a product from source table `crm_nd_sd_price`, unique on (nd_sd_price_id).
+* [crm_nd_sd_price_channel](crm_nd_sd_price_channel.md) - One row = one sales-channel association for an ND/SD price from source table `crm_nd_sd_price_channel`, unique on (nd_sd_price_channel_id).
 * [crm_nd_sd_price_territory_group](crm_nd_sd_price_territory_group.md) - One row = one link between an ND/SD price and a sales territory group from source table `crm_nd_sd_price_territory_group`, unique on (nd_sd_price_territory_group_id).
 * [crm_nd_sd_price_zone](crm_nd_sd_price_zone.md) - One row = one link between an ND/SD price and a data zone from source table `crm_nd_sd_price_zone`, unique on (nd_sd_price_zone_id).
 * [crm_quotation](crm_quotation.md) - One row = one quotation (latest revision) from source table `crm_quotation`, unique on (quotation_id).
@@ -30,6 +33,8 @@
 * [crm_quotation_detail](crm_quotation_detail.md) - One row = one quotation line from source table `crm_quotation_detail`, unique on (quotation_detail_id).
 * [crm_quotation_history](crm_quotation_history.md) - One row = one snapshot of a quotation at a revision from source table `crm_quotation_history`, unique on (quotation_history_id).
 * [crm_quotation_sale](crm_quotation_sale.md) - One row = one salesperson on a quotation from source table `crm_quotation_sale`, unique on (quotation_sale_id).
+* [crm_quotation_terr_cust](crm_quotation_terr_cust.md) - One row = one customer assignment for a quotation territory from source table `crm_quotation_terr_cust`, unique on (quotation_terr_cust_id).
+* [crm_quotation_terr_sale](crm_quotation_terr_sale.md) - One row = one salesperson assignment for a quotation territory from source table `crm_quotation_terr_sale`, unique on (quotation_terr_sale_id).
 * [crm_sale_order](crm_sale_order.md) - One row = one sale order from source table `crm_sale_order`, unique on (sale_order_id).
 * [crm_sale_order_approval_log](crm_sale_order_approval_log.md) - One row = one approval action on a sale order from source table `crm_sale_order_approval_log`, unique on (sale_order_approval_log_id).
 * [crm_sale_order_approver](crm_sale_order_approver.md) - One row = one approver assigned to a sale order revision from source table `crm_sale_order_approver`, unique on (sale_order_approver_id).
