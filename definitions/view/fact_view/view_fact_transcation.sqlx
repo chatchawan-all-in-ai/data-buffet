@@ -853,14 +853,25 @@ with dim_calendar as (
       END)
     ) as FlagAccExc,
 
-    -- Project: ช่วงแรกของ mihdesc (คั่นด้วย #) ที่มีคำว่า "โครงการ" · ไม่มีช่วงไหนมี = ช่วงแรกที่อยู่ก่อน # (ข้าม # นำหน้า) · ว่าง = NULL
-    --   ตัด "คุณ" หน้า "โครงการ" ออก (ชื่อโครงการพิมพ์ไว้ในช่องคนติดต่อ เช่น "คุณโครงการวิลล่าพลาโน่")
-    -- IsProject: mihdesc มีคำว่า "โครงการ" ซึ่งเท่ากับ Project มีคำนี้เสมอ เพราะ # ไม่มีทางตัดกลางคำ
-    COALESCE(
-      (SELECT REGEXP_REPLACE(TRIM(seg), r'^คุณ\s*(โครงการ)', r'\1')
-        FROM UNNEST(SPLIT(t1.mihdesc, '#')) AS seg WITH OFFSET AS pos
-        WHERE seg LIKE '%โครงการ%' ORDER BY pos LIMIT 1),
-      NULLIF(TRIM(REGEXP_EXTRACT(t1.mihdesc, r'^#*([^#]*)')), '')
+    -- Project: ช่วงแรกของ mihdesc (คั่นด้วย #) ที่มีคำว่า "โครงการ" · ไม่มีช่วงไหนมี = NULL (บิลที่ไม่ใช่โครงการ)
+    --   เริ่มที่คำว่า "โครงการ" (ทิ้ง "คุณ"/"ส่ง"/เลขไซต์ข้างหน้า) แล้วตัดที่อยู่/คนติดต่อ/เบอร์โทรท้ายชื่อออก
+    --   (ถนน แขวง ตำบล อำเภอ เขต จังหวัด ซอย หมู่ เลขที่ ติดต่อ โทร ตามแผนที่, " คุณ", ถ./ต./อ./จ./ซ./ม., เบอร์โทร, บ้านเลขที่ 12/3)
+    --   ตัดแล้วเหลือแค่ "โครงการ" (เช่น "โครงการ คุณสมชาย") → ใช้ช่วงก่อนตัด
+    -- IsProject: mihdesc มีคำว่า "โครงการ" → Yes ซึ่งเท่ากับ Project IS NOT NULL เสมอ เพราะ # ไม่มีทางตัดกลางคำ
+    (SELECT COALESCE(NULLIF(p_clean, 'โครงการ'), p)
+      FROM (
+        SELECT p,
+          NULLIF(TRIM(REGEXP_REPLACE(
+            REGEXP_REPLACE(
+              REGEXP_EXTRACT(p, r'โครงการ.*'),
+              r'(?:ถนน|แขวง|ตำบล|อำเภอ|เขต|จังหวัด|ซอย|หมู่ที่|หมู่\s*\d|บ้านเลขที่|เลขที่|ติดต่อ|โทร|[Tt]el|ตามแผนที่|(?:^|[\s\(\),])(?:คุณ|(?:ถ|ต|อ|จ|ซ|ม)\.)|\d{2,3}[-\s]?\d{3}[-\s]?\d{3,4}|\d+/\d+).*$', ''),
+            r'[\s\(\-,:/]+$', '')), '') AS p_clean
+        FROM (
+          SELECT (SELECT TRIM(seg)
+            FROM UNNEST(SPLIT(t1.mihdesc, '#')) AS seg WITH OFFSET AS pos
+            WHERE seg LIKE '%โครงการ%' ORDER BY pos LIMIT 1) AS p
+        )
+      )
     ) as Project,
     IF(IFNULL(t1.mihdesc, '') LIKE '%โครงการ%', 'Yes', 'No') as IsProject,
 
