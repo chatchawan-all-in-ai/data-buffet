@@ -128,7 +128,7 @@ runs** — see "Deploy" below:
 
 | File | Builds | What |
 |---|---|---|
-| `mart_export_config.sqlx` | `process_dataset.mart_export_config` | One row per exported table. `CREATE TABLE IF NOT EXISTS`, then a `MERGE` from `includes/controller/mart-export-config.json` (inserts new tables, updates `task_group` of existing ones). Schema in its OKF card (linked below) |
+| `mart_export_config.sqlx` | `process_dataset.mart_export_config` | One row per exported table. `CREATE TABLE IF NOT EXISTS`, then syncs from `includes/controller/mart-export-config.json` (inserts new tables, refreshes `task_group` and `send_order`, and removes entries no longer configured after claims/recovery are clear). Schema in its OKF card (linked below) |
 | `mart_sent_state.sqlx` | `process_dataset.mart_sent_state` | One row per data row sent. `CREATE TABLE IF NOT EXISTS`, cluster `table_name, row_key`. Schema and writers in its OKF card (linked below) |
 | `pub_sub/pub_sub_schema.sqlx` | dataset `pub_sub` (tags `view` + `pub_sub`) | `CREATE SCHEMA IF NOT EXISTS ... OPTIONS(location=REGION)`, the same bootstrap as `validated_schema_*` / `cdc_schema`. `definitions/pub_sub/` is the layer folder for future shaping tables before Pub/Sub |
 | `view/pub_sub/export_<table>.sqlx` × 9 | `pub_sub.export_<table>` (views, tags `view` + `pub_sub`) | TA app org tables for the AI team (below): the columns of the org sample sent 2026-11-02, `row_key`, `row_hash` |
@@ -227,11 +227,12 @@ The authoritative table schemas and writer contracts are in the OKF cards for
 [`mart_sent_state`](../../okf/process/mart_sent_state.md#schema). The publisher reads config
 columns by name.
 
-The `MERGE` inserts new export tables and, for an existing table, updates `task_group` only.
-Every other column of an existing row is preserved, including `source_view`, `topic`,
-`trigger_scheduler`, `last_invocation_id`, `last_invocation_end`, `claimed_at` and `seeded_at`,
-even if its JSON entry changes or is removed, except for the scoped AI-route migration below.
-`task_group` is required for every JSON entry:
+The `MERGE` inserts new export tables and refreshes `task_group` and the 1-based `send_order`
+from the JSON position for every configured table. It preserves the other columns of an existing
+row, including `source_view`, `topic`, `trigger_scheduler`, `last_invocation_id`,
+`last_invocation_end`, `claimed_at` and `seeded_at`. Rows removed from the JSON are deleted only
+when their `claimed_at`, `group_claimed_at` and `recovery_*` fields are clear; otherwise the
+action fails so publishing or recovery can finish first. `task_group` is required for every JSON entry:
 Dataform compilation fails when one has none.
 
 **A new export table starts unseeded.** The config MERGE sets
@@ -246,13 +247,14 @@ The first-load execution, transaction, claim cleanup and retry procedure are own
 [onboarding guide B3](../../how-to/setup-pubsub-export.md#3-โหลดครั้งแรกด้วยไฟล์-ครั้งแรกที่ทีมต่อ-topic-นั้นเท่านั้น);
 the TF rollout date and sequence are in [section C](../../how-to/setup-pubsub-export.md#ส่วน-c--ชุด-commission-ของทีม-tf).
 
-Before the MERGE, a transactional, repeatable migration removes only the retired
-`dim_company` config row and renames the 12 AI view routes still using their original
-`export-ta-view_*` topics. Only `topic` changes on retained rows; checkpoints, claims,
-recovery fields and sent state are preserved. TF commission routes are untouched.
+Before the MERGE, the transaction that removes retired config rows also runs a repeatable
+migration that renames the 12 AI view routes still
+using their original `export-ta-view_*` topics. Only `topic` changes in that route migration; checkpoints, claims,
+recovery fields and sent state are preserved, while the MERGE refreshes `task_group` and
+`send_order`. TF commission routes are untouched when present in the JSON.
 Follow the [deployment migration procedure](../../how-to/setup-pubsub-export.md#a11-ย้าย-config-ของ-ai-routes-ก่อน-rebuild-publisher)
 before rebuilding the publisher. Other changes to an existing export table's
-view/topic or removal remain deliberate manual changes. Export-view name resolution
+view/topic remain deliberate manual changes. Export-view name resolution
 and validation are described in the [config reference](../../okf/process/mart_export_config.md#how-it-is-built).
 
 **Check job** (every 5 minutes, `main.py check`, 1 vCPU / 512 MiB, one task, service account
@@ -272,8 +274,10 @@ and validation are described in the [config reference](../../okf/process/mart_ex
    A failure posts to Slack (webhook in Secret Manager secret `slack-datamart-dataform`).
 
 **Send job** (`main.py send`, 5 tasks in parallel, 2 vCPU / 4 GiB each, task timeout 30 minutes,
-no task retries, service account `datamart-publisher`). Tables are grouped by `task_group`; the order
-of the groups is the order of the first entry of each group in `mart-export-config.json`, with
+no task retries, service account `datamart-publisher`). It reads `task_group` and `send_order` from
+`mart_export_config`. Tables are grouped by `task_group`; groups are ordered by the minimum
+`send_order` of their members, and tables within a group use `send_order`. Dataform sets this value
+to the table's 1-based position in `mart-export-config.json`, with
 the five large ones (`fact_order`, `fact_transaction_delivery`, `fact_delivery`, `fact_quotation`,
 `target`) at the top. Every task takes the next group, in that order, that has at least one seeded
 table (a group whose tables are all unseeded is never claimed) and works through its tables
@@ -284,8 +288,9 @@ after processing its members, and a crashed task's group claim expires after 35 
 Every DML on `mart_export_config` (and the `mart_sent_state` MERGE) is retried a bounded number of
 times with a short random backoff when BigQuery aborts it for a concurrent update. A group release
 that still fails is logged as a warning and does not fail the task; the claim expires by itself.
-The JSON must supply every table and its required group; missing or mismatched entries fail
-clearly without alternate ordering. Per table:
+Before claiming any group, the send job requires a nonempty config with unique, nonblank
+`table_name` values, nonblank `task_group` values, and unique positive integer `send_order`
+values. Invalid scheduling config fails the task. Per table:
 
 1. Resolve the export invocation exactly as the check job does.
 2. Claim the row atomically: `UPDATE mart_export_config SET claimed_at = <now>
@@ -350,9 +355,14 @@ the [message guide](../../how-to/setup-pubsub-export.md). Exactly-once delivery 
 on team subscriptions: it does not remove duplicates created on the publish side, only
 redeliveries after an acknowledgement.
 
-**Group order is read at build time.** `setup.sh` copies `mart-export-config.json` into the
-image (the required group and table order is read from it), so a new group takes effect when
-`setup.sh` has been run; which group a table belongs to is read from `mart_export_config.task_group`.
+**Order is read from the table at runtime.** The `mart_export_config` Dataform action records the
+JSON position in `send_order`; the Cloud Run image does not contain or read the JSON. Adding or
+removing an export is a change to `includes/controller/mart-export-config.json` followed by a run
+of the `mart_export_config` Dataform action. No image rebuild is needed for config-only changes.
+For the existing-table schema upgrade before running this SQLX version, follow
+[setup A1](../../how-to/setup-pubsub-export.md#a1-สร้างตาราง-bookkeeping-และ-export-view).
+`setup.sh` still reads the JSON to create topics and grant view access; run it when those GCP
+resources need to be provisioned.
 
 **Export view contract** (every export view):
 
@@ -385,13 +395,16 @@ the export view reads and the others one object per upstream dataset it reads th
 `trigger_scheduler` = the Dataform workflow configuration
 whose successful run triggers it, or omit it to trigger on the action named `table_name`;
 optional `snapshot_date` = `{"column", "format"}` of the document date that splits the
-first-load files into date folders), then run tag `pub_sub` once as below - it leaves seeded_at NULL for the
-new table until its first manual Cloud Shell snapshot seeds state and writes files together. The publisher
-needs no change. Re-run `pubsub/scripts/setup.sh`: it creates the topic, its dead-letter topic and its
-record subscription, grants the publisher read on the view only, authorizes the view on
-its base tables' datasets (from `source_tables`) and rebuilds the image so a new group is in
-the order. Consumer teams get the new topic through `pubsub/scripts/add-consumer.sh`.
-For existing exports, follow the config lifecycle and scoped AI-route migration above.
+first-load files into date folders), then run tag `pub_sub` to create the view and run the
+`mart_export_config` Dataform action to add its row and `send_order`. The row remains unseeded until
+its first manual Cloud Shell snapshot seeds state and writes files together. Re-run
+`pubsub/scripts/setup.sh`: it creates the topic, dead-letter topic and record subscription, grants
+the publisher read on the view only, and authorizes the view on its base tables' datasets (from
+`source_tables`). It also deploys the jobs, but a config-only change reuses the same image because
+the config JSON is not part of the image. Consumer teams get the new topic through
+`pubsub/scripts/add-consumer.sh`. To remove a table, remove its JSON entry and run the
+`mart_export_config` action after its claims and recovery fields are clear. For existing exports,
+follow the config lifecycle and scoped AI-route migration above.
 
 ### Deploy
 
@@ -412,7 +425,8 @@ Manual execution uses the release's live compilation result
 The run creates the `pub_sub` dataset (in `databuffet.REGION`), the export views and
 the two tables, and adds missing export config rows (unseeded until their first manual
 Cloud Shell snapshot). Re-running follows the config lifecycle described above, including
-refreshing `task_group` from the JSON while preserving checkpoints, claims and sent state.
+refreshing `task_group` and `send_order` from the JSON while preserving checkpoints, claims and
+sent state for retained rows. The action backfills `seeded_at` from existing sent state as before.
 No Dataform workflow configuration carries
 `pub_sub`. Do not use tag `view` for this: it deploys every view and skips the two
 tables. Then set up GCP and test per

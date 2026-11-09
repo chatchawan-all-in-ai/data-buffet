@@ -3,13 +3,16 @@ config {
     schema: databuffet.PROCESS_DATASET,
     hasOutput: true,
     tags: [databuffet.TAG_PUB_SUB],
-    description: "One row per table exported to Pub/Sub: the config from includes/controller/mart-export-config.json (trigger_scheduler = the Dataform workflow configuration whose successful run triggers the export, NULL = a successful run of action table_name) plus its task_group (the group of tables one send task works through) and the publisher's memory of the last Dataform workflow invocation it handled (last_invocation_id / last_invocation_end) and its being-processed marker (claimed_at). A new table has seeded_at NULL until its first manual Cloud Shell snapshot seeds mart_sent_state and writes first-load files together; deployment never seeds rows",
+    description: "One row per table exported to Pub/Sub: the config from includes/controller/mart-export-config.json (trigger_scheduler = the Dataform workflow configuration whose successful run triggers the export, NULL = a successful run of action table_name), its task_group and send_order (the 1-based table position in the JSON), and the publisher's memory of the last Dataform workflow invocation it handled (last_invocation_id / last_invocation_end) and its being-processed marker (claimed_at). A new table has seeded_at NULL until its first manual Cloud Shell snapshot seeds mart_sent_state and writes first-load files together; deployment never seeds rows",
 }
 
 js {
     const cfg = databuffet.martExportConfig;
     const sql = s => `'${s.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
     const opt = s => (s === undefined || s === null ? "CAST(NULL AS STRING)" : sql(s));
+    if (!Array.isArray(cfg.tables) || cfg.tables.length === 0) {
+        throw new Error("mart-export-config.json must contain a nonempty tables list");
+    }
     // resolve(), not ref(): ref() would make this action depend on every export view, and Dataform
     // allows at most 50 dependencies per action.
     const viewOf = t => resolve(databuffet.PUB_SUB, t.source_view);
@@ -19,6 +22,10 @@ js {
             throw new Error(`mart-export-config.json: table ${t.table_name} has no task_group`);
         }
     });
+    const configRows = cfg.tables.map((t, index) =>
+        `(${sql(t.table_name)}, ${sql(viewOf(t).split(String.fromCharCode(96)).join(""))}, ` +
+        `${sql(t.topic)}, ${opt(t.trigger_scheduler)}, ${sql(t.task_group)}, ${index + 1})`
+    ).join(",\n    ");
 }
 
 -- Created once, never rebuilt: the publisher keeps its memory in last_invocation_* and
@@ -33,15 +40,13 @@ CREATE TABLE IF NOT EXISTS ${self()} (
   trigger_scheduler STRING,
   seeded_at TIMESTAMP,
   task_group STRING,
+  send_order INT64,
   group_claimed_at TIMESTAMP,
   recovery_started_at TIMESTAMP,
   recovery_until TIMESTAMP
 );
 
 BEGIN TRANSACTION;
-
-DELETE FROM ${self()}
-WHERE table_name = 'dim_company';
 
 UPDATE ${self()}
 SET topic = CONCAT('export-ta-', SUBSTR(table_name, 6))
@@ -61,6 +66,17 @@ WHERE table_name IN (
 )
   AND topic = CONCAT('export-ta-', table_name);
 
+ASSERT NOT EXISTS (
+  SELECT 1
+  FROM ${self()}
+  WHERE table_name NOT IN (${cfg.tables.map(t => sql(t.table_name)).join(", ")})
+    AND (claimed_at IS NOT NULL OR group_claimed_at IS NOT NULL
+         OR recovery_started_at IS NOT NULL OR recovery_until IS NOT NULL)
+) AS 'cannot remove export rows while claims or recovery are pending';
+
+DELETE FROM ${self()}
+WHERE table_name NOT IN (${cfg.tables.map(t => sql(t.table_name)).join(", ")});
+
 COMMIT TRANSACTION;
 
 UPDATE ${self()} AS c
@@ -71,13 +87,18 @@ WHERE c.seeded_at IS NULL
 MERGE ${self()} AS t
 USING (
   SELECT *
-  FROM UNNEST(ARRAY<STRUCT<table_name STRING, source_view STRING, topic STRING, trigger_scheduler STRING, task_group STRING>>[
-    ${cfg.tables.map(t => `(${sql(t.table_name)}, ${sql(viewOf(t).replace(/`/g, ""))}, ${sql(t.topic)}, ${opt(t.trigger_scheduler)}, ${sql(t.task_group)})`).join(",\n    ")}
+  FROM UNNEST(ARRAY<STRUCT<
+    table_name STRING, source_view STRING, topic STRING, trigger_scheduler STRING,
+    task_group STRING, send_order INT64
+  >>[
+    ${configRows}
   ])
 ) AS s
 ON t.table_name = s.table_name
 WHEN MATCHED THEN
-  UPDATE SET task_group = s.task_group
+  UPDATE SET task_group = s.task_group, send_order = s.send_order
 WHEN NOT MATCHED THEN
-  INSERT (table_name, source_view, topic, trigger_scheduler, task_group, last_invocation_id, last_invocation_end, claimed_at, seeded_at)
-  VALUES (s.table_name, s.source_view, s.topic, s.trigger_scheduler, s.task_group, NULL, NULL, NULL, NULL);
+  INSERT (table_name, source_view, topic, trigger_scheduler, task_group, send_order,
+          last_invocation_id, last_invocation_end, claimed_at, seeded_at)
+  VALUES (s.table_name, s.source_view, s.topic, s.trigger_scheduler, s.task_group, s.send_order,
+          NULL, NULL, NULL, NULL);

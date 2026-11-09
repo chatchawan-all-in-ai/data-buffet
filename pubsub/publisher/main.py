@@ -15,7 +15,7 @@ Contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
 Message envelope and per-table trigger rules are preserved from the Cloud Workflows publisher.
 The current claim, recovery and deadline contracts are owned by the reference linked above.
 All configuration of a table is read from process_dataset.mart_export_config BY COLUMN NAME;
-the JSON baked into the image supplies the required group and table order.
+send_order supplies the required group and table order.
 Logs are JSON lines on stdout (Cloud Logging reads them).
 """
 import json
@@ -41,7 +41,6 @@ RUN_REGION = os.environ.get("RUN_REGION", "us-central1")
 SEND_JOB = os.environ.get("SEND_JOB", "datamart-publish-send")
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIFF_SQL = os.environ.get("DIFF_SQL", os.path.join(HERE, "..", "sql", "diff.sql"))
-CONFIG_JSON = os.environ.get("CONFIG_JSON", os.path.join(HERE, "..", "config", "mart-export-config.json"))
 
 CLAIM_TIMEOUT_MINUTES = 35          # a claim older than this is expired (dead run)
 FIRST_RUN_LOOKBACK_HOURS = 48       # window searched while last_invocation_end is NULL
@@ -192,7 +191,8 @@ class Context:
 
     def read_config(self):
         job = self.query(f"""
-          SELECT table_name, source_view, topic, task_group, last_invocation_id, last_invocation_end,
+          SELECT table_name, source_view, topic, task_group, send_order,
+                 last_invocation_id, last_invocation_end,
                  claimed_at, recovery_started_at, recovery_until, group_claimed_at, trigger_scheduler, seeded_at
           FROM `{PROJECT}.{DATASET}.mart_export_config`""")
         return [dict(r.items()) for r in job.result(timeout=remaining(), retry=None, job_retry=None)]
@@ -331,34 +331,33 @@ def check_main():
 
 
 # ===== send mode ===============================================================================
-def scheduling_order():
-    with open(CONFIG_JSON, encoding="utf-8") as source:
-        tables = json.load(source)["tables"]
-    if not isinstance(tables, list) or not tables:
-        raise ValueError("config JSON must contain a nonempty tables list")
-    order = {}
-    for table in tables:
-        name, group = table["table_name"], table["task_group"]
-        if not isinstance(name, str) or not name.strip() or name in order:
-            raise ValueError("config JSON requires unique, nonempty table_name values")
-        if not isinstance(group, str) or not group.strip():
-            raise ValueError(f"config JSON requires task_group for {name}")
-        order[name] = group
-    return order
-
-
-def ordered_groups(rows, order):
-    by_name = {}
+def ordered_groups(rows):
+    if not rows:
+        raise ValueError("mart_export_config has no export tables")
+    names = set()
+    send_orders = set()
+    ordered_rows = []
     for row in rows:
         name = row["table_name"]
-        if name not in order or row["task_group"] != order[name] or name in by_name:
-            raise ValueError(f"mart_export_config disagrees with config JSON for {name}")
-        by_name[name] = row
+        group = row.get("task_group")
+        send_order = row.get("send_order")
+        if not isinstance(name, str) or not name.strip() or name in names:
+            raise ValueError("mart_export_config requires unique, nonempty table_name values")
+        if not isinstance(group, str) or not group.strip():
+            raise ValueError(f"mart_export_config requires task_group for {name}")
+        if not isinstance(send_order, int) or isinstance(send_order, bool):
+            raise ValueError(f"mart_export_config requires send_order for {name}")
+        if send_order < 1:
+            raise ValueError(f"mart_export_config requires positive send_order for {name}")
+        if send_order in send_orders:
+            raise ValueError(f"mart_export_config requires unique send_order values; duplicate {send_order}")
+        names.add(name)
+        send_orders.add(send_order)
+        ordered_rows.append(row)
+
     groups = {}
-    for name, group in order.items():
-        if name not in by_name:
-            raise ValueError(f"mart_export_config is missing {name}; run Dataform")
-        groups.setdefault(group, []).append(by_name[name])
+    for row in sorted(ordered_rows, key=lambda item: item["send_order"]):
+        groups.setdefault(row["task_group"], []).append(row)
     return groups
 
 
@@ -738,12 +737,11 @@ def send_main():
     ctx = Context()
     failed = []
     try:
-        order = scheduling_order()
         handled = set()
         log("INFO", "send task started", task=os.environ.get("CLOUD_RUN_TASK_INDEX"),
             tasks=os.environ.get("CLOUD_RUN_TASK_COUNT"))
         while elapsed() < STOP_AFTER_SECONDS:
-            groups = ordered_groups(ctx.read_config(), order)
+            groups = ordered_groups(ctx.read_config())
             pick = None
             for group, members in groups.items():
                 if group in handled or all(r["seeded_at"] is None for r in members):
@@ -757,7 +755,7 @@ def send_main():
             group, group_claim = pick
             handled.add(group)
             try:
-                members = ordered_groups(ctx.read_config(), order)[group]
+                members = ordered_groups(ctx.read_config())[group]
                 log("INFO", "group taken", group=group, tables=[r["table_name"] for r in members])
                 for row in members:
                     if elapsed() >= STOP_AFTER_SECONDS:

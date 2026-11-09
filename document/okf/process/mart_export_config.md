@@ -20,9 +20,9 @@ status: draft
 
 # What it is
 
-Configuration and state table of the Data Mart to Pub/Sub export: one row per exported table (the commission sets, TA app org tables and AI team sample tables; table_name = the BigQuery table name in lower case, e.g. dim_calendar, view_dim_customer, fact_order, rls_ta_customer). The columns table_name, source_view, topic, trigger_scheduler and task_group come from `includes/controller/mart-export-config.json`. Outside Dataform, the first-load exporter writes `seeded_at`; the publisher writes `last_invocation_id`, `last_invocation_end`, `claimed_at`, `group_claimed_at` and the `recovery_*` state. These fields checkpoint invocations, seed existing sent state, and claim or recover work while publishing. It is paired with [mart_sent_state](/process/mart_sent_state.md); the export views it points to live in dataset [pub_sub](/view/pub_sub/index.md), e.g. [export_view_dim_company](/view/pub_sub/export_view_dim_company.md) and [export_order](/view/pub_sub/export_order.md).
+Configuration and state table of the Data Mart to Pub/Sub export: one row per exported table (the commission sets, TA app org tables and AI team sample tables; table_name = the BigQuery table name in lower case, e.g. dim_calendar, view_dim_customer, fact_order, rls_ta_customer). The columns table_name, source_view, topic, trigger_scheduler, task_group and send_order come from `includes/controller/mart-export-config.json`; send_order is the 1-based table position in that file. Outside Dataform, the first-load exporter writes `seeded_at`; the publisher writes `last_invocation_id`, `last_invocation_end`, `claimed_at`, `group_claimed_at` and the `recovery_*` state. These fields checkpoint invocations, seed existing sent state, and claim or recover work while publishing. It is paired with [mart_sent_state](/process/mart_sent_state.md); the export views it points to live in dataset [pub_sub](/view/pub_sub/index.md), e.g. [export_view_dim_company](/view/pub_sub/export_view_dim_company.md) and [export_order](/view/pub_sub/export_order.md).
 
-Read by: none in this repository.
+Read by: [Cloud Run Pub/Sub publisher](../../../pubsub/publisher/main.py).
 
 # Grain and key
 
@@ -40,7 +40,8 @@ One row = one Data Mart table exported to Pub/Sub: key `table_name` (the exporte
 | `claimed_at` | TIMESTAMP | Shared being-processed marker (UTC) set by the publisher or the first-load exporter; NULL = free; the publisher may reclaim a claim older than 35 minutes only for a seeded table. The first-load exporter requires NULL. |
 | `trigger_scheduler` | STRING | Dataform workflow configuration whose SUCCEEDED invocations trigger the export ('daily_process' for the commission sets, the TA org sets and the AI team sample tables); NULL = a SUCCEEDED invocation whose action table_name SUCCEEDED. |
 | `seeded_at` | TIMESTAMP | NULL = not seeded; the publisher skips the table entirely regardless of claimed_at. The first-load export sets it to the export time in the seed transaction; tables that already have sent state are backfilled from MIN(sent_at). |
-| `task_group` | STRING | Name of the group of tables one send task works through (e.g. fact_order, commission, master); the groups are taken in the order of the config JSON and a task claims the next group that still has a table to send. Refreshed from the JSON on every Dataform run. |
+| `task_group` | STRING | Name of the group of tables one send task works through (e.g. fact_order, commission, master); each task claims the next group with a seeded table. Refreshed from the JSON on every Dataform run. |
+| `send_order` | INT64 | 1-based position of the table in `includes/controller/mart-export-config.json`; the publisher orders tables by this value and groups by each group's minimum value. Refreshed from the JSON on every Dataform run. |
 | `group_claimed_at` | TIMESTAMP | Group ownership marker, set atomically across every member only when no member has a live group or table claim. Released after the group; expires after 35 minutes if the task dies. |
 | `recovery_started_at` | TIMESTAMP | Earliest unresolved dead table claim; retained across failed recovery and repeated reclaims until record recovery has merged into sent state. |
 | `recovery_until` | TIMESTAMP | Latest dead table claim plus its 30-minute task limit; recovery requires two distinct, fresh zero-backlog samples after this timestamp. Cleared with recovery_started_at after the recovery MERGE. |
@@ -49,7 +50,7 @@ One row = one Data Mart table exported to Pub/Sub: key `table_name` (the exporte
 
 - Definition: `definitions/process/mart_export_config.sqlx` (`type: "operations"`, tags `pub_sub`); the operation owns this table.
 - Reads: [mart_sent_state](/process/mart_sent_state.md), to backfill seeded_at; export-view names are resolved with `resolve()` (no dependency on the views, no view data read).
-- Operations: `CREATE TABLE IF NOT EXISTS` with all 12 columns (never rebuilt or altered); backfill `seeded_at` from `MIN(sent_at)` for tables with sent state. For the MERGE and scoped AI-route migration, see the [config lifecycle](../../project_wiki/cdc-process/process.md#pubsub-export); deployment order is owned by the [setup guide](../../how-to/setup-pubsub-export.md#a11-ย้าย-config-ของ-ai-routes-ก่อน-rebuild-publisher).
+- Operations: `CREATE TABLE IF NOT EXISTS` with all 13 columns for a new table. The action backfills `seeded_at` from `MIN(sent_at)` for tables with sent state. For insertion, refresh and removal rules, including the scoped AI-route migration, see the [config lifecycle](../../project_wiki/cdc-process/process.md#pubsub-export); the existing-table schema upgrade and deployment order are owned by the [setup guide](../../how-to/setup-pubsub-export.md#a1-สร้างตาราง-bookkeeping-และ-export-view).
 
 # Examples
 

@@ -83,8 +83,8 @@ done
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 pubsub_dir="$(cd "$here/.." && pwd)"
 repo_root="$(cd "$here/../.." && pwd)"
-# The single copy of the export config: Dataform requires it from includes/ (a path outside
-# includes/ cannot be shown to compile in the Dataform release), so the scripts read it there.
+# Dataform requires this config under includes/; setup reads it to create topics and grant
+# access to export views. The publisher image reads runtime config from mart_export_config.
 config_json="$repo_root/includes/controller/mart-export-config.json"
 
 trigger_sa="$TRIGGER_SA_NAME@$PROJECT.iam.gserviceaccount.com"
@@ -327,14 +327,14 @@ export_tables="$(read_export_tables "$python_bin")"
 for t in "$BQ_DATASET.mart_export_config" "$BQ_DATASET.mart_sent_state"; do
   bq_table_exists "$t" || die "$PROJECT:$t not found - run tag pub_sub from Dataform release production first"
 done
-# The publisher reads mart_export_config by column name; task_group comes from the Dataform release.
+# The publisher reads mart_export_config by column name, including its task_group and send_order.
 bq --project_id="$PROJECT" show --schema --format=json "$PROJECT:$BQ_DATASET.mart_export_config" |
-  "$python_bin" -c 'import json, sys; sys.exit(0 if {"task_group", "group_claimed_at", "recovery_started_at", "recovery_until"} <= {f["name"] for f in json.load(sys.stdin)} else 1)' ||
-  die "$BQ_DATASET.mart_export_config is missing publisher ownership/recovery columns - run tag pub_sub from Dataform release production first"
+  "$python_bin" -c 'import json, sys; sys.exit(0 if {"task_group", "send_order", "group_claimed_at", "recovery_started_at", "recovery_until"} <= {f["name"] for f in json.load(sys.stdin)} else 1)' ||
+  die "$BQ_DATASET.mart_export_config is missing publisher columns - apply the one-time send_order ALTER and Dataform schema setup first"
 missing_group="$(bq --project_id="$PROJECT" --location="$REGION" --format=csv query --use_legacy_sql=false \
-  "SELECT COUNT(*) FROM \`$PROJECT.$BQ_DATASET.mart_export_config\` WHERE task_group IS NULL" | tail -n 1)"
+  "SELECT COUNT(*) FROM \`$PROJECT.$BQ_DATASET.mart_export_config\` WHERE task_group IS NULL OR send_order IS NULL" | tail -n 1)"
 [ "$missing_group" = 0 ] ||
-  die "$missing_group row(s) of $BQ_DATASET.mart_export_config have no task_group - run tag pub_sub from Dataform release production first"
+  die "$missing_group row(s) of $BQ_DATASET.mart_export_config have no task_group or send_order - run Dataform action mart_export_config from release production first"
 declare -A SOURCE_TABLES=()
 while IFS=$'\t' read -r table_name source_view _topic source_tables; do
   bq_table_exists "pub_sub.$source_view" || die "view pub_sub.$source_view not found - run tag pub_sub first"
@@ -470,11 +470,9 @@ echo "  roles/secretmanager.secretAccessor on secret $SLACK_SECRET"
 log "Publisher image ($AR_REPO in $REGION)"
 stage="$(mktemp -d)"
 trap 'rm -rf "$stage"' EXIT
-mkdir -p "$stage/publisher" "$stage/sql" "$stage/config"
+mkdir -p "$stage/publisher" "$stage/sql"
 cp "$pubsub_dir/publisher/main.py" "$pubsub_dir/publisher/requirements.txt" "$pubsub_dir/publisher/Dockerfile" "$stage/publisher/"
 cp "$pubsub_dir/sql/diff.sql" "$stage/sql/"
-# The group order of the send tasks comes from this file (the single copy stays in includes/).
-cp "$config_json" "$stage/config/"
 image_tag="$(cd "$stage" && find . -type f | LC_ALL=C sort | xargs sha256sum | sha256sum | cut -c1-12)"
 image_uri="$REGION-docker.pkg.dev/$PROJECT/$AR_REPO/$IMAGE_NAME:$image_tag"
 if gcloud artifacts docker images describe "$image_uri" --project="$PROJECT" >/dev/null 2>&1; then

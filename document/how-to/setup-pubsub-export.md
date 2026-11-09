@@ -15,7 +15,8 @@
 manual ตาม [สัญญา publisher](../project_wiki/cdc-process/process.md#pubsub-export)
 · ถ้ามี job ตรวจจึงสั่ง Cloud Run job `datamart-publish-send` (2 vCPU / 4 GiB ต่อ task, 5 task พร้อมกัน)
 ซึ่งส่งเฉพาะแถวที่เปลี่ยน: แต่ละ task หยิบ `task_group` ถัดไปตามลำดับใน config ที่ยังมีตารางรอส่ง
-(กลุ่มใหญ่ 5 กลุ่มอยู่บนสุด) · job ส่งหยุดเองที่ 25 นาที บันทึกที่ส่งแล้ว แล้วรอบตรวจถัดไปส่งส่วนที่เหลือต่อ
+(กลุ่มใหญ่ 5 กลุ่มอยู่บนสุด) โดย publisher อ่านกลุ่มและลำดับจาก `mart_export_config`; `send_order`
+เก็บตำแหน่งของแต่ละตารางตามลำดับใน JSON · job ส่งหยุดเองที่ 25 นาที บันทึกที่ส่งแล้ว แล้วรอบตรวจถัดไปส่งส่วนที่เหลือต่อ
 · ใช้ service accounts `datamart-publisher` (รัน job ส่ง), `datamart-publish-checker` (รัน job ตรวจ)
 และ `datamart-publish-trigger` (Scheduler → job ตรวจ) แบบ keyless · เมื่อล้มเหลวแจ้ง Slack
 ผ่าน incoming webhook ที่เก็บใน Secret Manager ชื่อ `slack-datamart-dataform`
@@ -79,12 +80,21 @@ DATETIME = `"2026-01-30T09:10:00"`, ตัวเลขไม่มี `.0` เ�
 | [`pubsub/scripts/setup.sh`](../../pubsub/scripts/setup.sh) | สร้าง/อัปเดต infra ทั้งหมด แบบ idempotent (รันซ้ำได้) · `--enable-scheduler` เปิด Scheduler · `--cleanup-old` ลบตัวส่ง Cloud Workflows เดิม |
 | [`pubsub/scripts/add-consumer.sh`](../../pubsub/scripts/add-consumer.sh) | ต่อทีมผู้รับแบบ pull (ส่วน B) แบบ idempotent |
 | [`pubsub/scripts/export-snapshot.sh`](../../pubsub/scripts/export-snapshot.sh) | export ไฟล์โหลดครั้งแรกของทีมใหม่ (ส่วน B ขั้น 3) |
-| [`includes/controller/mart-export-config.json`](../../includes/controller/mart-export-config.json) | config ของทุก topic: `task_group`, `source_tables` ฯลฯ — ไฟล์เดียวที่ Dataform และสคริปต์ใน `pubsub/` อ่าน (อยู่ใน `includes/` เพราะ Dataform `require` จากที่นี่) |
+| [`includes/controller/mart-export-config.json`](../../includes/controller/mart-export-config.json) | config ของทุก topic: `task_group`, `source_tables` ฯลฯ — Dataform สร้างแถวและ `send_order` ใน `mart_export_config`; `setup.sh` อ่านไฟล์นี้เพื่อสร้าง topic และกำหนดสิทธิ์ ไม่ได้คัดลอกเข้า image (อยู่ใน `includes/` เพราะ Dataform `require` จากที่นี่) |
 
 ### A1. สร้างตาราง bookkeeping และ export view
 
 ถ้าเป็น installation เดิม ให้เริ่มที่ [A1.1](#a11-ย้าย-config-ของ-ai-routes-ก่อน-rebuild-publisher)
 ก่อนรันขั้นนี้ เพื่อหยุดงานที่กำลังส่งและกู้ recovery ให้จบก่อน migration
+
+สำหรับ table เดิม ก่อนรัน Dataform action เวอร์ชันนี้ ให้เพิ่มคอลัมน์แยกครั้งเดียวด้วย
+
+```sql
+ALTER TABLE `databuffet-nonprd.process_dataset.mart_export_config`
+ADD COLUMN IF NOT EXISTS send_order INT64;
+```
+
+จากนั้น action `mart_export_config` จะเติมค่าตาม JSON โดยรักษา publisher state เดิม
 
 ทำตาม [ขั้น deploy](../project_wiki/cdc-process/process.md#deploy) — รัน tag
 `pub_sub` จาก release `production` แบบ include dependencies **ปิด** · `setup.sh` จะหยุด
@@ -103,9 +113,10 @@ publisher ข้ามตารางที่ `seeded_at` เป็น NULL จ
    ค้าง ให้กู้ด้วย publisher เดิมและ record subscription เดิมจนจบก่อนย้าย route;
    ห้ามล้าง claim, checkpoint หรือ `mart_sent_state` เพื่อข้ามขั้นนี้
 2. รัน A1 จาก compilation ของ release `production` ที่มี change นี้ และรอ action
-   `mart_export_config` สำเร็จ **ก่อนรัน A3 (`setup.sh`) เพื่อ rebuild publisher**
-3. Action นี้ทำ migration ใน transaction: ลบเฉพาะ config row `table_name = dim_company`
-   และเปลี่ยนเฉพาะ `topic` ที่ยังเป็น `export-ta-<table_name>` ของ 12 แถวต่อไปนี้
+   `mart_export_config` สำเร็จ **ก่อนรัน A3 (`setup.sh`) เพื่ออัปเดต routes และ deploy jobs**
+3. Action นี้ทำ migration ใน transaction: ลบ config row ที่ไม่มีใน JSON เมื่อไม่มี claim หรือ
+   recovery ค้าง (รวม row pilot `dim_company`) และเปลี่ยนเฉพาะ `topic` ที่ยังเป็น
+   `export-ta-<table_name>` ของ 12 แถวต่อไปนี้
    ให้ตัด `view_` ออกจากชื่อ topic:
    `view_dim_aging_history`, `view_dim_channel`, `view_dim_company`, `view_dim_customer`,
    `view_dim_customer_report_info`, `view_dim_invoice`, `view_dim_order`,
@@ -114,15 +125,18 @@ publisher ข้ามตารางที่ `seeded_at` เป็น NULL จ
    รันซ้ำได้; route ที่เปลี่ยนแล้วหรือถูกตั้งเป็นชื่ออื่นไม่ถูกเขียนทับ
 4. ตรวจ config ว่าไม่มี pilot row และทั้ง 12 แถวใช้ topic ตาม JSON ก่อนทำ A3;
    หากมี custom route ให้ตัดสินใจย้ายแถวนั้นโดยเฉพาะก่อนดำเนินต่อ
-   แถว TF (`export-commission-*`) และแถวอื่นไม่ถูก migration แก้ไข;
-   แถวที่คงไว้เก็บ `source_view`, `trigger_scheduler`, `last_invocation_*`, `seeded_at`,
-   claims และ recovery fields เดิมทั้งหมด การ backfill `seeded_at` และ refresh `task_group`
-   ของ A1 ยังทำตามสัญญาเดิม และไม่แก้ `mart_sent_state` รวมถึง state ของ pilot ที่เลิกใช้
-5. ทำ A3 ให้สร้าง topic/record subscription และ publisher ใหม่ครบก่อนเปิด Scheduler กลับ
+   แถวที่คงไว้รักษา `source_view`, `trigger_scheduler`, `last_invocation_*`, `seeded_at`,
+   claims และ recovery fields; action refresh `task_group` / `send_order` จาก JSON และ
+   backfill `seeded_at` จาก sent state ตามพฤติกรรมเดิม โดยไม่แก้ `mart_sent_state`
+   รวมถึง state ของ pilot ที่เลิกใช้
+5. ทำ A3 ให้สร้าง topic/record subscription และ deploy publisher jobs ก่อนเปิด Scheduler กลับ
    ไม่ต้อง seed แถวที่ seed แล้วซ้ำ; `view_dim_company` ยังไม่เคย seed ให้โหลดครั้งแรกตาม B3
    เมื่อทีมพร้อม ห้ามนำ sent state ของ pilot มาใช้แทน view
 
 Migration นี้ไม่ลบ GCP topic, subscription หรือ export view เก่า
+
+การเพิ่มหรือนำ export ออก และการเปลี่ยนกลุ่มหรือลำดับโดยไม่ rebuild image ให้ทำตาม
+[config lifecycle](../project_wiki/cdc-process/process.md#pubsub-export)
 
 ### A2. ตรวจ secret ของ Slack
 
@@ -137,7 +151,9 @@ bash pubsub/scripts/setup.sh
 
 สคริปต์ทำตามลำดับ (ทุกขั้นเช็คก่อนสร้าง หรือ apply ซ้ำได้ไม่เสียหาย):
 
-1. ตรวจ prerequisite ของ A1–A2
+1. ตรวจ prerequisite ของ A1–A2 รวมคอลัมน์ `task_group`, `send_order`, `group_claimed_at`,
+   `recovery_started_at`, `recovery_until` ใน `mart_export_config` และค่า `task_group` /
+   `send_order` ที่ไม่เป็น NULL ทุกแถว; การเพิ่มคอลัมน์และเติมค่าสำหรับ table เดิมอยู่ใน [A1](#a1-สร้างตาราง-bookkeeping-และ-export-view)
 2. เปิด API: Cloud Run, Cloud Build, Artifact Registry, Cloud Scheduler, Pub/Sub, Secret Manager,
    BigQuery Storage, Monitoring, Cloud Storage (และ Dataform / BigQuery ที่เปิดอยู่แล้ว)
 3. สร้าง service accounts `datamart-publish-trigger`, `datamart-publish-checker` และ
@@ -560,7 +576,7 @@ serialize ทุกการเขียนต่อ `(table, primary_key)` เ�
 1. รัน tag `pub_sub` ตาม [ขั้น deploy](../project_wiki/cdc-process/process.md#deploy) — สร้าง 12 view,
    และเพิ่ม 12 แถว config ที่ `seeded_at` เป็น NULL โดยยังไม่ seed หรือเขียนไฟล์ ·
    การสร้างตาราง config และ backfill ดู [config reference](../okf/process/mart_export_config.md#how-it-is-built)
-   `setup.sh` ตรวจว่ามีคอลัมน์ `task_group`, `group_claimed_at`, `recovery_started_at`, `recovery_until` และมี `task_group` ครบทุกแถวและหยุดถ้ายังไม่ได้รัน tag `pub_sub`
+   ตรวจ prerequisite ของ `setup.sh` ตาม [A3](#a3-รัน-setupsh)
 2. `bash pubsub/scripts/setup.sh` — สร้าง 12 topic + dead-letter topic + record subscription, ให้สิทธิ์ publisher อ่าน 12 view
    (authorized view บน `validated_mac5` และ `dimension_table`) และ deploy job ตรวจ/job ส่งที่รู้จัก `trigger_scheduler`
 3. ```bash
