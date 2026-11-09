@@ -261,6 +261,7 @@ with dim_calendar as (
     
     pump.PumpSK,
     order_date.mix_date AS OrderDate,
+    derp_cost.CostDerp,
     trans.*
   from `${FactTranscationTableRef}` as trans
 
@@ -301,6 +302,27 @@ with dim_calendar as (
     and trans.FlagNewProductMKT = pump.FlagNewProductMKT
     and IFNULL(reg.RegionID, '') = IFNULL(pump.RegionID, '')
     and trans.CompanySK = pump.CompanySK
+
+  -- ต้นทุนจริงจาก DERP แทน milCog ของ MAC5 (ค่านั้นเป็นยอดขายก่อนหักส่วนลด ไม่ใช่ต้นทุน)
+  -- เอาเฉพาะบรรทัดที่จับสินค้าได้ · ต้นทุน NO_LINE ไม่มีบรรทัดรองรับ จึงไม่ปันเข้ามา
+  left join (
+    SELECT
+      company_id,
+      milType,
+      milVnos,
+      milListno,
+      milPer,
+      -- curated_mil มี key บรรทัดซ้ำอยู่บ้าง รวมให้เหลือ 1 แถวต่อบรรทัดก่อน join
+      SUM(costDerp) AS CostDerp
+    FROM ${ref(databuffet.CURATED_DERP, "curated_invoice_line_cost")}
+    WHERE costStatus = 'MATCHED'
+    GROUP BY company_id, milType, milVnos, milListno, milPer
+  ) as derp_cost
+    on trans.companyID = derp_cost.company_id
+    and trans.milType = derp_cost.milType
+    and trans.milVnos = derp_cost.milVnos
+    and trans.milListno = derp_cost.milListno
+    and trans.milPer IS NOT DISTINCT FROM derp_cost.milPer
 
 
 
@@ -1005,7 +1027,7 @@ with dim_calendar as (
       milQuan, milQuanp2, milAdisc, milCog, milConv, milDisca, milDisct, milVat, milSum,
       milExchg, milAcost, milCost, milUcost, milUprice, 
       Vat, milsum_incvat, mildisca_incvat, milcog_incvat,
-      DepositExcVat, DepositIncVat, DepositVat, CompanySK
+      DepositExcVat, DepositIncVat, DepositVat, CompanySK, CostDerp
     ),
     IF(trans.mix_date is not null, trans.CompanySK, calendar.CompanySK) as CompanySK,
     IF(trans.mix_date is not null, trans.mix_date, calendar.Date) as mix_date,
@@ -1016,7 +1038,8 @@ with dim_calendar as (
     IF(trans.mix_date is not null, trans.milQuan, 0.0) as milQuan,
     IF(trans.mix_date is not null, trans.milQuanp2, 0.0) as milQuanp2,
     IF(trans.mix_date is not null, trans.milAdisc, 0.0) as milAdisc,
-    IF(trans.mix_date is not null, trans.milCog, 0.0) as milCog,
+    -- NULL = ไม่มีต้นทุน DERP (ไม่มี journal, BS/AS, จับสินค้าไม่ได้) ไม่ใช่ต้นทุน 0
+    IF(trans.mix_date is not null, trans.CostDerp, 0.0) as milCog,
     IF(trans.mix_date is not null, trans.milConv, 0.0) as milConv,
     IF(trans.mix_date is not null, trans.milDisca, 0.0) as milDisca,
     IF(trans.mix_date is not null, trans.milDisct, NULL) as milDisct,
@@ -1033,7 +1056,8 @@ with dim_calendar as (
     IF(trans.mix_date is not null, trans.Vat, 0.0) as Vat,
     IF(trans.mix_date is not null, trans.milsum_incvat, 0.0) as milsum_incvat,
     IF(trans.mix_date is not null, trans.mildisca_incvat, 0.0) as mildisca_incvat,
-    IF(trans.mix_date is not null, trans.milcog_incvat, 0.0) as milcog_incvat,
+    -- ต้นทุนไม่มี VAT ขาย ใช้ค่าเดียวกับ milCog
+    IF(trans.mix_date is not null, trans.CostDerp, 0.0) as milcog_incvat,
 
     IF(trans.mix_date is not null, trans.DepositExcVat, 0.0) as DepositExcVat,
     IF(trans.mix_date is not null, trans.DepositIncVat, 0.0) as DepositIncVat,
