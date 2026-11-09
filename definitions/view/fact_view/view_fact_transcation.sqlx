@@ -852,7 +852,18 @@ with dim_calendar as (
         ELSE 'No'
       END)
     ) as FlagAccExc,
-    
+
+    -- Project: ช่วงแรกของ mihdesc (คั่นด้วย #) ที่มีคำว่า "โครงการ" · ไม่มีช่วงไหนมี = ช่วงแรกที่อยู่ก่อน # (ข้าม # นำหน้า) · ว่าง = NULL
+    --   ตัด "คุณ" หน้า "โครงการ" ออก (ชื่อโครงการพิมพ์ไว้ในช่องคนติดต่อ เช่น "คุณโครงการวิลล่าพลาโน่")
+    -- IsProject: mihdesc มีคำว่า "โครงการ" ซึ่งเท่ากับ Project มีคำนี้เสมอ เพราะ # ไม่มีทางตัดกลางคำ
+    COALESCE(
+      (SELECT REGEXP_REPLACE(TRIM(seg), r'^คุณ\s*(โครงการ)', r'\1')
+        FROM UNNEST(SPLIT(t1.mihdesc, '#')) AS seg WITH OFFSET AS pos
+        WHERE seg LIKE '%โครงการ%' ORDER BY pos LIMIT 1),
+      NULLIF(TRIM(REGEXP_EXTRACT(t1.mihdesc, r'^#*([^#]*)')), '')
+    ) as Project,
+    IF(IFNULL(t1.mihdesc, '') LIKE '%โครงการ%', 'Yes', 'No') as IsProject,
+
     t1.* except(mihCancel, mihStatus, seq_condition, OrderDate)
   from raw_table as t1
   left join `${DimProductMasterTableRef}` as t4
