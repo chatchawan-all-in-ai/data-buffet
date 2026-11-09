@@ -540,17 +540,19 @@ flowchart LR
 
 ## Product master & marketing — สินค้า
 
-**Objects in this topic (9):** `curated_product`, `dim_product_master`, `dim_product_master_fc`, `dim_product_mkt`, `dim_product_mkt_director`, `dim_pump_information`, `dim_rebate`, `dim_stk_mkt`, `product_for_aisearch`
+**Objects in this topic (12):** `curated_product`, `dim_price`, `dim_price_channel`, `dim_price_tier`, `dim_product_master`, `dim_product_master_fc`, `dim_product_mkt`, `dim_product_mkt_director`, `dim_pump_information`, `dim_rebate`, `dim_stk_mkt`, `product_for_aisearch`
 
-**Fed by (11):** `brand`, `category`, `dim_company`, `dim_region`, `fact_transcation`, `product`, `product_detail`, `stg`, `stk`, `unit`, `vendor`
+**Fed by (13):** `brand`, `category`, `crm_nd_sd_price`, `dim_company`, `dim_region`, `fact_transcation`, `product`, `product_detail`, `sales_channel_master_sales_channel`, `stg`, `stk`, `unit`, `vendor`
 
 ```mermaid
 flowchart LR
-  subgraph validated["validated (8)"]
+  subgraph validated["validated (10)"]
     brand["brand"]
     category__mastersku["category"]
+    crm_nd_sd_price["crm_nd_sd_price"]
     product["product"]
     product_detail["product_detail"]
+    sales_channel_master_sales_channel["sales_channel_master_sales_channel"]
     stg["stg"]
     stk["stk"]
     unit["unit"]
@@ -560,8 +562,11 @@ flowchart LR
     curated_product["curated_product"]
     product_for_aisearch["product_for_aisearch"]
   end
-  subgraph dimension["dimension (9)"]
+  subgraph dimension["dimension (12)"]
     dim_company["dim_company"]
+    dim_price["dim_price"]
+    dim_price_channel["dim_price_channel"]
+    dim_price_tier["dim_price_tier"]
     dim_product_master["dim_product_master"]
     dim_product_master_fc["dim_product_master_fc"]
     dim_product_mkt["dim_product_mkt"]
@@ -584,7 +589,10 @@ flowchart LR
   end
   brand --> product_for_aisearch
   category__mastersku --> product_for_aisearch
+  crm_nd_sd_price --> dim_price
+  crm_nd_sd_price --> dim_price_tier
   curated_product --> product_for_aisearch
+  dim_company --> dim_price_channel
   dim_company --> dim_product_master
   dim_company --> dim_product_master_fc
   dim_company --> dim_product_mkt
@@ -598,6 +606,7 @@ flowchart LR
   dim_company --> fact_order_store
   dim_company --> fact_quotation
   dim_company --> fact_transaction_delivery
+  dim_price --> dim_price_tier
   dim_product_master --> dim_pump_information
   dim_product_master --> fact_backlog_store
   dim_product_master --> fact_invoice_store
@@ -628,6 +637,7 @@ flowchart LR
   product_detail --> curated_product
   product_detail --> dim_product_master
   product_detail --> product_for_aisearch
+  sales_channel_master_sales_channel --> dim_price_channel
   stg --> dim_product_master
   stk --> dim_product_master
   stk --> dim_stk_mkt
@@ -638,9 +648,9 @@ flowchart LR
   classDef dimension fill:#ffe0b3,stroke:#d98f2f,color:#111;
   classDef fact fill:#c6f5c6,stroke:#3fa63f,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
-  class brand,category__mastersku,product,product_detail,stg,stk,unit,vendor validated;
+  class brand,category__mastersku,crm_nd_sd_price,product,product_detail,sales_channel_master_sales_channel,stg,stk,unit,vendor validated;
   class curated_product,product_for_aisearch curated;
-  class dim_company,dim_product_master,dim_product_master_fc,dim_product_mkt,dim_product_mkt_director,dim_pump_information,dim_rebate,dim_region,dim_stk_mkt dimension;
+  class dim_company,dim_price,dim_price_channel,dim_price_tier,dim_product_master,dim_product_master_fc,dim_product_mkt,dim_product_mkt_director,dim_pump_information,dim_rebate,dim_region,dim_stk_mkt dimension;
   class fact_backlog_store,fact_invoice_store,fact_order,fact_order_store,fact_quotation,fact_saleout_mdt,fact_saleout_monthly_mdt,fact_transaction_delivery,fact_transcation fact;
 ```
 

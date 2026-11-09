@@ -1,0 +1,188 @@
+config {
+  type: "operations",
+  hasOutput: true,
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: ["dim_company"],
+  tags: [databuffet.TAG_DIM_DAILY],
+}
+
+js {
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+    const DimPriceChannelTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimPriceChannelTableRef = `${DimPriceChannelTable.database}.${DimPriceChannelTable.schema}.${DimPriceChannelTable.name}`;
+
+    const stableDimensionColumns = ['PriceChannelSK', 'MasterSalesChannelID', 'SalesChannelCode', 'SalesChannelName', 'Description', 'Status', 'Level', 'OrderSort', 'ParentID', 'ParentPriceChannelSK', 'PathID', 'PathCode', 'PathName', 'CompanyCode', 'OrganizationCode', 'CompanySK', 'SourceUpdatedAt', 'SourceAsatdate', 'asatdate'];
+    const stableDimensionKeyColumns = ['MasterSalesChannelID'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`PriceChannelSK` = S.`PriceChannelSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'PriceChannelSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+}
+
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    WITH company_code_candidates AS (
+      SELECT
+        CompanyCode,
+        COUNT(*) AS CandidateCount,
+        IF(
+          COUNT(*) = 1 AND COUNTIF(CompanySK IS NULL) = 0,
+          ANY_VALUE(CompanySK),
+          CAST(NULL AS INT64)
+        ) AS CompanySK
+      FROM `${DimCompanyTableRef}`
+      WHERE CompanyCode IS NOT NULL AND CompanyCode != ''
+      GROUP BY CompanyCode
+    )
+    SELECT
+      ROW_NUMBER() OVER(ORDER BY t1.master_sales_channel_id) AS PriceChannelSK,
+      t1.master_sales_channel_id AS MasterSalesChannelID,
+      t1.sales_channel_code AS SalesChannelCode,
+      t1.sales_channel_name AS SalesChannelName,
+      t1.description AS Description,
+      t1.status AS Status,
+      t1.`level` AS Level,
+      t1.order_sort AS OrderSort,
+      t1.parent_id AS ParentID,
+      CAST(NULL AS INT64) AS ParentPriceChannelSK,
+      t1.path_id AS PathID,
+      t1.path_code AS PathCode,
+      t1.path_name AS PathName,
+      t1.company_code AS CompanyCode,
+      t1.organization_code AS OrganizationCode,
+      CASE
+        WHEN company_code_candidates.CandidateCount = 1 THEN company_code_candidates.CompanySK
+        ELSE CAST(NULL AS INT64)
+      END AS CompanySK,
+      t1.updated_at AS SourceUpdatedAt,
+      t1.asatdate AS SourceAsatdate,
+      CURRENT_DATE('Asia/Bangkok') AS asatdate
+    FROM ${ref(databuffet.VALIDATED_DERP, "sales_channel_master_sales_channel")} AS t1
+    LEFT JOIN company_code_candidates
+      ON t1.company_code = company_code_candidates.CompanyCode
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    WHERE MasterSalesChannelID IS NULL OR MasterSalesChannelID = ''
+  ) AS 'dim_price_channel source natural key must not be NULL or empty';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_price_channel source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot AS child
+    LEFT JOIN _SESSION.stable_sk_source_snapshot AS parent
+      ON child.ParentID = parent.MasterSalesChannelID
+    WHERE child.ParentID IS NOT NULL AND parent.MasterSalesChannelID IS NULL
+  ) AS 'dim_price_channel source parent must resolve within the complete snapshot';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPriceChannelTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_price_channel target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPriceChannelTableRef}`
+    WHERE PriceChannelSK IS NULL
+  ) AS 'dim_price_channel target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPriceChannelTableRef}`
+    GROUP BY PriceChannelSK
+    HAVING COUNT(*) > 1
+  ) AS 'dim_price_channel target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(PriceChannelSK)
+    FROM `${DimPriceChannelTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  WITH allocated_rows AS (
+    SELECT
+      source_row.*,
+      target_row.PriceChannelSK AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.PriceChannelSK IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimPriceChannelTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ), assigned_rows AS (
+    SELECT
+      allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+      REPLACE (
+        COALESCE(
+          allocated_row.stable_existing_sk,
+          max_sk + allocated_row.stable_new_sk_rank
+        ) AS PriceChannelSK
+      )
+    FROM allocated_rows AS allocated_row
+  )
+  SELECT
+    assigned_rows.PriceChannelSK,
+    assigned_rows.MasterSalesChannelID,
+    assigned_rows.SalesChannelCode,
+    assigned_rows.SalesChannelName,
+    assigned_rows.Description,
+    assigned_rows.Status,
+    assigned_rows.Level,
+    assigned_rows.OrderSort,
+    assigned_rows.ParentID,
+    parent.PriceChannelSK AS ParentPriceChannelSK,
+    assigned_rows.PathID,
+    assigned_rows.PathCode,
+    assigned_rows.PathName,
+    assigned_rows.CompanyCode,
+    assigned_rows.OrganizationCode,
+    assigned_rows.CompanySK,
+    assigned_rows.SourceUpdatedAt,
+    assigned_rows.SourceAsatdate,
+    assigned_rows.asatdate
+  FROM assigned_rows
+  LEFT JOIN assigned_rows AS parent
+    ON assigned_rows.ParentID = parent.MasterSalesChannelID;
+
+  MERGE `${DimPriceChannelTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

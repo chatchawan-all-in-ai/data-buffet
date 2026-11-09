@@ -24,7 +24,7 @@ status: draft
 # What it is
 
 Validated copy of DERP `crm_nd_sd_price`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Product selling prices with list price, floor price, the normal-discount (ND) quantity tier and up to three special-discount (SD) tiers.
-No other repo object reads it.
+Read by: [dim_price](../../dimension/dim_price.md) and [dim_price_tier](../../dimension/dim_price_tier.md).
 
 # Grain and key
 

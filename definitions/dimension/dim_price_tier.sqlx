@@ -1,0 +1,215 @@
+config {
+  type: "operations",
+  hasOutput: true,
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: ["dim_price"],
+  tags: [databuffet.TAG_DIM_DAILY],
+}
+
+js {
+    const DimPriceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_price",
+    };
+    const DimPriceTableRef = `${DimPriceTable.database}.${DimPriceTable.schema}.${DimPriceTable.name}`;
+    const DimPriceTierTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimPriceTierTableRef = `${DimPriceTierTable.database}.${DimPriceTierTable.schema}.${DimPriceTierTable.name}`;
+
+    const stableDimensionColumns = ['PriceTierSK', 'PriceSK', 'NdSdPriceID', 'TierCode', 'MinQty', 'MaxQty', 'Rate', 'RateType', 'PriceInclVat', 'PriceExclVat', 'VatRate', 'VatBasisStatus', 'QuantityRuleStatus', 'SourceAsatdate', 'asatdate'];
+    const stableDimensionKeyColumns = ['NdSdPriceID', 'TierCode'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`PriceTierSK` = S.`PriceTierSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'PriceTierSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+}
+
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    WITH source_tier AS (
+      SELECT
+        t1.nd_sd_price_id AS NdSdPriceID,
+        tier.TierCode,
+        tier.MinQty,
+        tier.MaxQty,
+        tier.Rate,
+        tier.RateType,
+        tier.PriceInclVat,
+        tier.PriceExclVat,
+        tier.VatRate,
+        t1.asatdate AS SourceAsatdate
+      FROM ${ref(databuffet.VALIDATED_DERP, "crm_nd_sd_price")} AS t1
+      CROSS JOIN UNNEST([
+        STRUCT(
+          'ND' AS TierCode,
+          t1.nd_min_qty AS MinQty,
+          t1.nd_max_qty AS MaxQty,
+          CAST(NULL AS FLOAT64) AS Rate,
+          CAST(NULL AS STRING) AS RateType,
+          t1.list_price_incl_vat AS PriceInclVat,
+          t1.list_price_excl_vat AS PriceExclVat,
+          t1.list_price_vat_rate AS VatRate
+        ),
+        STRUCT(
+          'SD1' AS TierCode,
+          t1.sd1_min_qty AS MinQty,
+          t1.sd1_max_qty AS MaxQty,
+          t1.sd1_rate AS Rate,
+          t1.sd1_rate_type AS RateType,
+          CAST(NULL AS FLOAT64) AS PriceInclVat,
+          t1.sd1_price_excl_vat AS PriceExclVat,
+          CAST(NULL AS FLOAT64) AS VatRate
+        ),
+        STRUCT(
+          'SD2' AS TierCode,
+          t1.sd2_min_qty AS MinQty,
+          t1.sd2_max_qty AS MaxQty,
+          t1.sd2_rate AS Rate,
+          t1.sd2_rate_type AS RateType,
+          CAST(NULL AS FLOAT64) AS PriceInclVat,
+          t1.sd2_price_excl_vat AS PriceExclVat,
+          CAST(NULL AS FLOAT64) AS VatRate
+        ),
+        STRUCT(
+          'SD3' AS TierCode,
+          t1.sd3_min_qty AS MinQty,
+          t1.sd3_max_qty AS MaxQty,
+          t1.sd3_rate AS Rate,
+          t1.sd3_rate_type AS RateType,
+          CAST(NULL AS FLOAT64) AS PriceInclVat,
+          t1.sd3_price_excl_vat AS PriceExclVat,
+          CAST(NULL AS FLOAT64) AS VatRate
+        ),
+        STRUCT(
+          'BIGPRO' AS TierCode,
+          CAST(NULL AS INT64) AS MinQty,
+          CAST(NULL AS INT64) AS MaxQty,
+          t1.bigpro_rate AS Rate,
+          t1.bigpro_rate_type AS RateType,
+          CAST(NULL AS FLOAT64) AS PriceInclVat,
+          t1.bigpro_price_excl_vat AS PriceExclVat,
+          CAST(NULL AS FLOAT64) AS VatRate
+        )
+      ]) AS tier
+    )
+    SELECT
+      ROW_NUMBER() OVER(ORDER BY source_tier.NdSdPriceID, source_tier.TierCode) AS PriceTierSK,
+      dim_price.PriceSK,
+      source_tier.NdSdPriceID,
+      source_tier.TierCode,
+      source_tier.MinQty,
+      source_tier.MaxQty,
+      source_tier.Rate,
+      source_tier.RateType,
+      source_tier.PriceInclVat,
+      source_tier.PriceExclVat,
+      source_tier.VatRate,
+      CASE
+        WHEN source_tier.PriceInclVat IS NULL AND source_tier.PriceExclVat IS NULL THEN 'missing'
+        ELSE 'unverified'
+      END AS VatBasisStatus,
+      CASE
+        WHEN source_tier.TierCode = 'BIGPRO' THEN 'missing'
+        WHEN source_tier.MinQty IS NOT NULL THEN 'confirmed'
+        WHEN source_tier.MaxQty IS NOT NULL THEN 'unverified'
+        ELSE 'missing'
+      END AS QuantityRuleStatus,
+      source_tier.SourceAsatdate,
+      CURRENT_DATE('Asia/Bangkok') AS asatdate
+    FROM source_tier
+    LEFT JOIN `${DimPriceTableRef}` AS dim_price
+      ON source_tier.NdSdPriceID = dim_price.NdSdPriceID
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    WHERE NdSdPriceID IS NULL OR NdSdPriceID = '' OR TierCode IS NULL OR TierCode = ''
+  ) AS 'dim_price_tier source natural key must not be NULL or empty';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_price_tier source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    WHERE PriceSK IS NULL
+  ) AS 'dim_price_tier parent price key must resolve';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPriceTierTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_price_tier target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPriceTierTableRef}`
+    WHERE PriceTierSK IS NULL
+  ) AS 'dim_price_tier target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPriceTierTableRef}`
+    GROUP BY PriceTierSK
+    HAVING COUNT(*) > 1
+  ) AS 'dim_price_tier target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(PriceTierSK)
+    FROM `${DimPriceTierTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      COALESCE(
+        allocated_row.stable_existing_sk,
+        max_sk + allocated_row.stable_new_sk_rank
+      ) AS PriceTierSK
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.PriceTierSK AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.PriceTierSK IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimPriceTierTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
+
+  MERGE `${DimPriceTierTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

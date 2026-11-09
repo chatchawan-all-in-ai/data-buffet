@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-09 (D-ERP price dimensions)
+
+* **Creation**: Added OKF cards for `dim_price`, `dim_price_tier` and `dim_price_channel`, plus their dimension index and inventory entries.
+
 ## 2026-11-09 (Group A contracts)
 
 * **Update**: Refreshed changed validated keys, saleout extract-date column names, and business row-selection contracts in the affected table and view cards.

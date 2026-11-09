@@ -37,6 +37,9 @@ Star-schema dimensions in `dimension_table` (surrogate keys, mds and lake source
 * [dim_holiday](dim_holiday.md) - One row = one public holiday date with Thai and English names and a long-weekend flag, from the MDS holiday master.
 * [dim_invoice](dim_invoice.md) - One row = one sales document per distinct linked order number (NULL when unlinked), company, customer and date, with sales-split percentages.
 * [dim_order](dim_order.md) - One row = one MAC5 sales order (document type PS) per company with header attributes, status text and a derived fulfilment status (On Order / In Process / Complete).
+* [dim_price](dim_price.md) - One row = one D-ERP ND/SD price sheet with source identity, validity, status, floor and quantity attributes.
+* [dim_price_channel](dim_price_channel.md) - One row = one D-ERP sales channel with its source hierarchy and parent channel key.
+* [dim_price_tier](dim_price_tier.md) - One row = one ND, SD1, SD2, SD3 or BIGPRO tier for a D-ERP price sheet.
 * [dim_payment](dim_payment.md) - One row = one payment memo code (CodeMemo) per company with its payment id, name, method (EN/TH) and type, from the MDS payment master.
 * [dim_payment_receive_score](dim_payment_receive_score.md) - One row = one score band (min/max total payment received, validity period) per company, used to score a customer's yearly payment volume.
 * [dim_pc](dim_pc.md) - One row = one promoter/PC (product consultant) assignment (employee, MDT branch, marketing group, period) from the MDS PC master, plus a reserved -1 'unknown' row.

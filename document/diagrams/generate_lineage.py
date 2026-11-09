@@ -74,6 +74,7 @@ TOPICS = [
     ("product", "Product master & marketing — สินค้า", [
         r"^dim_product_master(_fc)?$",
         r"^dim_product_mkt(_director)?$",
+        r"^dim_price(_tier|_channel)?$",
         r"^dim_stk_mkt$",
         r"^dim_rebate$",
         r"^dim_pump_information$",

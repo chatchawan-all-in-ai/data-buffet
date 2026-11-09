@@ -24,7 +24,7 @@ status: draft
 # What it is
 
 Validated copy of DERP `sales_channel_master_sales_channel`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`, and duplicates are collapsed. There is no business logic at this layer. Table meaning: Hierarchy of sales channels with their document prefixes and quotation/sales-order approval and PO rules.
-No other repo object reads it.
+Read by: [dim_price_channel](../../dimension/dim_price_channel.md).
 
 # Grain and key
 

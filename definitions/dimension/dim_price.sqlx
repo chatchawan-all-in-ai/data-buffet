@@ -1,0 +1,138 @@
+config {
+  type: "operations",
+  hasOutput: true,
+  schema: databuffet.DIMENSION_TABLE,
+  dependencies: [],
+  tags: [databuffet.TAG_DIM_DAILY],
+}
+
+js {
+    const DimPriceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: name(),
+    };
+    const DimPriceTableRef = `${DimPriceTable.database}.${DimPriceTable.schema}.${DimPriceTable.name}`;
+
+    const stableDimensionColumns = ['PriceSK', 'NdSdPriceID', 'ProductID', 'ProductCode', 'ProductBarcode', 'ProductSK', 'CompanySK', 'ProductMatchCount', 'CompanyResolutionStatus', 'ProductResolutionStatus', 'EffectiveFrom', 'ExpiryTo', 'Status', 'ListPriceInclVat', 'ListPriceExclVat', 'ListPriceVatRate', 'FloorPct', 'FloorPriceInclVat', 'FloorRateType', 'NdMinQty', 'NdMaxQty', 'Remark', 'SourceUpdatedAt', 'SourceDeletedAt', 'SourceAsatdate', 'asatdate'];
+    const stableDimensionKeyColumns = ['NdSdPriceID'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `source_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`PriceSK` = S.`PriceSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => column !== 'PriceSK' && !stableDimensionKeyColumns.includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
+}
+
+BEGIN
+  DECLARE max_sk INT64 DEFAULT 0;
+
+  CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    SELECT
+      ROW_NUMBER() OVER(ORDER BY t1.nd_sd_price_id) AS PriceSK,
+      t1.nd_sd_price_id AS NdSdPriceID,
+      t1.product_id AS ProductID,
+      t1.product_code AS ProductCode,
+      t1.product_barcode AS ProductBarcode,
+      CAST(NULL AS INT64) AS ProductSK,
+      CAST(NULL AS INT64) AS CompanySK,
+      CAST(NULL AS INT64) AS ProductMatchCount,
+      'UNKNOWN' AS CompanyResolutionStatus,
+      'UNKNOWN' AS ProductResolutionStatus,
+      t1.effective_from AS EffectiveFrom,
+      t1.expiry_to AS ExpiryTo,
+      t1.status AS Status,
+      t1.list_price_incl_vat AS ListPriceInclVat,
+      t1.list_price_excl_vat AS ListPriceExclVat,
+      t1.list_price_vat_rate AS ListPriceVatRate,
+      t1.floor_pct AS FloorPct,
+      t1.floor_price_incl_vat AS FloorPriceInclVat,
+      t1.floor_rate_type AS FloorRateType,
+      t1.nd_min_qty AS NdMinQty,
+      t1.nd_max_qty AS NdMaxQty,
+      t1.remark AS Remark,
+      t1.updated_at AS SourceUpdatedAt,
+      t1.deleted_at AS SourceDeletedAt,
+      t1.asatdate AS SourceAsatdate,
+      CURRENT_DATE('Asia/Bangkok') AS asatdate
+    FROM ${ref(databuffet.VALIDATED_DERP, "crm_nd_sd_price")} AS t1
+  );
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    WHERE NdSdPriceID IS NULL OR NdSdPriceID = ''
+  ) AS 'dim_price source natural key must not be NULL or empty';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_price source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPriceTableRef}`
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_price target natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPriceTableRef}`
+    WHERE PriceSK IS NULL
+  ) AS 'dim_price target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimPriceTableRef}`
+    GROUP BY PriceSK
+    HAVING COUNT(*) > 1
+  ) AS 'dim_price target surrogate key must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(PriceSK)
+    FROM `${DimPriceTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      COALESCE(
+        allocated_row.stable_existing_sk,
+        max_sk + allocated_row.stable_new_sk_rank
+      ) AS PriceSK
+    )
+  FROM (
+    SELECT
+      source_row.*,
+      target_row.PriceSK AS stable_existing_sk,
+      ROW_NUMBER() OVER (
+        PARTITION BY (target_row.PriceSK IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM _SESSION.stable_sk_source_snapshot AS source_row
+    LEFT JOIN `${DimPriceTableRef}` AS target_row
+      ON ${stableDimensionLookupCondition}
+  ) AS allocated_row;
+
+  MERGE `${DimPriceTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
+  WHEN MATCHED THEN
+    UPDATE SET
+      ${stableDimensionUpdateSet}
+  WHEN NOT MATCHED THEN
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
+END;

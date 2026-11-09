@@ -123,6 +123,16 @@ action; see [stable dimension sync](merge-sk-pattern.md) and the project DAG.
 | dim_store | StoreSK · **NK = companyID + StoreCode** | คลัง/สาขาจาก `validated_mac5.sto` (601 แถว ag01) · `StoreGroup` (`stogroup`) เป็นชั้นที่ใช้สไลซ์ — KK ขอนแก่น, LP ลำพูน, HY หาดใหญ่, UB อุบลราชธานี, PK ภูเก็ต · `ReportStore` (เพิ่ม 2026-09-03) = `stogroup` ที่ไม่อยู่ใน `kk/pk/lp/ub/hy` ยุบเป็น `'KTB'` ถังเดียว ไว้สไลซ์รายงาน · `UNION ALL` แถว Unknown `StoreSK = -1` (`StoreNameE = 'Unknown'`, **`ReportStore = 'KTB'`** ตั้งแต่ 2026-09-25 — เดิม `'Unknown'`) รับรหัสที่ไม่มีใน `sto` (pattern เดียวกับ `dim_stk_mkt`) · consumer: `fact_order_store` / `fact_invoice_store` / `fact_backlog_store` ต่อด้วย `milSto` / `cpsSto` (เพิ่ม 2026-09-01) |
 | dim_pump_information | PumpSK · **NK = CompanyID + milstk + RegionID + FlagNewProductMKT + PumpSegment** | **อ่านจาก `fact_transcation`** (ไม่ใช่ mds) → `PumpSegment`; PS1 + FlagNewProductMKT → `dim_product_mkt.Segment`, นอกนั้น → `view_dim_product_master.PumpSegment` (เพิ่ม 2026-08-26) · consumer: `view_fact_transcation` join กลับด้วย NK 4 ตัว (ไม่ persist PumpSK) · **`CompanySK` จำเป็น — `milstk` unique แค่ภายในบริษัท** |
 
+## Group (d) — D-ERP price dimensions (3)
+
+| File | SK | Natural key | Source |
+|---|---|---|---|
+| dim_price | PriceSK | NdSdPriceID | validated_derp.crm_nd_sd_price |
+| dim_price_tier | PriceTierSK | NdSdPriceID, TierCode | validated_derp.crm_nd_sd_price; depends on dim_price |
+| dim_price_channel | PriceChannelSK | MasterSalesChannelID | validated_derp.sales_channel_master_sales_channel; depends on dim_company |
+
+These dimensions use the common [stable-SK sync](merge-sk-pattern.md). Table-specific mapping and hierarchy contracts are owned by the [dim_price](../../okf/dimension/dim_price.md), [dim_price_tier](../../okf/dimension/dim_price_tier.md) and [dim_price_channel](../../okf/dimension/dim_price_channel.md) cards.
+
 ## Group (e) — Other operations and distinct dimension behavior
 
 | File | What it does |
