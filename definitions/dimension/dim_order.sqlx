@@ -20,6 +20,13 @@ js {
         name: "dim_company",
     };
     const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+
+    const MdsPrefixOrderChannelTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_prefix_order_channel_master",
+    };
+    const MdsPrefixOrderChannelTableRef = `${MdsPrefixOrderChannelTable.database}.${MdsPrefixOrderChannelTable.schema}.${MdsPrefixOrderChannelTable.name}`;
 }
 
 BEGIN
@@ -87,6 +94,19 @@ BEGIN
         from cal_table
         group by 1, 2
     ),
+    -- ช่องทางขายตาม prefix เลข order (MDS): 1 แถวต่อ prefix กัน MERGE fan out ถ้า MDS มี prefix ซ้ำ
+    order_channel as (
+        select
+            UPPER(${databuffet.functionData.cleanString("Prefix")}) as Prefix,
+            ${databuffet.functionData.cleanString("Channel_Name")} as Channel_Name
+        from `${MdsPrefixOrderChannelTableRef}`
+        where is_active = TRUE
+            and ${databuffet.functionData.cleanString("Prefix")} is not null
+        qualify row_number() over(
+            partition by UPPER(${databuffet.functionData.cleanString("Prefix")})
+            order by version desc, updated_at desc
+        ) = 1
+    ),
     source_data AS (
         SELECT
             dim_com.CompanySK,
@@ -118,7 +138,9 @@ BEGIN
             per.pernamet,
             mih.mihBl,
             ar.ar_scolb as StatusColorBg,
-            order_status.OrderStatus
+            order_status.OrderStatus,
+            -- prefix = ตัวอักษรชุดแรกก่อนตัวเลข เทียบเท่ากันทั้งคำ (SH ไม่ชน SHT); ไม่เจอใน MDS → 'Other'
+            COALESCE(order_channel.Channel_Name, 'Other') as OrderChannel
         FROM ${ref(databuffet.CURATED_MAC5, 'curated_mih')} as mih
         LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, 'ar_s')} as ar
             on mih.mihStatus = ar.ar_scode
@@ -131,6 +153,8 @@ BEGIN
             and order_status.company_id = mih.company_id
         left join `${DimCompanyTableRef}` as dim_com
             on mih.company_id = dim_com.companyID
+        LEFT JOIN order_channel as order_channel
+            on UPPER(REGEXP_EXTRACT(mih.mihVnos, r'^[A-Za-z]+')) = order_channel.Prefix
         WHERE mih.mihType = 'PS'
             and PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
             -- and mih.company_id = 'ag01'
@@ -175,7 +199,8 @@ BEGIN
         t1.pernamet,
         t1.mihBl,
         t1.StatusColorBg,
-        t1.OrderStatus
+        t1.OrderStatus,
+        t1.OrderChannel
     FROM source_data AS t1
     LEFT JOIN `${DimOrderTableRef}` AS t2
         ON  t1.mihYear = t2.mihYear
@@ -217,7 +242,8 @@ BEGIN
       T.pernamet = S.pernamet,
       T.mihBl = S.mihBl,
       T.StatusColorBg = S.StatusColorBg,
-      T.OrderStatus = S.OrderStatus
+      T.OrderStatus = S.OrderStatus,
+      T.OrderChannel = S.OrderChannel
 
   -- กรณีไม่เจอข้อมูล (Insert)
   WHEN NOT MATCHED THEN
@@ -229,7 +255,8 @@ BEGIN
       StatusName, memoExtract, mihMemoNew, mihNotes,
       mihStatusDesc, OrderStatus,
       mihDesc, mihKeydate, mihDelvdate, mihClearum, mihExtrasum,
-      mihPer, pernamet, mihBl, StatusColorBg
+      mihPer, pernamet, mihBl, StatusColorBg,
+      OrderChannel
     )
     VALUES (
       S.OrderSK, S.CompanySK,
@@ -239,6 +266,7 @@ BEGIN
       S.StatusName, S.memoExtract, S.mihMemoNew, S.mihNotes,
       S.mihStatusDesc, S.OrderStatus,
       S.mihDesc, S.mihKeydate, S.mihDelvdate, S.mihClearum, S.mihExtrasum,
-      S.mihPer, S.pernamet, S.mihBl, S.StatusColorBg
+      S.mihPer, S.pernamet, S.mihBl, S.StatusColorBg,
+      S.OrderChannel
     );
 END;
