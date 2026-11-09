@@ -3,7 +3,7 @@
 View คือชั้นนำเสนอสำหรับ Power BI / data mart / RLS — `type: "view"` ไม่เก็บข้อมูลจริง
 รายละเอียด pattern เต็ม: [project_wiki/view/view-layer.md](../project_wiki/view/view-layer.md)
 
-สำหรับ view ส่ง Pub/Sub ให้ใช้ [export contract](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
+สำหรับ view ส่ง Pub/Sub ให้ใช้ [export contract](../project_wiki/cdc-process/process.md#pubsub-export)
 ซึ่งกำหนด dataset, โฟลเดอร์, tag และวิธีเปิดใช้งานแยกจาก presentation views ด้านล่าง
 
 ## ขั้นตอน

@@ -7,6 +7,8 @@
 ## 2026-11-09 (Group A contracts)
 
 * **Update**: Refreshed changed validated keys, saleout extract-date column names, and business row-selection contracts in the affected table and view cards.
+* **Update**: Expanded the `export_view_dim_company` SQLX and OKF card to include all source view columns.
+* **Update**: Removed the `dim_company` pilot export, renamed the 12 AI-team view topics, and refreshed Pub/Sub setup and reference docs.
 
 ## 2026-11-08 (formula datetime parsing)
 

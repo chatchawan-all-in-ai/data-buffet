@@ -21,7 +21,7 @@
 # owner in Google Cloud Shell (CLOUD_SHELL=true); python3/python.
 #
 # Usage: bash pubsub/scripts/export-snapshot.sh <team> <topic>
-#   e.g. bash pubsub/scripts/export-snapshot.sh ai-dev export-ta-dim_company
+#   e.g. bash pubsub/scripts/export-snapshot.sh ai-dev export-ta-org_levels
 set -euo pipefail
 
 PROJECT=databuffet-nonprd

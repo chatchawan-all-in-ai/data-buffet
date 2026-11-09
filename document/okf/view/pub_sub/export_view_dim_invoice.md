@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of [dimension_view.view_dim_invoice](/view/dimension_view/view_dim_invoice.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-view_dim_invoice`.
+The Pub/Sub export view of [dimension_view.view_dim_invoice](/view/dimension_view/view_dim_invoice.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-dim_invoice`.
 
 # Grain and key
 

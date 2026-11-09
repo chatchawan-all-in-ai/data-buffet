@@ -20,8 +20,8 @@
 # project owner.
 #
 # Usage: bash pubsub/scripts/add-consumer.sh [--team-sa <email>] <team> <topic>...
-#   e.g. bash pubsub/scripts/add-consumer.sh ai-dev export-ta-dim_company
-#        bash pubsub/scripts/add-consumer.sh --team-sa consumer-run@ai-prod.iam.gserviceaccount.com ai-prod export-ta-dim_company
+#   e.g. bash pubsub/scripts/add-consumer.sh ai-dev export-ta-org_levels
+#        bash pubsub/scripts/add-consumer.sh --team-sa consumer-run@ai-prod.iam.gserviceaccount.com ai-prod export-ta-org_levels
 set -euo pipefail
 
 PROJECT=databuffet-nonprd

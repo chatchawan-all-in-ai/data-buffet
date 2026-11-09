@@ -52,7 +52,7 @@ GCS files  gs://file-raw-data  (AVRO, Hive partition: ASATDATE=YYYYMMDD · ม�
 | CDC | `cdc_dataset` | operations | จับ NEW/CHANGED จาก config |
 | Pub/Sub | `pub_sub` | operations | `pub_sub_schema` สร้าง dataset · ที่อยู่ของตารางเตรียมข้อมูลก่อนส่ง Pub/Sub ในอนาคต (view ส่งออกอยู่ที่ `definitions/view/pub_sub/`) |
 | Org center | `org_center` | table (`dimension_daily`) + operations | บอกว่าใครอยู่หน่วยไหน ตำแหน่งอะไร · ตาราง แหล่งข้อมูล และ PC → TA links ดู [Org Center reference](../project_wiki/org_center/org-center.md) |
-| Process | `process_dataset` | incremental / table / operations | AI แกะที่อยู่ไทย (row ที่ CDC เปลี่ยน) + RLS (`rls_customer360`) + [นำร่องส่ง Pub/Sub](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
+| Process | `process_dataset` | incremental / table / operations | AI แกะที่อยู่ไทย (row ที่ CDC เปลี่ยน) + RLS (`rls_customer360`) + [Pub/Sub exports](../project_wiki/cdc-process/process.md#pubsub-export) |
 
 ### แยกย่อย dimension
 

@@ -1,6 +1,6 @@
 # pub_sub
 
-55 cards in BigQuery dataset `pub_sub`.
+54 cards in BigQuery dataset `pub_sub`.
 
 # Tables
 
@@ -15,7 +15,6 @@
 * [export_debit_note](export_debit_note.md) - One row = one line of an ag01 debit note (AS) across all years, not cancelled; commission set `debit_note` for the TF team, exposed for the Pub/Sub export with row_key and row_hash.
 * [export_dim_aging_rang](export_dim_aging_rang.md) - One row = one aging range (day band) of the receivables aging report, exposed for the Pub/Sub export of dimension_table.dim_aging_rang with row_key and row_hash.
 * [export_dim_calendar](export_dim_calendar.md) - One row = one calendar day with its weekend and holiday flags, exposed for the Pub/Sub export of dimension_table.dim_calendar with row_key and row_hash.
-* [export_dim_company](export_dim_company.md) - One row = one company, exposed for the Pub/Sub export of the table dimension_table.dim_company with row_key and row_hash.
 * [export_dim_customer_segment](export_dim_customer_segment.md) - One row = one customer segment, exposed for the Pub/Sub export of dimension_table.dim_customer_segment with row_key and row_hash.
 * [export_dim_doctype](export_dim_doctype.md) - One row = one document type code of a company, exposed for the Pub/Sub export of dimension_table.dim_doctype with row_key and row_hash.
 * [export_dim_payment](export_dim_payment.md) - One row = one payment method code of a company, exposed for the Pub/Sub export of dimension_table.dim_payment with row_key and row_hash.
@@ -48,7 +47,7 @@
 * [export_stk](export_stk.md) - One row = one ag01 product; commission set `stk` for the TF team, exposed for the Pub/Sub export with row_key and row_hash.
 * [export_view_dim_aging_history](export_view_dim_aging_history.md) - One row = one invoice of one company on one as-at date of the receivables aging snapshot, exposed for the Pub/Sub export of dimension_view.view_dim_aging_history with row_key and row_hash.
 * [export_view_dim_channel](export_view_dim_channel.md) - One row = one sales channel of a company, exposed for the Pub/Sub export of dimension_view.view_dim_channel with row_key and row_hash.
-* [export_view_dim_company](export_view_dim_company.md) - One row = one company with its report id, exposed for the Pub/Sub export of dimension_view.view_dim_company with row_key and row_hash.
+* [export_view_dim_company](export_view_dim_company.md) - One row = one company with all columns of dimension_view.view_dim_company, exposed for the Pub/Sub export with row_key and row_hash.
 * [export_view_dim_customer](export_view_dim_customer.md) - One row = one customer, exposed for the Pub/Sub export of dimension_view.view_dim_customer with row_key and row_hash.
 * [export_view_dim_customer_report_info](export_view_dim_customer_report_info.md) - One row = one customer report name with its segment and TA assignment, exposed for the Pub/Sub export of dimension_view.view_dim_customer_report_info with row_key and row_hash.
 * [export_view_dim_invoice](export_view_dim_invoice.md) - One row = one invoice document, exposed for the Pub/Sub export of dimension_view.view_dim_invoice with row_key and row_hash.

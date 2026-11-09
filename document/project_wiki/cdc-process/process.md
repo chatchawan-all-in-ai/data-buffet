@@ -1,6 +1,6 @@
 # Process Layer — `definitions/process/`
 
-> **LLM context**: 2 files with tag `process`, plus the Pub/Sub export pilot
+> **LLM context**: 2 files with tag `process`, plus the Pub/Sub export publisher
 > (2 `.sqlx` here, plus `definitions/pub_sub/pub_sub_schema.sqlx` and the export views
 > in `definitions/view/pub_sub/`; tag `pub_sub`, run by hand — see the last section).
 > TA customer access is also built in this folder; see [`rls_ta_customer`](#rls_ta_customersqlx--ta-customer-access-who-sees-which-customer).
@@ -84,7 +84,7 @@ Dataform materializes it from the `config` block. RLS is also referenced in
 
 ---
 
-## Pub/Sub export pilot — `dim_company` (2026-10-24)
+## Pub/Sub export
 
 "Data Mart → Pub/Sub": Dataform keeps an export view per exported table plus two
 bookkeeping tables. The publisher is two Cloud Run jobs in `us-central1`, one program
@@ -128,9 +128,8 @@ runs** — see "Deploy" below:
 | `mart_export_config.sqlx` | `process_dataset.mart_export_config` | One row per exported table. `CREATE TABLE IF NOT EXISTS`, then a `MERGE` from `includes/controller/mart-export-config.json` (inserts new tables, updates `task_group` of existing ones). Schema in its OKF card (linked below) |
 | `mart_sent_state.sqlx` | `process_dataset.mart_sent_state` | One row per data row sent. `CREATE TABLE IF NOT EXISTS`, cluster `table_name, row_key`. Schema and writers in its OKF card (linked below) |
 | `pub_sub/pub_sub_schema.sqlx` | dataset `pub_sub` (tags `view` + `pub_sub`) | `CREATE SCHEMA IF NOT EXISTS ... OPTIONS(location=REGION)`, the same bootstrap as `validated_schema_*` / `cdc_schema`. `definitions/pub_sub/` is the layer folder for future shaping tables before Pub/Sub |
-| `view/pub_sub/export_dim_company.sqlx` | `pub_sub.export_dim_company` (view, tags `view` + `pub_sub`) | `CompanyID`, `CompanyCode`, `CompanyNameTH`, `CompanyNameEN` as in `dim_company`, `row_key`, `row_hash` — no `CompanySK`, no `MdsId` |
 | `view/pub_sub/export_<table>.sqlx` × 9 | `pub_sub.export_<table>` (views, tags `view` + `pub_sub`) | TA app org tables for the AI team (below): the columns of the org sample sent 2026-11-02, `row_key`, `row_hash` |
-| `view/pub_sub/export_<table>.sqlx` × 33 | `pub_sub.export_<table>` (views, tags `view` + `pub_sub`) | AI team sample tables (below): the columns of the sample CSVs sent 2026-10-26 / 2026-11-02, `row_key`, `row_hash` |
+| `view/pub_sub/export_<table>.sqlx` × 33 | `pub_sub.export_<table>` (views, tags `view` + `pub_sub`) | AI team sample tables (below): schemas and keys in the [OKF export index](../../okf/view/pub_sub/index.md) |
 | `view/pub_sub/export_<set>.sqlx` × 12 | `pub_sub.export_<set>` (views, tags `view` + `pub_sub`) | Commission sets for TF (below): the columns of the sample sent to TF on 2026-10-14, `row_key`, `row_hash` |
 
 **Commission sets for the TF team** (company ag01; added 2026-11-02).
@@ -186,17 +185,17 @@ the next successful `daily_process` run.
 Added 2026-11-03. One export view per table already sent to the AI team as
 sample data: the 31 tables of the 2026-10-26 package, `rls_ta_customer` (rls sample) and
 `mds_data_ta_dashboard_display_control` (dashboard display control). `table_name` = the BigQuery table name in
-lower case. Topic routing and triggers are owned by
-[`mart-export-config.json`](../../../includes/controller/mart-export-config.json). Columns, names and order are the
+lower case; view-based topics omit the leading `view_` from that name. Topic routing and triggers are owned by
+[`mart-export-config.json`](../../../includes/controller/mart-export-config.json). Except for the company export linked below, columns, names and order follow the
 sample CSV header, read from the same source for the whole table (the sample filters are not applied), so they
 keep the SK columns of the sample. Dimension SKs remain stable for matching natural keys; current fact row-key
 rules and migration scope are owned by the
 [coding standard](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). Where a table has no unique business key the key is the business
 columns plus `occurrence` (position of the row among rows with the same key, ordered by their data JSON).
-`view_dim_company` has its own view because its sample columns differ from `export_dim_company`.
+The company export schema is owned by its [OKF card](../../okf/view/pub_sub/export_view_dim_company.md#schema).
 
 The [OKF export index](../../okf/view/pub_sub/index.md) links to each view's authoritative
-schema, source, key and recorded row count. Deployment is deferred until the AI team has tested
+schema, source and key. Deployment is deferred until the AI team has tested
 the samples; the stopping point and future activation procedure are owned by
 [setup guide, section E](../../how-to/setup-pubsub-export.md#ส่วน-e--ตารางตัวอย่างของทีม-ai-33-ตาราง).
 
@@ -224,7 +223,8 @@ columns by name.
 The `MERGE` inserts new export tables and, for an existing table, updates `task_group` only.
 Every other column of an existing row is preserved, including `source_view`, `topic`,
 `trigger_scheduler`, `last_invocation_id`, `last_invocation_end`, `claimed_at` and `seeded_at`,
-even if its JSON entry changes or is removed. `task_group` is required for every JSON entry:
+even if its JSON entry changes or is removed, except for the scoped AI-route migration below.
+`task_group` is required for every JSON entry:
 Dataform compilation fails when one has none.
 
 **A new export table starts unseeded.** The config MERGE sets
@@ -239,8 +239,13 @@ The first-load execution, transaction, claim cleanup and retry procedure are own
 [onboarding guide B3](../../how-to/setup-pubsub-export.md#3-โหลดครั้งแรกด้วยไฟล์-ครั้งแรกที่ทีมต่อ-topic-นั้นเท่านั้น);
 the TF rollout date and sequence are in [section C](../../how-to/setup-pubsub-export.md#ส่วน-c--ชุด-commission-ของทีม-tf).
 
-Changing an existing export table's
-view/topic or removing it is a deliberate manual change. Export-view name resolution
+Before the MERGE, a transactional, repeatable migration removes only the retired
+`dim_company` config row and renames the 12 AI view routes still using their original
+`export-ta-view_*` topics. Only `topic` changes on retained rows; checkpoints, claims,
+recovery fields and sent state are preserved. TF commission routes are untouched.
+Follow the [deployment migration procedure](../../how-to/setup-pubsub-export.md#a11-ย้าย-config-ของ-ai-routes-ก่อน-rebuild-publisher)
+before rebuilding the publisher. Other changes to an existing export table's
+view/topic or removal remain deliberate manual changes. Export-view name resolution
 and validation are described in the [config reference](../../okf/process/mart_export_config.md#how-it-is-built).
 
 **Check job** (every 5 minutes, `main.py check`, 1 vCPU / 512 MiB, one task, service account
@@ -379,12 +384,15 @@ needs no change. Re-run `pubsub/scripts/setup.sh`: it creates the topic, its dea
 record subscription, grants the publisher read on the view only, authorizes the view on
 its base tables' datasets (from `source_tables`) and rebuilds the image so a new group is in
 the order. Consumer teams get the new topic through `pubsub/scripts/add-consumer.sh`.
-For existing exports, the config lifecycle above applies (only `task_group` follows the JSON).
+For existing exports, follow the config lifecycle and scoped AI-route migration above.
 
 ### Deploy
 
 Run by hand, with no workflow configuration change. Once the code reaches `nonprod`,
 follow these steps for the first deployment and whenever an export table is added:
+
+For an existing installation, first follow the [migration procedure](../../how-to/setup-pubsub-export.md#a11-ย้าย-config-ของ-ai-routes-ก่อน-rebuild-publisher),
+which pauses publishing and completes recovery before running the Dataform actions below.
 
 1. In Dataform → Releases & Scheduling → release config `production`, select
    **New compilation** and wait for success, or verify that its existing live
@@ -401,7 +409,7 @@ refreshing `task_group` from the JSON while preserving checkpoints, claims and s
 No Dataform workflow configuration carries
 `pub_sub`. Do not use tag `view` for this: it deploys every view and skips the two
 tables. Then set up GCP and test per
-[setup-pubsub-export.md — ส่วน A](../../how-to/setup-pubsub-export.md#ส่วน-a--deploy-และทดสอบ-pilot).
+[setup-pubsub-export.md — ส่วน A](../../how-to/setup-pubsub-export.md#ส่วน-a--deploy-และทดสอบ-publisher).
 
 ---
 

@@ -4,29 +4,48 @@ config {
     dependencies: ["pub_sub_schema", "view_dim_company"],
     // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
     tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
-    description: "Pub/Sub export of dimension_view.view_dim_company: the columns of the sample sent to the AI team (the AI team package of 2026-10-26), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+    description: "Pub/Sub export of every data column from dimension_view.view_dim_company, plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
 }
 
 js {
     const ViewDimCompanyTable = {
-    database: databuffet.DATABASE,
-    schema: databuffet.DIMENSION_VIEW,
-    name: "view_dim_company",
-};
-const ViewDimCompanyTableRef = `${ViewDimCompanyTable.database}.${ViewDimCompanyTable.schema}.${ViewDimCompanyTable.name}`;
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_VIEW,
+        name: "view_dim_company",
+    };
+    const ViewDimCompanyTableRef = `${ViewDimCompanyTable.database}.${ViewDimCompanyTable.schema}.${ViewDimCompanyTable.name}`;
 }
 
 WITH src AS (
   SELECT
     CompanySK,
     CompanyID,
-    CompanyReportID
+    CompanyCode,
+    CompanyNameTH,
+    CompanyNameEN,
+    CompanyReportID,
+    CompanyNameReportTH,
+    CompanyNameReportEN
   FROM `${ViewDimCompanyTableRef}`
 )
 SELECT
   s.CompanySK,
   s.CompanyID,
+  s.CompanyCode,
+  s.CompanyNameTH,
+  s.CompanyNameEN,
   s.CompanyReportID,
+  s.CompanyNameReportTH,
+  s.CompanyNameReportEN,
   TO_JSON_STRING(STRUCT(s.CompanyID)) AS row_key,
-  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(s.CompanySK, s.CompanyID, s.CompanyReportID))) AS row_hash
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(
+    s.CompanySK,
+    s.CompanyID,
+    s.CompanyCode,
+    s.CompanyNameTH,
+    s.CompanyNameEN,
+    s.CompanyReportID,
+    s.CompanyNameReportTH,
+    s.CompanyNameReportEN
+  ))) AS row_hash
 FROM src AS s

@@ -45,7 +45,7 @@ cdc → process   (สายแยก — process gate อยู่บน CDC �
 
 `view` ต้องรัน **หลัง** `fact_daily` เสมอ เพราะ view อ่านจาก dim/fact
 `view` **ไม่อยู่ในตารางเวลาโดยตั้งใจ** — presentation views ใช้ [คู่มือ deploy](deploy-view.md)
-ส่วน Pub/Sub export views ใช้ [export contract](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
+ส่วน Pub/Sub export views ใช้ [export contract](../project_wiki/cdc-process/process.md#pubsub-export)
 ตารางเวลาจริง (05:45 / 06:00 / 08:55 / ปีละครั้ง) ดูที่
 [running-and-troubleshooting § Schedule](../project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd)
 

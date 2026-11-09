@@ -32,7 +32,7 @@ module.exports = {
 | Project config | `workflow_settings.yaml` | `DATABASE`, `REGION`, `RAW_BUCKET`, `MDS_BACKFILL_DAYS` |
 | Schema names & tags | [`variables.json`](variables.md) | `VALIDATED_MAC5`, `DIMENSION_TABLE`, `TAG_DIM_DAILY` |
 | CDC config | [`cdc-config.json`](cdc-config.md) | `cdcConfig.cdc_enabled_sources.mac5.tables.deb` |
-| Pub/Sub export config | `mart-export-config.json` ([process page](../cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)) | `martExportConfig.tables[0].source_view` |
+| Pub/Sub export config | `mart-export-config.json` ([process page](../cdc-process/process.md#pubsub-export)) | `martExportConfig.tables[0].source_view` |
 | SQL helpers | [`function-data.js`](function-data.md) | `functionData.cleanString(col)` |
 
 ## Usage in SQLX

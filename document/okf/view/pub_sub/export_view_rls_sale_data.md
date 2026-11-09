@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of [process_dataset.view_rls_sale_data](/view/process_dataset/view_rls_sale_data.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-view_rls_sale_data`.
+The Pub/Sub export view of [process_dataset.view_rls_sale_data](/view/process_dataset/view_rls_sale_data.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-rls_sale_data`.
 
 # Grain and key
 

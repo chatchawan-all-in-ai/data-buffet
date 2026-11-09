@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of [dimension_view.view_dim_sale_representative_last](/view/dimension_view/view_dim_sale_representative_last.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-view_dim_sale_representative_last`.
+The Pub/Sub export view of [dimension_view.view_dim_sale_representative_last](/view/dimension_view/view_dim_sale_representative_last.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-dim_sale_representative_last`.
 
 # Grain and key
 

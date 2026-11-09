@@ -38,6 +38,31 @@ CREATE TABLE IF NOT EXISTS ${self()} (
   recovery_until TIMESTAMP
 );
 
+BEGIN TRANSACTION;
+
+DELETE FROM ${self()}
+WHERE table_name = 'dim_company';
+
+UPDATE ${self()}
+SET topic = CONCAT('export-ta-', SUBSTR(table_name, 6))
+WHERE table_name IN (
+  'view_dim_aging_history',
+  'view_dim_channel',
+  'view_dim_company',
+  'view_dim_customer',
+  'view_dim_customer_report_info',
+  'view_dim_invoice',
+  'view_dim_order',
+  'view_dim_product_master',
+  'view_dim_product_mkt',
+  'view_dim_sale_representative_last',
+  'view_fact_transcation',
+  'view_rls_sale_data'
+)
+  AND topic = CONCAT('export-ta-', table_name);
+
+COMMIT TRANSACTION;
+
 UPDATE ${self()} AS c
 SET seeded_at = (SELECT MIN(s.sent_at) FROM ${ref("mart_sent_state")} AS s WHERE s.table_name = c.table_name)
 WHERE c.seeded_at IS NULL

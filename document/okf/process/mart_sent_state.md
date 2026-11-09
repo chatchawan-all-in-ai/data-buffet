@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-Sent-state ledger of the Data Mart to Pub/Sub export: it holds, per export table, every row the receivers currently hold. The Cloud Run publisher (send job `datamart-publish-send`) diffs the export view (for dim_company: [export_dim_company](/view/pub_sub/export_dim_company.md)) against this table: a key absent here is NEW, a different `row_hash` is UPDATE, a key only here is DELETE. Writers are the publisher after successful delivery and the first-load exporter for an unseeded table (invocation_id 'seed'). Initialization status lives in [mart_export_config](/process/mart_export_config.md).
+Sent-state ledger of the Data Mart to Pub/Sub export: it holds, per export table, every row the receivers currently hold. The Cloud Run publisher (send job `datamart-publish-send`) diffs each configured export view against this table: a key absent here is NEW, a different `row_hash` is UPDATE, a key only here is DELETE. Writers are the publisher after successful delivery and the first-load exporter for an unseeded table (invocation_id 'seed'). Initialization status lives in [mart_export_config](/process/mart_export_config.md).
 
 Read by: [mart_export_config](/process/mart_export_config.md).
 

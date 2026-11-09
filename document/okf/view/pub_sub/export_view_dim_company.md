@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "export_view_dim_company"
-description: "One row = one company with its report id, exposed for the Pub/Sub export of dimension_view.view_dim_company with row_key and row_hash."
+description: "One row = one company with all columns of dimension_view.view_dim_company, exposed for the Pub/Sub export with row_key and row_hash."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=pub_sub&t=export_view_dim_company&page=table"
 project_id: databuffet-nonprd
 dataset_id: pub_sub
@@ -20,11 +20,11 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of [dimension_view.view_dim_company](/view/dimension_view/view_dim_company.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-view_dim_company`.
+The Pub/Sub export view of [dimension_view.view_dim_company](/view/dimension_view/view_dim_company.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-dim_company`.
 
 # Grain and key
 
-One row = one company with its report id: key `CompanyID` (unique); `row_key` is the JSON of that key.
+One row = one company: key `CompanyID` (unique); `row_key` is the JSON of that key.
 
 # Schema
 
@@ -32,9 +32,14 @@ One row = one company with its report id: key `CompanyID` (unique); `row_key` is
 |---|---|---|
 | `CompanySK` | INT64 | Stable SK of the company in dim_company. |
 | `CompanyID` | STRING | MAC5 company code. |
+| `CompanyCode` | STRING | Company code from dim_company (pass-through from mds company master). |
+| `CompanyNameTH` | STRING | Company name in Thai from dim_company (pass-through). |
+| `CompanyNameEN` | STRING | Company name in English from dim_company (pass-through). |
 | `CompanyReportID` | STRING | CompanyID for reporting: 'ag01' for both ag01 and ab01, otherwise CompanyID. |
+| `CompanyNameReportTH` | STRING | Hard-coded Thai legal name for reports (ag01/ab01 share one; 'ไม่มีข้อมูล' for any other ID). |
+| `CompanyNameReportEN` | STRING | Hard-coded English legal name for reports (ag01/ab01 share one; 'No Data' for any other ID). |
 | `row_key` | STRING | JSON of the key defined in [Grain and key](#grain-and-key), used as the message `primary_key`; never NULL. |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of every data column, i.e. of exactly the message `data`. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of all eight data columns, i.e. of exactly the message `data`. |
 
 # How it is built
 

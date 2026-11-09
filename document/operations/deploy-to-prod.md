@@ -6,7 +6,7 @@
 เป้าหมาย: `databuffet-nonprd` (us-central1) → `databuffet-prd` (asia-southeast1)
 ให้เหมือนกัน แล้ว prd เดินเอง
 
-Pub/Sub pilot ยังอยู่เฉพาะ nonprd ตาม [export contract](../project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24)
+Pub/Sub export objects ยังอยู่เฉพาะ nonprd ตาม [export contract](../project_wiki/cdc-process/process.md#pubsub-export)
 จึงไม่รัน tag `pub_sub` ใน prd (ไม่สร้าง dataset `pub_sub`, export view, `mart_export_config` และ `mart_sent_state`)
 
 - **Step 1–12** ทำล่วงหน้าได้ ไม่กระทบใคร
@@ -561,8 +561,8 @@ DROP VIEW IF EXISTS `databuffet-prd.process_dataset.view_rls_special_data`;
 **ก่อนรัน**: ตรวจ schema ตารางต้นทางตาม [Customer Report Info deployment contract](../project_wiki/view/view-layer.md#customer-report-info--customer-segment-2026-10-01)
 
 **ทำ**: เลือก view actions จาก `definitions/view/` ยกเว้น `definitions/view/pub_sub/`
-ตามขอบเขต nonprd ของ pilot · ไม่เลือก `pub_sub_schema` และไม่เลือก tag `view` ทั้งกลุ่ม
-(tag นี้รวม pilot actions แล้ว) · ไม่ติ๊ก dependencies/dependents/full refresh ·
+ตามขอบเขต nonprd ของ Pub/Sub export · ไม่เลือก `pub_sub_schema` และไม่เลือก tag `view` ทั้งกลุ่ม
+(tag นี้รวม export actions แล้ว) · ไม่ติ๊ก dependencies/dependents/full refresh ·
 Service account = `dbuffet-dataform-prd@` · **START EXECUTION**
 
 **ต้องเห็น**: Succeeded ทุก action

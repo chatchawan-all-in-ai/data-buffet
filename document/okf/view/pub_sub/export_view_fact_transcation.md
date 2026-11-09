@@ -20,7 +20,7 @@ status: draft
 
 # What it is
 
-The Pub/Sub export view of [fact_view.view_fact_transcation](/view/fact_view/view_fact_transcation.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-view_fact_transcation`.
+The Pub/Sub export view of [fact_view.view_fact_transcation](/view/fact_view/view_fact_transcation.md), for the whole table. After each successful `daily_process` run, its publisher sends NEW/UPDATE/DELETE messages based on `row_hash` to topic `export-ta-fact_transcation`.
 
 # Grain and key
 

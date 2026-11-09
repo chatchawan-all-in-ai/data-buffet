@@ -55,7 +55,7 @@ GCS AVRO/CSV files (gs://file-raw-data)
 
 Supporting pipelines:
   • CDC      definitions/cdc/        Change tracking driven by includes/controller/cdc-config.json
-  • PROCESS  definitions/process/    AI Thai-address parsing (AI.GENERATE, gated on CDC) + RLS access maps + Pub/Sub export pilot
+  • PROCESS  definitions/process/    AI Thai-address parsing (AI.GENERATE, gated on CDC) + RLS access maps + Pub/Sub exports
 ```
 
 ### Layers
@@ -76,9 +76,9 @@ JavaScript-generated actions are outside that diagram's scope.
 | **CDC** | `definitions/cdc/` | Config-driven change log over validated tables |
 | **Pub/Sub** | `definitions/pub_sub/` | `pub_sub_schema` creates the `pub_sub` dataset; future shaping tables before Pub/Sub (export views live in `definitions/view/pub_sub/`) |
 | **Org center** | `definitions/org_center/` | Who sits in which unit and position, plus TA customer portfolios and special access exceptions, rebuilt nightly (`dimension_daily`); see the [Org Center reference](document/project_wiki/org_center/org-center.md) for tables, sources, PC → TA links, plan codes, company names, and data-quality flags |
-| **Process** | `definitions/process/` | AI address parsing + row-level security (see the [process reference](document/project_wiki/cdc-process/process.md), including TA customer access) + [Pub/Sub export pilot](document/project_wiki/cdc-process/process.md#pubsub-export-pilot--dim_company-2026-10-24) |
+| **Process** | `definitions/process/` | AI address parsing + row-level security (see the [process reference](document/project_wiki/cdc-process/process.md), including TA customer access) + [Pub/Sub exports](document/project_wiki/cdc-process/process.md#pubsub-export) |
 
-The Pub/Sub export includes the `dim_company` pilot, commission datasets for TF, the nine org-center tables of the TA app and 33 sample tables for the AI team.
+The Pub/Sub export covers 12 commission datasets for TF, nine org-center tables of the TA app and 33 sample tables for the AI team.
 Dataform objects live here, with the publishing Cloud Run jobs (check + send) and their idempotent
 GCP setup script in `pubsub/`, deployed by hand.
 See the [setup and message guide](document/how-to/setup-pubsub-export.md).
@@ -118,7 +118,7 @@ definitions/
 │                     # fact_*_store, fact_*_mdt (SALEOUT_MDT)
 ├── view/             # BI/reporting views (dimension_view, fact_view, ...)
 ├── cdc/              # cdc_schema, cdc_change_log
-├── process/          # AI address parsing, RLS access maps, Pub/Sub export pilot
+├── process/          # AI address parsing, RLS access maps, Pub/Sub exports
 ├── pub_sub/          # pub_sub_schema (creates the pub_sub dataset)
 └── org_center/       # Org Center objects (see the Org Center reference above)
 
@@ -244,7 +244,7 @@ Select tags for an execution in the Dataform service (see the
 | Curated | `curated`, `curated_full`, `curated_incremental` (SALEOUT_MDT curated) |
 | Dimension | `dimension_daily` (every dim except `dim_calendar`, plus org center and [TA customer access](document/okf/process/rls_ta_customer.md)), `dimension_yearly` (`dim_calendar` only) |
 | Fact | `fact_daily` |
-| Support | `process`, `cdc`, `cdc_incremental`, `pub_sub` (Pub/Sub pilot objects, run by hand — [pilot deploy](document/project_wiki/cdc-process/process.md#deploy)) |
+| Support | `process`, `cdc`, `cdc_incremental`, `pub_sub` (Pub/Sub export objects, run by hand — [deployment](document/project_wiki/cdc-process/process.md#deploy)) |
 
 > ⚠️ To add or refresh raw tables, never run the whole `initial` tag. Run only the
 > single `create_all_table_raw_<source>` action. See the

@@ -316,7 +316,7 @@
     {
       "table_name": "view_rls_sale_data",
       "source_view": "export_view_rls_sale_data",
-      "topic": "export-ta-view_rls_sale_data",
+      "topic": "export-ta-rls_sale_data",
       "task_group": "org",
       "trigger_scheduler": "daily_process",
       "source_tables": [
@@ -339,7 +339,7 @@
     {
       "table_name": "view_dim_order",
       "source_view": "export_view_dim_order",
-      "topic": "export-ta-view_dim_order",
+      "topic": "export-ta-dim_order",
       "task_group": "order",
       "trigger_scheduler": "daily_process",
       "source_tables": [
@@ -373,7 +373,7 @@
     {
       "table_name": "view_dim_invoice",
       "source_view": "export_view_dim_invoice",
-      "topic": "export-ta-view_dim_invoice",
+      "topic": "export-ta-dim_invoice",
       "task_group": "sales",
       "trigger_scheduler": "daily_process",
       "source_tables": [
@@ -387,7 +387,7 @@
     {
       "table_name": "view_fact_transcation",
       "source_view": "export_view_fact_transcation",
-      "topic": "export-ta-view_fact_transcation",
+      "topic": "export-ta-fact_transcation",
       "task_group": "sales",
       "trigger_scheduler": "daily_process",
       "source_tables": [
@@ -414,7 +414,7 @@
     {
       "table_name": "view_dim_aging_history",
       "source_view": "export_view_dim_aging_history",
-      "topic": "export-ta-view_dim_aging_history",
+      "topic": "export-ta-dim_aging_history",
       "task_group": "ar",
       "trigger_scheduler": "daily_process",
       "source_tables": [
@@ -456,7 +456,7 @@
     {
       "table_name": "view_dim_product_master",
       "source_view": "export_view_dim_product_master",
-      "topic": "export-ta-view_dim_product_master",
+      "topic": "export-ta-dim_product_master",
       "task_group": "product",
       "trigger_scheduler": "daily_process",
       "source_tables": [
@@ -467,7 +467,7 @@
     {
       "table_name": "view_dim_product_mkt",
       "source_view": "export_view_dim_product_mkt",
-      "topic": "export-ta-view_dim_product_mkt",
+      "topic": "export-ta-dim_product_mkt",
       "task_group": "product",
       "trigger_scheduler": "daily_process",
       "source_tables": [
@@ -511,7 +511,7 @@
     {
       "table_name": "view_dim_customer",
       "source_view": "export_view_dim_customer",
-      "topic": "export-ta-view_dim_customer",
+      "topic": "export-ta-dim_customer",
       "task_group": "customer",
       "trigger_scheduler": "daily_process",
       "source_tables": [
@@ -523,21 +523,12 @@
     {
       "table_name": "view_dim_customer_report_info",
       "source_view": "export_view_dim_customer_report_info",
-      "topic": "export-ta-view_dim_customer_report_info",
+      "topic": "export-ta-dim_customer_report_info",
       "task_group": "customer",
       "trigger_scheduler": "daily_process",
       "source_tables": [
         "dimension_view.view_dim_customer_report_info",
         "dimension_table.dim_customer_report_info"
-      ]
-    },
-    {
-      "table_name": "dim_company",
-      "source_view": "export_dim_company",
-      "topic": "export-ta-dim_company",
-      "task_group": "master",
-      "source_tables": [
-        "dimension_table.dim_company"
       ]
     },
     {
@@ -583,7 +574,7 @@
     {
       "table_name": "view_dim_channel",
       "source_view": "export_view_dim_channel",
-      "topic": "export-ta-view_dim_channel",
+      "topic": "export-ta-dim_channel",
       "task_group": "master",
       "trigger_scheduler": "daily_process",
       "source_tables": [
@@ -594,7 +585,7 @@
     {
       "table_name": "view_dim_company",
       "source_view": "export_view_dim_company",
-      "topic": "export-ta-view_dim_company",
+      "topic": "export-ta-dim_company",
       "task_group": "master",
       "trigger_scheduler": "daily_process",
       "source_tables": [
@@ -605,7 +596,7 @@
     {
       "table_name": "view_dim_sale_representative_last",
       "source_view": "export_view_dim_sale_representative_last",
-      "topic": "export-ta-view_dim_sale_representative_last",
+      "topic": "export-ta-dim_sale_representative_last",
       "task_group": "master",
       "trigger_scheduler": "daily_process",
       "source_tables": [
