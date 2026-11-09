@@ -94,6 +94,9 @@ every 5 minutes; it reads run status from the **Dataform API** and, when a table
 run to export, starts the **send job** `datamart-publish-send`, which compares each export view
 with the sent state and publishes the changed rows. The diff query is
 [`pubsub/sql/diff.sql`](../../../pubsub/sql/diff.sql), shared with the first-load script.
+Diff rows are unordered in both the sender and first-load snapshots. Matching uses
+`row_key` and `row_hash`, not row position; the query avoids a global sort to keep
+large exports from exhausting BigQuery memory. Message contents are unchanged.
 GCP setup ([`pubsub/scripts/setup.sh`](../../../pubsub/scripts/setup.sh)),
 deploy/test steps and the message format are owned by
 [setup-pubsub-export.md](../../how-to/setup-pubsub-export.md).

@@ -127,6 +127,7 @@ folder=""
 manifest_written=""
 count_file="$(mktemp)"
 local_dir="$(mktemp -d)"
+job_error_file="$(mktemp)"
 claim="$("$python_bin" -c 'from datetime import datetime, timezone; print(datetime.now(timezone.utc).isoformat(timespec="microseconds"))')"
 
 # Staging never outlives the run; a failed run also removes its partial data files, so a
@@ -147,6 +148,7 @@ cleanup() {
     fi
   fi
   rm -f "$count_file"
+  rm -f "$job_error_file"
   rm -rf "$local_dir"
   gcloud storage rm "$staging/**" >/dev/null 2>&1 || true
   if [ -n "$folder" ] && [ -z "$manifest_written" ]; then
@@ -174,7 +176,7 @@ claimed="$(bq --project_id="$PROJECT" --location="$BQ_LOCATION" --format=json qu
 # 30-minute assertion below is deliberately shorter: this script fails before the publisher can
 # take over an expired claim, so the two never export the same table at once.
 log "Checking publisher catch-up and exporting $EXPORT_DATASET.$source_view (BigQuery job $job_id)"
-job_facts="$(bq --project_id="$PROJECT" --location="$BQ_LOCATION" --format=json query --use_legacy_sql=false \
+if ! job_json="$(bq --project_id="$PROJECT" --location="$BQ_LOCATION" --format=json query --use_legacy_sql=false \
   --job_id="$job_id" --parameter="table_name::$table_name" --parameter="claim::$claim" --parameter="seed_mode:BOOL:$seed_mode" \
   "DECLARE export_time TIMESTAMP;
    BEGIN TRANSACTION;
@@ -214,8 +216,19 @@ $query
    EXPORT DATA OPTIONS (uri = '$staging/*.csv', format = 'CSV', header = false) AS
      SELECT FORMAT_DATE('%Y/%m/%d', file_date) AS folder, message FROM snapshot;
    SELECT FORMAT_TIMESTAMP('%Y-%m-%dT%H:%M:%E6SZ', export_time, 'UTC') AS export_time,
-     COUNT(*) AS row_count FROM snapshot" |
-  "$python_bin" -c '
+     COUNT(*) AS row_count FROM snapshot" 2>"$job_error_file")"; then
+  printf 'export-snapshot.sh: BigQuery job %s failed:\n' "$job_id" >&2
+  if [ -n "$job_json" ]; then
+    printf '%s\n' "$job_json" >&2
+  fi
+  if [ -s "$job_error_file" ]; then
+    cat "$job_error_file" >&2
+  elif [ -z "$job_json" ]; then
+    printf '  bq query exited unsuccessfully without an error message\n' >&2
+  fi
+  die "snapshot query failed"
+fi
+job_facts="$(printf '%s\n' "$job_json" | "$python_bin" -c '
 import json, sys
 from datetime import datetime
 facts = json.load(sys.stdin)[-1][0]

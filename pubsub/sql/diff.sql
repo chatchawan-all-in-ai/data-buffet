@@ -35,4 +35,3 @@ SELECT
 FROM v
 FULL OUTER JOIN s ON v.row_key = s.row_key
 WHERE s.row_key IS NULL OR v.row_key IS NULL OR v.row_hash != s.row_hash
-ORDER BY row_key

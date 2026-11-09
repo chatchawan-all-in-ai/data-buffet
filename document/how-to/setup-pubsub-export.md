@@ -336,6 +336,7 @@ bash pubsub/scripts/export-snapshot.sh ai-dev export-ta-org_levels
   folder เดียว · ไฟล์ละไม่เกิน 100,000 บรรทัด — newline-delimited JSON หนึ่งบรรทัดต่อแถว
   แต่ละบรรทัด **ตรงทุก byte** กับข้อความที่ publisher publish ให้แถวนั้นเป็น `NEW` (สร้างจาก diff
   query ตัวเดียวกัน `pubsub/sql/diff.sql`) ทีมจึงโหลดด้วยโค้ดเดียวกับ consumer
+  · ลำดับแถวเป็นไปตาม [diff contract](../project_wiki/cdc-process/process.md#pubsub-export)
 - `manifest.json` — `table`, `topic`, `team`, `export_time`, `row_count`, `files` · เขียนเป็นไฟล์
   สุดท้ายหลัง seek สำเร็จและรอ 90 วินาทีแล้ว folder ที่ไม่มี manifest คือ export ที่ไม่เสร็จ
   ห้ามโหลดหรือเริ่ม pull
@@ -352,6 +353,10 @@ bash pubsub/scripts/export-snapshot.sh ai-dev export-ta-org_levels
 ต้องตรงกันทั้งหมด ไม่มีแถวขาด เกิน หรือ hash ต่างกัน มิฉะนั้นหยุด ให้รอ publisher รอบถัดไป
 แล้วลองใหม่ · **export time คือเวลาเริ่ม transaction นี้** (UTC) และไฟล์สร้างจากตารางชั่วคราว
 ชุดที่ตรวจแล้ว จึงไม่เปลี่ยนตาม Dataform ระหว่าง export
+
+ถ้า snapshot query ล้มเหลว สคริปต์แสดง BigQuery job ID พร้อม output ของ `bq` ทั้ง stdout
+และ stderr ที่มี แล้วหยุดด้วย exit ไม่เป็นศูนย์ก่อน parse JSON · หากไม่มี output จะแจ้งว่าไม่มี
+error message · ใช้ job ID ตรวจรายละเอียดใน BigQuery job history
 
 หลังเขียนไฟล์ข้อมูลครบและตรวจจำนวนแถวแล้ว สคริปต์ seek `sub.<ทีม>.<topic>` ไปที่ export time
 ขณะยังถือ claim เพื่อ mark ข้อความที่ publish ก่อนจุดนี้เป็น acknowledged รวม key ที่ไม่มีในไฟล์
