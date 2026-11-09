@@ -12,6 +12,22 @@ The existing t5/t6 invoice joins remain intact; `OrderDate` is removed before th
 public view output. Other `_last` consumers keep their existing rules, including
 the [customer-report TA policy](#customer-report-info--customer-segment-2026-10-01).
 
+### Project / IsProject ใน `view_fact_transcation` (2026-11-09)
+
+ที่มา: ประชุมทีม 5 พ.ย. 2026 · ระบบต้นทางไม่มีคอลัมน์ชื่อโครงการ จึงตัดจากหมายเหตุบิล
+`mihdesc` (มีอยู่แล้วใน `fact_transcation` ไม่ต้อง join `dim_invoice`) คำนวณใน CTE `final`:
+
+- **`Project`** = ช่วงแรก (คั่นด้วย `#`) ที่มีคำว่า `โครงการ` ถ้าไม่มีช่วงไหนมี ใช้ช่วงแรกก่อน `#`
+  (ข้าม `#` นำหน้า) · ว่าง = NULL · ตัด `คุณ` ที่อยู่หน้า `โครงการ` ออก (ชื่อโครงการพิมพ์ในช่องคนติดต่อ
+  เช่น `#คุณโครงการวิลล่าพลาโน่` → `โครงการวิลล่าพลาโน่`)
+- **`IsProject`** = `mihdesc` มีคำว่า `โครงการ` → `Yes` ไม่มี → `No` ซึ่งเท่ากับ "Project มีคำว่าโครงการ" เสมอ
+  (`#` ไม่มีทางตัดกลางคำ) จึงไม่มีบิลที่ Yes แต่ Project ไม่ใช่ชื่อโครงการ
+
+เลือกแบบนี้ (ตัดสินใจ 2026-11-09) แทน "ช่วงแรกก่อน `#` ตรง ๆ" เพราะช่วงแรกมักเป็นคำสั่งส่งของหรือชื่อคนติดต่อ
+(`#ส่งต่อ #โครงการ…`) — แบบตรง ๆ พลาดโครงการ 16,209 บิลใน `dim_invoice` · ไม่ข้ามช่วงคำสั่งส่งของแบบทั่วไป
+เพราะบิล `ลงร้าน` จะได้ Project เป็นที่อยู่แทน · ผล ณ วันที่ทำ: fact 2,732,499 แถว · Yes 116,301 (4.26%) ·
+ข้อจำกัดดู [known issues](../../operations/known-issues.md#2026-11-09--project--isproject-ตัดจากหมายเหตุบิล)
+
 > **LLM context**: The presentation layer — BigQuery **views** that sit on top of the
 > physical dim/fact/curated/validated tables (and a few external sources). Migrated
 > into Dataform on **2026-07-24** from views that previously lived only in BigQuery
