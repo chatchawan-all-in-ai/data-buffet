@@ -16,7 +16,7 @@
 dataform compile --json | jq '.tables[] | {name: .target.name, deps: .dependencyTargets}'
 ```
 
-`dataform format` เขียนไฟล์ใหม่ — ใช้เฉพาะไฟล์ที่ตั้งใจแก้ และตรวจ diff หลังรัน
+Data Mart ไม่มีขั้นตอน formatter
 
 ### Tag ทั้งหมด
 
