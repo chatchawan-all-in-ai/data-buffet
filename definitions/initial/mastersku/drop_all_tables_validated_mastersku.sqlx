@@ -4,15 +4,95 @@ config {
   tags: [databuffet.TAG_INITIAL],
 }
 
+js {
+    const BrandTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTERSKU,
+        name: "brand",
+    };
+    const BrandTableRef = `${BrandTable.database}.${BrandTable.schema}.${BrandTable.name}`;
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTERSKU}.brand`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTERSKU}.category`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTERSKU}.product`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTERSKU}.product_category`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTERSKU}.product_detail`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTERSKU}.product_group`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTERSKU}.product_group_cost_group`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTERSKU}.vendor`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTERSKU}.unit`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTERSKU}.product_status`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTERSKU}.product_admin_status`;
+    const CategoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTERSKU,
+        name: "category",
+    };
+    const CategoryTableRef = `${CategoryTable.database}.${CategoryTable.schema}.${CategoryTable.name}`;
+
+    const ProductTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTERSKU,
+        name: "product",
+    };
+    const ProductTableRef = `${ProductTable.database}.${ProductTable.schema}.${ProductTable.name}`;
+
+    const ProductCategoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTERSKU,
+        name: "product_category",
+    };
+    const ProductCategoryTableRef = `${ProductCategoryTable.database}.${ProductCategoryTable.schema}.${ProductCategoryTable.name}`;
+
+    const ProductDetailTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTERSKU,
+        name: "product_detail",
+    };
+    const ProductDetailTableRef = `${ProductDetailTable.database}.${ProductDetailTable.schema}.${ProductDetailTable.name}`;
+
+    const ProductGroupTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTERSKU,
+        name: "product_group",
+    };
+    const ProductGroupTableRef = `${ProductGroupTable.database}.${ProductGroupTable.schema}.${ProductGroupTable.name}`;
+
+    const ProductGroupCostGroupTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTERSKU,
+        name: "product_group_cost_group",
+    };
+    const ProductGroupCostGroupTableRef = `${ProductGroupCostGroupTable.database}.${ProductGroupCostGroupTable.schema}.${ProductGroupCostGroupTable.name}`;
+
+    const VendorTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTERSKU,
+        name: "vendor",
+    };
+    const VendorTableRef = `${VendorTable.database}.${VendorTable.schema}.${VendorTable.name}`;
+
+    const UnitTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTERSKU,
+        name: "unit",
+    };
+    const UnitTableRef = `${UnitTable.database}.${UnitTable.schema}.${UnitTable.name}`;
+
+    const ProductStatusTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTERSKU,
+        name: "product_status",
+    };
+    const ProductStatusTableRef = `${ProductStatusTable.database}.${ProductStatusTable.schema}.${ProductStatusTable.name}`;
+
+    const ProductAdminStatusTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTERSKU,
+        name: "product_admin_status",
+    };
+    const ProductAdminStatusTableRef = `${ProductAdminStatusTable.database}.${ProductAdminStatusTable.schema}.${ProductAdminStatusTable.name}`;
+}
+
+
+
+DROP TABLE IF EXISTS `${BrandTableRef}`;
+DROP TABLE IF EXISTS `${CategoryTableRef}`;
+DROP TABLE IF EXISTS `${ProductTableRef}`;
+DROP TABLE IF EXISTS `${ProductCategoryTableRef}`;
+DROP TABLE IF EXISTS `${ProductDetailTableRef}`;
+DROP TABLE IF EXISTS `${ProductGroupTableRef}`;
+DROP TABLE IF EXISTS `${ProductGroupCostGroupTableRef}`;
+DROP TABLE IF EXISTS `${VendorTableRef}`;
+DROP TABLE IF EXISTS `${UnitTableRef}`;
+DROP TABLE IF EXISTS `${ProductStatusTableRef}`;
+DROP TABLE IF EXISTS `${ProductAdminStatusTableRef}`;

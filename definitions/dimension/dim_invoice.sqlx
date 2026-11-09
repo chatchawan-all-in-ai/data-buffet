@@ -34,7 +34,6 @@ BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
   SET max_sk = (SELECT IFNULL(MAX(InvoiceSK), 0) FROM `${DimInvoiceTableRef}`);
 
-  -- 2. เริ่มกระบวนการ MERGE
   MERGE `${DimInvoiceTableRef}` AS T
   USING (
     WITH mih_raw as (
@@ -59,7 +58,6 @@ BEGIN
           and mih.mihCancel <> -1
           and PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
           and mih.asatdate >= current_date('Asia/Bangkok')-1
-          --   and mih.company_id = 'ag01'
     ),
     mih_raw2 as (
         SELECT
@@ -80,7 +78,6 @@ BEGIN
           AND mih.company_id = ap_s.company_id
         WHERE PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
           and mih.asatdate >= current_date('Asia/Bangkok')-1
-            -- and mih.company_id = 'ag01'
 
     ),
     filter_mih2 as (
@@ -201,7 +198,6 @@ BEGIN
   ) AS S
   ON T.InvoiceSK = S.InvoiceSK
 
-  -- กรณีเจอข้อมูลเดิม (Update)
   WHEN MATCHED THEN
     UPDATE SET
       T.OrderSK = S.OrderSK,
@@ -226,9 +222,7 @@ BEGIN
       T.mihDesc = S.mihDesc,
       T.mihMec = S.mihMec,
       T.InvoiceSalesFlag = S.InvoiceSalesFlag
-      -- ยกเว้น: OrderSK, InvoiceSK, QuotationSK ไม่ถูก update
 
-  -- กรณีไม่เจอข้อมูล (Insert)
   WHEN NOT MATCHED THEN
     INSERT (
       InvoiceSK, CompanySK, OrderSK, companyID,

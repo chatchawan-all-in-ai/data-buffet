@@ -15,68 +15,84 @@ config {
 }
 
 js {
-    const MdsDataOrgEmployeeMappingCenterTable = {
+const MdsDataOrgEmployeeMappingCenterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
         name: "mds_data_org_employee_mapping_center",
     };
     const MdsDataOrgEmployeeMappingCenterTableRef = `${MdsDataOrgEmployeeMappingCenterTable.database}.${MdsDataOrgEmployeeMappingCenterTable.schema}.${MdsDataOrgEmployeeMappingCenterTable.name}`;
 
-    const OrgCenterLinkTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.ORG_CENTER,
-        name: "org_center_link",
-    };
-    const OrgCenterLinkTableRef = `${OrgCenterLinkTable.database}.${OrgCenterLinkTable.schema}.${OrgCenterLinkTable.name}`;
-
-    const MdsDataMdtSalesPcMasterTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_mdt_sales_pc_master",
-    };
-    const MdsDataMdtSalesPcMasterTableRef = `${MdsDataMdtSalesPcMasterTable.database}.${MdsDataMdtSalesPcMasterTable.schema}.${MdsDataMdtSalesPcMasterTable.name}`;
-
-    const MdsDataCompanyMasterTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_company_master",
-    };
-    const MdsDataCompanyMasterTableRef = `${MdsDataCompanyMasterTable.database}.${MdsDataCompanyMasterTable.schema}.${MdsDataCompanyMasterTable.name}`;
-
-    const DimDirectorLastTable = {
+const DimDirectorLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_director_last",
     };
     const DimDirectorLastTableRef = `${DimDirectorLastTable.database}.${DimDirectorLastTable.schema}.${DimDirectorLastTable.name}`;
 
-    const DimRegionManagerLastTable = {
+const MdsDataCompanyMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_company_master",
+    };
+    const MdsDataCompanyMasterTableRef = `${MdsDataCompanyMasterTable.database}.${MdsDataCompanyMasterTable.schema}.${MdsDataCompanyMasterTable.name}`;
+
+const DimRegionManagerLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_region_manager_last",
     };
     const DimRegionManagerLastTableRef = `${DimRegionManagerLastTable.database}.${DimRegionManagerLastTable.schema}.${DimRegionManagerLastTable.name}`;
 
-    const DimSectionManagerLastTable = {
+const DimSectionManagerLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_section_manager_last",
     };
     const DimSectionManagerLastTableRef = `${DimSectionManagerLastTable.database}.${DimSectionManagerLastTable.schema}.${DimSectionManagerLastTable.name}`;
 
-    const DimSaleRepresentativeLastTable = {
+const DimSaleRepresentativeLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_sale_representative_last",
     };
     const DimSaleRepresentativeLastTableRef = `${DimSaleRepresentativeLastTable.database}.${DimSaleRepresentativeLastTable.schema}.${DimSaleRepresentativeLastTable.name}`;
 
-    const DimSectionLastTable = {
+const DimSectionLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_section_last",
     };
     const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
+
+const MdsDataMdtSalesPcMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_mdt_sales_pc_master",
+    };
+    const MdsDataMdtSalesPcMasterTableRef = `${MdsDataMdtSalesPcMasterTable.database}.${MdsDataMdtSalesPcMasterTable.schema}.${MdsDataMdtSalesPcMasterTable.name}`;
+
+const OrgCenterLinkTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.ORG_CENTER,
+        name: "org_center_link",
+    };
+    const OrgCenterLinkTableRef = `${OrgCenterLinkTable.database}.${OrgCenterLinkTable.schema}.${OrgCenterLinkTable.name}`;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 -- unit_id ต้องตรงกับ org_center_unit · ไม่กรองแถวหมดอายุ
@@ -116,7 +132,6 @@ WITH emp_email AS (
   QUALIFY ROW_NUMBER() OVER (PARTITION BY company_id ORDER BY updated_at DESC, id) = 1
 
 ), ceo AS (
-  -- ชื่อเต็มแยกเหมือน DIRECTOR: คำแรก = ชื่อ ที่เหลือ = นามสกุล
   SELECT
     c.company_id,
     c.employee_id,
@@ -160,7 +175,6 @@ WITH emp_email AS (
   FROM `${DimSectionManagerLastTableRef}`
 
 ), ta_base AS (
-  -- เฉพาะแถวจาก MDS (DepartmentID IS NOT NULL) · TA สังกัดส่วนของ Department ตัวเอง
   SELECT
     ${databuffet.functionData.cleanString("rep.companyID")} AS company_id,
     ${databuffet.functionData.cleanString("rep.EmployeeID")} AS employee_id,
@@ -177,7 +191,6 @@ WITH emp_email AS (
   WHERE rep.DepartmentID IS NOT NULL
 
 ), ta_agg AS (
-  -- หลาย Department ในส่วนเดียว = 1 แถว · ชื่อจากแถวที่ EndDate ล่าสุด
   SELECT
     company_id,
     employee_id,
@@ -213,7 +226,6 @@ WITH emp_email AS (
   QUALIFY ROW_NUMBER() OVER (PARTITION BY employee_id ORDER BY end_date DESC, start_date DESC, updated_at DESC, id) = 1
 
 ), ta_dept AS (
-  -- ที่นั่ง TA ต่อ department (1 department = 1 ส่วน) · TA หลายคนใน department เดียวกันได้ทุกคน
   SELECT DISTINCT
     company_id,
     department_id,

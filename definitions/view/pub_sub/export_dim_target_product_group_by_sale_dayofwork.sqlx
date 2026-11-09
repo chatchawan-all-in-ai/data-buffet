@@ -8,13 +8,14 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_target_product_group_by_sale_dayofwork`;
+    const DimTargetProductGroupBySaleDayofworkTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_target_product_group_by_sale_dayofwork",
+};
+const DimTargetProductGroupBySaleDayofworkTableRef = `${DimTargetProductGroupBySaleDayofworkTable.database}.${DimTargetProductGroupBySaleDayofworkTable.schema}.${DimTargetProductGroupBySaleDayofworkTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table dimension_table.dim_target_product_group_by_sale_dayofwork (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = companyID, Date, EmployeeID, DepartmentID, TargetID, MarketingGroupID, SubMarketingID, SegmentID, ChannelTargetGroup, StartDate.
 WITH src AS (
   SELECT
     Year,
@@ -36,7 +37,7 @@ WITH src AS (
     SegmentID,
     ChannelTargetGroup,
     StartDate
-  FROM `${SourceTableRef}`
+  FROM `${DimTargetProductGroupBySaleDayofworkTableRef}`
 )
 SELECT
   s.Year,

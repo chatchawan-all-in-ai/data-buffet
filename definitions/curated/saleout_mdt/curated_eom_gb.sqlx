@@ -9,22 +9,15 @@ config {
         clusterBy: ["branch_code", "product_code"]
     },
 }
-
-/*
-  ยอดปิดรายเดือนที่โกลบอลเฮ้าส์ส่งมาเอง (โฟลเดอร์ SO_MDT_EOM)
-  คนละชุดกับ saleout_gb ซึ่งเป็นฟีดรายวัน — ตัวนี้คือ "ยอดที่ห้างแจ้ง" ไว้เทียบว่าเราเก็บหายไปเท่าไร
-
-  type: "table" เพราะห้างส่งไฟล์แก้ย้อนหลังได้ และ ASATDATE เป็นวันที่ DAG รัน ไม่ใช่งวด
-  หน้าต่าง incremental จึงใช้ไม่ได้ — ดู known-issues 2026-10-05
-*/
+-- แยกยอดปิดรายเดือนจากฟีดรายวันเพื่อเทียบยอดที่ห้างแจ้ง
 
 js {
-    const sourceTable = {
+    const EomGbTable = {
         database: databuffet.DATABASE,
         schema:   databuffet.RAW_SALEOUT_MDT,
         name:     "eom_gb",
     };
-    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+    const EomGbTableRef = `${EomGbTable.database}.${EomGbTable.schema}.${EomGbTable.name}`;
 
     // ปั๊มน้ำ Hitachi — พี่กุ้งสั่งตัดออกจากยอด GB (2026-10-05)
     // ชุดเดียวกับที่ตัดใน curated_saleout_mdt ฝั่งรายวัน ต้องแก้ทั้งสองที่เสมอ
@@ -48,12 +41,6 @@ WITH src AS (
         -- Sale_Quantity เป็น INT64 อยู่แล้วจาก AVRO จึงใช้ได้ตรง ๆ
         Sale_Quantity AS sale_qty,
 
-        -- Sale_Amount ยังเป็น STRING และสกปรก 2 แบบ ต้องล้างทั้งคู่ก่อน cast
-        --   แถวขาย  "1,120"   จุลภาคคั่นหลักพัน
-        --   แถวคืน  '-750     อัญประกาศเดี่ยวนำหน้า (Excel ใส่กันค่าถูกตีเป็นสูตร)
-        -- ⚠️ ถ้าลบแต่จุลภาค SAFE_CAST จะคืน NULL ให้แถวคืน 85 จาก 96 แถว แล้ว SUM ข้ามไปเงียบ ๆ
-        --    ยอดจะเกินไปเท่ากับมูลค่าการคืนพอดี (วัด 2026-10-05: ส.ค. เกิน 274,170.00)
-        --    อาการเดียวกับบั๊กเครื่องหมายคืนของ onetime.saleout_monthly_mdt ที่แก้ไปเมื่อเช้า
         SAFE_CAST(REPLACE(REPLACE(TRIM(Sale_Amount), "'", ''), ',', '') AS FLOAT64) AS sale_amount,
 
         ${databuffet.functionData.parseAsatDate()} AS asatdate,
@@ -61,11 +48,8 @@ WITH src AS (
         -- ไว้ตัดงวดที่ถูกส่งซ้ำ ต้องใช้ค่าดิบเพราะ parseAsatDate แปลงเป็น DATE แล้ว
         ASATDATE AS asat_raw
 
-    FROM `${sourceTableRef}`
+    FROM `${EomGbTableRef}`
 
-    -- ⚠️ ไฟล์ของ GB มีแถวผลรวมต่อท้าย 1 แถวต่อไฟล์ ทุกคอลัมน์เป็น NULL ยกเว้นยอด
-    --    วัด 2026-10-05: 2 แถว รวม 40,130,486.81 = ยอดทั้งสองเดือนพอดี
-    --    ไม่กรองทิ้งยอดจะเบิ้ลสองเท่าเป๊ะ
     WHERE Sale_No_ IS NOT NULL
       AND Sale_Date IS NOT NULL
       AND Branch_Code IS NOT NULL
@@ -93,12 +77,6 @@ WITH src AS (
 
 ), latest AS (
 
-    -- ⚠️ งวดเดียวกันถูกส่งซ้ำได้ (ห้างส่งไฟล์เดิมอีกรอบ) แล้วไปอยู่คนละพาร์ทิชัน ASATDATE
-    -- ถ้าไม่ตัด GROUP BY ข้างล่างจะบวกรวมทุกพาร์ทิชัน ยอดเบิ้ลตามจำนวนครั้งที่ส่ง
-    -- วัด 2026-10-08: ก.ย. มาถึง 4 พาร์ทิชัน (05/06/07/08) ยอดเป็น 4 เท่าพอดี
-    --   ของจริง 15,638,676.75 กลายเป็น 62,554,707.00
-    -- ตัดข้ามพาร์ทิชันโดยตั้งใจ (ไม่ใส่ asat_raw ใน PARTITION BY) — เหมือน eom_hp/eom_tw/eom_bt
-    -- GB ไม่มีคอลัมน์เวลาสร้างไฟล์แบบ CRDATE ของ HP จึงใช้ ASATDATE เป็นตัวตัด
     SELECT s.* FROM src AS s
     INNER JOIN chosen USING (month_date, asat_raw)
 

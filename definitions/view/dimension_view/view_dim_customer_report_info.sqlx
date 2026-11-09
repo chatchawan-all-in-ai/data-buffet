@@ -56,12 +56,12 @@ js {
     };
     const DimDirectorLastTableRef = `${DimDirectorLastTable.database}.${DimDirectorLastTable.schema}.${DimDirectorLastTable.name}`;
 
-    const DimSaleRepLastTable = {
+    const DimSaleRepresentativeLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_sale_representative_last",
     };
-    const DimSaleRepLastTableRef = `${DimSaleRepLastTable.database}.${DimSaleRepLastTable.schema}.${DimSaleRepLastTable.name}`;
+    const DimSaleRepresentativeLastTableRef = `${DimSaleRepresentativeLastTable.database}.${DimSaleRepresentativeLastTable.schema}.${DimSaleRepresentativeLastTable.name}`;
 
     const DimSubDistrictsTable = {
         database: databuffet.DATABASE,
@@ -133,7 +133,7 @@ LEFT JOIN `${DimRegionManagerLastTableRef}` AS rm
   ON cri.RegionManagerSK = rm.RegionManagerSK
 LEFT JOIN `${DimDirectorLastTableRef}` AS dir
   ON cri.DirectorSK = dir.DirectorSK
-LEFT JOIN `${DimSaleRepLastTableRef}` AS rep
+LEFT JOIN `${DimSaleRepresentativeLastTableRef}` AS rep
   ON cri.SaleRepSK = rep.SaleRepSK
 LEFT JOIN `${DimSubDistrictsTableRef}` AS sub_district
   ON cri.InvoiceSubDistrictSK = sub_district.SubDistrictSK

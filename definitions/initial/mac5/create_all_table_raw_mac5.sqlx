@@ -4,15 +4,616 @@ config {
   tags: [databuffet.TAG_INITIAL],
 }
 
-------------------------------------- SCHEMA --------------------------------------
+js {
+    const CqlTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "cql",
+    };
+    const CqlTableRef = `${CqlTable.database}.${CqlTable.schema}.${CqlTable.name}`;
+
+    const RcvTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "rcv",
+    };
+    const RcvTableRef = `${RcvTable.database}.${RcvTable.schema}.${RcvTable.name}`;
+
+    const CstTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "cst",
+    };
+    const CstTableRef = `${CstTable.database}.${CstTable.schema}.${CstTable.name}`;
+
+    const MihTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mih",
+    };
+    const MihTableRef = `${MihTable.database}.${MihTable.schema}.${MihTable.name}`;
+
+    const CpsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "cps",
+    };
+    const CpsTableRef = `${CpsTable.database}.${CpsTable.schema}.${CpsTable.name}`;
+
+    const CpsDummyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "cps_dummy",
+    };
+    const CpsDummyTableRef = `${CpsDummyTable.database}.${CpsDummyTable.schema}.${CpsDummyTable.name}`;
+
+    const MieTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mie",
+    };
+    const MieTableRef = `${MieTable.database}.${MieTable.schema}.${MieTable.name}`;
+
+    const MieDummyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mie_dummy",
+    };
+    const MieDummyTableRef = `${MieDummyTable.database}.${MieDummyTable.schema}.${MieDummyTable.name}`;
+
+    const Mih2Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mih2",
+    };
+    const Mih2TableRef = `${Mih2Table.database}.${Mih2Table.schema}.${Mih2Table.name}`;
+
+    const MihDummyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mih_dummy",
+    };
+    const MihDummyTableRef = `${MihDummyTable.database}.${MihDummyTable.schema}.${MihDummyTable.name}`;
+
+    const MilTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mil",
+    };
+    const MilTableRef = `${MilTable.database}.${MilTable.schema}.${MilTable.name}`;
+
+    const MilDummyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mil_dummy",
+    };
+    const MilDummyTableRef = `${MilDummyTable.database}.${MilDummyTable.schema}.${MilDummyTable.name}`;
+
+    const MirTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mir",
+    };
+    const MirTableRef = `${MirTable.database}.${MirTable.schema}.${MirTable.name}`;
+
+    const ApSTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "ap_s",
+    };
+    const ApSTableRef = `${ApSTable.database}.${ApSTable.schema}.${ApSTable.name}`;
+
+    const ArSTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "ar_s",
+    };
+    const ArSTableRef = `${ArSTable.database}.${ArSTable.schema}.${ArSTable.name}`;
+
+    const DocTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "doc",
+    };
+    const DocTableRef = `${DocTable.database}.${DocTable.schema}.${DocTable.name}`;
+
+    const PerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "per",
+    };
+    const PerTableRef = `${PerTable.database}.${PerTable.schema}.${PerTable.name}`;
+
+    const RnoTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "rno",
+    };
+    const RnoTableRef = `${RnoTable.database}.${RnoTable.schema}.${RnoTable.name}`;
+
+    const SblTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "sbl",
+    };
+    const SblTableRef = `${SblTable.database}.${SblTable.schema}.${SblTable.name}`;
+
+    const StdTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "std",
+    };
+    const StdTableRef = `${StdTable.database}.${StdTable.schema}.${StdTable.name}`;
+
+    const StfTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "stf",
+    };
+    const StfTableRef = `${StfTable.database}.${StfTable.schema}.${StfTable.name}`;
+
+    const StgTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "stg",
+    };
+    const StgTableRef = `${StgTable.database}.${StgTable.schema}.${StgTable.name}`;
+
+    const StkTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "stk",
+    };
+    const StkTableRef = `${StkTable.database}.${StkTable.schema}.${StkTable.name}`;
+
+    const StoTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "sto",
+    };
+    const StoTableRef = `${StoTable.database}.${StoTable.schema}.${StoTable.name}`;
+
+    const VmpTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "vmp",
+    };
+    const VmpTableRef = `${VmpTable.database}.${VmpTable.schema}.${VmpTable.name}`;
+
+    const ApilogTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "apilog",
+    };
+    const ApilogTableRef = `${ApilogTable.database}.${ApilogTable.schema}.${ApilogTable.name}`;
+
+    const CfsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "cfs",
+    };
+    const CfsTableRef = `${CfsTable.database}.${CfsTable.schema}.${CfsTable.name}`;
+
+    const CheckPoTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "check_po",
+    };
+    const CheckPoTableRef = `${CheckPoTable.database}.${CheckPoTable.schema}.${CheckPoTable.name}`;
+
+    const ChqTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "chq",
+    };
+    const ChqTableRef = `${ChqTable.database}.${ChqTable.schema}.${ChqTable.name}`;
+
+    const CombosetTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "comboset",
+    };
+    const CombosetTableRef = `${CombosetTable.database}.${CombosetTable.schema}.${CombosetTable.name}`;
+
+    const CombostkTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "combostk",
+    };
+    const CombostkTableRef = `${CombostkTable.database}.${CombostkTable.schema}.${CombostkTable.name}`;
+
+    const CppTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "cpp",
+    };
+    const CppTableRef = `${CppTable.database}.${CppTable.schema}.${CppTable.name}`;
+
+    const CpxTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "cpx",
+    };
+    const CpxTableRef = `${CpxTable.database}.${CpxTable.schema}.${CpxTable.name}`;
+
+    const CreTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "cre",
+    };
+    const CreTableRef = `${CreTable.database}.${CreTable.schema}.${CreTable.name}`;
+
+    const DebTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "deb",
+    };
+    const DebTableRef = `${DebTable.database}.${DebTable.schema}.${DebTable.name}`;
+
+    const DepTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "dep",
+    };
+    const DepTableRef = `${DepTable.database}.${DepTable.schema}.${DepTable.name}`;
+
+    const DetailQtspreadTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "detail_qtspread",
+    };
+    const DetailQtspreadTableRef = `${DetailQtspreadTable.database}.${DetailQtspreadTable.schema}.${DetailQtspreadTable.name}`;
+
+    const GrpTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "grp",
+    };
+    const GrpTableRef = `${GrpTable.database}.${GrpTable.schema}.${GrpTable.name}`;
+
+    const LogPrintBillingTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "log_print_billing",
+    };
+    const LogPrintBillingTableRef = `${LogPrintBillingTable.database}.${LogPrintBillingTable.schema}.${LogPrintBillingTable.name}`;
+
+    const MainQtspreadTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "main_qtspread",
+    };
+    const MainQtspreadTableRef = `${MainQtspreadTable.database}.${MainQtspreadTable.schema}.${MainQtspreadTable.name}`;
+
+    const MaincontractTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "maincontract",
+    };
+    const MaincontractTableRef = `${MaincontractTable.database}.${MaincontractTable.schema}.${MaincontractTable.name}`;
+
+    const MatchCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "match_customer",
+    };
+    const MatchCustomerTableRef = `${MatchCustomerTable.database}.${MatchCustomerTable.schema}.${MatchCustomerTable.name}`;
+
+    const MatchDebBotReTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "match_deb_bot_re",
+    };
+    const MatchDebBotReTableRef = `${MatchDebBotReTable.database}.${MatchDebBotReTable.schema}.${MatchDebBotReTable.name}`;
+
+    const MatchProductTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "match_product",
+    };
+    const MatchProductTableRef = `${MatchProductTable.database}.${MatchProductTable.schema}.${MatchProductTable.name}`;
+
+    const MihBillingTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mih_billing",
+    };
+    const MihBillingTableRef = `${MihBillingTable.database}.${MihBillingTable.schema}.${MihBillingTable.name}`;
+
+    const MilBillingTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mil_billing",
+    };
+    const MilBillingTableRef = `${MilBillingTable.database}.${MilBillingTable.schema}.${MilBillingTable.name}`;
+
+    const MipTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mip",
+    };
+    const MipTableRef = `${MipTable.database}.${MipTable.schema}.${MipTable.name}`;
+
+    const MktPerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mkt_per",
+    };
+    const MktPerTableRef = `${MktPerTable.database}.${MktPerTable.schema}.${MktPerTable.name}`;
+
+    const OrderFromAllkonMTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "order_from_allkon_m",
+    };
+    const OrderFromAllkonMTableRef = `${OrderFromAllkonMTable.database}.${OrderFromAllkonMTable.schema}.${OrderFromAllkonMTable.name}`;
+
+    const PathfilestamperTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "pathfilestamper",
+    };
+    const PathfilestamperTableRef = `${PathfilestamperTable.database}.${PathfilestamperTable.schema}.${PathfilestamperTable.name}`;
+
+    const ProAgTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "pro_ag",
+    };
+    const ProAgTableRef = `${ProAgTable.database}.${ProAgTable.schema}.${ProAgTable.name}`;
+
+    const ProCrcTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "pro_crc",
+    };
+    const ProCrcTableRef = `${ProCrcTable.database}.${ProCrcTable.schema}.${ProCrcTable.name}`;
+
+    const ProReTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "pro_re",
+    };
+    const ProReTableRef = `${ProReTable.database}.${ProReTable.schema}.${ProReTable.name}`;
+
+    const ProductBotReTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "product_bot_re",
+    };
+    const ProductBotReTableRef = `${ProductBotReTable.database}.${ProductBotReTable.schema}.${ProductBotReTable.name}`;
+
+    const ProductDetailBotReTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "product_detail_bot_re",
+    };
+    const ProductDetailBotReTableRef = `${ProductDetailBotReTable.database}.${ProductDetailBotReTable.schema}.${ProductDetailBotReTable.name}`;
+
+    const ProductPromotionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "product_promotion",
+    };
+    const ProductPromotionTableRef = `${ProductPromotionTable.database}.${ProductPromotionTable.schema}.${ProductPromotionTable.name}`;
+
+    const QtSpreadToMihTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "qt_spread_to_mih",
+    };
+    const QtSpreadToMihTableRef = `${QtSpreadToMihTable.database}.${QtSpreadToMihTable.schema}.${QtSpreadToMihTable.name}`;
+
+    const SupcontractTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "supcontract",
+    };
+    const SupcontractTableRef = `${SupcontractTable.database}.${SupcontractTable.schema}.${SupcontractTable.name}`;
+
+    const TabTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tab",
+    };
+    const TabTableRef = `${TabTable.database}.${TabTable.schema}.${TabTable.name}`;
+
+    const TbcontactTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tbcontact",
+    };
+    const TbcontactTableRef = `${TbcontactTable.database}.${TbcontactTable.schema}.${TbcontactTable.name}`;
+
+    const TbookApptypeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tbook_apptype",
+    };
+    const TbookApptypeTableRef = `${TbookApptypeTable.database}.${TbookApptypeTable.schema}.${TbookApptypeTable.name}`;
+
+    const TbookGivestkTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tbook_givestk",
+    };
+    const TbookGivestkTableRef = `${TbookGivestkTable.database}.${TbookGivestkTable.schema}.${TbookGivestkTable.name}`;
+
+    const TbookPayinTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tbook_payin",
+    };
+    const TbookPayinTableRef = `${TbookPayinTable.database}.${TbookPayinTable.schema}.${TbookPayinTable.name}`;
+
+    const TbookProfilecompTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tbook_profilecomp",
+    };
+    const TbookProfilecompTableRef = `${TbookProfilecompTable.database}.${TbookProfilecompTable.schema}.${TbookProfilecompTable.name}`;
+
+    const TbookQuodetailTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tbook_quodetail",
+    };
+    const TbookQuodetailTableRef = `${TbookQuodetailTable.database}.${TbookQuodetailTable.schema}.${TbookQuodetailTable.name}`;
+
+    const TbookQuotationTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tbook_quotation",
+    };
+    const TbookQuotationTableRef = `${TbookQuotationTable.database}.${TbookQuotationTable.schema}.${TbookQuotationTable.name}`;
+
+    const TbpjaddaccTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tbpjaddacc",
+    };
+    const TbpjaddaccTableRef = `${TbpjaddaccTable.database}.${TbpjaddaccTable.schema}.${TbpjaddaccTable.name}`;
+
+    const TdisApproveorderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tdis_approveorder",
+    };
+    const TdisApproveorderTableRef = `${TdisApproveorderTable.database}.${TdisApproveorderTable.schema}.${TdisApproveorderTable.name}`;
+
+    const TdisApproveqtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tdis_approveqt",
+    };
+    const TdisApproveqtTableRef = `${TdisApproveqtTable.database}.${TdisApproveqtTable.schema}.${TdisApproveqtTable.name}`;
+
+    const TdisMailTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tdis_mail",
+    };
+    const TdisMailTableRef = `${TdisMailTable.database}.${TdisMailTable.schema}.${TdisMailTable.name}`;
+
+    const TmpMihstatusTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tmp_mihstatus",
+    };
+    const TmpMihstatusTableRef = `${TmpMihstatusTable.database}.${TmpMihstatusTable.schema}.${TmpMihstatusTable.name}`;
+
+    const TmpPdfApTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tmp_pdf_ap",
+    };
+    const TmpPdfApTableRef = `${TmpPdfApTable.database}.${TmpPdfApTable.schema}.${TmpPdfApTable.name}`;
+
+    const TmpPdfFrasersTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tmp_pdf_frasers",
+    };
+    const TmpPdfFrasersTableRef = `${TmpPdfFrasersTable.database}.${TmpPdfFrasersTable.schema}.${TmpPdfFrasersTable.name}`;
+
+    const TmpPdfPruksaTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tmp_pdf_pruksa",
+    };
+    const TmpPdfPruksaTableRef = `${TmpPdfPruksaTable.database}.${TmpPdfPruksaTable.schema}.${TmpPdfPruksaTable.name}`;
+
+    const TmpPdfQhTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tmp_pdf_qh",
+    };
+    const TmpPdfQhTableRef = `${TmpPdfQhTable.database}.${TmpPdfQhTable.schema}.${TmpPdfQhTable.name}`;
+
+    const TmpPdfSansiriTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tmp_pdf_sansiri",
+    };
+    const TmpPdfSansiriTableRef = `${TmpPdfSansiriTable.database}.${TmpPdfSansiriTable.schema}.${TmpPdfSansiriTable.name}`;
+
+    const TmpPdfSupalaiTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tmp_pdf_supalai",
+    };
+    const TmpPdfSupalaiTableRef = `${TmpPdfSupalaiTable.database}.${TmpPdfSupalaiTable.schema}.${TmpPdfSupalaiTable.name}`;
+
+    const UserloginanyprogramTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "userloginanyprogram",
+    };
+    const UserloginanyprogramTableRef = `${UserloginanyprogramTable.database}.${UserloginanyprogramTable.schema}.${UserloginanyprogramTable.name}`;
+
+    const StkMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "stk_mkt",
+    };
+    const StkMktTableRef = `${StkMktTable.database}.${StkMktTable.schema}.${StkMktTable.name}`;
+
+    const MecTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mec",
+    };
+    const MecTableRef = `${MecTable.database}.${MecTable.schema}.${MecTable.name}`;
+
+    const StgReportTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "stg_report",
+    };
+    const StgReportTableRef = `${StgReportTable.database}.${StgReportTable.schema}.${StgReportTable.name}`;
+
+    const StgaccTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "stgacc",
+    };
+    const StgaccTableRef = `${StgaccTable.database}.${StgaccTable.schema}.${StgaccTable.name}`;
+
+    const TempgpswebTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tempgpsweb",
+    };
+    const TempgpswebTableRef = `${TempgpswebTable.database}.${TempgpswebTable.schema}.${TempgpswebTable.name}`;
+
+    const TdeliveryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "tdelivery",
+    };
+    const TdeliveryTableRef = `${TdeliveryTable.database}.${TdeliveryTable.schema}.${TdeliveryTable.name}`;
+
+    const TtripDocumentTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "ttrip_document",
+    };
+    const TtripDocumentTableRef = `${TtripDocumentTable.database}.${TtripDocumentTable.schema}.${TtripDocumentTable.name}`;
+
+    const TtripTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "ttrip",
+    };
+    const TtripTableRef = `${TtripTable.database}.${TtripTable.schema}.${TtripTable.name}`;
+}
+
+
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}` OPTIONS(location="${databuffet.REGION}");
-------------------------------------- SCHEMA --------------------------------------
 
 
------------------------------------- INCREMENT ------------------------------------
--- Table: cql
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cql`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cql`
+DROP TABLE IF EXISTS `${CqlTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CqlTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -22,11 +623,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/cql/'
 );
 
--- Table: rcv
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.rcv`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.rcv`
+DROP TABLE IF EXISTS `${RcvTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${RcvTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -34,11 +634,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/rcv/'
 );
 
--- Table: cst
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cst`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cst`
+DROP TABLE IF EXISTS `${CstTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CstTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -46,11 +645,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/cst/'
 );
 
--- Table: mih
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mih`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mih`
+DROP TABLE IF EXISTS `${MihTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MihTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -58,11 +656,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mih/'
 );
 
--- Table: cps
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cps`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cps`
+DROP TABLE IF EXISTS `${CpsTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CpsTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -70,11 +667,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/cps/'
 );
 
--- Table: cps_dummy
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cps_dummy`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cps_dummy`
+DROP TABLE IF EXISTS `${CpsDummyTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CpsDummyTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -82,11 +678,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/cps_dummy/'
 );
 
--- Table: mie
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mie`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mie`
+DROP TABLE IF EXISTS `${MieTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MieTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -94,11 +689,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mie/'
 );
 
--- Table: mie_dummy
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mie_dummy`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mie_dummy`
+DROP TABLE IF EXISTS `${MieDummyTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MieDummyTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -106,11 +700,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mie_dummy/'
 );
 
--- Table: mih2
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mih2`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mih2`
+DROP TABLE IF EXISTS `${Mih2TableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${Mih2TableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -118,11 +711,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mih2/'
 );
 
--- Table: mih_dummy
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mih_dummy`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mih_dummy`
+DROP TABLE IF EXISTS `${MihDummyTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MihDummyTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -130,11 +722,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mih_dummy/'
 );
 
--- Table: mil
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mil`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mil`
+DROP TABLE IF EXISTS `${MilTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MilTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -142,11 +733,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mil/'
 );
 
--- Table: mil_dummy
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mil_dummy`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mil_dummy`
+DROP TABLE IF EXISTS `${MilDummyTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MilDummyTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -154,612 +744,534 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mil_dummy/'
 );
 
--- Table: mir
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mir`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mir`
+DROP TABLE IF EXISTS `${MirTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MirTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mir/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mir/'
 );
------------------------------------- INCREMENT ------------------------------------
 
 
--------------------------------------- FULL ---------------------------------------
--- Table: ap_s
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.ap_s`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.ap_s`
+DROP TABLE IF EXISTS `${ApSTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ApSTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/ap_s/*.avro']
 );
 
--- Table: ar_s
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.ar_s`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.ar_s`
+DROP TABLE IF EXISTS `${ArSTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ArSTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/ar_s/*.avro']
 );
 
--- Table: doc
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.doc`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.doc`
+DROP TABLE IF EXISTS `${DocTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${DocTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/doc/*.avro']
 );
 
--- Table: per
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.per`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.per`
+DROP TABLE IF EXISTS `${PerTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${PerTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/per/*.avro']
 );
 
--- Table: rno
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.rno`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.rno`
+DROP TABLE IF EXISTS `${RnoTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${RnoTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/rno/*.avro']
 );
 
--- Table: sbl
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.sbl`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.sbl`
+DROP TABLE IF EXISTS `${SblTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SblTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/sbl/*.avro']
 );
 
--- Table: std
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.std`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.std`
+DROP TABLE IF EXISTS `${StdTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${StdTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/std/*.avro']
 );
 
--- Table: stf
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.stf`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.stf`
+DROP TABLE IF EXISTS `${StfTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${StfTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/stf/*.avro']
 );
 
--- Table: stg
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.stg`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.stg`
+DROP TABLE IF EXISTS `${StgTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${StgTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/stg/*.avro']
 );
 
--- Table: stk
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.stk`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.stk`
+DROP TABLE IF EXISTS `${StkTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${StkTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/stk/*.avro']
 );
 
--- Table: sto
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.sto`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.sto`
+DROP TABLE IF EXISTS `${StoTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${StoTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/sto/*.avro']
 );
 
--- Table: vmp
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.vmp`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.vmp`
+DROP TABLE IF EXISTS `${VmpTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${VmpTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/vmp/*.avro']
 );
 
--- Table: apilog
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.apilog`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.apilog`
+DROP TABLE IF EXISTS `${ApilogTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ApilogTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/apilog/*.avro']
 );
 
--- Table: ar_s
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.ar_s`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.ar_s`
+DROP TABLE IF EXISTS `${ArSTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ArSTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/ar_s/*.avro']
 );
 
--- Table: cfs
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cfs`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cfs`
+DROP TABLE IF EXISTS `${CfsTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CfsTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/cfs/*.avro']
 );
 
--- Table: check_po
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.check_po`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.check_po`
+DROP TABLE IF EXISTS `${CheckPoTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CheckPoTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/check_po/*.avro']
 );
 
--- Table: chq
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.chq`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.chq`
+DROP TABLE IF EXISTS `${ChqTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ChqTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/chq/*.avro']
 );
 
--- Table: comboset
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.comboset`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.comboset`
+DROP TABLE IF EXISTS `${CombosetTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CombosetTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/comboset/*.avro']
 );
 
--- Table: combostk
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.combostk`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.combostk`
+DROP TABLE IF EXISTS `${CombostkTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CombostkTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/combostk/*.avro']
 );
 
--- Table: cpp
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cpp`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cpp`
+DROP TABLE IF EXISTS `${CppTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CppTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/cpp/*.avro']
 );
 
--- Table: cpx
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cpx`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cpx`
+DROP TABLE IF EXISTS `${CpxTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CpxTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/cpx/*.avro']
 );
 
--- Table: cre
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cre`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cre`
+DROP TABLE IF EXISTS `${CreTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CreTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/cre/*.avro']
 );
 
--- Table: deb
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.deb`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.deb`
+DROP TABLE IF EXISTS `${DebTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${DebTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/deb/*.avro']
 );
 
--- Table: dep
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.dep`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.dep`
+DROP TABLE IF EXISTS `${DepTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${DepTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/dep/*.avro']
 );
 
--- Table: detail_qtspread
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.detail_qtspread`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.detail_qtspread`
+DROP TABLE IF EXISTS `${DetailQtspreadTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${DetailQtspreadTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/detail_qtspread/*.avro']
 );
 
--- Table: grp
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.grp`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.grp`
+DROP TABLE IF EXISTS `${GrpTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${GrpTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/grp/*.avro']
 );
 
--- Table: log_print_billing
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.log_print_billing`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.log_print_billing`
+DROP TABLE IF EXISTS `${LogPrintBillingTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${LogPrintBillingTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/log_print_billing/*.avro']
 );
 
--- Table: main_qtspread
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.main_qtspread`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.main_qtspread`
+DROP TABLE IF EXISTS `${MainQtspreadTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MainQtspreadTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/main_qtspread/*.avro']
 );
 
--- Table: maincontract
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.maincontract`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.maincontract`
+DROP TABLE IF EXISTS `${MaincontractTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MaincontractTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/maincontract/*.avro']
 );
 
--- Table: match_customer
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.match_customer`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.match_customer`
+DROP TABLE IF EXISTS `${MatchCustomerTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MatchCustomerTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/match_customer/*.avro']
 );
 
--- Table: match_deb_bot_re
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.match_deb_bot_re`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.match_deb_bot_re`
+DROP TABLE IF EXISTS `${MatchDebBotReTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MatchDebBotReTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/match_deb_bot_re/*.avro']
 );
 
--- Table: match_product
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.match_product`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.match_product`
+DROP TABLE IF EXISTS `${MatchProductTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MatchProductTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/match_product/*.avro']
 );
 
--- Table: mih_billing
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mih_billing`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mih_billing`
+DROP TABLE IF EXISTS `${MihBillingTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MihBillingTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mih_billing/*.avro']
 );
 
--- Table: mil_billing
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mil_billing`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mil_billing`
+DROP TABLE IF EXISTS `${MilBillingTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MilBillingTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mil_billing/*.avro']
 );
 
--- Table: mip
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mip`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mip`
+DROP TABLE IF EXISTS `${MipTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MipTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mip/*.avro']
 );
 
--- Table: mkt_per
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mkt_per`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mkt_per`
+DROP TABLE IF EXISTS `${MktPerTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MktPerTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mkt_per/*.avro']
 );
 
--- Table: order_from_allkon_m
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.order_from_allkon_m`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.order_from_allkon_m`
+DROP TABLE IF EXISTS `${OrderFromAllkonMTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${OrderFromAllkonMTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/order_from_allkon_m/*.avro']
 );
 
--- Table: pathfilestamper
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.pathfilestamper`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.pathfilestamper`
+DROP TABLE IF EXISTS `${PathfilestamperTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${PathfilestamperTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/pathfilestamper/*.avro']
 );
 
--- Table: pro_ag
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.pro_ag`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.pro_ag`
+DROP TABLE IF EXISTS `${ProAgTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProAgTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/pro_ag/*.avro']
 );
 
--- Table: pro_crc
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.pro_crc`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.pro_crc`
+DROP TABLE IF EXISTS `${ProCrcTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProCrcTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/pro_crc/*.avro']
 );
 
--- Table: pro_re
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.pro_re`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.pro_re`
+DROP TABLE IF EXISTS `${ProReTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProReTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/pro_re/*.avro']
 );
 
--- Table: product_bot_re
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.product_bot_re`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.product_bot_re`
+DROP TABLE IF EXISTS `${ProductBotReTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProductBotReTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/product_bot_re/*.avro']
 );
 
--- Table: product_detail_bot_re
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.product_detail_bot_re`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.product_detail_bot_re`
+DROP TABLE IF EXISTS `${ProductDetailBotReTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProductDetailBotReTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/product_detail_bot_re/*.avro']
 );
 
--- Table: product_promotion
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.product_promotion`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.product_promotion`
+DROP TABLE IF EXISTS `${ProductPromotionTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProductPromotionTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/product_promotion/*.avro']
 );
 
--- Table: qt_spread_to_mih
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.qt_spread_to_mih`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.qt_spread_to_mih`
+DROP TABLE IF EXISTS `${QtSpreadToMihTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${QtSpreadToMihTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/qt_spread_to_mih/*.avro']
 );
 
--- Table: supcontract
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.supcontract`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.supcontract`
+DROP TABLE IF EXISTS `${SupcontractTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SupcontractTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/supcontract/*.avro']
 );
 
--- Table: tab
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tab`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tab`
+DROP TABLE IF EXISTS `${TabTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TabTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tab/*.avro']
 );
 
--- Table: tbcontact
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbcontact`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbcontact`
+DROP TABLE IF EXISTS `${TbcontactTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TbcontactTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tbcontact/*.avro']
 );
 
--- Table: tbook_apptype
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbook_apptype`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbook_apptype`
+DROP TABLE IF EXISTS `${TbookApptypeTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TbookApptypeTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tbook_apptype/*.avro']
 );
 
--- Table: tbook_givestk
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbook_givestk`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbook_givestk`
+DROP TABLE IF EXISTS `${TbookGivestkTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TbookGivestkTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tbook_givestk/*.avro']
 );
 
--- Table: tbook_payin
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbook_payin`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbook_payin`
+DROP TABLE IF EXISTS `${TbookPayinTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TbookPayinTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tbook_payin/*.avro']
 );
 
--- Table: tbook_profilecomp
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbook_profilecomp`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbook_profilecomp`
+DROP TABLE IF EXISTS `${TbookProfilecompTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TbookProfilecompTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tbook_profilecomp/*.avro']
 );
 
--- Table: tbook_quodetail
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbook_quodetail`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbook_quodetail`
+DROP TABLE IF EXISTS `${TbookQuodetailTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TbookQuodetailTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tbook_quodetail/*.avro']
 );
 
--- Table: tbook_quotation
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbook_quotation`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbook_quotation`
+DROP TABLE IF EXISTS `${TbookQuotationTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TbookQuotationTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tbook_quotation/*.avro']
 );
 
--- Table: tbpjaddacc
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbpjaddacc`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tbpjaddacc`
+DROP TABLE IF EXISTS `${TbpjaddaccTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TbpjaddaccTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tbpjaddacc/*.avro']
 );
 
--- Table: tdis_approveorder
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tdis_approveorder`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tdis_approveorder`
+DROP TABLE IF EXISTS `${TdisApproveorderTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TdisApproveorderTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tdis_approveorder/*.avro']
 );
 
--- Table: tdis_approveqt
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tdis_approveqt`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tdis_approveqt`
+DROP TABLE IF EXISTS `${TdisApproveqtTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TdisApproveqtTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tdis_approveqt/*.avro']
 );
 
--- Table: tdis_mail
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tdis_mail`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tdis_mail`
+DROP TABLE IF EXISTS `${TdisMailTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TdisMailTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tdis_mail/*.avro']
 );
 
--- Table: tmp_mihstatus
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_mihstatus`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_mihstatus`
+DROP TABLE IF EXISTS `${TmpMihstatusTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TmpMihstatusTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tmp_mihstatus/*.avro']
 );
 
--- Table: tmp_pdf_ap
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_pdf_ap`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_pdf_ap`
+DROP TABLE IF EXISTS `${TmpPdfApTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TmpPdfApTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tmp_pdf_ap/*.avro']
 );
 
--- Table: tmp_pdf_frasers
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_pdf_frasers`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_pdf_frasers`
+DROP TABLE IF EXISTS `${TmpPdfFrasersTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TmpPdfFrasersTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tmp_pdf_frasers/*.avro']
 );
 
--- Table: tmp_pdf_pruksa
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_pdf_pruksa`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_pdf_pruksa`
+DROP TABLE IF EXISTS `${TmpPdfPruksaTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TmpPdfPruksaTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tmp_pdf_pruksa/*.avro']
 );
 
--- Table: tmp_pdf_qh
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_pdf_qh`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_pdf_qh`
+DROP TABLE IF EXISTS `${TmpPdfQhTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TmpPdfQhTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tmp_pdf_qh/*.avro']
 );
 
--- Table: tmp_pdf_sansiri
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_pdf_sansiri`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_pdf_sansiri`
+DROP TABLE IF EXISTS `${TmpPdfSansiriTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TmpPdfSansiriTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tmp_pdf_sansiri/*.avro']
 );
 
--- Table: tmp_pdf_supalai
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_pdf_supalai`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tmp_pdf_supalai`
+DROP TABLE IF EXISTS `${TmpPdfSupalaiTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TmpPdfSupalaiTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tmp_pdf_supalai/*.avro']
 );
 
--- Table: userloginanyprogram
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.userloginanyprogram`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.userloginanyprogram`
+DROP TABLE IF EXISTS `${UserloginanyprogramTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${UserloginanyprogramTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/userloginanyprogram/*.avro']
 );
 
--- Table: stk_mkt
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.stk_mkt`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.stk_mkt`
+DROP TABLE IF EXISTS `${StkMktTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${StkMktTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/stk_mkt/*.avro']
 );
 
--- Table: mec
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mec`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mec`
+DROP TABLE IF EXISTS `${MecTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MecTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/mec/*.avro']
 );
 
 
--- Table: stg_report
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.stg_report`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.stg_report`
+DROP TABLE IF EXISTS `${StgReportTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${StgReportTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_REPORT}/stg/*.avro']
 );
 
 
--- Table: stgacc
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.stgacc`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.stgacc`
+DROP TABLE IF EXISTS `${StgaccTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${StgaccTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_REPORT}/stgacc/*.avro']
 );
 
--- Table: tempgpsweb
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tempgpsweb`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tempgpsweb`
+DROP TABLE IF EXISTS `${TempgpswebTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TempgpswebTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_AG01}/tempgpsweb/*.avro']
 );
 
--- Table: tdelivery
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tdelivery`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.tdelivery`
+DROP TABLE IF EXISTS `${TdeliveryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TdeliveryTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_GPS}/tdelivery/*.avro']
 );
 
--- Table: ttrip_document
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.ttrip_document`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.ttrip_document`
+DROP TABLE IF EXISTS `${TtripDocumentTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TtripDocumentTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_GPS}/ttrip_document/*.avro']
 );
 
--- Table: ttrip
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.ttrip`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.ttrip`
+DROP TABLE IF EXISTS `${TtripTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TtripTableRef}`
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MAC5_GPS}/ttrip/*.avro']
 );
--------------------------------------- FULL ---------------------------------------

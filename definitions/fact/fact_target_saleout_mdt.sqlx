@@ -92,7 +92,6 @@ SELECT
 
   t.TargetYear  AS target_year,
   t.TargetMonth AS target_month,
-  -- เป้าเดือนถูกหารเท่า ๆ กันทุกวันในเดือน คูณกลับด้วย days_in_month = ยอดเป้าเดือนเดิม
   t.DaysInMonth AS days_in_month,
 
   -- degenerate: รหัสสาขาจาก MDS ใช้สืบกลับตอน branch_sk = -1

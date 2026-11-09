@@ -66,7 +66,6 @@ WITH branch_lookup AS (
     debnamet      AS customer_name,
     customer_code AS customer_code,
     debbranch     AS customer_branch_no,
-   -- ชื่อสาขาที่ห้างตั้ง ตัดข้อความหลังคำว่า "สาขา" ออกมา
     TRIM(REGEXP_REPLACE(REGEXP_EXTRACT(debnamet, r'สาขา\s*(.+)$'), r'[)\s]+$', '')) AS customer_branch_name,
     -- คีย์สำหรับจับคู่กับ dim — ตัดคำว่าเมกาโฮมของ MH แล้วตัดช่องว่าง/วงเล็บ/ขีด
     REGEXP_REPLACE(

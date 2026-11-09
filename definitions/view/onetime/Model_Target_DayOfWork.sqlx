@@ -86,7 +86,6 @@ js {
 
 select 
       Target_Work.TargetBySaleDayofworkSK
-      -- ,FORMAT('%d-%02d-%02d', CAST(Target_Work.Year AS INT64),CAST(Target_Work.Month AS INT64),CAST(Target_Work.Day AS INT64)) as TargetDate
       ,PARSE_DATE('%Y%m%d', CONCAT(Target_Work.Year, FORMAT("%02d", Target_Work.Month), CAST(Target_Work.Day AS INT64))) as TargetDate
       ,Target_Work.Year as TargetYear
       ,Target_Work.Month as TargetMonth

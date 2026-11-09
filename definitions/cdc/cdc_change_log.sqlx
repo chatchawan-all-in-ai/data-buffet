@@ -224,9 +224,6 @@ js {
     }
 }
 
--- ============================================================================
--- BigQuery SQL Script: Loop through tables and process CDC
--- ============================================================================
 
 BEGIN
     DECLARE table_count INT64 DEFAULT 0;
@@ -234,10 +231,8 @@ BEGIN
     DECLARE error_count INT64 DEFAULT 0;
     DECLARE current_table STRING;
 
-    -- Log start
     SELECT FORMAT('Starting CDC processing at %t', CURRENT_TIMESTAMP());
 
-    -- Create target table if not exists (with proper schema and partitioning)
     CREATE TABLE IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.CDC_DATESET}.cdc_change_log` (
         cdc_record_id STRING NOT NULL,
         source_system STRING NOT NULL,
@@ -294,7 +289,6 @@ js {
 
 ${insertStatements}
 
-    -- Final summary
     SELECT FORMAT(
         'CDC Processing Complete | Total: %d | Success: %d | Errors: %d | Time: %t',
         table_count,
@@ -303,7 +297,6 @@ ${insertStatements}
         CURRENT_TIMESTAMP()
     );
 
-    -- Fail the operation if any errors occurred
     IF error_count > 0 THEN
         RAISE USING MESSAGE = FORMAT('CDC processing completed with %d errors', error_count);
     END IF;

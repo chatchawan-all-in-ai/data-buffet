@@ -34,7 +34,6 @@ js {
     const pickOrder = `is_valid DESC, IF(is_valid, position_rank, 0), valid_to DESC, company_id, position_rank, unit_id`;
 }
 
--- 1 แถว = 1 คน (ข้ามบริษัท) · ที่นั่งและวันที่อยู่ใน org_center_member
 WITH member AS (
   SELECT
     *,
@@ -56,7 +55,6 @@ WITH member AS (
     ARRAY_AGG(STRUCT(first_name, last_name)
               ORDER BY position_code = 'CEO', position_code = 'DIRECTOR', ${pickOrder}
               LIMIT 1)[OFFSET(0)] AS picked,
-    -- ชื่อเล่น: ค่าแรกที่ไม่ NULL ตาม pickOrder (แถว CEO และ DIRECTOR ไม่มีชื่อเล่น)
     ARRAY_AGG(nickname IGNORE NULLS ORDER BY ${pickOrder} LIMIT 1)[SAFE_OFFSET(0)] AS nickname,
     ARRAY_AGG(email IGNORE NULLS ORDER BY ${pickOrder} LIMIT 1)[SAFE_OFFSET(0)] AS email,
     ARRAY_AGG(DISTINCT company_id ORDER BY company_id) AS company_id,
@@ -71,7 +69,6 @@ WITH member AS (
     picked.first_name,
     picked.last_name,
     nickname,
-    -- อีเมลใน Data Mart ก่อน ว่างค่อยใช้ของ EMPLOYEE_INFO
     COALESCE(person.email, ei.email) AS email,
     ei.mobile_phone,
     ei.line_uuid,

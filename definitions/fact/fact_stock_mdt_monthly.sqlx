@@ -28,7 +28,6 @@ WITH month_last_day AS (
     DATE_TRUNC(stock_date, MONTH) AS month_start,
     MAX(stock_date)               AS snapshot_date
   FROM (
-    -- ตัดวันที่ไฟล์ไม่สมบูรณ์ทิ้งก่อนเลือกวันสุดท้าย
     SELECT store_code, stock_date
     FROM `${FactStockTableRef}`
     GROUP BY store_code, stock_date
@@ -54,7 +53,6 @@ SELECT
      m.month_snapshot) AS month_end,
 
   m.snapshot_date,
-  -- เดือนที่ยังไม่จบ = เดือนเดียวกับวันนี้ ค่าที่ได้เป็นค่าล่าสุด ไม่ใช่ค่าสิ้นเดือน
   m.month_start < DATE_TRUNC(CURRENT_DATE('Asia/Bangkok'), MONTH) AS is_month_end,
 
   f.store_code,

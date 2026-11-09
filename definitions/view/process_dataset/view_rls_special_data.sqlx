@@ -20,12 +20,12 @@ js {
     };
     const MdsDataOrgEmployeeMappingCenterTableRef = `${MdsDataOrgEmployeeMappingCenterTable.database}.${MdsDataOrgEmployeeMappingCenterTable.schema}.${MdsDataOrgEmployeeMappingCenterTable.name}`;
 
-    const RLSCustomer360Table = {
+    const RlsCustomer360Table = {
         database: databuffet.DATABASE,
         schema: databuffet.PROCESS_DATASET,
         name: "rls_customer360",
     };
-    const RLSCustomer360TableRef = `${RLSCustomer360Table.database}.${RLSCustomer360Table.schema}.${RLSCustomer360Table.name}`;
+    const RlsCustomer360TableRef = `${RlsCustomer360Table.database}.${RlsCustomer360Table.schema}.${RlsCustomer360Table.name}`;
 }
 
 WITH mds_data AS (
@@ -39,7 +39,6 @@ WITH mds_data AS (
     IFNULL(TRIM(rls.Director), 'ALL') as DirectorID,
     IFNULL(TRIM(rls.Region), 'ALL') as RegionID, 
     IFNULL(TRIM(rls.Section), 'ALL') as SectionID, 
-    -- IFNULL(TRIM(rls.Department), 'ALL') as DepartmentID, 
     IFNULL(TRIM(rls.MktGroupID), 'ALL') as MktGroupID, 
     IFNULL(TRIM(rls.MktSubGroupID), 'ALL') as MktSubGroupID, 
     IFNULL(TRIM(rls.MktSegmentID), 'ALL') as MktSegmentID,
@@ -50,11 +49,10 @@ WITH mds_data AS (
     AND LOWER(employeetype) IN ('special', 'mkt')
     AND rls.EmployeeEmail = emp.EmployeeEmail
   WHERE rls.is_active = true
-    -- and rls.EmployeeEmail = 'Manit.bo@dos.co.th'
 
 ), rls_customer_raw as (
   select milCus, DirectorID, RegionID, SectionID
-  from `${RLSCustomer360TableRef}`
+  from `${RlsCustomer360TableRef}`
 
 ), normal_pivoted_raw AS (
   SELECT 
@@ -66,7 +64,7 @@ WITH mds_data AS (
     LevelValue
   FROM mds_data
   UNPIVOT(LevelValue FOR LevelName IN (
-    CompanyID, ReportID, ReportName, DirectorID, RegionID, SectionID --, DepartmentID
+    CompanyID, ReportID, ReportName, DirectorID, RegionID, SectionID
   ))
 
 ), normal_pivoted AS (
@@ -127,7 +125,7 @@ WITH mds_data AS (
   SELECT 
     milCus,
     SPLIT(single_product, ':') AS split_hierarchy
-  FROM `${RLSCustomer360TableRef}`,
+  FROM `${RlsCustomer360TableRef}`,
     UNNEST(SPLIT(ProductMkt, '|')) AS single_product 
   WHERE ProductMkt IS NOT NULL
 
@@ -168,11 +166,8 @@ WITH mds_data AS (
     cus.milCus as LevelValue,
   FROM mkt_combined_notall as emp
   INNER JOIN ext_rls_customer_mkt cus
-    -- 1. MktGroupID logic
     ON (emp.MktGroupID = 'ALL' OR emp.MktGroupID = cus.MktGroupID)
-    -- 2. MktSubGroupID logic
     AND (emp.MktGroupID = 'ALL' OR emp.MktSubGroupID = 'ALL' OR emp.MktSubGroupID = cus.SubMktGroupID)
-    -- 3. MktSegmentID logic
     AND (emp.MktGroupID = 'ALL' OR emp.MktSubGroupID = 'ALL' OR emp.MktSegmentID = 'ALL' OR emp.MktSegmentID = cus.SegmentID)
   
 ) , final_normal as (

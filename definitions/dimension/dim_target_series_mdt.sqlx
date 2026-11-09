@@ -56,7 +56,6 @@ BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
 
   CREATE TEMP TABLE stable_sk_source_snapshot AS (
-    -- เป้ารายเดือนราย series (ตอนนี้มีแค่ TITAN) — pattern เดียวกับ dim_target_saleout_mdt
     WITH monthly AS (
       SELECT
         ${databuffet.functionData.castInt64("t1.Year")} AS TargetYear,

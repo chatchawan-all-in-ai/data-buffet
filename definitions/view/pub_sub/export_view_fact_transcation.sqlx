@@ -8,15 +8,14 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.FACT_VIEW}.view_fact_transcation`;
+    const ViewFactTranscationTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.FACT_VIEW,
+    name: "view_fact_transcation",
+};
+const ViewFactTranscationTableRef = `${ViewFactTranscationTable.database}.${ViewFactTranscationTable.schema}.${ViewFactTranscationTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table fact_view.view_fact_transcation (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = companyID, milType, milVnos, milListno + occurrence.
--- No unique business key: rows are identified by the key columns plus `occurrence`, the position of the row among
--- the rows with the same key ordered by their data JSON, so exact duplicate lines get distinct, repeatable keys.
 WITH src AS (
   SELECT
     milYear,
@@ -51,7 +50,7 @@ WITH src AS (
       PARTITION BY companyID, milType, milVnos, milListno
       ORDER BY TO_JSON_STRING(STRUCT(milYear, milMonth, milDay, milType, CustomerSK, CustomerReportInfoSK, ProductSK, NewProductMktSK, PumpSK, SaleRepSKLast, ChangeSectionSKLast, InvoiceSK, OrderSK, ChannelSK, Barcode, memoextract, CompanySK, FactOrderSK, FlagSaleExc, milSum, milsum_incvat, milQuan, milDisca, milVnos, milDisct, milUprice))
     ) AS occurrence
-  FROM `${SourceTableRef}`
+  FROM `${ViewFactTranscationTableRef}`
 )
 SELECT
   s.milYear,

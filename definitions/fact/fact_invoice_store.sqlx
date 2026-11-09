@@ -1,7 +1,7 @@
 config {
     type: "table",
     schema: databuffet.FACT_TABLE,
-    dependencies: ["dim_order", "dim_invoice", "dim_customer", "dim_product_master", "dim_company", "dim_store"],
+    dependencies: ["dim_order", "dim_invoice", "dim_customer", "dim_product_master", "dim_company", "dim_store", "dim_product_mkt"],
     tags: [databuffet.TAG_FACT_DAILY],
     uniqueKey: ["FactInvoiceStoreSK"],
     bigquery: {
@@ -124,7 +124,6 @@ WITH dim_order_dedup AS (
     mil.percent_sale,
     (CASE 
       WHEN mil.milsum = 0.0 
-        -- or mil.milDesc like '%ของแถม%' 
         or dim_prod.ProductGroupMAC5 = '5000' 
         THEN 'Yes'
       ELSE 'No'

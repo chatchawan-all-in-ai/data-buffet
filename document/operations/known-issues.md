@@ -941,3 +941,12 @@ DAG `pipline_saleout_mdt_eom` **รวมทุกไฟล์ในโฟลเ
   แก้ฝั่ง BigQuery ให้ตรง repo แทน** — ตอนนี้ drift scan ขึ้น identical แล้ว
   **บทเรียน**: ถ้า repo "ถูกกว่า" แต่ค่าเท่ากัน ให้ deploy repo ทับ ดีกว่าปล่อยให้ scan
   ฟ้องทุกรอบจนคนเลิกเชื่อผลสแกน
+
+## 2026-11-09 — CDC validated snapshot dependency
+
+`cdc_change_log` reads the existing `validated_mac5.deb` snapshot. Adding an explicit
+Dataform dependency on `deb` would create the cycle
+`cdc_change_log → deb → validated_schema_mac5 → cdc_change_log`, because the schema
+bootstrap already depends on the CDC action. The explicit dependency is therefore not
+applied; the CDC action retains its existing snapshot read and execution order. Revisit
+when the validated/CDC bootstrap graph can be changed without altering run behavior.

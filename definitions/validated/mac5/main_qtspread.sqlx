@@ -61,12 +61,10 @@ WITH all_sources AS (
         SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR(dinsert, 1, 19)),
         PARSE_DATETIME('%b %d %Y %I:%M%p', TRIM(dinsert))
     ) as dinsert,
-    --PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR(dinsert, 1, 19)) as dinsert,
     COALESCE(
         SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR(dupdate, 1, 19)),
         PARSE_DATETIME('%b %d %Y %I:%M%p', TRIM(dupdate))
     ) as dupdate,
-    --PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR(dupdate, 1, 19)) as dupdate,
     ${databuffet.functionData.cleanString('atten')} as atten,
     ${databuffet.functionData.cleanString('lat')} as lat,
     ${databuffet.functionData.cleanString('long')} as long,
@@ -93,7 +91,6 @@ WITH all_sources AS (
         SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR(editnotedate, 1, 19)),
         PARSE_DATETIME('%b %d %Y %I:%M%p', TRIM(editnotedate))
     ) as editnotedate,
-    --PARSE_DATETIME('%Y-%m-%d %H:%M:%S', SUBSTR(editnotedate, 1, 19)) AS editnotedate,
     ${databuffet.functionData.cleanString('delvdate')} as delvdate,
     ${databuffet.functionData.cleanString('transferfg')} as transferfg,
     ${databuffet.functionData.cleanString('meccode')} as meccode,

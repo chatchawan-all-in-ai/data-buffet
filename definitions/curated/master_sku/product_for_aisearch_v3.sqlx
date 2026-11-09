@@ -6,19 +6,14 @@ config {
 
 js {
     // Define table references
-    const targetTable = {
+    const ProductForAisearchV3Table = {
         database: databuffet.DATABASE,
         schema: databuffet.CURATED_MASTER_SKU,
         name: "product_for_aisearch_v3",
     };
 
     // Build target table reference
-    const targetTableRef = `${targetTable.database}.${targetTable.schema}.${targetTable.name}`;
-
-    // AI search expects the old lower-case unit codes (mm/cm/m/inch/ft, kg/g, l/ml),
-    // and no unit when the measurement itself is empty
-    const unitCode = (valueColumn, codeExpression) =>
-        `IF(${valueColumn} IS NULL, NULL, IF(${codeExpression} = 'IN', 'inch', LOWER(${codeExpression})))`;
+    const ProductForAisearchV3TableRef = `${ProductForAisearchV3Table.database}.${ProductForAisearchV3Table.schema}.${ProductForAisearchV3Table.name}`;
 
     // first non-empty variant value with this label, in array order
     const specValue = (label) => `(SELECT ${databuffet.functionData.cleanString("JSON_VALUE(attr, '$.value')")}
@@ -35,7 +30,6 @@ js {
 DECLARE run_date DATE DEFAULT CURRENT_DATE('Asia/Bangkok');
 
 BEGIN
-  ------ CREATE TEMP TABLE
   CREATE OR REPLACE TEMP TABLE unit_vocab AS
   SELECT DISTINCT v
   FROM (
@@ -79,17 +73,6 @@ BEGIN
         COALESCE(product.material, NULLIF(NULLIF(NULLIF(${specValue("วัสดุ")}, 'โปรดระบุ'), '-'), '0')) as product_material,
         product.package_shape as product_shape
 
-        -- product.gross_width as package_width,
-        -- ${unitCode("product.gross_width", "package_unit.code")} as package_width_unit,
-        -- product.gross_length as package_length,
-        -- ${unitCode("product.gross_length", "package_unit.code")} as package_length_unit,
-        -- product.gross_height as package_height,
-        -- ${unitCode("product.gross_height", "package_unit.code")} as package_height_unit,
-        -- product.net_weight as product_weight_net,
-        -- ${unitCode("product.net_weight", "COALESCE(weight_unit.code, volume_unit.code)")} as product_weight_net_unit,
-        -- product.gross_weight as product_weight_gross,
-        -- ${unitCode("product.gross_weight", "COALESCE(weight_unit.code, volume_unit.code)")} as product_weight_gross_unit,
-        -- '{"SpeciFeild":[]}' as special_specifications_json
     ) as structData
   FROM (
     SELECT *
@@ -118,25 +101,21 @@ BEGIN
     ON product.volume_unit_id = volume_unit.id
   WHERE product.asatdate BETWEEN run_date - 1 AND run_date;
 
-  ---- CREATE TARGET ON FIRST RUN
-  CREATE TABLE IF NOT EXISTS `${targetTableRef}`
+  CREATE TABLE IF NOT EXISTS `${ProductForAisearchV3TableRef}`
   PARTITION BY asatdate
   CLUSTER BY id
   AS SELECT * FROM temp_product_for_aisearch_v3 WHERE FALSE;
 
     BEGIN TRANSACTION;
 
-    ---- DELETE DATA BEFOR INSERT
-    DELETE FROM `${targetTableRef}`
+    DELETE FROM `${ProductForAisearchV3TableRef}`
     WHERE asatdate = run_date;
 
-    ---- INSERT DATA
-    INSERT INTO `${targetTableRef}`
+    INSERT INTO `${ProductForAisearchV3TableRef}`
     SELECT * FROM temp_product_for_aisearch_v3;
 
     COMMIT TRANSACTION;
 
-  ---- DROP TEMP TABLE
   DROP TABLE IF EXISTS temp_product_for_aisearch_v3;
   DROP TABLE IF EXISTS unit_vocab;
 

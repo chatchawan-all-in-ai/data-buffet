@@ -37,6 +37,40 @@ END;`;
         partition_statement = "";
         post_operations_statement = "";
     }
+    const StkAg01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "stk",
+    };
+    const StkAg01TableRef = `${StkAg01Table.database}.${StkAg01Table.schema}.${StkAg01Table.name}`;
+
+    const StkAa05Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AA05,
+        name: "stk",
+    };
+    const StkAa05TableRef = `${StkAa05Table.database}.${StkAa05Table.schema}.${StkAa05Table.name}`;
+
+    const StkAb01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AB01,
+        name: "stk",
+    };
+    const StkAb01TableRef = `${StkAb01Table.database}.${StkAb01Table.schema}.${StkAb01Table.name}`;
+
+    const StkAc02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AC02,
+        name: "stk",
+    };
+    const StkAc02TableRef = `${StkAc02Table.database}.${StkAc02Table.schema}.${StkAc02Table.name}`;
+
+    const StkAk02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AK02,
+        name: "stk",
+    };
+    const StkAk02TableRef = `${StkAk02Table.database}.${StkAk02Table.schema}.${StkAk02Table.name}`;
 }
 
 WITH all_sources AS (
@@ -122,7 +156,7 @@ WITH all_sources AS (
     ${databuffet.functionData.cleanString('stkgroup3_dge_report')} as stkgroup3_dge_report,
     ${databuffet.functionData.cleanString('part_dge')} as part_dge,
     ${databuffet.functionData.cleanString('stkfpass')} as stkfpass
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.stk`
+  FROM `${StkAg01TableRef}`
 
   UNION ALL
 
@@ -208,7 +242,7 @@ WITH all_sources AS (
     CAST(NULL AS STRING) as stkgroup3_dge_report,
     CAST(NULL AS STRING) as part_dge,
     CAST(NULL AS STRING) as stkfpass
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}.stk`
+  FROM `${StkAa05TableRef}`
 
   UNION ALL
 
@@ -294,7 +328,7 @@ WITH all_sources AS (
     CAST(NULL AS STRING) as stkgroup3_dge_report,
     CAST(NULL AS STRING) as part_dge,
     CAST(NULL AS STRING) as stkfpass
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}.stk`
+  FROM `${StkAb01TableRef}`
 
   UNION ALL
 
@@ -380,7 +414,7 @@ WITH all_sources AS (
     ${databuffet.functionData.cleanString('stkgroup3_dge_report')} as stkgroup3_dge_report,
     ${databuffet.functionData.cleanString('part_dge')} as part_dge,
     ${databuffet.functionData.cleanString('stkfpass')} as stkfpass
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AC02}.stk`
+  FROM `${StkAc02TableRef}`
 
   UNION ALL
 
@@ -466,7 +500,7 @@ WITH all_sources AS (
     CAST(NULL AS STRING) as stkgroup3_dge_report,
     CAST(NULL AS STRING) as part_dge,
     CAST(NULL AS STRING) as stkfpass
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.stk`
+  FROM `${StkAk02TableRef}`
 )
 
 SELECT * FROM all_sources

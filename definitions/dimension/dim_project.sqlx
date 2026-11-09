@@ -27,7 +27,6 @@ BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
   SET max_sk = (SELECT IFNULL(MAX(ProjectSK), 0) FROM `${DimProjectTableRef}`);
 
-  -- เริ่มกระบวนการ MERGE
   MERGE `${DimProjectTableRef}` AS T
   USING (
     WITH raw_data AS (
@@ -57,7 +56,6 @@ BEGIN
       FROM ${ref(databuffet.VALIDATED_MAC5, 'tbook_profilecomp')} as pj
       left join `${DimCompanyTableRef}` as dim_com
         on pj.company_id = dim_com.companyID
-      -- WHERE pj.company_id = 'ag01'
     )
     SELECT
       (CASE
@@ -89,7 +87,6 @@ BEGIN
   ) AS S
   ON T.ProjectSK = S.ProjectSK
 
-  -- กรณีเจอข้อมูลเดิม (Update)
   WHEN MATCHED THEN
     UPDATE SET
       T.docNo = S.docNo,
@@ -108,7 +105,6 @@ BEGIN
       T.projectEnd = S.projectEnd,
       T.projectDay = S.projectDay
 
-  -- กรณีข้อมูลใหม่ (Insert)
   WHEN NOT MATCHED THEN
     INSERT (
       ProjectSK, CompanySK,

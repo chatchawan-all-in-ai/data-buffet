@@ -50,6 +50,47 @@ BEGIN
     END IF;
 END;`;
     }
+    const ChqAg01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "chq",
+    };
+    const ChqAg01TableRef = `${ChqAg01Table.database}.${ChqAg01Table.schema}.${ChqAg01Table.name}`;
+
+    const ChqAa05Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AA05,
+        name: "chq",
+    };
+    const ChqAa05TableRef = `${ChqAa05Table.database}.${ChqAa05Table.schema}.${ChqAa05Table.name}`;
+
+    const ChqAb01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AB01,
+        name: "chq",
+    };
+    const ChqAb01TableRef = `${ChqAb01Table.database}.${ChqAb01Table.schema}.${ChqAb01Table.name}`;
+
+    const ChqAc02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AC02,
+        name: "chq",
+    };
+    const ChqAc02TableRef = `${ChqAc02Table.database}.${ChqAc02Table.schema}.${ChqAc02Table.name}`;
+
+    const ChqAk02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AK02,
+        name: "chq",
+    };
+    const ChqAk02TableRef = `${ChqAk02Table.database}.${ChqAk02Table.schema}.${ChqAk02Table.name}`;
+
+    const EXTRACTCHQDATATable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FUNCTION_DATASET,
+        name: "EXTRACT_CHQ_DATA",
+    };
+    const EXTRACTCHQDATATableRef = `${EXTRACTCHQDATATable.database}.${EXTRACTCHQDATATable.schema}.${EXTRACTCHQDATATable.name}`;
 }
 
 pre_operations {
@@ -89,7 +130,7 @@ WITH raw_sources AS (
     ${databuffet.functionData.cleanString('chqbranch')} as chqbranch,
     ${databuffet.functionData.cleanString('chqmec')} as chqmec,
     ${databuffet.functionData.parseFlexibleDatetime('chqdatev')} AS chqdatev
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.chq`
+  FROM `${ChqAg01TableRef}`
 
   UNION ALL
 
@@ -126,7 +167,7 @@ WITH raw_sources AS (
     ${databuffet.functionData.cleanString('chqbranch')} as chqbranch,
     ${databuffet.functionData.cleanString('chqmec')} as chqmec,
     ${databuffet.functionData.parseFlexibleDatetime('chqdatev')} AS chqdatev
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}.chq`
+  FROM `${ChqAa05TableRef}`
 
   UNION ALL
 
@@ -163,7 +204,7 @@ WITH raw_sources AS (
     ${databuffet.functionData.cleanString('chqbranch')} as chqbranch,
     ${databuffet.functionData.cleanString('chqmec')} as chqmec,
     ${databuffet.functionData.parseFlexibleDatetime('chqdatev')} AS chqdatev
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}.chq`
+  FROM `${ChqAb01TableRef}`
 
   UNION ALL
 
@@ -200,7 +241,7 @@ WITH raw_sources AS (
     ${databuffet.functionData.cleanString('chqbranch')} as chqbranch,
     ${databuffet.functionData.cleanString('chqmec')} as chqmec,
     ${databuffet.functionData.parseFlexibleDatetime('chqdatev')} AS chqdatev
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AC02}.chq`
+  FROM `${ChqAc02TableRef}`
 
   UNION ALL
 
@@ -237,7 +278,7 @@ WITH raw_sources AS (
     ${databuffet.functionData.cleanString('chqbranch')} as chqbranch,
     ${databuffet.functionData.cleanString('chqmec')} as chqmec,
     ${databuffet.functionData.parseFlexibleDatetime('chqdatev')} AS chqdatev
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.chq`
+  FROM `${ChqAk02TableRef}`
 ),
 
 all_sources AS (
@@ -245,20 +286,16 @@ all_sources AS (
   ${deduplicate_statement}
 )
 
--------------------------------------------------------------------------
--- ✨ เรียกใช้ UDF ที่เรารับ Parameter เข้าไป สั้นกริ๊บ! ✨
--------------------------------------------------------------------------
 SELECT 
   * EXCEPT(chqmemo, extracted_data),
-  chqmemo AS chqmemo_raw,               -- 👈 ดึงคอลัมน์ดิบกลับมา แล้วตั้งชื่อเป็น _raw
-  extracted_data.chqmemo AS chqmemo,    -- 👈 เอาข้อความที่ตัดแล้ว (clean) มาใช้เป็น chqmemo แทน
+  chqmemo AS chqmemo_raw,
+  extracted_data.chqmemo AS chqmemo,
   extracted_data.extract_text,
   extracted_data.extract_value
 FROM (
   SELECT 
     *,
-    -- โยน 3 Parameters ให้ UDF ตามโครงสร้างที่เราตั้งไว้เลยครับ
-    `${databuffet.DATABASE}.${databuffet.FUNCTION_DATASET}.EXTRACT_CHQ_DATA`(chqmemo, chqdatec, chqtotal) AS extracted_data
+    `${EXTRACTCHQDATATableRef}`(chqmemo, chqdatec, chqtotal) AS extracted_data
   FROM all_sources
 )
 

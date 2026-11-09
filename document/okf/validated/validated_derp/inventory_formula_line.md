@@ -17,7 +17,7 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:codex", at: "2026-11-08T22:03:22+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:05:00+07:00" }
 status: draft
 ---
 
@@ -35,7 +35,7 @@ One row per `formula_line_id`. The key is declared in `uniqueKey` and `pk_key` a
 |---|---|---|
 | `formula_line_id` | STRING | Source formula line id value. |
 | `id` | STRING | Source row identifier. |
-| `formula_id` | STRING | D365: formula_id ⚠ พบ 1 formula_id ('15420601_V1') ใน formula_line ที่ไม่มีอยู่ใน formula_versions ในข้อมูลปัจจุบัน (orphan child) — ต้องมี data quality check ก่อน load |
+| `formula_id` | STRING | D365: formula_id |
 | `line_creation_sequence_number` | FLOAT64 | ลำดับการสร้าง line (ต่างจาก line_number ที่เป็นลำดับแสดงผล) \| D365: line_creation_sequence_number |
 | `product_configuration_id` | STRING | Variant dimension ของ component — configuration \| D365: product_configuration_id (3/4,733) |
 | `substitution_priority` | FLOAT64 | ลำดับความสำคัญของวัตถุดิบทดแทนภายในกลุ่ม \| D365: substitution_priority |
@@ -89,12 +89,12 @@ One row per `formula_line_id`. The key is declared in `uniqueKey` and `pk_key` a
 | `is_active` | BOOL | D365: is_active ('Y'/'N' — Mac5 ส่ง 'Yes'/'No' ต้อง normalize ก่อน merge) |
 | `remarks` | STRING | หมายเหตุ \| D365: remarks (0/4,733 ปัจจุบันไม่มีค่า) |
 | `created_datetime` | DATETIME | Source created datetime value. |
-| `created_by` | STRING | D365: created_by — ⚠ เป็นชื่อ service account เช่น 'Service' ไม่ใช่ uuid (แก้ type จาก V1) |
+| `created_by` | STRING | D365: created_by |
 | `updated_datetime` | DATETIME | Source updated datetime value. |
 | `updated_by` | STRING | D365: updated_by (0/4,733 ปัจจุบันไม่มีค่า) |
-| `product_id` | STRING | D365: product_id ⚠ D365 ส่งค่ามาจริงเพียง 24/4,733 แถว (0.5%) ต้อง resolve ผ่าน item_number join กับ products แทน |
-| `formula_versions_id` | STRING | FK → formula_versions.formula_versions_id ⚠ ไม่มีอยู่ใน formula_line_d365.xlsx (raw export) — มีเฉพาะใน .sql (target DB) ต้อง resolve ผ่าน join formula_id → formula_versions |
-| `site_id` | STRING | FK → sites.id ⚠ ไม่มีอยู่ใน formula_line_d365.xlsx (raw export) — มีเฉพาะใน .sql (target DB) ต้อง derive จาก consumption_site_id ผ่าน lookup |
+| `product_id` | STRING | D365: product_id |
+| `formula_versions_id` | STRING | FK → formula_versions.formula_versions_id |
+| `site_id` | STRING | FK → sites.id |
 | `asatdate` | DATE | Extract date (`YYYY-MM-DD`), parsed from raw `ASATDATE` (`YYYYMMDD`); used for table partitioning. |
 
 # How it is built

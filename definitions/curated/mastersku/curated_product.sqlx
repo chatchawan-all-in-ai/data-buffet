@@ -69,13 +69,13 @@ QUALIFY row_number() over(partition by prdSku order by prdUpdatedDate desc) = 1
 
 post_operations {
     UPDATE ${self()} as t
-    SET 
+    SET
     t.prdColorTH = src.prdColorTH,
     t.prdColorEN = src.prdColorEN,
     t.prdSize = src.prdSize
     FROM (
         with rows_product as (
-            SELECT 
+            SELECT
                 prdSku,
                 JSON_VALUE(dimField, '$.label') as dimField_label,
                 NULLIF(TRIM(JSON_VALUE(dimField, '$.value')), '') as dimField_value,
@@ -87,51 +87,49 @@ post_operations {
             LEFT JOIN UNNEST (JSON_QUERY_ARRAY(prdDiminsionData, '$.dimFeild'))  as dimField
             LEFT JOIN UNNEST (JSON_QUERY_ARRAY(pd_spacific_fields, '$.SpeciFeild'))  as SpeciFeild
             ${ when(incremental(), `WHERE p.asatdate >= DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY)`) }
-            -- WHERE p.prdSku in ('MSKU1000091280', 'MSKU0000024500', 'MSKU0000024833')
 
             ), arge_data as (
-            select prdSku, 
-                max((case 
+            select prdSku,
+                max((case
                     when lower(dimField_label) in ('ขนาด', 'size') then dimField_value
                     else null
                 end)) as dimField_prdSize,
-                
-                max((case 
+
+                max((case
                     when lower(dimField_label) in ('สี', 'color') then dimField_value
                     else null
                 end)) as dimField_prdColor,
-                
-                max((case 
+
+                max((case
                     when lower(SpeciFeild_label) in ('ขนาด', 'size') then SpeciFeild_value
                     else null
                 end)) as SpeciFeild_prdSize,
-                
-                max((case 
+
+                max((case
                     when lower(SpeciFeild_label) in ('สี', 'color') then SpeciFeild_value
                     else null
                 end)) as SpeciFeild_prdColor,
             from rows_product
             group by prdSku
-            -- having dimField_prdSize is not null or dimField_prdColor is not null or SpeciFeild_prdSize is not null or SpeciFeild_prdColor is not null
-            
+
             ), cleaning_data as (
-            select 
+            select
                 prdSku,
                 IFNULL(dimField_prdSize, SpeciFeild_prdSize) as prdSize,
                 IFNULL(dimField_prdColor, SpeciFeild_prdColor) as prdColor
             from arge_data
 
             )
-            SELECT  
-                prdSku, 
+            SELECT
+                prdSku,
                 prdSize,
-                (CASE 
-                    WHEN REGEXP_CONTAINS(SPLIT(prdColor, ' ')[SAFE_OFFSET(0)], r'[ก-๙]') 
+                (CASE
+                    WHEN REGEXP_CONTAINS(SPLIT(prdColor, ' ')[SAFE_OFFSET(0)], r'[ก-๙]')
                         THEN NULLIF(TRIM(REGEXP_EXTRACT(prdColor, r'^([ก-๙\s]+)')), '')
                     ELSE NULL
-                END) AS prdColorTH,                
-                (CASE 
-                    WHEN NOT REGEXP_CONTAINS(SPLIT(prdColor, ' ')[SAFE_OFFSET(0)], r'[ก-๙]') 
+                END) AS prdColorTH,
+                (CASE
+                    WHEN NOT REGEXP_CONTAINS(SPLIT(prdColor, ' ')[SAFE_OFFSET(0)], r'[ก-๙]')
                         THEN NULLIF(TRIM(prdColor), '')
                     ELSE NULLIF(TRIM(REGEXP_REPLACE(prdColor, r'^([ก-๙\s]+)', '')), '')
                 END) AS prdColorEN

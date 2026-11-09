@@ -14,7 +14,7 @@ js {
     const sourceTable = {
         database: databuffet.DATABASE,
         schema:   databuffet.RAW_SALEOUT_MDT,
-        name:     "sale_by_branch_detail",
+        name:     name(),
     };
     const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
 

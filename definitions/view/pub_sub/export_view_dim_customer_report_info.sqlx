@@ -8,13 +8,14 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_VIEW}.view_dim_customer_report_info`;
+    const ViewDimCustomerReportInfoTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_VIEW,
+    name: "view_dim_customer_report_info",
+};
+const ViewDimCustomerReportInfoTableRef = `${ViewDimCustomerReportInfoTable.database}.${ViewDimCustomerReportInfoTable.schema}.${ViewDimCustomerReportInfoTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table dimension_view.view_dim_customer_report_info (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = CustomerReportInfoSK.
 WITH src AS (
   SELECT
     CustomerReportInfoSK,
@@ -40,7 +41,7 @@ WITH src AS (
     District,
     Province,
     DEBcreditTerm
-  FROM `${SourceTableRef}`
+  FROM `${ViewDimCustomerReportInfoTableRef}`
 )
 SELECT
   s.CustomerReportInfoSK,

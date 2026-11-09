@@ -53,6 +53,40 @@ END;`;
         partition_statement = "";
         post_operations_statement = "";
     }
+    const MirAg01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mir",
+    };
+    const MirAg01TableRef = `${MirAg01Table.database}.${MirAg01Table.schema}.${MirAg01Table.name}`;
+
+    const MirAa05Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AA05,
+        name: "mir",
+    };
+    const MirAa05TableRef = `${MirAa05Table.database}.${MirAa05Table.schema}.${MirAa05Table.name}`;
+
+    const MirAb01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AB01,
+        name: "mir",
+    };
+    const MirAb01TableRef = `${MirAb01Table.database}.${MirAb01Table.schema}.${MirAb01Table.name}`;
+
+    const MirAc02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AC02,
+        name: "mir",
+    };
+    const MirAc02TableRef = `${MirAc02Table.database}.${MirAc02Table.schema}.${MirAc02Table.name}`;
+
+    const MirAk02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AK02,
+        name: "mir",
+    };
+    const MirAk02TableRef = `${MirAk02Table.database}.${MirAk02Table.schema}.${MirAk02Table.name}`;
 }
 
 SELECT * FROM new_data_mir
@@ -82,7 +116,7 @@ pre_operations {
     ${databuffet.functionData.cleanString('miraccount')} as miraccount,
     ${databuffet.functionData.parseAsatDate()} as asatdate
 
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mir`
+  FROM `${MirAg01TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -108,7 +142,7 @@ pre_operations {
     ${databuffet.functionData.cleanString('miraccount')} as miraccount,
     ${databuffet.functionData.parseAsatDate()} as asatdate
 
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}.mir`
+  FROM `${MirAa05TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -134,7 +168,7 @@ pre_operations {
     ${databuffet.functionData.cleanString('miraccount')} as miraccount,
     ${databuffet.functionData.parseAsatDate()} as asatdate
 
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}.mir`
+  FROM `${MirAb01TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -160,7 +194,7 @@ pre_operations {
     ${databuffet.functionData.cleanString('miraccount')} as miraccount,
     ${databuffet.functionData.parseAsatDate()} as asatdate
 
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AC02}.mir`
+  FROM `${MirAc02TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -186,7 +220,7 @@ pre_operations {
     ${databuffet.functionData.cleanString('miraccount')} as miraccount,
     ${databuffet.functionData.parseAsatDate()} as asatdate
 
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.mir`
+  FROM `${MirAk02TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   )

@@ -286,6 +286,9 @@ flowchart LR
   dim_product_mdt --> fact_saleout_mdt
   dim_product_mdt --> fact_saleout_monthly_mdt
   dim_product_mdt --> fact_stock_mdt
+  dim_product_mkt --> fact_backlog_store
+  dim_product_mkt --> fact_invoice_store
+  dim_product_mkt --> fact_order_store
   dim_product_mkt --> fact_saleout_mdt
   dim_product_mkt --> fact_saleout_monthly_mdt
   dim_product_mkt --> fact_transcation
@@ -453,6 +456,7 @@ flowchart LR
   dim_company --> dim_cost_group
   dim_company --> dim_cost_stk
   dim_company --> dim_customer
+  dim_company --> dim_customer_report_info
   dim_company --> dim_customer_segment
   dim_company --> dim_delivery
   dim_company --> dim_department
@@ -500,6 +504,7 @@ flowchart LR
   dim_customer_segment --> dim_customer_report_info
   dim_department --> dim_department_last
   dim_department --> dim_target_product_group_by_sale_dayofwork
+  dim_department_last --> dim_customer_report_info
   dim_department_last --> dim_rate_target
   dim_department_last --> dim_target_product_group_by_sale
   dim_department_last --> update_sk_sale_rep_group
@@ -542,6 +547,7 @@ flowchart LR
   dim_report --> dim_target_product_group_by_sale
   dim_sale_representative --> dim_sale_representative_last
   dim_sale_representative --> dim_target_product_group_by_sale_dayofwork
+  dim_sale_representative_last --> dim_customer_report_info
   dim_sale_representative_last --> dim_target_product_group_by_sale
   dim_sale_representative_last --> update_sk_sale_rep_group
   dim_sales_branch_mdt --> dim_pc
@@ -855,7 +861,7 @@ other views it selects from. Edges captured from each view's `dependencies[]`.
 
 ```mermaid
 flowchart LR
-  subgraph validated["validated (18)"]
+  subgraph validated["validated (17)"]
     ar_s["ar_s"]
     brand["brand"]
     chq["chq"]
@@ -873,7 +879,6 @@ flowchart LR
     stg["stg"]
     stk["stk"]
     sto["sto"]
-    vendor["vendor"]
   end
   subgraph curated["curated (3)"]
     curated_mih["curated_mih"]
@@ -1068,7 +1073,6 @@ flowchart LR
   ar_s --> export_status
   ar_s --> view_aging_ri
   ar_s --> view_fact_mir_rs
-  brand --> Product_Attribute
   brand --> export_brand
   chq --> export_chqri
   chq --> export_receipt
@@ -1292,7 +1296,6 @@ flowchart LR
   stk --> export_order
   stk --> export_stk
   sto --> export_warehouse
-  vendor --> Product_Attribute
   view_deb_address_data --> Transaction_Data_Mart
   view_dim_aging --> view_aging_ri
   view_dim_aging --> view_fact_transcation
@@ -1327,7 +1330,7 @@ flowchart LR
   classDef process fill:#f5c6c6,stroke:#c04040,color:#111;
   classDef org_center fill:#e6dcf5,stroke:#7a5cb0,color:#111;
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
-  class ar_s,brand,chq,cql,deb,mec,mie,mih,mih2,mil,mir,per,product,product_detail,stg,stk,sto,vendor validated;
+  class ar_s,brand,chq,cql,deb,mec,mie,mih,mih2,mil,mir,per,product,product_detail,stg,stk,sto validated;
   class curated_mih,curated_mil,curated_tbook_quotation curated;
   class dim_aging,dim_aging_rang,dim_calendar,dim_change_district,dim_channel,dim_channel_cost,dim_channel_finance,dim_channel_sales,dim_company,dim_cost_group,dim_cost_stk,dim_customer,dim_customer_grade,dim_customer_report_info,dim_customer_segment,dim_department,dim_department_last,dim_director,dim_director_last,dim_doctype,dim_group_customer,dim_guarantee,dim_invoice,dim_order,dim_payment,dim_pc,dim_product_master,dim_product_master_fc,dim_product_mkt,dim_product_mkt_director,dim_product_series,dim_project,dim_pump_information,dim_quotation,dim_rate_target,dim_rebate,dim_region,dim_region_last,dim_region_manager,dim_region_manager_last,dim_report,dim_sale_representative,dim_sale_representative_last,dim_sales_branch_mdt,dim_section,dim_section_last,dim_section_manager,dim_section_manager_last,dim_status_not_receive,dim_stk_mkt,dim_target_product_group,dim_target_product_group_by_sale,dim_target_product_group_by_sale_dayofwork,dim_waterpac dimension;
   class fact_delivery,fact_invoice,fact_mir_rs,fact_mir_vs,fact_order,fact_quotation,fact_saleout_mdt,fact_saleout_monthly_mdt,fact_stock_mdt,fact_target_saleout_mdt,fact_transaction_delivery,fact_transcation fact;

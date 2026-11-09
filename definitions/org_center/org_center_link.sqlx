@@ -12,27 +12,25 @@ config {
 }
 
 js {
-    const MdsDataPcTaTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_ta_pc",
-    };
-    const MdsDataPcTaTableRef = `${MdsDataPcTaTable.database}.${MdsDataPcTaTable.schema}.${MdsDataPcTaTable.name}`;
-
-    const MdsDataMdtSalesPcMasterTable = {
+const MdsDataMdtSalesPcMasterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
         name: "mds_data_mdt_sales_pc_master",
     };
     const MdsDataMdtSalesPcMasterTableRef = `${MdsDataMdtSalesPcMasterTable.database}.${MdsDataMdtSalesPcMasterTable.schema}.${MdsDataMdtSalesPcMasterTable.name}`;
 
+const MdsDataTaPcTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_ta_pc",
+    };
+    const MdsDataTaPcTableRef = `${MdsDataTaPcTable.database}.${MdsDataTaPcTable.schema}.${MdsDataTaPcTable.name}`;
+
+
+
 }
 
--- 1 แถว = PC 1 คน ผูกกับ department (ตำแหน่ง TA) ที่ 1 สาขา ในช่วงวันที่หนึ่ง · ค่าจาก MDS เก็บตามที่กรอก (ไม่ trim ไม่แก้รหัส)
--- DepartmentID ว่างได้ (ยังหา department ไม่ได้) = department_id NULL · แถวยังอยู่ใน link แต่ไม่มีที่นั่ง TA และ org_center_flags รายงาน
--- valid_to = EndDate ของ MDS (วันแรกที่ไม่รับผิดชอบแล้ว) · EndDate ว่าง = 2066-12-31 เหมือนตารางอื่นใน org center
 WITH pc_type AS (
-  -- employee_type ว่าง = PC_MDT · 'พันธมิตร' = PC_AGENT · ค่าอื่นหรือไม่มีใน PC master = NULL
   SELECT
     employee_id,
     CASE
@@ -54,7 +52,7 @@ WITH pc_type AS (
     NULLIF(pt.DepartmentID, '') AS department_id,
     pt.StartDate AS valid_from,
     IFNULL(pt.EndDate, DATE '2066-12-31') AS valid_to
-  FROM `${MdsDataPcTaTableRef}` AS pt
+  FROM `${MdsDataTaPcTableRef}` AS pt
   LEFT JOIN pc_type AS ty
     ON pt.PCEmployeeID = ty.employee_id
   WHERE pt.is_active = TRUE

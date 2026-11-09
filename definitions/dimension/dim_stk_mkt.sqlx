@@ -10,23 +10,24 @@ config {
 }
 
 js {
-    const DimCompanyTable = {
+const MdsSourceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_product_market_group_by_product_id_master",
+    };
+    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
+
+const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: 'dim_company',
     };
     const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 
-    const MdsSourceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_product_market_group_by_product_id_master",
-    };
-    const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
+
 }
 
 WITH mds_mkt AS (
-  -- Market group จาก mds master
   SELECT
     dim_com.CompanySK,
     ${databuffet.functionData.cleanString("t1.companyID")} AS companyID,
@@ -64,7 +65,6 @@ waiting_master AS (
   FROM (
     SELECT DISTINCT stkcode, company_id
     FROM ${ref(databuffet.VALIDATED_MAC5, "stk")}
-    -- WHERE company_id = 'ag01'
   ) AS t1
   LEFT JOIN `${DimCompanyTableRef}` AS dim_com
     ON t1.company_id = dim_com.companyID
@@ -85,7 +85,7 @@ combined AS (
 SELECT
   ROW_NUMBER() OVER(
     ORDER BY
-      (CASE WHEN MdsID IS NULL THEN 1 ELSE 0 END),  -- mds ก่อน แล้วค่อย Waiting Master
+      (CASE WHEN MdsID IS NULL THEN 1 ELSE 0 END),
       companyID,
       StkCode
   ) AS StkMktSK,

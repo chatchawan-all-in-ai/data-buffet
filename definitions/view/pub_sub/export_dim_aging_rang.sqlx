@@ -8,20 +8,21 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_aging_rang`;
+    const DimAgingRangTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_aging_rang",
+};
+const DimAgingRangTableRef = `${DimAgingRangTable.database}.${DimAgingRangTable.schema}.${DimAgingRangTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table dimension_table.dim_aging_rang (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = AgingRangSK.
 WITH src AS (
   SELECT
     AgingRangSK,
     ReportName,
     AgingDayMin,
     AgingDayMax
-  FROM `${SourceTableRef}`
+  FROM `${DimAgingRangTableRef}`
 )
 SELECT
   s.AgingRangSK,

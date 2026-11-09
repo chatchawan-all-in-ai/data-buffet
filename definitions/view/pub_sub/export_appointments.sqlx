@@ -8,18 +8,14 @@ config {
 }
 
 js {
-    const OrgCenterMemberTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_member`;
+    const OrgCenterMemberTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.ORG_CENTER,
+    name: "org_center_member",
+};
+const OrgCenterMemberTableRef = `${OrgCenterMemberTable.database}.${OrgCenterMemberTable.schema}.${OrgCenterMemberTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
---   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
---   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
---   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
--- Natural key = company_id, membership_id, org_unit_id, position_id, valid_from (the uniqueKey of org_center_member).
--- membership_id = MDS EmployeeID, org_unit_id = org_units.id (with company_id), position_id = positions.code.
--- zone = DepartmentID of a TA seat (TAs sit at the section; captain decision 2026-11-02), several joined by '|';
--- NULL on every other seat. is_primary and source_row_id have no source and stay NULL.
 WITH appointment AS (
   SELECT
     company_id,

@@ -1,7 +1,7 @@
 config {
     type: "incremental",
     schema: databuffet.PROCESS_DATASET,
-    dependencies: [],
+    dependencies: ["cdc_change_log"],
     tags: [databuffet.TAG_PROCESS],
     uniqueKey: ["company_id", "debcode"],
     bigquery: {
@@ -9,6 +9,15 @@ config {
         clusterBy: ["company_id", "debcode"],
         // updatePartitionFilter: "asatdate >= CURRENT_DATE('Asia/Bangkok')-7"
     }
+}
+
+js {
+    const CdcChangeLogTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.CDC_DATESET,
+        name: "cdc_change_log",
+    };
+    const CdcChangeLogTableRef = `${CdcChangeLogTable.database}.${CdcChangeLogTable.schema}.${CdcChangeLogTable.name}`;
 }
 
 WITH raw_data AS (
@@ -19,7 +28,7 @@ WITH raw_data AS (
   FROM ${ref(databuffet.VALIDATED_MAC5, 'deb')} AS d
   WHERE EXISTS (
     SELECT 1
-    FROM ${ref(databuffet.CDC_DATESET, 'cdc_change_log')}
+    FROM `${CdcChangeLogTableRef}`
     WHERE source_system = 'mac5'
       AND source_schema = 'validated_mac5'
       AND source_table = 'deb'

@@ -132,7 +132,6 @@ BEGIN
         percode AS EmployeeID,
         TRIM(REGEXP_REPLACE(pernamet, r'\s+', ' ')) AS pernamet
       FROM ${ref(databuffet.VALIDATED_MAC5, 'per')} AS per
-      -- WHERE per.company_id = 'ag01'
 
     ), ledger_rep AS (
       SELECT
@@ -166,7 +165,7 @@ BEGIN
     SELECT
       ROW_NUMBER() OVER(
         ORDER BY
-          (CASE WHEN MdsID IS NULL THEN 1 ELSE 0 END),  -- mds ก่อน แล้วค่อย ledger
+          (CASE WHEN MdsID IS NULL THEN 1 ELSE 0 END),
           companyID,
           DepartmentID,
           EmployeeID,

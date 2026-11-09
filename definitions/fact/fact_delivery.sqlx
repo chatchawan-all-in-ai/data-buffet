@@ -105,8 +105,6 @@ with mil_is as (
     and mh.company_id = deb.company_id
 
   where td.fdocument like (case when IFNULL(d.fserial_no,'0') = '0' then '%' else  d.fserial_no end)
-    -- and fdocument = 'L6601000167'
-    -- and fitem = '3G-X3-W03-00'
     and left(fitem, 1) <> '8'
 
   group by td.company_id, td.fdocument,t.fcode,t.fvehicle,td.fitem,td.fitem2,d.flattitude , d.flongtitude ,d.fzone ,d.fpoi
@@ -232,8 +230,6 @@ with mil_is as (
     shipmentStatus_3,
     qty2 as totalItems,
   from agg_tabe
-  -- where fdocument = 'L6601000167 '
-  --   and fitem = '3G-X3-W03-00'
 
 )
   select
@@ -257,5 +253,4 @@ with mil_is as (
     and t1.companyID = dl.companyID
   LEFT JOIN `${DimCompanyTableRef}` as dim_com
     on t1.companyID = dim_com.companyID
-  -- order by 1,2,3
 ) AS output_row

@@ -8,17 +8,14 @@ config {
 }
 
 js {
-    const OrgCenterExceptionTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_exception`;
+    const OrgCenterExceptionTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.ORG_CENTER,
+    name: "org_center_exception",
+};
+const OrgCenterExceptionTableRef = `${OrgCenterExceptionTable.database}.${OrgCenterExceptionTable.schema}.${OrgCenterExceptionTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
---   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
---   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
---   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
--- Natural key = source_row_id + every scope column: the director / region / section arrays split to one value
--- per row (cross product; one value each today, so one row per org_center_exception row). Rows without an
--- employee_id are kept (employee_id NULL). report_id, report_name and department_code have no source and stay NULL.
 WITH access_exception AS (
   SELECT
     x.employee_id,

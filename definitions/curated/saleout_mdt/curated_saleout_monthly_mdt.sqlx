@@ -9,27 +9,7 @@ config {
         clusterBy: ["store_code", "branch_code", "product_code"]
     },
 }
-
-/*
-  ยอดขาย Sales Out รายเดือน — ตัวที่ fact_saleout_monthly_mdt ควรอ่าน
-  แทนที่ onetime.saleout_monthly_mdt ซึ่งปั้นด้วยมือ สร้างใหม่จากโค้ดไม่ได้ และเคยพังมาแล้ว
-  (สคริปต์แปลงไฟล์เดือน 8 คูณ -1 ซ้ำ ทำให้รายการคืนของ GB กลายเป็นบวก เกิน 548,340 บาท
-   สคริปต์ตัวนั้นอยู่ใน scratchpad ที่ถูกลบไปแล้ว ไล่กลับไม่ได้ — ดู known-issues 2026-10-05)
-
-  เกรน: เดือน + ห้าง + สาขา + สินค้า  (month_date = วันแรกของเดือน)
-  fact ครอบ LAST_DAY() เองอยู่แล้ว ชั้นนี้จึงใช้วันแรกให้สม่ำเสมอ
-
-  เลือกแหล่งต่อ 1 เดือน ต่อ 1 ห้าง ตามลำดับความน่าเชื่อถือ — ตัวแรกที่มีข้อมูลชนะ
-    1 CHAIN_FILE    ไฟล์ปิดงวดที่ห้างส่งมาเอง (ชั้น EOM)      ส.ค. 2026 เป็นต้นมา
-    2 BI            ไฟล์ที่ทีม BI ส่งให้ตอนตั้งระบบ            2022-01 ถึง 2026-07
-    3 DAILY_ROLLUP  ยุบจากฟีดรายวัน                          เดือนที่กำลังเดินอยู่
-
-  ช่วงเวลาแทบไม่ทับกัน — BI จบ ก.ค. 2026 พอดีตรงที่ EOM เริ่ม ส.ค. 2026
-  ที่ทับคือเดือนที่ห้างยังไม่ปิดงวด ซึ่ง DAILY_ROLLUP รับไปจนกว่าไฟล์ปิดงวดจะเข้า แล้วสลับเอง
-
-  ⚠️ ห้ามยุบ 3 แหล่งเข้าด้วยกันแบบ SUM เด็ดขาด — มันคือยอดเดียวกันคนละแหล่ง บวกกันคือเบิ้ล
-*/
-
+-- เลือกแหล่งเดียวต่อเดือนและห้างเพื่อไม่บวกยอดเดียวกันซ้ำ
 js {
     // ตารางนี้ Dataform ไม่ได้สร้าง จึงใช้ ref() ไม่ได้ — เป็นประวัติชุดเดียวจบ
     // สร้างจาก saved query ชื่อ saleout_lastyear_monthly ใน Shared queries
@@ -37,10 +17,13 @@ js {
     // ชุดเดียวกับที่ตัดใน curated_saleout_mdt ฝั่งรายวัน ต้องแก้ทั้งสองที่เสมอ
     // 10176841 ลูกลอย+ก้าน 1"
     const DH_NOT_OURS = `'10176841'`;
-
-    const LastYearMonthlyRef = `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.saleout_lastyear_monthly`;
+    const LastYearMonthlyTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.VALIDATED_SALEOUT_MDT,
+    name: "saleout_lastyear_monthly",
+};
+const LastYearMonthlyTableRef = `${LastYearMonthlyTable.database}.${LastYearMonthlyTable.schema}.${LastYearMonthlyTable.name}`;
 }
-
 WITH eom AS (
 
     -- ⚠️ เอาเฉพาะงวดที่ปิดแล้ว — eom_hp มีงวดเดือนปัจจุบันติดมาด้วยเพราะห้าง export
@@ -67,20 +50,15 @@ WITH eom AS (
 
 ), bi AS (
 
-    -- ไฟล์ที่ทีม BI ให้มาตอนตั้งระบบ เป็นแหล่งเดียวที่มีประวัติก่อนฟีดรายวันจะเริ่ม
-    -- ⚠️ สร้างใหม่จากฟีดรายวันไม่ได้ (ตรงกันแค่ 23 จาก 55 เดือน) จึงยังต้องพึ่ง onetime อยู่จุดเดียว
-    -- ⚠️ สาขา DH To go ในไฟล์นี้ไม่มี `_TG` ต่อท้าย แต่ master กับฟีดรายวันใช้ `_TG` ทั้งคู่
-    --    ถ้าไม่เติมกลับ จะจับ dim ไม่ได้ แล้ว dim_sales_branch_mdt จะสร้างสาขาซ้ำขึ้นมาเอง
-    --    ทำให้ Branch ID / Zone ID ว่างในรายงาน · `KN` ยังจับไม่ได้แม้เติม ต้องให้ทีม master เพิ่ม
     SELECT
-        LAST_DAY(month_date) AS month_date,   -- ต้นทางใช้วันสุดท้ายของเดือนอยู่แล้ว ย้ำให้ชัด
+        LAST_DAY(month_date) AS month_date,
         store_code,
         IF(store_code = 'DH' AND REGEXP_CONTAINS(branch_code, r'^M[0-9]+$'),
            CONCAT(branch_code, '_TG'),
            branch_code) AS branch_code,
         branch_name,
         product_code, product_name, sale_qty, sale_amount
-    FROM `${LastYearMonthlyRef}`
+    FROM `${LastYearMonthlyTableRef}`
 
 ), daily AS (
 
@@ -113,10 +91,6 @@ WITH eom AS (
 
 ), winner AS (
 
-    -- แหล่งที่ดีที่สุดที่มีจริงของแต่ละ (เดือน, ห้าง)
-    -- ตัดสินที่ระดับห้าง ไม่ใช่ระดับสาขาหรือสินค้า — ไม่งั้นเดือนเดียวจะผสมแหล่งกันจนเทียบไม่ได้
-    -- ⚠️ เทียบที่ period (เดือน) ไม่ใช่ month_date — เพราะ DAILY_ROLLUP ของเดือนปัจจุบัน
-    -- มี month_date หลายค่า (วันละค่า) ส่วน CHAIN_FILE/BI มีค่าเดียวต่อเดือน
     SELECT period, store_code, MIN(prio) AS prio
     FROM all_src
     GROUP BY period, store_code

@@ -9,23 +9,15 @@ config {
         clusterBy: ["store_code", "branch_code", "product_code"]
     },
 }
-
-/*
-  ยอดปิดรายเดือนที่โฮมโปร/เมกาโฮมส่งมาเอง (โฟลเดอร์ SO_MDT_EOM/HP)
-  คนละชุดกับ saleout_hp ซึ่งเป็นฟีดรายวัน — ตัวนี้คือ "ยอดที่ห้างแจ้ง" ไว้เทียบว่าเราเก็บหายไปเท่าไร
-  ไฟล์เป็น CSV หน้าตาเดียวกับฟีดรายวันเป๊ะ ต่างแค่ PERIODTYPE = 'M' และ PERIODDATE เป็น เดือน/ปี
-
-  type: "table" เพราะ ASATDATE เป็นวันที่ DAG รัน ไม่ใช่งวด — หน้าต่าง incremental ใช้ไม่ได้
-  ตารางเล็ก (หลักพันแถวต่อเดือน) อ่านเต็มทุกรอบไม่แพง · ดู known-issues 2026-10-05
-*/
+-- PERIODDATE เป็นงวด ส่วน ASATDATE เป็นวันรัน จึงอ่านเต็มทุกครั้ง
 
 js {
-    const sourceTable = {
+    const EomHpTable = {
         database: databuffet.DATABASE,
         schema:   databuffet.RAW_SALEOUT_MDT,
         name:     "eom_hp",
     };
-    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+    const EomHpTableRef = `${EomHpTable.database}.${EomHpTable.schema}.${EomHpTable.name}`;
 
     // ห้างส่งค่าครอบด้วย ="..." กันเลขศูนย์นำหาย — แกะทุกคอลัมน์ข้อความเหมือนฟีดรายวัน
     const UNQUOTE = String.raw`r'^="|"$'`;
@@ -64,7 +56,7 @@ WITH src AS (
         SAFE.PARSE_DATETIME('%d/%m/%Y %H:%M', ${c('CRDATE')}) AS crdate,
         ${databuffet.functionData.parseAsatDate()}            AS asatdate
 
-    FROM `${sourceTableRef}`
+    FROM `${EomHpTableRef}`
     WHERE PERIODDATE IS NOT NULL AND SITENO IS NOT NULL
 
 ), file_version AS (
@@ -85,13 +77,6 @@ WITH src AS (
 
 ), latest AS (
 
-    -- ⚠️ หนึ่งพาร์ทิชันมีหลายงวด และงวดเดียวกันมีหลายเวอร์ชัน
-    -- DAG รวมทุกไฟล์ในโฟลเดอร์เป็น AVRO ก้อนเดียวต่อวันที่รัน ไฟล์เก่าที่ยังไม่ถูก archive จึงติดมาด้วย
-    -- วัด 2026-10-05: 6 ไฟล์ = 7,173 แถว · งวด 09 มาจาก 3 ไฟล์ (23.77M / 24.19M / 27.04M)
-    --
-    -- เลือกเวอร์ชันล่าสุดต่องวดด้วย CRDATE ซึ่งห้างประทับมาในทุกแถว — เชื่อถือได้กว่าชื่อไฟล์
-    -- ตัดข้ามพาร์ทิชันโดยตั้งใจ (ไม่ใส่ ASATDATE ใน PARTITION BY) เพราะงวดเดิมถูกส่งซ้ำวันหลังได้
-    -- ไม่ตัดซ้ำยอดเดือน 9 จะเบิ้ลเป็น 75M
     SELECT s.* FROM src AS s
     INNER JOIN chosen USING (month_date, crdate)
 

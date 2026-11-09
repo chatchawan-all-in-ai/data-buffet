@@ -6,20 +6,6 @@ config {
 }
 
 js {
-    const FnFlagSalesKpiTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.FUNCTION_DATASET,
-        name: "fn_flag_sales_kpi",
-    };
-    const FnFlagSalesKpiTableRef = `${FnFlagSalesKpiTable.database}.${FnFlagSalesKpiTable.schema}.${FnFlagSalesKpiTable.name}`;
-
-    const DimProductRebateTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_product_rebate",
-    };
-    const DimProductRebateTableRef = `${DimProductRebateTable.database}.${DimProductRebateTable.schema}.${DimProductRebateTable.name}`;
-
     const ViewDebAddressDataTable = {
         database: databuffet.DATABASE,
         schema: databuffet.PROCESS_DATASET,
@@ -44,7 +30,6 @@ WITH stk as (
     stkcode885,
     stkgroup
   FROM ${ref(databuffet.VALIDATED_MAC5, "stk")}
-  -- where company_id = 'ag01'
 
 ), mih_ps as (
   select 
@@ -57,11 +42,9 @@ WITH stk as (
     on mihps.mihref1 = qt.running
     and mihps.company_id = qt.company_id
   where mihps.mihType = 'PS'
-    -- and mihps.company_id = 'ag01'
 
 ), raw_transcation as (
   SELECT
-    -- `${FnFlagSalesKpiTableRef}`(a.mihcancel, a.mihstatus, product_rebate.rebate) as FlagSalesKPI,
     dim_com.CompanySK,
     dim_com.companyID,
     a.mihvatno,
@@ -102,15 +85,12 @@ WITH stk as (
   LEFT JOIN stk AS s
     ON LOWER(s.stkcode) = LOWER(b.milstk)
     and s.company_id = b.company_id
-  -- LEFT JOIN `${DimProductRebateTableRef}` as product_rebate 
-  --   ON b.milstk = product_rebate.Rebate
   LEFT JOIN `${ViewDebAddressDataTableRef}` as aidata
     ON a.mihCus = aidata.debcode
     AND a.company_id = aidata.company_id
   LEFT JOIN `${DimCompanyTableRef}` as dim_com
     ON a.company_id = dim_com.companyID
   WHERE a.mihtype IN ('IS', 'AS', 'BS', 'QS') 
-    -- and a.company_id = 'ag01'
 
 ), transcation as (
   SELECT *,
@@ -133,12 +113,6 @@ WITH stk as (
 )
   SELECT 
     * EXCEPT(mihVatsum, stkVat, stkcode885, mihExtrasum, mihExtravat, over_milsum),
-    --------- Oat Edit --------------
-    /*(CASE
-      WHEN milType = 'BS' and milsum < 0 THEN 0
-      ELSE milsum + Vat 
-    END) AS milsum_incvat,*/
-    --------- End Oat Edit --------------
     milsum + Vat AS milsum_incvat,
 
     (CASE

@@ -7,10 +7,18 @@ config {
 
 
 js {
-    const ViewFactTranscationRef =
-        `${databuffet.DATABASE}.${databuffet.FACT_VIEW}.view_fact_transcation`;
-    const DimDirectorRef =
-        `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_director`;
+    const ViewFactTranscationTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.FACT_VIEW,
+    name: "view_fact_transcation",
+};
+const ViewFactTranscationTableRef = `${ViewFactTranscationTable.database}.${ViewFactTranscationTable.schema}.${ViewFactTranscationTable.name}`;
+    const DimDirectorTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_director",
+};
+const DimDirectorTableRef = `${DimDirectorTable.database}.${DimDirectorTable.schema}.${DimDirectorTable.name}`;
 }
 
 SELECT
@@ -40,8 +48,8 @@ SELECT
   SUM(tran.milSum)           AS milSum,
   SUM(tran.milsum_incvat)    AS milsum_incvat,
   SUM(tran.mildisca_incvat)  AS mildisca_incvat
-FROM `${ViewFactTranscationRef}` AS tran
-INNER JOIN `${DimDirectorRef}` AS director
+FROM `${ViewFactTranscationTableRef}` AS tran
+INNER JOIN `${DimDirectorTableRef}` AS director
   ON  tran.DirectorSK = director.DirectorSK
   AND director.DirectorID = '00004'
 GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16

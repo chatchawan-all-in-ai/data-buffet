@@ -4,90 +4,688 @@ config {
   tags: [databuffet.TAG_REINITIAL],
 }
 
+js {
+    const CpsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "cps",
+    };
+    const CpsTableRef = `${CpsTable.database}.${CpsTable.schema}.${CpsTable.name}`;
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.cps`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.cps_dummy`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.cst`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.mie`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.mie_dummy`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.mih`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.mih2`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.mih_dummy`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.mil`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.mil_dummy`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.mip`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.rcv`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.ap_s`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.apilog`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.ap_s`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.ar_s`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.cfs`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.check_po`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.chq`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.comboset`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.combostk`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.cpp`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.cpx`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.cre`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.deb`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.dep`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.detail_qtspread`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.doc`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.grp`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.log_print_billing`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.main_qtspread`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.maincontract`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.match_customer`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.match_deb_bot_re`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.match_product`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.mec`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.mih_billing`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.mil_billing`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.mir`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.order_from_allkon_m`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.pathfilestamper`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.per`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.pro_ag`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.pro_crc`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.pro_re`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.product_bot_re`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.product_detail_bot_re`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.product_promotion`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.qt_spread_to_mih`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.rno`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.sbl`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.std`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.stf`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.stg`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.stk`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.sto`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.mkt_per`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.supcontract`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tab`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tbcontact`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tbook_apptype`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tbook_givestk`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tbook_payin`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tbook_profilecomp`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tbook_quodetail`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tbook_quotation`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tbpjaddacc`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tdis_approveorder`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tdis_approveqt`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tdis_mail`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tmp_mihstatus`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tmp_pdf_ap`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tmp_pdf_frasers`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tmp_pdf_pruksa`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tmp_pdf_qh`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tmp_pdf_sansiri`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tmp_pdf_supalai`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.userloginanyprogram`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.vmp`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.stk_mkt`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.stg_report`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.stgacc`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tempgpsweb`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.ttrip_document`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.ttrip`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}.tdelivery`;
+    const CpsDummyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "cps_dummy",
+    };
+    const CpsDummyTableRef = `${CpsDummyTable.database}.${CpsDummyTable.schema}.${CpsDummyTable.name}`;
+
+    const CstTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "cst",
+    };
+    const CstTableRef = `${CstTable.database}.${CstTable.schema}.${CstTable.name}`;
+
+    const MieTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mie",
+    };
+    const MieTableRef = `${MieTable.database}.${MieTable.schema}.${MieTable.name}`;
+
+    const MieDummyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mie_dummy",
+    };
+    const MieDummyTableRef = `${MieDummyTable.database}.${MieDummyTable.schema}.${MieDummyTable.name}`;
+
+    const MihTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mih",
+    };
+    const MihTableRef = `${MihTable.database}.${MihTable.schema}.${MihTable.name}`;
+
+    const Mih2Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mih2",
+    };
+    const Mih2TableRef = `${Mih2Table.database}.${Mih2Table.schema}.${Mih2Table.name}`;
+
+    const MihDummyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mih_dummy",
+    };
+    const MihDummyTableRef = `${MihDummyTable.database}.${MihDummyTable.schema}.${MihDummyTable.name}`;
+
+    const MilTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mil",
+    };
+    const MilTableRef = `${MilTable.database}.${MilTable.schema}.${MilTable.name}`;
+
+    const MilDummyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mil_dummy",
+    };
+    const MilDummyTableRef = `${MilDummyTable.database}.${MilDummyTable.schema}.${MilDummyTable.name}`;
+
+    const MipTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mip",
+    };
+    const MipTableRef = `${MipTable.database}.${MipTable.schema}.${MipTable.name}`;
+
+    const RcvTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "rcv",
+    };
+    const RcvTableRef = `${RcvTable.database}.${RcvTable.schema}.${RcvTable.name}`;
+
+    const ApSTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "ap_s",
+    };
+    const ApSTableRef = `${ApSTable.database}.${ApSTable.schema}.${ApSTable.name}`;
+
+    const ApilogTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "apilog",
+    };
+    const ApilogTableRef = `${ApilogTable.database}.${ApilogTable.schema}.${ApilogTable.name}`;
+
+    const ArSTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "ar_s",
+    };
+    const ArSTableRef = `${ArSTable.database}.${ArSTable.schema}.${ArSTable.name}`;
+
+    const CfsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "cfs",
+    };
+    const CfsTableRef = `${CfsTable.database}.${CfsTable.schema}.${CfsTable.name}`;
+
+    const CheckPoTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "check_po",
+    };
+    const CheckPoTableRef = `${CheckPoTable.database}.${CheckPoTable.schema}.${CheckPoTable.name}`;
+
+    const ChqTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "chq",
+    };
+    const ChqTableRef = `${ChqTable.database}.${ChqTable.schema}.${ChqTable.name}`;
+
+    const CombosetTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "comboset",
+    };
+    const CombosetTableRef = `${CombosetTable.database}.${CombosetTable.schema}.${CombosetTable.name}`;
+
+    const CombostkTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "combostk",
+    };
+    const CombostkTableRef = `${CombostkTable.database}.${CombostkTable.schema}.${CombostkTable.name}`;
+
+    const CppTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "cpp",
+    };
+    const CppTableRef = `${CppTable.database}.${CppTable.schema}.${CppTable.name}`;
+
+    const CpxTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "cpx",
+    };
+    const CpxTableRef = `${CpxTable.database}.${CpxTable.schema}.${CpxTable.name}`;
+
+    const CreTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "cre",
+    };
+    const CreTableRef = `${CreTable.database}.${CreTable.schema}.${CreTable.name}`;
+
+    const DebTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "deb",
+    };
+    const DebTableRef = `${DebTable.database}.${DebTable.schema}.${DebTable.name}`;
+
+    const DepTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "dep",
+    };
+    const DepTableRef = `${DepTable.database}.${DepTable.schema}.${DepTable.name}`;
+
+    const DetailQtspreadTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "detail_qtspread",
+    };
+    const DetailQtspreadTableRef = `${DetailQtspreadTable.database}.${DetailQtspreadTable.schema}.${DetailQtspreadTable.name}`;
+
+    const DocTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "doc",
+    };
+    const DocTableRef = `${DocTable.database}.${DocTable.schema}.${DocTable.name}`;
+
+    const GrpTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "grp",
+    };
+    const GrpTableRef = `${GrpTable.database}.${GrpTable.schema}.${GrpTable.name}`;
+
+    const LogPrintBillingTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "log_print_billing",
+    };
+    const LogPrintBillingTableRef = `${LogPrintBillingTable.database}.${LogPrintBillingTable.schema}.${LogPrintBillingTable.name}`;
+
+    const MainQtspreadTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "main_qtspread",
+    };
+    const MainQtspreadTableRef = `${MainQtspreadTable.database}.${MainQtspreadTable.schema}.${MainQtspreadTable.name}`;
+
+    const MaincontractTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "maincontract",
+    };
+    const MaincontractTableRef = `${MaincontractTable.database}.${MaincontractTable.schema}.${MaincontractTable.name}`;
+
+    const MatchCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "match_customer",
+    };
+    const MatchCustomerTableRef = `${MatchCustomerTable.database}.${MatchCustomerTable.schema}.${MatchCustomerTable.name}`;
+
+    const MatchDebBotReTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "match_deb_bot_re",
+    };
+    const MatchDebBotReTableRef = `${MatchDebBotReTable.database}.${MatchDebBotReTable.schema}.${MatchDebBotReTable.name}`;
+
+    const MatchProductTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "match_product",
+    };
+    const MatchProductTableRef = `${MatchProductTable.database}.${MatchProductTable.schema}.${MatchProductTable.name}`;
+
+    const MecTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mec",
+    };
+    const MecTableRef = `${MecTable.database}.${MecTable.schema}.${MecTable.name}`;
+
+    const MihBillingTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mih_billing",
+    };
+    const MihBillingTableRef = `${MihBillingTable.database}.${MihBillingTable.schema}.${MihBillingTable.name}`;
+
+    const MilBillingTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mil_billing",
+    };
+    const MilBillingTableRef = `${MilBillingTable.database}.${MilBillingTable.schema}.${MilBillingTable.name}`;
+
+    const MirTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mir",
+    };
+    const MirTableRef = `${MirTable.database}.${MirTable.schema}.${MirTable.name}`;
+
+    const OrderFromAllkonMTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "order_from_allkon_m",
+    };
+    const OrderFromAllkonMTableRef = `${OrderFromAllkonMTable.database}.${OrderFromAllkonMTable.schema}.${OrderFromAllkonMTable.name}`;
+
+    const PathfilestamperTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "pathfilestamper",
+    };
+    const PathfilestamperTableRef = `${PathfilestamperTable.database}.${PathfilestamperTable.schema}.${PathfilestamperTable.name}`;
+
+    const PerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "per",
+    };
+    const PerTableRef = `${PerTable.database}.${PerTable.schema}.${PerTable.name}`;
+
+    const ProAgTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "pro_ag",
+    };
+    const ProAgTableRef = `${ProAgTable.database}.${ProAgTable.schema}.${ProAgTable.name}`;
+
+    const ProCrcTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "pro_crc",
+    };
+    const ProCrcTableRef = `${ProCrcTable.database}.${ProCrcTable.schema}.${ProCrcTable.name}`;
+
+    const ProReTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "pro_re",
+    };
+    const ProReTableRef = `${ProReTable.database}.${ProReTable.schema}.${ProReTable.name}`;
+
+    const ProductBotReTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "product_bot_re",
+    };
+    const ProductBotReTableRef = `${ProductBotReTable.database}.${ProductBotReTable.schema}.${ProductBotReTable.name}`;
+
+    const ProductDetailBotReTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "product_detail_bot_re",
+    };
+    const ProductDetailBotReTableRef = `${ProductDetailBotReTable.database}.${ProductDetailBotReTable.schema}.${ProductDetailBotReTable.name}`;
+
+    const ProductPromotionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "product_promotion",
+    };
+    const ProductPromotionTableRef = `${ProductPromotionTable.database}.${ProductPromotionTable.schema}.${ProductPromotionTable.name}`;
+
+    const QtSpreadToMihTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "qt_spread_to_mih",
+    };
+    const QtSpreadToMihTableRef = `${QtSpreadToMihTable.database}.${QtSpreadToMihTable.schema}.${QtSpreadToMihTable.name}`;
+
+    const RnoTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "rno",
+    };
+    const RnoTableRef = `${RnoTable.database}.${RnoTable.schema}.${RnoTable.name}`;
+
+    const SblTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "sbl",
+    };
+    const SblTableRef = `${SblTable.database}.${SblTable.schema}.${SblTable.name}`;
+
+    const StdTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "std",
+    };
+    const StdTableRef = `${StdTable.database}.${StdTable.schema}.${StdTable.name}`;
+
+    const StfTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "stf",
+    };
+    const StfTableRef = `${StfTable.database}.${StfTable.schema}.${StfTable.name}`;
+
+    const StgTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "stg",
+    };
+    const StgTableRef = `${StgTable.database}.${StgTable.schema}.${StgTable.name}`;
+
+    const StkTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "stk",
+    };
+    const StkTableRef = `${StkTable.database}.${StkTable.schema}.${StkTable.name}`;
+
+    const StoTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "sto",
+    };
+    const StoTableRef = `${StoTable.database}.${StoTable.schema}.${StoTable.name}`;
+
+    const MktPerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "mkt_per",
+    };
+    const MktPerTableRef = `${MktPerTable.database}.${MktPerTable.schema}.${MktPerTable.name}`;
+
+    const SupcontractTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "supcontract",
+    };
+    const SupcontractTableRef = `${SupcontractTable.database}.${SupcontractTable.schema}.${SupcontractTable.name}`;
+
+    const TabTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tab",
+    };
+    const TabTableRef = `${TabTable.database}.${TabTable.schema}.${TabTable.name}`;
+
+    const TbcontactTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tbcontact",
+    };
+    const TbcontactTableRef = `${TbcontactTable.database}.${TbcontactTable.schema}.${TbcontactTable.name}`;
+
+    const TbookApptypeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tbook_apptype",
+    };
+    const TbookApptypeTableRef = `${TbookApptypeTable.database}.${TbookApptypeTable.schema}.${TbookApptypeTable.name}`;
+
+    const TbookGivestkTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tbook_givestk",
+    };
+    const TbookGivestkTableRef = `${TbookGivestkTable.database}.${TbookGivestkTable.schema}.${TbookGivestkTable.name}`;
+
+    const TbookPayinTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tbook_payin",
+    };
+    const TbookPayinTableRef = `${TbookPayinTable.database}.${TbookPayinTable.schema}.${TbookPayinTable.name}`;
+
+    const TbookProfilecompTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tbook_profilecomp",
+    };
+    const TbookProfilecompTableRef = `${TbookProfilecompTable.database}.${TbookProfilecompTable.schema}.${TbookProfilecompTable.name}`;
+
+    const TbookQuodetailTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tbook_quodetail",
+    };
+    const TbookQuodetailTableRef = `${TbookQuodetailTable.database}.${TbookQuodetailTable.schema}.${TbookQuodetailTable.name}`;
+
+    const TbookQuotationTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tbook_quotation",
+    };
+    const TbookQuotationTableRef = `${TbookQuotationTable.database}.${TbookQuotationTable.schema}.${TbookQuotationTable.name}`;
+
+    const TbpjaddaccTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tbpjaddacc",
+    };
+    const TbpjaddaccTableRef = `${TbpjaddaccTable.database}.${TbpjaddaccTable.schema}.${TbpjaddaccTable.name}`;
+
+    const TdisApproveorderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tdis_approveorder",
+    };
+    const TdisApproveorderTableRef = `${TdisApproveorderTable.database}.${TdisApproveorderTable.schema}.${TdisApproveorderTable.name}`;
+
+    const TdisApproveqtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tdis_approveqt",
+    };
+    const TdisApproveqtTableRef = `${TdisApproveqtTable.database}.${TdisApproveqtTable.schema}.${TdisApproveqtTable.name}`;
+
+    const TdisMailTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tdis_mail",
+    };
+    const TdisMailTableRef = `${TdisMailTable.database}.${TdisMailTable.schema}.${TdisMailTable.name}`;
+
+    const TmpMihstatusTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tmp_mihstatus",
+    };
+    const TmpMihstatusTableRef = `${TmpMihstatusTable.database}.${TmpMihstatusTable.schema}.${TmpMihstatusTable.name}`;
+
+    const TmpPdfApTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tmp_pdf_ap",
+    };
+    const TmpPdfApTableRef = `${TmpPdfApTable.database}.${TmpPdfApTable.schema}.${TmpPdfApTable.name}`;
+
+    const TmpPdfFrasersTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tmp_pdf_frasers",
+    };
+    const TmpPdfFrasersTableRef = `${TmpPdfFrasersTable.database}.${TmpPdfFrasersTable.schema}.${TmpPdfFrasersTable.name}`;
+
+    const TmpPdfPruksaTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tmp_pdf_pruksa",
+    };
+    const TmpPdfPruksaTableRef = `${TmpPdfPruksaTable.database}.${TmpPdfPruksaTable.schema}.${TmpPdfPruksaTable.name}`;
+
+    const TmpPdfQhTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tmp_pdf_qh",
+    };
+    const TmpPdfQhTableRef = `${TmpPdfQhTable.database}.${TmpPdfQhTable.schema}.${TmpPdfQhTable.name}`;
+
+    const TmpPdfSansiriTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tmp_pdf_sansiri",
+    };
+    const TmpPdfSansiriTableRef = `${TmpPdfSansiriTable.database}.${TmpPdfSansiriTable.schema}.${TmpPdfSansiriTable.name}`;
+
+    const TmpPdfSupalaiTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tmp_pdf_supalai",
+    };
+    const TmpPdfSupalaiTableRef = `${TmpPdfSupalaiTable.database}.${TmpPdfSupalaiTable.schema}.${TmpPdfSupalaiTable.name}`;
+
+    const UserloginanyprogramTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "userloginanyprogram",
+    };
+    const UserloginanyprogramTableRef = `${UserloginanyprogramTable.database}.${UserloginanyprogramTable.schema}.${UserloginanyprogramTable.name}`;
+
+    const VmpTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "vmp",
+    };
+    const VmpTableRef = `${VmpTable.database}.${VmpTable.schema}.${VmpTable.name}`;
+
+    const StkMktTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "stk_mkt",
+    };
+    const StkMktTableRef = `${StkMktTable.database}.${StkMktTable.schema}.${StkMktTable.name}`;
+
+    const StgReportTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "stg_report",
+    };
+    const StgReportTableRef = `${StgReportTable.database}.${StgReportTable.schema}.${StgReportTable.name}`;
+
+    const StgaccTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "stgacc",
+    };
+    const StgaccTableRef = `${StgaccTable.database}.${StgaccTable.schema}.${StgaccTable.name}`;
+
+    const TempgpswebTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tempgpsweb",
+    };
+    const TempgpswebTableRef = `${TempgpswebTable.database}.${TempgpswebTable.schema}.${TempgpswebTable.name}`;
+
+    const TtripDocumentTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "ttrip_document",
+    };
+    const TtripDocumentTableRef = `${TtripDocumentTable.database}.${TtripDocumentTable.schema}.${TtripDocumentTable.name}`;
+
+    const TtripTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "ttrip",
+    };
+    const TtripTableRef = `${TtripTable.database}.${TtripTable.schema}.${TtripTable.name}`;
+
+    const TdeliveryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MAC5,
+        name: "tdelivery",
+    };
+    const TdeliveryTableRef = `${TdeliveryTable.database}.${TdeliveryTable.schema}.${TdeliveryTable.name}`;
+}
+
+
+
+DROP TABLE IF EXISTS `${CpsTableRef}`;
+DROP TABLE IF EXISTS `${CpsDummyTableRef}`;
+DROP TABLE IF EXISTS `${CstTableRef}`;
+DROP TABLE IF EXISTS `${MieTableRef}`;
+DROP TABLE IF EXISTS `${MieDummyTableRef}`;
+DROP TABLE IF EXISTS `${MihTableRef}`;
+DROP TABLE IF EXISTS `${Mih2TableRef}`;
+DROP TABLE IF EXISTS `${MihDummyTableRef}`;
+DROP TABLE IF EXISTS `${MilTableRef}`;
+DROP TABLE IF EXISTS `${MilDummyTableRef}`;
+DROP TABLE IF EXISTS `${MipTableRef}`;
+DROP TABLE IF EXISTS `${RcvTableRef}`;
+DROP TABLE IF EXISTS `${ApSTableRef}`;
+DROP TABLE IF EXISTS `${ApilogTableRef}`;
+DROP TABLE IF EXISTS `${ApSTableRef}`;
+DROP TABLE IF EXISTS `${ArSTableRef}`;
+DROP TABLE IF EXISTS `${CfsTableRef}`;
+DROP TABLE IF EXISTS `${CheckPoTableRef}`;
+DROP TABLE IF EXISTS `${ChqTableRef}`;
+DROP TABLE IF EXISTS `${CombosetTableRef}`;
+DROP TABLE IF EXISTS `${CombostkTableRef}`;
+DROP TABLE IF EXISTS `${CppTableRef}`;
+DROP TABLE IF EXISTS `${CpxTableRef}`;
+DROP TABLE IF EXISTS `${CreTableRef}`;
+DROP TABLE IF EXISTS `${DebTableRef}`;
+DROP TABLE IF EXISTS `${DepTableRef}`;
+DROP TABLE IF EXISTS `${DetailQtspreadTableRef}`;
+DROP TABLE IF EXISTS `${DocTableRef}`;
+DROP TABLE IF EXISTS `${GrpTableRef}`;
+DROP TABLE IF EXISTS `${LogPrintBillingTableRef}`;
+DROP TABLE IF EXISTS `${MainQtspreadTableRef}`;
+DROP TABLE IF EXISTS `${MaincontractTableRef}`;
+DROP TABLE IF EXISTS `${MatchCustomerTableRef}`;
+DROP TABLE IF EXISTS `${MatchDebBotReTableRef}`;
+DROP TABLE IF EXISTS `${MatchProductTableRef}`;
+DROP TABLE IF EXISTS `${MecTableRef}`;
+DROP TABLE IF EXISTS `${MihBillingTableRef}`;
+DROP TABLE IF EXISTS `${MilBillingTableRef}`;
+DROP TABLE IF EXISTS `${MirTableRef}`;
+DROP TABLE IF EXISTS `${OrderFromAllkonMTableRef}`;
+DROP TABLE IF EXISTS `${PathfilestamperTableRef}`;
+DROP TABLE IF EXISTS `${PerTableRef}`;
+DROP TABLE IF EXISTS `${ProAgTableRef}`;
+DROP TABLE IF EXISTS `${ProCrcTableRef}`;
+DROP TABLE IF EXISTS `${ProReTableRef}`;
+DROP TABLE IF EXISTS `${ProductBotReTableRef}`;
+DROP TABLE IF EXISTS `${ProductDetailBotReTableRef}`;
+DROP TABLE IF EXISTS `${ProductPromotionTableRef}`;
+DROP TABLE IF EXISTS `${QtSpreadToMihTableRef}`;
+DROP TABLE IF EXISTS `${RnoTableRef}`;
+DROP TABLE IF EXISTS `${SblTableRef}`;
+DROP TABLE IF EXISTS `${StdTableRef}`;
+DROP TABLE IF EXISTS `${StfTableRef}`;
+DROP TABLE IF EXISTS `${StgTableRef}`;
+DROP TABLE IF EXISTS `${StkTableRef}`;
+DROP TABLE IF EXISTS `${StoTableRef}`;
+DROP TABLE IF EXISTS `${MktPerTableRef}`;
+DROP TABLE IF EXISTS `${SupcontractTableRef}`;
+DROP TABLE IF EXISTS `${TabTableRef}`;
+DROP TABLE IF EXISTS `${TbcontactTableRef}`;
+DROP TABLE IF EXISTS `${TbookApptypeTableRef}`;
+DROP TABLE IF EXISTS `${TbookGivestkTableRef}`;
+DROP TABLE IF EXISTS `${TbookPayinTableRef}`;
+DROP TABLE IF EXISTS `${TbookProfilecompTableRef}`;
+DROP TABLE IF EXISTS `${TbookQuodetailTableRef}`;
+DROP TABLE IF EXISTS `${TbookQuotationTableRef}`;
+DROP TABLE IF EXISTS `${TbpjaddaccTableRef}`;
+DROP TABLE IF EXISTS `${TdisApproveorderTableRef}`;
+DROP TABLE IF EXISTS `${TdisApproveqtTableRef}`;
+DROP TABLE IF EXISTS `${TdisMailTableRef}`;
+DROP TABLE IF EXISTS `${TmpMihstatusTableRef}`;
+DROP TABLE IF EXISTS `${TmpPdfApTableRef}`;
+DROP TABLE IF EXISTS `${TmpPdfFrasersTableRef}`;
+DROP TABLE IF EXISTS `${TmpPdfPruksaTableRef}`;
+DROP TABLE IF EXISTS `${TmpPdfQhTableRef}`;
+DROP TABLE IF EXISTS `${TmpPdfSansiriTableRef}`;
+DROP TABLE IF EXISTS `${TmpPdfSupalaiTableRef}`;
+DROP TABLE IF EXISTS `${UserloginanyprogramTableRef}`;
+DROP TABLE IF EXISTS `${VmpTableRef}`;
+DROP TABLE IF EXISTS `${StkMktTableRef}`;
+DROP TABLE IF EXISTS `${StgReportTableRef}`;
+DROP TABLE IF EXISTS `${StgaccTableRef}`;
+DROP TABLE IF EXISTS `${TempgpswebTableRef}`;
+DROP TABLE IF EXISTS `${TtripDocumentTableRef}`;
+DROP TABLE IF EXISTS `${TtripTableRef}`;
+DROP TABLE IF EXISTS `${TdeliveryTableRef}`;

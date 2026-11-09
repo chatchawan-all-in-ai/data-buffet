@@ -4,7 +4,31 @@ config {
   tags: [databuffet.TAG_REINITIAL],
 }
 
+js {
+    const CuratedMihTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.CURATED_MAC5,
+        name: "curated_mih",
+    };
+    const CuratedMihTableRef = `${CuratedMihTable.database}.${CuratedMihTable.schema}.${CuratedMihTable.name}`;
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.CURATED_MAC5}.curated_mih`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.CURATED_MAC5}.curated_mil`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.CURATED_MAC5}.curated_tbook_quotation`;
+    const CuratedMilTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.CURATED_MAC5,
+        name: "curated_mil",
+    };
+    const CuratedMilTableRef = `${CuratedMilTable.database}.${CuratedMilTable.schema}.${CuratedMilTable.name}`;
+
+    const CuratedTbookQuotationTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.CURATED_MAC5,
+        name: "curated_tbook_quotation",
+    };
+    const CuratedTbookQuotationTableRef = `${CuratedTbookQuotationTable.database}.${CuratedTbookQuotationTable.schema}.${CuratedTbookQuotationTable.name}`;
+}
+
+
+
+DROP TABLE IF EXISTS `${CuratedMihTableRef}`;
+DROP TABLE IF EXISTS `${CuratedMilTableRef}`;
+DROP TABLE IF EXISTS `${CuratedTbookQuotationTableRef}`;

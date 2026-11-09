@@ -193,7 +193,6 @@ BEGIN
     WHERE month IS NOT NULL
     GROUP BY 1, 2, 3;
 
-    -- อัปเดตรายเดือน
     UPDATE ${self()} AS target
     SET target.Percent = (CAST(100 AS BIGNUMERIC) / CAST(src.total_val AS BIGNUMERIC))
     FROM monthly_summary AS src

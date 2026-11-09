@@ -4,13 +4,65 @@ config {
   tags: [],
 }
 
-CREATE OR REPLACE FUNCTION `${databuffet.DATABASE}.${databuffet.FUNCTION_DATASET}.fn_get_scg_customer_ids`()
+js {
+    const FnGetScgCustomerIdsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FUNCTION_DATASET,
+        name: "fn_get_scg_customer_ids",
+    };
+    const FnGetScgCustomerIdsTableRef = `${FnGetScgCustomerIdsTable.database}.${FnGetScgCustomerIdsTable.schema}.${FnGetScgCustomerIdsTable.name}`;
+
+    const FnFlagExcTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FUNCTION_DATASET,
+        name: "fn_flag_exc",
+    };
+    const FnFlagExcTableRef = `${FnFlagExcTable.database}.${FnFlagExcTable.schema}.${FnFlagExcTable.name}`;
+
+    const FnFlagSalesKpiTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FUNCTION_DATASET,
+        name: "fn_flag_sales_kpi",
+    };
+    const FnFlagSalesKpiTableRef = `${FnFlagSalesKpiTable.database}.${FnFlagSalesKpiTable.schema}.${FnFlagSalesKpiTable.name}`;
+
+    const FnFlagScgTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FUNCTION_DATASET,
+        name: "fn_flag_scg",
+    };
+    const FnFlagScgTableRef = `${FnFlagScgTable.database}.${FnFlagScgTable.schema}.${FnFlagScgTable.name}`;
+
+    const FnOrderTypeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FUNCTION_DATASET,
+        name: "fn_order_type",
+    };
+    const FnOrderTypeTableRef = `${FnOrderTypeTable.database}.${FnOrderTypeTable.schema}.${FnOrderTypeTable.name}`;
+
+    const EXTRACTCHQDATATable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FUNCTION_DATASET,
+        name: "EXTRACT_CHQ_DATA",
+    };
+    const EXTRACTCHQDATATableRef = `${EXTRACTCHQDATATable.database}.${EXTRACTCHQDATATable.schema}.${EXTRACTCHQDATATable.name}`;
+
+    const CleanCompanyPrefixTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FUNCTION_DATASET,
+        name: "clean_company_prefix",
+    };
+    const CleanCompanyPrefixTableRef = `${CleanCompanyPrefixTable.database}.${CleanCompanyPrefixTable.schema}.${CleanCompanyPrefixTable.name}`;
+}
+
+
+CREATE OR REPLACE FUNCTION `${FnGetScgCustomerIdsTableRef}`()
 RETURNS ARRAY<STRING> AS (
   ['111000262', '111009320', '111017384', '111023359']
 );
 
 
-CREATE OR REPLACE FUNCTION `${databuffet.DATABASE}.${databuffet.FUNCTION_DATASET}.fn_flag_exc`(mihcancel INT64, mihstatus INT64, FlagExc STRING)
+CREATE OR REPLACE FUNCTION `${FnFlagExcTableRef}`(mihcancel INT64, mihstatus INT64, FlagExc STRING)
 AS (
 CASE 
     WHEN FlagExc = 'Yes' THEN 'Yes'
@@ -20,7 +72,7 @@ CASE
 );
 
 
-CREATE OR REPLACE FUNCTION `${databuffet.DATABASE}.${databuffet.FUNCTION_DATASET}.fn_flag_sales_kpi`(mihcancel INT64, mihstatus INT64, rebate STRING)
+CREATE OR REPLACE FUNCTION `${FnFlagSalesKpiTableRef}`(mihcancel INT64, mihstatus INT64, rebate STRING)
 AS (
 CASE 
     WHEN mihcancel <> -1 AND mihstatus NOT IN (33, 32) AND rebate IS NULL THEN 'Yes'
@@ -29,17 +81,17 @@ CASE
 );
 
 
-CREATE OR REPLACE FUNCTION `${databuffet.DATABASE}.${databuffet.FUNCTION_DATASET}.fn_flag_scg`(mihvnos STRING, mihcus STRING)
+CREATE OR REPLACE FUNCTION `${FnFlagScgTableRef}`(mihvnos STRING, mihcus STRING)
 AS (
 (CASE 
-  WHEN UPPER(left(mihvnos,3)) = 'CRC' and mihcus not in UNNEST(`${databuffet.DATABASE}.${databuffet.FUNCTION_DATASET}.fn_get_scg_customer_ids`()) THEN 'ซื้อตรง'
-  WHEN UPPER(left(mihvnos,3)) = 'CRC' and mihcus in UNNEST(`${databuffet.DATABASE}.${databuffet.FUNCTION_DATASET}.fn_get_scg_customer_ids`()) THEN 'ซื้อผ่านร้าน'
+  WHEN UPPER(left(mihvnos,3)) = 'CRC' and mihcus not in UNNEST(`${FnGetScgCustomerIdsTableRef}`()) THEN 'ซื้อตรง'
+  WHEN UPPER(left(mihvnos,3)) = 'CRC' and mihcus in UNNEST(`${FnGetScgCustomerIdsTableRef}`()) THEN 'ซื้อผ่านร้าน'
   ELSE CAST(NULL AS STRING)
 END)
 );
 
 
-CREATE OR REPLACE FUNCTION `${databuffet.DATABASE}.${databuffet.FUNCTION_DATASET}.fn_order_type`(mihref2 STRING)
+CREATE OR REPLACE FUNCTION `${FnOrderTypeTableRef}`(mihref2 STRING)
 AS (
 (CASE 
     WHEN LEFT(mihref2, 4) = 'QOAG' THEN 'Online-AllkonsM'
@@ -48,7 +100,7 @@ AS (
 );
 
 
-CREATE OR REPLACE FUNCTION `${databuffet.DATABASE}.${databuffet.FUNCTION_DATASET}.EXTRACT_CHQ_DATA`(memo_raw STRING, datec DATETIME, total FLOAT64) RETURNS STRUCT<chqmemo STRING, extract_text STRING, extract_value ARRAY<STRUCT<extract_date DATE, extract_amount FLOAT64>>>
+CREATE OR REPLACE FUNCTION `${EXTRACTCHQDATATableRef}`(memo_raw STRING, datec DATETIME, total FLOAT64) RETURNS STRUCT<chqmemo STRING, extract_text STRING, extract_value ARRAY<STRUCT<extract_date DATE, extract_amount FLOAT64>>>
 AS (
 (
     SELECT AS STRUCT
@@ -198,15 +250,12 @@ AS (
 );
 
 
-CREATE OR REPLACE FUNCTION `${databuffet.DATABASE}.${databuffet.FUNCTION_DATASET}.clean_company_prefix`(text_input STRING)
+CREATE OR REPLACE FUNCTION `${CleanCompanyPrefixTableRef}`(text_input STRING)
 RETURNS STRING AS (
   NULLIF(TRIM(
     REGEXP_REPLACE(
-      -- Step 3: ตัดคำลงท้ายซ้ำจนหมด เช่น จำกัด (มหาชน)
       REGEXP_REPLACE(
-        -- Step 2: ตัด จำกัด / (มหาชน) ที่อยู่หน้าวงเล็บท้ายชื่อ เช่น จำกัด (สาขา...)
         REGEXP_REPLACE(
-          -- Step 1: ตัดคำนำหน้าออก
           text_input,
           r'^\+?\s*(?:บริษัท|บจก\.|บจ\.|บ\.|บมจ\.|หจก\.|ร้าน|ห้างหุ้นส่วนจำกัด|ห้างหุ้นจำกัด)\s*',
           ''

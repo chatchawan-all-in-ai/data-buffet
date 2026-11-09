@@ -7,19 +7,6 @@ config {
     description: "Pub/Sub export of commission set invoice for the TF team: one row = one line of an ag01 invoice (IS), not cancelled, across all years; columns, names and order of the TF sample, plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- Commission sets keep the column names, order and JSON types of the sample sent to TF on
--- 2026-10-14 (commission_tf_ag01_2026), which differ from the source column names on purpose.
--- Natural key = company_source_id, Invoice_No, No (unique, never NULL).
--- Data set   : invoice  (commission export for TF; target = sample commission_tf_ag01_2026, 2026-10-14)
--- Original   : Query Commission คุณแป้ง/invoice.sql
--- Sources    : databuffet-nonprd.validated_mac5.mih, mie (latest row per document), mil, stk
--- PK: company_source_id, Invoice_No, No. Scope: ag01, mihtype = 'IS', mihcancel = 0, all years.
--- Columns, names, order and JSON types match the sample.
--- Differences from the original query (the sample is the target):
---   No (millistno) and company_source_id are added; they are in the sample, not in the source query.
---   Condition_payment_id is NULL: fn_returnMihmemopaymentfromorder and mih_payment_mapping are not in the Data Mart.
---   Deposit_Amt is 0 when not a deposit line (source ELSE '' becomes 0 in SQL Server; the sample has 0).
 WITH mie_latest AS (
   -- validated_mac5.mie keeps a stale row when a document's customer/date changes
   -- (its key includes MIEcus + date), so keep only the latest row per document.

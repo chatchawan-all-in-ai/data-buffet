@@ -41,21 +41,6 @@ with final as (
     IFNULL(rebate.salesExc, 'No') as FlagSalesExc,
     IFNULL(rebate.accExc, 'No') as FlagAccExc,
 
-    -- (CASE
-    --   WHEN REGEXP_CONTAINS(ProductCode, r'/([PU])') THEN
-    --     ARRAY_REVERSE(SPLIT(REGEXP_REPLACE(ProductCode, r'/([PU])', r'|\\1'), '|'))[SAFE_OFFSET(0)]
-    --   ELSE NULL
-    -- END) as WaterPac,
-    -- (CASE
-    --   WHEN REGEXP_CONTAINS(ProductCode1, r'/([PU])') THEN
-    --     ARRAY_REVERSE(SPLIT(REGEXP_REPLACE(ProductCode1, r'/([PU])', r'|\\1'), '|'))[SAFE_OFFSET(0)]
-    --   ELSE NULL
-    -- END) as WaterPac1,
-    -- (CASE
-    --   WHEN REGEXP_CONTAINS(ProductMac5Description, r'/([PU])') THEN
-    --     ARRAY_REVERSE(SPLIT(REGEXP_REPLACE(ProductMac5Description, r'/([PU])', r'|\\1'), '|'))[SAFE_OFFSET(0)]
-    --   ELSE NULL
-    -- END) as WaterPac2,
 
     REGEXP_EXTRACT(ProductCode, r'/([PU][a-zA-Z0-9].*)$') AS WaterPac,
     REGEXP_EXTRACT(ProductCode1, r'/([PU][a-zA-Z0-9].*)$') AS WaterPac1,
@@ -73,13 +58,9 @@ with final as (
     on pd.ProductCode = rebate.rebate
     and pd.CompanySK = rebate.CompanySK
     and rebate.status = 'Product'
-  -- WHERE ProductMac5Description like '%P07%'
 
 )
   SELECT
-    -- pd.ProductCode, pd.ProductCode1, pd.ProductMac5Description,
-    -- pd.WaterPac, pd.WaterPac1, pd.WaterPac2, pd.MarketingGroupID, pd.Segment, pd.SegmentID,
-    -- wp.WaterPacName as wp, wp1.WaterPacName as wp1, wp2.WaterPacName as wp2,
     pd.* except(MarketingGroupID, Segment, SegmentID, WaterPac, WaterPac1, WaterPac2),
     (CASE 
       WHEN pd.SegmentID in ('00111', '00112') THEN COALESCE(wp.WaterPacName, wp1.WaterPacName, wp2.WaterPacName, 'WaterPac')
@@ -96,5 +77,3 @@ with final as (
   LEFT JOIN `${DimWaterpacTableRef}` as wp2
     on pd.CompanySK = wp2.CompanySK
     and UPPER(pd.WaterPac2) = UPPER(wp2.WaterPacCode)
-
-  -- WHERE ProductCode in ('DE-17/SB-1000L/H/P20/P')

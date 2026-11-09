@@ -4,55 +4,415 @@ config {
   tags: [databuffet.TAG_INITIAL],
 }
 
+js {
+    const InventoryMovementJournalHeadersTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "inventory_movement_journal_headers",
+    };
+    const InventoryMovementJournalHeadersTableRef = `${InventoryMovementJournalHeadersTable.database}.${InventoryMovementJournalHeadersTable.schema}.${InventoryMovementJournalHeadersTable.name}`;
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.inventory_movement_journal_headers`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.inventory_movement_journal_entries`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.inventory_item_price`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_nd_sd_price`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_nd_sd_price_territory_group`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_nd_sd_price_zone`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_quotation`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_quotation_delivery`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_quotation_delivery_detail`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_quotation_detail`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_quotation_history`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_quotation_sale`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order_approval_log`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order_approver`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order_attachment`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order_delivery`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order_delivery_line`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order_deposit`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order_line`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order_payment`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order_payment_allocation`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order_payment_receipt`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order_revision`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order_sales_person`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_sale_order_status_history`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.sales_channel_master_sales_channel`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.sales_customer_sales_territory`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.sales_employee`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.sales_employee_sale_territory`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.sales_sales_territory`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_business_unit`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_customer_address`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_customer_contact`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_customer_contact_channels`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_customer_credit`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_customer_data_zone`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_customer_master`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_customer_segment`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_customer_stores`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_data_zone`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_combo_set`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_combo_set_customer`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_combo_set_item`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_combo_set_sale_territory`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_master_payment_condition`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_master_payment_method`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.crm_master_payment_term`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.inventory_formula_line`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.inventory_formula_versions`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}.sync_mac5_inventory_item_price`;
+    const InventoryMovementJournalEntriesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "inventory_movement_journal_entries",
+    };
+    const InventoryMovementJournalEntriesTableRef = `${InventoryMovementJournalEntriesTable.database}.${InventoryMovementJournalEntriesTable.schema}.${InventoryMovementJournalEntriesTable.name}`;
+
+    const InventoryItemPriceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "inventory_item_price",
+    };
+    const InventoryItemPriceTableRef = `${InventoryItemPriceTable.database}.${InventoryItemPriceTable.schema}.${InventoryItemPriceTable.name}`;
+
+    const CrmNdSdPriceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_nd_sd_price",
+    };
+    const CrmNdSdPriceTableRef = `${CrmNdSdPriceTable.database}.${CrmNdSdPriceTable.schema}.${CrmNdSdPriceTable.name}`;
+
+    const CrmNdSdPriceTerritoryGroupTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_nd_sd_price_territory_group",
+    };
+    const CrmNdSdPriceTerritoryGroupTableRef = `${CrmNdSdPriceTerritoryGroupTable.database}.${CrmNdSdPriceTerritoryGroupTable.schema}.${CrmNdSdPriceTerritoryGroupTable.name}`;
+
+    const CrmNdSdPriceZoneTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_nd_sd_price_zone",
+    };
+    const CrmNdSdPriceZoneTableRef = `${CrmNdSdPriceZoneTable.database}.${CrmNdSdPriceZoneTable.schema}.${CrmNdSdPriceZoneTable.name}`;
+
+    const CrmQuotationTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_quotation",
+    };
+    const CrmQuotationTableRef = `${CrmQuotationTable.database}.${CrmQuotationTable.schema}.${CrmQuotationTable.name}`;
+
+    const CrmQuotationDeliveryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_quotation_delivery",
+    };
+    const CrmQuotationDeliveryTableRef = `${CrmQuotationDeliveryTable.database}.${CrmQuotationDeliveryTable.schema}.${CrmQuotationDeliveryTable.name}`;
+
+    const CrmQuotationDeliveryDetailTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_quotation_delivery_detail",
+    };
+    const CrmQuotationDeliveryDetailTableRef = `${CrmQuotationDeliveryDetailTable.database}.${CrmQuotationDeliveryDetailTable.schema}.${CrmQuotationDeliveryDetailTable.name}`;
+
+    const CrmQuotationDetailTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_quotation_detail",
+    };
+    const CrmQuotationDetailTableRef = `${CrmQuotationDetailTable.database}.${CrmQuotationDetailTable.schema}.${CrmQuotationDetailTable.name}`;
+
+    const CrmQuotationHistoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_quotation_history",
+    };
+    const CrmQuotationHistoryTableRef = `${CrmQuotationHistoryTable.database}.${CrmQuotationHistoryTable.schema}.${CrmQuotationHistoryTable.name}`;
+
+    const CrmQuotationSaleTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_quotation_sale",
+    };
+    const CrmQuotationSaleTableRef = `${CrmQuotationSaleTable.database}.${CrmQuotationSaleTable.schema}.${CrmQuotationSaleTable.name}`;
+
+    const CrmSaleOrderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order",
+    };
+    const CrmSaleOrderTableRef = `${CrmSaleOrderTable.database}.${CrmSaleOrderTable.schema}.${CrmSaleOrderTable.name}`;
+
+    const CrmSaleOrderApprovalLogTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order_approval_log",
+    };
+    const CrmSaleOrderApprovalLogTableRef = `${CrmSaleOrderApprovalLogTable.database}.${CrmSaleOrderApprovalLogTable.schema}.${CrmSaleOrderApprovalLogTable.name}`;
+
+    const CrmSaleOrderApproverTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order_approver",
+    };
+    const CrmSaleOrderApproverTableRef = `${CrmSaleOrderApproverTable.database}.${CrmSaleOrderApproverTable.schema}.${CrmSaleOrderApproverTable.name}`;
+
+    const CrmSaleOrderAttachmentTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order_attachment",
+    };
+    const CrmSaleOrderAttachmentTableRef = `${CrmSaleOrderAttachmentTable.database}.${CrmSaleOrderAttachmentTable.schema}.${CrmSaleOrderAttachmentTable.name}`;
+
+    const CrmSaleOrderDeliveryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order_delivery",
+    };
+    const CrmSaleOrderDeliveryTableRef = `${CrmSaleOrderDeliveryTable.database}.${CrmSaleOrderDeliveryTable.schema}.${CrmSaleOrderDeliveryTable.name}`;
+
+    const CrmSaleOrderDeliveryLineTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order_delivery_line",
+    };
+    const CrmSaleOrderDeliveryLineTableRef = `${CrmSaleOrderDeliveryLineTable.database}.${CrmSaleOrderDeliveryLineTable.schema}.${CrmSaleOrderDeliveryLineTable.name}`;
+
+    const CrmSaleOrderDepositTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order_deposit",
+    };
+    const CrmSaleOrderDepositTableRef = `${CrmSaleOrderDepositTable.database}.${CrmSaleOrderDepositTable.schema}.${CrmSaleOrderDepositTable.name}`;
+
+    const CrmSaleOrderLineTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order_line",
+    };
+    const CrmSaleOrderLineTableRef = `${CrmSaleOrderLineTable.database}.${CrmSaleOrderLineTable.schema}.${CrmSaleOrderLineTable.name}`;
+
+    const CrmSaleOrderPaymentTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order_payment",
+    };
+    const CrmSaleOrderPaymentTableRef = `${CrmSaleOrderPaymentTable.database}.${CrmSaleOrderPaymentTable.schema}.${CrmSaleOrderPaymentTable.name}`;
+
+    const CrmSaleOrderPaymentAllocationTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order_payment_allocation",
+    };
+    const CrmSaleOrderPaymentAllocationTableRef = `${CrmSaleOrderPaymentAllocationTable.database}.${CrmSaleOrderPaymentAllocationTable.schema}.${CrmSaleOrderPaymentAllocationTable.name}`;
+
+    const CrmSaleOrderPaymentReceiptTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order_payment_receipt",
+    };
+    const CrmSaleOrderPaymentReceiptTableRef = `${CrmSaleOrderPaymentReceiptTable.database}.${CrmSaleOrderPaymentReceiptTable.schema}.${CrmSaleOrderPaymentReceiptTable.name}`;
+
+    const CrmSaleOrderRevisionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order_revision",
+    };
+    const CrmSaleOrderRevisionTableRef = `${CrmSaleOrderRevisionTable.database}.${CrmSaleOrderRevisionTable.schema}.${CrmSaleOrderRevisionTable.name}`;
+
+    const CrmSaleOrderSalesPersonTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order_sales_person",
+    };
+    const CrmSaleOrderSalesPersonTableRef = `${CrmSaleOrderSalesPersonTable.database}.${CrmSaleOrderSalesPersonTable.schema}.${CrmSaleOrderSalesPersonTable.name}`;
+
+    const CrmSaleOrderStatusHistoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_sale_order_status_history",
+    };
+    const CrmSaleOrderStatusHistoryTableRef = `${CrmSaleOrderStatusHistoryTable.database}.${CrmSaleOrderStatusHistoryTable.schema}.${CrmSaleOrderStatusHistoryTable.name}`;
+
+    const SalesChannelMasterSalesChannelTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "sales_channel_master_sales_channel",
+    };
+    const SalesChannelMasterSalesChannelTableRef = `${SalesChannelMasterSalesChannelTable.database}.${SalesChannelMasterSalesChannelTable.schema}.${SalesChannelMasterSalesChannelTable.name}`;
+
+    const SalesCustomerSalesTerritoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "sales_customer_sales_territory",
+    };
+    const SalesCustomerSalesTerritoryTableRef = `${SalesCustomerSalesTerritoryTable.database}.${SalesCustomerSalesTerritoryTable.schema}.${SalesCustomerSalesTerritoryTable.name}`;
+
+    const SalesEmployeeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "sales_employee",
+    };
+    const SalesEmployeeTableRef = `${SalesEmployeeTable.database}.${SalesEmployeeTable.schema}.${SalesEmployeeTable.name}`;
+
+    const SalesEmployeeSaleTerritoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "sales_employee_sale_territory",
+    };
+    const SalesEmployeeSaleTerritoryTableRef = `${SalesEmployeeSaleTerritoryTable.database}.${SalesEmployeeSaleTerritoryTable.schema}.${SalesEmployeeSaleTerritoryTable.name}`;
+
+    const SalesSalesTerritoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "sales_sales_territory",
+    };
+    const SalesSalesTerritoryTableRef = `${SalesSalesTerritoryTable.database}.${SalesSalesTerritoryTable.schema}.${SalesSalesTerritoryTable.name}`;
+
+    const CrmBusinessUnitTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_business_unit",
+    };
+    const CrmBusinessUnitTableRef = `${CrmBusinessUnitTable.database}.${CrmBusinessUnitTable.schema}.${CrmBusinessUnitTable.name}`;
+
+    const CrmCustomerAddressTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_customer_address",
+    };
+    const CrmCustomerAddressTableRef = `${CrmCustomerAddressTable.database}.${CrmCustomerAddressTable.schema}.${CrmCustomerAddressTable.name}`;
+
+    const CrmCustomerContactTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_customer_contact",
+    };
+    const CrmCustomerContactTableRef = `${CrmCustomerContactTable.database}.${CrmCustomerContactTable.schema}.${CrmCustomerContactTable.name}`;
+
+    const CrmCustomerContactChannelsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_customer_contact_channels",
+    };
+    const CrmCustomerContactChannelsTableRef = `${CrmCustomerContactChannelsTable.database}.${CrmCustomerContactChannelsTable.schema}.${CrmCustomerContactChannelsTable.name}`;
+
+    const CrmCustomerCreditTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_customer_credit",
+    };
+    const CrmCustomerCreditTableRef = `${CrmCustomerCreditTable.database}.${CrmCustomerCreditTable.schema}.${CrmCustomerCreditTable.name}`;
+
+    const CrmCustomerDataZoneTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_customer_data_zone",
+    };
+    const CrmCustomerDataZoneTableRef = `${CrmCustomerDataZoneTable.database}.${CrmCustomerDataZoneTable.schema}.${CrmCustomerDataZoneTable.name}`;
+
+    const CrmCustomerMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_customer_master",
+    };
+    const CrmCustomerMasterTableRef = `${CrmCustomerMasterTable.database}.${CrmCustomerMasterTable.schema}.${CrmCustomerMasterTable.name}`;
+
+    const CrmCustomerSegmentTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_customer_segment",
+    };
+    const CrmCustomerSegmentTableRef = `${CrmCustomerSegmentTable.database}.${CrmCustomerSegmentTable.schema}.${CrmCustomerSegmentTable.name}`;
+
+    const CrmCustomerStoresTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_customer_stores",
+    };
+    const CrmCustomerStoresTableRef = `${CrmCustomerStoresTable.database}.${CrmCustomerStoresTable.schema}.${CrmCustomerStoresTable.name}`;
+
+    const CrmDataZoneTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_data_zone",
+    };
+    const CrmDataZoneTableRef = `${CrmDataZoneTable.database}.${CrmDataZoneTable.schema}.${CrmDataZoneTable.name}`;
+
+    const CrmComboSetTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_combo_set",
+    };
+    const CrmComboSetTableRef = `${CrmComboSetTable.database}.${CrmComboSetTable.schema}.${CrmComboSetTable.name}`;
+
+    const CrmComboSetCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_combo_set_customer",
+    };
+    const CrmComboSetCustomerTableRef = `${CrmComboSetCustomerTable.database}.${CrmComboSetCustomerTable.schema}.${CrmComboSetCustomerTable.name}`;
+
+    const CrmComboSetItemTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_combo_set_item",
+    };
+    const CrmComboSetItemTableRef = `${CrmComboSetItemTable.database}.${CrmComboSetItemTable.schema}.${CrmComboSetItemTable.name}`;
+
+    const CrmComboSetSaleTerritoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_combo_set_sale_territory",
+    };
+    const CrmComboSetSaleTerritoryTableRef = `${CrmComboSetSaleTerritoryTable.database}.${CrmComboSetSaleTerritoryTable.schema}.${CrmComboSetSaleTerritoryTable.name}`;
+
+    const CrmMasterPaymentConditionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_master_payment_condition",
+    };
+    const CrmMasterPaymentConditionTableRef = `${CrmMasterPaymentConditionTable.database}.${CrmMasterPaymentConditionTable.schema}.${CrmMasterPaymentConditionTable.name}`;
+
+    const CrmMasterPaymentMethodTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_master_payment_method",
+    };
+    const CrmMasterPaymentMethodTableRef = `${CrmMasterPaymentMethodTable.database}.${CrmMasterPaymentMethodTable.schema}.${CrmMasterPaymentMethodTable.name}`;
+
+    const CrmMasterPaymentTermTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "crm_master_payment_term",
+    };
+    const CrmMasterPaymentTermTableRef = `${CrmMasterPaymentTermTable.database}.${CrmMasterPaymentTermTable.schema}.${CrmMasterPaymentTermTable.name}`;
+
+    const InventoryFormulaLineTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "inventory_formula_line",
+    };
+    const InventoryFormulaLineTableRef = `${InventoryFormulaLineTable.database}.${InventoryFormulaLineTable.schema}.${InventoryFormulaLineTable.name}`;
+
+    const InventoryFormulaVersionsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "inventory_formula_versions",
+    };
+    const InventoryFormulaVersionsTableRef = `${InventoryFormulaVersionsTable.database}.${InventoryFormulaVersionsTable.schema}.${InventoryFormulaVersionsTable.name}`;
+
+    const SyncMac5InventoryItemPriceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_DERP,
+        name: "sync_mac5_inventory_item_price",
+    };
+    const SyncMac5InventoryItemPriceTableRef = `${SyncMac5InventoryItemPriceTable.database}.${SyncMac5InventoryItemPriceTable.schema}.${SyncMac5InventoryItemPriceTable.name}`;
+}
+
+
+
+DROP TABLE IF EXISTS `${InventoryMovementJournalHeadersTableRef}`;
+DROP TABLE IF EXISTS `${InventoryMovementJournalEntriesTableRef}`;
+DROP TABLE IF EXISTS `${InventoryItemPriceTableRef}`;
+DROP TABLE IF EXISTS `${CrmNdSdPriceTableRef}`;
+DROP TABLE IF EXISTS `${CrmNdSdPriceTerritoryGroupTableRef}`;
+DROP TABLE IF EXISTS `${CrmNdSdPriceZoneTableRef}`;
+DROP TABLE IF EXISTS `${CrmQuotationTableRef}`;
+DROP TABLE IF EXISTS `${CrmQuotationDeliveryTableRef}`;
+DROP TABLE IF EXISTS `${CrmQuotationDeliveryDetailTableRef}`;
+DROP TABLE IF EXISTS `${CrmQuotationDetailTableRef}`;
+DROP TABLE IF EXISTS `${CrmQuotationHistoryTableRef}`;
+DROP TABLE IF EXISTS `${CrmQuotationSaleTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderApprovalLogTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderApproverTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderAttachmentTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderDeliveryTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderDeliveryLineTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderDepositTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderLineTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderPaymentTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderPaymentAllocationTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderPaymentReceiptTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderRevisionTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderSalesPersonTableRef}`;
+DROP TABLE IF EXISTS `${CrmSaleOrderStatusHistoryTableRef}`;
+DROP TABLE IF EXISTS `${SalesChannelMasterSalesChannelTableRef}`;
+DROP TABLE IF EXISTS `${SalesCustomerSalesTerritoryTableRef}`;
+DROP TABLE IF EXISTS `${SalesEmployeeTableRef}`;
+DROP TABLE IF EXISTS `${SalesEmployeeSaleTerritoryTableRef}`;
+DROP TABLE IF EXISTS `${SalesSalesTerritoryTableRef}`;
+DROP TABLE IF EXISTS `${CrmBusinessUnitTableRef}`;
+DROP TABLE IF EXISTS `${CrmCustomerAddressTableRef}`;
+DROP TABLE IF EXISTS `${CrmCustomerContactTableRef}`;
+DROP TABLE IF EXISTS `${CrmCustomerContactChannelsTableRef}`;
+DROP TABLE IF EXISTS `${CrmCustomerCreditTableRef}`;
+DROP TABLE IF EXISTS `${CrmCustomerDataZoneTableRef}`;
+DROP TABLE IF EXISTS `${CrmCustomerMasterTableRef}`;
+DROP TABLE IF EXISTS `${CrmCustomerSegmentTableRef}`;
+DROP TABLE IF EXISTS `${CrmCustomerStoresTableRef}`;
+DROP TABLE IF EXISTS `${CrmDataZoneTableRef}`;
+DROP TABLE IF EXISTS `${CrmComboSetTableRef}`;
+DROP TABLE IF EXISTS `${CrmComboSetCustomerTableRef}`;
+DROP TABLE IF EXISTS `${CrmComboSetItemTableRef}`;
+DROP TABLE IF EXISTS `${CrmComboSetSaleTerritoryTableRef}`;
+DROP TABLE IF EXISTS `${CrmMasterPaymentConditionTableRef}`;
+DROP TABLE IF EXISTS `${CrmMasterPaymentMethodTableRef}`;
+DROP TABLE IF EXISTS `${CrmMasterPaymentTermTableRef}`;
+DROP TABLE IF EXISTS `${InventoryFormulaLineTableRef}`;
+DROP TABLE IF EXISTS `${InventoryFormulaVersionsTableRef}`;
+DROP TABLE IF EXISTS `${SyncMac5InventoryItemPriceTableRef}`;

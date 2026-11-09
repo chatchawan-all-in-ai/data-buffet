@@ -8,13 +8,14 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_project`;
+    const DimProjectTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_project",
+};
+const DimProjectTableRef = `${DimProjectTable.database}.${DimProjectTable.schema}.${DimProjectTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table dimension_table.dim_project (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = ProjectSK.
 WITH src AS (
   SELECT
     ProjectSK,
@@ -24,7 +25,7 @@ WITH src AS (
     province,
     companyStatus,
     profileComp
-  FROM `${SourceTableRef}`
+  FROM `${DimProjectTableRef}`
 )
 SELECT
   s.ProjectSK,

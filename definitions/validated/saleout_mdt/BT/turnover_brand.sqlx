@@ -14,7 +14,7 @@ js {
     const sourceTable = {
         database: databuffet.DATABASE,
         schema:   databuffet.RAW_SALEOUT_MDT,
-        name:     "turnover_brand",
+        name:     name(),
     };
     const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
     const pk_key = ["vendor_id", "mch3", "brand", "class_stock"]

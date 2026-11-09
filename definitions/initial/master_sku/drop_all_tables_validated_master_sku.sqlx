@@ -4,36 +4,270 @@ config {
   tags: [databuffet.TAG_INITIAL],
 }
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.brand_translations`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.brand_vendors`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.brands`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.categories`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.category_translations`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.common_code_translations`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.common_codes`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.product_translations`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.products`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.spec_attribute_translations`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.spec_attributes`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.spec_group_translations`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.spec_groups`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.specifications`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.synonyms`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.vendors`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.audit_logs`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.business_unit_translations`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.product_channel_prices`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.product_customers`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.business_units`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.channels`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.customers`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.functional_group_translations`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.functional_groups`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.product_assets`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.product_channels`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.product_codes`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.product_groups`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.product_vendors`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.variant_definitions`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.users`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}.user_preferences`;
+js {
+    const BrandTranslationsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "brand_translations",
+    };
+    const BrandTranslationsTableRef = `${BrandTranslationsTable.database}.${BrandTranslationsTable.schema}.${BrandTranslationsTable.name}`;
+
+    const BrandVendorsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "brand_vendors",
+    };
+    const BrandVendorsTableRef = `${BrandVendorsTable.database}.${BrandVendorsTable.schema}.${BrandVendorsTable.name}`;
+
+    const BrandsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "brands",
+    };
+    const BrandsTableRef = `${BrandsTable.database}.${BrandsTable.schema}.${BrandsTable.name}`;
+
+    const CategoriesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "categories",
+    };
+    const CategoriesTableRef = `${CategoriesTable.database}.${CategoriesTable.schema}.${CategoriesTable.name}`;
+
+    const CategoryTranslationsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "category_translations",
+    };
+    const CategoryTranslationsTableRef = `${CategoryTranslationsTable.database}.${CategoryTranslationsTable.schema}.${CategoryTranslationsTable.name}`;
+
+    const CommonCodeTranslationsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "common_code_translations",
+    };
+    const CommonCodeTranslationsTableRef = `${CommonCodeTranslationsTable.database}.${CommonCodeTranslationsTable.schema}.${CommonCodeTranslationsTable.name}`;
+
+    const CommonCodesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "common_codes",
+    };
+    const CommonCodesTableRef = `${CommonCodesTable.database}.${CommonCodesTable.schema}.${CommonCodesTable.name}`;
+
+    const ProductTranslationsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "product_translations",
+    };
+    const ProductTranslationsTableRef = `${ProductTranslationsTable.database}.${ProductTranslationsTable.schema}.${ProductTranslationsTable.name}`;
+
+    const ProductsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "products",
+    };
+    const ProductsTableRef = `${ProductsTable.database}.${ProductsTable.schema}.${ProductsTable.name}`;
+
+    const SpecAttributeTranslationsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "spec_attribute_translations",
+    };
+    const SpecAttributeTranslationsTableRef = `${SpecAttributeTranslationsTable.database}.${SpecAttributeTranslationsTable.schema}.${SpecAttributeTranslationsTable.name}`;
+
+    const SpecAttributesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "spec_attributes",
+    };
+    const SpecAttributesTableRef = `${SpecAttributesTable.database}.${SpecAttributesTable.schema}.${SpecAttributesTable.name}`;
+
+    const SpecGroupTranslationsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "spec_group_translations",
+    };
+    const SpecGroupTranslationsTableRef = `${SpecGroupTranslationsTable.database}.${SpecGroupTranslationsTable.schema}.${SpecGroupTranslationsTable.name}`;
+
+    const SpecGroupsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "spec_groups",
+    };
+    const SpecGroupsTableRef = `${SpecGroupsTable.database}.${SpecGroupsTable.schema}.${SpecGroupsTable.name}`;
+
+    const SpecificationsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "specifications",
+    };
+    const SpecificationsTableRef = `${SpecificationsTable.database}.${SpecificationsTable.schema}.${SpecificationsTable.name}`;
+
+    const SynonymsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "synonyms",
+    };
+    const SynonymsTableRef = `${SynonymsTable.database}.${SynonymsTable.schema}.${SynonymsTable.name}`;
+
+    const VendorsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "vendors",
+    };
+    const VendorsTableRef = `${VendorsTable.database}.${VendorsTable.schema}.${VendorsTable.name}`;
+
+    const AuditLogsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "audit_logs",
+    };
+    const AuditLogsTableRef = `${AuditLogsTable.database}.${AuditLogsTable.schema}.${AuditLogsTable.name}`;
+
+    const BusinessUnitTranslationsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "business_unit_translations",
+    };
+    const BusinessUnitTranslationsTableRef = `${BusinessUnitTranslationsTable.database}.${BusinessUnitTranslationsTable.schema}.${BusinessUnitTranslationsTable.name}`;
+
+    const ProductChannelPricesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "product_channel_prices",
+    };
+    const ProductChannelPricesTableRef = `${ProductChannelPricesTable.database}.${ProductChannelPricesTable.schema}.${ProductChannelPricesTable.name}`;
+
+    const ProductCustomersTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "product_customers",
+    };
+    const ProductCustomersTableRef = `${ProductCustomersTable.database}.${ProductCustomersTable.schema}.${ProductCustomersTable.name}`;
+
+    const BusinessUnitsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "business_units",
+    };
+    const BusinessUnitsTableRef = `${BusinessUnitsTable.database}.${BusinessUnitsTable.schema}.${BusinessUnitsTable.name}`;
+
+    const ChannelsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "channels",
+    };
+    const ChannelsTableRef = `${ChannelsTable.database}.${ChannelsTable.schema}.${ChannelsTable.name}`;
+
+    const CustomersTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "customers",
+    };
+    const CustomersTableRef = `${CustomersTable.database}.${CustomersTable.schema}.${CustomersTable.name}`;
+
+    const FunctionalGroupTranslationsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "functional_group_translations",
+    };
+    const FunctionalGroupTranslationsTableRef = `${FunctionalGroupTranslationsTable.database}.${FunctionalGroupTranslationsTable.schema}.${FunctionalGroupTranslationsTable.name}`;
+
+    const FunctionalGroupsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "functional_groups",
+    };
+    const FunctionalGroupsTableRef = `${FunctionalGroupsTable.database}.${FunctionalGroupsTable.schema}.${FunctionalGroupsTable.name}`;
+
+    const ProductAssetsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "product_assets",
+    };
+    const ProductAssetsTableRef = `${ProductAssetsTable.database}.${ProductAssetsTable.schema}.${ProductAssetsTable.name}`;
+
+    const ProductChannelsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "product_channels",
+    };
+    const ProductChannelsTableRef = `${ProductChannelsTable.database}.${ProductChannelsTable.schema}.${ProductChannelsTable.name}`;
+
+    const ProductCodesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "product_codes",
+    };
+    const ProductCodesTableRef = `${ProductCodesTable.database}.${ProductCodesTable.schema}.${ProductCodesTable.name}`;
+
+    const ProductGroupsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "product_groups",
+    };
+    const ProductGroupsTableRef = `${ProductGroupsTable.database}.${ProductGroupsTable.schema}.${ProductGroupsTable.name}`;
+
+    const ProductVendorsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "product_vendors",
+    };
+    const ProductVendorsTableRef = `${ProductVendorsTable.database}.${ProductVendorsTable.schema}.${ProductVendorsTable.name}`;
+
+    const VariantDefinitionsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "variant_definitions",
+    };
+    const VariantDefinitionsTableRef = `${VariantDefinitionsTable.database}.${VariantDefinitionsTable.schema}.${VariantDefinitionsTable.name}`;
+
+    const UsersTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "users",
+    };
+    const UsersTableRef = `${UsersTable.database}.${UsersTable.schema}.${UsersTable.name}`;
+
+    const UserPreferencesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_MASTER_SKU,
+        name: "user_preferences",
+    };
+    const UserPreferencesTableRef = `${UserPreferencesTable.database}.${UserPreferencesTable.schema}.${UserPreferencesTable.name}`;
+}
+
+
+DROP TABLE IF EXISTS `${BrandTranslationsTableRef}`;
+DROP TABLE IF EXISTS `${BrandVendorsTableRef}`;
+DROP TABLE IF EXISTS `${BrandsTableRef}`;
+DROP TABLE IF EXISTS `${CategoriesTableRef}`;
+DROP TABLE IF EXISTS `${CategoryTranslationsTableRef}`;
+DROP TABLE IF EXISTS `${CommonCodeTranslationsTableRef}`;
+DROP TABLE IF EXISTS `${CommonCodesTableRef}`;
+DROP TABLE IF EXISTS `${ProductTranslationsTableRef}`;
+DROP TABLE IF EXISTS `${ProductsTableRef}`;
+DROP TABLE IF EXISTS `${SpecAttributeTranslationsTableRef}`;
+DROP TABLE IF EXISTS `${SpecAttributesTableRef}`;
+DROP TABLE IF EXISTS `${SpecGroupTranslationsTableRef}`;
+DROP TABLE IF EXISTS `${SpecGroupsTableRef}`;
+DROP TABLE IF EXISTS `${SpecificationsTableRef}`;
+DROP TABLE IF EXISTS `${SynonymsTableRef}`;
+DROP TABLE IF EXISTS `${VendorsTableRef}`;
+DROP TABLE IF EXISTS `${AuditLogsTableRef}`;
+DROP TABLE IF EXISTS `${BusinessUnitTranslationsTableRef}`;
+DROP TABLE IF EXISTS `${ProductChannelPricesTableRef}`;
+DROP TABLE IF EXISTS `${ProductCustomersTableRef}`;
+DROP TABLE IF EXISTS `${BusinessUnitsTableRef}`;
+DROP TABLE IF EXISTS `${ChannelsTableRef}`;
+DROP TABLE IF EXISTS `${CustomersTableRef}`;
+DROP TABLE IF EXISTS `${FunctionalGroupTranslationsTableRef}`;
+DROP TABLE IF EXISTS `${FunctionalGroupsTableRef}`;
+DROP TABLE IF EXISTS `${ProductAssetsTableRef}`;
+DROP TABLE IF EXISTS `${ProductChannelsTableRef}`;
+DROP TABLE IF EXISTS `${ProductCodesTableRef}`;
+DROP TABLE IF EXISTS `${ProductGroupsTableRef}`;
+DROP TABLE IF EXISTS `${ProductVendorsTableRef}`;
+DROP TABLE IF EXISTS `${VariantDefinitionsTableRef}`;
+DROP TABLE IF EXISTS `${UsersTableRef}`;
+DROP TABLE IF EXISTS `${UserPreferencesTableRef}`;

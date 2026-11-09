@@ -8,19 +8,20 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_product_master_fc`;
+    const DimProductMasterFcTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_product_master_fc",
+};
+const DimProductMasterFcTableRef = `${DimProductMasterFcTable.database}.${DimProductMasterFcTable.schema}.${DimProductMasterFcTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table dimension_table.dim_product_master_fc (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = Barcode.
 WITH src AS (
   SELECT
     Barcode,
     TM2Brand,
     TM3Series
-  FROM `${SourceTableRef}`
+  FROM `${DimProductMasterFcTableRef}`
 )
 SELECT
   s.Barcode,

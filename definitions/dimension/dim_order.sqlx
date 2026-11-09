@@ -33,7 +33,6 @@ BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
   SET max_sk = (SELECT IFNULL(MAX(OrderSK), 0) FROM `${DimOrderTableRef}`);
 
-  -- 2. เริ่มกระบวนการ MERGE
   MERGE `${DimOrderTableRef}` AS T
   USING (
     WITH mil as (
@@ -73,7 +72,6 @@ BEGIN
             (case
                 when sec.millinkvcno is null and sec.milstk is null then 'On Order'
                 when sec.milQuan >= main.milQuan then 'Complete'
-                -- when sec.milQuan >= main.milQuan and ROUND(sec.milSum, 2) >= ROUND(main.milSum, 2)  then 'Complete'
                 else 'In Process'
             end) as item_status
         from main_table as main
@@ -157,14 +155,11 @@ BEGIN
             on UPPER(REGEXP_EXTRACT(mih.mihVnos, r'^[A-Za-z]+')) = order_channel.Prefix
         WHERE mih.mihType = 'PS'
             and PARSE_DATE('%Y%m%d', CONCAT(mih.mihYear, FORMAT("%02d", mih.mihMonth), FORMAT("%02d", mih.mihDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
-            -- and mih.company_id = 'ag01'
     )
 
-    -- Join Source กับ Target เพื่อหาว่าเป็นแถวใหม่หรือไม่ และคำนวณ SK
     SELECT
         (CASE
             WHEN t2.OrderSK IS NOT NULL THEN t2.OrderSK
-            -- ถ้าเป็นแถวใหม่ (Insert) ให้เอา Max + Running Number
             ELSE max_sk + ROW_NUMBER() OVER(
                 PARTITION BY (CASE WHEN t2.mihVnos IS NULL THEN 1 ELSE 0 END)
                 ORDER BY t1.CompanySK, t1.mihYear, t1.mihMonth, t1.mihDay, t1.mihVnos
@@ -214,7 +209,6 @@ BEGIN
   ) AS S
   ON T.OrderSK = S.OrderSK
 
-  -- กรณีเจอข้อมูลเดิม (Update)
   WHEN MATCHED THEN
     UPDATE SET
       T.mix_date = S.mix_date,
@@ -245,7 +239,6 @@ BEGIN
       T.OrderStatus = S.OrderStatus,
       T.OrderChannel = S.OrderChannel
 
-  -- กรณีไม่เจอข้อมูล (Insert)
   WHEN NOT MATCHED THEN
     INSERT (
       OrderSK, CompanySK,

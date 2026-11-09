@@ -6,10 +6,6 @@ config {
     description: "What each Pub/Sub export table last sent: one row per row_key the receivers currently hold, with the Dataform workflow invocation that sent it. The publisher (Cloud Run send job) compares an export view with this table to find NEW / UPDATE / DELETE rows, and writes it only after a publish succeeds",
 }
 
--- Created once, never rebuilt. Writers and seed lifecycle:
--- document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- table_name + row_key are never NULL; row_key is TO_JSON_STRING of the key columns,
--- so a NULL key component is JSON null inside the key object. Times are UTC.
 CREATE TABLE IF NOT EXISTS ${self()} (
   table_name STRING NOT NULL,
   row_key STRING NOT NULL,

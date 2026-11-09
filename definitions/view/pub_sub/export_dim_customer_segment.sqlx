@@ -8,13 +8,14 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_customer_segment`;
+    const DimCustomerSegmentTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_customer_segment",
+};
+const DimCustomerSegmentTableRef = `${DimCustomerSegmentTable.database}.${DimCustomerSegmentTable.schema}.${DimCustomerSegmentTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table dimension_table.dim_customer_segment (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = CompanyID, Segment3.
 WITH src AS (
   SELECT
     CustomerSegmentSK,
@@ -25,7 +26,7 @@ WITH src AS (
     DescriptionEng,
     SortOrder,
     CompanyID
-  FROM `${SourceTableRef}`
+  FROM `${DimCustomerSegmentTableRef}`
 )
 SELECT
   s.CustomerSegmentSK,

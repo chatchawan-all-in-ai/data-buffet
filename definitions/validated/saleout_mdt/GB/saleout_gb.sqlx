@@ -14,7 +14,7 @@ js {
     const sourceTable = {
         database: databuffet.DATABASE,
         schema:   databuffet.RAW_SALEOUT_MDT,
-        name:     "saleout_gb",
+        name:     name(),
     };
     const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
     const pk_key = ["sale_no", "sale_date", "branch_code", "product_code"]
@@ -68,9 +68,6 @@ SELECT
     ${databuffet.functionData.cleanString('Product_Name')} AS product_name,
     ${databuffet.functionData.castInt64('Sale_Quantity')} AS sale_quantity,
     CAST(REGEXP_REPLACE(TRIM(Sale_Amount), r"[,\']", '') AS FLOAT64) AS sale_amount,
-    -- ไฟล์ใหม่ส่ง 'ขาย'/'รับคืน' ของเดิมส่ง 'SALE'/'RETURN'
-    -- ต้องแปลงที่นี่ เพราะ doc_type อยู่ใน uniqueKey ของ curated
-    -- ถ้าปล่อยค่าไทยไหลไป แถวเดียวกันจะกลายเป็นคนละคีย์แล้วยอดเบิ้ล
     CASE ${databuffet.functionData.cleanString('Type')}
         WHEN 'ขาย'    THEN 'SALE'
         WHEN 'รับคืน' THEN 'RETURN'

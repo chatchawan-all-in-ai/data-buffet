@@ -6,18 +6,20 @@ config {
 }
 
 js {
-    const FactStockMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.FACT_TABLE,
-        name: "fact_stock_mdt",
-    };
-    const FactStockMdtTableRef = `${FactStockMdtTable.database}.${FactStockMdtTable.schema}.${FactStockMdtTable.name}`;
-    const FactSaleoutMdtTable = {
+const FactSaleoutMdtTable = {
         database: databuffet.DATABASE,
         schema: databuffet.FACT_TABLE,
         name: "fact_saleout_mdt",
     };
     const FactSaleoutMdtTableRef = `${FactSaleoutMdtTable.database}.${FactSaleoutMdtTable.schema}.${FactSaleoutMdtTable.name}`;
+
+const FactStockMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FACT_TABLE,
+        name: "fact_stock_mdt",
+    };
+    const FactStockMdtTableRef = `${FactStockMdtTable.database}.${FactStockMdtTable.schema}.${FactStockMdtTable.name}`;
+
 }
 
 WITH last_sale AS (
@@ -37,10 +39,6 @@ WITH last_sale AS (
 
 ), latest_stock AS (
 
-  -- สต็อกวันล่าสุดของแต่ละ (ห้าง สาขา สินค้า)
-  -- แต่ละห้างส่งไฟล์คนละรอบ วันล่าสุดจึงไม่จำเป็นต้องเท่ากันทุกแถว
-  -- ใช้ stock_date ของแถวตัวเองเป็นฐานนับวัน ไม่ใช่วันนี้ จะได้ไม่เพี้ยนตอนฟีดค้าง
-  -- ⚠️ เลือกวันล่าสุดก่อนแล้วค่อยกรองของคงเหลือ สลับลำดับแล้วของที่ขายหมดจะโผล่เป็นของค้าง
   SELECT *
   FROM `${FactStockMdtTableRef}`
   QUALIFY ROW_NUMBER() OVER(

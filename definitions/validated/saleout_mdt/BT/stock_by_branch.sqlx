@@ -13,7 +13,7 @@ js {
     const sourceTable = {
         database: databuffet.DATABASE,
         schema:   databuffet.RAW_SALEOUT_MDT,
-        name:     "stock_by_branch",
+        name:     name(),
     };
     const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
 }

@@ -8,18 +8,14 @@ config {
 }
 
 js {
-    const OrgCenterCustomerTaTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_customer_ta`;
+    const OrgCenterCustomerTaTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.ORG_CENTER,
+    name: "org_center_customer_ta",
+};
+const OrgCenterCustomerTaTableRef = `${OrgCenterCustomerTaTable.database}.${OrgCenterCustomerTaTable.schema}.${OrgCenterCustomerTaTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
---   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
---   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
---   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
--- Natural key = company_id, customer_id, department_id, valid_from.
--- company_id = the customer's company; department_id = the TA department (the TA position) that owns the customer
--- (NULL when not yet known; it is part of the key, so an empty value is its own key bucket).
--- org_center_customer_ta.valid_to is the first day after the assignment, so only 2066-12-31 -> NULL applies. source_row_id = MDS id.
 WITH assignment AS (
   SELECT
     c.company_id,

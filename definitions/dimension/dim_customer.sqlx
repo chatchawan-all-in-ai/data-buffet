@@ -15,12 +15,12 @@ js {
     };
     const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
 
-    const DebAddressTable = {
+    const ViewDebAddressDataTable = {
         database: databuffet.DATABASE,
         schema: databuffet.PROCESS_DATASET,
         name: "view_deb_address_data",
     };
-    const DebAddressTableRef = `${DebAddressTable.database}.${DebAddressTable.schema}.${DebAddressTable.name}`;
+    const ViewDebAddressDataTableRef = `${ViewDebAddressDataTable.database}.${ViewDebAddressDataTable.schema}.${ViewDebAddressDataTable.name}`;
 
     const DimCompanyTable = {
         database: databuffet.DATABASE,
@@ -35,7 +35,6 @@ BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
   SET max_sk = (SELECT IFNULL(MAX(CustomerSK), 0) FROM `${DimCustomerTableRef}`);
 
-  -- เริ่มกระบวนการ MERGE
   MERGE `${DimCustomerTableRef}` AS T
   USING (
     WITH match_customer AS (
@@ -108,7 +107,7 @@ BEGIN
             CAST(NULL as STRING) as Customer_CM_Grade,
             DATE_DIFF(CURRENT_DATE('Asia/Bangkok'), deb.debdate, YEAR) as Total_contact_time_Year
         FROM ${ref(databuffet.VALIDATED_MAC5, 'deb')} as deb
-        LEFT JOIN `${DebAddressTableRef}` as deb_address
+        LEFT JOIN `${ViewDebAddressDataTableRef}` as deb_address
             ON deb.debcode = deb_address.debcode
             and deb.company_id = deb_address.company_id
         LEFT JOIN match_customer as mc
@@ -118,11 +117,9 @@ BEGIN
             ON mc.customer_allkon = cp.customer_code
         LEFT JOIN `${DimCompanyTableRef}` as dim_com
             ON deb.company_id = dim_com.companyID
-        -- WHERE deb.company_id = 'ag01'
         QUALIFY row_number() over(partition by dim_com.companyID, deb.debcode order by cp.id desc) = 1
     )
 
-    -- จัดการรัน CustomerSK ต่อจากของเดิม
     SELECT
         (CASE
             WHEN t2.CustomerSK IS NOT NULL THEN t2.CustomerSK

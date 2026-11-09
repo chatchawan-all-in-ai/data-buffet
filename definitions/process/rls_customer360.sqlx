@@ -47,8 +47,6 @@ js {
     const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
 }
 
--- CREATE OR REPLACE TABLE databuffet-nonprd.process_dataset.rls_customer360
--- AS
 WITH fact_table as (
   SELECT DISTINCT
     milCus,
@@ -69,7 +67,7 @@ WITH fact_table as (
     ON fact.DirectorSK = director.DirectorSK
   LEFT JOIN `${DimProductMktTableRef}` AS prod_mkt
     ON fact.ProductMktSK = prod_mkt.ProductMktSK
-  
+
 )
   select
     milCus,

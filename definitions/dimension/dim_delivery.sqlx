@@ -85,8 +85,6 @@ BEGIN
         AND mh.company_id = deb.company_id
 
       WHERE td.fdocument LIKE (CASE WHEN IFNULL(d.fserial_no, '0') = '0' THEN '%' ELSE d.fserial_no END)
-        -- AND fdocument = 'L6703001189'
-        -- AND fitem = '3G-X3-W03-00'
         AND LEFT(fitem, 1) <> '8'
 
       GROUP BY td.company_id, td.fdocument, t.fcode, t.fvehicle, td.fitem, td.fitem2, d.flattitude, d.flongtitude, d.fzone, d.fpoi
@@ -101,7 +99,6 @@ BEGIN
         , mh.mihCus, deb.debnamet
 
     ), raw_delivery_item1 AS (
-      -- 1511293
       SELECT
         company_id,
         fdocument,
@@ -131,7 +128,6 @@ BEGIN
       GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
 
     ), raw_delivery_item2 AS (
-      -- 576602
       SELECT
         company_id,
         fdocument,

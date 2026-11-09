@@ -6,90 +6,96 @@ config {
 }
 
 js {
-    const DimSaleRepresentativeLastTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_sale_representative_last",
-    };
-    const DimSaleRepresentativeLastTableRef = `${DimSaleRepresentativeLastTable.database}.${DimSaleRepresentativeLastTable.schema}.${DimSaleRepresentativeLastTable.name}`;
-
-    const DimTargetProductGroupTable = {
+const DimTargetProductGroupTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_target_product_group",
     };
     const DimTargetProductGroupTableRef = `${DimTargetProductGroupTable.database}.${DimTargetProductGroupTable.schema}.${DimTargetProductGroupTable.name}`;
 
-    const DimProductMktTable = {
+const DimProductMktTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_product_mkt",
     };
     const DimProductMktTableRef = `${DimProductMktTable.database}.${DimProductMktTable.schema}.${DimProductMktTable.name}`;
 
-    const DimReportTable = {
+const DimReportTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_report",
     };
     const DimReportTableRef = `${DimReportTable.database}.${DimReportTable.schema}.${DimReportTable.name}`;
 
-    const DimRateTargetTable = {
+const DimRateTargetTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_rate_target",
     };
     const DimRateTargetTableRef = `${DimRateTargetTable.database}.${DimRateTargetTable.schema}.${DimRateTargetTable.name}`;
 
-    const DimDepartmentLastTable = {
+const DimSaleRepresentativeLastTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sale_representative_last",
+    };
+    const DimSaleRepresentativeLastTableRef = `${DimSaleRepresentativeLastTable.database}.${DimSaleRepresentativeLastTable.schema}.${DimSaleRepresentativeLastTable.name}`;
+
+const DimDepartmentLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_department_last",
     };
     const DimDepartmentLastTableRef = `${DimDepartmentLastTable.database}.${DimDepartmentLastTable.schema}.${DimDepartmentLastTable.name}`;
 
-    const DimRegionLastTable = {
+const DimRegionLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_region_last",
     };
     const DimRegionLastTableRef = `${DimRegionLastTable.database}.${DimRegionLastTable.schema}.${DimRegionLastTable.name}`;
 
-    const DimSectionLastTable = {
+const DimSectionLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_section_last",
     };
     const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
 
-    const DimRegionManagerLastTable = {
+const DimRegionManagerLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_region_manager_last",
     };
     const DimRegionManagerLastTableRef = `${DimRegionManagerLastTable.database}.${DimRegionManagerLastTable.schema}.${DimRegionManagerLastTable.name}`;
 
-    const DimSectionManagerLastTable = {
+const DimSectionManagerLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_section_manager_last",
     };
     const DimSectionManagerLastTableRef = `${DimSectionManagerLastTable.database}.${DimSectionManagerLastTable.schema}.${DimSectionManagerLastTable.name}`;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
--- with exc_salerep as (
---   SELECT SaleRepSK
---   FROM (
---     SELECT 
---       SaleRepSK,
---       DepartmentID,
---       COUNT(DISTINCT IF(DepartmentID IS NULL, 0, 1)) OVER(PARTITION BY EmployeeID) as dept_status_count
---     FROM `${DimSaleRepresentativeLastTableRef}`
---   )
---   WHERE dept_status_count > 1
---     AND DepartmentID IS NULL
 
--- ),
 with target_table as (
   select 
     dim_p_mkt.ProductMktSK,
@@ -102,8 +108,6 @@ with target_table as (
     and dim_tg_pg.SegmentID = dim_p_mkt.SegmentID
     and dim_tg_pg.CompanySK = dim_p_mkt.CompanySK
   
-  -- where targetid = 'M1'
-    -- and TargetProductGroupSK = 18833
 
 ), dim_report as (
   SELECT 
@@ -152,20 +156,16 @@ with target_table as (
 
 ), aggregate_target_1 as (
   select 
-    --- SK
     tg.TargetProductGroupSK,
     rate.RateTargetSK,
     tg.ProductMktSK,
 
-    --- target
     tg.* except(TargetProductGroupSK, ProductMktSK),
 
-    --- rate target
     rate.EmployeeID,
     rate.Percent,
     rate.DepartmentID,
 
-    -- Cal
     (tg.Amt * (rate.Percent / 100)) as CalAmt,
     (tg.Qty * (rate.Percent / 100)) as CalQty,
   from target_table as tg
@@ -176,20 +176,16 @@ with target_table as (
   
 ), aggregate_target_2 as (
   select
-    --- SK
     tg.TargetProductGroupSK,
     rate.RateTargetSK,
     tg.ProductMktSK,
 
-    --- target
     tg.* except(TargetProductGroupSK, ProductMktSK),
 
-    --- rate target
     rate.EmployeeID,
     rate.Percent,
     rate.DepartmentID,
 
-    -- Cal
     (tg.Amt * (rate.Percent / 100)) as CalAmt,
     (tg.Qty * (rate.Percent / 100)) as CalQty,
   from target_table as tg
@@ -208,20 +204,16 @@ with target_table as (
 
 ), aggregate_target_3 as (
   select
-    --- SK
     tg.TargetProductGroupSK,
     rate.RateTargetSK,
     tg.ProductMktSK,
 
-    --- target
     tg.* except(TargetProductGroupSK, ProductMktSK),
 
-    --- rate target
     rate.EmployeeID,
     rate.Percent,
     rate.DepartmentID,
 
-    -- Cal
     (tg.Amt * (rate.Percent / 100)) as CalAmt,
     (tg.Qty * (rate.Percent / 100)) as CalQty,
   from target_table as tg
@@ -257,9 +249,7 @@ with target_table as (
   from aggregate_target_3
 
 ), final as (
-  -- 372096
   select distinct
-    -- row_number() over(order by TargetProductGroupSK, RateTargetSK) as TargetBySaleSK,
     l.SaleRepSK as SaleRepSKLast,
     c.DepartmentSK as DepartmentSKLast,
     d.RegionSK as RegionSKLast,
@@ -329,5 +319,3 @@ FROM (
   from final
   where final.SaleRepSKLast is not null
 )
-  -- where final.directorsklast = 1
-  -- where not exists (select 1 from exc_salerep as exc where final.SaleRepSKLast = exc.SaleRepSK)

@@ -4,18 +4,372 @@ config {
   tags: [databuffet.TAG_INITIAL],
 }
 
-------------------------------------- SCHEMA --------------------------------------
+js {
+    const InventoryMovementJournalHeadersTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "inventory_movement_journal_headers",
+    };
+    const InventoryMovementJournalHeadersTableRef = `${InventoryMovementJournalHeadersTable.database}.${InventoryMovementJournalHeadersTable.schema}.${InventoryMovementJournalHeadersTable.name}`;
+
+    const InventoryMovementJournalEntriesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "inventory_movement_journal_entries",
+    };
+    const InventoryMovementJournalEntriesTableRef = `${InventoryMovementJournalEntriesTable.database}.${InventoryMovementJournalEntriesTable.schema}.${InventoryMovementJournalEntriesTable.name}`;
+
+    const InventoryItemPriceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "inventory_item_price",
+    };
+    const InventoryItemPriceTableRef = `${InventoryItemPriceTable.database}.${InventoryItemPriceTable.schema}.${InventoryItemPriceTable.name}`;
+
+    const CrmNdSdPriceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_nd_sd_price",
+    };
+    const CrmNdSdPriceTableRef = `${CrmNdSdPriceTable.database}.${CrmNdSdPriceTable.schema}.${CrmNdSdPriceTable.name}`;
+
+    const CrmNdSdPriceTerritoryGroupTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_nd_sd_price_territory_group",
+    };
+    const CrmNdSdPriceTerritoryGroupTableRef = `${CrmNdSdPriceTerritoryGroupTable.database}.${CrmNdSdPriceTerritoryGroupTable.schema}.${CrmNdSdPriceTerritoryGroupTable.name}`;
+
+    const CrmNdSdPriceZoneTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_nd_sd_price_zone",
+    };
+    const CrmNdSdPriceZoneTableRef = `${CrmNdSdPriceZoneTable.database}.${CrmNdSdPriceZoneTable.schema}.${CrmNdSdPriceZoneTable.name}`;
+
+    const CrmQuotationTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_quotation",
+    };
+    const CrmQuotationTableRef = `${CrmQuotationTable.database}.${CrmQuotationTable.schema}.${CrmQuotationTable.name}`;
+
+    const CrmQuotationDeliveryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_quotation_delivery",
+    };
+    const CrmQuotationDeliveryTableRef = `${CrmQuotationDeliveryTable.database}.${CrmQuotationDeliveryTable.schema}.${CrmQuotationDeliveryTable.name}`;
+
+    const CrmQuotationDeliveryDetailTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_quotation_delivery_detail",
+    };
+    const CrmQuotationDeliveryDetailTableRef = `${CrmQuotationDeliveryDetailTable.database}.${CrmQuotationDeliveryDetailTable.schema}.${CrmQuotationDeliveryDetailTable.name}`;
+
+    const CrmQuotationDetailTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_quotation_detail",
+    };
+    const CrmQuotationDetailTableRef = `${CrmQuotationDetailTable.database}.${CrmQuotationDetailTable.schema}.${CrmQuotationDetailTable.name}`;
+
+    const CrmQuotationHistoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_quotation_history",
+    };
+    const CrmQuotationHistoryTableRef = `${CrmQuotationHistoryTable.database}.${CrmQuotationHistoryTable.schema}.${CrmQuotationHistoryTable.name}`;
+
+    const CrmQuotationSaleTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_quotation_sale",
+    };
+    const CrmQuotationSaleTableRef = `${CrmQuotationSaleTable.database}.${CrmQuotationSaleTable.schema}.${CrmQuotationSaleTable.name}`;
+
+    const CrmSaleOrderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order",
+    };
+    const CrmSaleOrderTableRef = `${CrmSaleOrderTable.database}.${CrmSaleOrderTable.schema}.${CrmSaleOrderTable.name}`;
+
+    const CrmSaleOrderApprovalLogTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order_approval_log",
+    };
+    const CrmSaleOrderApprovalLogTableRef = `${CrmSaleOrderApprovalLogTable.database}.${CrmSaleOrderApprovalLogTable.schema}.${CrmSaleOrderApprovalLogTable.name}`;
+
+    const CrmSaleOrderApproverTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order_approver",
+    };
+    const CrmSaleOrderApproverTableRef = `${CrmSaleOrderApproverTable.database}.${CrmSaleOrderApproverTable.schema}.${CrmSaleOrderApproverTable.name}`;
+
+    const CrmSaleOrderAttachmentTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order_attachment",
+    };
+    const CrmSaleOrderAttachmentTableRef = `${CrmSaleOrderAttachmentTable.database}.${CrmSaleOrderAttachmentTable.schema}.${CrmSaleOrderAttachmentTable.name}`;
+
+    const CrmSaleOrderDeliveryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order_delivery",
+    };
+    const CrmSaleOrderDeliveryTableRef = `${CrmSaleOrderDeliveryTable.database}.${CrmSaleOrderDeliveryTable.schema}.${CrmSaleOrderDeliveryTable.name}`;
+
+    const CrmSaleOrderDeliveryLineTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order_delivery_line",
+    };
+    const CrmSaleOrderDeliveryLineTableRef = `${CrmSaleOrderDeliveryLineTable.database}.${CrmSaleOrderDeliveryLineTable.schema}.${CrmSaleOrderDeliveryLineTable.name}`;
+
+    const CrmSaleOrderDepositTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order_deposit",
+    };
+    const CrmSaleOrderDepositTableRef = `${CrmSaleOrderDepositTable.database}.${CrmSaleOrderDepositTable.schema}.${CrmSaleOrderDepositTable.name}`;
+
+    const CrmSaleOrderLineTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order_line",
+    };
+    const CrmSaleOrderLineTableRef = `${CrmSaleOrderLineTable.database}.${CrmSaleOrderLineTable.schema}.${CrmSaleOrderLineTable.name}`;
+
+    const CrmSaleOrderPaymentTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order_payment",
+    };
+    const CrmSaleOrderPaymentTableRef = `${CrmSaleOrderPaymentTable.database}.${CrmSaleOrderPaymentTable.schema}.${CrmSaleOrderPaymentTable.name}`;
+
+    const CrmSaleOrderPaymentAllocationTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order_payment_allocation",
+    };
+    const CrmSaleOrderPaymentAllocationTableRef = `${CrmSaleOrderPaymentAllocationTable.database}.${CrmSaleOrderPaymentAllocationTable.schema}.${CrmSaleOrderPaymentAllocationTable.name}`;
+
+    const CrmSaleOrderPaymentReceiptTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order_payment_receipt",
+    };
+    const CrmSaleOrderPaymentReceiptTableRef = `${CrmSaleOrderPaymentReceiptTable.database}.${CrmSaleOrderPaymentReceiptTable.schema}.${CrmSaleOrderPaymentReceiptTable.name}`;
+
+    const CrmSaleOrderRevisionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order_revision",
+    };
+    const CrmSaleOrderRevisionTableRef = `${CrmSaleOrderRevisionTable.database}.${CrmSaleOrderRevisionTable.schema}.${CrmSaleOrderRevisionTable.name}`;
+
+    const CrmSaleOrderSalesPersonTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order_sales_person",
+    };
+    const CrmSaleOrderSalesPersonTableRef = `${CrmSaleOrderSalesPersonTable.database}.${CrmSaleOrderSalesPersonTable.schema}.${CrmSaleOrderSalesPersonTable.name}`;
+
+    const CrmSaleOrderStatusHistoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_sale_order_status_history",
+    };
+    const CrmSaleOrderStatusHistoryTableRef = `${CrmSaleOrderStatusHistoryTable.database}.${CrmSaleOrderStatusHistoryTable.schema}.${CrmSaleOrderStatusHistoryTable.name}`;
+
+    const SalesChannelMasterSalesChannelTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "sales_channel_master_sales_channel",
+    };
+    const SalesChannelMasterSalesChannelTableRef = `${SalesChannelMasterSalesChannelTable.database}.${SalesChannelMasterSalesChannelTable.schema}.${SalesChannelMasterSalesChannelTable.name}`;
+
+    const SalesCustomerSalesTerritoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "sales_customer_sales_territory",
+    };
+    const SalesCustomerSalesTerritoryTableRef = `${SalesCustomerSalesTerritoryTable.database}.${SalesCustomerSalesTerritoryTable.schema}.${SalesCustomerSalesTerritoryTable.name}`;
+
+    const SalesEmployeeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "sales_employee",
+    };
+    const SalesEmployeeTableRef = `${SalesEmployeeTable.database}.${SalesEmployeeTable.schema}.${SalesEmployeeTable.name}`;
+
+    const SalesEmployeeSaleTerritoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "sales_employee_sale_territory",
+    };
+    const SalesEmployeeSaleTerritoryTableRef = `${SalesEmployeeSaleTerritoryTable.database}.${SalesEmployeeSaleTerritoryTable.schema}.${SalesEmployeeSaleTerritoryTable.name}`;
+
+    const SalesSalesTerritoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "sales_sales_territory",
+    };
+    const SalesSalesTerritoryTableRef = `${SalesSalesTerritoryTable.database}.${SalesSalesTerritoryTable.schema}.${SalesSalesTerritoryTable.name}`;
+
+    const CrmBusinessUnitTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_business_unit",
+    };
+    const CrmBusinessUnitTableRef = `${CrmBusinessUnitTable.database}.${CrmBusinessUnitTable.schema}.${CrmBusinessUnitTable.name}`;
+
+    const CrmCustomerAddressTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_customer_address",
+    };
+    const CrmCustomerAddressTableRef = `${CrmCustomerAddressTable.database}.${CrmCustomerAddressTable.schema}.${CrmCustomerAddressTable.name}`;
+
+    const CrmCustomerContactTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_customer_contact",
+    };
+    const CrmCustomerContactTableRef = `${CrmCustomerContactTable.database}.${CrmCustomerContactTable.schema}.${CrmCustomerContactTable.name}`;
+
+    const CrmCustomerContactChannelsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_customer_contact_channels",
+    };
+    const CrmCustomerContactChannelsTableRef = `${CrmCustomerContactChannelsTable.database}.${CrmCustomerContactChannelsTable.schema}.${CrmCustomerContactChannelsTable.name}`;
+
+    const CrmCustomerCreditTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_customer_credit",
+    };
+    const CrmCustomerCreditTableRef = `${CrmCustomerCreditTable.database}.${CrmCustomerCreditTable.schema}.${CrmCustomerCreditTable.name}`;
+
+    const CrmCustomerDataZoneTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_customer_data_zone",
+    };
+    const CrmCustomerDataZoneTableRef = `${CrmCustomerDataZoneTable.database}.${CrmCustomerDataZoneTable.schema}.${CrmCustomerDataZoneTable.name}`;
+
+    const CrmCustomerMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_customer_master",
+    };
+    const CrmCustomerMasterTableRef = `${CrmCustomerMasterTable.database}.${CrmCustomerMasterTable.schema}.${CrmCustomerMasterTable.name}`;
+
+    const CrmCustomerSegmentTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_customer_segment",
+    };
+    const CrmCustomerSegmentTableRef = `${CrmCustomerSegmentTable.database}.${CrmCustomerSegmentTable.schema}.${CrmCustomerSegmentTable.name}`;
+
+    const CrmCustomerStoresTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_customer_stores",
+    };
+    const CrmCustomerStoresTableRef = `${CrmCustomerStoresTable.database}.${CrmCustomerStoresTable.schema}.${CrmCustomerStoresTable.name}`;
+
+    const CrmDataZoneTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_data_zone",
+    };
+    const CrmDataZoneTableRef = `${CrmDataZoneTable.database}.${CrmDataZoneTable.schema}.${CrmDataZoneTable.name}`;
+
+    const CrmComboSetTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_combo_set",
+    };
+    const CrmComboSetTableRef = `${CrmComboSetTable.database}.${CrmComboSetTable.schema}.${CrmComboSetTable.name}`;
+
+    const CrmComboSetCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_combo_set_customer",
+    };
+    const CrmComboSetCustomerTableRef = `${CrmComboSetCustomerTable.database}.${CrmComboSetCustomerTable.schema}.${CrmComboSetCustomerTable.name}`;
+
+    const CrmComboSetItemTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_combo_set_item",
+    };
+    const CrmComboSetItemTableRef = `${CrmComboSetItemTable.database}.${CrmComboSetItemTable.schema}.${CrmComboSetItemTable.name}`;
+
+    const CrmComboSetSaleTerritoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_combo_set_sale_territory",
+    };
+    const CrmComboSetSaleTerritoryTableRef = `${CrmComboSetSaleTerritoryTable.database}.${CrmComboSetSaleTerritoryTable.schema}.${CrmComboSetSaleTerritoryTable.name}`;
+
+    const CrmMasterPaymentConditionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_master_payment_condition",
+    };
+    const CrmMasterPaymentConditionTableRef = `${CrmMasterPaymentConditionTable.database}.${CrmMasterPaymentConditionTable.schema}.${CrmMasterPaymentConditionTable.name}`;
+
+    const CrmMasterPaymentMethodTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_master_payment_method",
+    };
+    const CrmMasterPaymentMethodTableRef = `${CrmMasterPaymentMethodTable.database}.${CrmMasterPaymentMethodTable.schema}.${CrmMasterPaymentMethodTable.name}`;
+
+    const CrmMasterPaymentTermTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "crm_master_payment_term",
+    };
+    const CrmMasterPaymentTermTableRef = `${CrmMasterPaymentTermTable.database}.${CrmMasterPaymentTermTable.schema}.${CrmMasterPaymentTermTable.name}`;
+
+    const InventoryFormulaLineTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "inventory_formula_line",
+    };
+    const InventoryFormulaLineTableRef = `${InventoryFormulaLineTable.database}.${InventoryFormulaLineTable.schema}.${InventoryFormulaLineTable.name}`;
+
+    const InventoryFormulaVersionsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "inventory_formula_versions",
+    };
+    const InventoryFormulaVersionsTableRef = `${InventoryFormulaVersionsTable.database}.${InventoryFormulaVersionsTable.schema}.${InventoryFormulaVersionsTable.name}`;
+
+    const SyncMac5InventoryItemPriceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_DERP,
+        name: "sync_mac5_inventory_item_price",
+    };
+    const SyncMac5InventoryItemPriceTableRef = `${SyncMac5InventoryItemPriceTable.database}.${SyncMac5InventoryItemPriceTable.schema}.${SyncMac5InventoryItemPriceTable.name}`;
+}
+
+
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}` OPTIONS(location="${databuffet.REGION}");
-------------------------------------- SCHEMA --------------------------------------
 
 
------------------------------------ INCREMENTAL ---------------------------------------
--- 20260914–20260916 = full load (20260915 มีไฟล์ซ้ำ *_NNN_1.avro) · ตั้งแต่ 20260917 = incremental รายวัน
--- validated ต้อง dedup ด้วย id ข้ามทุก partition
 
--- Table: inventory_movement_journal_headers
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_movement_journal_headers`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_movement_journal_headers`
+DROP TABLE IF EXISTS `${InventoryMovementJournalHeadersTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${InventoryMovementJournalHeadersTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -25,9 +379,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/inventory_movement_journal_headers/'
 );
 
--- Table: inventory_movement_journal_entries
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_movement_journal_entries`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_movement_journal_entries`
+DROP TABLE IF EXISTS `${InventoryMovementJournalEntriesTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${InventoryMovementJournalEntriesTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -39,9 +392,8 @@ OPTIONS (
 
 -- inventory_item_price: snapshot เต็มทุกวัน (~175k แถว/วัน) · ไฟล์ AVRO ช่วง 2026-10 มี default ผิดกฎใน 3 ฟิลด์ → BigQuery อาจสร้าง/อ่านไม่ได้จนกว่าต้นทางแก้
 
--- Table: inventory_item_price
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_item_price`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_item_price`
+DROP TABLE IF EXISTS `${InventoryItemPriceTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${InventoryItemPriceTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -53,9 +405,8 @@ OPTIONS (
 
 -- crm_* / sales_*: เริ่มส่ง 2026-10-21/22/26 (1 partition ต่อโฟลเดอร์ ณ 2026-10-28)
 
--- Table: crm_nd_sd_price
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_nd_sd_price`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_nd_sd_price`
+DROP TABLE IF EXISTS `${CrmNdSdPriceTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmNdSdPriceTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -65,9 +416,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_nd_sd_price/'
 );
 
--- Table: crm_nd_sd_price_territory_group
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_nd_sd_price_territory_group`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_nd_sd_price_territory_group`
+DROP TABLE IF EXISTS `${CrmNdSdPriceTerritoryGroupTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmNdSdPriceTerritoryGroupTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -77,9 +427,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_nd_sd_price_territory_group/'
 );
 
--- Table: crm_nd_sd_price_zone
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_nd_sd_price_zone`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_nd_sd_price_zone`
+DROP TABLE IF EXISTS `${CrmNdSdPriceZoneTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmNdSdPriceZoneTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -89,9 +438,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_nd_sd_price_zone/'
 );
 
--- Table: crm_quotation
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation`
+DROP TABLE IF EXISTS `${CrmQuotationTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmQuotationTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -101,9 +449,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation/'
 );
 
--- Table: crm_quotation_delivery
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_delivery`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_delivery`
+DROP TABLE IF EXISTS `${CrmQuotationDeliveryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmQuotationDeliveryTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -113,9 +460,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_delivery/'
 );
 
--- Table: crm_quotation_delivery_detail
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_delivery_detail`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_delivery_detail`
+DROP TABLE IF EXISTS `${CrmQuotationDeliveryDetailTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmQuotationDeliveryDetailTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -125,9 +471,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_delivery_detail/'
 );
 
--- Table: crm_quotation_detail
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_detail`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_detail`
+DROP TABLE IF EXISTS `${CrmQuotationDetailTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmQuotationDetailTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -137,9 +482,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_detail/'
 );
 
--- Table: crm_quotation_history
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_history`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_history`
+DROP TABLE IF EXISTS `${CrmQuotationHistoryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmQuotationHistoryTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -149,9 +493,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_history/'
 );
 
--- Table: crm_quotation_sale
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_sale`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_quotation_sale`
+DROP TABLE IF EXISTS `${CrmQuotationSaleTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmQuotationSaleTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -161,9 +504,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_quotation_sale/'
 );
 
--- Table: crm_sale_order
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order`
+DROP TABLE IF EXISTS `${CrmSaleOrderTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -173,9 +515,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order/'
 );
 
--- Table: crm_sale_order_approval_log
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_approval_log`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_approval_log`
+DROP TABLE IF EXISTS `${CrmSaleOrderApprovalLogTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderApprovalLogTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -185,9 +526,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_approval_log/'
 );
 
--- Table: crm_sale_order_approver
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_approver`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_approver`
+DROP TABLE IF EXISTS `${CrmSaleOrderApproverTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderApproverTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -197,9 +537,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_approver/'
 );
 
--- Table: crm_sale_order_attachment
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_attachment`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_attachment`
+DROP TABLE IF EXISTS `${CrmSaleOrderAttachmentTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderAttachmentTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -209,9 +548,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_attachment/'
 );
 
--- Table: crm_sale_order_delivery
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_delivery`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_delivery`
+DROP TABLE IF EXISTS `${CrmSaleOrderDeliveryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderDeliveryTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -221,9 +559,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_delivery/'
 );
 
--- Table: crm_sale_order_delivery_line
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_delivery_line`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_delivery_line`
+DROP TABLE IF EXISTS `${CrmSaleOrderDeliveryLineTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderDeliveryLineTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -233,9 +570,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_delivery_line/'
 );
 
--- Table: crm_sale_order_deposit
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_deposit`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_deposit`
+DROP TABLE IF EXISTS `${CrmSaleOrderDepositTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderDepositTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -245,9 +581,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_deposit/'
 );
 
--- Table: crm_sale_order_line
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_line`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_line`
+DROP TABLE IF EXISTS `${CrmSaleOrderLineTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderLineTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -257,9 +592,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_line/'
 );
 
--- Table: crm_sale_order_payment
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_payment`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_payment`
+DROP TABLE IF EXISTS `${CrmSaleOrderPaymentTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderPaymentTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -269,9 +603,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_payment/'
 );
 
--- Table: crm_sale_order_payment_allocation
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_payment_allocation`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_payment_allocation`
+DROP TABLE IF EXISTS `${CrmSaleOrderPaymentAllocationTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderPaymentAllocationTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -281,9 +614,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_payment_allocation/'
 );
 
--- Table: crm_sale_order_payment_receipt
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_payment_receipt`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_payment_receipt`
+DROP TABLE IF EXISTS `${CrmSaleOrderPaymentReceiptTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderPaymentReceiptTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -293,9 +625,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_payment_receipt/'
 );
 
--- Table: crm_sale_order_revision
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_revision`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_revision`
+DROP TABLE IF EXISTS `${CrmSaleOrderRevisionTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderRevisionTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -305,9 +636,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_revision/'
 );
 
--- Table: crm_sale_order_sales_person
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_sales_person`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_sales_person`
+DROP TABLE IF EXISTS `${CrmSaleOrderSalesPersonTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderSalesPersonTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -317,9 +647,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_sales_person/'
 );
 
--- Table: crm_sale_order_status_history
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_status_history`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_sale_order_status_history`
+DROP TABLE IF EXISTS `${CrmSaleOrderStatusHistoryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmSaleOrderStatusHistoryTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -329,9 +658,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_sale_order_status_history/'
 );
 
--- Table: sales_channel_master_sales_channel
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_channel_master_sales_channel`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_channel_master_sales_channel`
+DROP TABLE IF EXISTS `${SalesChannelMasterSalesChannelTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SalesChannelMasterSalesChannelTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -341,9 +669,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_channel_master_sales_channel/'
 );
 
--- Table: sales_customer_sales_territory
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_customer_sales_territory`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_customer_sales_territory`
+DROP TABLE IF EXISTS `${SalesCustomerSalesTerritoryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SalesCustomerSalesTerritoryTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -353,9 +680,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_customer_sales_territory/'
 );
 
--- Table: sales_employee
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_employee`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_employee`
+DROP TABLE IF EXISTS `${SalesEmployeeTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SalesEmployeeTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -365,9 +691,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_employee/'
 );
 
--- Table: sales_employee_sale_territory
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_employee_sale_territory`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_employee_sale_territory`
+DROP TABLE IF EXISTS `${SalesEmployeeSaleTerritoryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SalesEmployeeSaleTerritoryTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -377,9 +702,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sales_employee_sale_territory/'
 );
 
--- Table: sales_sales_territory
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_sales_territory`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sales_sales_territory`
+DROP TABLE IF EXISTS `${SalesSalesTerritoryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SalesSalesTerritoryTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -391,9 +715,8 @@ OPTIONS (
 
 -- Customer / business unit: ASATDATE partitions first observed 2026-10-29
 
--- Table: crm_business_unit
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_business_unit`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_business_unit`
+DROP TABLE IF EXISTS `${CrmBusinessUnitTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmBusinessUnitTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -403,9 +726,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_business_unit/'
 );
 
--- Table: crm_customer_address
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_address`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_address`
+DROP TABLE IF EXISTS `${CrmCustomerAddressTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmCustomerAddressTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -415,9 +737,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_address/'
 );
 
--- Table: crm_customer_contact
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_contact`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_contact`
+DROP TABLE IF EXISTS `${CrmCustomerContactTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmCustomerContactTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -427,9 +748,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_contact/'
 );
 
--- Table: crm_customer_contact_channels
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_contact_channels`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_contact_channels`
+DROP TABLE IF EXISTS `${CrmCustomerContactChannelsTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmCustomerContactChannelsTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -439,9 +759,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_contact_channels/'
 );
 
--- Table: crm_customer_credit
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_credit`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_credit`
+DROP TABLE IF EXISTS `${CrmCustomerCreditTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmCustomerCreditTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -451,9 +770,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_credit/'
 );
 
--- Table: crm_customer_data_zone
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_data_zone`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_data_zone`
+DROP TABLE IF EXISTS `${CrmCustomerDataZoneTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmCustomerDataZoneTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -463,9 +781,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_data_zone/'
 );
 
--- Table: crm_customer_master
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_master`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_master`
+DROP TABLE IF EXISTS `${CrmCustomerMasterTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmCustomerMasterTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -475,9 +792,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_master/'
 );
 
--- Table: crm_customer_segment
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_segment`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_segment`
+DROP TABLE IF EXISTS `${CrmCustomerSegmentTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmCustomerSegmentTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -487,9 +803,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_segment/'
 );
 
--- Table: crm_customer_stores
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_stores`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_customer_stores`
+DROP TABLE IF EXISTS `${CrmCustomerStoresTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmCustomerStoresTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -499,9 +814,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_customer_stores/'
 );
 
--- Table: crm_data_zone
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_data_zone`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_data_zone`
+DROP TABLE IF EXISTS `${CrmDataZoneTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmDataZoneTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -511,8 +825,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_data_zone/'
 );
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_combo_set`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_combo_set`
+DROP TABLE IF EXISTS `${CrmComboSetTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmComboSetTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -522,8 +836,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_combo_set/'
 );
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_combo_set_customer`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_combo_set_customer`
+DROP TABLE IF EXISTS `${CrmComboSetCustomerTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmComboSetCustomerTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -533,8 +847,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_combo_set_customer/'
 );
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_combo_set_item`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_combo_set_item`
+DROP TABLE IF EXISTS `${CrmComboSetItemTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmComboSetItemTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -544,8 +858,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_combo_set_item/'
 );
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_combo_set_sale_territory`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_combo_set_sale_territory`
+DROP TABLE IF EXISTS `${CrmComboSetSaleTerritoryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmComboSetSaleTerritoryTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -555,8 +869,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_combo_set_sale_territory/'
 );
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_master_payment_condition`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_master_payment_condition`
+DROP TABLE IF EXISTS `${CrmMasterPaymentConditionTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmMasterPaymentConditionTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -566,8 +880,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_master_payment_condition/'
 );
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_master_payment_method`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_master_payment_method`
+DROP TABLE IF EXISTS `${CrmMasterPaymentMethodTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmMasterPaymentMethodTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -577,8 +891,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_master_payment_method/'
 );
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_master_payment_term`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.crm_master_payment_term`
+DROP TABLE IF EXISTS `${CrmMasterPaymentTermTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CrmMasterPaymentTermTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -588,8 +902,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/crm_master_payment_term/'
 );
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_formula_line`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_formula_line`
+DROP TABLE IF EXISTS `${InventoryFormulaLineTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${InventoryFormulaLineTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -599,8 +913,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/inventory_formula_line/'
 );
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_formula_versions`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.inventory_formula_versions`
+DROP TABLE IF EXISTS `${InventoryFormulaVersionsTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${InventoryFormulaVersionsTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -610,8 +924,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/inventory_formula_versions/'
 );
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sync_mac5_inventory_item_price`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_DERP}.sync_mac5_inventory_item_price`
+DROP TABLE IF EXISTS `${SyncMac5InventoryItemPriceTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SyncMac5InventoryItemPriceTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -620,4 +934,3 @@ OPTIONS (
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sync_mac5_inventory_item_price/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_DERP}/sync_mac5_inventory_item_price/'
 );
------------------------------------ INCREMENTAL ---------------------------------------

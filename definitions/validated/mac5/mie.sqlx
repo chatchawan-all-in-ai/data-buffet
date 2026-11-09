@@ -38,6 +38,40 @@ END;`;
         partition_statement = "";
         post_operations_statement = "";
     }
+    const MieAg01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mie",
+    };
+    const MieAg01TableRef = `${MieAg01Table.database}.${MieAg01Table.schema}.${MieAg01Table.name}`;
+
+    const MieAa05Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AA05,
+        name: "mie",
+    };
+    const MieAa05TableRef = `${MieAa05Table.database}.${MieAa05Table.schema}.${MieAa05Table.name}`;
+
+    const MieAb01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AB01,
+        name: "mie",
+    };
+    const MieAb01TableRef = `${MieAb01Table.database}.${MieAb01Table.schema}.${MieAb01Table.name}`;
+
+    const MieAc02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AC02,
+        name: "mie",
+    };
+    const MieAc02TableRef = `${MieAc02Table.database}.${MieAc02Table.schema}.${MieAc02Table.name}`;
+
+    const MieAk02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AK02,
+        name: "mie",
+    };
+    const MieAk02TableRef = `${MieAk02Table.database}.${MieAk02Table.schema}.${MieAk02Table.name}`;
 }
 
 WITH all_sources AS (
@@ -83,7 +117,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castFloat64('MIEperDT532')} AS mieperdt532,
     ${databuffet.functionData.cleanString('MIEtaxpayNo')} AS mietaxpayno,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mie`
+  FROM `${MieAg01TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -129,7 +163,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castFloat64('MIEperDT532')} AS mieperdt532,
     ${databuffet.functionData.cleanString('MIEtaxpayNo')} AS mietaxpayno,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}.mie`
+  FROM `${MieAa05TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -175,7 +209,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castFloat64('MIEperDT532')} AS mieperdt532,
     ${databuffet.functionData.cleanString('MIEtaxpayNo')} AS mietaxpayno,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}.mie`
+  FROM `${MieAb01TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -221,7 +255,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castFloat64('MIEperDT532')} AS mieperdt532,
     ${databuffet.functionData.cleanString('MIEtaxpayNo')} AS mietaxpayno,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AC02}.mie`
+  FROM `${MieAc02TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
   
   UNION ALL
@@ -267,7 +301,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castFloat64('MIEperDT532')} AS mieperdt532,
     ${databuffet.functionData.cleanString('MIEtaxpayNo')} AS mietaxpayno,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.mie`
+  FROM `${MieAk02TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 )
 SELECT * FROM all_sources

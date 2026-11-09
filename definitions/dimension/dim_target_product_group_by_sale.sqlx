@@ -152,7 +152,6 @@ with target_table as (
     rate.StartDate,
     rate.EndDate,
 
-    -- Cal
     (tg.Amt * (rate.Percent / 100)) as CalAmt,
     (tg.Qty * (rate.Percent / 100)) as CalQty,
   from target_table as tg
@@ -173,7 +172,6 @@ with target_table as (
     rate.StartDate,
     rate.EndDate,
 
-    -- Cal
     (tg.Amt * (rate.Percent / 100)) as CalAmt,
     (tg.Qty * (rate.Percent / 100)) as CalQty,
   from target_table as tg
@@ -202,7 +200,6 @@ with target_table as (
     rate.StartDate,
     rate.EndDate,
 
-    -- Cal
     (tg.Amt * (rate.Percent / 100)) as CalAmt,
     (tg.Qty * (rate.Percent / 100)) as CalQty,
   from target_table as tg
@@ -249,13 +246,11 @@ with target_table as (
     dim_report.ReportSK,
     a.* except(MarketingGroupID_pg)
   from mix_table as a
-  -- Process Sale
   left join `${DimSaleRepresentativeLastTableRef}` as l
     on a.employeeid = l.employeeid
     and a.DepartmentID = l.DepartmentID
     and a.CompanySK = l.CompanySK
 
-  -- Process Department
   left join `${DimDepartmentLastTableRef}` as c
     on a.DepartmentID = c.DepartmentID
     and a.CompanySK = c.CompanySK

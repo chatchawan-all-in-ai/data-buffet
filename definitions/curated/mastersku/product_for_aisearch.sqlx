@@ -6,25 +6,24 @@ config {
 
 js {
     // Define table references
-    const sourceTable = {
+    const ProductForAisearchTable = {
         database: databuffet.DATABASE,
         schema: databuffet.CURATED_MASTERSKU,
         name: "product_for_aisearch",
     };
 
     // Build source table reference
-    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+    const ProductForAisearchTableRef = `${ProductForAisearchTable.database}.${ProductForAisearchTable.schema}.${ProductForAisearchTable.name}`;
 
 }
 
 DECLARE run_date DATE DEFAULT CURRENT_DATE('Asia/Bangkok');
 
 BEGIN
-  ------ CREATE TEMP TABLE
   CREATE OR REPLACE TEMP TABLE temp_product_for_aisearch AS
   SELECT
     run_date as asatdate,
-    product.prdSku as id, 
+    product.prdSku as id,
     STRUCT(
         product.prdDescription as product_name,
         product.prdSku as sku_code,
@@ -34,7 +33,7 @@ BEGIN
         cate.cat_name,
         IFNULL(brand.bra_name, brand.bra_name_th) as brand_name,
         vendor.vd_name,
-        (CASE 
+        (CASE
           WHEN product.prdIsActive = true and product.prdIsUse = true and pd.pd_is_system = true then 'Approve'
           ELSE 'Non-Approve'
         END) as product_status,
@@ -57,7 +56,7 @@ BEGIN
         pd.pd_spacific_fields as special_specifications_json
     ) as structData
   FROM ${ref(databuffet.CURATED_MASTERSKU, "curated_product")} as product
-  
+
   LEFT JOIN ${ref(databuffet.VALIDATED_MASTERSKU, "product_detail")} as pd
     ON product.prdId = pd.pd_prd_id
   LEFT JOIN ${ref(databuffet.VALIDATED_MASTERSKU, "brand")} as brand
@@ -80,15 +79,12 @@ BEGIN
 
   WHERE product.asatdate between run_date-1 and run_date;
 
-  ---- DELETE DATA BEFOR INSERT
-  DELETE FROM `${sourceTableRef}`
+  DELETE FROM `${ProductForAisearchTableRef}`
   WHERE asatdate = run_date;
-  
-  ---- INSERT DATA 
-  INSERT INTO `${sourceTableRef}`
+
+  INSERT INTO `${ProductForAisearchTableRef}`
   SELECT * FROM temp_product_for_aisearch;
 
-  ---- DROP TEMP TABLE
   DROP TABLE IF EXISTS temp_product_for_aisearch;
 
 END;

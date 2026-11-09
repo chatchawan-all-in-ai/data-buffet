@@ -23,7 +23,6 @@ js {
 
 declare max_sk INT64;
 
--- หาค่า SK สูงสุดปัจจุบัน (ถ้าตารางว่างให้เริ่มที่ 0)
 set max_sk = IFNULL( (select IFNULL(MAX(GroupCustomerSK), 0) from `${DimGroupCustomerTableRef}`), 0 );
 
 MERGE `${DimGroupCustomerTableRef}` as T
@@ -37,7 +36,6 @@ USING (
   ),
   final as (
     select 
-      -- ถ้ามีข้อมูลอยู่แล้วให้ใช้ SK เดิม, ถ้าเป็นข้อมูลใหม่ให้เอา max_sk บวกกับ row_number()
       (CASE 
         WHEN existing.GroupCustomerSK is not null THEN existing.GroupCustomerSK
         ELSE max_sk + row_number() over(partition by existing.GroupCustomerSK is null order by dim_cust.companyID, dim_cust.debgroup)
@@ -46,7 +44,6 @@ USING (
       dim_cust.companyID,
       dim_cust.debgroup
     from dim_cust
-    -- Join กลับไปหาตารางตัวเองเพื่อเช็คว่า Group นี้เคยถูกสร้างไว้หรือยัง
     left join `${DimGroupCustomerTableRef}` as existing
       on dim_cust.CompanySK = existing.CompanySK
       and dim_cust.debgroup = existing.debgroup

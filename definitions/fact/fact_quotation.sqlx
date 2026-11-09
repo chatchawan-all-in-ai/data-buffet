@@ -88,7 +88,6 @@ with quotation_detail as (
     LEFT JOIN  `${DimProductMasterTableRef}` as dim_product
       on qt_detail.company_id = dim_product.companyID
       and qt_detail.stkcode = dim_product.ProductCode
-    -- WHERE qt_detail.company_id = 'ag01'
     group by 1,2,3,4,5,6,7,8,9,10,11,12
 
   )

@@ -1,25 +1,20 @@
 config {
     type: "view",
     schema: databuffet.PUB_SUB,
-    dependencies: ["pub_sub_schema", "brand"],
+    dependencies: ["pub_sub_schema"],
     // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
     tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
     description: "Pub/Sub export of validated_mastersku.brand: the columns of the sample sent to the AI team (the AI team package of 2026-10-26), plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTERSKU}.brand`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table validated_mastersku.brand (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = bra_id.
 WITH src AS (
   SELECT
     bra_id,
     bra_name
-  FROM `${SourceTableRef}`
+  FROM ${ref(databuffet.VALIDATED_MASTERSKU, "brand")}
 )
 SELECT
   s.bra_id,

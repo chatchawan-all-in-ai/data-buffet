@@ -8,19 +8,20 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_org_ols_center`;
+    const MdsDataOrgOlsCenterTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.MDS_DATASET,
+    name: "mds_data_org_ols_center",
+};
+const MdsDataOrgOlsCenterTableRef = `${MdsDataOrgOlsCenterTable.database}.${MdsDataOrgOlsCenterTable.schema}.${MdsDataOrgOlsCenterTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table mds_dataset.mds_data_org_ols_center (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = employeeemail.
 WITH src AS (
   SELECT
     employeeemail,
     viewtarget,
     is_active
-  FROM `${SourceTableRef}`
+  FROM `${MdsDataOrgOlsCenterTableRef}`
 )
 SELECT
   s.employeeemail,

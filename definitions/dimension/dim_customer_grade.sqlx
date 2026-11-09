@@ -10,68 +10,84 @@ config {
 }
 
 js {
-    const DimCustomerGradeTable = {
+const DimCustomerGradeTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimCustomerGradeTableRef = `${DimCustomerGradeTable.database}.${DimCustomerGradeTable.schema}.${DimCustomerGradeTable.name}`;
 
-    const DimCalendarTable = {
+const DimCalendarTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_calendar",
     };
     const DimCalendarTableRef = `${DimCalendarTable.database}.${DimCalendarTable.schema}.${DimCalendarTable.name}`;
 
-    const DimCustomerTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_customer",
-    };
-    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
-
-    const DimStatusNotReceiveTable = {
+const DimStatusNotReceiveTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_status_not_receive",
     };
     const DimStatusNotReceiveTableRef = `${DimStatusNotReceiveTable.database}.${DimStatusNotReceiveTable.schema}.${DimStatusNotReceiveTable.name}`;
 
-    const DimPaymentScoreTable = {
+const DimCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer",
+    };
+    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
+
+const DimPaymentReceiveScoreTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_payment_receive_score",
     };
-    const DimPaymentScoreTableRef = `${DimPaymentScoreTable.database}.${DimPaymentScoreTable.schema}.${DimPaymentScoreTable.name}`;
+    const DimPaymentReceiveScoreTableRef = `${DimPaymentReceiveScoreTable.database}.${DimPaymentReceiveScoreTable.schema}.${DimPaymentReceiveScoreTable.name}`;
 
-    const DimAVGCollectScoreTable = {
+const DimAvgCollectionScoreTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_avg_collection_score",
     };
-    const DimAVGCollectScoreTableRef = `${DimAVGCollectScoreTable.database}.${DimAVGCollectScoreTable.schema}.${DimAVGCollectScoreTable.name}`;
+    const DimAvgCollectionScoreTableRef = `${DimAvgCollectionScoreTable.database}.${DimAvgCollectionScoreTable.schema}.${DimAvgCollectionScoreTable.name}`;
 
-    const DimBounceChqScoreTable = {
+const DimBounceChequeScoreTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_bounce_cheque_score",
     };
-    const DimBounceChqScoreTableRef = `${DimBounceChqScoreTable.database}.${DimBounceChqScoreTable.schema}.${DimBounceChqScoreTable.name}`;
+    const DimBounceChequeScoreTableRef = `${DimBounceChequeScoreTable.database}.${DimBounceChequeScoreTable.schema}.${DimBounceChequeScoreTable.name}`;
 
-    const DimContactScoreTable = {
+const DimContactScoreTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_contact_score",
     };
     const DimContactScoreTableRef = `${DimContactScoreTable.database}.${DimContactScoreTable.schema}.${DimContactScoreTable.name}`;
 
-    const DimGradeTable = {
+const DimGradeTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_grade",
     };
     const DimGradeTableRef = `${DimGradeTable.database}.${DimGradeTable.schema}.${DimGradeTable.name}`;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 declare max_sk INT64;
@@ -260,7 +276,7 @@ USING (
       on cust.debcode = rec_sum.mircus
       and cust.year = rec_sum.miryear
       and cust.companyID = rec_sum.company_id
-    left join `${DimPaymentScoreTableRef}` as payment_receive_score
+    left join `${DimPaymentReceiveScoreTableRef}` as payment_receive_score
       on cust.CompanySK = payment_receive_score.CompanySK
       and ROUND(IFNULL(rec_sum.mirsum, 0)) between payment_receive_score.PaymentReceivedMin and payment_receive_score.PaymentReceivedMax
       and current_date('Asia/Bangkok')-1 between payment_receive_score.StartDate  and payment_receive_score.EndDate
@@ -269,7 +285,7 @@ USING (
       on cust.debcode = rec_age_inv.mircus
       and cust.year = rec_age_inv.miryear
       and cust.companyID = rec_age_inv.company_id
-    left join `${DimAVGCollectScoreTableRef}` as avg_collect_score_inv
+    left join `${DimAvgCollectionScoreTableRef}` as avg_collect_score_inv
       on cust.CompanyID = avg_collect_score_inv.CompanyID
       and ROUND(IFNULL(rec_age_inv.receiveAgeDays_invoiceDate, 0)) between avg_collect_score_inv.AvgCollectiondayMin and avg_collect_score_inv.AvgCollectiondayMax
       and current_date('Asia/Bangkok')-1 between avg_collect_score_inv.StartDate  and avg_collect_score_inv.EndDate
@@ -278,7 +294,7 @@ USING (
       on cust.debcode = rec_age_due.mircus
       and cust.year = rec_age_due.miryear
       and cust.companyID = rec_age_due.company_id
-    left join `${DimAVGCollectScoreTableRef}` as avg_collect_score_due
+    left join `${DimAvgCollectionScoreTableRef}` as avg_collect_score_due
       on cust.CompanyID = avg_collect_score_due.CompanyID
       and ROUND(IFNULL(rec_age_due.receiveAgeDays_dueDate, 0)) between avg_collect_score_due.AvgCollectiondayMin and avg_collect_score_due.AvgCollectiondayMax
       and current_date('Asia/Bangkok')-1 between avg_collect_score_due.StartDate  and avg_collect_score_due.EndDate
@@ -287,7 +303,7 @@ USING (
       on cust.debcode = can_chq.chqcus
       and cust.year = can_chq.chqyear
       and cust.companyID = can_chq.company_id
-    left join `${DimBounceChqScoreTableRef}` as bounce_chq_score
+    left join `${DimBounceChequeScoreTableRef}` as bounce_chq_score
       on cust.CompanySK = bounce_chq_score.CompanySK
       and ROUND(IFNULL(can_chq.cancel_chq, 0)) between bounce_chq_score.BouncedChequeMin and bounce_chq_score.BouncedChequeMax
       and current_date('Asia/Bangkok')-1 between bounce_chq_score.StartDate and bounce_chq_score.EndDate

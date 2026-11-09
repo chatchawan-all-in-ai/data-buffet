@@ -119,9 +119,6 @@ SELECT
    -- NULLIF จับทั้งสองกรณี: สินค้าที่ไม่มีในทะเบียนเลย (NULL) และที่มีแต่ยังไม่ได้จัดกลุ่ม (-1)
   IFNULL(NULLIF(dim_pr.ProductMktSK, -1), IFNULL((SELECT WaitingMktSK FROM waiting_mkt), -1)) AS product_mkt_sk,
   COALESCE(rep.ReportSK, rep_fb.ReportSK, -1) AS report_sk,
-  -- ชุด "Transaction" ตามเอกสาร requirement — ค่า ณ วันที่ขาย ไม่ใช่ค่าปัจจุบัน
-  -- ต่างจาก RegionSK/RegionManagerSK ใน dim_sales_branch_mdt ซึ่งมาจาก _last = ค่าล่าสุด
-  -- (ฝั่ง sale in เรียกชุดค่าปัจจุบันว่า ChangeRegionSK — เรายังไม่ได้ทำชุดนั้น)
   IFNULL(rg.RegionSK,         -1) AS region_sk,
   IFNULL(rgm.RegionManagerSK, -1) AS region_manager_sk,
   IFNULL(dr.DirectorSK,       -1) AS director_sk,
@@ -160,10 +157,6 @@ LEFT JOIN region_manager_at_sale AS rgm
 LEFT JOIN director_at_sale AS dr
   ON  rg.DirectorID = dr.DirectorID
   AND c.sale_date BETWEEN dr.StartDate AND dr.EndDate
--- ทดลองตัด Segment ที่ไฟล์ BI ของ GB ไม่นับ (2026-09-23)
---   00221 = HITACHI (HOME PUMP) 3 รุ่น 16.47M · 00222 ยังไม่มีแถวของ GB
--- IFNULL: สินค้าที่ไม่มี Segment (SK -1) ต้องไม่หลุดไปด้วย
--- ponytail: ย้ายรายการไปไว้ที่ master รายการตัดออก (store_code, segment_id) เมื่อ BI ยืนยัน
 WHERE NOT (c.store_code = 'GB' AND IFNULL(mkt.SegmentID, '') IN ('00221', '00222'))
 
 pre_operations {}

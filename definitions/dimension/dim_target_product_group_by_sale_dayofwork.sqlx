@@ -1,7 +1,7 @@
 config {
     type: "table",
     schema: databuffet.DIMENSION_TABLE,
-    dependencies: [ 
+    dependencies: [
                     "dim_calendar", "dim_rate_target",
                     "dim_target_product_group_by_sale",
                     // dims เหล่านี้ปั้น SK ใหม่ทุกคืน ต้องรันเสร็จก่อนไฟล์นี้เสมอ
@@ -17,85 +17,93 @@ config {
 }
 
 js {
-    // ref ชี้กลับมาที่ตัวเอง (name()) — ยังไม่ได้ใช้ เพราะ config เป็น type: "table"
-    // Dataform จึงสร้าง/เขียนตารางให้เอง ไม่ต้องเขียน DDL อ้างชื่อตัวเองใน body
-    // เก็บไว้เผื่อวันไหนเปลี่ยนเป็น type: "operations"
-    const DimSourceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: name(),
-    };
-    const DimSourceTableRef = `${DimSourceTable.database}.${DimSourceTable.schema}.${DimSourceTable.name}`;
-
-    const DimCalendarTable = {
+const DimCalendarTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_calendar",
     };
     const DimCalendarTableRef = `${DimCalendarTable.database}.${DimCalendarTable.schema}.${DimCalendarTable.name}`;
 
-    const DimTargetProductGroupTable = {
+const DimTargetProductGroupBySaleTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_target_product_group_by_sale",
     };
-    const DimTargetProductGroupTableRef = `${DimTargetProductGroupTable.database}.${DimTargetProductGroupTable.schema}.${DimTargetProductGroupTable.name}`;
+    const DimTargetProductGroupBySaleTableRef = `${DimTargetProductGroupBySaleTable.database}.${DimTargetProductGroupBySaleTable.schema}.${DimTargetProductGroupBySaleTable.name}`;
 
-    const DimSaleRepTable = {
+const DimSaleRepresentativeTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_sale_representative",
     };
-    const DimSaleRepTableRef = `${DimSaleRepTable.database}.${DimSaleRepTable.schema}.${DimSaleRepTable.name}`;
+    const DimSaleRepresentativeTableRef = `${DimSaleRepresentativeTable.database}.${DimSaleRepresentativeTable.schema}.${DimSaleRepresentativeTable.name}`;
 
-    const DimDepartmentTable = {
+const DimDepartmentTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_department",
     };
     const DimDepartmentTableRef = `${DimDepartmentTable.database}.${DimDepartmentTable.schema}.${DimDepartmentTable.name}`;
 
-    const DimRegionTable = {
+const DimRegionTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_region",
     };
     const DimRegionTableRef = `${DimRegionTable.database}.${DimRegionTable.schema}.${DimRegionTable.name}`;
 
-    const DimRegionManagerTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_region_manager",
-    };
-    const DimRegionManagerTableRef = `${DimRegionManagerTable.database}.${DimRegionManagerTable.schema}.${DimRegionManagerTable.name}`;
-
-    const DimSectionTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_section",
-    };
-    const DimSectionTableRef = `${DimSectionTable.database}.${DimSectionTable.schema}.${DimSectionTable.name}`;
-
-    const DimSectionManagerTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_section_manager",
-    };
-    const DimSectionManagerTableRef = `${DimSectionManagerTable.database}.${DimSectionManagerTable.schema}.${DimSectionManagerTable.name}`;
-
-    const DimDirectorTable = {
+const DimDirectorTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_director",
     };
     const DimDirectorTableRef = `${DimDirectorTable.database}.${DimDirectorTable.schema}.${DimDirectorTable.name}`;
 
-    const DimRateTargetTable = {
+const DimSectionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_section",
+    };
+    const DimSectionTableRef = `${DimSectionTable.database}.${DimSectionTable.schema}.${DimSectionTable.name}`;
+
+const DimRegionManagerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_region_manager",
+    };
+    const DimRegionManagerTableRef = `${DimRegionManagerTable.database}.${DimRegionManagerTable.schema}.${DimRegionManagerTable.name}`;
+
+const DimSectionManagerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_section_manager",
+    };
+    const DimSectionManagerTableRef = `${DimSectionManagerTable.database}.${DimSectionManagerTable.schema}.${DimSectionManagerTable.name}`;
+
+const DimRateTargetTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_rate_target",
     };
     const DimRateTargetTableRef = `${DimRateTargetTable.database}.${DimRateTargetTable.schema}.${DimRateTargetTable.name}`;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }
 
@@ -110,10 +118,10 @@ with tab_dm as (
   group by 1,2
 
 ), final as (
-  SELECT 
+  SELECT
     dm.Date,
-    tbc.*, 
-    dm.Day, 
+    tbc.*,
+    dm.Day,
     sum_dm.total_day,
     (CASE
       WHEN HolidayFlag = 'Yes' THEN 0.0
@@ -123,12 +131,12 @@ with tab_dm as (
       WHEN HolidayFlag = 'Yes' THEN 0
       ELSE TRUNC((tbc.CalQty / sum_dm.total_day), 10)
     END) as Qty_New,
-  FROM `${DimTargetProductGroupTableRef}` as tbc
+  FROM `${DimTargetProductGroupBySaleTableRef}` as tbc
   LEFT JOIN tab_dm as dm
     ON tbc.Year = dm.Year
       and FORMAT('%02d', tbc.Month) = dm.MonthNumber
       and (tbc.StartDate is null
-           or dm.Date between tbc.StartDate and tbc.EndDate)  
+           or dm.Date between tbc.StartDate and tbc.EndDate)
   LEFT JOIN tab_sum_dm as sum_dm
     ON sum_dm.YEAR = dm.YEAR
       and sum_dm.MonthNumber = dm.MonthNumber
@@ -143,9 +151,8 @@ with tab_dm as (
     sec.SectionSK,
     sec_m.SectionManagerSK,
     final.*
-    -- count(1)
   FROM final
-  left join `${DimSaleRepTableRef}` as salerep
+  left join `${DimSaleRepresentativeTableRef}` as salerep
     on final.Date between salerep.StartDate and salerep.EndDate
       and final.employeeid = salerep.employeeid
       and final.DepartmentID = salerep.DepartmentID
@@ -157,8 +164,8 @@ with tab_dm as (
       and final.CompanySK = dep.CompanySK
 
   left join `${DimRegionTableRef}` as reg
-    on final.Date between reg.StartDate and reg.EndDate 
-      and (CASE 
+    on final.Date between reg.StartDate and reg.EndDate
+      and (CASE
         WHEN reg.RegionID != reg.SubRegionID
           THEN dep.RegionID = reg.RegionID and dep.SectionID = reg.SubRegionID
         ELSE dep.RegionID = reg.RegionID
@@ -171,30 +178,29 @@ with tab_dm as (
       and reg.CompanySK = dir.CompanySK
 
   left join `${DimSectionTableRef}` as sec
-    on final.Date between sec.StartDate and sec.EndDate 
+    on final.Date between sec.StartDate and sec.EndDate
       and dep.SectionID = sec.SectionID
       and dep.CompanySK = sec.CompanySK
 
   left join `${DimRegionManagerTableRef}` as reg_m
-    on final.Date between reg_m.StartDate and reg_m.EndDate 
+    on final.Date between reg_m.StartDate and reg_m.EndDate
       and reg.RegionID = reg_m.RegionID
       and reg.SubRegionID = reg_m.SubRegionID
       and reg.CompanySK = reg_m.CompanySK
 
   left join `${DimSectionManagerTableRef}` as sec_m
-    on final.Date between sec_m.StartDate and sec_m.EndDate 
+    on final.Date between sec_m.StartDate and sec_m.EndDate
       and dep.SectionID = sec_m.SectionID
       and dep.CompanySK = sec_m.CompanySK
-    
-  -- where salerep.SaleRepSK = 42
+
 ), final_mix as (
-  SELECT 
-    row_number() over(order by Year, Month, Day, TargetBySaleSK) as TargetBySaleDayofworkSK, 
+  SELECT
+    row_number() over(order by Year, Month, Day, TargetBySaleSK) as TargetBySaleDayofworkSK,
     COALESCE(final2.SaleRepSK, salerep.SaleRepSK) as SaleRepSK,
     final2.* except(SaleRepSK)
   FROM final2
-  
-  left join `${DimSaleRepTableRef}` as salerep
+
+  left join `${DimSaleRepresentativeTableRef}` as salerep
     on final2.Date between salerep.StartDate and salerep.EndDate
       and final2.employeeid = salerep.employeeid
       and salerep.DepartmentID is null
@@ -221,7 +227,7 @@ with tab_dm as (
     where m.companyID = s.companyID
       and m.Year = s.Year
       and m.Month = s.Month
-      and m.EmployeeID = s.EmployeeID      
+      and m.EmployeeID = s.EmployeeID
       and m.DepartmentID = s.DepartmentID
   )
   union distinct

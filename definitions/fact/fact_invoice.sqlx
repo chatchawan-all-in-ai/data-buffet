@@ -73,7 +73,6 @@ with dim_invoice as (
     mil.milvnos,
     mil.milCus,
     mil.milStk,
-    -- mil.milListno,
     mil.milLinkVcno,
     sum(mil.milQuan) as milQuan,
     sum(mil.milAdisc) as milAdisc,
@@ -90,7 +89,6 @@ with dim_invoice as (
       and t.mihCus = mil.milCus
       and IFNULL(t.milLinkVcno, '') = IFNULL(mil.milLinkVcno, '')
       and t.companyID = mil.company_id
-  -- where t.mihvnos = '6603011218'
   LEFT JOIN `${DimCompanyTableRef}` as dim_com
     on mil.company_id = dim_com.companyID
   WHERE mil.milType in ('IS', 'BS', 'AS', 'QS')

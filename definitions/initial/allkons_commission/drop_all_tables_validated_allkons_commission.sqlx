@@ -4,11 +4,63 @@ config {
   tags: [databuffet.TAG_INITIAL],
 }
 
+js {
+    const Mac5SalesAreasTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_ALLKONS_COMMISSION,
+        name: "mac5_sales_areas",
+    };
+    const Mac5SalesAreasTableRef = `${Mac5SalesAreasTable.database}.${Mac5SalesAreasTable.schema}.${Mac5SalesAreasTable.name}`;
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_ALLKONS_COMMISSION}.mac5_sales_areas`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_ALLKONS_COMMISSION}.mac5_sales_channels`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_ALLKONS_COMMISSION}.mac5_transactions`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_ALLKONS_COMMISSION}.marketing_condition_version_details`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_ALLKONS_COMMISSION}.sales_channels`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_ALLKONS_COMMISSION}.sales_positions`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_ALLKONS_COMMISSION}.target_commission_monthly_carries`;
+    const Mac5SalesChannelsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_ALLKONS_COMMISSION,
+        name: "mac5_sales_channels",
+    };
+    const Mac5SalesChannelsTableRef = `${Mac5SalesChannelsTable.database}.${Mac5SalesChannelsTable.schema}.${Mac5SalesChannelsTable.name}`;
+
+    const Mac5TransactionsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_ALLKONS_COMMISSION,
+        name: "mac5_transactions",
+    };
+    const Mac5TransactionsTableRef = `${Mac5TransactionsTable.database}.${Mac5TransactionsTable.schema}.${Mac5TransactionsTable.name}`;
+
+    const MarketingConditionVersionDetailsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_ALLKONS_COMMISSION,
+        name: "marketing_condition_version_details",
+    };
+    const MarketingConditionVersionDetailsTableRef = `${MarketingConditionVersionDetailsTable.database}.${MarketingConditionVersionDetailsTable.schema}.${MarketingConditionVersionDetailsTable.name}`;
+
+    const SalesChannelsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_ALLKONS_COMMISSION,
+        name: "sales_channels",
+    };
+    const SalesChannelsTableRef = `${SalesChannelsTable.database}.${SalesChannelsTable.schema}.${SalesChannelsTable.name}`;
+
+    const SalesPositionsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_ALLKONS_COMMISSION,
+        name: "sales_positions",
+    };
+    const SalesPositionsTableRef = `${SalesPositionsTable.database}.${SalesPositionsTable.schema}.${SalesPositionsTable.name}`;
+
+    const TargetCommissionMonthlyCarriesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_ALLKONS_COMMISSION,
+        name: "target_commission_monthly_carries",
+    };
+    const TargetCommissionMonthlyCarriesTableRef = `${TargetCommissionMonthlyCarriesTable.database}.${TargetCommissionMonthlyCarriesTable.schema}.${TargetCommissionMonthlyCarriesTable.name}`;
+}
+
+
+
+DROP TABLE IF EXISTS `${Mac5SalesAreasTableRef}`;
+DROP TABLE IF EXISTS `${Mac5SalesChannelsTableRef}`;
+DROP TABLE IF EXISTS `${Mac5TransactionsTableRef}`;
+DROP TABLE IF EXISTS `${MarketingConditionVersionDetailsTableRef}`;
+DROP TABLE IF EXISTS `${SalesChannelsTableRef}`;
+DROP TABLE IF EXISTS `${SalesPositionsTableRef}`;
+DROP TABLE IF EXISTS `${TargetCommissionMonthlyCarriesTableRef}`;

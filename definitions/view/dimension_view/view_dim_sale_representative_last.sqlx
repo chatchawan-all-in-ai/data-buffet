@@ -23,19 +23,15 @@ js {
 
 select Sales_Rep.*, Department.DepartmentName ,
 
--------Oat เพิ่ม ไว้ ทำตัว Sort -------
 FORMAT('%02d', 
     ROW_NUMBER() OVER (
-      -- จัดกลุ่มตาม SectionSK (หากเป็นค่าว่างหรือ Null จะถูกรวบเป็นกลุ่มเดียวกัน)
       PARTITION BY IFNULL(CAST(Sales_Rep.RegionSK AS STRING), '') 
       
-      -- เรียงลำดับคิวในการรันเลข โดยดูจาก DepartmentID ก่อน ถ้าไม่มีให้ดู EmployeeID
       ORDER BY 
         IFNULL(Sales_Rep.DepartmentID, ''), 
         EmployeeID
     )
   ) AS Sort
--------Oat เพิ่ม ไว้ ทำตัว Sort -------
 
 from `${DimSaleRepresentativeLastTableRef}` as Sales_Rep
 left join `${DimDepartmentLastTableRef}` as Department 

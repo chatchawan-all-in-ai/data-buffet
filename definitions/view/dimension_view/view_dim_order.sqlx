@@ -1,31 +1,35 @@
 config {
   type: "view",
   schema: databuffet.DIMENSION_VIEW,
-  dependencies: ["dim_order"],
+  dependencies: ["dim_order", "create_all_function"],
   tags: [databuffet.TAG_VIEW],
 }
 
 js {
-    const DimOrderTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_order",
-    };
-    const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
-
-    const FnOrderTypeTable = {
+const FnOrderTypeTable = {
         database: databuffet.DATABASE,
         schema: databuffet.FUNCTION_DATASET,
         name: "fn_order_type",
     };
     const FnOrderTypeTableRef = `${FnOrderTypeTable.database}.${FnOrderTypeTable.schema}.${FnOrderTypeTable.name}`;
 
-    const MdsDataDocumentExpireRuleMasterTable = {
+const DimOrderTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_order",
+    };
+    const DimOrderTableRef = `${DimOrderTable.database}.${DimOrderTable.schema}.${DimOrderTable.name}`;
+
+const MdsDataDocumentExpireRuleMasterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
         name: "mds_data_document_expire_rule_master",
     };
     const MdsDataDocumentExpireRuleMasterTableRef = `${MdsDataDocumentExpireRuleMasterTable.database}.${MdsDataDocumentExpireRuleMasterTable.schema}.${MdsDataDocumentExpireRuleMasterTable.name}`;
+
+
+
+
 }
 
 SELECT  
@@ -51,6 +55,5 @@ left join `${MdsDataDocumentExpireRuleMasterTableRef}` as mds
   on lower(left(ord.mihVnos, 2)) = lower(mds.DocPrefix)
   and mds.is_active = true
   
--- where OrderSK = 1007301
 
 qualify row_number() over(partition by OrderSK order by mih2.mih2pos desc) = 1

@@ -44,7 +44,6 @@ WITH mkt_group AS (
 
 ), pc_per_month AS (
 
-  -- 1 แถว = 1 PC ที่รับผิดชอบช่องนั้นในเดือนนั้น (ช่อง = สาขา + กลุ่มการตลาด)
   SELECT DISTINCT
     DATE_TRUNC(d, MONTH) AS month_date,
     BranchMdtSK, MarketingGroupID, PcSK
@@ -54,7 +53,6 @@ WITH mkt_group AS (
 
 ), pc_share AS (
 
-  -- ช่องหนึ่งมี PC กี่คน = ตัวหารแบ่งยอด (ยอดรวมยังเท่าเดิมเมื่อบวกกลับ)
   SELECT *,
     COUNT(*) OVER(PARTITION BY month_date, BranchMdtSK, MarketingGroupID) AS pc_in_slot
   FROM pc_per_month
@@ -104,6 +102,5 @@ WITH mkt_group AS (
 SELECT
   * EXCEPT(pc_row_in_month),
 
-  -- Yes = ไม่นับหัว · No = นับ · นับเฉพาะ PC ที่มียอดขาย คนที่ขายไม่ออกทั้งเดือนไม่ถูกนับ
   IF(pc_sk_list IS NULL OR pc_row_in_month > 1, 'Yes', 'No') AS fact_pc_not_count
 FROM exploded

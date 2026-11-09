@@ -37,6 +37,40 @@ END;`;
         partition_statement = "";
         post_operations_statement = "";
     }
+    const DepAg01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "dep",
+    };
+    const DepAg01TableRef = `${DepAg01Table.database}.${DepAg01Table.schema}.${DepAg01Table.name}`;
+
+    const DepAa05Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AA05,
+        name: "dep",
+    };
+    const DepAa05TableRef = `${DepAa05Table.database}.${DepAa05Table.schema}.${DepAa05Table.name}`;
+
+    const DepAb01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AB01,
+        name: "dep",
+    };
+    const DepAb01TableRef = `${DepAb01Table.database}.${DepAb01Table.schema}.${DepAb01Table.name}`;
+
+    const DepAc02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AC02,
+        name: "dep",
+    };
+    const DepAc02TableRef = `${DepAc02Table.database}.${DepAc02Table.schema}.${DepAc02Table.name}`;
+
+    const DepAk02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AK02,
+        name: "dep",
+    };
+    const DepAk02TableRef = `${DepAk02Table.database}.${DepAk02Table.schema}.${DepAk02Table.name}`;
 }
 
 WITH all_sources AS (
@@ -50,7 +84,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('deplock')} as deplock,
     ${databuffet.functionData.parseFlexibleDatetime('depeditdt')} AS depeditdt,
     ${databuffet.functionData.cleanString('depeditmf')} as depeditmf
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.dep`
+  FROM `${DepAg01TableRef}`
 
   UNION ALL
 
@@ -64,7 +98,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('deplock')} as deplock,
     ${databuffet.functionData.parseFlexibleDatetime('depeditdt')} AS depeditdt,
     ${databuffet.functionData.cleanString('depeditmf')} as depeditmf
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}.dep`
+  FROM `${DepAa05TableRef}`
 
   UNION ALL
 
@@ -78,7 +112,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('deplock')} as deplock,
     ${databuffet.functionData.parseFlexibleDatetime('depeditdt')} AS depeditdt,
     ${databuffet.functionData.cleanString('depeditmf')} as depeditmf
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}.dep`
+  FROM `${DepAb01TableRef}`
 
   UNION ALL
 
@@ -92,7 +126,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('deplock')} as deplock,
     ${databuffet.functionData.parseFlexibleDatetime('depeditdt')} AS depeditdt,
     ${databuffet.functionData.cleanString('depeditmf')} as depeditmf
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AC02}.dep`
+  FROM `${DepAc02TableRef}`
 
   UNION ALL
 
@@ -106,7 +140,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('deplock')} as deplock,
     ${databuffet.functionData.parseFlexibleDatetime('depeditdt')} AS depeditdt,
     ${databuffet.functionData.cleanString('depeditmf')} as depeditmf
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.dep`
+  FROM `${DepAk02TableRef}`
 )
 
 SELECT * FROM all_sources

@@ -38,6 +38,40 @@ END;`;
         partition_statement = "";
         post_operations_statement = "";
     }
+    const CqlAg01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "cql",
+    };
+    const CqlAg01TableRef = `${CqlAg01Table.database}.${CqlAg01Table.schema}.${CqlAg01Table.name}`;
+
+    const CqlAa05Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AA05,
+        name: "cql",
+    };
+    const CqlAa05TableRef = `${CqlAa05Table.database}.${CqlAa05Table.schema}.${CqlAa05Table.name}`;
+
+    const CqlAb01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AB01,
+        name: "cql",
+    };
+    const CqlAb01TableRef = `${CqlAb01Table.database}.${CqlAb01Table.schema}.${CqlAb01Table.name}`;
+
+    const CqlAc02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AC02,
+        name: "cql",
+    };
+    const CqlAc02TableRef = `${CqlAc02Table.database}.${CqlAc02Table.schema}.${CqlAc02Table.name}`;
+
+    const CqlAk02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AK02,
+        name: "cql",
+    };
+    const CqlAk02TableRef = `${CqlAk02Table.database}.${CqlAk02Table.schema}.${CqlAk02Table.name}`;
 }
 
 WITH all_sources AS (
@@ -58,7 +92,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('CQLtag')} AS cqltag,
     ${databuffet.functionData.castInt64('CQLAutoNO')} AS cqlautono,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cql`
+  FROM `${CqlAg01TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -80,7 +114,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('CQLtag')} AS cqltag,
     ${databuffet.functionData.castInt64('CQLAutoNO')} AS cqlautono,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}.cql`
+  FROM `${CqlAa05TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -102,7 +136,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('CQLtag')} AS cqltag,
     ${databuffet.functionData.castInt64('CQLAutoNO')} AS cqlautono,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}.cql`
+  FROM `${CqlAb01TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -124,7 +158,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('CQLtag')} AS cqltag,
     ${databuffet.functionData.castInt64('CQLAutoNO')} AS cqlautono,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AC02}.cql`
+  FROM `${CqlAc02TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -146,7 +180,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('CQLtag')} AS cqltag,
     ${databuffet.functionData.castInt64('CQLAutoNO')} AS cqlautono,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.cql`
+  FROM `${CqlAk02TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 )
 

@@ -8,15 +8,14 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.FACT_TABLE}.fact_order`;
+    const FactOrderTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.FACT_TABLE,
+    name: "fact_order",
+};
+const FactOrderTableRef = `${FactOrderTable.database}.${FactOrderTable.schema}.${FactOrderTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table fact_table.fact_order (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = companyID, milType, milvnos, milStk + occurrence.
--- No unique business key: rows are identified by the key columns plus `occurrence`, the position of the row among
--- the rows with the same key ordered by their data JSON, so exact duplicate lines get distinct, repeatable keys.
 WITH src AS (
   SELECT
     FactOrderSk,
@@ -34,7 +33,7 @@ WITH src AS (
       PARTITION BY companyID, milType, milvnos, milStk
       ORDER BY TO_JSON_STRING(STRUCT(FactOrderSk, OrderSK, ProductSK, CompanySK, CustomerSK, FactQuotationSK, milSum))
     ) AS occurrence
-  FROM `${SourceTableRef}`
+  FROM `${FactOrderTableRef}`
 )
 SELECT
   s.FactOrderSk,

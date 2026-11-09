@@ -8,20 +8,30 @@ config {
 }
 
 js {
-    const OrgCenterPersonTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_person`;
-    const OrgCenterExceptionTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_exception`;
-    const MdsDataOrgEmployeeMappingCenterTableRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_org_employee_mapping_center`;
+const MdsDataOrgEmployeeMappingCenterTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.MDS_DATASET,
+    name: "mds_data_org_employee_mapping_center",
+};
+const MdsDataOrgEmployeeMappingCenterTableRef = `${MdsDataOrgEmployeeMappingCenterTable.database}.${MdsDataOrgEmployeeMappingCenterTable.schema}.${MdsDataOrgEmployeeMappingCenterTable.name}`;
+
+const OrgCenterPersonTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.ORG_CENTER,
+    name: "org_center_person",
+};
+const OrgCenterPersonTableRef = `${OrgCenterPersonTable.database}.${OrgCenterPersonTable.schema}.${OrgCenterPersonTable.name}`;
+
+const OrgCenterExceptionTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.ORG_CENTER,
+    name: "org_center_exception",
+};
+const OrgCenterExceptionTableRef = `${OrgCenterExceptionTable.database}.${OrgCenterExceptionTable.schema}.${OrgCenterExceptionTable.name}`;
+
+
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
---   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
---   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
---   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
--- Natural key = person_key (MDS EmployeeID, never NULL).
--- Two sources: org_center_person (people with a seat) and the people with a special access row who have
--- no seat (captain decision 2026-11-02: add them), named from the MDS employee mapping center that
--- org_center_member already reads. They have no phone or LINE UUID in MDS employee info, so both stay NULL.
 WITH mds_mapping AS (
   SELECT
     ${databuffet.functionData.cleanString("employeeid")} AS employee_id,
@@ -44,7 +54,6 @@ WITH mds_mapping AS (
   FROM `${OrgCenterPersonTableRef}`
 
 ), unseated AS (
-  -- first word = first name, the rest = last name (the same split org_center_member applies to CEO names)
   SELECT
     ex.employee_id AS person_key,
     REGEXP_EXTRACT(mp.employee_name, r'^(\S+)') AS first_name,
@@ -72,7 +81,6 @@ WITH mds_mapping AS (
 ), shaped AS (
   SELECT
     person_key,
-    -- nickname if there is one, else first name
     COALESCE(nickname, first_name) AS display_name,
     first_name,
     last_name,

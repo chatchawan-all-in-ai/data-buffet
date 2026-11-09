@@ -14,7 +14,12 @@ config {
 }
 
 js {
-    const MdsDataCompanyMasterTableRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_company_master`;
+    const MdsDataCompanyMasterTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.MDS_DATASET,
+    name: "mds_data_company_master",
+};
+const MdsDataCompanyMasterTableRef = `${MdsDataCompanyMasterTable.database}.${MdsDataCompanyMasterTable.schema}.${MdsDataCompanyMasterTable.name}`;
 
     const DimDirectorLastTable = {
         database: databuffet.DATABASE,
@@ -94,7 +99,6 @@ WITH company_source AS (
     CONCAT('DIR-', ${databuffet.functionData.cleanString("dir.DirectorID")}) AS parent_unit_id,
     reg.StartDate AS valid_from,
     reg.EndDate AS valid_to,
-    -- แผนใช้ RegionID: PS1-1..PS1-5 รวมเป็น PS1 · ภาคอื่น RegionID = SubRegionID
     ${databuffet.functionData.cleanString("reg.RegionID")} AS plan_code,
     -- RegionID ของ dim: PS1-1..PS1-5 รวมเป็น PS1 · ใช้จับคู่สิทธิ์พิเศษที่ระบุภาค (org_center_exception.region_code)
     ${databuffet.functionData.cleanString("reg.RegionID")} AS region_code

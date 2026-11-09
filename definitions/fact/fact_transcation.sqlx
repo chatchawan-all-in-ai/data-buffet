@@ -327,7 +327,6 @@ BEGIN
 
       PARSE_DATE('%Y%m%d', CONCAT(trans.milYear, FORMAT("%02d", trans.milMonth), FORMAT("%02d", trans.milDay))) AS mix_date,
 
-      -- productmaster.ProductCode,
       productmaster.ProductGroupACC,
       productmaster.ProductGroupMac5Description,
       deb.debgroup,
@@ -350,27 +349,22 @@ BEGIN
     LEFT JOIN `${DimOrderTableRef}` AS order_date
       ON order_invoice.OrderSK = order_date.OrderSK
 
-    -- Product Master
     LEFT JOIN `${DimProductMasterTableRef}` AS productmaster
       ON LOWER(trans.milstk) = LOWER(productmaster.ProductCode)
       AND trans.CompanySK = productmaster.CompanySK
 
-    -- PaymentSK
     LEFT JOIN `${DimPaymentTableRef}` AS payment_sk
       ON trans.memoextract = payment_sk.CodeMemo
       AND trans.CompanySK = payment_sk.CompanySK
 
-    -- ChannelSK
     LEFT JOIN `${ViewDimChannelTableRef}` AS channel_sk
       ON IFNULL(trans.milDep, 'N/A') = channel_sk.DepCode
       AND trans.CompanySK = channel_sk.CompanySK
 
-    -- DEB
     LEFT JOIN ${ref(databuffet.VALIDATED_MAC5, "deb")} AS deb
       ON trans.milCus = deb.debCode
       AND trans.companyID = deb.company_id
 
-    -- SPECIAL FLAG DIM CHANNEL (อ่านจาก CTE sale_rep ไม่ scan dim ซ้ำ)
     LEFT JOIN (
       SELECT DISTINCT companyid, employeeID
       FROM sale_rep
@@ -381,10 +375,6 @@ BEGIN
       AND trans.milPer = flagSpecialDimChannel.employeeID
 
     WHERE PARSE_DATE('%Y%m%d', CONCAT(trans.milYear, FORMAT("%02d", trans.milMonth), FORMAT("%02d", trans.milDay))) >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
-      -- and trans.asatdate >= CURRENT_DATE('Asia/Bangkok')-1
-      -- and trans.companyID = 'ag01'
-      -- AND trans.milVnos = '6901003086'
-      -- AND trans.milPer = '1065043'
 
   ), raw_transction AS (
     SELECT
@@ -401,7 +391,6 @@ BEGIN
       trans.*
     FROM pre_raw_transction AS trans
 
-    -- mapping invoice
     LEFT JOIN `${MappingInvoiceTableRef}` AS map_inv
       ON trans.milPer = TRIM(map_inv.milPer)
       AND trans.milVnos = TRIM(map_inv.milVnos)
@@ -415,7 +404,6 @@ BEGIN
 
   ), final_part1 AS (
     SELECT
-      -- Surrogate Key
       sale_sk.SaleRepSK,
       dep_sk.DepartmentSK,
       reg_sk.RegionSK,
@@ -437,39 +425,32 @@ BEGIN
       trans.ChannelSaleSK,
       trans.ChannelCostSK,
 
-      -- DATA
       trans.* EXCEPT(ChannelSK, ChannelFinanceSK, ChannelSaleSK, ChannelCostSK),
 
-      -- FOR USE THIS PROCESS
       dep_sk.DepartmentID,
       reg_sk.RegionID
     FROM raw_part1 AS trans
 
-    -- CostStkSk
     LEFT JOIN src_dim_cost_stk AS coststk_sk
       ON LOWER(trans.milStk) = LOWER(coststk_sk.MilStk)
       AND trans.ChannelCostID = coststk_sk.ChannelCostID
       AND trans.mix_date BETWEEN coststk_sk.StartDate AND coststk_sk.EndDate
       AND trans.CompanySK = coststk_sk.CompanySK
 
-    -- CostGroupSK
     LEFT JOIN src_dim_cost_group AS costgroup_sk
       ON trans.ProductGroupACC = costgroup_sk.GAccID
       AND trans.ChannelCostID = costgroup_sk.ChannelCostID
       AND trans.mix_date BETWEEN costgroup_sk.StartDate AND costgroup_sk.EndDate
       AND trans.CompanySK = costgroup_sk.CompanySK
 
-    -- SaleRepSK
     LEFT JOIN sale_rep AS sale_sk
       ON ${saleRepMatchOn('sale_sk')}
 
-    -- DepartmentSK
     LEFT JOIN src_dim_department AS dep_sk
       ON trans.mix_date BETWEEN dep_sk.StartDate AND dep_sk.EndDate
       AND sale_sk.DepartmentID = dep_sk.DepartmentID
       AND sale_sk.CompanySK = dep_sk.CompanySK
 
-    -- RegionSK
     LEFT JOIN src_dim_region AS reg_sk
       ON trans.mix_date BETWEEN reg_sk.StartDate AND reg_sk.EndDate
       AND (CASE
@@ -479,61 +460,47 @@ BEGIN
       END)
       AND dep_sk.CompanySK = reg_sk.CompanySK
 
-    -- RegionManagerSK
     LEFT JOIN src_dim_region_manager AS reg_m_sk
       ON trans.mix_date BETWEEN reg_m_sk.StartDate AND reg_m_sk.EndDate
       AND reg_sk.RegionID = reg_m_sk.RegionID
       AND reg_sk.SubRegionID = reg_m_sk.SubRegionID
       AND reg_sk.CompanySK = reg_m_sk.CompanySK
-      -- and (CASE
-      --   WHEN reg_m_sk.RegionID != reg_m_sk.SubRegionID
-      --     THEN reg_sk.RegionID = reg_m_sk.RegionID and dep_sk.SectionID = reg_m_sk.SubRegionID
-      --   ELSE reg_sk.RegionID = reg_m_sk.RegionID
-      -- END)
 
-    -- SectionSK
     LEFT JOIN src_dim_section AS sec_sk
       ON trans.mix_date BETWEEN sec_sk.StartDate AND sec_sk.EndDate
       AND dep_sk.SectionID = sec_sk.SectionID
       AND dep_sk.CompanySK = sec_sk.CompanySK
 
-    -- SectionManagerSK
     LEFT JOIN src_dim_section_manager AS sec_m_sk
       ON trans.mix_date BETWEEN sec_m_sk.StartDate AND sec_m_sk.EndDate
       AND sec_sk.SectionID = sec_m_sk.SectionID
       AND sec_sk.CompanySK = sec_m_sk.CompanySK
 
-    -- DirectorSK
     LEFT JOIN src_dim_director AS dir_sk
       ON trans.mix_date BETWEEN dir_sk.StartDate AND dir_sk.EndDate
       AND reg_sk.DirectorID = dir_sk.DirectorID
       AND reg_sk.CompanySK = dir_sk.CompanySK
 
-    -- Change district
     LEFT JOIN src_dim_change_district AS dim_change_district
       ON trans.milCus = dim_change_district.customerCode
       AND trans.mix_date BETWEEN dim_change_district.StartDate AND dim_change_district.EndDate
       AND trans.CompanySK = dim_change_district.CompanySK
 
-    -- ChangeSectionSK
     LEFT JOIN src_dim_section AS change_sec_sk
       ON trans.mix_date BETWEEN change_sec_sk.StartDate AND change_sec_sk.EndDate
       AND dim_change_district.newSectionID = change_sec_sk.SectionID
       AND trans.CompanySK = change_sec_sk.CompanySK
 
-    -- ChangeSectionManagerSK
     LEFT JOIN src_dim_section_manager AS change_sec_m_sk
       ON trans.mix_date BETWEEN change_sec_m_sk.StartDate AND change_sec_m_sk.EndDate
       AND change_sec_sk.SectionID = change_sec_m_sk.SectionID
       AND change_sec_sk.CompanySK = change_sec_m_sk.CompanySK
 
-    -- Change Department
     LEFT JOIN department_change AS change_dep
       ON trans.mix_date BETWEEN change_dep.StartDate AND change_dep.EndDate
       AND change_sec_sk.SectionID = change_dep.SectionID
       AND change_sec_sk.CompanyID = change_dep.CompanyID
 
-    -- Change RegionSK
     LEFT JOIN src_dim_region AS change_reg_sk
       ON trans.mix_date BETWEEN change_reg_sk.StartDate AND change_reg_sk.EndDate
       AND (CASE
@@ -543,14 +510,12 @@ BEGIN
       END)
       AND change_dep.CompanySK = change_reg_sk.CompanySK
 
-    -- Change RegionManagerSK
     LEFT JOIN src_dim_region_manager AS change_reg_m_sk
       ON trans.mix_date BETWEEN change_reg_m_sk.StartDate AND change_reg_m_sk.EndDate
       AND change_reg_sk.RegionID = change_reg_m_sk.RegionID
       AND change_reg_sk.SubRegionID = change_reg_m_sk.SubRegionID
       AND change_reg_sk.CompanySK = change_reg_m_sk.CompanySK
 
-    -- Change DirectorSK
     LEFT JOIN src_dim_director AS change_dir_sk
       ON trans.mix_date BETWEEN change_dir_sk.StartDate AND change_dir_sk.EndDate
       AND change_reg_sk.DirectorID = change_dir_sk.DirectorID
@@ -562,7 +527,6 @@ BEGIN
 
   ), final_part2 AS (
     SELECT
-      -- Surrogate Key
       sale_sk.SaleRepSK,
       dep_sk.DepartmentSK,
       reg_sk.RegionSK,
@@ -584,25 +548,20 @@ BEGIN
       trans.ChannelSaleSK,
       channel_cost.ChannelCostSK,
       
-      -- DATA
       trans.* EXCEPT(ChannelSK, ChannelFinanceSK, ChannelSaleSK, ChannelCostSK),
 
-      -- FOR USE THIS PROCESS
       dep_sk.DepartmentID,
       reg_sk.RegionID
     FROM raw_part2 AS trans
 
-    -- SaleRepSK
     LEFT JOIN sale_rep AS sale_sk
       ON ${saleRepMatchOn('sale_sk')}
 
-    -- DepartmentSK
     LEFT JOIN src_dim_department AS dep_sk
       ON trans.mix_date BETWEEN dep_sk.StartDate AND dep_sk.EndDate
       AND sale_sk.DepartmentID = dep_sk.DepartmentID
       AND sale_sk.CompanySK = dep_sk.CompanySK
 
-    -- RegionSK
     LEFT JOIN src_dim_region AS reg_sk
       ON trans.mix_date BETWEEN reg_sk.StartDate AND reg_sk.EndDate
       AND (CASE
@@ -612,56 +571,47 @@ BEGIN
       END)
       AND dep_sk.CompanySK = reg_sk.CompanySK
 
-    -- RegionManagerSK
     LEFT JOIN src_dim_region_manager AS reg_m_sk
       ON trans.mix_date BETWEEN reg_m_sk.StartDate AND reg_m_sk.EndDate
       AND reg_sk.RegionID = reg_m_sk.RegionID
       AND reg_sk.SubRegionID = reg_m_sk.SubRegionID
       AND reg_sk.CompanySK = reg_m_sk.CompanySK
 
-    -- SectionSK
     LEFT JOIN src_dim_section AS sec_sk
       ON trans.mix_date BETWEEN sec_sk.StartDate AND sec_sk.EndDate
       AND dep_sk.SectionID = sec_sk.SectionID
       AND dep_sk.CompanySK = sec_sk.CompanySK
 
-    -- SectionManagerSK
     LEFT JOIN src_dim_section_manager AS sec_m_sk
       ON trans.mix_date BETWEEN sec_m_sk.StartDate AND sec_m_sk.EndDate
       AND sec_sk.SectionID = sec_m_sk.SectionID
       AND sec_sk.CompanySK = sec_m_sk.CompanySK
 
-    -- DirectorSK
     LEFT JOIN src_dim_director AS dir_sk
       ON trans.mix_date BETWEEN dir_sk.StartDate AND dir_sk.EndDate
       AND reg_sk.DirectorID = dir_sk.DirectorID
       AND reg_sk.CompanySK = dir_sk.CompanySK
 
-    -- Change district
     LEFT JOIN src_dim_change_district AS dim_change_district
       ON trans.milCus = dim_change_district.customerCode
       AND trans.mix_date BETWEEN dim_change_district.StartDate AND dim_change_district.EndDate
       AND trans.CompanySK = dim_change_district.CompanySK
 
-    -- ChangeSectionSK
     LEFT JOIN src_dim_section AS change_sec_sk
       ON trans.mix_date BETWEEN change_sec_sk.StartDate AND change_sec_sk.EndDate
       AND dim_change_district.newSectionID = change_sec_sk.SectionID
       AND trans.CompanySK = change_sec_sk.CompanySK
 
-    -- ChangeSectionManagerSK
     LEFT JOIN src_dim_section_manager AS change_sec_m_sk
       ON trans.mix_date BETWEEN change_sec_m_sk.StartDate AND change_sec_m_sk.EndDate
       AND change_sec_sk.SectionID = change_sec_m_sk.SectionID
       AND change_sec_sk.CompanySK = change_sec_m_sk.CompanySK
 
-    -- Change Department
     LEFT JOIN department_change AS change_dep
       ON trans.mix_date BETWEEN change_dep.StartDate AND change_dep.EndDate
       AND change_sec_sk.SectionID = change_dep.SectionID
       AND change_sec_sk.CompanyID = change_dep.CompanyID
 
-    -- Change RegionSK
     LEFT JOIN src_dim_region AS change_reg_sk
       ON trans.mix_date BETWEEN change_reg_sk.StartDate AND change_reg_sk.EndDate
       AND (CASE
@@ -671,48 +621,40 @@ BEGIN
       END)
       AND change_dep.CompanySK = change_reg_sk.CompanySK
 
-    -- Change RegionManagerSK
     LEFT JOIN src_dim_region_manager AS change_reg_m_sk
       ON trans.mix_date BETWEEN change_reg_m_sk.StartDate AND change_reg_m_sk.EndDate
       AND change_reg_sk.RegionID = change_reg_m_sk.RegionID
       AND change_reg_sk.SubRegionID = change_reg_m_sk.SubRegionID
       AND change_reg_sk.CompanySK = change_reg_m_sk.CompanySK
 
-    -- Change DirectorSK
     LEFT JOIN src_dim_director AS change_dir_sk
       ON trans.mix_date BETWEEN change_dir_sk.StartDate AND change_dir_sk.EndDate
       AND change_reg_sk.DirectorID = change_dir_sk.DirectorID
       AND change_reg_sk.CompanySK = change_dir_sk.CompanySK
 
-    -- Sale Add-on
     LEFT JOIN sale_rep AS sale_addon
       ON ${saleRepMatchOn('sale_addon')}
 
-    -- Department Add-on
     LEFT JOIN src_dim_department AS dep_addon
       ON trans.mix_date BETWEEN dep_addon.StartDate AND dep_addon.EndDate
       AND sale_addon.DepartmentID = dep_addon.DepartmentID
       AND sale_addon.CompanySK = dep_addon.CompanySK
 
-    -- Section Add-on
     LEFT JOIN src_dim_section AS sec_addon
       ON trans.mix_date BETWEEN sec_addon.StartDate AND sec_addon.EndDate
       AND dep_addon.SectionID = sec_addon.SectionID
       AND dep_addon.CompanySK = sec_addon.CompanySK
 
-    -- Join เพื่อหา ChannelCostID ใหม่ในกรณีที่เป็น COST99999
     LEFT JOIN `${DimChannelCostTableRef}` AS channel_cost
       ON sec_addon.SectionID = channel_cost.ChannelCostName
       AND sec_addon.CompanySK = channel_cost.CompanySK
 
-    -- CostStkSk
     LEFT JOIN src_dim_cost_stk AS coststk_sk
       ON trans.mix_date BETWEEN coststk_sk.StartDate AND coststk_sk.EndDate
       AND LOWER(trans.milStk) = LOWER(coststk_sk.MilStk)
       AND trans.CompanySK = coststk_sk.CompanySK
       AND coststk_sk.ChannelCostID = channel_cost.ChannelCostID
 
-    -- CostGroupSK
     LEFT JOIN src_dim_cost_group AS costgroup_sk
       ON trans.mix_date BETWEEN costgroup_sk.StartDate AND costgroup_sk.EndDate
       AND trans.ProductGroupACC = costgroup_sk.GAccID
@@ -726,16 +668,13 @@ BEGIN
   ), mix_table AS (
     SELECT * EXCEPT(ProductGroupACC, debgroup)
     FROM final_part1
-    -- where mildep is null
     UNION ALL
     SELECT * EXCEPT(ProductGroupACC, debgroup)
     FROM final_part2
-    -- where mildep is null
   )
   SELECT
     trans.CompanySK, 
     trans.companyID,
-    -- SK
     DebAddress.ProvinceSK AS InvoiceProvinceSK,
     DebAddress.DistrictSK AS InvoiceDistrictSK,
     DebAddress.SubDistrictSK AS InvoiceSubDistrictSK,
@@ -778,7 +717,6 @@ BEGIN
       ELSE NULL
     END) AS DirectorSK,
 
-    -- DATA
     trans.* EXCEPT(OrderDate, ProductGroupMac5Description, FlagMappingInvoice, SectionMappingID,
       RegionID, mihnotes, DepartmentID, CompanySK, companyID,
       SaleRepSK, DepartmentSK, RegionSK, RegionManagerSK, SectionSK, SectionManagerSK, DirectorSK
@@ -813,25 +751,21 @@ BEGIN
     ON trans.milCus = dim_cust.debcode
     AND trans.CompanySK = dim_cust.CompanySK
 
-  -- SectionForMapping
   LEFT JOIN src_dim_section AS sec_map_sk
     ON trans.mix_date BETWEEN sec_map_sk.StartDate AND sec_map_sk.EndDate
     AND trans.SectionMappingID = sec_map_sk.SectionID
     AND trans.CompanySK = sec_map_sk.CompanySK
 
-  -- SectionManagerForMapping
   LEFT JOIN src_dim_section_manager AS sec_m_map_sk
     ON trans.mix_date BETWEEN sec_m_map_sk.StartDate AND sec_m_map_sk.EndDate
     AND sec_map_sk.SectionID = sec_m_map_sk.SectionID
     AND sec_map_sk.CompanySK = sec_m_map_sk.CompanySK
 
-  -- DepartmentForMapping
   LEFT JOIN department_change AS dep_map
     ON trans.mix_date BETWEEN dep_map.StartDate AND dep_map.EndDate
     AND sec_map_sk.SectionID = dep_map.SectionID
     AND sec_map_sk.CompanyID = dep_map.CompanyID
 
-  -- RegionForMappinh
   LEFT JOIN src_dim_region AS reg_map_sk
     ON trans.mix_date BETWEEN reg_map_sk.StartDate AND reg_map_sk.EndDate
     AND (CASE
@@ -841,25 +775,21 @@ BEGIN
     END)
     AND dep_map.CompanySK = reg_map_sk.CompanySK
 
-  -- RegionManagerForMapping
   LEFT JOIN src_dim_region_manager AS reg_m_map_sk
     ON trans.mix_date BETWEEN reg_m_map_sk.StartDate AND reg_m_map_sk.EndDate
     AND reg_map_sk.RegionID = reg_m_map_sk.RegionID
     AND reg_map_sk.SubRegionID = reg_m_map_sk.SubRegionID
     AND reg_map_sk.CompanySK = reg_m_map_sk.CompanySK
 
-  -- DirectorForMapping
   LEFT JOIN src_dim_director AS dir_map_sk
     ON trans.mix_date BETWEEN dir_map_sk.StartDate AND dir_map_sk.EndDate
     AND reg_map_sk.DirectorID = dir_map_sk.DirectorID
     AND reg_map_sk.CompanySK = dir_map_sk.CompanySK
 
-  -- change productmktsk
   left join mds_change_mktgroup as mds
     on trans.companyid = mds.companyid
     and (
       (
-        -- กลุ่มที่ 1: เช็คจาก Depcode และ ProductID (milstk) เช่น บ-0124
         (
           lower(mds.DepcodeAction) = lower('startwith') AND lower(mds.ProductAction) = lower('exc')
           AND trans.mildep LIKE CONCAT(mds.Depcode, '%') 
@@ -868,7 +798,6 @@ BEGIN
       )
       OR 
       (
-        -- กลุ่มที่ 21: เช็คจาก Depcode และ ProductID (milstk) เช่น บ-0124
         (
           lower(mds.DepcodeAction) = lower('startwith') AND lower(mds.ProductAction) = lower('inc') AND lower(mds.customercodeaction) = lower('inc')
           AND trans.mildep LIKE CONCAT(mds.Depcode, '%')
@@ -878,7 +807,6 @@ BEGIN
       )
       OR
       (
-        -- กลุ่มที่ 2 & 3: เช็คจาก ID เดิม และ Job (miljob) = LITETITE
         (
           lower(mds.JobAction) = 'inc' AND lower(mds.MarketingAction) = 'inc'
           AND trans.miljob = mds.Job           
@@ -898,7 +826,6 @@ BEGIN
       )
       OR 
       (
-        -- กลุ่มที่ 4-11: เช็คจาก SalesReging, ยอดขาย (SalesAmt) และ ID เดิม
         (
           lower(mds.SalesRegionAction) = 'inc' AND lower(mds.SalesAmtAction) = 'inc'
           AND trans.RegionID = mds.SalesRegion 
@@ -910,7 +837,6 @@ BEGIN
       )
       OR 
       (
-        -- กลุ่มที่ 12-13: เช็คจาก Product Group (LT-DFS) และคำค้นหาในชื่อสินค้า (mildesc)
         (
           lower(mds.ProductGroupAction) = 'inc' AND lower(mds.ProductDescriptionAction) = 'contains'
           AND trans.ProductGroupMac5Description = mds.ProductGroup
@@ -919,7 +845,6 @@ BEGIN
       )
       OR 
       (
-        -- กลุ่มที่ 14-18: เช็คจาก ProductID และคำค้นหาในหมายเหตุ (mihnotes) หรือชื่อสินค้า (mildesc)
         (
           lower(mds.ProductAction) = 'inc' AND lower(mds.ProductDescriptionAction) = 'contains' AND lower(RemarkAction) = 'contains'
           AND LOWER(trans.milstk) = LOWER(mds.ProductID) 
@@ -928,7 +853,6 @@ BEGIN
       )
       OR 
       (
-        -- กลุ่มที่ 19: เช็คจาก ProductID และชื่อสินค้า (mildesc)
         (
           lower(mds.ProductAction) = 'inc' AND lower(mds.ProductDescriptionAction) = 'contains'
           AND LOWER(trans.milstk) = LOWER(mds.ProductID) 

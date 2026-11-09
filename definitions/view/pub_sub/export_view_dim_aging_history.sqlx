@@ -8,13 +8,14 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_VIEW}.view_dim_aging_history`;
+    const ViewDimAgingHistoryTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_VIEW,
+    name: "view_dim_aging_history",
+};
+const ViewDimAgingHistoryTableRef = `${ViewDimAgingHistoryTable.database}.${ViewDimAgingHistoryTable.schema}.${ViewDimAgingHistoryTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table dimension_view.view_dim_aging_history (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = asatdate, companyID, cfsVnosID.
 WITH src AS (
   SELECT
     asatdate,
@@ -35,7 +36,7 @@ WITH src AS (
     GroupFlagComplete,
     DayRange,
     companyID
-  FROM `${SourceTableRef}`
+  FROM `${ViewDimAgingHistoryTableRef}`
 )
 SELECT
   s.asatdate,

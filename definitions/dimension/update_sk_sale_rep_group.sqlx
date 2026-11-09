@@ -1,15 +1,15 @@
 config {
   type: "operations",
   dependencies: [
-                  "dim_sale_representative_last", 
-                  "dim_department_last", "dim_director_last", 
-                  "dim_region_manager_last", "dim_region_last", 
+                  "dim_sale_representative_last",
+                  "dim_department_last", "dim_director_last",
+                  "dim_region_manager_last", "dim_region_last",
                   "dim_section_manager_last", "dim_section_last"
                 ],
   tags: [databuffet.TAG_DIM_DAILY],
 }
 
-js {    
+js {
     const DimRegionLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -52,17 +52,16 @@ js {
     };
     const DimSectionManagerLastTableRef = `${DimSectionManagerLastTable.database}.${DimSectionManagerLastTable.schema}.${DimSectionManagerLastTable.name}`;
 
-    const DimSaleRepresentativeLast = {
+    const DimSaleRepresentativeLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_sale_representative_last",
     };
-    const DimSaleRepresentativeLastRef = `${DimSaleRepresentativeLast.database}.${DimSaleRepresentativeLast.schema}.${DimSaleRepresentativeLast.name}`
-    
+    const DimSaleRepresentativeLastTableRef = `${DimSaleRepresentativeLastTable.database}.${DimSaleRepresentativeLastTable.schema}.${DimSaleRepresentativeLastTable.name}`
+
 }
 
 BEGIN
----------------- dim_region_last ----------------
   CREATE OR REPLACE TEMP TABLE temp_data AS
   select t1.RegionSK, t2.RegionManagerSK, t3.DirectorSK
   from `${DimRegionLastTableRef}` as t1
@@ -80,17 +79,14 @@ BEGIN
   on t1.DirectorID = t3.DirectorID
     and t1.CompanySK = t3.CompanySK
   ;
-  
-  -------- UPDATE DATA
+
   UPDATE `${DimRegionLastTableRef}` AS target
   SET target.RegionManagerSK = source.RegionManagerSK,
     target.DirectorSK = source.DirectorSK
   FROM temp_data AS source
   WHERE target.RegionSK = source.RegionSK;
----------------- dim_region_last ----------------
 
 
----------------- dim_department_last ----------------
   CREATE OR REPLACE TEMP TABLE temp_data AS
   select t1.DepartmentSK, t2.RegionSK, t2.RegionManagerSK, t2.DirectorSK, t3.SectionSK, t4.SectionManagerSK
   from `${DimDepartmentLastTableRef}` as t1
@@ -98,7 +94,7 @@ BEGIN
     select RegionManagerSK, RegionSK, DirectorSK, RegionID, SubRegionID, CompanySK
     from `${DimRegionLastTableRef}`
   ) as t2
-  on (CASE 
+  on (CASE
       WHEN t2.RegionID != t2.SubRegionID
         THEN t1.RegionID = t2.RegionID and t1.SectionID = t2.SubRegionID
       ELSE t1.RegionID = t2.RegionID
@@ -117,8 +113,7 @@ BEGIN
   on t1.SectionID = t4.SectionID
     and t1.CompanySK = t4.CompanySK
   ;
-  
-  -------- UPDATE DATA
+
   UPDATE `${DimDepartmentLastTableRef}` AS target
   SET target.SectionSK = source.SectionSK,
     target.SectionManagerSK = source.SectionManagerSK,
@@ -127,23 +122,20 @@ BEGIN
     target.DirectorSK = source.DirectorSK
   FROM temp_data AS source
   WHERE target.DepartmentSK = source.DepartmentSK;
----------------- dim_department_last ----------------
 
 
----------------- dim_section_last ----------------
   CREATE OR REPLACE TEMP TABLE temp_data AS
-  select 
+  select
     t1.SectionSK, t2.SectionManagerSK, t2.RegionSK, t2.RegionManagerSK, t2.DirectorSK
   from `${DimSectionLastTableRef}` as t1
   left join (
     SELECT DISTINCT SectionID, SectionManagerSK, RegionSK, RegionManagerSK, DirectorSK, CompanySK
-    FROM `${DimDepartmentLastTableRef}` 
+    FROM `${DimDepartmentLastTableRef}`
   ) as t2
   on t1.SectionID = t2.SectionID
     and t1.CompanySK = t2.CompanySK
   ;
-  
-  -------- UPDATE DATA
+
   UPDATE `${DimSectionLastTableRef}` AS target
   SET target.SectionManagerSK = source.SectionManagerSK,
     target.RegionSK = source.RegionSK,
@@ -151,24 +143,21 @@ BEGIN
     target.DirectorSK = source.DirectorSK
   FROM temp_data AS source
   WHERE target.SectionSK = source.SectionSK;
----------------- dim_section_last ----------------
 
 
----------------- dim_sale_representative_last ----------------
   CREATE OR REPLACE TEMP TABLE temp_data AS
   select t1.SaleRepSK, t2.DepartmentSK, t2.SectionSK, t2.SectionManagerSK, t2.RegionSK, t2.RegionManagerSK, t2.DirectorSK
-  from `${DimSaleRepresentativeLastRef}` as t1
+  from `${DimSaleRepresentativeLastTableRef}` as t1
   left join (
-    select DepartmentSK, RegionSK, RegionManagerSK, DirectorSK, SectionSK, SectionManagerSK, 
+    select DepartmentSK, RegionSK, RegionManagerSK, DirectorSK, SectionSK, SectionManagerSK,
       DepartmentID, RegionID, SectionID, CompanySK
     from `${DimDepartmentLastTableRef}`
   ) as t2
   on t1.DepartmentID = t2.DepartmentID
     and t1.CompanySK = t2.CompanySK
   ;
-  
-  -------- UPDATE DATA
-  UPDATE `${DimSaleRepresentativeLastRef}` AS target
+
+  UPDATE `${DimSaleRepresentativeLastTableRef}` AS target
   SET target.DepartmentSK = source.DepartmentSK,
     target.SectionSK = source.SectionSK,
     target.SectionManagerSK = source.SectionManagerSK,
@@ -178,8 +167,6 @@ BEGIN
 
   FROM temp_data AS source
   WHERE target.SaleRepSK = source.SaleRepSK;
----------------- dim_sale_representative_last ----------------
 
-  -- DROP TEMP TABLE
   DROP TABLE IF EXISTS temp_data;
 END;

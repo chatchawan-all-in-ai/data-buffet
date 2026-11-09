@@ -6,68 +6,84 @@ config {
 }
 
 js {
-    const DimCustomerTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_customer",
-    };
-    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
-
-    const DimDistrictsTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_districts",
-    };
-    const DimDistrictsTableRef = `${DimDistrictsTable.database}.${DimDistrictsTable.schema}.${DimDistrictsTable.name}`;
-
-    const DimGeographiesTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_geographies",
-    };
-    const DimGeographiesTableRef = `${DimGeographiesTable.database}.${DimGeographiesTable.schema}.${DimGeographiesTable.name}`;
-
-    const DimGroupCustomerTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_group_customer",
-    };
-    const DimGroupCustomerTableRef = `${DimGroupCustomerTable.database}.${DimGroupCustomerTable.schema}.${DimGroupCustomerTable.name}`;
-
-    const DimProvincesTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_provinces",
-    };
-    const DimProvincesTableRef = `${DimProvincesTable.database}.${DimProvincesTable.schema}.${DimProvincesTable.name}`;
-
-    const DimSubDistrictsTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_sub_districts",
-    };
-    const DimSubDistrictsTableRef = `${DimSubDistrictsTable.database}.${DimSubDistrictsTable.schema}.${DimSubDistrictsTable.name}`;
-
-    const MdsDataCustomernicknameMasterTable = {
+const MdsDataCustomernicknameMasterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
         name: "mds_data_customernickname_master",
     };
     const MdsDataCustomernicknameMasterTableRef = `${MdsDataCustomernicknameMasterTable.database}.${MdsDataCustomernicknameMasterTable.schema}.${MdsDataCustomernicknameMasterTable.name}`;
 
-    const MdsDataKeyaccountGroupMasterTable = {
+const MdsDataKeyaccountMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.MDS_DATASET,
+        name: "mds_data_keyaccount_master",
+    };
+    const MdsDataKeyaccountMasterTableRef = `${MdsDataKeyaccountMasterTable.database}.${MdsDataKeyaccountMasterTable.schema}.${MdsDataKeyaccountMasterTable.name}`;
+
+const MdsDataKeyaccountGroupMasterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
         name: "mds_data_keyaccount_group_master",
     };
     const MdsDataKeyaccountGroupMasterTableRef = `${MdsDataKeyaccountGroupMasterTable.database}.${MdsDataKeyaccountGroupMasterTable.schema}.${MdsDataKeyaccountGroupMasterTable.name}`;
 
-    const MdsDataKeyaccountMasterTable = {
+const DimCustomerTable = {
         database: databuffet.DATABASE,
-        schema: databuffet.MDS_DATASET,
-        name: "mds_data_keyaccount_master",
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer",
     };
-    const MdsDataKeyaccountMasterTableRef = `${MdsDataKeyaccountMasterTable.database}.${MdsDataKeyaccountMasterTable.schema}.${MdsDataKeyaccountMasterTable.name}`;
+    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
+
+const DimGroupCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_group_customer",
+    };
+    const DimGroupCustomerTableRef = `${DimGroupCustomerTable.database}.${DimGroupCustomerTable.schema}.${DimGroupCustomerTable.name}`;
+
+const DimSubDistrictsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_sub_districts",
+    };
+    const DimSubDistrictsTableRef = `${DimSubDistrictsTable.database}.${DimSubDistrictsTable.schema}.${DimSubDistrictsTable.name}`;
+
+const DimDistrictsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_districts",
+    };
+    const DimDistrictsTableRef = `${DimDistrictsTable.database}.${DimDistrictsTable.schema}.${DimDistrictsTable.name}`;
+
+const DimProvincesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_provinces",
+    };
+    const DimProvincesTableRef = `${DimProvincesTable.database}.${DimProvincesTable.schema}.${DimProvincesTable.name}`;
+
+const DimGeographiesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_geographies",
+    };
+    const DimGeographiesTableRef = `${DimGeographiesTable.database}.${DimGeographiesTable.schema}.${DimGeographiesTable.name}`;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 with mds_nicknamemaster as (
@@ -115,7 +131,6 @@ with mds_nicknamemaster as (
   left join `${DimGeographiesTableRef}` as geo 
     on province.GeoGraphiesSK = geo.GeoGraphiesSK
 
-  ---- MDS
   left join mds_nicknamemaster as mds_nickname
     on dim_cust.companyID = mds_nickname.companyID
     and dim_cust.debcode = mds_nickname.customercode

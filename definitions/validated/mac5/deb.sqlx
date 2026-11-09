@@ -37,6 +37,40 @@ END;`;
         partition_statement = "";
         post_operations_statement = "";
     }
+    const DebAg01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "deb",
+    };
+    const DebAg01TableRef = `${DebAg01Table.database}.${DebAg01Table.schema}.${DebAg01Table.name}`;
+
+    const DebAa05Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AA05,
+        name: "deb",
+    };
+    const DebAa05TableRef = `${DebAa05Table.database}.${DebAa05Table.schema}.${DebAa05Table.name}`;
+
+    const DebAb01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AB01,
+        name: "deb",
+    };
+    const DebAb01TableRef = `${DebAb01Table.database}.${DebAb01Table.schema}.${DebAb01Table.name}`;
+
+    const DebAc02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AC02,
+        name: "deb",
+    };
+    const DebAc02TableRef = `${DebAc02Table.database}.${DebAc02Table.schema}.${DebAc02Table.name}`;
+
+    const DebAk02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AK02,
+        name: "deb",
+    };
+    const DebAk02TableRef = `${DebAk02Table.database}.${DebAk02Table.schema}.${DebAk02Table.name}`;
 }
 
 WITH all_sources AS (
@@ -114,7 +148,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('debactive')} as debactive,
     ${databuffet.functionData.castInt64('debstatus')} as debstatus,
     ${databuffet.functionData.parseFlexibleDatetime('debexpiredate')} AS debexpiredate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.deb`
+  FROM `${DebAg01TableRef}`
 
   UNION ALL
 
@@ -192,7 +226,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('debactive')} as debactive,
     ${databuffet.functionData.castInt64('debstatus')} as debstatus,
     ${databuffet.functionData.parseFlexibleDatetime('debexpiredate')} AS debexpiredate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}.deb`
+  FROM `${DebAa05TableRef}`
 
   UNION ALL
 
@@ -270,7 +304,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('debactive')} as debactive,
     ${databuffet.functionData.castInt64('debstatus')} as debstatus,
     ${databuffet.functionData.parseFlexibleDatetime('debexpiredate')} AS debexpiredate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}.deb`
+  FROM `${DebAb01TableRef}`
 
   UNION ALL
 
@@ -348,7 +382,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('debactive')} as debactive,
     ${databuffet.functionData.castInt64('debstatus')} as debstatus,
     ${databuffet.functionData.parseFlexibleDatetime('debexpiredate')} AS debexpiredate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AC02}.deb`
+  FROM `${DebAc02TableRef}`
 
   UNION ALL
 
@@ -426,7 +460,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castInt64('debactive')} as debactive,
     ${databuffet.functionData.castInt64('debstatus')} as debstatus,
     ${databuffet.functionData.parseFlexibleDatetime('debexpiredate')} AS debexpiredate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.deb`
+  FROM `${DebAk02TableRef}`
 )
 
 SELECT * FROM all_sources

@@ -7,19 +7,6 @@ config {
     description: "Pub/Sub export of commission set chqri for the TF team: one row = one ag01 received cheque (chqtype 1) line used by an RS receipt across all years; columns, names and order of the TF sample, plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- Commission sets keep the column names, order and JSON types of the sample sent to TF on
--- 2026-10-14 (commission_tf_ag01_2026), which differ from the source column names on purpose.
--- Natural key = company_source_id, chqno, chqbank, chqdatec, chqtag, cqlvnos, cqlbank, cqlautono, cqlsys (unique; may hold NULL, kept as JSON null in row_key).
--- Data set   : chqri  (commission export for TF; target = sample commission_tf_ag01_2026, 2026-10-14)
--- Original   : Query Commission คุณแป้ง/chqri.sql
--- Sources    : databuffet-nonprd.validated_mac5.chq (chqtype 1), cql (RS)
--- PK: company_source_id, chqno, chqbank, chqdatec, chqtag, cqlvnos, cqlbank, cqlautono, cqlsys. Scope: ag01, chqtype = 1, cqlmivt = 'RS', all years.
--- Columns, names, order and JSON types match the sample.
--- Differences from the original query (the sample is the target):
---   company_source_id, chqbank, chqdatec, chqtag, cqlautono, cqlsys are added (key columns in the sample, not in the source).
---   No year filter is applied; the export includes all receipt payment-line dates.
---   The source joins with LEFT JOIN but filters cqlmivt = 'RS' in WHERE, so it behaves as an inner join; written as JOIN here.
 WITH src AS (
   SELECT
     q.company_id AS company_source_id,

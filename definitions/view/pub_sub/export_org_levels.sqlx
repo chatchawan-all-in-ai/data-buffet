@@ -8,16 +8,14 @@ config {
 }
 
 js {
-    const OrgCenterUnitTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_unit`;
+    const OrgCenterUnitTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.ORG_CENTER,
+    name: "org_center_unit",
+};
+const OrgCenterUnitTableRef = `${OrgCenterUnitTable.database}.${OrgCenterUnitTable.schema}.${OrgCenterUnitTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
---   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
---   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
---   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
--- Natural key = company_id, depth. No team level (depth 4): TAs sit at the section and carry a zone
--- on appointments (captain decision 2026-11-02).
 WITH level AS (
   SELECT DISTINCT
     company_id,

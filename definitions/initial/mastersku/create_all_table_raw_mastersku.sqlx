@@ -4,17 +4,93 @@ config {
   tags: [databuffet.TAG_INITIAL],
 }
 
-------------------------------------- SCHEMA --------------------------------------
+js {
+    const BrandTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTERSKU,
+        name: "brand",
+    };
+    const BrandTableRef = `${BrandTable.database}.${BrandTable.schema}.${BrandTable.name}`;
+
+    const CategoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTERSKU,
+        name: "category",
+    };
+    const CategoryTableRef = `${CategoryTable.database}.${CategoryTable.schema}.${CategoryTable.name}`;
+
+    const ProductTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTERSKU,
+        name: "product",
+    };
+    const ProductTableRef = `${ProductTable.database}.${ProductTable.schema}.${ProductTable.name}`;
+
+    const ProductCategoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTERSKU,
+        name: "product_category",
+    };
+    const ProductCategoryTableRef = `${ProductCategoryTable.database}.${ProductCategoryTable.schema}.${ProductCategoryTable.name}`;
+
+    const ProductDetailTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTERSKU,
+        name: "product_detail",
+    };
+    const ProductDetailTableRef = `${ProductDetailTable.database}.${ProductDetailTable.schema}.${ProductDetailTable.name}`;
+
+    const ProductGroupTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTERSKU,
+        name: "product_group",
+    };
+    const ProductGroupTableRef = `${ProductGroupTable.database}.${ProductGroupTable.schema}.${ProductGroupTable.name}`;
+
+    const ProductGroupCostGroupTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTERSKU,
+        name: "product_group_cost_group",
+    };
+    const ProductGroupCostGroupTableRef = `${ProductGroupCostGroupTable.database}.${ProductGroupCostGroupTable.schema}.${ProductGroupCostGroupTable.name}`;
+
+    const VendorTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTERSKU,
+        name: "vendor",
+    };
+    const VendorTableRef = `${VendorTable.database}.${VendorTable.schema}.${VendorTable.name}`;
+
+    const UnitTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTERSKU,
+        name: "unit",
+    };
+    const UnitTableRef = `${UnitTable.database}.${UnitTable.schema}.${UnitTable.name}`;
+
+    const ProductStatusTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTERSKU,
+        name: "product_status",
+    };
+    const ProductStatusTableRef = `${ProductStatusTable.database}.${ProductStatusTable.schema}.${ProductStatusTable.name}`;
+
+    const ProductAdminStatusTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MASTERSKU,
+        name: "product_admin_status",
+    };
+    const ProductAdminStatusTableRef = `${ProductAdminStatusTable.database}.${ProductAdminStatusTable.schema}.${ProductAdminStatusTable.name}`;
+}
+
+
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}` OPTIONS(location="${databuffet.REGION}");
-------------------------------------- SCHEMA --------------------------------------
 
 
------------------------------------ INCREMENTAL ------------------------------------
--- Table: brand
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.brand`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.brand`
+DROP TABLE IF EXISTS `${BrandTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${BrandTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -22,11 +98,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTERSKU}/brand/'
 );
 
--- Table: category
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.category`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.category`
+DROP TABLE IF EXISTS `${CategoryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CategoryTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -34,11 +109,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTERSKU}/category/'
 );
 
--- Table: product
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product`
+DROP TABLE IF EXISTS `${ProductTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProductTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -46,11 +120,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTERSKU}/product/'
 );
 
--- Table: product_category
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product_category`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product_category`
+DROP TABLE IF EXISTS `${ProductCategoryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProductCategoryTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -58,11 +131,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTERSKU}/product_category/'
 );
 
--- Table: product_detail
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product_detail`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product_detail`
+DROP TABLE IF EXISTS `${ProductDetailTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProductDetailTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -70,11 +142,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTERSKU}/product_detail/'
 );
 
--- Table: product_group
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product_group`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product_group`
+DROP TABLE IF EXISTS `${ProductGroupTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProductGroupTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -82,11 +153,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTERSKU}/product_group/'
 );
 
--- Table: product_group_cost_group
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product_group_cost_group`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product_group_cost_group`
+DROP TABLE IF EXISTS `${ProductGroupCostGroupTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProductGroupCostGroupTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -94,11 +164,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTERSKU}/product_group_cost_group/'
 );
 
--- Table: vendor
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.vendor`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.vendor`
+DROP TABLE IF EXISTS `${VendorTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${VendorTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -106,11 +175,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTERSKU}/vendor/'
 );
 
--- Table: unit
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.unit`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.unit`
+DROP TABLE IF EXISTS `${UnitTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${UnitTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -118,11 +186,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTERSKU}/unit/'
 );
 
--- Table: product_status
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product_status`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product_status`
+DROP TABLE IF EXISTS `${ProductStatusTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProductStatusTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -130,15 +197,13 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTERSKU}/product_status/'
 );
 
--- Table: product_admin_status
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product_admin_status`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}.product_admin_status`
+DROP TABLE IF EXISTS `${ProductAdminStatusTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProductAdminStatusTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTERSKU}/product_admin_status/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_MASTERSKU}/product_admin_status/'
 );
------------------------------------ INCREMENTAL ------------------------------------

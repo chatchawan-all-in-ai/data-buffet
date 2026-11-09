@@ -121,28 +121,8 @@ with chq as (
       2
     ) as mirsum,
 
-    -- company_id,
-    -- mirbinvno,
-    -- mirbinvdate,
-    -- mirvnos,
-    -- ปรับปัดเศษ 2 ตำแหน่งในส่วนแสดงผล
-    -- ROUND(adjusted_mihnetsum, 2) as adjusted_mihnetsum,
-    -- extract_date,
-    -- ROUND(extract_amount, 2) as extract_amount,
-    -- ROUND(accum_mihnetsum, 2) as accum_mihnetsum,
-    -- ROUND(cut_accum_amount, 2) as cut_accum_amount,
     
-    -- คำนวณยอดจ่ายและปัดเศษ
-    -- ROUND(
-    --   GREATEST(0, LEAST(adjusted_mihnetsum, extract_amount - cut_accum_amount)), 
-    --   2
-    -- ) as mirsum,
     
-    -- คำนวณยอดคงเหลือและปัดเศษ
-    -- ROUND(
-    --   adjusted_mihnetsum - GREATEST(0, LEAST(adjusted_mihnetsum, extract_amount - cut_accum_amount)), 
-    --   2
-    -- ) as new_outstanding
   FROM running_calculations
 
 ), mir as (
@@ -155,7 +135,6 @@ with chq as (
     mir.mirsum as mirsum_raw,
     ( IF(e_mir.mirvnos is not null, e_mir.mirsum, IFNULL(mir.mirsum, 0.00)) ) as mirsum,
     ( IF(e_mir.mirvnos is not null, e_mir.extract_date, PARSE_DATE('%Y%m%d', CONCAT(CAST(mir.miryear AS STRING), FORMAT('%02d', mir.mirmonth), FORMAT('%02d', mir.mirday)))) ) as ReceiveDate,
-    -- COUNT(DISTINCT IF(mir.miryear <= 2022 and mih.mihstatus = 7, TRUE, NULL)) as status_complete,
     ( IF(e_mir.mirvnos is not null, true, false) ) as FlagChaReject, 
     (
       (mir.miryear <= 2022 and mih.mihstatus = 7)      
@@ -181,14 +160,11 @@ with chq as (
     and mir.mirvnos = e_mir.mirvnos
     and mir.mirbinvno = e_mir.mirbinvno
   where mir.mirtype = 'RS'
-    -- and 
     and PARSE_DATE('%Y%m%d', CONCAT(CAST(mir.miryear AS STRING), FORMAT('%02d', mir.mirmonth), FORMAT('%02d', mir.mirday))) <= CURRENT_DATE('Asia/Bangkok')
-    -- and mir.mirbinvno in ('H6601000337')
-  -- group by 1,2
 
 ), agg_mir as (
   select 
-    company_id, mirbinvno, -- count(1) as total_row,
+    company_id, mirbinvno,
     ARRAY_AGG(
       CONCAT(
         IFNULL(CONCAT( IF(FlagUse = true, '(Y) ', '(N) '), CAST(mirvnos AS STRING) ), ''), ' / ', 
@@ -217,14 +193,13 @@ with chq as (
     rg.ReportName,
     bil.mirdesc,
     bil.mirnotes,
-    -- t2.total_row,
     (
       SELECT STRING_AGG(CONCAT(CAST(idx + 1 AS STRING), '. ', item), '\n' ORDER BY idx)
-      FROM UNNEST(t2.array_information) as item WITH OFFSET as idx --ดึงค่า index ออกมาตรงนี้ (เริ่มจาก 0)
+      FROM UNNEST(t2.array_information) as item WITH OFFSET as idx
     ) as ri_information,
     (
       SELECT STRING_AGG(CONCAT(CAST(idx + 1 AS STRING), '. ', item), '\n' ORDER BY idx)
-      FROM UNNEST(t2.array_amt) as item WITH OFFSET as idx --ดึงค่า index ออกมาตรงนี้ (เริ่มจาก 0)
+      FROM UNNEST(t2.array_amt) as item WITH OFFSET as idx
     ) as ri_amt
   from `${ViewDimAgingTableRef}` as t1
   left join agg_mir as t2
@@ -237,4 +212,3 @@ with chq as (
   left join `${FactMirVsTableRef}` as bil
     on t1.BillingSK = bil.BillingSK
   where t1.GroupFlagComplete = 'Non-Completed'
-  --and t1.cfsVnosID = 'TME68070004'

@@ -53,7 +53,6 @@ with all_level as (
   select 4 as level, 'DirectorID' as LevelName union all
   select 3 as level, 'RegionID' as LevelName union all
   select 2 as level, 'SectionID' as LevelName
-  -- select 1 as level, 'DepartmentID' as LevelName
 
 ), tab_lv4 as (
   SELECT distinct
@@ -74,7 +73,6 @@ with all_level as (
   LEFT JOIN all_level as lv
     on lv.level = 4
   WHERE lv4.DirectorOfSalesID is not null
-    -- and lv4.DirectorSK = 2
 
 ), tab_lv3 as (
   select distinct
@@ -99,7 +97,6 @@ with all_level as (
   inner join `${DimDirectorLastTableRef}` as dir
     on lv3.DirectorSK = dir.DirectorSK
   where lv3_name.RegionManagerEmployeeID is not null
-    -- and lv3.DirectorSK = 2
 
 ), tab_lv2 as (
   select distinct
@@ -126,7 +123,6 @@ with all_level as (
   inner join `${DimRegionLastTableRef}` as reg
     on lv2.RegionSK = reg.RegionSK
   where lv2_name.SectionManagerEmployeeID is not null
-    -- and lv2.DirectorSK = 2
 
 ), emp_level as (
   select distinct companyID, EmployeeID, level_data as EmployeeLevel
@@ -169,13 +165,11 @@ with all_level as (
   from tab_lv3 as lv3
   LEFT JOIN all_level as lv
     on lv.level = 4
-  -- where lv3.EmployeeID = '1069018'
   union distinct
   select distinct
     lv3.companyID, lv3.EmployeeID, lv3.LevelName, lv3.lv3_desc as LevelValue, lv3.level_data
   from tab_lv3 as lv3
   where lv3.level_data = 3
-    -- and lv3.EmployeeID = '1069018'
   union distinct
   select distinct
     lv3.companyID, lv3.EmployeeID, lv2.LevelName, lv2.lv2_desc as LevelValue, lv2.level_data
@@ -184,7 +178,6 @@ with all_level as (
     on lv2.companyID = lv3.companyID
     and lv2.lv3_key = lv3.lv3_key
   where lv2.level_data = 2
-    -- and lv3.EmployeeID = '1069018'
 
 ), lv2_data as (
   select distinct
@@ -192,33 +185,27 @@ with all_level as (
   from tab_lv2 as lv2
   LEFT JOIN all_level as lv
     on lv.level = 4
-  -- where lv2.EmployeeID = '1056085'
   union distinct
   select distinct
     lv2.companyID, lv2.EmployeeID, lv.LevelName as LevelName, lv2.lv3_desc as LevelValue, lv.level as level_data
   from tab_lv2 as lv2
   LEFT JOIN all_level as lv
     on lv.level = 3
-  -- where lv2.EmployeeID = '1056085'
   union distinct
   select distinct
     lv2.companyID, lv2.EmployeeID, lv2.LevelName, lv2.lv2_desc as LevelValue, lv2.level_data
   from tab_lv2 as lv2
   where lv2.level_data = 2
-    -- and lv2.EmployeeID = '1056085'
 
 ), all_data as (
   select *
   from lv4_data
-  -- where EmployeeID = '9999999'
   union distinct
   select *
   from lv3_data
-  -- where EmployeeID = '9999999'
   union  distinct
   select *
   from lv2_data
-  -- where EmployeeID = '9999999'
 
 ), emp_wrong as (
   select *
@@ -239,12 +226,6 @@ with all_level as (
     COALESCE(t1.LevelValue, 'All') as LevelValue,
     COALESCE(t1.level_data, t3.level) as level_data,
 
-    -- t1.companyID,
-    -- t1.EmployeeID,
-    -- t2.EmployeeLevel,
-    -- t1.LevelName,
-    -- t1.LevelValue,
-    -- t1.level_data,
   from all_data as t1
   full join emp_wrong as t3
     on t1.companyID = t3.companyID
@@ -256,8 +237,6 @@ with all_level as (
   left join `${ViewDimCompanyTableRef}` as dim_comp
     on COALESCE(t1.companyID, t3.companyID) = dim_comp.companyID
     
-    -- on t1.companyID = t2.companyID
-    -- and t1.EmployeeID = t2.EmployeeID
 
 )
   select 
@@ -275,6 +254,5 @@ with all_level as (
     companyID as LevelValue,
     9 as level_data
   from final as t1
-  -- qualify row_number() over(partition by EmployeeID order by EmployeeLevel desc) = 1
   
   order by 1, 5 desc, 4

@@ -4,7 +4,6 @@ config {
   tags: [],
 }
 
--- MAC5
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}` OPTIONS(location="${databuffet.REGION}");
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}` OPTIONS(location="${databuffet.REGION}");
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}` OPTIONS(location="${databuffet.REGION}");
@@ -14,36 +13,29 @@ CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MAC5}
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.CURATED_MAC5}` OPTIONS(location="${databuffet.REGION}");
 
 
--- CIS360
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}` OPTIONS(location="${databuffet.REGION}");
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_CIS360}` OPTIONS(location="${databuffet.REGION}");
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.CURATED_CIS360}` OPTIONS(location="${databuffet.REGION}");
 
 
--- MASTERSKU
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTERSKU}` OPTIONS(location="${databuffet.REGION}");
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTERSKU}` OPTIONS(location="${databuffet.REGION}");
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.CURATED_MASTERSKU}` OPTIONS(location="${databuffet.REGION}");
 
--- MASTER_SKU (new master system, gs://file-raw-data/master_sku)
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_MASTER_SKU}` OPTIONS(location="${databuffet.REGION}");
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_MASTER_SKU}` OPTIONS(location="${databuffet.REGION}");
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.CURATED_MASTER_SKU}` OPTIONS(location="${databuffet.REGION}");
 
--- SALEOUT_MDT
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}` OPTIONS(location="${databuffet.REGION}");
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}` OPTIONS(location="${databuffet.REGION}");
 
--- ALLKONS_COMMISSION
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}` OPTIONS(location="${databuffet.REGION}");
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_ALLKONS_COMMISSION}` OPTIONS(location="${databuffet.REGION}");
 
--- DERP
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_DERP}` OPTIONS(location="${databuffet.REGION}");
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_DERP}` OPTIONS(location="${databuffet.REGION}");
 
 
--- DIMENSION
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}` OPTIONS(location="${databuffet.REGION}");
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.DIMENSION_VIEW}` OPTIONS(location="${databuffet.REGION}");
 
@@ -53,15 +45,12 @@ CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.FACT_TABLE}` OP
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.FACT_VIEW}` OPTIONS(location="${databuffet.REGION}");
 
 
--- PROCESS_DATASET
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.PROCESS_DATASET}` OPTIONS(location="${databuffet.REGION}");
 
 
--- CDC_DATESET
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.CDC_DATESET}` OPTIONS(location="${databuffet.REGION}");
 
 
--- FUNCTION_DATASET
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.FUNCTION_DATASET}` OPTIONS(location="${databuffet.REGION}");
 
 

@@ -4,18 +4,149 @@ config {
   tags: [databuffet.TAG_INITIAL],
 }
 
-------------------------------------- SCHEMA --------------------------------------
+js {
+    const SaleByBranchDetailTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "sale_by_branch_detail",
+    };
+    const SaleByBranchDetailTableRef = `${SaleByBranchDetailTable.database}.${SaleByBranchDetailTable.schema}.${SaleByBranchDetailTable.name}`;
+
+    const SaleByBranchMch3Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "sale_by_branch_mch3",
+    };
+    const SaleByBranchMch3TableRef = `${SaleByBranchMch3Table.database}.${SaleByBranchMch3Table.schema}.${SaleByBranchMch3Table.name}`;
+
+    const SalesByBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "sales_by_branch",
+    };
+    const SalesByBranchTableRef = `${SalesByBranchTable.database}.${SalesByBranchTable.schema}.${SalesByBranchTable.name}`;
+
+    const StockAgingTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "stock_aging",
+    };
+    const StockAgingTableRef = `${StockAgingTable.database}.${StockAgingTable.schema}.${StockAgingTable.name}`;
+
+    const StockByBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "stock_by_branch",
+    };
+    const StockByBranchTableRef = `${StockByBranchTable.database}.${StockByBranchTable.schema}.${StockByBranchTable.name}`;
+
+    const TurnoverBrandTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "turnover_brand",
+    };
+    const TurnoverBrandTableRef = `${TurnoverBrandTable.database}.${TurnoverBrandTable.schema}.${TurnoverBrandTable.name}`;
+
+    const TurnoverTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "turnover",
+    };
+    const TurnoverTableRef = `${TurnoverTable.database}.${TurnoverTable.schema}.${TurnoverTable.name}`;
+
+    const DetailSalesDailyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "detail_sales_daily",
+    };
+    const DetailSalesDailyTableRef = `${DetailSalesDailyTable.database}.${DetailSalesDailyTable.schema}.${DetailSalesDailyTable.name}`;
+
+    const SaleoutDhTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "saleout_dh",
+    };
+    const SaleoutDhTableRef = `${SaleoutDhTable.database}.${SaleoutDhTable.schema}.${SaleoutDhTable.name}`;
+
+    const SaleoutGbTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "saleout_gb",
+    };
+    const SaleoutGbTableRef = `${SaleoutGbTable.database}.${SaleoutGbTable.schema}.${SaleoutGbTable.name}`;
+
+    const SaleoutHpTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "saleout_hp",
+    };
+    const SaleoutHpTableRef = `${SaleoutHpTable.database}.${SaleoutHpTable.schema}.${SaleoutHpTable.name}`;
+
+    const ReportSaleSubscriptionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "report_sale_subscription",
+    };
+    const ReportSaleSubscriptionTableRef = `${ReportSaleSubscriptionTable.database}.${ReportSaleSubscriptionTable.schema}.${ReportSaleSubscriptionTable.name}`;
+
+    const EomGbTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "eom_gb",
+    };
+    const EomGbTableRef = `${EomGbTable.database}.${EomGbTable.schema}.${EomGbTable.name}`;
+
+    const EomHpTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "eom_hp",
+    };
+    const EomHpTableRef = `${EomHpTable.database}.${EomHpTable.schema}.${EomHpTable.name}`;
+
+    const EomTwTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "eom_tw",
+    };
+    const EomTwTableRef = `${EomTwTable.database}.${EomTwTable.schema}.${EomTwTable.name}`;
+
+    const EomBtSalesByBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "eom_bt_sales_by_branch",
+    };
+    const EomBtSalesByBranchTableRef = `${EomBtSalesByBranchTable.database}.${EomBtSalesByBranchTable.schema}.${EomBtSalesByBranchTable.name}`;
+
+    const EomBtSaleByBranchDetailTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "eom_bt_sale_by_branch_detail",
+    };
+    const EomBtSaleByBranchDetailTableRef = `${EomBtSaleByBranchDetailTable.database}.${EomBtSaleByBranchDetailTable.schema}.${EomBtSaleByBranchDetailTable.name}`;
+
+    const SaleoutLastyearTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "saleout_lastyear",
+    };
+    const SaleoutLastyearTableRef = `${SaleoutLastyearTable.database}.${SaleoutLastyearTable.schema}.${SaleoutLastyearTable.name}`;
+
+    const SaleoutLastyearMonthlyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_SALEOUT_MDT,
+        name: "saleout_lastyear_monthly",
+    };
+    const SaleoutLastyearMonthlyTableRef = `${SaleoutLastyearMonthlyTable.database}.${SaleoutLastyearMonthlyTable.schema}.${SaleoutLastyearMonthlyTable.name}`;
+}
+
+
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}` OPTIONS(location="${databuffet.REGION}");
-------------------------------------- SCHEMA --------------------------------------
 
 
------------------------------------ INCREMENTAL ---------------------------------------
-------------------------------------- BT ----------------------------------------------
--- Table: sale_by_branch_detail
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.sale_by_branch_detail`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.sale_by_branch_detail`
+DROP TABLE IF EXISTS `${SaleByBranchDetailTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SaleByBranchDetailTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -23,11 +154,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/bt/sale_by_branch_detail/'
 );
 
--- Table: sale_by_branch_mch3
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.sale_by_branch_mch3`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.sale_by_branch_mch3`
+DROP TABLE IF EXISTS `${SaleByBranchMch3TableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SaleByBranchMch3TableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -35,11 +165,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/bt/sale_by_branch_mch3/'
 );
 
--- Table: sales_by_branch
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.sales_by_branch`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.sales_by_branch`
+DROP TABLE IF EXISTS `${SalesByBranchTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SalesByBranchTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -47,11 +176,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/bt/sales_by_branch/'
 );
 
--- Table: stock_aging
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.stock_aging`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.stock_aging`
+DROP TABLE IF EXISTS `${StockAgingTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${StockAgingTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -59,11 +187,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/bt/stock_aging/'
 );
 
--- Table: stock_by_branch
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.stock_by_branch`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.stock_by_branch`
+DROP TABLE IF EXISTS `${StockByBranchTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${StockByBranchTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -71,11 +198,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/bt/stock_by_branch/'
 );
 
--- Table: turnover_brand
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.turnover_brand`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.turnover_brand`
+DROP TABLE IF EXISTS `${TurnoverBrandTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TurnoverBrandTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -83,24 +209,20 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/bt/turnover_brand/'
 );
 
--- Table: turnover
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.turnover`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.turnover`
+DROP TABLE IF EXISTS `${TurnoverTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TurnoverTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/bt/turnover/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/bt/turnover/'
 );
--- Table: detail_sales_daily   บุญถาวร — รูปแบบใหม่ตั้งแต่ 2026-10-08 ชีตเดียวจบ
--- เกรนรายวันจริง (DATE_ID = วันขาย) ไม่ใช่ยอดสะสม MTD แบบ sale_by_branch_detail
--- ตารางเก่ายังอยู่ เพราะเก็บประวัติถึง 7 ต.ค. ที่กู้จากที่อื่นไม่ได้
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.detail_sales_daily`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.detail_sales_daily`
+DROP TABLE IF EXISTS `${DetailSalesDailyTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${DetailSalesDailyTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -108,28 +230,22 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/bt/detail_sales_daily/'
 );
 
-------------------------------------- BT ----------------------------------------------
 
-------------------------------------- DH ----------------------------------------------
--- Table: saleout_mdt_dh
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_dh`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_dh`
+DROP TABLE IF EXISTS `${SaleoutDhTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SaleoutDhTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/dh/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/dh/'
 );
-------------------------------------- DH ----------------------------------------------
 
-------------------------------------- GB ----------------------------------------------
--- Table: saleout_mdt_gb
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_gb`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_gb`
+DROP TABLE IF EXISTS `${SaleoutGbTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SaleoutGbTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -138,12 +254,10 @@ OPTIONS (
 );
 ------------------------------------- GB ----------------------------------------------
 
-------------------------------------- HP ----------------------------------------------
--- Table: saleout_mdt_hp
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_hp`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_hp`
+DROP TABLE IF EXISTS `${SaleoutHpTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SaleoutHpTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -152,37 +266,20 @@ OPTIONS (
 );
 ------------------------------------- HP ----------------------------------------------
 
-------------------------------------- TW ----------------------------------------------
--- Table: reportsalesubscription
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.report_sale_subscription`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.report_sale_subscription`
+DROP TABLE IF EXISTS `${ReportSaleSubscriptionTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ReportSaleSubscriptionTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/tw/reportsalesubscription/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/tw/reportsalesubscription/'
 );
-------------------------------------- TW ----------------------------------------------
------------------------------------ INCREMENTAL ---------------------------------------
 
-------------------------------------- EOM ----------------------------------------------
--- ยอดปิดรายเดือนที่ห้างส่งมาเอง — ไว้เทียบกับฟีดรายวันว่าเราทำยอดหายไปเท่าไร
--- ต้นทาง Airflow DAG pipline_saleout_mdt_eom อ่าน /opt/airflow/dags/SaleOut_MDT/SO_MDT_EOM/
---
--- ⚠️ ASATDATE ของชั้นนี้คือ **วันที่ DAG รัน** ไม่ใช่งวดของข้อมูล
---    แต่ละห้างปิดเดือนคนละวัน (GB/BT/HP วันที่ 5 · TW วันที่ 8) วันเดียวกันจึงได้คนละเดือน
---    วัด 2026-10-05: ไฟล์ GB = ก.ย. แต่ไฟล์ TW = ส.ค.
---    **งวดจริงต้องอ่านจากเนื้อไฟล์ที่ชั้น validated** ห้ามเดาจาก ASATDATE เด็ดขาด
---
--- BT เอาเฉพาะ 2 ชีตที่ใช้เทียบยอดขาย (ตัดสินใจ 2026-10-05)
--- อีก 5 ชีต (stock_by_branch, stock_aging, turnover, turnover_brand, sale_by_branch_mch3)
--- ยังขึ้น GCS อยู่ แต่ไม่สร้าง external table เพราะยังไม่มีใครอ่าน เพิ่มทีหลังได้
 
--- Table: eom_gb   โกลบอลเฮ้าส์ — รายการขายรายบรรทัด + แถวผลรวมต่อท้าย (ต้องกรองทิ้งที่ validated)
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_gb`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_gb`
+DROP TABLE IF EXISTS `${EomGbTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${EomGbTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -192,16 +289,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/so_mdt_eom/gb/'
 );
 
--- Table: eom_hp   โฮมโปร + เมกาโฮม — CSV รูปแบบเดียวกับฟีดรายวัน (PERIODTYPE = 'M')
--- เปิดใช้ 2026-10-05 หลังห้างส่งไฟล์ปิดงวด 09/2026 มาให้ (ก่อนหน้านี้ส่งแต่เดือนที่ยังไม่ปิด
--- โฟลเดอร์บน GCS เลยว่าง และ external table บนโฟลเดอร์ว่างสร้างไม่ได้ — เดา schema ไม่ออก)
---
--- ⚠️ หนึ่งพาร์ทิชันมีหลายงวดและหลายเวอร์ชันของงวดเดียวกัน — DAG รวมทุกไฟล์ในโฟลเดอร์
--- เป็น AVRO ก้อนเดียวต่อวันที่รัน วัด 2026-10-05: 6 ไฟล์ = 7,173 แถว ครอบคลุมงวด 09 และ 10
--- โดยงวด 09 มาจาก 3 ไฟล์ (23.77M / 24.19M / 27.04M) ซึ่งเป็นยอดระหว่างเดือน 2 ครั้งและยอดปิด 1 ครั้ง
--- validated ต้องเลือกเวอร์ชันล่าสุดต่องวดด้วย CRDATE — ไม่ตัดซ้ำยอดเดือน 9 จะเบิ้ลเป็น 75M
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_hp`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_hp`
+DROP TABLE IF EXISTS `${EomHpTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${EomHpTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -211,9 +300,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/so_mdt_eom/hp/'
 );
 
--- Table: eom_tw   ไทวัสดุ — ชีตชื่อลงท้าย Month ต่างจากรายวัน
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_tw`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_tw`
+DROP TABLE IF EXISTS `${EomTwTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${EomTwTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -223,9 +311,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/so_mdt_eom/tw/reportsalesubscriptionmonth/'
 );
 
--- Table: eom_bt_sales_by_branch   บุญถาวร — ยอดสรุป MTD/YTD รายสาขา
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_bt_sales_by_branch`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_bt_sales_by_branch`
+DROP TABLE IF EXISTS `${EomBtSalesByBranchTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${EomBtSalesByBranchTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -235,9 +322,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/so_mdt_eom/bt/sales_by_branch/'
 );
 
--- Table: eom_bt_sale_by_branch_detail   บุญถาวร — รายละเอียดรายสินค้า
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_bt_sale_by_branch_detail`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.eom_bt_sale_by_branch_detail`
+DROP TABLE IF EXISTS `${EomBtSaleByBranchDetailTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${EomBtSaleByBranchDetailTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -248,10 +334,9 @@ OPTIONS (
 );
 ------------------------------------- EOM ----------------------------------------------
 
-------------------------------- LASTYEAR (ครั้งเดียว) ----------------------------------
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_lastyear`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_lastyear` (
+DROP TABLE IF EXISTS `${SaleoutLastyearTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SaleoutLastyearTableRef}` (
     sale_date    STRING,
     branch_code  STRING,
     branch_name  STRING,
@@ -270,14 +355,9 @@ OPTIONS (
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/lastyear/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/lastyear/'
 );
-------------------------------- LASTYEAR (ครั้งเดียว) ----------------------------------
 
--- Table: saleout_lastyear_monthly   ประวัติรายเดือน 2022-01 ถึง 2026-07
--- ⚠️ ไฟล์นี้เป็น "สำเนา" ที่ดัมป์จาก onetime.saleout_lastyear_monthly เมื่อ 2026-10-19
---    ไม่ใช่ไฟล์ต้นฉบับจากทีม BI ซึ่งหาไม่เจอแล้ว — ถ้าเจอต้นฉบับให้เอามาแทน
---    มีไว้กันกรณีตารางหาย ก่อนหน้านี้หายแล้วสร้างคืนไม่ได้เลย
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_lastyear_monthly`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_SALEOUT_MDT}.saleout_lastyear_monthly` (
+DROP TABLE IF EXISTS `${SaleoutLastyearMonthlyTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SaleoutLastyearMonthlyTableRef}` (
     month_date   STRING,
     store_code   STRING,
     branch_code  STRING,
@@ -296,5 +376,3 @@ OPTIONS (
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/lastyear_monthly/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_SALEOUT_MDT}/lastyear_monthly/'
 );
-------------------------------- LASTYEAR (ครั้งเดียว) ----------------------------------
------------------------------------ INCREMENTAL ---------------------------------------

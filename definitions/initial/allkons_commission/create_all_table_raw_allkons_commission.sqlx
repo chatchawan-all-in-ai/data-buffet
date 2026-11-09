@@ -4,15 +4,63 @@ config {
   tags: [databuffet.TAG_INITIAL],
 }
 
-------------------------------------- SCHEMA --------------------------------------
+js {
+    const Mac5SalesAreasTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_ALLKONS_COMMISSION,
+        name: "mac5_sales_areas",
+    };
+    const Mac5SalesAreasTableRef = `${Mac5SalesAreasTable.database}.${Mac5SalesAreasTable.schema}.${Mac5SalesAreasTable.name}`;
+
+    const Mac5SalesChannelsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_ALLKONS_COMMISSION,
+        name: "mac5_sales_channels",
+    };
+    const Mac5SalesChannelsTableRef = `${Mac5SalesChannelsTable.database}.${Mac5SalesChannelsTable.schema}.${Mac5SalesChannelsTable.name}`;
+
+    const Mac5TransactionsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_ALLKONS_COMMISSION,
+        name: "mac5_transactions",
+    };
+    const Mac5TransactionsTableRef = `${Mac5TransactionsTable.database}.${Mac5TransactionsTable.schema}.${Mac5TransactionsTable.name}`;
+
+    const MarketingConditionVersionDetailsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_ALLKONS_COMMISSION,
+        name: "marketing_condition_version_details",
+    };
+    const MarketingConditionVersionDetailsTableRef = `${MarketingConditionVersionDetailsTable.database}.${MarketingConditionVersionDetailsTable.schema}.${MarketingConditionVersionDetailsTable.name}`;
+
+    const SalesChannelsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_ALLKONS_COMMISSION,
+        name: "sales_channels",
+    };
+    const SalesChannelsTableRef = `${SalesChannelsTable.database}.${SalesChannelsTable.schema}.${SalesChannelsTable.name}`;
+
+    const SalesPositionsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_ALLKONS_COMMISSION,
+        name: "sales_positions",
+    };
+    const SalesPositionsTableRef = `${SalesPositionsTable.database}.${SalesPositionsTable.schema}.${SalesPositionsTable.name}`;
+
+    const TargetCommissionMonthlyCarriesTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_ALLKONS_COMMISSION,
+        name: "target_commission_monthly_carries",
+    };
+    const TargetCommissionMonthlyCarriesTableRef = `${TargetCommissionMonthlyCarriesTable.database}.${TargetCommissionMonthlyCarriesTable.schema}.${TargetCommissionMonthlyCarriesTable.name}`;
+}
+
+
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}` OPTIONS(location="${databuffet.REGION}");
-------------------------------------- SCHEMA --------------------------------------
 
 
------------------------------------ INCREMENTAL ------------------------------------
--- Table : mac5_sales_areas
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.mac5_sales_areas`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.mac5_sales_areas`
+DROP TABLE IF EXISTS `${Mac5SalesAreasTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${Mac5SalesAreasTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -22,9 +70,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_ALLKONS_COMMISSION}/mac5_sales_areas/'
 );
 
--- Table : mac5_sales_channels
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.mac5_sales_channels`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.mac5_sales_channels`
+DROP TABLE IF EXISTS `${Mac5SalesChannelsTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${Mac5SalesChannelsTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -34,9 +81,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_ALLKONS_COMMISSION}/mac5_sales_channels/'
 );
 
--- Table : mac5_transactions
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.mac5_transactions`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.mac5_transactions`
+DROP TABLE IF EXISTS `${Mac5TransactionsTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${Mac5TransactionsTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -46,9 +92,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_ALLKONS_COMMISSION}/mac5_transactions/'
 );
 
--- Table : marketing_condition_version_details
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.marketing_condition_version_details`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.marketing_condition_version_details`
+DROP TABLE IF EXISTS `${MarketingConditionVersionDetailsTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${MarketingConditionVersionDetailsTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -58,9 +103,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_ALLKONS_COMMISSION}/marketing_condition_version_details/'
 );
 
--- Table : sales_channels
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.sales_channels`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.sales_channels`
+DROP TABLE IF EXISTS `${SalesChannelsTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SalesChannelsTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -70,9 +114,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_ALLKONS_COMMISSION}/sales_channels/'
 );
 
--- Table : sales_positions
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.sales_positions`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.sales_positions`
+DROP TABLE IF EXISTS `${SalesPositionsTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SalesPositionsTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -82,9 +125,8 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_ALLKONS_COMMISSION}/sales_positions/'
 );
 
--- Table : target_commission_monthly_carries
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.target_commission_monthly_carries`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_ALLKONS_COMMISSION}.target_commission_monthly_carries`
+DROP TABLE IF EXISTS `${TargetCommissionMonthlyCarriesTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${TargetCommissionMonthlyCarriesTableRef}`
 WITH PARTITION COLUMNS (
     ASATDATE STRING
 )
@@ -93,4 +135,3 @@ OPTIONS (
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_ALLKONS_COMMISSION}/target_commission_monthly_carries/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_ALLKONS_COMMISSION}/target_commission_monthly_carries/'
 );
------------------------------------ INCREMENTAL ------------------------------------

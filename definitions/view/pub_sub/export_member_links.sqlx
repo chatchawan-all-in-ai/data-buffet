@@ -8,18 +8,14 @@ config {
 }
 
 js {
-    const OrgCenterLinkTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_link`;
+    const OrgCenterLinkTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.ORG_CENTER,
+    name: "org_center_link",
+};
+const OrgCenterLinkTableRef = `${OrgCenterLinkTable.database}.${OrgCenterLinkTable.schema}.${OrgCenterLinkTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
---   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
---   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
---   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
--- Natural key = company_id, link_type, from_membership_id, department_id, site_id, valid_from.
--- from = the PC's EmployeeID, department_id = the TA department (the TA position) the PC is linked to (NULL when not yet known), site_id = branch code. org_center_link.valid_to
--- already is the first day after the link, so only 2066-12-31 -> NULL applies here.
--- scope_unit_id and source_row_id have no source and stay NULL; pc_type / branch_type are not exported.
 WITH link AS (
   SELECT
     company_id,

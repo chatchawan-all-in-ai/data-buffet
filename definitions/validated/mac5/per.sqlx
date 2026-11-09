@@ -37,6 +37,40 @@ END;`;
         partition_statement = "";
         post_operations_statement = "";
     }
+    const PerAg01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "per",
+    };
+    const PerAg01TableRef = `${PerAg01Table.database}.${PerAg01Table.schema}.${PerAg01Table.name}`;
+
+    const PerAa05Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AA05,
+        name: "per",
+    };
+    const PerAa05TableRef = `${PerAa05Table.database}.${PerAa05Table.schema}.${PerAa05Table.name}`;
+
+    const PerAb01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AB01,
+        name: "per",
+    };
+    const PerAb01TableRef = `${PerAb01Table.database}.${PerAb01Table.schema}.${PerAb01Table.name}`;
+
+    const PerAc02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AC02,
+        name: "per",
+    };
+    const PerAc02TableRef = `${PerAc02Table.database}.${PerAc02Table.schema}.${PerAc02Table.name}`;
+
+    const PerAk02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AK02,
+        name: "per",
+    };
+    const PerAk02TableRef = `${PerAk02Table.database}.${PerAk02Table.schema}.${PerAk02Table.name}`;
 }
 
 WITH all_sources AS (
@@ -68,7 +102,7 @@ WITH all_sources AS (
     ${databuffet.functionData.parseFlexibleDatetime('pereditdt')} AS pereditdt,
     ${databuffet.functionData.cleanString('pereditmf')} as pereditmf,
     ${databuffet.functionData.cleanString('perzone')} as perzone
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.per`
+  FROM `${PerAg01TableRef}`
 
   UNION ALL
 
@@ -100,7 +134,7 @@ WITH all_sources AS (
     ${databuffet.functionData.parseFlexibleDatetime('pereditdt')} AS pereditdt,
     ${databuffet.functionData.cleanString('pereditmf')} as pereditmf,
     CAST(NULL AS STRING) as perzone
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}.per`
+  FROM `${PerAa05TableRef}`
 
   UNION ALL
 
@@ -132,7 +166,7 @@ WITH all_sources AS (
     ${databuffet.functionData.parseFlexibleDatetime('pereditdt')} AS pereditdt,
     ${databuffet.functionData.cleanString('pereditmf')} as pereditmf,
     CAST(NULL AS STRING) as perzone
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}.per`
+  FROM `${PerAb01TableRef}`
 
   UNION ALL
 
@@ -164,7 +198,7 @@ WITH all_sources AS (
     ${databuffet.functionData.parseFlexibleDatetime('pereditdt')} AS pereditdt,
     ${databuffet.functionData.cleanString('pereditmf')} as pereditmf,
     CAST(NULL AS STRING) as perzone
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AC02}.per`
+  FROM `${PerAc02TableRef}`
 
   UNION ALL
 
@@ -196,7 +230,7 @@ WITH all_sources AS (
     ${databuffet.functionData.parseFlexibleDatetime('pereditdt')} AS pereditdt,
     ${databuffet.functionData.cleanString('pereditmf')} as pereditmf,
     CAST(NULL AS STRING) as perzone
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.per`
+  FROM `${PerAk02TableRef}`
 )
 
 SELECT * FROM all_sources

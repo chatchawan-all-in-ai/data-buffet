@@ -1,7 +1,7 @@
 config {
     type: "incremental",
     schema: databuffet.VALIDATED_MAC5,
-    dependencies: ["validated_schema_mac5", "create_all_table_raw_mac5", "create_all_table_raw_mac5_aa05", "create_all_table_raw_mac5_ab01", "create_all_table_raw_mac5_ac02", "create_all_table_raw_mac5_ak02", "mih"],
+    dependencies: ["validated_schema_mac5", "create_all_table_raw_mac5", "create_all_table_raw_mac5_aa05", "create_all_table_raw_mac5_ab01", "create_all_table_raw_mac5_ac02", "create_all_table_raw_mac5_ak02"],
     tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_INCREMENTAL],
     uniqueKey: ["company_id", "MILtype","MILvnos","MILlistNo"],
     bigquery: {
@@ -53,6 +53,40 @@ END;`;
         partition_statement = "";
         post_operations_statement = "";
     }
+    const MilAg01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mil",
+    };
+    const MilAg01TableRef = `${MilAg01Table.database}.${MilAg01Table.schema}.${MilAg01Table.name}`;
+
+    const MilAa05Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AA05,
+        name: "mil",
+    };
+    const MilAa05TableRef = `${MilAa05Table.database}.${MilAa05Table.schema}.${MilAa05Table.name}`;
+
+    const MilAb01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AB01,
+        name: "mil",
+    };
+    const MilAb01TableRef = `${MilAb01Table.database}.${MilAb01Table.schema}.${MilAb01Table.name}`;
+
+    const MilAc02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AC02,
+        name: "mil",
+    };
+    const MilAc02TableRef = `${MilAc02Table.database}.${MilAc02Table.schema}.${MilAc02Table.name}`;
+
+    const MilAk02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AK02,
+        name: "mil",
+    };
+    const MilAk02TableRef = `${MilAk02Table.database}.${MilAk02Table.schema}.${MilAk02Table.name}`;
 }
 
 SELECT * FROM new_data_mil
@@ -60,22 +94,22 @@ SELECT * FROM new_data_mil
 pre_operations {
   CREATE OR REPLACE TEMP TABLE new_data_mil AS
   WITH cte_mil as (
-  SELECT 'ag01' AS company_id, * FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mil`
+  SELECT 'ag01' AS company_id, * FROM `${MilAg01TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
 
-  SELECT 'aa05' AS company_id, * FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}.mil`
+  SELECT 'aa05' AS company_id, * FROM `${MilAa05TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
 
-  SELECT 'ab01' AS company_id, * FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}.mil`
+  SELECT 'ab01' AS company_id, * FROM `${MilAb01TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
 
-  SELECT 'ac02' AS company_id, * FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AC02}.mil`
+  SELECT 'ac02' AS company_id, * FROM `${MilAc02TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -91,7 +125,7 @@ pre_operations {
     milclearum, milexpdate, milnotes, milnotkl, mildelvdt, mildatesp,
     milnumcsp, milnumisp, milcost, milucost, miluprice, milusequanp,
     milvcol5, milfitem, ASATDATE
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.mil`
+  FROM `${MilAk02TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
 ), cte_mih as (
@@ -105,7 +139,7 @@ pre_operations {
     t1.mihcus,
     t1.mihdischf1
 
-  from ${ref("mih")} as t1
+  from ${ref(databuffet.VALIDATED_MAC5, "mih")} as t1
   inner join (
     select distinct company_id, milyear, milmonth, milday, miltype, milvnos, milcus
     from cte_mil

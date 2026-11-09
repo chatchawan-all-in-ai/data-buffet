@@ -7,17 +7,6 @@ config {
     description: "Pub/Sub export of commission set status for the TF team: one row = one ag01 document status code (ar_s); columns, names and order of the TF sample, plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- Commission sets keep the column names, order and JSON types of the sample sent to TF on
--- 2026-10-14 (commission_tf_ag01_2026), which differ from the source column names on purpose.
--- Natural key = company_source_id, id (unique, never NULL).
--- Data set   : status  (commission export for TF; target = sample commission_tf_ag01_2026, 2026-10-14)
--- Original   : Query Commission คุณแป้ง/masterdate.sql (Status)
--- Sources    : databuffet-nonprd.validated_mac5.ar_s
--- PK: company_source_id, id. Scope: all ag01 rows.
--- Columns, names, order and JSON types match the sample.
--- Differences from the original query (the sample is the target):
---   The source filters AR_scode <> 0; the sample keeps code 0 (91 rows incl. 0), so no filter here.
 WITH src AS (
   SELECT company_id AS company_source_id, ar_scode AS id, ar_snamet AS status, '1' AS Active
   FROM ${ref(databuffet.VALIDATED_MAC5, "ar_s")}

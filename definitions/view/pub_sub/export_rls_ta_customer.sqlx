@@ -8,13 +8,14 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.PROCESS_DATASET}.rls_ta_customer`;
+    const RlsTaCustomerTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.PROCESS_DATASET,
+    name: "rls_ta_customer",
+};
+const RlsTaCustomerTableRef = `${RlsTaCustomerTable.database}.${RlsTaCustomerTable.schema}.${RlsTaCustomerTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table process_dataset.rls_ta_customer (the rls sample of 2026-11-02): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = employee_id, customer_company_id, customer_code, marketing_group_id, sub_marketing_id, segment_id, access_source.
 WITH src AS (
   SELECT
     employee_id,
@@ -24,7 +25,7 @@ WITH src AS (
     sub_marketing_id,
     segment_id,
     access_source
-  FROM `${SourceTableRef}`
+  FROM `${RlsTaCustomerTableRef}`
 )
 SELECT
   s.employee_id,

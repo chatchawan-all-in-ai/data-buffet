@@ -4,17 +4,191 @@ config {
   tags: [databuffet.TAG_INITIAL],
 }
 
-------------------------------------- SCHEMA --------------------------------------
+js {
+    const JuristicProfileTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "juristic_profile",
+    };
+    const JuristicProfileTableRef = `${JuristicProfileTable.database}.${JuristicProfileTable.schema}.${JuristicProfileTable.name}`;
+
+    const CustomerProfileNatureBusinessTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "customer_profile_nature_business",
+    };
+    const CustomerProfileNatureBusinessTableRef = `${CustomerProfileNatureBusinessTable.database}.${CustomerProfileNatureBusinessTable.schema}.${CustomerProfileNatureBusinessTable.name}`;
+
+    const CustomerProfileTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "customer_profile",
+    };
+    const CustomerProfileTableRef = `${CustomerProfileTable.database}.${CustomerProfileTable.schema}.${CustomerProfileTable.name}`;
+
+    const CustomerProfileRoleBusinessTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "customer_profile_role_business",
+    };
+    const CustomerProfileRoleBusinessTableRef = `${CustomerProfileRoleBusinessTable.database}.${CustomerProfileRoleBusinessTable.schema}.${CustomerProfileRoleBusinessTable.name}`;
+
+    const CustomerAddressTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "customer_address",
+    };
+    const CustomerAddressTableRef = `${CustomerAddressTable.database}.${CustomerAddressTable.schema}.${CustomerAddressTable.name}`;
+
+    const CustomerProfileTagTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "customer_profile_tag",
+    };
+    const CustomerProfileTagTableRef = `${CustomerProfileTagTable.database}.${CustomerProfileTagTable.schema}.${CustomerProfileTagTable.name}`;
+
+    const CustomerProfileCategoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "customer_profile_category",
+    };
+    const CustomerProfileCategoryTableRef = `${CustomerProfileCategoryTable.database}.${CustomerProfileCategoryTable.schema}.${CustomerProfileCategoryTable.name}`;
+
+    const CustomerToPlatformTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "customer_to_platform",
+    };
+    const CustomerToPlatformTableRef = `${CustomerToPlatformTable.database}.${CustomerToPlatformTable.schema}.${CustomerToPlatformTable.name}`;
+
+    const CustomerToTransactionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "customer_to_transaction",
+    };
+    const CustomerToTransactionTableRef = `${CustomerToTransactionTable.database}.${CustomerToTransactionTable.schema}.${CustomerToTransactionTable.name}`;
+
+    const CustomerToCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "customer_to_customer",
+    };
+    const CustomerToCustomerTableRef = `${CustomerToCustomerTable.database}.${CustomerToCustomerTable.schema}.${CustomerToCustomerTable.name}`;
+
+    const RoleBusinessTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "role_business",
+    };
+    const RoleBusinessTableRef = `${RoleBusinessTable.database}.${RoleBusinessTable.schema}.${RoleBusinessTable.name}`;
+
+    const NatureBusinessTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "nature_business",
+    };
+    const NatureBusinessTableRef = `${NatureBusinessTable.database}.${NatureBusinessTable.schema}.${NatureBusinessTable.name}`;
+
+    const AddressTypeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "address_type",
+    };
+    const AddressTypeTableRef = `${AddressTypeTable.database}.${AddressTypeTable.schema}.${AddressTypeTable.name}`;
+
+    const OrganizeTypeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "organize_type",
+    };
+    const OrganizeTypeTableRef = `${OrganizeTypeTable.database}.${OrganizeTypeTable.schema}.${OrganizeTypeTable.name}`;
+
+    const JuristicTypeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "juristic_type",
+    };
+    const JuristicTypeTableRef = `${JuristicTypeTable.database}.${JuristicTypeTable.schema}.${JuristicTypeTable.name}`;
+
+    const CustomerStatusTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "customer_status",
+    };
+    const CustomerStatusTableRef = `${CustomerStatusTable.database}.${CustomerStatusTable.schema}.${CustomerStatusTable.name}`;
+
+    const CustomerProfileTypeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "customer_profile_type",
+    };
+    const CustomerProfileTypeTableRef = `${CustomerProfileTypeTable.database}.${CustomerProfileTypeTable.schema}.${CustomerProfileTypeTable.name}`;
+
+    const CustomerTypeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "customer_type",
+    };
+    const CustomerTypeTableRef = `${CustomerTypeTable.database}.${CustomerTypeTable.schema}.${CustomerTypeTable.name}`;
+
+    const CategoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "category",
+    };
+    const CategoryTableRef = `${CategoryTable.database}.${CategoryTable.schema}.${CategoryTable.name}`;
+
+    const ZipcodeTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "zipcode",
+    };
+    const ZipcodeTableRef = `${ZipcodeTable.database}.${ZipcodeTable.schema}.${ZipcodeTable.name}`;
+
+    const SubDistrictTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "sub_district",
+    };
+    const SubDistrictTableRef = `${SubDistrictTable.database}.${SubDistrictTable.schema}.${SubDistrictTable.name}`;
+
+    const DistrictTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "district",
+    };
+    const DistrictTableRef = `${DistrictTable.database}.${DistrictTable.schema}.${DistrictTable.name}`;
+
+    const ProvinceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "province",
+    };
+    const ProvinceTableRef = `${ProvinceTable.database}.${ProvinceTable.schema}.${ProvinceTable.name}`;
+
+    const CountryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "country",
+    };
+    const CountryTableRef = `${CountryTable.database}.${CountryTable.schema}.${CountryTable.name}`;
+
+    const PrefixTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_CIS360,
+        name: "prefix",
+    };
+    const PrefixTableRef = `${PrefixTable.database}.${PrefixTable.schema}.${PrefixTable.name}`;
+}
+
+
 CREATE SCHEMA IF NOT EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}` OPTIONS(location="${databuffet.REGION}");
-------------------------------------- SCHEMA --------------------------------------
 
 
------------------------------------ INCREMENTAL ------------------------------------
--- Table : juristic_profile
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.juristic_profile`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.juristic_profile`
+DROP TABLE IF EXISTS `${JuristicProfileTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${JuristicProfileTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -22,11 +196,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/juristic_profile/'
 );
 
--- Table : customer_profile_nature_business
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_profile_nature_business`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_profile_nature_business`
+DROP TABLE IF EXISTS `${CustomerProfileNatureBusinessTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CustomerProfileNatureBusinessTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -34,11 +207,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/customer_profile_nature_business/'
 );
 
--- Table : customer_profile
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_profile`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_profile`
+DROP TABLE IF EXISTS `${CustomerProfileTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CustomerProfileTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -46,11 +218,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/customer_profile/'
 );
 
--- Table : customer_profile_role_business
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_profile_role_business`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_profile_role_business`
+DROP TABLE IF EXISTS `${CustomerProfileRoleBusinessTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CustomerProfileRoleBusinessTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -58,11 +229,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/customer_profile_role_business/'
 );
 
--- Table : customer_address
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_address`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_address`
+DROP TABLE IF EXISTS `${CustomerAddressTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CustomerAddressTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -70,11 +240,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/customer_address/'
 );
 
--- Table : customer_profile_tag
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_profile_tag`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_profile_tag`
+DROP TABLE IF EXISTS `${CustomerProfileTagTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CustomerProfileTagTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -82,11 +251,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/customer_profile_tag/'
 );
 
--- Table : customer_profile_category
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_profile_category`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_profile_category`
+DROP TABLE IF EXISTS `${CustomerProfileCategoryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CustomerProfileCategoryTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -94,11 +262,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/customer_profile_category/'
 );
 
--- Table : customer_to_platform
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_to_platform`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_to_platform`
+DROP TABLE IF EXISTS `${CustomerToPlatformTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CustomerToPlatformTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -106,11 +273,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/customer_to_platform/'
 );
 
--- Table : customer_to_transaction
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_to_transaction`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_to_transaction`
+DROP TABLE IF EXISTS `${CustomerToTransactionTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CustomerToTransactionTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -118,11 +284,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/customer_to_transaction/'
 );
 
--- Table : customer_to_customer
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_to_customer`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_to_customer`
+DROP TABLE IF EXISTS `${CustomerToCustomerTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CustomerToCustomerTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -130,11 +295,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/customer_to_customer/'
 );
 
--- Table : role_business
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.role_business`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.role_business`
+DROP TABLE IF EXISTS `${RoleBusinessTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${RoleBusinessTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -142,11 +306,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/role_business/'
 );
 
--- Table : nature_business
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.nature_business`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.nature_business`
+DROP TABLE IF EXISTS `${NatureBusinessTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${NatureBusinessTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -154,11 +317,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/nature_business/'
 );
 
--- Table : address_type
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.address_type`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.address_type`
+DROP TABLE IF EXISTS `${AddressTypeTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${AddressTypeTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -166,11 +328,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/address_type/'
 );
 
--- Table : organize_type
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.organize_type`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.organize_type`
+DROP TABLE IF EXISTS `${OrganizeTypeTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${OrganizeTypeTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -178,11 +339,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/organize_type/'
 );
 
--- Table : juristic_type
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.juristic_type`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.juristic_type`
+DROP TABLE IF EXISTS `${JuristicTypeTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${JuristicTypeTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -190,11 +350,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/juristic_type/'
 );
 
--- Table : customer_status
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_status`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_status`
+DROP TABLE IF EXISTS `${CustomerStatusTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CustomerStatusTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -202,11 +361,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/customer_status/'
 );
 
--- Table : customer_profile_type
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_profile_type`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_profile_type`
+DROP TABLE IF EXISTS `${CustomerProfileTypeTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CustomerProfileTypeTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -214,11 +372,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/customer_profile_type/'
 );
 
--- Table : customer_type
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_type`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.customer_type`
+DROP TABLE IF EXISTS `${CustomerTypeTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CustomerTypeTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -226,11 +383,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/customer_type/'
 );
 
--- Table : category
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.category`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.category`
+DROP TABLE IF EXISTS `${CategoryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CategoryTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -238,11 +394,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/category/'
 );
 
--- Table : zipcode
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.zipcode`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.zipcode`
+DROP TABLE IF EXISTS `${ZipcodeTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ZipcodeTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -250,11 +405,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/zipcode/'
 );
 
--- Table : sub_district
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.sub_district`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.sub_district`
+DROP TABLE IF EXISTS `${SubDistrictTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${SubDistrictTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -262,11 +416,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/sub_district/'
 );
 
--- Table : district
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.district`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.district`
+DROP TABLE IF EXISTS `${DistrictTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${DistrictTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -274,11 +427,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/district/'
 );
 
--- Table : province
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.province`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.province`
+DROP TABLE IF EXISTS `${ProvinceTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${ProvinceTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -286,11 +438,10 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/province/'
 );
 
--- Table : country
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.country`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.country`
+DROP TABLE IF EXISTS `${CountryTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${CountryTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
@@ -298,15 +449,13 @@ OPTIONS (
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/country/'
 );
 
--- Table : prefix
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.prefix`;
-CREATE OR REPLACE EXTERNAL TABLE `${databuffet.DATABASE}.${databuffet.RAW_CIS360}.prefix`
+DROP TABLE IF EXISTS `${PrefixTableRef}`;
+CREATE OR REPLACE EXTERNAL TABLE `${PrefixTableRef}`
 WITH PARTITION COLUMNS (
-    ASATDATE STRING 
+    ASATDATE STRING
 )
 OPTIONS (
   format = 'AVRO',
   uris = ['${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/prefix/*'],
   hive_partition_uri_prefix = '${databuffet.RAW_BUCKET}/${databuffet.GCS_CIS360}/prefix/'
 );
------------------------------------ INCREMENTAL ------------------------------------

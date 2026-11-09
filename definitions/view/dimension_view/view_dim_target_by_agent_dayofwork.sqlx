@@ -112,7 +112,6 @@ with tab_dm as (
     sec.SectionSK,
     sec_m.SectionManagerSK,
     final.*
-    -- count(1)
   FROM final
   left join `${DimSaleRepresentativeTableRef}` as salerep
     on final.Date between salerep.StartDate and salerep.EndDate
@@ -150,18 +149,12 @@ with tab_dm as (
       and reg.SubRegionID = reg_m.SubRegionID
       and reg.CompanySK = reg_m.CompanySK
       
-      -- and (CASE 
-      --   WHEN reg_m.RegionID != reg_m.SubRegionID
-      --     THEN reg.RegionID = reg_m.RegionID and reg.SubRegionID = reg_m.SubRegionID
-      --   ELSE reg.RegionID = reg_m.RegionID
-      -- END)
 
   left join `${DimSectionManagerTableRef}` as sec_m
     on final.Date between sec_m.StartDate and sec_m.EndDate 
       and dep.SectionID = sec_m.SectionID
       and dep.CompanySK = sec_m.CompanySK
     
-  -- where salerep.SaleRepSK = 42
 )
   SELECT 
     row_number() over(order by Year, Month, Day, TargetBySaleSK) as TargetBySaleDayofworkSK, 

@@ -4,15 +4,95 @@ config {
   tags: [databuffet.TAG_INITIAL],
 }
 
+js {
+    const SaleByBranchDetailTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_SALEOUT_MDT,
+        name: "sale_by_branch_detail",
+    };
+    const SaleByBranchDetailTableRef = `${SaleByBranchDetailTable.database}.${SaleByBranchDetailTable.schema}.${SaleByBranchDetailTable.name}`;
 
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.sale_by_branch_detail`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.sale_by_branch_mch3`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.sales_by_branch`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.stock_aging`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.stock_by_branch`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.turnover`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.turnover_brand`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.saleout_gb`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.saleout_hp`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.report_sale_subscription`;
-DROP TABLE IF EXISTS `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.saleout_dh`;
+    const SaleByBranchMch3Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_SALEOUT_MDT,
+        name: "sale_by_branch_mch3",
+    };
+    const SaleByBranchMch3TableRef = `${SaleByBranchMch3Table.database}.${SaleByBranchMch3Table.schema}.${SaleByBranchMch3Table.name}`;
+
+    const SalesByBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_SALEOUT_MDT,
+        name: "sales_by_branch",
+    };
+    const SalesByBranchTableRef = `${SalesByBranchTable.database}.${SalesByBranchTable.schema}.${SalesByBranchTable.name}`;
+
+    const StockAgingTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_SALEOUT_MDT,
+        name: "stock_aging",
+    };
+    const StockAgingTableRef = `${StockAgingTable.database}.${StockAgingTable.schema}.${StockAgingTable.name}`;
+
+    const StockByBranchTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_SALEOUT_MDT,
+        name: "stock_by_branch",
+    };
+    const StockByBranchTableRef = `${StockByBranchTable.database}.${StockByBranchTable.schema}.${StockByBranchTable.name}`;
+
+    const TurnoverTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_SALEOUT_MDT,
+        name: "turnover",
+    };
+    const TurnoverTableRef = `${TurnoverTable.database}.${TurnoverTable.schema}.${TurnoverTable.name}`;
+
+    const TurnoverBrandTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_SALEOUT_MDT,
+        name: "turnover_brand",
+    };
+    const TurnoverBrandTableRef = `${TurnoverBrandTable.database}.${TurnoverBrandTable.schema}.${TurnoverBrandTable.name}`;
+
+    const SaleoutGbTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_SALEOUT_MDT,
+        name: "saleout_gb",
+    };
+    const SaleoutGbTableRef = `${SaleoutGbTable.database}.${SaleoutGbTable.schema}.${SaleoutGbTable.name}`;
+
+    const SaleoutHpTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_SALEOUT_MDT,
+        name: "saleout_hp",
+    };
+    const SaleoutHpTableRef = `${SaleoutHpTable.database}.${SaleoutHpTable.schema}.${SaleoutHpTable.name}`;
+
+    const ReportSaleSubscriptionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_SALEOUT_MDT,
+        name: "report_sale_subscription",
+    };
+    const ReportSaleSubscriptionTableRef = `${ReportSaleSubscriptionTable.database}.${ReportSaleSubscriptionTable.schema}.${ReportSaleSubscriptionTable.name}`;
+
+    const SaleoutDhTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.VALIDATED_SALEOUT_MDT,
+        name: "saleout_dh",
+    };
+    const SaleoutDhTableRef = `${SaleoutDhTable.database}.${SaleoutDhTable.schema}.${SaleoutDhTable.name}`;
+}
+
+
+
+DROP TABLE IF EXISTS `${SaleByBranchDetailTableRef}`;
+DROP TABLE IF EXISTS `${SaleByBranchMch3TableRef}`;
+DROP TABLE IF EXISTS `${SalesByBranchTableRef}`;
+DROP TABLE IF EXISTS `${StockAgingTableRef}`;
+DROP TABLE IF EXISTS `${StockByBranchTableRef}`;
+DROP TABLE IF EXISTS `${TurnoverTableRef}`;
+DROP TABLE IF EXISTS `${TurnoverBrandTableRef}`;
+DROP TABLE IF EXISTS `${SaleoutGbTableRef}`;
+DROP TABLE IF EXISTS `${SaleoutHpTableRef}`;
+DROP TABLE IF EXISTS `${ReportSaleSubscriptionTableRef}`;
+DROP TABLE IF EXISTS `${SaleoutDhTableRef}`;

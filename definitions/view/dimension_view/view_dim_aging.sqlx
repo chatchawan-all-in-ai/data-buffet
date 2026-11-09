@@ -20,13 +20,6 @@ js {
     };
     const ViewDimChannelTableRef = `${ViewDimChannelTable.database}.${ViewDimChannelTable.schema}.${ViewDimChannelTable.name}`;
 
-    const DimSaleRepresentativeLastTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_sale_representative_last",
-    };
-    const DimSaleRepresentativeLastTableRef = `${DimSaleRepresentativeLastTable.database}.${DimSaleRepresentativeLastTable.schema}.${DimSaleRepresentativeLastTable.name}`;
-
     const DimAgingRangTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -37,18 +30,10 @@ js {
 
 with dim_agin_raw as (
   select 
-    -- cfs.cfsdateid,
     dim_channel.ChannelSK,
     dim_channel.ChannelFinanceSK,
     dim_channel.ChannelSaleSK,
     dim_channel.ChannelCostSK,
-    -- dim_sale.SaleRepSK,
-    -- dim_sale.DepartmentSK,
-    -- dim_sale.SectionSK,
-    -- dim_sale.SectionManagerSK,
-    -- dim_sale.RegionSK,
-    -- dim_sale.RegionManagerSK,
-    -- dim_sale.DirectorSK,
     dim_aging.*,
 
     (CASE 
@@ -77,12 +62,7 @@ with dim_agin_raw as (
   left join `${ViewDimChannelTableRef}` as dim_channel
     on dim_aging.CompanySK = dim_channel.CompanySK
     and dim_aging.cfsDep = dim_channel.DepCode
-  -- left join `${DimSaleRepresentativeLastTableRef}` as dim_sale
-  --   on dim_aging.CompanySK = dim_sale.CompanySK
-  --   and dim_aging.cfsDep = dim_sale.DepartmentID
-  --   and	dim_aging.cfsPer = dim_sale.EmployeeID
   where dim_aging.cfsvnosid != 'BFCN020/47'
-    -- and debcode = '111000689'
 )
 
 select distinct
@@ -103,10 +83,6 @@ select distinct
   
   ReceiptAgeDays
 from dim_agin_raw as raw
--- aging range ต้องเป็นของบริษัทตัวเอง (ของเดิมเขียน `raw.CompanySK = raw.CompanySK`
--- เทียบกับตัวเอง = TRUE เสมอ ทำให้ทุกบริษัทไปใช้ช่วงของ ag01)
--- ตอนนี้ mds มี range เฉพาะ ag01 → aa05/ab01/ac02/ak02 จะได้ AgingRangSK = NULL
--- จนกว่า mds จะเพิ่ม range ให้บริษัทเหล่านั้น
 left join `${DimAgingRangTableRef}` as dim_aging_rang
   on raw.CompanySK = dim_aging_rang.CompanySK
   and DayRange between dim_aging_rang.AgingDayMin and dim_aging_rang.AgingDayMax

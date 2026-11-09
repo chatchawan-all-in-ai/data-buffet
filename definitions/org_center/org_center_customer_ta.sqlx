@@ -12,17 +12,14 @@ config {
 }
 
 js {
-    const MdsDataCustomerTaTable = {
+    const MdsDataTaCustomerTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
         name: "mds_data_ta_customer",
     };
-    const MdsDataCustomerTaTableRef = `${MdsDataCustomerTaTable.database}.${MdsDataCustomerTaTable.schema}.${MdsDataCustomerTaTable.name}`;
+    const MdsDataTaCustomerTableRef = `${MdsDataTaCustomerTable.database}.${MdsDataTaCustomerTable.schema}.${MdsDataTaCustomerTable.name}`;
 }
 
--- 1 แถว = ลูกค้า 1 ราย อยู่ใน portfolio ของ department (ตำแหน่ง TA) 1 แห่ง ในช่วงวันที่หนึ่ง · ค่าจาก MDS (active เท่านั้น)
--- DepartmentID ว่างได้ = department_id NULL (ยังหา department ไม่ได้) · แถวยังอยู่ แต่ไม่ให้สิทธิ์ใน rls_ta_customer และ org_center_flags รายงาน
--- valid_to = EndDate ของ MDS (วันแรกที่ไม่รับผิดชอบแล้ว) · EndDate ว่าง = 2066-12-31 เหมือนตารางอื่นใน org center
 SELECT
   ${databuffet.functionData.cleanString("companyID")} AS company_id,
   ${databuffet.functionData.cleanString("CustomerCode")} AS customer_code,
@@ -32,7 +29,7 @@ SELECT
   IFNULL(EndDate, DATE '2066-12-31') AS valid_to,
   ${databuffet.functionData.cleanString("CustomerName")} AS customer_name,
   id AS source_row_id
-FROM `${MdsDataCustomerTaTableRef}`
+FROM `${MdsDataTaCustomerTableRef}`
 WHERE is_active = TRUE
 
 pre_operations {

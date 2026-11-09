@@ -8,13 +8,14 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_pump_information`;
+    const DimPumpInformationTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_pump_information",
+};
+const DimPumpInformationTableRef = `${DimPumpInformationTable.database}.${DimPumpInformationTable.schema}.${DimPumpInformationTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table dimension_table.dim_pump_information (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = CompanyID, milstk, RegionID, FlagNewProductMKT.
 WITH src AS (
   SELECT
     PumpSK,
@@ -23,7 +24,7 @@ WITH src AS (
     milstk,
     RegionID,
     FlagNewProductMKT
-  FROM `${SourceTableRef}`
+  FROM `${DimPumpInformationTableRef}`
 )
 SELECT
   s.PumpSK,

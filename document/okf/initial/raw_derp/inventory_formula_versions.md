@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/initial/initial-layer.md"
     title: "Data Mart wiki (document/project_wiki/initial/initial-layer.md)"
-generated: { by: "agent:codex", at: "2026-11-08T22:03:22+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:05:00+07:00" }
 status: draft
 ---
 
@@ -32,10 +32,10 @@ One row per source record per `ASATDATE` partition. There is no key at this laye
 
 | Column | Type | Description |
 |---|---|---|
-| `formula_versions_id` | STRING | Source formula versions id value. |
+| `formula_versions_id` | STRING |  Source formula versions id value. |
 | `id` | STRING | Source row identifier. |
 | `manufactured_item_number` | STRING | รหัสสินค้าที่ผลิต (FG) \| D365: manufactured_item_number (เดิม V1 ใช้ชื่อ item_number) |
-| `formula_id` | STRING | รหัส BOM/สูตร เช่น 12610048_V1 \| D365: formula_id ⚠ ไม่ unique เสมอไป: พบ formula_id เดียวใช้ร่วมกันหลาย manufactured_item_number ในข้อมูลจริง (เช่น '5KP-1000GP_AS' ใช้กับ 6+ สินค้า) — ห้ามใช้เป็น unique key เดี่ยว ๆ ให้ join ผ่าน bom_header_id เป็นหลัก |
+| `formula_id` | STRING | รหัส BOM/สูตร เช่น 12610048_V1 \| D365: formula_id |
 | `production_site_id` | STRING | รหัส Site ที่ผลิต เช่น KTB \| D365: production_site_id |
 | `product_configuration_id` | STRING | Variant dimension ของสินค้าที่ผลิต — configuration \| D365: product_configuration_id (4/998 มีค่า) |
 | `product_color_id` | STRING | Variant dimension — สี \| D365: product_color_id (793/998, 79%) |
@@ -63,11 +63,11 @@ One row per source record per `ASATDATE` partition. There is no key at this laye
 | `ivzs_bom_accessories` | STRING | Source ivzs bom accessories value. |
 | `remarks` | STRING | หมายเหตุ \| D365: remarks (0/998 ปัจจุบันไม่มีค่า) |
 | `created_datetime` | STRING | Source created datetime value. |
-| `created_by` | STRING | D365: created_by — ⚠ เป็นชื่อ service account เช่น 'Service' ไม่ใช่ uuid (แก้ type จาก V1) |
+| `created_by` | STRING | D365: created_by |
 | `updated_datetime` | STRING | Source updated datetime value. |
 | `updated_by` | STRING | D365: updated_by (0/998 ปัจจุบันไม่มีค่า) |
-| `product_id` | STRING | D365: product_id ⚠ D365 ส่งค่ามาจริงเพียง 32/998 แถว (3.2%) ส่วนใหญ่เป็น NULL ต้อง resolve ผ่าน manufactured_item_number join กับ products แทน |
-| `site_id` | STRING | FK → sites.id ⚠ ไม่มีอยู่ใน formula_versions_d365.xlsx (raw export) — มีเฉพาะใน D-ERP_inventory_bom.sql (target DB) ต้อง derive จาก production_site_id ผ่าน lookup ตอน load |
+| `product_id` | STRING | D365: product_id |
+| `site_id` | STRING | FK → sites.id |
 | `ASATDATE` | STRING | Hive partition column (`YYYYMMDD`) identifying the extract date. |
 
 # How it is built

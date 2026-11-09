@@ -9,8 +9,6 @@ config {
     }
 }
 
--- Same 50 columns, in the same order, as curated_mastersku.curated_product, built from master_sku.
--- Daily rebuild: 1 row per master_sku_code, and brand/vendor lookups always current.
 WITH p AS (
   SELECT *
   FROM ${ref(databuffet.VALIDATED_MASTER_SKU, "products")}
@@ -18,7 +16,6 @@ WITH p AS (
   WHERE master_sku_code IS NOT NULL
   QUALIFY ROW_NUMBER() OVER(PARTITION BY master_sku_code ORDER BY updated_at DESC) = 1
 ),
--- first non-empty value per variant label, in array order
 spec AS (
   SELECT p.id,
     ARRAY_AGG(IF(LOWER(lbl) IN ('ขนาด', 'size'), val, NULL) IGNORE NULLS ORDER BY pos LIMIT 1)[SAFE_OFFSET(0)] AS spec_size,
@@ -33,7 +30,6 @@ spec AS (
     )])
   GROUP BY p.id
 ),
--- words that really are a sales unit: every variant 'หน่วยขาย' value + unit names in common_codes
 unit_vocab AS (
   SELECT DISTINCT ${databuffet.functionData.cleanString("JSON_VALUE(attr, '$.value')")} AS v
   FROM ${ref(databuffet.VALIDATED_MASTER_SKU, "products")}, UNNEST(JSON_QUERY_ARRAY(specification_attributes)) AS attr
@@ -99,11 +95,9 @@ SELECT
   b.updated_by AS prdUpdatedBy,
   -- specification_group_id matches the old pg id; product_group_id does not
   b.specification_group_id AS prdPgId,
-  -- old product_status lookup ids: On / Off
   IF(b.product_status = 'Active', '5430ac8c-9904-4e5b-8aab-6c87850f0022', '7f5ac89b-3367-4ea9-8e13-f191732bb40f') AS prdPsId,
   CAST(NULL AS STRING) AS prdIdSource,
   CAST(NULL AS STRING) AS prdMcId,
-  -- specification_attributes holds the variant values, kept in the {"dimFeild":[{label,value}]} shape
   TO_JSON_STRING(STRUCT(ARRAY(
     SELECT AS STRUCT JSON_VALUE(attr, '$.label') AS label, JSON_VALUE(attr, '$.value') AS value
     FROM UNNEST(JSON_QUERY_ARRAY(b.specification_attributes)) AS attr WITH OFFSET AS pos

@@ -15,18 +15,62 @@ config {
 }
 
 js {
-    const OrgCenterUnitTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_unit`;
-    const OrgCenterMemberTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_member`;
-    const OrgCenterCustomerTaTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_customer_ta`;
-    const OrgCenterExceptionTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_exception`;
-    const DimSaleRepresentativeLastTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_sale_representative_last`;
-    const DimSectionLastTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_section_last`;
-    const DimCompanyTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_company`;
+const OrgCenterUnitTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.ORG_CENTER,
+    name: "org_center_unit",
+};
+const OrgCenterUnitTableRef = `${OrgCenterUnitTable.database}.${OrgCenterUnitTable.schema}.${OrgCenterUnitTable.name}`;
+
+const OrgCenterMemberTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.ORG_CENTER,
+    name: "org_center_member",
+};
+const OrgCenterMemberTableRef = `${OrgCenterMemberTable.database}.${OrgCenterMemberTable.schema}.${OrgCenterMemberTable.name}`;
+
+const DimSaleRepresentativeLastTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_sale_representative_last",
+};
+const DimSaleRepresentativeLastTableRef = `${DimSaleRepresentativeLastTable.database}.${DimSaleRepresentativeLastTable.schema}.${DimSaleRepresentativeLastTable.name}`;
+
+const DimSectionLastTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_section_last",
+};
+const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
+
+const OrgCenterCustomerTaTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.ORG_CENTER,
+    name: "org_center_customer_ta",
+};
+const OrgCenterCustomerTaTableRef = `${OrgCenterCustomerTaTable.database}.${OrgCenterCustomerTaTable.schema}.${OrgCenterCustomerTaTable.name}`;
+
+const OrgCenterExceptionTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.ORG_CENTER,
+    name: "org_center_exception",
+};
+const OrgCenterExceptionTableRef = `${OrgCenterExceptionTable.database}.${OrgCenterExceptionTable.schema}.${OrgCenterExceptionTable.name}`;
+
+const DimCompanyTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_company",
+};
+const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+
+
+
+
+
+
 }
 
--- 1 แถว = คนที่ดู (employee_id) x ลูกค้า (customer_company_id + customer_code หรือ 'ALL') x ขอบเขตสินค้า (กลุ่ม/กลุ่มย่อย/segment หรือ 'ALL') ณ วันนี้ (Asia/Bangkok)
--- ใช้เฉพาะแถวที่มีผลวันนี้ · unit/member = BETWEEN valid_from AND valid_to · พอร์ต = [valid_from, valid_to)
--- กฎกรอง mart ครบทุกขอบเขตและตัวอย่าง EXISTS: document/okf/process/rls_ta_customer.md#examples
 WITH today AS (
   SELECT CURRENT_DATE('Asia/Bangkok') AS d
 
@@ -61,7 +105,6 @@ WITH today AS (
     AND m.employee_id IS NOT NULL
 
 ), ta AS (
-  -- ที่นั่ง TA วันนี้ ต่อ department (1 department = 1 ส่วน) · department เดียวมี TA หลายคนได้ทุกคน
   SELECT DISTINCT
     ${databuffet.functionData.cleanString("rep.companyID")} AS company_id,
     ${databuffet.functionData.cleanString("rep.EmployeeID")} AS employee_id,
@@ -129,14 +172,12 @@ WITH today AS (
   WHERE m.position_code IN ('SECTION_MGR', 'REGION_MGR', 'DIRECTOR', 'CEO')
 
 ), exception_company AS (
-  -- สิทธิ์พิเศษ: company_code 'ALL' = ทุกบริษัทใน dim_company · ข้ามแถวที่ไม่มี employee_id
   SELECT e.*, co AS customer_company_id
   FROM `${OrgCenterExceptionTableRef}` AS e
   CROSS JOIN UNNEST(IF(e.company_code = 'ALL', (SELECT ARRAY_AGG(CompanyID) FROM `${DimCompanyTableRef}`), [e.company_code])) AS co
   WHERE e.employee_id IS NOT NULL
 
 ), exception_grant AS (
-  -- ทั้งบริษัท: ไม่ใช่รายลูกค้า หรือ ฝ่าย/ภาค/ส่วน เป็น ALL ทั้ง 3 ช่อง -> customer_code 'ALL'
   SELECT DISTINCT
     employee_id,
     customer_company_id,
@@ -149,7 +190,6 @@ WITH today AS (
     OR ('ALL' IN UNNEST(director_code) AND 'ALL' IN UNNEST(region_code) AND 'ALL' IN UNNEST(section_code))
 
   UNION ALL
-  -- ตามหน่วย: SECTION ที่ตรงทุกช่องที่ไม่ใช่ ALL (ฝ่าย = unit_code, ภาค = region_code, ส่วน = unit_code) -> ลูกค้าในพอร์ตของ TA ในส่วนนั้น เฉพาะบริษัทในขอบเขต
   SELECT DISTINCT
     e.employee_id,
     c.customer_company_id,
@@ -201,7 +241,6 @@ WITH today AS (
     marketing_group_id,
     sub_marketing_id,
     segment_id,
-    -- ได้สิทธิ์หลายทาง: เก็บทางแรกตามลำดับ TA, SECTION_MGR, REGION_MGR, DIRECTOR, CEO, EXCEPTION
     ARRAY_AGG(access_source ORDER BY CASE access_source WHEN 'TA' THEN 1 WHEN 'SECTION_MGR' THEN 2 WHEN 'REGION_MGR' THEN 3 WHEN 'DIRECTOR' THEN 4 WHEN 'CEO' THEN 5 ELSE 6 END LIMIT 1)[OFFSET(0)] AS access_source
   FROM all_grant
   GROUP BY employee_id, customer_company_id, customer_code, marketing_group_id, sub_marketing_id, segment_id

@@ -53,6 +53,40 @@ END;`;
         partition_statement = "";
         post_operations_statement = "";
     }
+    const MihAg01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "mih",
+    };
+    const MihAg01TableRef = `${MihAg01Table.database}.${MihAg01Table.schema}.${MihAg01Table.name}`;
+
+    const MihAa05Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AA05,
+        name: "mih",
+    };
+    const MihAa05TableRef = `${MihAa05Table.database}.${MihAa05Table.schema}.${MihAa05Table.name}`;
+
+    const MihAb01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AB01,
+        name: "mih",
+    };
+    const MihAb01TableRef = `${MihAb01Table.database}.${MihAb01Table.schema}.${MihAb01Table.name}`;
+
+    const MihAc02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AC02,
+        name: "mih",
+    };
+    const MihAc02TableRef = `${MihAc02Table.database}.${MihAc02Table.schema}.${MihAc02Table.name}`;
+
+    const MihAk02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AK02,
+        name: "mih",
+    };
+    const MihAk02TableRef = `${MihAk02Table.database}.${MihAk02Table.schema}.${MihAk02Table.name}`;
 }
 
 SELECT * FROM new_data_mih
@@ -146,7 +180,7 @@ pre_operations {
     NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'฿[^฿]*฿', '')), '') AS mihmemo_new,
     IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(฿[^฿]*฿)')), '฿00฿') AS memo_extract,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.mih`
+  FROM `${MihAg01TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -237,7 +271,7 @@ pre_operations {
     NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'฿[^฿]*฿', '')), '') AS mihmemo_new,
     IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(฿[^฿]*฿)')), '฿00฿') AS memo_extract,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}.mih`
+  FROM `${MihAa05TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -328,7 +362,7 @@ pre_operations {
     NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'฿[^฿]*฿', '')), '') AS mihmemo_new,
     IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(฿[^฿]*฿)')), '฿00฿') AS memo_extract,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}.mih`
+  FROM `${MihAb01TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -419,7 +453,7 @@ pre_operations {
     NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'฿[^฿]*฿', '')), '') AS mihmemo_new,
     IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(฿[^฿]*฿)')), '฿00฿') AS memo_extract,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AC02}.mih`
+  FROM `${MihAc02TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 
   UNION ALL
@@ -510,7 +544,7 @@ pre_operations {
     NULLIF(TRIM(REGEXP_REPLACE(mihmemo, r'฿[^฿]*฿', '')), '') AS mihmemo_new,
     IFNULL(TRIM(REGEXP_EXTRACT(mihmemo, r'(฿[^฿]*฿)')), '฿00฿') AS memo_extract,
     ${databuffet.functionData.parseAsatDate()} AS asatdate
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.mih`
+  FROM `${MihAk02TableRef}`
   ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 )
 

@@ -14,7 +14,7 @@ js {
     const sourceTable = {
         database: databuffet.DATABASE,
         schema:   databuffet.RAW_SALEOUT_MDT,
-        name:     "detail_sales_daily",
+        name:     name(),
     };
     const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
 
@@ -47,9 +47,6 @@ END;`;
     }
 }
 
--- BT เปลี่ยนรูปแบบไฟล์ทั้งใบ 2026-10-08 — ชีต Detail Sales Daily ชีตเดียวจบ
--- ต่างจาก sale_by_branch_detail ตรงที่เป็น "ยอดของวันนั้น" ไม่ใช่ยอดสะสม MTD
--- จึง SUM ข้ามวันได้ตรง ๆ ไม่ต้องทำ differencing ด้วย LAG ที่ชั้น curated
 SELECT
     -- DATE_ID คือวันที่ขายจริง มาในรูป 'YYYY-MM-DD'
     PARSE_DATE('%Y-%m-%d', ${databuffet.functionData.cleanString('DATE_ID')}) AS sale_date,

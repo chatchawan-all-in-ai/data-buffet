@@ -51,9 +51,6 @@ END;`;
     }
 }
 
--- key จริง = journal_number + line_number ไม่ใช่ uuid (*_id): ต้นทางลบ-สร้างบรรทัดใหม่ด้วย uuid ใหม่เมื่อ record เปลี่ยน version
--- (~50k บรรทัด / ~87 ล้านบาท ณ 2026-10-16) → เก็บ version ล่าสุดตาม updated_datetime
--- raw: 20260914–16 full load (มีไฟล์ซ้ำ _1) แล้ว incremental รายวัน
 SELECT
     ${databuffet.functionData.cleanString('inventory_movement_journal_entries_id')} AS inventory_movement_journal_entries_id,
     ${databuffet.functionData.cleanString('movement_entries_id')} AS movement_entries_id,

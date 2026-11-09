@@ -9,29 +9,15 @@ config {
         clusterBy: ["branch_code", "product_code"]
     },
 }
-
-/*
-  ยอดปิดรายเดือนที่บุญถาวรส่งมาเอง (โฟลเดอร์ SO_MDT_EOM/BT ชีต sale_by_branch_detail)
-
-  ใช้ชีต detail ไม่ใช่ sales_by_branch เพราะอีกชีตเป็นยอดรวมระดับสาขา ไม่มีรายสินค้า
-  เทียบกับ curated ที่เกรนเป็นรายสินค้าไม่ได้
-
-  ต่างจากห้างอื่น 2 อย่าง
-  - ไม่มีแถวสรุปต่อท้ายไฟล์ (GB กับ TW มี) จึงไม่ต้องกรอง
-  - งวดอยู่ในทุกแถวที่ START_DATE/END_DATE ตรงไปตรงมา ไม่ต้องอ่านหัวไฟล์แบบ HP/TW
-
-  type: "table" เพราะ ASATDATE เป็นวันที่ DAG รัน ไม่ใช่งวด · ดู known-issues 2026-10-05
-*/
-
+-- ใช้ชีต detail เพราะชีตสรุปไม่มีรายสินค้า
 js {
-    const sourceTable = {
+    const EomBtSaleByBranchDetailTable = {
         database: databuffet.DATABASE,
         schema:   databuffet.RAW_SALEOUT_MDT,
         name:     "eom_bt_sale_by_branch_detail",
     };
-    const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+    const EomBtSaleByBranchDetailTableRef = `${EomBtSaleByBranchDetailTable.database}.${EomBtSaleByBranchDetailTable.schema}.${EomBtSaleByBranchDetailTable.name}`;
 }
-
 WITH src AS (
 
     SELECT
@@ -50,7 +36,7 @@ WITH src AS (
         ${databuffet.functionData.parseAsatDate()} AS asatdate,
         ASATDATE AS asat_raw
 
-    FROM `${sourceTableRef}`
+    FROM `${EomBtSaleByBranchDetailTableRef}`
 
     WHERE START_DATE IS NOT NULL
       AND BRANCH IS NOT NULL AND TRIM(BRANCH) <> ''
@@ -74,9 +60,6 @@ WITH src AS (
 
 ), latest AS (
 
-    -- งวดเดียวกันถูกส่งซ้ำได้แล้วไปอยู่คนละพาร์ทิชัน ASATDATE
-    -- BT ไม่มีคอลัมน์เวลาสร้างไฟล์แบบ CRDATE ของ HP จึงใช้ ASATDATE เป็นตัวตัด
-    -- ตัดข้ามพาร์ทิชันโดยตั้งใจ (PARTITION BY month_date อย่างเดียว) ไม่งั้นงวดเดิมจะได้ 2 ชุด
     SELECT s.* FROM src AS s
     INNER JOIN chosen USING (month_date, asat_raw)
 
@@ -92,9 +75,6 @@ WITH src AS (
 
 )
 
--- ยุบช่องทางขาย (Showroom / Anyhome / Website) รวมกัน ให้เกรนตรงกับ eom ห้างอื่น
--- และตรงกับ curated ซึ่งยุบช่องทางเหมือนกัน — ไม่งั้นเอาไปเทียบกันไม่ได้
--- ⚠️ เครื่องหมายติดลบต้องคงไว้ งวด 09 มีรายการคืน 2 แถว
 SELECT
     month_date,
     'BT'                    AS store_code,

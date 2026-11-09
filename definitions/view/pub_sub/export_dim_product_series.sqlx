@@ -8,18 +8,19 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_product_series`;
+    const DimProductSeriesTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_product_series",
+};
+const DimProductSeriesTableRef = `${DimProductSeriesTable.database}.${DimProductSeriesTable.schema}.${DimProductSeriesTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table dimension_table.dim_product_series (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = SeriesCode.
 WITH src AS (
   SELECT
     SeriesCode,
     SeriesName
-  FROM `${SourceTableRef}`
+  FROM `${DimProductSeriesTableRef}`
 )
 SELECT
   s.SeriesCode,

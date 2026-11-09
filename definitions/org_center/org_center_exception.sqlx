@@ -27,9 +27,6 @@ js {
     )`;
 }
 
--- 1 แถว = คน 1 คน x บริษัท x ขอบเขตสินค้า 1 ชุด (กลุ่ม + กลุ่มย่อย + segment) จากสิทธิ์พิเศษใน MDS
--- 'ALL' = ไม่จำกัด · ค่าว่างใน MDS = 'ALL' · แยก '|' และจับคู่กลุ่ม/กลุ่มย่อย/segment ตามตำแหน่งเหมือน view_rls_special_data · ไม่ใช้คอลัมน์ department
--- input = output: แถวที่ไม่มี employeeid ยังอยู่ครบ (employee_id = NULL) · org_center_flags รายงานแถวเหล่านี้
 WITH mds_data AS (
   SELECT
     id AS source_row_id,

@@ -608,6 +608,9 @@ flowchart LR
   dim_product_master --> fact_transcation
   dim_product_mkt --> dim_product_master
   dim_product_mkt --> dim_pump_information
+  dim_product_mkt --> fact_backlog_store
+  dim_product_mkt --> fact_invoice_store
+  dim_product_mkt --> fact_order_store
   dim_product_mkt --> fact_saleout_mdt
   dim_product_mkt --> fact_saleout_monthly_mdt
   dim_product_mkt --> fact_transcation
@@ -802,6 +805,9 @@ flowchart LR
   dim_product_master --> fact_transaction_delivery
   dim_product_master --> fact_transcation
   dim_product_mkt --> dim_product_master
+  dim_product_mkt --> fact_backlog_store
+  dim_product_mkt --> fact_invoice_store
+  dim_product_mkt --> fact_order_store
   dim_product_mkt --> fact_transcation
   dim_region --> dim_target_product_group_by_sale_dayofwork
   dim_region --> fact_transcation
@@ -1059,7 +1065,7 @@ flowchart LR
 
 **Objects in this topic (4):** `dim_store`, `fact_backlog_store`, `fact_invoice_store`, `fact_order_store`
 
-**Fed by (9):** `cps`, `curated_mih`, `curated_mil`, `dim_company`, `dim_customer`, `dim_invoice`, `dim_order`, `dim_product_master`, `sto`
+**Fed by (10):** `cps`, `curated_mih`, `curated_mil`, `dim_company`, `dim_customer`, `dim_invoice`, `dim_order`, `dim_product_master`, `dim_product_mkt`, `sto`
 
 ```mermaid
 flowchart LR
@@ -1071,12 +1077,13 @@ flowchart LR
     curated_mih["curated_mih"]
     curated_mil["curated_mil"]
   end
-  subgraph dimension["dimension (6)"]
+  subgraph dimension["dimension (7)"]
     dim_company["dim_company"]
     dim_customer["dim_customer"]
     dim_invoice["dim_invoice"]
     dim_order["dim_order"]
     dim_product_master["dim_product_master"]
+    dim_product_mkt["dim_product_mkt"]
     dim_store["dim_store"]
   end
   subgraph fact["fact (3)"]
@@ -1099,6 +1106,7 @@ flowchart LR
   dim_company --> dim_invoice
   dim_company --> dim_order
   dim_company --> dim_product_master
+  dim_company --> dim_product_mkt
   dim_company --> dim_store
   dim_company --> fact_backlog_store
   dim_company --> fact_invoice_store
@@ -1114,6 +1122,10 @@ flowchart LR
   dim_product_master --> fact_backlog_store
   dim_product_master --> fact_invoice_store
   dim_product_master --> fact_order_store
+  dim_product_mkt --> dim_product_master
+  dim_product_mkt --> fact_backlog_store
+  dim_product_mkt --> fact_invoice_store
+  dim_product_mkt --> fact_order_store
   dim_store --> fact_backlog_store
   dim_store --> fact_invoice_store
   dim_store --> fact_order_store
@@ -1125,7 +1137,7 @@ flowchart LR
   classDef paused fill:#f5f5f5,stroke:#bbb,color:#999,stroke-dasharray:4 3;
   class cps,sto validated;
   class curated_mih,curated_mil curated;
-  class dim_company,dim_customer,dim_invoice,dim_order,dim_product_master,dim_store dimension;
+  class dim_company,dim_customer,dim_invoice,dim_order,dim_product_master,dim_product_mkt,dim_store dimension;
   class fact_backlog_store,fact_invoice_store,fact_order_store fact;
 ```
 

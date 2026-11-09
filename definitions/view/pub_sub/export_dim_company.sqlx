@@ -8,16 +8,14 @@ config {
 }
 
 js {
-    const DimCompanyTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_company`;
+    const DimCompanyTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_company",
+};
+const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 }
 
--- Export view contract (one per exported table, listed in includes/controller/mart-export-config.json):
---   * data columns first, under their source column names, no surrogate keys and nothing that moves
---     by itself day to day, so an unchanged row keeps the same row_hash; no cleaning helpers — the
---     source dim already cleaned them;
---   * row_key = TO_JSON_STRING(STRUCT(<natural key>)), never NULL;
---   * row_hash = FARM_FINGERPRINT of the JSON of every data column, i.e. of exactly the message `data`.
--- Natural key = CompanyID (unique and never NULL in dim_company).
 WITH company AS (
   SELECT
     CompanyID,

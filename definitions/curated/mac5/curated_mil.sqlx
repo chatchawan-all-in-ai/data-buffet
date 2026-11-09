@@ -84,7 +84,7 @@ SELECT
   asatdate as asatdate,
   '100.00%' as percent_sale
 FROM ${ref(databuffet.VALIDATED_MAC5, "mil")}
-WHERE IFNULL(milvnos, '') != '' 
+WHERE IFNULL(milvnos, '') != ''
   ${ when(incremental(), `AND asatdate >= DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY)`) }
   ;
 
@@ -100,7 +100,6 @@ WHERE IFNULL(milvnos, '') != ''
 
 post_operations {
   BEGIN
-    -------- CREATE TEMP TABLE --------
     CREATE OR REPLACE TEMP TABLE new_data_curated_mil AS
     WITH mil_raw AS (
       SELECT
@@ -115,7 +114,7 @@ post_operations {
       FROM ${ref(databuffet.VALIDATED_MAC5, "mil")} AS mil
       WHERE mil.company_id = 'ag01'
         AND IFNULL(mil.milvnos, '') != ''
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY mil.company_id, mil.milType, mil.milVnos, mil.milListno ORDER BY mil.asatdate DESC) = 1 
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY mil.company_id, mil.milType, mil.milVnos, mil.milListno ORDER BY mil.asatdate DESC) = 1
 
     ), filter_mih2 AS (
       SELECT
@@ -128,7 +127,7 @@ post_operations {
         IF(per_sale1 > 100.00, 100.00, per_sale1) AS per_sale1,
         IF(per_sale2 > 100.00, 100.00, per_sale2) AS per_sale2,
       FROM (
-        SELECT DISTINCT 
+        SELECT DISTINCT
           company_id,
           mih2vnos,
           mih2cus,
@@ -142,16 +141,15 @@ post_operations {
           AND NULLIF(mih2.mih2cus, '') IS NOT NULL
           AND mih2.mih2per2 IS NOT NULL
           AND mih2.mih2per2pc IS NOT NULL
-          --   AND mih2type = 'PS'
           AND EXISTS (
             SELECT 1 FROM mil_raw AS mil
             WHERE mih2.mih2vnos = mil.milLinkvcno
               AND mih2.mih2cus = mil.milCus
-              AND mih2.company_id = mil.company_id 
+              AND mih2.company_id = mil.company_id
           )
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY company_id, mih2vnos, mih2cus ORDER BY mih2rev DESC) = 1 
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY company_id, mih2vnos, mih2cus ORDER BY mih2rev DESC) = 1
       )
-      WHERE (mih2perpc <> '100%' AND mih2perpc <> '00%') 
+      WHERE (mih2perpc <> '100%' AND mih2perpc <> '00%')
 
     ), includ_mil AS (
       SELECT
@@ -231,7 +229,6 @@ post_operations {
         mil.milUsequanp,
         mil.milVcol5,
         mil.milFitem,
-        -- mil.mihRef1,
         mil.asatdate,
         (CASE WHEN split_sale = 1 THEN CONCAT(mih2.per_sale1, '%') ELSE CONCAT(mih2.per_sale2, '%') END) AS percent_sale,
       FROM mil_raw AS mil
@@ -242,8 +239,8 @@ post_operations {
       CROSS JOIN (
         SELECT 1 AS split_sale
         UNION ALL
-        SELECT 2 AS split_sale 
-      ) 
+        SELECT 2 AS split_sale
+      )
 
     ), exclude_mil AS (
       SELECT
@@ -313,7 +310,6 @@ post_operations {
         mil.milUsequanp,
         mil.milVcol5,
         mil.milFitem,
-        -- mil.mihRef1,
         mil.asatdate,
         '100.00%' AS percent_sale
       FROM mil_raw AS mil
@@ -323,22 +319,20 @@ post_operations {
           WHERE mil.company_id = mil2.company_id
             AND mil.milType = mil2.milType
             AND mil.milVnos = mil2.milVnos
-            AND mil.milListno = mil2.milListno 
-        ) 
-    
+            AND mil.milListno = mil2.milListno
+        )
+
     ), final AS (
       SELECT * FROM exclude_mil
       UNION ALL
-      SELECT * FROM includ_mil 
+      SELECT * FROM includ_mil
 
     )
       SELECT *
       FROM final
       ORDER BY company_id, milType, milVnos, milListno, milPer
     ;
-    -------- CREATE TEMP TABLE --------
 
-    -------- DELETE WITH DOC KEY --------
     DELETE FROM ${self()} AS old_data
     WHERE EXISTS (
       SELECT 1 FROM new_data_curated_mil AS new_data
@@ -347,15 +341,12 @@ post_operations {
         AND old_data.milVnos = new_data.milVnos
     )
     ;
-    -------- DELETE WITH DOC KEY --------
 
-    -------- INSERT DATA --------
     INSERT INTO ${self()}
     SELECT *
     FROM new_data_curated_mil
     WHERE company_id = 'ag01'
     ;
-    -------- INSERT DATA --------
 
   END;
 }

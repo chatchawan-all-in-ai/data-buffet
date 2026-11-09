@@ -5,72 +5,90 @@ config {
   // ชุดเล็กสุด: update_sk_sale_rep_group รันหลัง *_last ทั้งหมด (รวม dim_department_last, dim_sale_representative_last, dim_company)
   // ตารางหลัง view (กฎ Run order): view_dim_invoice อ่าน dim_aging (ครอบ dim_invoice, dim_customer), dim_order, mec ตรง ๆ
   // · view_dim_customer อ่าน dim_group_customer · view_deb_address_data อ่าน deb_address_data
-  dependencies: ["update_sk_sale_rep_group", "dim_customer_segment", "dim_aging", "dim_order", "dim_group_customer", "mec", "deb_address_data"],
+  dependencies: ["update_sk_sale_rep_group", "dim_customer_segment", "dim_aging", "dim_order", "dim_group_customer", "mec", "deb_address_data", "create_all_function", "dim_sale_representative_last", "dim_department_last", "dim_company"],
   tags: [databuffet.TAG_DIM_DAILY],
   hasOutput: true
 }
 
 js {
-    const DimCustomerReportInfoTable = {
+const DimCustomerReportInfoTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimCustomerReportInfoTableRef = `${DimCustomerReportInfoTable.database}.${DimCustomerReportInfoTable.schema}.${DimCustomerReportInfoTable.name}`;
-    const MdsSourceTable = {
+
+const MdsSourceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
         name: "mds_data_customer_report_master",
     };
     const MdsSourceTableRef = `${MdsSourceTable.database}.${MdsSourceTable.schema}.${MdsSourceTable.name}`;
-    const ViewDimInvoiceTable = {
+
+const ViewDimInvoiceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_VIEW,
         name: "view_dim_invoice",
     };
     const ViewDimInvoiceTableRef = `${ViewDimInvoiceTable.database}.${ViewDimInvoiceTable.schema}.${ViewDimInvoiceTable.name}`;
-    const ViewDimCustomerTable = {
+
+const ViewDimCustomerTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_VIEW,
         name: "view_dim_customer",
     };
     const ViewDimCustomerTableRef = `${ViewDimCustomerTable.database}.${ViewDimCustomerTable.schema}.${ViewDimCustomerTable.name}`;
-    const CleanCompanyPrefixTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.FUNCTION_DATASET,
-        name: "clean_company_prefix",
-    };
-    const CleanCompanyPrefixTableRef = `${CleanCompanyPrefixTable.database}.${CleanCompanyPrefixTable.schema}.${CleanCompanyPrefixTable.name}`;
-    const DimSaleRepresentativeLastTable = {
+
+const DimSaleRepresentativeLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_sale_representative_last",
     };
     const DimSaleRepresentativeLastTableRef = `${DimSaleRepresentativeLastTable.database}.${DimSaleRepresentativeLastTable.schema}.${DimSaleRepresentativeLastTable.name}`;
-    const DimDepartmentLastTable = {
+
+const DimDepartmentLastTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_department_last",
     };
     const DimDepartmentLastTableRef = `${DimDepartmentLastTable.database}.${DimDepartmentLastTable.schema}.${DimDepartmentLastTable.name}`;
-    const DimCompanyTable = {
+
+const DimCompanyTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_company",
     };
     const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
-    const ViewDebAddressDataTable = {
+
+const ViewDebAddressDataTable = {
         database: databuffet.DATABASE,
         schema: databuffet.PROCESS_DATASET,
         name: "view_deb_address_data",
     };
     const ViewDebAddressDataTableRef = `${ViewDebAddressDataTable.database}.${ViewDebAddressDataTable.schema}.${ViewDebAddressDataTable.name}`;
-    const DimCustomerSegmentTable = {
+
+const DimCustomerSegmentTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_customer_segment",
     };
     const DimCustomerSegmentTableRef = `${DimCustomerSegmentTable.database}.${DimCustomerSegmentTable.schema}.${DimCustomerSegmentTable.name}`;
+
+const CleanCompanyPrefixTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FUNCTION_DATASET,
+        name: "clean_company_prefix",
+    };
+    const CleanCompanyPrefixTableRef = `${CleanCompanyPrefixTable.database}.${CleanCompanyPrefixTable.schema}.${CleanCompanyPrefixTable.name}`;
+
+
+
+
+
+
+
+
+
 
 
 
@@ -82,11 +100,8 @@ js {
 
 BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
-  -- ไม่นับแถวสงวน -1
   SET max_sk = (SELECT IFNULL(MAX(CustomerReportInfoSK), 0) FROM `${DimCustomerReportInfoTableRef}` WHERE CustomerReportInfoSK <> -1);
 
-  -- ชื่อเดิม (CompanyID + CustomerReportKey) คง SK และอัปเดตคอลัมน์อื่น · ชื่อใหม่ได้ max_sk + ROW_NUMBER
-  -- ชื่อที่หายจาก source (MDS inactive และไม่มี invoice) ไม่ลบ — แถวเดิมคงอยู่
   MERGE `${DimCustomerReportInfoTableRef}` AS T
   USING (
 with mds as (
@@ -115,7 +130,6 @@ with mds as (
     ${databuffet.functionData.cleanString("inv.mihCus")} AS mihCus,
     inv.mix_date,
     inv.mihVnos,
-    -- พนักงานผู้ขาย + แผนกของบิล ใช้เลือก TA ภาคของพนักงาน MDT (mdt_slot)
     inv.mihPer,
     TRIM(inv.mihDep) AS mihDep,
     inv.mihCancel
@@ -147,7 +161,6 @@ with mds as (
   QUALIFY ROW_NUMBER() OVER(PARTITION BY r.CompanyID, r.CustomerReportKey ORDER BY r.mix_date DESC, r.mihVnos DESC) = 1
 
 ), rep_cur as (
-  -- แถว TA ที่ใช้ได้วันนี้และไม่ใช่ Dummy ของพนักงานทุกคน (ปกติ + MDT)
   SELECT sr.companyID, sr.EmployeeID, sr.DepartmentSK, sr.DepartmentID, sr.DepCode
   FROM `${DimSaleRepresentativeLastTableRef}` AS sr
   JOIN `${DimDepartmentLastTableRef}` AS dep
@@ -169,7 +182,6 @@ with mds as (
     AND (history.CostChannelID IS NOT NULL OR history.DepCode IS NOT NULL)
 
 ), rep_ta as (
-  -- TA ของพนักงานปกติ = rep_cur ที่ไม่ใช่พนักงาน MDT
   SELECT r.companyID, r.EmployeeID, r.DepartmentSK
   FROM rep_cur AS r
   WHERE NOT EXISTS (
@@ -180,7 +192,6 @@ with mds as (
   )
 
 ), deb_ta as (
-  -- deb.debsalesp -> TA; พนักงานที่มีหลาย TA ที่ใช้ได้วันนี้ = ไม่ให้ TA
   SELECT deb.company_id, deb.debcode, deb.debsalesp,
     IF(COUNT(DISTINCT r.DepartmentSK) = 1, ANY_VALUE(r.DepartmentSK), NULL) AS DepartmentSK
   FROM ${ref(databuffet.VALIDATED_MAC5, "deb")} AS deb
@@ -190,7 +201,6 @@ with mds as (
   GROUP BY 1, 2, 3
 
 ), mdt_cand as (
-  -- พนักงาน MDT: เชนจาก deb.debgroup (กฎเดียวกับ view_fact_transcation) แล้วตัวเลือก = TA ปัจจุบันในเชนนั้น
   SELECT d.company_id, d.debcode, d.debsalesp, r.DepartmentSK, r.DepCode
   FROM (
     SELECT deb.company_id, deb.debcode, deb.debsalesp,
@@ -213,8 +223,6 @@ with mds as (
     AND STARTS_WITH(LOWER(r.DepartmentID), d.chain || '_')
 
 ), mdt_slot as (
-  -- หลาย TA ในเชน (แยกภาคด้วย DepCode): ใช้ mihDep ของบิลล่าสุดที่พนักงานคนนี้ขายให้ร้านนี้ (ชื่อรายงานเดียวกับ ta_cus)
-  -- ที่ตรงกับ DepCode ของตัวเลือก · ไม่มีบิลตรง = ว่าง
   SELECT c.company_id, c.debcode, c.DepartmentSK
   FROM mdt_cand AS c
   JOIN ta_cus AS tc
@@ -229,7 +237,6 @@ with mds as (
   QUALIFY ROW_NUMBER() OVER(PARTITION BY c.company_id, c.debcode ORDER BY i.mix_date DESC, i.mihVnos DESC, (SELECT dep.DepartmentID FROM `${DimDepartmentLastTableRef}` AS dep WHERE dep.DepartmentSK = c.DepartmentSK)) = 1
 
 ), mdt_ta as (
-  -- TA เดียวในเชน ใช้ตัวนั้น · หลาย TA ใช้ mdt_slot · ไม่มีตัวเลือก / debgroup ไม่ใช่เชน = ว่าง
   SELECT c.company_id, c.debcode,
     IF(COUNT(DISTINCT c.DepartmentSK) = 1, ANY_VALUE(c.DepartmentSK), ANY_VALUE(slot.DepartmentSK)) AS DepartmentSK
   FROM mdt_cand AS c
@@ -300,7 +307,6 @@ with mds as (
     END) AS TASource,
     -- รหัสที่ใช้หา TA เก็บไว้ตรวจร้านที่ TA ว่าง
     tc.debcode AS TADebcode,
-    -- พนักงาน: debsalesp ของรหัสที่ใช้หา TA
     dta.debsalesp AS TAEmployeeID
   FROM with_segment AS t
   LEFT JOIN `${DimCompanyTableRef}` AS dim_com
@@ -339,7 +345,6 @@ with mds as (
       SubDistrictSK, DistrictSK, ProvinceSK) = 1
 
 ), with_address as (
-  -- รหัสลูกค้าของร้าน = รหัสที่ใช้หา segment ถ้าไม่มีใช้รหัสที่ใช้หา TA · credit term จาก deb · ที่อยู่จาก deb_address
   SELECT
     t.*,
     deb.DEBcreditTerm,
@@ -363,7 +368,6 @@ SELECT
   COALESCE(seg.CustomerSegmentSK, seg_dc.CustomerSegmentSK, -1) AS CustomerSegmentSK,
   t.CompanyID,
   t.CustomerReportName,
-  -- key ที่ใช้ match ชื่อเดิม (ชื่อตัด whitespace ทั้งหมด)
   t.CustomerReportKey,
   t.FlagPC,
   t.ShopOnline,
@@ -384,10 +388,8 @@ SELECT
   dep.RegionManagerSK,
   dep.DirectorSK,
   t.TASource,
-  -- รหัสลูกค้าที่ใช้หา TA และพนักงาน (SK) · ชื่อ/รหัสพนักงานอยู่ใน view_dim_customer_report_info
   t.TADebcode,
   t.SaleRepSK,
-  -- รหัสลูกค้าของร้าน + credit term + ที่อยู่ (SK) · ชื่อตำบล/อำเภอ/จังหวัดอยู่ใน view_dim_customer_report_info
   t.ReportDebcode,
   t.DEBcreditTerm,
   t.InvoiceProvinceSK,
@@ -422,7 +424,6 @@ LEFT JOIN `${DimCustomerReportInfoTableRef}` AS t2
   AND T.CustomerReportKey = S.CustomerReportKey
 
   WHEN MATCHED THEN
-    -- ทุกคอลัมน์ยกเว้น SK และ key
     UPDATE SET
       CompanySK = S.CompanySK,
       CustomerSegmentSK = S.CustomerSegmentSK,

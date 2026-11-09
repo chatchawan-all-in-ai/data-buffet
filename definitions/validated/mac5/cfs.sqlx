@@ -37,6 +37,40 @@ END;`;
         partition_statement = "";
         post_operations_statement = "";
     }
+    const CfsAg01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "cfs",
+    };
+    const CfsAg01TableRef = `${CfsAg01Table.database}.${CfsAg01Table.schema}.${CfsAg01Table.name}`;
+
+    const CfsAa05Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AA05,
+        name: "cfs",
+    };
+    const CfsAa05TableRef = `${CfsAa05Table.database}.${CfsAa05Table.schema}.${CfsAa05Table.name}`;
+
+    const CfsAb01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AB01,
+        name: "cfs",
+    };
+    const CfsAb01TableRef = `${CfsAb01Table.database}.${CfsAb01Table.schema}.${CfsAb01Table.name}`;
+
+    const CfsAc02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AC02,
+        name: "cfs",
+    };
+    const CfsAc02TableRef = `${CfsAc02Table.database}.${CfsAc02Table.schema}.${CfsAc02Table.name}`;
+
+    const CfsAk02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AK02,
+        name: "cfs",
+    };
+    const CfsAk02TableRef = `${CfsAk02Table.database}.${CfsAk02Table.schema}.${CfsAk02Table.name}`;
 }
 
 WITH all_sources AS (
@@ -60,7 +94,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castFloat64('cfsexchg')} as cfsexchg,
     ${databuffet.functionData.castFloat64('cfsbillcut')} as cfsbillcut,
     ${databuffet.functionData.castInt64('cfsbillclr')} as cfsbillclr
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.cfs`
+  FROM `${CfsAg01TableRef}`
 
   UNION ALL
   SELECT 'aa05' AS company_id,
@@ -83,7 +117,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castFloat64('cfsexchg')} as cfsexchg,
     ${databuffet.functionData.castFloat64('cfsbillcut')} as cfsbillcut,
     ${databuffet.functionData.castInt64('cfsbillclr')} as cfsbillclr
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}.cfs`
+  FROM `${CfsAa05TableRef}`
 
   UNION ALL
   SELECT 'ab01' AS company_id,
@@ -106,7 +140,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castFloat64('cfsexchg')} as cfsexchg,
     ${databuffet.functionData.castFloat64('cfsbillcut')} as cfsbillcut,
     ${databuffet.functionData.castInt64('cfsbillclr')} as cfsbillclr
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}.cfs`
+  FROM `${CfsAb01TableRef}`
 
   UNION ALL
   SELECT 'ac02' AS company_id,
@@ -129,7 +163,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castFloat64('cfsexchg')} as cfsexchg,
     ${databuffet.functionData.castFloat64('cfsbillcut')} as cfsbillcut,
     ${databuffet.functionData.castInt64('cfsbillclr')} as cfsbillclr
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AC02}.cfs`
+  FROM `${CfsAc02TableRef}`
   
   UNION ALL
   SELECT 'ak02' AS company_id,
@@ -152,7 +186,7 @@ WITH all_sources AS (
     ${databuffet.functionData.castFloat64('cfsexchg')} as cfsexchg,
     ${databuffet.functionData.castFloat64('cfsbillcut')} as cfsbillcut,
     ${databuffet.functionData.castInt64('cfsbillclr')} as cfsbillclr
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.cfs`
+  FROM `${CfsAk02TableRef}`
 
 )
 SELECT * FROM all_sources

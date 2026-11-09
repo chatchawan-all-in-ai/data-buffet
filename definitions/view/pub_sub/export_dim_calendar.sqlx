@@ -8,13 +8,14 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_calendar`;
+    const DimCalendarTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_calendar",
+};
+const DimCalendarTableRef = `${DimCalendarTable.database}.${DimCalendarTable.schema}.${DimCalendarTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table dimension_table.dim_calendar (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = Date.
 WITH src AS (
   SELECT
     Date,
@@ -25,7 +26,7 @@ WITH src AS (
     YearMonthNumber,
     WeekendFlag,
     HolidayFlag
-  FROM `${SourceTableRef}`
+  FROM `${DimCalendarTableRef}`
 )
 SELECT
   s.Date,

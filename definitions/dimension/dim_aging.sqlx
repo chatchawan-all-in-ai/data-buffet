@@ -6,68 +6,84 @@ config {
 }
 
 js {
-    const DimAgingTable = {
+const DimAgingTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimAgingTableRef = `${DimAgingTable.database}.${DimAgingTable.schema}.${DimAgingTable.name}`;
 
-    const DimCompanyTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_company",
-    };
-    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
-
-    const DimCustomerTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_customer",
-    };
-    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
-
-    const DimInvoiceTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_invoice",
-    };
-    const DimInvoiceTableRef = `${DimInvoiceTable.database}.${DimInvoiceTable.schema}.${DimInvoiceTable.name}`;
-
-    const DimAgingHistoryTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_aging_history",
-    };
-    const DimAgingHistoryTableRef = `${DimAgingHistoryTable.database}.${DimAgingHistoryTable.schema}.${DimAgingHistoryTable.name}`;
-
-    const DimAgingView = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_VIEW,
-        name: "view_dim_aging",
-    };
-    const DimAgingViewRef = `${DimAgingView.database}.${DimAgingView.schema}.${DimAgingView.name}`;
-
-    const FactBillingTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.FACT_TABLE,
-        name: "fact_mir_vs",
-    };
-    const FactBillingTableRef = `${FactBillingTable.database}.${FactBillingTable.schema}.${FactBillingTable.name}`;
-
-    const DimStatusNotReceiveTable = {
+const DimStatusNotReceiveTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_status_not_receive",
     };
     const DimStatusNotReceiveTableRef = `${DimStatusNotReceiveTable.database}.${DimStatusNotReceiveTable.schema}.${DimStatusNotReceiveTable.name}`;
 
-    const CfsClose2024Table = {
+const Cfsinvclose2024Table = {
         database: databuffet.DATABASE,
         schema: databuffet.ONETIME,
         name: "cfsinvclose2024",
     };
-    const CfsClose2024TableRef = `${CfsClose2024Table.database}.${CfsClose2024Table.schema}.${CfsClose2024Table.name}`;
+    const Cfsinvclose2024TableRef = `${Cfsinvclose2024Table.database}.${Cfsinvclose2024Table.schema}.${Cfsinvclose2024Table.name}`;
+
+const DimInvoiceTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_invoice",
+    };
+    const DimInvoiceTableRef = `${DimInvoiceTable.database}.${DimInvoiceTable.schema}.${DimInvoiceTable.name}`;
+
+const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+
+const DimCustomerTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_customer",
+    };
+    const DimCustomerTableRef = `${DimCustomerTable.database}.${DimCustomerTable.schema}.${DimCustomerTable.name}`;
+
+const FactMirVsTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FACT_TABLE,
+        name: "fact_mir_vs",
+    };
+    const FactMirVsTableRef = `${FactMirVsTable.database}.${FactMirVsTable.schema}.${FactMirVsTable.name}`;
+
+const DimAgingHistoryTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_aging_history",
+    };
+    const DimAgingHistoryTableRef = `${DimAgingHistoryTable.database}.${DimAgingHistoryTable.schema}.${DimAgingHistoryTable.name}`;
+
+const ViewDimAgingTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_VIEW,
+        name: "view_dim_aging",
+    };
+    const ViewDimAgingTableRef = `${ViewDimAgingTable.database}.${ViewDimAgingTable.schema}.${ViewDimAgingTable.name}`;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }
 
@@ -147,28 +163,8 @@ with chq as (
       2
     ) as mirsum,
 
-    -- company_id,
-    -- mirbinvno,
-    -- mirbinvdate,
-    -- mirvnos,
-    -- ปรับปัดเศษ 2 ตำแหน่งในส่วนแสดงผล
-    -- ROUND(adjusted_mihnetsum, 2) as adjusted_mihnetsum,
-    -- extract_date,
-    -- ROUND(extract_amount, 2) as extract_amount,
-    -- ROUND(accum_mihnetsum, 2) as accum_mihnetsum,
-    -- ROUND(cut_accum_amount, 2) as cut_accum_amount,
     
-    -- คำนวณยอดจ่ายและปัดเศษ
-    -- ROUND(
-    --   GREATEST(0, LEAST(adjusted_mihnetsum, extract_amount - cut_accum_amount)), 
-    --   2
-    -- ) as mirsum,
     
-    -- คำนวณยอดคงเหลือและปัดเศษ
-    -- ROUND(
-    --   adjusted_mihnetsum - GREATEST(0, LEAST(adjusted_mihnetsum, extract_amount - cut_accum_amount)), 
-    --   2
-    -- ) as new_outstanding
   FROM running_calculations
 
 ), mir as (
@@ -194,7 +190,6 @@ left join `${DimStatusNotReceiveTableRef}` as exc_status
     and mih.mihstatus = exc_status.StatusID
   where mir.mirtype = 'RS'
     and (
-      -- (mir.miryear <= 2022 and mih.mihstatus = 7)
       ( mir.miryear <= 2023 and exc_status.CompanyID is not null )
       or 
       ( exc_status.CompanyID is null )
@@ -230,7 +225,7 @@ left join `${DimStatusNotReceiveTableRef}` as exc_status
   where mih.mihType = 'IS'
     and mih.mihcancel = 0
     and PARSE_DATE('%Y%m%d', CONCAT(CAST(mih.mihyear AS STRING), FORMAT('%02d', mih.mihmonth), FORMAT('%02d', mih.mihday))) <= CURRENT_DATE('Asia/Bangkok')
-    and not exists (select 1 from `${CfsClose2024TableRef}` as fix where mih.mihVnos = fix.cfsvnosid and mih.company_id = 'ag01')
+    and not exists (select 1 from `${Cfsinvclose2024TableRef}` as fix where mih.mihVnos = fix.cfsvnosid and mih.company_id = 'ag01')
 
 ), main_bs_as_raw as (
   select 
@@ -255,7 +250,7 @@ left join `${DimStatusNotReceiveTableRef}` as exc_status
     and mih.mihYear = mil.milYear
     and mih.mihVnos = mil.milVnos
     and mih.mihCus = mil.milCus
-  left join `${CfsClose2024TableRef}` as skip_inv
+  left join `${Cfsinvclose2024TableRef}` as skip_inv
     on mih.company_id = 'ag01'
     and mil.milLinkVcno = skip_inv.cfsvnosid
   where mih.mihType in ('BS', 'AS')
@@ -265,7 +260,7 @@ left join `${DimStatusNotReceiveTableRef}` as exc_status
         where ar_snamet in ('เงินมัดจำรับล่วงหน้า', 'ยกเลิกใบกำกับภาษี', 'ยกเลิกลดหนี้', 'ยกเลิก', 'เงินมัดจำรับล่วงหน้า 214025')
       )
     and PARSE_DATE('%Y%m%d', CONCAT(CAST(mih.mihyear AS STRING), FORMAT('%02d', mih.mihmonth), FORMAT('%02d', mih.mihday))) <= CURRENT_DATE('Asia/Bangkok')
-    and not exists (select 1 from `${CfsClose2024TableRef}` as fix where mih.mihVnos = fix.cfsvnosid and mih.company_id = 'ag01')
+    and not exists (select 1 from `${Cfsinvclose2024TableRef}` as fix where mih.mihVnos = fix.cfsvnosid and mih.company_id = 'ag01')
 
 ), main_bs_as as (
   select 
@@ -347,7 +342,7 @@ left join `${DimStatusNotReceiveTableRef}` as exc_status
   left join mir as mir
     on main.CompanyID = mir.company_id
     and main.InvoiceNo = mir.mirbinvno
-  -- where not exists (select 1 from `${CfsClose2024TableRef}` as fix where main.InvoiceNo = fix.cfsvnosid and main.CompanyID = 'ag01')
+  -- where not exists (select 1 from `${Cfsinvclose2024TableRef}` as fix where main.InvoiceNo = fix.cfsvnosid and main.CompanyID = 'ag01')
 
   union all
   select distinct
@@ -383,7 +378,7 @@ left join `${DimStatusNotReceiveTableRef}` as exc_status
   left join mir as mir
     on main.CompanyID = mir.company_id
     and main.InvoiceNo = mir.mirbinvno
-  -- where not exists (select 1 from `${CfsClose2024TableRef}` as fix where main.InvoiceNo = fix.cfsvnosid and main.CompanyID = 'ag01')
+  -- where not exists (select 1 from `${Cfsinvclose2024TableRef}` as fix where main.InvoiceNo = fix.cfsvnosid and main.CompanyID = 'ag01')
 
 ), group_data as (
   select distinct
@@ -394,13 +389,11 @@ left join `${DimStatusNotReceiveTableRef}` as exc_status
   left join unnest(SPLIT(InvoiceRef, '|')) as InvoiceRefValue
 
 ), base_pairs AS (
-  -- 1. เตรียมข้อมูลพื้นฐาน ล็อคด้วย companyID
   SELECT DISTINCT companyID, invoiceIS AS a, invoiceBSAS AS b FROM group_data
   UNION DISTINCT
   SELECT DISTINCT companyID, invoiceBSAS AS a, invoiceIS AS b FROM group_data
 
 ), hop_2 AS (
-  -- hop_2: ระยะ 2 ทอด
   SELECT 
     t1.companyID, t1.a, 
     MIN(LEAST(t1.a, t1.b, t2.b)) as min_node
@@ -411,7 +404,6 @@ left join `${DimStatusNotReceiveTableRef}` as exc_status
   GROUP BY 1, 2
 
 ), hop_4 AS (
-  -- hop_4: ระยะ 4 ทอด
   SELECT 
     t1.companyID, t1.a, 
     MIN(LEAST(t1.a, t1.min_node, t2.min_node)) as final_group_id
@@ -422,7 +414,6 @@ left join `${DimStatusNotReceiveTableRef}` as exc_status
   GROUP BY 1, 2
 
 ), hop_8 AS (
-  -- hop_8: ระยะ 8 ทอด
   SELECT 
     t1.companyID, t1.a, 
     MIN(LEAST(t1.a, t1.final_group_id, t2.final_group_id)) as super_group_id
@@ -436,7 +427,6 @@ left join `${DimStatusNotReceiveTableRef}` as exc_status
   SELECT 
     t.companyID, 
     t.InvoiceNo,
-    -- หาค่าที่น้อยที่สุดจากทุก "ทางเชื่อม" ที่ Invoice นี้มี
     MIN(COALESCE(g.super_group_id, t.invoiceIS, t.InvoiceNo)) as group_id
   FROM group_data as t
   LEFT JOIN hop_8 as g 
@@ -522,7 +512,7 @@ left join `${DimStatusNotReceiveTableRef}` as exc_status
   left join dim_invoice as inv
     on final.InvoiceNo = inv.mihVnos
     and dim_com.CompanySK = inv.CompanySK
-  left join `${FactBillingTableRef}` as vs
+  left join `${FactMirVsTableRef}` as vs
     on final.InvoiceNo = vs.mirbinvno
     and final.CompanyID = vs.company_id
 
@@ -546,19 +536,16 @@ left join `${DimStatusNotReceiveTableRef}` as exc_status
 BEGIN
     DECLARE run_date DATE DEFAULT CURRENT_DATE('Asia/Bangkok')-1;
 
-    --- delete data before daily process
     DELETE FROM `${DimAgingHistoryTableRef}`
     WHERE asatdate >= run_date
     ;
 
-    --- insert data for daily process
     INSERT INTO `${DimAgingHistoryTableRef}`
     SELECT run_date as asatdate, * except(ChannelSK, ChannelFinanceSK, ChannelSaleSK, ChannelCostSK)
-    FROM `${DimAgingViewRef}`
+    FROM `${ViewDimAgingTableRef}`
     WHERE GroupFlagComplete = 'Non-Completed' 
     ;
 
-    --- delete data for daily process
     DELETE FROM `${DimAgingHistoryTableRef}`
     WHERE (
         DATE_TRUNC(asatdate, MONTH) = DATE_TRUNC(run_date, MONTH)

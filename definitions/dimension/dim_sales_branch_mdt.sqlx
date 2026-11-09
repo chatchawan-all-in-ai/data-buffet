@@ -120,7 +120,6 @@ BEGIN
       ) AS t1
       LEFT JOIN `${DimZoneMdtTableRef}` AS dim_zone
         ON NULLIF(CAST(TRIM(t1.zone_id) AS STRING), '') = dim_zone.ZoneCode
-      -- ผู้จัดการโซน join ด้วย zone_id แบบเดียวกับ dim_zone_mdt
       LEFT JOIN zone_ta_current AS dim_zone_ta
         ON NULLIF(CAST(TRIM(t1.zone_id) AS STRING), '') = dim_zone_ta.ZoneCode
       -- Section แกะจาก BranchCodeMdt (<ห้าง>_<Section>_<ลำดับ>) ต้องเติมศูนย์และแปลง CEN ให้ตรง dim
@@ -198,7 +197,6 @@ BEGIN
       LEFT JOIN `${DimRegionLastTableRef}` AS dim_region
         ON f.store_code = dim_region.RegionID
        AND dim_region.companyID = 'ag01'
-      -- สาขาในฟีดที่ master ยังไม่มี (เทียบห้าง + สาขา)
       WHERE NOT EXISTS (
         SELECT 1 FROM branch_master AS b
         WHERE b.BranchCode = f.branch_code

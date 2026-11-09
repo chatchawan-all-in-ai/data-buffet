@@ -20,12 +20,12 @@ js {
     };
     const ViewRlsDataTableRef = `${ViewRlsDataTable.database}.${ViewRlsDataTable.schema}.${ViewRlsDataTable.name}`;
 
-    const RLSCustomer360Table = {
+    const RlsCustomer360Table = {
         database: databuffet.DATABASE,
         schema: databuffet.PROCESS_DATASET,
         name: "rls_customer360",
     };
-    const RLSCustomer360TableRef = `${RLSCustomer360Table.database}.${RLSCustomer360Table.schema}.${RLSCustomer360Table.name}`;
+    const RlsCustomer360TableRef = `${RlsCustomer360Table.database}.${RlsCustomer360Table.schema}.${RlsCustomer360Table.name}`;
 }
 
 WITH emp_map AS (
@@ -53,7 +53,7 @@ WITH emp_map AS (
   SELECT 
     milCus,
     SectionID
-  FROM `${RLSCustomer360TableRef}`
+  FROM `${RlsCustomer360TableRef}`
   WHERE SectionID IS NOT NULL
 
 ), agg_rls_customer AS (
@@ -79,29 +79,3 @@ WITH emp_map AS (
   UNION ALL
   SELECT * FROM rls_customer
   order by 1
-
-
------- #### BACK UP 17/7/2026
--- with emp_map as (
---   SELECT 
---     trim(employeeid) as employeeid, 
---     trim(employeetype) as employeetype,
---     trim(employeename) as employeename, 
---     trim(employeeemail) as employeeemail,
---   FROM `${MdsDataOrgEmployeeMappingCenterTableRef}` 
---   WHERE is_active = true
---     and lower(trim(employeetype)) = 'sales'
---     and employeeid is not null
---     and employeeemail is not null
-
--- )
---   select distinct 
---     -- emp.EmployeeType,
---     emp.EmployeeEmail, 
---     rls.LevelName,
---     rls.LevelValue,
---   from `${ViewRlsDataTableRef}` as rls
---   inner join emp_map as emp
---     on rls.EmployeeID = emp.employeeid
---   -- where emp.EmployeeEmail is not null
---   -- order by 1

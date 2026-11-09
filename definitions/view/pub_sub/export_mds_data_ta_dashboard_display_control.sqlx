@@ -8,13 +8,14 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.MDS_DATASET}.mds_data_ta_dashboard_display_control`;
+    const MdsDataTaDashboardDisplayControlTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.MDS_DATASET,
+    name: "mds_data_ta_dashboard_display_control",
+};
+const MdsDataTaDashboardDisplayControlTableRef = `${MdsDataTaDashboardDisplayControlTable.database}.${MdsDataTaDashboardDisplayControlTable.schema}.${MdsDataTaDashboardDisplayControlTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table mds_dataset.mds_data_ta_dashboard_display_control (the P1 dashboard display control sample): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = companyID, ControlKey, SectionID, ItemType, ItemCode.
 WITH src AS (
   SELECT
     companyID,
@@ -28,7 +29,7 @@ WITH src AS (
     StartDate,
     EndDate,
     is_active
-  FROM `${SourceTableRef}`
+  FROM `${MdsDataTaDashboardDisplayControlTableRef}`
 )
 SELECT
   s.companyID,

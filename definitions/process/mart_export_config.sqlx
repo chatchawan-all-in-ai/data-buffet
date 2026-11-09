@@ -43,12 +43,6 @@ SET seeded_at = (SELECT MIN(s.sent_at) FROM ${ref("mart_sent_state")} AS s WHERE
 WHERE c.seeded_at IS NULL
   AND EXISTS (SELECT 1 FROM ${ref("mart_sent_state")} AS s WHERE s.table_name = c.table_name);
 
--- MERGE: a new table is inserted; an existing row gets its task_group updated and nothing else
--- (never topic, source_view, trigger_scheduler, last_invocation_*, claimed_at or seeded_at), so the
--- publisher's memory and every table already being sent stay as they are. The UPDATE above
--- only backfills seeded_at for tables that already have sent state.
--- resolve() adds no dependency, so compile does not catch a config row naming a missing view;
--- pubsub/scripts/setup.sh stops when an export view does not exist.
 MERGE ${self()} AS t
 USING (
   SELECT *

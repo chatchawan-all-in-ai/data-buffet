@@ -6,18 +6,20 @@ config {
 }
 
 js {
-    const FactTargetSaleoutMdtTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.FACT_TABLE,
-        name: "fact_target_saleout_mdt",
-    };
-    const FactTargetSaleoutMdtTableRef = `${FactTargetSaleoutMdtTable.database}.${FactTargetSaleoutMdtTable.schema}.${FactTargetSaleoutMdtTable.name}`;
-    const DimPcTable = {
+const DimPcTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_pc",
     };
     const DimPcTableRef = `${DimPcTable.database}.${DimPcTable.schema}.${DimPcTable.name}`;
+
+const FactTargetSaleoutMdtTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.FACT_TABLE,
+        name: "fact_target_saleout_mdt",
+    };
+    const FactTargetSaleoutMdtTableRef = `${FactTargetSaleoutMdtTable.database}.${FactTargetSaleoutMdtTable.schema}.${FactTargetSaleoutMdtTable.name}`;
+
 }
 
 -- เป้ารายคน PC (หารเท่ากันตามจำนวน PC ในช่อง เป็นข้อตกลง ไม่ใช่ข้อเท็จจริง)
@@ -25,7 +27,6 @@ js {
 
 WITH pc_per_month AS (
 
-  -- 1 แถว = 1 PC ที่รับผิดชอบช่องนั้นในเดือนนั้น (ช่อง = สาขา + กลุ่มการตลาด)
   SELECT DISTINCT
     DATE_TRUNC(d, MONTH) AS month_date,
     BranchMdtSK, MarketingGroupID, PcSK
@@ -35,7 +36,6 @@ WITH pc_per_month AS (
 
 ), pc_share AS (
 
-  -- ช่องหนึ่งมี PC กี่คน = ตัวหารแบ่งเป้า (เป้ารวมยังเท่าเดิมเมื่อบวกกลับ)
   SELECT *,
     COUNT(*) OVER(PARTITION BY month_date, BranchMdtSK, MarketingGroupID) AS pc_in_slot
   FROM pc_per_month

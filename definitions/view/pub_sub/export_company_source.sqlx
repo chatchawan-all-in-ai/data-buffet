@@ -8,18 +8,14 @@ config {
 }
 
 js {
-    const DimCompanyTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_company`;
+    const DimCompanyTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_company",
+};
+const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- Commission sets keep the column names, order and JSON types of the sample sent to TF on
--- 2026-10-14 (commission_tf_ag01_2026), which differ from the source column names on purpose.
--- Natural key = company_source_id (unique, never NULL).
--- Data set   : company_source  (commission export for TF; target = sample commission_tf_ag01_2026, 2026-10-14)
--- Original   : Query Commission คุณแป้ง/none (not in the source queries)
--- Sources    : databuffet-nonprd.dimension_table.dim_company
--- PK: company_source_id. Scope: ag01. The Data Mart company that owns the data (not a customer).
--- Columns, names, order and JSON types match the sample.
 WITH src AS (
   SELECT CompanyID AS company_source_id, CompanyCode, CompanyNameTH, CompanyNameEN
   FROM `${DimCompanyTableRef}`

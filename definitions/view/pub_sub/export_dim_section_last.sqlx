@@ -8,20 +8,21 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.DIMENSION_TABLE}.dim_section_last`;
+    const DimSectionLastTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.DIMENSION_TABLE,
+    name: "dim_section_last",
+};
+const DimSectionLastTableRef = `${DimSectionLastTable.database}.${DimSectionLastTable.schema}.${DimSectionLastTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table dimension_table.dim_section_last (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = companyID, SectionID.
 WITH src AS (
   SELECT
     SectionSK,
     SectionID,
     SectionName,
     companyID
-  FROM `${SourceTableRef}`
+  FROM `${DimSectionLastTableRef}`
 )
 SELECT
   s.SectionSK,

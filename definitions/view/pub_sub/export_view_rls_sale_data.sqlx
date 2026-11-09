@@ -8,19 +8,20 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.PROCESS_DATASET}.view_rls_sale_data`;
+    const ViewRlsSaleDataTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.PROCESS_DATASET,
+    name: "view_rls_sale_data",
+};
+const ViewRlsSaleDataTableRef = `${ViewRlsSaleDataTable.database}.${ViewRlsSaleDataTable.schema}.${ViewRlsSaleDataTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table process_dataset.view_rls_sale_data (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = EmployeeEmail, LevelName, LevelValue.
 WITH src AS (
   SELECT
     EmployeeEmail,
     LevelName,
     LevelValue
-  FROM `${SourceTableRef}`
+  FROM `${ViewRlsSaleDataTableRef}`
 )
 SELECT
   s.EmployeeEmail,

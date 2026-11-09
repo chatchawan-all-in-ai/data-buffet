@@ -8,15 +8,14 @@ config {
 }
 
 js {
-    const SourceTableRef = `${databuffet.DATABASE}.${databuffet.ONETIME}.Product_Attribute`;
+    const ProductAttributeTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.ONETIME,
+    name: "Product_Attribute",
+};
+const ProductAttributeTableRef = `${ProductAttributeTable.database}.${ProductAttributeTable.schema}.${ProductAttributeTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- AI team sample table onetime.Product_Attribute (the AI team package of 2026-10-26): the sample's columns, names and order,
--- read from the same source for the whole table (the sample filters are not applied).
--- Natural key = ProductSK + occurrence.
--- No unique business key: rows are identified by the key columns plus `occurrence`, the position of the row among
--- the rows with the same key ordered by their data JSON, so exact duplicate lines get distinct, repeatable keys.
 WITH src AS (
   SELECT
     ProductSK,
@@ -37,7 +36,7 @@ WITH src AS (
       PARTITION BY ProductSK
       ORDER BY TO_JSON_STRING(STRUCT(ProductSK, ProductCode, ProductSeries, ProductSize, ProductUnit, ProductModel, ProductMaterials, ProductColor, ProductShape, ProductGrossWeight, ProductNetWeight, ProductSizeHight, ProductSizeLong, ProductSizeWide))
     ) AS occurrence
-  FROM `${SourceTableRef}`
+  FROM `${ProductAttributeTableRef}`
 )
 SELECT
   s.ProductSK,

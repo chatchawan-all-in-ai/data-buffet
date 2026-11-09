@@ -7,26 +7,30 @@ config {
 
 js {
     // Define table references
-    const DimQuotationTable = {
+const DimQuotationTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: name(),
     };
     const DimQuotationTableRef = `${DimQuotationTable.database}.${DimQuotationTable.schema}.${DimQuotationTable.name}`;
 
-    const DimProjectTable = {
+const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+
+const DimProjectTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_project",
     };
     const DimProjectTableRef = `${DimProjectTable.database}.${DimProjectTable.schema}.${DimProjectTable.name}`;
 
-    const DimCompanyTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.DIMENSION_TABLE,
-        name: "dim_company",
-    };
-    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+
+
+
 
 }
 
@@ -34,7 +38,6 @@ BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
   SET max_sk = (SELECT IFNULL(MAX(QuotationSK), 0) FROM `${DimQuotationTableRef}`);
 
-  -- 2. เริ่มกระบวนการ MERGE
   MERGE `${DimQuotationTableRef}` AS T
   USING (
     WITH raw_quotation_table as (
@@ -54,7 +57,6 @@ BEGIN
             quo.TermPayment,
             IF(CONTAINS_SUBSTR(quo.Project, '\\'), TRIM(SPLIT(quo.Project, '\\')[SAFE_OFFSET(0)]), NULL) as p_split
         FROM ${ref(databuffet.CURATED_MAC5, 'curated_tbook_quotation')} as quo
-        -- WHERE quo.company_id = 'ag01'
 
     ), LogicTable as (
         SELECT
@@ -81,7 +83,6 @@ BEGIN
         inner join quotation_table as qt
             on qt_detail.linkid = qt.id
             and qt_detail.company_id = qt.company_id
-        -- WHERE qt_detail.company_id = 'ag01'
 
     ), sec_table as (
         SELECT
@@ -92,7 +93,6 @@ BEGIN
             and mih.mihtype = mil.miltype
             and mih.company_id = mil.company_id
         WHERE mih.mihtype = 'PS'
-            -- and mih.company_id = 'ag01'
             and exists (SELECT 1 FROM quotation_table as qt WHERE mih.mihref1 = qt.Running)
         group by 1, 2, 3
 
@@ -173,7 +173,6 @@ BEGIN
   ) AS S
   ON T.QuotationSK = S.QuotationSK
 
-  -- กรณีเจอข้อมูล (Update)
   WHEN MATCHED THEN
     UPDATE SET
       ProjectSK = S.ProjectSK,
@@ -191,9 +190,7 @@ BEGIN
       CustomerID = S.CustomerID,
       ProjectCode = S.ProjectCode,
       OrderStatus = S.OrderStatus
-      -- ยกเว้น: QuotationSK, OrderSK, InvoiceSK
 
-  -- กรณีไม่เจอข้อมูล (Insert)
   WHEN NOT MATCHED THEN
     INSERT (
       QuotationSK, ProjectSK, CompanySK,

@@ -23,22 +23,18 @@ js {
     // ไม่ตัด 8859738138040 'DOS ถังเก็บน้ำคู่ปั๊ม +ปั๊มhitachi' เพราะเป็นสินค้าของเรา
     const HITACHI_PUMPS = `'8850207702816', '8850207702830', '8850207700430'`;
 
-    const LastYearRef = `${databuffet.DATABASE}.${databuffet.VALIDATED_SALEOUT_MDT}.saleout_lastyear`;
+    const LastYearTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.VALIDATED_SALEOUT_MDT,
+    name: "saleout_lastyear",
+};
+const LastYearTableRef = `${LastYearTable.database}.${LastYearTable.schema}.${LastYearTable.name}`;
 }
 
 
 SELECT * FROM new_data_curated_saleout_mdt
 
 pre_operations {
-    -- ยุบทั้ง query ลง temp ก่อน แล้วล้างของเดิมทั้งวันก่อน MERGE
-    -- เหตุผล: MERGE บน uniqueKey เอาแถวที่หายจากต้นทางออกไม่ได้ · doc_type อยู่ในคีย์ด้วย
-    -- พอ TW แก้รายการเดิมจาก SALE เป็น RETURN มันกลายเป็นคีย์ใหม่ แถว SALE เก่าเลยค้างตลอดไป
-    -- วัด 2026-10-20: ค้าง 10 แถว +339,586 บาท ทั้งหมดเป็น TW ตั้งแต่ 27 ก.ย.
-    -- แพตเทิร์นเดียวกับ validated mil/mir ต่างแค่เกรน ที่นี่ใช้ (ห้าง, วันขาย)
-    --
-    -- ⚠️ แตะเฉพาะ (ห้าง, วัน) ที่มีใน temp วันที่ไม่ได้อยู่ในรอบนี้ไม่ถูกแตะ
-    -- ปลอดภัยเพราะต้นทางส่งครบทั้งวันเสมอ — ตรวจ 2026-10-20: saleout_hp ซึ่งเป็นตัวเดียว
-    -- ที่กรอง asatdate แบบ incremental มี 1 sale_date ต่อ 1 asatdate ครบทั้ง 218 วัน
     CREATE OR REPLACE TEMP TABLE new_data_curated_saleout_mdt AS
 WITH hp AS (
 
@@ -49,7 +45,7 @@ WITH hp AS (
         sitename    AS branch_name,
         artno       AS product_code,
         artdesc     AS product_name,
-        vdartno     AS barcode_match,               -- บาร์โค้ด GS1 ใช้จับคู่ dim_product_master.Barcode
+        vdartno     AS barcode_match,
         qty         AS sale_qty,
         value       AS sale_amount,
         IF(is_return, 'RETURN', 'SALE') AS doc_type,
@@ -93,10 +89,6 @@ WITH hp AS (
 
 ), bt_daily AS (
 
-    -- บุญถาวรส่งยอดสะสมตั้งแต่ต้นเดือน (MTD) ใหม่ทุกวัน ไม่ใช่ยอดของวัน
-    -- ยอดของวัน = MTD ของวันนี้ − MTD ของแถวก่อนหน้า รีเซ็ตทุกต้นเดือน
-    -- ⚠️ ห้ามใส่ filter asatdate ในบล็อกนี้ — LAG ต้องเห็นแถวของวันก่อนหน้า
-    --    ถ้าอ่านแค่วันเดียว ยอดสะสมทั้งเดือนจะถูกนับเป็นยอดของวันเดียว
     SELECT
         s.end_date,
         s.branch,
@@ -117,9 +109,6 @@ WITH hp AS (
 
 ), bt AS (
 
-    -- ยุบช่องทาง (Showroom / Anyhome / Web) รวมกัน เพราะเกรนของ curated ไม่มีช่องทาง
-    -- แต่แยกตามชนิดเอกสาร — ช่องทางหนึ่งขายอีกช่องทางคืน จะได้ไม่หักกลบจนมองไม่เห็น
-    -- ⚠️ ต้นทางไม่มีคอลัมน์ชนิดเอกสาร เราเดาจากยอดสะสม MTD ที่ลดลง
     SELECT
         end_date                   AS sale_date,
         'BT'                       AS store_code,
@@ -185,9 +174,9 @@ WITH hp AS (
         product_code              AS barcode_match,  -- GB ใช้บาร์โค้ด 13 หลักเป็นรหัสสินค้าอยู่แล้ว
         SUM(sale_quantity)        AS sale_qty,
         SUM(sale_amount)          AS sale_amount,
-        type                      AS doc_type,       -- ห้างส่งมาเอง SALE / RETURN
+        type                      AS doc_type,
         'SOURCE'                  AS doc_type_source,
-        1                         AS days_covered,   -- วันขายแม่นยำ ไม่ใช่ค่าประมาณ
+        1                         AS days_covered,
         FALSE                     AS date_is_estimated,
         MAX(asatdate)             AS asatdate
     FROM gb_lines 
@@ -209,10 +198,6 @@ WITH hp AS (
 
 ), tw_full_days AS (
 
-    -- วันที่ฟีด TW มาครบ = มีสาขาส่งยอดมาอย่างน้อย 30 สาขา (ปกติ 63-83 · วันที่ไฟล์ไม่มา 1-23)
-    -- ⚠️ วันที่ไฟล์ไม่มาจะเหลือแค่แถวเศษจากไฟล์อื่น (ส่วนใหญ่เป็นการคืนสินค้า) ถ้ายังนับว่ามีฟีด
-    --    feed_days จะกันไม่ให้ไฟล์ BI มาเติม แล้วยอดทั้งวันหายเงียบ ๆ
-    -- แถวเศษของวันที่ไม่ครบถูกทิ้งด้วย ให้วันหนึ่งมีข้อมูลจากแหล่งเดียว (ฟีด หรือ ไฟล์ BI)
     SELECT Last_Sold_Date
     FROM tw_dedup
     GROUP BY Last_Sold_Date
@@ -242,14 +227,9 @@ WITH hp AS (
 
 ), dh AS (
 
-    -- DoHome — ฟีดมาทาง SharePoint เดือนละไฟล์ต่อสาขา validated รวมยอดมาให้ที่เกรนเดียวกันแล้ว
-    -- ⚠️ ห้ามใส่กรอง asatdate แบบ incremental — asatdate ของ DH คือวันขายท้ายสุดในไฟล์
-    --    ไม่ใช่วันที่ DAG รัน เงื่อนไข >= เมื่อวาน จึงเป็นเท็จเสมอ แล้ว DH หายจาก curated ทั้งก้อน
-    -- ไม่มีชื่อสาขาในฟีด (SOURCE_FOLDER เป็นชื่อเขต) ชื่อจริงมาจาก dim ตอนขึ้น fact
-    -- product_code เป็นรหัสของบริษัทเอง ไม่ใช่บาร์โค้ด จึงไม่มี barcode_match
     SELECT
         sale_date,
-        store_code,                                    -- 'DH' คงที่มาจาก validated
+        store_code,
         branch_code,
         CAST(NULL AS STRING)            AS branch_name,
         product_code,
@@ -265,29 +245,16 @@ WITH hp AS (
     FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_dh")}
     WHERE sale_date IS NOT NULL
       AND (sale_qty <> 0 OR sale_amount <> 0)
-      -- ⚠️ ยึดฟีด SharePoint ตั้งแต่ ส.ค. 2026 เท่านั้น — ไฟล์เดือน ก.ค. ไม่ใช่ของ DoHome
-      --    แต่เป็นชุดตัวอย่างที่ทีมเราอัปเอง ถ้าไม่กรองจะชนะไฟล์ BI ของเดือน ก.ค.
-      --    (feed_days กันราย (ห้าง, วัน) และชุดตัวอย่างมีครบทั้งเดือน)
-      --    แถวเดือน ก.ค. ยังอยู่ใน validated ครบ แค่ไม่ให้เข้า curated
       AND sale_date >= DATE '2026-08-01'
 
 ), hp_all_days AS (
 
-    -- (ห้าง, วัน) ทั้งหมดที่ HP/MH เคยส่งมา — อ่าน validated ตรง ๆ ไม่ผ่าน CTE hp
-    -- ⚠️ CTE `hp` ติดกรอง asatdate ตอน incremental จึงเหลือวันล่าสุดวันเดียว ถ้าเอามาทำ feed_days
-    --    แถวย้อนหลังจะไม่ถูกกัน แล้ว lastyear จะซ้อนกับยอดจากฟีดรายวัน
-    --    (gb/bt/tw ไม่มีปัญหานี้ เพราะ CTE ของมันอ่านเต็มทุกรอบอยู่แล้ว)
-    -- เงื่อนไข WHERE ต้องเหมือน CTE `hp` เป๊ะ (ตัดเฉพาะบรรทัด incremental) ไม่งั้นกันคนละชุดวัน
     SELECT DISTINCT store_code, sale_date
     FROM ${ref(databuffet.VALIDATED_SALEOUT_MDT, "saleout_hp")}
     WHERE sale_date IS NOT NULL
       AND (qty <> 0 OR value <> 0)
 ), feed_days AS (
 
-    -- (ห้าง, วัน) ที่ฟีดรายวันส่งมาจริง — กันไม่ให้ไฟล์ย้อนหลังนับซ้ำ
-    -- ต้องอยู่หลัง CTE ของทั้ง 4 ห้าง และก่อน lastyear
-    -- ⚠️ ตรงนี้กันราย (ห้าง, วัน) ส่วน feed_start กันเป็นช่วง ต้องมีทั้งคู่
-    --    มีแต่ตรงนี้ วันที่ห้างหยุดส่ง lastyear จะไหลกลับมาเติมเงียบ ๆ
     SELECT DISTINCT store_code, sale_date FROM hp_all_days
         -- แถว BT ครอบหลายวันได้ (days_covered) ต้องกันทุกวันในช่วง ไม่ใช่แค่วันสุดท้าย
     -- วัด 2026-09-23: 14 แถว ครอบ 39 วัน โดนไฟล์ BI ซ้อน 2.87M
@@ -300,11 +267,10 @@ WITH hp AS (
 ), bi_end AS (
 
     SELECT MAX(sale_date) AS d
-    FROM `${LastYearRef}`
+    FROM `${LastYearTableRef}`
 
 ), month_cov AS (
 
-    -- (ห้าง, เดือน) ที่มีฟีด: มีฟีดกี่วัน เทียบกับจำนวนวันในเดือน (ตัดที่ bi_end)
     SELECT f.store_code,
            DATE_TRUNC(f.sale_date, MONTH) AS m,
            COUNT(DISTINCT f.sale_date)    AS fed_days,
@@ -316,9 +282,6 @@ WITH hp AS (
 
 ), partial_months AS (
 
-    -- เดือนที่ฟีดมีบางวันแต่ไม่ครบ = เดือนที่ต้องเติมเฉพาะส่วนที่ขาด
-    -- ⚠️ ไม่รวมเดือนที่ไฟล์ BI จบกลางเดือน — ของที่ BI ลงก่อนวันจบแต่ฟีดลงหลัง จะถูกนับว่าขาดแล้วเติมซ้ำ
-    -- ⚠️ GB ใช้แบบรายวันเดิม — ฟีด GB สูงกว่า BI จึงเห็นว่า "ไม่ขาด" แล้วไม่เติมวันที่หาย
     SELECT c.store_code, c.m
     FROM month_cov AS c
     CROSS JOIN bi_end AS e
@@ -374,7 +337,7 @@ WITH hp AS (
            ANY_VALUE(ly.product_name) AS product_name,
            SUM(ly.sale_qty) AS q, SUM(ly.sale_amount) AS a,
            MAX(ly.asatdate) AS asatdate
-    FROM `${LastYearRef}` AS ly
+    FROM `${LastYearTableRef}` AS ly
     INNER JOIN partial_months AS p
       ON  p.store_code = ly.store_code
       AND p.m = DATE_TRUNC(ly.sale_date, MONTH)
@@ -418,9 +381,6 @@ WITH hp AS (
 
 ), lastyear_topup AS (
 
-    -- แถวเติม — วันที่เป็นวันประมาณ (date_is_estimated = TRUE) ครอบทุกวันที่ฟีดไม่มีในเดือนนั้น
-    -- ponytail: ถ้าวันหลังห้างส่งไฟล์ย้อนหลังมาเติมวันที่หาย วันที่ของแถวเติมจะเลื่อน
-    --    แถวเติมเก่าจะค้างในตาราง (MERGE ไม่ลบ) ต้อง full refresh หลังโหลดไฟล์ย้อนหลังทุกครั้ง
     SELECT
         d.d                                  AS sale_date,
         t.store_code,
@@ -466,11 +426,7 @@ WITH hp AS (
         MAX(asatdate)           AS asatdate
 
         
-    FROM `${LastYearRef}` AS ly
-    -- เอาเฉพาะ (ห้าง, วัน) ที่ฟีดรายวัน **ไม่มี** ข้อมูล — anti-join
-    -- ⚠️ ห้ามใช้ NOT EXISTS ที่อ้าง CTE ข้ามกัน — Dataform ห่อ incremental เป็น script
-    --    แล้ว BigQuery มองไม่เห็น CTE ในนั้น ฟ้อง "feed_days must be qualified with a dataset"
-    --    (พังจริง 2026-09-18 ตาราง curated หายทั้งตัว ต้องรันใหม่)
+    FROM `${LastYearTableRef}` AS ly
     LEFT JOIN feed_days AS f
       ON  f.store_code = ly.store_code
       AND f.sale_date  = ly.sale_date
@@ -502,8 +458,6 @@ SELECT * FROM (
 -- ตัดทีเดียวหลัง union เพราะรหัสนี้มาได้ทั้งจากฟีด DH และจากไฟล์ประวัติ lastyear
 WHERE NOT (store_code = 'DH' AND LTRIM(product_code, '0') IN (${DH_NOT_OURS}))
   AND NOT (store_code = 'GB' AND product_code IN (${HITACHI_PUMPS}))
--- UNION ALL
--- SELECT * FROM lastyear_topup
 ;
 
     ${ when(incremental(), `

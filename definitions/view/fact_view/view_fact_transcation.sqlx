@@ -10,7 +10,7 @@ config {
                   "fact_invoice", "view_dim_aging", "fact_order", "view_dim_invoice", 
                   "dim_region", "dim_company", "dim_director", "dim_region_manager", 
                   "dim_section_manager", "dim_pump_information",
-                  "dim_customer_report_info", "dim_order"],
+                  "dim_customer_report_info", "dim_order", "create_all_function"],
   tags: [databuffet.TAG_VIEW],
 }
 
@@ -223,7 +223,6 @@ with dim_calendar as (
   select * 
   from `${DimRebateTableRef}`
   where lower(trim(status)) in ('cutomer', 'sales', 'product', 'textsplit')
-    -- and companyID = 'ag01'
 
 ), dim_report as (
   SELECT 
@@ -235,7 +234,6 @@ with dim_calendar as (
       ELSE 2
     END) AS Segment
   FROM `${DimReportTableRef}`
-  -- where companyID = 'ag01'
   
 ), fact_transaction as (
   select
@@ -250,12 +248,10 @@ with dim_calendar as (
     map_inv.SectionID as SectionMappingID,
     deb.debgroup,
 
-    -- plug-in for logic change section
     sec.SectionID,
     reg.RegionID,
     dir.DirectorName,
     
-    -- gur.GuaranteeSK,
     pump.PumpSK,
     order_date.mix_date AS OrderDate,
     trans.*
@@ -272,41 +268,31 @@ with dim_calendar as (
     LEFT JOIN `${DimOrderTableRef}` AS order_date
       ON order_invoice.OrderSK = order_date.OrderSK
 
-  -- deb
   left join ${ref(databuffet.VALIDATED_MAC5, "deb")} as deb
     on trans.milCus = deb.debcode
     and trans.companyID = deb.company_id
 
-  -- mapping invoice
   left join `${MappingInvoiceTableRef}` as map_inv
     on trans.milPer = TRIM(map_inv.milPer)
     and trans.milVnos = TRIM(map_inv.milVnos)
     and trans.companyID = TRIM(map_inv.CompanyID
     )
-  -- section id
   left join `${DimSectionTableRef}` as sec
     on trans.SectionSK = sec.SectionSK
 
-  -- region id
   left join `${DimRegionTableRef}` as reg
     on trans.RegionSK = reg.RegionSK
 
-  -- director id
   left join `${DimDirectorTableRef}` as dir
     on trans.DirectorSK = dir.DirectorSK
     
-  -- Pump Information
   left join `${DimPumpInformationTableRef}` as pump
     on LOWER(IFNULL(trans.milStk, '')) = LOWER(IFNULL(pump.milStk, ''))
     and trans.FlagNewProductMKT = pump.FlagNewProductMKT
     and IFNULL(reg.RegionID, '') = IFNULL(pump.RegionID, '')
     and trans.CompanySK = pump.CompanySK
 
-  -- guarantee
-  --   on gur.CustomerID = trans.milCus
-  --   and gur.CompanySK = trans.CompanySK
 
-  -- where trans.companyID = 'ag01'
 
 ), raw_table as (
   select 
@@ -358,7 +344,7 @@ with dim_calendar as (
                             WHEN IFNULL(sale_sk.ChangeSectionFlag, 'No') = 'Yes' 
                               THEN COALESCE(change_sec_sk.SectionSK, dummy_sec_last.SectionSK)
 
-                            ELSE sec_sk.SectionSK -- COALESCE(change_sec_sk.SectionSK, sec_sk.SectionSK)
+                            ELSE sec_sk.SectionSK
                           END)
 
                         WHEN FlagMappingInvoice = 'Yes' THEN sec_map_sk.SectionSK
@@ -375,7 +361,7 @@ with dim_calendar as (
                           WHEN IFNULL(sale_sk.ChangeSectionFlag, 'No') = 'Yes' 
                             THEN COALESCE(change_sec_sk.SectionSK, dummy_sec_last.SectionSK)
 
-                          ELSE sec_sk.SectionSK -- COALESCE(change_sec_sk.SectionSK, sec_sk.SectionSK)
+                          ELSE sec_sk.SectionSK
                         END)
 
                       WHEN FlagMappingInvoice = 'Yes' THEN sec_map_sk.SectionSK
@@ -619,7 +605,6 @@ with dim_calendar as (
     on trans.SaleRepSk = dim_salerep.SaleRepSk
     and trans.CompanySK = dim_salerep.CompanySK
 
-  -- dim_channel
   left join (
       select 
         * except(DummyChannel),
@@ -629,7 +614,6 @@ with dim_calendar as (
     on trans.ChannelSK = channel_sk.ChannelSK
     and trans.CompanySK = channel_sk.CompanySK
 
-  -- SaleRepSK
   left join (
     select *,
        (CASE
@@ -696,110 +680,90 @@ with dim_calendar as (
               THEN sale_sk.DepartmentID is null
           END)
           
-  -- DepartmentSK
   left join `${DimDepartmentLastTableRef}` as dep_sk
     on sale_sk.DepartmentSK = dep_sk.DepartmentSK
     and trans.CompanySK = dep_sk.CompanySK
 
-  -- SectionSK
   left join `${DimSectionLastTableRef}` as sec_sk
     on dep_sk.SectionSK = sec_sk.SectionSK
     and trans.CompanySK = sec_sk.CompanySK
     
-  -- Change Section
   left join `${DimSectionTableRef}` as change_sec
     on COALESCE(trans.ChangeSectionSK, trans.SectionSK) = change_sec.SectionSK
     and trans.CompanySK = change_sec.CompanySK
 
-  -- ChangeSectionSK
   left join `${DimSectionLastTableRef}` as change_sec_sk
     on change_sec.SectionID = change_sec_sk.SectionID
     and trans.CompanySK = change_sec_sk.CompanySK
     
-  -- SectionForMapping
   left join `${DimSectionLastTableRef}` as sec_map_sk
     on trans.SectionMappingID = sec_map_sk.SectionID
     and trans.CompanySK = sec_map_sk.CompanySK
 
-  -- DirectorForMapping
   left join `${DimDirectorLastTableRef}` as dir_map
     on sec_map_sk.DirectorSK = dir_map.DirectorSK
     and trans.CompanySK = dir_map.CompanySK
     
-  -- ChangeDistrictForMapping
   left join `${DimChangeDistrictTableRef}` as chg_dis_map
     on trans.milCus = chg_dis_map.customerCode
     and trans.CompanySK = chg_dis_map.CompanySK
     and trans.mix_date between chg_dis_map.startDate and chg_dis_map.endDate
 
-  -- ChangeSectionForMapping
   left join `${DimSectionLastTableRef}` as change_sec_map_sk
     on trans.SectionMappingID = change_sec_map_sk.SectionID
     and trans.CompanySK = change_sec_map_sk.CompanySK
 
-  -- CostStkSk
   left join `${DimCostStkTableRef}` as cost_stk_sk
     on trans.CostStkSk = cost_stk_sk.CostStkSk
     and trans.CompanySK = cost_stk_sk.CompanySK
 
-  -- CostGroupSK
   left join `${DimCostGroupTableRef}` as cost_group_sk
     on trans.CostGroupSK = cost_group_sk.CostGroupSK
     and trans.CompanySK = cost_group_sk.CompanySK
 
-  -- StkMkt
   left join `${DimStkMktTableRef}` as stk_mkt
     on trans.StkMktSK = stk_mkt.StkMktSK
     and trans.CompanySK = stk_mkt.CompanySK
 
-  -- Region Last
   left join `${DimRegionLastTableRef}` as region_last
     on sec_sk.RegionSK = region_last.RegionSK
     and trans.CompanySK = region_last.CompanySK
 
-  -- RegionMapping Last
   left join `${DimRegionLastTableRef}` as region_map_last
     on sec_map_sk.RegionSK = region_map_last.RegionSK
     and trans.CompanySK = region_map_last.CompanySK
 
-  -- DUMMY SECTION LAST
   LEFT JOIN `${DimSectionLastTableRef}` as dummy_sec_last
     ON dummy_sec_last.SectionID = 'Dummy999990'
     AND trans.CompanySK = dummy_sec_last.CompanySK
 
-  -- DUMMY SECTION
   LEFT JOIN `${DimSectionTableRef}` as dummy_sec
     ON dummy_sec.SectionID = 'Dummy999990'
     AND trans.CompanySK = dummy_sec.CompanySK
     AND trans.mix_date BETWEEN dummy_sec.StartDate AND dummy_sec.EndDate
 
-  -- DUMMY SECTION MANAGER
   LEFT JOIN `${DimSectionManagerTableRef}` as dummy_sec_mgr
     ON dummy_sec_mgr.SectionID = 'Dummy999990'
     AND trans.CompanySK = dummy_sec_mgr.CompanySK
     AND trans.mix_date BETWEEN dummy_sec_mgr.StartDate AND dummy_sec_mgr.EndDate
 
-  -- DUMMY REGION
   LEFT JOIN `${DimRegionTableRef}` dummy_reg
     ON dummy_reg.RegionID = 'Dummy999990'
     AND dummy_reg.SubRegionID = 'Dummy999990'
     AND trans.CompanySK = dummy_reg.CompanySK
     AND trans.mix_date BETWEEN dummy_reg.StartDate AND dummy_reg.EndDate
 
-  -- DUMMY REGION MANGER
   LEFT JOIN `${DimRegionManagerTableRef}` as dummy_reg_mgr
     ON dummy_reg_mgr.RegionID = 'Dummy999990'
     AND dummy_reg_mgr.SubRegionID = 'Dummy999990'
     AND trans.CompanySK = dummy_reg_mgr.CompanySK
     AND trans.mix_date BETWEEN dummy_reg_mgr.StartDate AND dummy_reg_mgr.EndDate
 
-  -- DUMMY DIRECTOR
   LEFT JOIN `${DimDirectorTableRef}` as dummy_dir
     ON dummy_dir.DirectorID = 'Non Director'
     AND trans.CompanySK = dummy_dir.CompanySK
     AND trans.mix_date BETWEEN dummy_dir.StartDate AND dummy_dir.EndDate
 
-  -- get RegionID for ReportSK
   left join `${DimRegionTableRef}` as reg
     on (CASE
           WHEN UPPER(trans.DirectorName) = UPPER('Agent') 
@@ -841,7 +805,6 @@ with dim_calendar as (
                 END)
         END) = reg.RegionSK
 
-  -- ReportSk
   left join dim_report as dim_report
     on trans.CompanySK = dim_report.CompanySK
     and (CASE 
@@ -855,13 +818,11 @@ with dim_calendar as (
             and dim_report.MarketingGroupID is null
       END)
 
-  -- where UPPER(left(milLinkvcno,3)) = 'CRC'
 
   qualify row_number() over(partition by trans.CompanySK, trans.milType,trans.milVnos,trans.milCus,LOWER(trans.milStk),trans.milPer,trans.milListno order by seq_condition, dim_report.Segment, (CASE WHEN sale_sk.DepartmentID IS NULL THEN 1 ELSE 0 END) DESC, sale_sk.CompanySK DESC, sale_sk.DepartmentID DESC, sale_sk.EmployeeID DESC, sale_sk.DepCode DESC, sale_sk.CostChannelID DESC, sale_sk.ProvinceID DESC) = 1
 
 ), final as (
   select 
-    -- SK
     t2.FactInvoiceSK,
     t2.InvoiceSK,
     dim_aging.AgingSK,
@@ -892,7 +853,6 @@ with dim_calendar as (
       END)
     ) as FlagAccExc,
     
-    -- DATA
     t1.* except(mihCancel, mihStatus, seq_condition, OrderDate)
   from raw_table as t1
   left join `${DimProductMasterTableRef}` as t4
@@ -934,7 +894,6 @@ with dim_calendar as (
     and LOWER(IFNULL(t1.milStk, '')) = LOWER(IFNULL(t2.milStk, ''))
     and t1.CompanySK = t2.CompanySK
 
-  -- aging
   left join `${ViewDimAgingTableRef}` as dim_aging
     on t2.CompanySK = dim_aging.CompanySK
     and t2.milVnos = dim_aging.cfsVnosID
@@ -1022,5 +981,3 @@ with dim_calendar as (
   left join final as trans
     on calendar.Date = trans.mix_date
     and calendar.CompanySK = trans.CompanySK
-  
-  -- where NewProductMktSK is not null

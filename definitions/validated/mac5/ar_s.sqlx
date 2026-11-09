@@ -37,6 +37,40 @@ END;`;
         partition_statement = "";
         post_operations_statement = "";
     }
+    const ArSAg01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AG01,
+        name: "ar_s",
+    };
+    const ArSAg01TableRef = `${ArSAg01Table.database}.${ArSAg01Table.schema}.${ArSAg01Table.name}`;
+
+    const ArSAa05Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AA05,
+        name: "ar_s",
+    };
+    const ArSAa05TableRef = `${ArSAa05Table.database}.${ArSAa05Table.schema}.${ArSAa05Table.name}`;
+
+    const ArSAb01Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AB01,
+        name: "ar_s",
+    };
+    const ArSAb01TableRef = `${ArSAb01Table.database}.${ArSAb01Table.schema}.${ArSAb01Table.name}`;
+
+    const ArSAc02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AC02,
+        name: "ar_s",
+    };
+    const ArSAc02TableRef = `${ArSAc02Table.database}.${ArSAc02Table.schema}.${ArSAc02Table.name}`;
+
+    const ArSAk02Table = {
+        database: databuffet.DATABASE,
+        schema: databuffet.RAW_MAC5_AK02,
+        name: "ar_s",
+    };
+    const ArSAk02TableRef = `${ArSAk02Table.database}.${ArSAk02Table.schema}.${ArSAk02Table.name}`;
 }
 
 WITH all_sources AS (
@@ -47,7 +81,7 @@ WITH all_sources AS (
     ${databuffet.functionData.cleanString('ar_snamee')} as ar_snamee,
     ${databuffet.functionData.castInt64('ar_scolf')} as ar_scolf,
     ${databuffet.functionData.castInt64('ar_scolb')} as ar_scolb
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AG01}.ar_s`
+  FROM `${ArSAg01TableRef}`
 
   UNION ALL
 
@@ -58,7 +92,7 @@ WITH all_sources AS (
     ${databuffet.functionData.cleanString('ar_snamee')} as ar_snamee,
     ${databuffet.functionData.castInt64('ar_scolf')} as ar_scolf,
     ${databuffet.functionData.castInt64('ar_scolb')} as ar_scolb
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AA05}.ar_s`
+  FROM `${ArSAa05TableRef}`
 
   UNION ALL
 
@@ -69,7 +103,7 @@ WITH all_sources AS (
     ${databuffet.functionData.cleanString('ar_snamee')} as ar_snamee,
     ${databuffet.functionData.castInt64('ar_scolf')} as ar_scolf,
     ${databuffet.functionData.castInt64('ar_scolb')} as ar_scolb
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AB01}.ar_s`
+  FROM `${ArSAb01TableRef}`
 
   UNION ALL
 
@@ -80,7 +114,7 @@ WITH all_sources AS (
     ${databuffet.functionData.cleanString('ar_snamee')} as ar_snamee,
     ${databuffet.functionData.castInt64('ar_scolf')} as ar_scolf,
     ${databuffet.functionData.castInt64('ar_scolb')} as ar_scolb
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AC02}.ar_s`
+  FROM `${ArSAc02TableRef}`
 
   UNION ALL
 
@@ -91,7 +125,7 @@ WITH all_sources AS (
     ${databuffet.functionData.cleanString('ar_snamee')} as ar_snamee,
     ${databuffet.functionData.castInt64('ar_scolf')} as ar_scolf,
     ${databuffet.functionData.castInt64('ar_scolb')} as ar_scolb
-  FROM `${databuffet.DATABASE}.${databuffet.RAW_MAC5_AK02}.ar_s`
+  FROM `${ArSAk02TableRef}`
 )
 
 SELECT * FROM all_sources

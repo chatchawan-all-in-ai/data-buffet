@@ -55,7 +55,6 @@ BEGIN
     WITH stable_main_source AS (
     with raw as (
         SELECT
-            -- ROW_NUMBER() OVER (ORDER BY dim_com.CompanySK, t1.DepartmentID, t1.EmployeeID, t1.DepCode, t1.CostChannelID, t1.ProvinceID) AS SaleRepSK,
             NULL AS DepartmentSK,
             NULL AS SectionSK,
             NULL AS SectionManagerSK,
@@ -82,7 +81,6 @@ BEGIN
         FROM (
             SELECT *
             FROM `${DimSaleRepresentativeTableRef}`
-            -- WHERE CURRENT_DATE('Asia/Bangkok') between StartDate and EndDate
             WHERE DepartmentID is not null
             QUALIFY ROW_NUMBER() OVER (PARTITION BY CompanyID, DepartmentID, EmployeeID, DepCode, CostChannelID, ProvinceID, OrderStartDate, OrderEndDate ORDER BY EndDate DESC, StartDate DESC) = 1
         ) as t1

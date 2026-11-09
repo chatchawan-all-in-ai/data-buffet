@@ -8,18 +8,14 @@ config {
 }
 
 js {
-    const OrgCenterUnitTableRef = `${databuffet.DATABASE}.${databuffet.ORG_CENTER}.org_center_unit`;
+    const OrgCenterUnitTable = {
+    database: databuffet.DATABASE,
+    schema: databuffet.ORG_CENTER,
+    name: "org_center_unit",
+};
+const OrgCenterUnitTableRef = `${OrgCenterUnitTable.database}.${OrgCenterUnitTable.schema}.${OrgCenterUnitTable.name}`;
 }
 
--- Export view contract: document/project_wiki/cdc-process/process.md (Pub/Sub export).
--- TA app table, shape of the org sample sent to the AI team on 2026-11-02 (one file per app table):
---   no app-generated id / created_at / updated_at / synced_at; company_id = company code;
---   [valid_from, valid_to) with valid_to NULL = still valid (org center keeps the end day itself
---   and 2066-12-31 as "open", so valid_to + 1 day and 2066-12-31 -> NULL where it is noted).
--- Natural key = company_id, id. id = org center unit_id, which is NOT unique across companies
--- (DIR-00002, REG-PS1-2, SEC-PS1-2, ... exist in ab01 and ag01), so the company is part of the key and
--- of every reference to it (parent_unit_id here, org_unit_id in appointments).
--- region_code = RegionID on region rows (PS1 for PS1-1..PS1-5), NULL on the other levels.
 WITH unit AS (
   SELECT
     u.unit_id AS id,

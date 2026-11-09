@@ -12,68 +12,84 @@ config {
 }
 
 js {
-    const OrgCenterUnitTable = {
+const OrgCenterUnitTable = {
         database: databuffet.DATABASE,
         schema: databuffet.ORG_CENTER,
         name: "org_center_unit",
     };
     const OrgCenterUnitTableRef = `${OrgCenterUnitTable.database}.${OrgCenterUnitTable.schema}.${OrgCenterUnitTable.name}`;
 
-    const OrgCenterMemberTable = {
+const OrgCenterMemberTable = {
         database: databuffet.DATABASE,
         schema: databuffet.ORG_CENTER,
         name: "org_center_member",
     };
     const OrgCenterMemberTableRef = `${OrgCenterMemberTable.database}.${OrgCenterMemberTable.schema}.${OrgCenterMemberTable.name}`;
 
-    const OrgCenterPersonTable = {
+const OrgCenterPersonTable = {
         database: databuffet.DATABASE,
         schema: databuffet.ORG_CENTER,
         name: "org_center_person",
     };
     const OrgCenterPersonTableRef = `${OrgCenterPersonTable.database}.${OrgCenterPersonTable.schema}.${OrgCenterPersonTable.name}`;
 
-    const OrgCenterLinkTable = {
+const OrgCenterLinkTable = {
         database: databuffet.DATABASE,
         schema: databuffet.ORG_CENTER,
         name: "org_center_link",
     };
     const OrgCenterLinkTableRef = `${OrgCenterLinkTable.database}.${OrgCenterLinkTable.schema}.${OrgCenterLinkTable.name}`;
 
-    const OrgCenterCustomerTaTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.ORG_CENTER,
-        name: "org_center_customer_ta",
-    };
-    const OrgCenterCustomerTaTableRef = `${OrgCenterCustomerTaTable.database}.${OrgCenterCustomerTaTable.schema}.${OrgCenterCustomerTaTable.name}`;
-
-    const OrgCenterExceptionTable = {
-        database: databuffet.DATABASE,
-        schema: databuffet.ORG_CENTER,
-        name: "org_center_exception",
-    };
-    const OrgCenterExceptionTableRef = `${OrgCenterExceptionTable.database}.${OrgCenterExceptionTable.schema}.${OrgCenterExceptionTable.name}`;
-
-    const MdsDataCompanyMasterTable = {
+const MdsDataCompanyMasterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
         name: "mds_data_company_master",
     };
     const MdsDataCompanyMasterTableRef = `${MdsDataCompanyMasterTable.database}.${MdsDataCompanyMasterTable.schema}.${MdsDataCompanyMasterTable.name}`;
 
-    const MdsDataMdtSalesPcMasterTable = {
+const MdsDataMdtSalesPcMasterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
         name: "mds_data_mdt_sales_pc_master",
     };
     const MdsDataMdtSalesPcMasterTableRef = `${MdsDataMdtSalesPcMasterTable.database}.${MdsDataMdtSalesPcMasterTable.schema}.${MdsDataMdtSalesPcMasterTable.name}`;
 
-    const MdsDataMdtSalesBranchMasterTable = {
+const OrgCenterCustomerTaTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.ORG_CENTER,
+        name: "org_center_customer_ta",
+    };
+    const OrgCenterCustomerTaTableRef = `${OrgCenterCustomerTaTable.database}.${OrgCenterCustomerTaTable.schema}.${OrgCenterCustomerTaTable.name}`;
+
+const MdsDataMdtSalesBranchMasterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.MDS_DATASET,
         name: "mds_data_mdt_sales_branch_master",
     };
     const MdsDataMdtSalesBranchMasterTableRef = `${MdsDataMdtSalesBranchMasterTable.database}.${MdsDataMdtSalesBranchMasterTable.schema}.${MdsDataMdtSalesBranchMasterTable.name}`;
+
+const OrgCenterExceptionTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.ORG_CENTER,
+        name: "org_center_exception",
+    };
+    const OrgCenterExceptionTableRef = `${OrgCenterExceptionTable.database}.${OrgCenterExceptionTable.schema}.${OrgCenterExceptionTable.name}`;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 -- 1 แถว = 1 ปัญหาที่พบ · ตามชีต Check ของ Org_Mock_Master_Plan_v4.xlsx เฉพาะข้อที่ใช้กับ design นี้
@@ -141,7 +157,6 @@ WITH today AS (
     AND p.unit_id IS NULL
 
 ), unit_no_manager AS (
-  -- หน่วยที่ยังมีผลวันนี้ ต้องมีผู้จัดการตามระดับที่มีผลวันนี้ (ฝ่าย DIRECTOR · ภาค REGION_MGR · ส่วน SECTION_MGR)
   SELECT u.company_id, 'UNIT' AS entity, TO_JSON_STRING([u.company_id, u.unit_id]) AS entity_key,
          'UNIT_NO_MANAGER' AS rule_code, 'หน่วยที่ยังมีผลไม่มีผู้จัดการที่มีผลวันนี้ใน org_center_member' AS rule_description
   FROM `${OrgCenterUnitTableRef}` AS u
@@ -185,7 +200,6 @@ WITH today AS (
   )
 
 ), link_department AS (
-  -- department_id ที่มีค่า แต่ไม่มีที่นั่ง TA ของ department นั้นในบริษัทเดียวกันใน org_center_member
   SELECT l.company_id, 'LINK' AS entity,
          TO_JSON_STRING([l.company_id, l.pc_employee_id, l.branch_type, l.branch_code, CAST(l.valid_from AS STRING)]) AS entity_key,
          'UNKNOWN_DEPARTMENT' AS rule_code, 'department_id ใน mds_data_ta_pc ไม่มีที่นั่ง TA ของบริษัทเดียวกันใน org_center_member' AS rule_description
@@ -242,7 +256,6 @@ WITH today AS (
     )
 
 ), link_overlap AS (
-  -- PC 1 คน + บริษัท + branch_type + สาขา ต้องมี department หลัก 1 แห่งต่อวัน · valid_to ไม่รวมวันนั้น
   SELECT a.company_id, 'LINK' AS entity,
          TO_JSON_STRING([a.company_id, a.pc_employee_id, a.branch_type, a.branch_code, CAST(a.valid_from AS STRING)]) AS entity_key,
          'PC_TA_OVERLAP' AS rule_code, 'ช่วงวันที่ซ้อนกับแถวอื่นของ PC + บริษัท + branch_type + สาขาเดียวกัน (ต้องมี department หลัก 1 แห่งต่อวัน)' AS rule_description

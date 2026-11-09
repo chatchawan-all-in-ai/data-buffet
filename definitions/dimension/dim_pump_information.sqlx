@@ -68,8 +68,6 @@ BEGIN
         fact.CompanySK,
         fact.CompanyID,
         fact.milstk, reg.RegionID, fact.FlagNewProductMKT,
-        -- prd.PumpSegment as OldPumpSegment,
-        -- prd_mkt.Segment as ProcessPumpSegment,
 
         (CASE
           WHEN reg.RegionID = 'PS1' and FlagNewProductMKT = true THEN prd_mkt.Segment
