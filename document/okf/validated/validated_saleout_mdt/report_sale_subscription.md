@@ -17,7 +17,7 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:15:58+00:00" }
 status: draft
 ---
 
@@ -49,7 +49,7 @@ No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key 
 | `Stock_On_Order` | INT64 | Stock quantity on open purchase orders. |
 | `Last_Sold_Date` | DATE | Date the SKU was last sold at the branch. |
 | `Last_Receive_Date` | DATE | Date the SKU was last received at the branch. |
-| `ASATDATE` | DATE | Extract date (the raw ASATDATE partition parsed to DATE); the partition column. |
+| `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE); the partition column. |
 
 # How it is built
 

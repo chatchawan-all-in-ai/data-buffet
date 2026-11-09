@@ -33,7 +33,7 @@ js {
     let partition_statement, post_operations_statement;
 
     if (pk_key && pk_key.length > 0) {
-        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY ASATDATE DESC) = 1`;
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY asatdate DESC) = 1`;
         post_operations_statement = `
 BEGIN
     DECLARE retry_count INT64 DEFAULT 0;
@@ -59,12 +59,12 @@ END;`;
 
 SELECT
     ${databuffet.functionData.cleanString('No_')} AS row_no,
-    ${databuffet.functionData.cleanString('Sale_No_')} AS sale_no,
+    IFNULL(${databuffet.functionData.cleanString('Sale_No_')}, '') AS sale_no,
     ${saleDateExpr} AS sale_date,
-    ${databuffet.functionData.cleanString('Branch_Code')} AS branch_code,
+    IFNULL(${databuffet.functionData.cleanString('Branch_Code')}, '') AS branch_code,
     ${databuffet.functionData.cleanString('Branch_Name')} AS branch_name,
     ${databuffet.functionData.cleanString('Branch_Short_Name')} AS branch_short_name,
-    ${databuffet.functionData.cleanString('Product_Code')} AS product_code,
+    IFNULL(${databuffet.functionData.cleanString('Product_Code')}, '') AS product_code,
     ${databuffet.functionData.cleanString('Product_Name')} AS product_name,
     ${databuffet.functionData.castInt64('Sale_Quantity')} AS sale_quantity,
     CAST(REGEXP_REPLACE(TRIM(Sale_Amount), r"[,\']", '') AS FLOAT64) AS sale_amount,
@@ -75,7 +75,7 @@ SELECT
     END AS type,
     ${databuffet.functionData.cleanString('Reference_No_')} AS reference_no,
     ${databuffet.functionData.cleanString('Deposit_No_')} AS deposit_no,
-    ${databuffet.functionData.parseAsatDate()} as ASATDATE,
+    ${databuffet.functionData.parseAsatDate()} as asatdate,
 FROM `${sourceTableRef}`
 WHERE Sale_Date IS NOT NULL AND TRIM(Sale_Date) <> ''
 ${ when(incremental(), `AND ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE(\'Asia/Bangkok\'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }

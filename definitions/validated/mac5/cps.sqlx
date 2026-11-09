@@ -54,7 +54,7 @@ END;`;
 WITH all_sources AS (
   SELECT 
     'ag01' AS company_id,
-    ${databuffet.functionData.cleanString('rowguid')} AS rowguid,
+    IFNULL(${databuffet.functionData.cleanString('rowguid')}, '') AS rowguid,
     ${databuffet.functionData.cleanString('CPSstkID')} AS cpsstkid,
     ${databuffet.functionData.castInt64('CPSlinkID')} AS cpslinkid,
     ${databuffet.functionData.cleanString('CPSvnosID')} AS cpsvnosid,

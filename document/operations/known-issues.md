@@ -370,8 +370,10 @@ DAG `pipline_saleout_mdt_eom` **รวมทุกไฟล์ในโฟลเ
   ถ้าไม่ล้าง แถวเก่าที่เป็น NULL กับแถวใหม่ที่เป็น `''` จะไม่ match กัน (`mih2` จะได้แถว `''` เพิ่ม 543 แถวครั้งเดียว `cst` 8 แถว)
   ตารางที่อยู่เฉพาะ C1 (`mie_dummy`, `mil_dummy`, `curated_tbook_quotation`) ไม่ต้องล้างตามผลสแกนนี้;
   `mih_dummy` ยังต้องล้างคีย์ `mihvnos` ในกลุ่ม B
-  ส่วนที่ยังไม่ได้แก้ (ตัดสินใจไว้แล้ว): latent อื่น ๆ (cis360, master_sku, mastersku, saleout_mdt, `cps`, `rcv`, `curated_mih`,
-  `curated_saleout_mdt`), `curated_mil` ที่แบ่งบรรทัดเป็น 2 แถวตั้งใจแต่ key ไม่มีตัวแยก split, และ `curated_product`
+  สถานะการ normalize key ของ validated ให้ดู `uniqueKey` และ SELECT ใน
+  [นิยาม SQLX](../../definitions/validated/) แทนรายการ latent จากการสแกนเดิม
+  ส่วนที่ยังไม่ได้แก้: master_sku, `curated_mih`, `curated_saleout_mdt`,
+  `curated_mil` ที่แบ่งบรรทัดเป็น 2 แถวตั้งใจแต่ key ไม่มีตัวแยก split, และ `curated_product`
   ที่ `updatePartitionFilter` 7 วันทำให้ซ้ำ
 
 ## การตัดสินใจเชิงออกแบบ

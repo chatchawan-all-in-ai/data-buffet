@@ -85,7 +85,7 @@ work on Opus, pattern-following work on Sonnet):
 |---|---|---:|---|---|
 | Initial | `definitions/initial/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `raw_*`, `function_dataset` | operations (external tables, UDFs) |
 | Validated | `definitions/validated/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `validated_<source>` | incremental / table + QUALIFY dedup |
-| Curated | `definitions/curated/` | 15 | `curated_<source>` | incremental (+ post_operations) |
+| Curated | `definitions/curated/` | 15 | `curated_<source>` | See [materialization rules](document/coding-standards/sqlx-coding-standard.md#2-config-block) |
 | Dimension | `definitions/dimension/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_table` | Dimension patterns and conversion scope: see inventory |
 | Fact | `definitions/fact/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `fact_table` | table rebuild / operations upsert — **no MERGE** |
 | View | `definitions/view/` | [Generated count](document/diagrams/pipeline_lineage.md#1-layer-overview) | `dimension_view`, `fact_view`, `bridge_dataset`, `onetime`, `process_dataset`, `pub_sub` | `type: "view"`, tag `view` — BI/reporting over dim/fact/curated (see `document/project_wiki/view/view-layer.md`) |

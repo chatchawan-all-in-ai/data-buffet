@@ -34,7 +34,7 @@ SELECT
     CAST(Stock_On_Order as INT64) as Stock_On_Order,
     ${databuffet.functionData.parseFlexibleDate('TRIM(Last_Sold_Date)')} as Last_Sold_Date,
     ${databuffet.functionData.parseFlexibleDate('TRIM(Last_Receive_Date)')} as Last_Receive_Date,
-    ${databuffet.functionData.parseAsatDate()} as ASATDATE,
+    ${databuffet.functionData.parseAsatDate()} as asatdate,
 FROM `${sourceTableRef}`
 
 pre_operations {

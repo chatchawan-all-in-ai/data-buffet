@@ -88,7 +88,7 @@ WITH dim_order_dedup AS (
     and ord.mihStatus = mds.StatusID
   WHERE IFNULL(ord.mihDesc,'') NOT LIKE '%PO.วางบิล%'
     AND ord.mix_date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL 4 YEAR), YEAR)
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY ord.CompanySK, ord.mihVnos ORDER BY ord.OrderSK DESC) = 1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY ord.CompanySK, ord.mihVnos ORDER BY mihKeydate DESC, ord.mihType, ord.mihCus, ord.mihRef1, ord.mihRef2, ord.mihRef3, ord.mihDesc) = 1
 
 ), dim_product_dedup AS (
   SELECT m.ProductSK, m.CompanySK, m.ProductCode, m.ProductGroupMAC5
@@ -97,7 +97,7 @@ WITH dim_order_dedup AS (
     on m.ProductMktSK = mkt.ProductMktSK
   WHERE mkt.TypeMarketing not in ('Sourcing')
     and m.companyid in ('ag01', 'ab01')
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY m.CompanySK, m.ProductCode ORDER BY m.ProductSK) = 1
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY m.CompanySK, m.ProductCode ORDER BY m.Barcode, m.ProductName, m.ProductDescription, m.ProductCode1) = 1
 
 ), source_data AS (
   SELECT

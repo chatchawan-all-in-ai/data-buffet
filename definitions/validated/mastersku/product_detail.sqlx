@@ -52,7 +52,7 @@ END;`;
 }
 
 SELECT
-  ${databuffet.functionData.cleanString('pd_id')} AS pd_id,
+  IFNULL(${databuffet.functionData.cleanString('pd_id')}, '') AS pd_id,
   ${databuffet.functionData.cleanString('pd_prd_id')} AS pd_prd_id,
   ${databuffet.functionData.cleanString('pd_url_video')} AS pd_url_video,
   ${databuffet.functionData.cleanString('pd_detail')} AS pd_detail,

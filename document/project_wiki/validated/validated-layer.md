@@ -54,7 +54,7 @@ Key mechanics:
   string (1-day look-back, Bangkok time) — not on the parsed DATE column.
 - **PK is defined twice**: `uniqueKey` in config (drives Dataform incremental MERGE)
   and `pk_key` in js (drives QUALIFY dedup + NOT ENFORCED PK). Keep them in sync.
-- **Empty `pk_key = []`** → no dedup, no PK constraint (append-style tables like `grp`).
+- **Empty `pk_key = []`** → no dedup, no PK constraint (see the keyless tables’ [cards](../../okf/validated/index.md)).
 - **PK post-op** runs only on full builds (`when(!incremental())`): a
   `WHILE retry_count < 10` loop doing `ALTER TABLE ... DROP PRIMARY KEY IF EXISTS` +
   `ADD PRIMARY KEY (...) NOT ENFORCED` inside `BEGIN...EXCEPTION` (metadata-contention guard).

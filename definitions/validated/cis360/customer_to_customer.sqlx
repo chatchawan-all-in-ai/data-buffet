@@ -52,7 +52,7 @@ END;`;
 }
 
 SELECT
-    ${databuffet.functionData.cleanString('id')} as id,
+    IFNULL(${databuffet.functionData.cleanString('id')}, '') as id,
     ${databuffet.functionData.cleanString('customer_profile_id')} as customer_profile_id,
     ${databuffet.functionData.cleanString('related_customer_profile_id')} as related_customer_profile_id,
     ${databuffet.functionData.castInt64('relationship_type_id')} as relationship_type_id,

@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-08T22:57:16+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:15:58+00:00" }
 status: draft
 ---
 
@@ -24,13 +24,13 @@ The view over the `fact_mir_vs` billing fact. It returns every `fact_mir_vs` col
 
 # Grain and key
 
-One row = one billing (VS) line of [fact_mir_vs](/fact/fact_mir_vs.md): key `BillingSK` (unique); natural key `company_id`, `mirtype`, `mirvnos`, `mirlistno`, `mirbinvno`. The join to `dim_aging` can match several rows per invoice number (different `cfsTypeID`), so the view ends with `QUALIFY ROW_NUMBER() OVER (PARTITION BY t1.BillingSK ORDER BY t2.AgingSK DESC) = 1`, keeping the row count exactly equal to `fact_mir_vs`.
+One row = one billing (VS) line of [fact_mir_vs](/fact/fact_mir_vs.md): key `BillingSK` (unique); natural key `company_id`, `mirtype`, `mirvnos`, `mirlistno`, `mirbinvno`. The join to `dim_aging` can match several rows per invoice number (different `cfsTypeID`), so the view ends with `QUALIFY ROW_NUMBER()` per `BillingSK`, ordered by `cfsTypeID, dueDate, realDueDate, invoiceDate, cfsJob, cfsDep, TotalAmount, OutStanding`, keeping the row count exactly equal to `fact_mir_vs`.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `AgingSK` | INT64 | SK of `dim_aging` for the invoice, joined on `mirbinvno = cfsvnosid` and `company_id = companyID`. When several `dim_aging` rows match (different `cfsTypeID`) the highest AgingSK is kept. NULL when the invoice has no aging row. Regenerated daily. |
+| `AgingSK` | INT64 | SK of `dim_aging` for the invoice, joined on `mirbinvno = cfsvnosid` and `company_id = companyID`. When several `dim_aging` rows match (different `cfsTypeID`) the [business row-selection order](#grain-and-key) chooses the row. NULL when the invoice has no aging row. Regenerated daily. |
 | `BillingSK` | INT64 | Stable row key of [fact_mir_vs](/fact/fact_mir_vs.md#grain-and-key), passed through unchanged. Unique in this view (one row per `BillingSK` by QUALIFY). |
 | `CollectSK` | INT64 | Stable SK of `dim_collection_status`, matched on company + year + month + customer of the document; NULL when no collection-status row exists. |
 | `Actions` | STRING | Collection action text from `dim_collection_status` (matched as for CollectSK). |

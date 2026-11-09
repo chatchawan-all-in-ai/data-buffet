@@ -188,7 +188,7 @@ BEGIN
     LEFT JOIN (
         SELECT OrderSK, CompanySK, mihVnos
         FROM `${DimOrderTableRef}`
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, mihVnos ORDER BY OrderSK) = 1
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY CompanySK, mihVnos ORDER BY mihKeydate DESC, mihType, mihCus, mihRef1, mihRef2, mihRef3, mihDesc) = 1
     ) AS dim_order
         ON IFNULL(t1.milLinkVcno, '') = IFNULL(dim_order.mihVnos, '')
         AND t1.CompanySK = dim_order.CompanySK

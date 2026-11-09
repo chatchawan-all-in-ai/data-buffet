@@ -17,7 +17,7 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:15:58+00:00" }
 status: draft
 ---
 
@@ -29,7 +29,7 @@ Read by: [curated_saleout_mdt.curated_stock_mdt](/curated/curated_saleout_mdt/cu
 
 # Grain and key
 
-One row per cleaned tuple `(vendor_id, branch, article_id, end_date, asatdate)`, selected by `QUALIFY ROW_NUMBER() = 1`. There is no declared `uniqueKey` or primary-key constraint, but SQL still deduplicates. `ORDER BY asatdate` is constant within each partition because asatdate is also in the tuple; records with that same tuple are tied, so the retained row is arbitrary when other attributes or quantities differ. Different extract dates remain separate snapshots.
+One row per cleaned tuple `(vendor_id, branch, article_id, end_date, asatdate)`, selected by `QUALIFY ROW_NUMBER() = 1`. `uniqueKey` and `pk_key` declare this tuple; each full rebuild attaches a `NOT ENFORCED` primary key using the standard retry loop. `ORDER BY asatdate` is constant within each partition because asatdate is also in the tuple; records with that same tuple are tied, so the retained row is arbitrary when other attributes or quantities differ. Different extract dates remain separate snapshots.
 
 # Schema
 
@@ -46,7 +46,7 @@ One row per cleaned tuple `(vendor_id, branch, article_id, end_date, asatdate)`,
 | `ur_cost_amt` | FLOAT64 | Value of the unrestricted stock at cost (THB). |
 | `start_date` | DATE | Stock snapshot date (same as `end_date`). |
 | `end_date` | DATE | Stock snapshot date. |
-| `ASATDATE` | DATE | Extract date (raw ASATDATE parsed to DATE); part of the deduplication tuple and the storage partition. It does not break ties within the tuple. |
+| `asatdate` | DATE | Extract date (raw ASATDATE parsed to DATE); part of the deduplication tuple and the storage partition. It does not break ties within the tuple. |
 
 # How it is built
 

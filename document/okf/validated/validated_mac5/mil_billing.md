@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "mil_billing"
-description: "One row = one billing document line from source table `mil_billing` (no declared key; not deduplicated)."
+description: "One row = one billing document line from source table `mil_billing`."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=validated_mac5&t=mil_billing&page=table"
 project_id: databuffet-nonprd
 dataset_id: validated_mac5
@@ -17,18 +17,18 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:15:58+00:00" }
 status: draft
 ---
 
 # What it is
 
-Validated copy of MAC5 `mil_billing`: every column is trimmed/cast with the shared helpers, the extract date is standardised to `asatdate`. There is no business logic at this layer. Table meaning: Lines of billing documents, same layout as `mil`.
+Validated copy of MAC5 `mil_billing`: every column is trimmed/cast with the shared helpers. There is no business logic at this layer. Table meaning: Lines of billing documents, same layout as `mil`.
 No other repo object reads it.
 
 # Grain and key
 
-No key: `uniqueKey` is not set, so rows are not deduplicated and no primary key is created.
+One row per `company_id`, `miltype`, `milvnos`, `millistno`. `uniqueKey` and `pk_key` declare this key; `QUALIFY ROW_NUMBER()` keeps the first row ordered by `miluname desc, mildesc desc`. Each full rebuild attaches a `NOT ENFORCED` primary key using the standard retry loop.
 
 # Schema
 

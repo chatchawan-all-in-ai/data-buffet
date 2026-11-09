@@ -52,7 +52,7 @@ END;`;
 }
 
 SELECT
-  ${databuffet.functionData.cleanString('vd_id')} AS vd_id,
+  IFNULL(${databuffet.functionData.cleanString('vd_id')}, '') AS vd_id,
   ${databuffet.functionData.cleanString('vd_api_id')} AS vd_api_id,
   ${databuffet.functionData.cleanString('vd_code')} AS vd_code,
   ${databuffet.functionData.cleanString('vd_name')} AS vd_name,

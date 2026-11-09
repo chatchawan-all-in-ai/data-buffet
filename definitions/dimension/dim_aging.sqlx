@@ -437,7 +437,7 @@ left join `${DimStatusNotReceiveTableRef}` as exc_status
 ), dim_invoice as (
   select InvoiceSK, CompanySK, mihVnos
   from `${DimInvoiceTableRef}`
-  qualify row_number() over(partition by CompanySK, mihVnos order by InvoiceSK) = 1
+  qualify row_number() over(partition by CompanySK, mihVnos order by mix_date DESC, mihType, mihCus, mihRef1, mihRef2, mihDesc) = 1
 
 ), final as (
   select

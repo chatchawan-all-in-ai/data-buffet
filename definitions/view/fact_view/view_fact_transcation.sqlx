@@ -265,9 +265,12 @@ with dim_calendar as (
   from `${FactTranscationTableRef}` as trans
 
     LEFT JOIN (
-      SELECT CompanySK, mihType, mihVnos, MAX(OrderSK) AS OrderSK
+      SELECT CompanySK, mihType, mihVnos, OrderSK
       FROM `${ViewDimInvoiceTableRef}`
-      GROUP BY CompanySK, mihType, mihVnos
+      QUALIFY ROW_NUMBER() OVER(
+        PARTITION BY CompanySK, mihType, mihVnos
+        ORDER BY mix_date DESC, mihCus, mihRef1, mihRef2, mihDesc
+      ) = 1
     ) AS order_invoice
       ON trans.CompanySK = order_invoice.CompanySK
       AND trans.milType = order_invoice.mihType
@@ -968,7 +971,7 @@ with dim_calendar as (
     and t1.CompanySK = t3.CompanySK
 
   left join (
-    SELECT CompanySK, mihType, mihVnos, MAX(OrderSK) as OrderSK, MAX(RefOrder) as RefOrder
+    SELECT CompanySK, mihType, mihVnos, MAX(RefOrder) as RefOrder
     FROM `${ViewDimInvoiceTableRef}`
     GROUP BY 1,2,3
   ) as t5
@@ -977,7 +980,7 @@ with dim_calendar as (
     and t1.milvnos = t5.mihVnos
   
   left join (
-    SELECT CompanySK, mihType, mihVnos, MAX(OrderSK) as OrderSK, MAX(RefOrder) as RefOrder
+    SELECT CompanySK, mihType, mihVnos, MAX(RefOrder) as RefOrder
     FROM `${ViewDimInvoiceTableRef}`
     GROUP BY 1,2,3
   ) as t6
@@ -986,7 +989,7 @@ with dim_calendar as (
 
   -- Customer Report Info ของชื่อร้านใน invoice นั้น ชนแบบไม่สนช่องว่าง (GROUP BY กันแถวบานถ้า view_dim_invoice ซ้ำ)
   left join (
-    SELECT InvoiceSK, MAX(CompanySK) as CompanySK, MAX(REGEXP_REPLACE(CustomerReportName, r'\s', '')) as CustomerReportKey
+    SELECT InvoiceSK, ANY_VALUE(CompanySK) as CompanySK, MAX(REGEXP_REPLACE(CustomerReportName, r'\s', '')) as CustomerReportKey
     FROM `${ViewDimInvoiceTableRef}`
     GROUP BY 1
   ) as inv_cri

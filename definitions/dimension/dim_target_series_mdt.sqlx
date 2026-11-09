@@ -95,7 +95,7 @@ BEGIN
         -- รหัสที่ไม่มีใน dim ลง OTHERS (999999) · ไม่มีแถว OTHERS ก็ได้ -1 ไม่ใช่ตารางว่าง
         COALESCE(
           dim_series.SeriesSK,
-          (SELECT MIN(SeriesSK) FROM `${DimProductSeriesTableRef}` WHERE SeriesCode = '999999'),
+          (SELECT SeriesSK FROM `${DimProductSeriesTableRef}` WHERE SeriesCode = '999999'),
           -1) AS SeriesSK,
         dim_br.StoreCode,
         d.BranchCodeMdt,

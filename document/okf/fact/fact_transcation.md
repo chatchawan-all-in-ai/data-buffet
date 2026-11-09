@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-08T22:57:16+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:15:58+00:00" }
 status: draft
 ---
 
@@ -158,6 +158,8 @@ One row = one bill line (`milListno`) of one IS/AS/BS/QS document per customer, 
 | `DepositVat` | FLOAT64 | Deposit VAT allocated to the line by its share of the document net amount, or zero when the document net amount is zero. |
 
 # How it is built
+
+The `OrderDate` lookup shared with `view_fact_transcation` first selects one `view_dim_invoice` row per `(CompanySK, mihType, mihVnos)`, ordered by `mix_date DESC, mihCus, mihRef1, mihRef2, mihDesc`, then joins its `OrderSK` to `dim_order` for `mix_date`. The invoice view resolves IS to its own order and BS/AS to the original IS order, so no bill-type branch is needed. Deduplicating the invoice keys and joining the unique order key preserve the bill-line grain.
 
 - Definition: `definitions/fact/fact_transcation.sqlx` (`type: "operations"`, tags `fact_daily`); the operation owns this table.
 - Reads: [dimension_table.dim_department](/dimension/dim_department.md), [dimension_table.dim_section](/dimension/dim_section.md), [dimension_table.dim_section_manager](/dimension/dim_section_manager.md), [dimension_table.dim_region](/dimension/dim_region.md), [dimension_table.dim_region_manager](/dimension/dim_region_manager.md), [dimension_table.dim_director](/dimension/dim_director.md), [dimension_table.dim_cost_stk](/dimension/dim_cost_stk.md), [dimension_table.dim_cost_group](/dimension/dim_cost_group.md), [dimension_table.dim_change_district](/dimension/dim_change_district.md), `mds_dataset.mds_data_change_marketinggroup_master` (master data loaded outside this repo), [dimension_table.dim_product_mkt](/dimension/dim_product_mkt.md), [dimension_table.dim_sale_representative](/dimension/dim_sale_representative.md), [onetime.Transaction_Data_Mart](/view/onetime/Transaction_Data_Mart.md), [dimension_view.view_dim_invoice](/view/dimension_view/view_dim_invoice.md), [dimension_table.dim_order](/dimension/dim_order.md), [dimension_table.dim_product_master](/dimension/dim_product_master.md), [dimension_table.dim_payment](/dimension/dim_payment.md), [dimension_view.view_dim_channel](/view/dimension_view/view_dim_channel.md), [validated_mac5.deb](/validated/validated_mac5/deb.md), `onetime.mapping_invoice`, [dimension_table.dim_channel_cost](/dimension/dim_channel_cost.md), [process_dataset.view_deb_address_data](/view/process_dataset/view_deb_address_data.md), [dimension_table.dim_stk_mkt](/dimension/dim_stk_mkt.md), [dimension_table.dim_target_product_group_by_sale_dayofwork](/dimension/dim_target_product_group_by_sale_dayofwork.md), [dimension_table.dim_customer](/dimension/dim_customer.md).

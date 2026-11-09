@@ -99,7 +99,7 @@ pre_operations {
 
 ## Checklist
 
-- [ ] `type: "incremental"` + `uniqueKey` มี `company_id` (mac5)
+- [ ] เลือก materialization ตาม [มาตรฐาน SQLX §2](../coding-standards/sqlx-coding-standard.md#2-config-block); เมื่อใช้ incremental ให้ `uniqueKey` มี `company_id` (mac5)
 - [ ] partition `asatdate`, cluster ≤ 4 คอลัมน์
 - [ ] อ่านต้นทางผ่าน `ref()` — ไม่ hardcode
 - [ ] window `when(incremental(), ...)` Bangkok time

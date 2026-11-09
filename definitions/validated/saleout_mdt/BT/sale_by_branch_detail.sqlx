@@ -48,14 +48,14 @@ END;`;
 }
 
 SELECT
-    ${databuffet.functionData.cleanString('BRANCH')} AS branch,
-    ${databuffet.functionData.cleanString('ARTICLE_ID')} AS article_id,
+    IFNULL(${databuffet.functionData.cleanString('BRANCH')}, '') AS branch,
+    IFNULL(${databuffet.functionData.cleanString('ARTICLE_ID')}, '') AS article_id,
 
 
-    CASE ${databuffet.functionData.cleanString('DISTRIBUTION_CHANNEL')}
+    IFNULL(CASE ${databuffet.functionData.cleanString('DISTRIBUTION_CHANNEL')}
         WHEN 'Website' THEN 'Web'
         ELSE ${databuffet.functionData.cleanString('DISTRIBUTION_CHANNEL')}
-    END AS distribution_channel,
+    END, '') AS distribution_channel,
 
     -- ช่วงที่ยอดสะสมครอบ: start_date เป็นวันที่ 1 ของเดือนเสมอ
     -- end_date คือวันสุดท้ายที่ยอดนับถึง ไม่ใช่วันที่ขายล่าสุด

@@ -52,7 +52,7 @@ END;`;
 }
 
 SELECT
-    ${databuffet.functionData.cleanString('id')} as id,
+    IFNULL(${databuffet.functionData.cleanString('id')}, '') as id,
     ${databuffet.functionData.cleanString('buyer_id')} as buyer_id,
     ${databuffet.functionData.cleanString('seller_id')} as seller_id,
     CAST(transaction_type_id as INT64) as transaction_type_id,

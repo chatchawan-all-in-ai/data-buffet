@@ -4,8 +4,6 @@
 
 ## 1. โครงไฟล์
 
-ก่อน commit ให้รัน `dataform format` เมื่อมี CLI พร้อมใช้งาน
-
 ทุกไฟล์เรียงเป็น 4 ส่วน:
 
 ```sqlx
@@ -37,6 +35,7 @@ config {
 - เลือก `type` ตาม layer:
   - validated: `incremental` (transactional) หรือ `table` (full-load reference)
   - curated: `incremental`
+    อนุญาต `table` สำหรับข้อมูล snapshot (เช่น สิ้นเดือน/stock), source ที่แก้หรือกลับรายการย้อนหลัง, หรือกรณียังไม่กำหนด grain/key; AI-search export ใช้ `operations` ได้
   - dimension stable-key sync: `operations` with a complete source snapshot
   - fact: `table` หรือ `operations`
 - `dependencies` ใช้กับ action ที่อ้างด้วย string interpolation (dim, schema bootstrap)
@@ -163,7 +162,7 @@ comment จึงถูกประมวลผลเป็น JS template liter
 
 ## 4. การ cast / ทำความสะอาดข้อมูล
 
-ใช้ helper ในชั้น validated/curated และเมื่อ dimension/fact อ่าน raw หรือ `mds_dataset` โดยตรง; คอลัมน์ที่ dimension/fact อ่านจาก validated/curated ผ่านการ clean และ cast แล้ว ไม่ต้องใช้ helper ซ้ำ (แต่ join key ต้องเทียบค่าที่ clean แล้วทั้งสองฝั่งตาม [คู่มือเพิ่ม fact](../how-to/add-fact-table.md))
+ใช้ helper ทุกครั้งที่ query อ่าน `raw` หรือ `mds_dataset` โดยตรง ไม่ว่าชั้นใด; คอลัมน์ที่อ่านจาก `validated`/`curated` ผ่านการ clean และ cast แล้ว ห้ามใช้ helper ซ้ำ (แต่ join key ต้องเทียบค่าที่ clean แล้วทั้งสองฝั่งตาม [คู่มือเพิ่ม fact](../how-to/add-fact-table.md))
 
 ใช้ helper จาก `function-data.js` เท่านั้น:
 

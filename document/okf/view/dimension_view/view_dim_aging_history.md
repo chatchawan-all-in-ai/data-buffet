@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-08T22:57:16+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:15:58+00:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [export_view_dim_aging_history](/view/pub_sub/export_view_dim_aging_his
 
 # Grain and key
 
-One row = one AR document in one snapshot: key `asatdate`, `companyID`, `cfsVnosID`, `cfsTypeID` (QUALIFY ROW_NUMBER over that key, ordered by channel `companyID`, `DepCode`, then `BillingSK`). Invoice `BFCN020/47` is excluded.
+One row = one AR document in one snapshot: key `asatdate`, `companyID`, `cfsVnosID`, `cfsTypeID` (QUALIFY ROW_NUMBER over that key, ordered by `dim_channel.companyID, dim_channel.DepCode, cur_vs.mirtype, cur_vs.mirvnos, cur_vs.mirlistno, cur_vs.mirsum`). Invoice `BFCN020/47` is excluded.
 
 # Schema
 

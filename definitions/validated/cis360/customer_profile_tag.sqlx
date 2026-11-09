@@ -52,7 +52,7 @@ END;`;
 }
 
 SELECT
-    ${databuffet.functionData.cleanString('id')} as id,
+    IFNULL(${databuffet.functionData.cleanString('id')}, '') as id,
     ${databuffet.functionData.cleanString('customer_profile_id')} as customer_profile_id,
     ${databuffet.functionData.castInt64('tag_id')} as tag_id,
     ${databuffet.functionData.parseFlexibleDatetime('create_date')} as create_date,

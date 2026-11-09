@@ -3,6 +3,7 @@ config {
     schema: databuffet.VALIDATED_SALEOUT_MDT,
     dependencies: ["validated_schema_saleout", "create_all_table_raw_saleout_mdt"],
     tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_FULL, databuffet.TAG_SALEOUT_DAILY],
+    uniqueKey: ["vendor_id", "branch", "article_id", "aging_tier", "brand", "mch3", "mch2", "end_date", "asatdate"],
     bigquery: {
         partitionBy: "asatdate",
         clusterBy: ["branch", "article_id", "aging_tier"]
@@ -16,6 +17,32 @@ js {
         name:     name(),
     };
     const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
+    const pk_key = ["vendor_id", "branch", "article_id", "aging_tier", "brand", "mch3", "mch2", "end_date", "asatdate"]
+
+    let partition_statement, post_operations_statement;
+
+    if (pk_key && pk_key.length > 0) {
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY asatdate) = 1`;
+        post_operations_statement = `
+BEGIN
+    DECLARE retry_count INT64 DEFAULT 0;
+    DECLARE max_retries INT64 DEFAULT 10;
+    DECLARE success BOOL DEFAULT FALSE;
+
+    WHILE retry_count < max_retries AND NOT success DO
+        BEGIN
+            ALTER TABLE ${self()} DROP PRIMARY KEY IF EXISTS;
+            ALTER TABLE ${self()} ADD PRIMARY KEY (${pk_key}) NOT ENFORCED;
+            SET success = TRUE;
+        EXCEPTION WHEN ERROR THEN
+            SET retry_count = retry_count + 1;
+        END;
+    END WHILE;
+END;`;
+    } else {
+        partition_statement = "";
+        post_operations_statement = "";
+    }
 }
 
 
@@ -41,15 +68,13 @@ SELECT
     ${databuffet.functionData.castInt64('REMAIN_QTY')} AS remain_qty,
     ${databuffet.functionData.parseFlexibleDate('TRIM(START_DATE)')} AS start_date,
     ${databuffet.functionData.parseFlexibleDate('TRIM(END_DATE)')} AS end_date,
-    ${databuffet.functionData.parseAsatDate()} as ASATDATE,
+    ${databuffet.functionData.parseAsatDate()} as asatdate,
 FROM `${sourceTableRef}`
-QUALIFY ROW_NUMBER() OVER(
-    PARTITION BY vendor_id, branch, article_id, aging_tier, brand, mch3, mch2, end_date, asatdate
-    ORDER BY asatdate
-) = 1
+${partition_statement}
 
 pre_operations {
 }
 
 post_operations {
+    ${ when(!incremental(), post_operations_statement) }
 }

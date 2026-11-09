@@ -121,7 +121,7 @@ with tab_main as (
     on agi.CFSvnosID = inv.mihvnos
     and inv.CompanySK = agi.CompanySK
 
-  qualify row_number() over(partition by InvoiceSK order by AgingSK) = 1
+  qualify row_number() over(partition by InvoiceSK order by agi.cfsTypeID, agi.dueDate, agi.realDueDate, agi.invoiceDate, agi.cfsJob, agi.cfsDep, agi.TotalAmount, agi.OutStanding) = 1
 
 ),
 tab_name as (
@@ -155,7 +155,7 @@ tab_name as (
   left join (
     select od.OrderSK, od.CompanySK, od.mihVnos 
     from `${DimOrderTableRef}` as od
-    qualify row_number() over(partition by od.CompanySK, od.mihVnos order by od.OrderSK desc) = 1
+    qualify row_number() over(partition by od.CompanySK, od.mihVnos order by od.mix_date DESC, od.mihCus, od.mihRef1, od.mihRef2, od.mihDesc) = 1
   ) as dim_order
     on main.RefOrder = dim_order.mihVnos
     and main.CompanySK = dim_order.CompanySK

@@ -52,7 +52,7 @@ END;`;
 }
 
 SELECT
-  ${databuffet.functionData.cleanString('unit_id')} AS unit_id,
+  IFNULL(${databuffet.functionData.cleanString('unit_id')}, '') AS unit_id,
   ${databuffet.functionData.cleanString('unit_type_name')} AS unit_type_name,
   ${databuffet.functionData.cleanString('unit_name')} AS unit_name,
   ${databuffet.functionData.castBool('unit_is_use')} as unit_is_use,

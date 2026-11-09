@@ -33,7 +33,7 @@ One row = one sales document per distinct `milLinkVcno` (NULL when not linked): 
 | Column | Type | Description |
 |---|---|---|
 | `InvoiceSK` | INT64 | Stable surrogate key; never regenerated, stored in fact tables. |
-| `OrderSK` | INT64 | Order SK from [dim_order](/dimension/dim_order.md), joined on `milLinkVcno = dim_order.mihVnos` and company (first SK per document). NULL when the line is not linked to a known order. Updated on every run for rows in the window. |
+| `OrderSK` | INT64 | Order SK from [dim_order](/dimension/dim_order.md), joined on `milLinkVcno = dim_order.mihVnos` and company (selected per company and document by `mihKeydate DESC, mihType, mihCus, mihRef1, mihRef2, mihRef3, mihDesc`). NULL when the line is not linked to a known order. Updated on every run for rows in the window. |
 | `mix_date` | DATE | Document date built from `mihYear`/`mihMonth`/`mihDay`. |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | MAC5 company code. |

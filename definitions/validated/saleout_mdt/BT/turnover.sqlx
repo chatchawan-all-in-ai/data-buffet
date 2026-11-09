@@ -22,7 +22,7 @@ js {
     let partition_statement, post_operations_statement;
 
     if (pk_key && pk_key.length > 0) {
-        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY ASATDATE DESC) = 1`;
+        partition_statement = `QUALIFY ROW_NUMBER() OVER(PARTITION BY ${pk_key} ORDER BY asatdate DESC) = 1`;
         post_operations_statement = `
 BEGIN
     DECLARE retry_count INT64 DEFAULT 0;
@@ -47,10 +47,10 @@ END;`;
 }
 
 SELECT
-    ${databuffet.functionData.cleanString('VENDOR_ID')} AS vendor_id,
+    IFNULL(${databuffet.functionData.cleanString('VENDOR_ID')}, '') AS vendor_id,
     ${databuffet.functionData.cleanString('VENDOR_NAME')} AS vendor_name,
-    ${databuffet.functionData.cleanString('BRANCH')} AS branch,
-    ${databuffet.functionData.cleanString('MCH3')} AS mch3,
+    IFNULL(${databuffet.functionData.cleanString('BRANCH')}, '') AS branch,
+    IFNULL(${databuffet.functionData.cleanString('MCH3')}, '') AS mch3,
     ${databuffet.functionData.castFloat64('UR_COST_AMT')} AS ur_cost_amt,
     ${databuffet.functionData.castFloat64('T_O')} AS t_o,
     ${databuffet.functionData.castFloat64('UR_COST_AMT_DEAD')} AS ur_cost_amt_dead,
@@ -58,7 +58,7 @@ SELECT
     ${databuffet.functionData.castFloat64('T_O_VENDOR')} AS t_o_vendor,
     ${databuffet.functionData.parseFlexibleDate('TRIM(START_DATE)')} AS start_date,
     ${databuffet.functionData.parseFlexibleDate('TRIM(END_DATE)')} AS end_date,
-    ${databuffet.functionData.parseAsatDate()} as ASATDATE,
+    ${databuffet.functionData.parseAsatDate()} as asatdate,
 FROM `${sourceTableRef}`
 ${ when(incremental(), `WHERE ASATDATE >= FORMAT_DATE("%Y%m%d", DATE_SUB(CURRENT_DATE('Asia/Bangkok'), INTERVAL ${databuffet.BACKFILL_DAYS} DAY))`) }
 ${partition_statement}

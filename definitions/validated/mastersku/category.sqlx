@@ -52,7 +52,7 @@ END;`;
 }
 
 SELECT
-  ${databuffet.functionData.cleanString('cat_id')} AS cat_id,
+  IFNULL(${databuffet.functionData.cleanString('cat_id')}, '') AS cat_id,
   ${databuffet.functionData.cleanString('cat_code')} AS cat_code,
   ${databuffet.functionData.cleanString('cat_name')} AS cat_name,
   ${databuffet.functionData.cleanString('cat_d365_code')} AS cat_d365_code,

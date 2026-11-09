@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:15:58+00:00" }
 status: draft
 ---
 
@@ -24,13 +24,13 @@ Credit-management view: a narrow slice of [dim_customer](/dimension/dim_customer
 
 # Grain and key
 
-One row = one customer: key `CustomerSK`. dim_customer_grade is reduced to one row per CustomerSK (highest CustomerGradeSK wins) before the LEFT JOIN, so customers without a grade have NULL grade columns.
+One row = one customer: key `CustomerSK`. dim_customer_grade is reduced to one row per CustomerSK (ordered by `asatdate DESC, Year DESC, CompanyID, CustomerCode, InvoiceGrade, DueGrade`) before the LEFT JOIN, so customers without a grade have NULL grade columns.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `CustomerGradeSK` | INT64 | SK of the selected (highest) grade row in dim_customer_grade; NULL when the customer has no grade row. |
+| `CustomerGradeSK` | INT64 | SK of the selected grade row ([selection order](#grain-and-key)) in dim_customer_grade; NULL when the customer has no grade row. |
 | `CustomerSK` | INT64 | Stable SK of the customer in dim_customer. |
 | `CompanySK` | INT64 | SK of the company in dim_company. |
 | `companyID` | STRING | MAC5 company code. |

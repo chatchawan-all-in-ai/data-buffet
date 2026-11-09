@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-08T22:57:16+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:15:58+00:00" }
 status: draft
 ---
 
@@ -40,8 +40,8 @@ One row = one product line of an IS invoice per salesperson share (`milPer`): ke
 | `mihMonth` | INT64 | Month part of the document date. |
 | `mihDay` | INT64 | Day part of the document date. |
 | `mihVnos` | STRING | Document number, unique within company and document type. |
-| `InvoiceSK` | INT64 | Surrogate key of [dim_invoice](/dimension/dim_invoice.md) (milType 'IS', company + mihVnos, latest InvoiceSK); NULL if unmatched. |
-| `OrderSK` | INT64 | OrderSK of the order whose `mihVnos = milLinkVcno`; -1 when none. |
+| `InvoiceSK` | INT64 | Surrogate key of [dim_invoice](/dimension/dim_invoice.md) (milType 'IS', company + mihVnos, ordered by `mix_date DESC, mihType, mihCus, mihRef1, mihRef2, mihDesc`); NULL if unmatched. |
+| `OrderSK` | INT64 | OrderSK of the order whose `mihVnos = milLinkVcno`, selected per company and document by `mihKeydate DESC, mihType, mihCus, mihRef1, mihRef2, mihRef3, mihDesc`; -1 when none. |
 | `CustomerSK` | INT64 | Surrogate key of [dim_customer](/dimension/dim_customer.md) (`debcode = mihCus`, same company); NULL when unmatched. |
 | `ProductSK` | INT64 | Surrogate key of [dim_product_master](/dimension/dim_product_master.md) (case-insensitive product code match); rows without a product (or with TypeMarketing 'Sourcing') are dropped by an INNER JOIN, so never NULL. |
 | `StoreSK` | INT64 | Surrogate key of [dim_store](/dimension/dim_store.md) (warehouse/branch) matched on company and store code; -1 when the store code is not in dim_store. |

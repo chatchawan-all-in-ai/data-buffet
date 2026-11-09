@@ -52,7 +52,7 @@ END;`;
 }
 
 SELECT
-  ${databuffet.functionData.cleanString('bra_id')} AS bra_id,
+  IFNULL(${databuffet.functionData.cleanString('bra_id')}, '') AS bra_id,
   ${databuffet.functionData.cleanString('bra_name')} AS bra_name,
   ${databuffet.functionData.cleanString('bra_name_th')} AS bra_name_th,
   ${databuffet.functionData.cleanString('bra_detail')} AS bra_detail,

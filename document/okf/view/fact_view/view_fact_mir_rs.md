@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-08T22:57:16+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:15:58+00:00" }
 status: draft
 ---
 
@@ -24,13 +24,13 @@ The view over the `fact_mir_rs` receipt/payment-received fact. It adds the link 
 
 # Grain and key
 
-One row = one receipt (RS) line or cheque of [fact_mir_rs](/fact/fact_mir_rs.md): key `ReceiveSK` (unique). The view joins `dim_aging` on invoice number and company, which can match several rows per invoice number (different `cfsTypeID`), and keeps the highest `AgingSK` per `ReceiveSK` with `QUALIFY ROW_NUMBER() OVER (PARTITION BY t1.ReceiveSK ORDER BY t2.AgingSK DESC) = 1`. A receipt line expanded by cheques has one row per cheque.
+One row = one receipt (RS) line or cheque of [fact_mir_rs](/fact/fact_mir_rs.md): key `ReceiveSK` (unique). The view joins `dim_aging` on invoice number and company, which can match several rows per invoice number (different `cfsTypeID`), and keeps one aging row per `ReceiveSK` with `QUALIFY ROW_NUMBER()` per `ReceiveSK`, ordered by `cfsTypeID, dueDate, realDueDate, invoiceDate, cfsJob, cfsDep, TotalAmount, OutStanding`. A receipt line expanded by cheques has one row per cheque.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `AgingSK` | INT64 | SK of `dim_aging` for the invoice paid (join `mirbinvno = cfsvnosid`, `company_id = companyID`); highest AgingSK kept when several rows match. NULL when the invoice has no aging row or on cheque-only rows. Regenerated daily. |
+| `AgingSK` | INT64 | SK of `dim_aging` for the invoice paid (join `mirbinvno = cfsvnosid`, `company_id = companyID`); the [business row-selection order](#grain-and-key) chooses among matches. NULL when the invoice has no aging row or on cheque-only rows. Regenerated daily. |
 | `ReceiveSK` | INT64 | Stable row key of [fact_mir_rs](/fact/fact_mir_rs.md#grain-and-key), passed through unchanged. Unique in this view. |
 | `BillingSK` | INT64 | Stable row key of the matching billing row in [fact_mir_vs](/fact/fact_mir_vs.md#grain-and-key) (match company + `mirbinvno`); NULL when the paid invoice was never billed. |
 | `FactChqSK` | INT64 | Row key of [fact_chq](/fact/fact_chq.md#schema) (match `cqlvnos = mirvnos`, customer, company). `fact_mir_rs` uses a FULL JOIN with `fact_chq`, so cheque rows without a receipt line also appear (the receipt-side columns are then NULL). |

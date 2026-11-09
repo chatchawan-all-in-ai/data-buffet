@@ -35,7 +35,7 @@ One row = one AR document (invoice, credit note or debit note): key (`companyID`
 | `AgingSK` | INT64 | `ROW_NUMBER() OVER(ORDER BY CompanySK, InvoiceNo, InvoiceDate)` over the whole table. Regenerated every run. |
 | `BillingSK` | INT64 | Row key of the billing-document row in [fact_mir_vs](/fact/fact_mir_vs.md#grain-and-key), joined on `InvoiceNo = mirbinvno` and company; NULL when the invoice has no billing row. |
 | `CustomerSK` | INT64 | Customer surrogate key from [dim_customer](/dimension/dim_customer.md), joined on `debcode` (the invoice's `mihCus`) and `CompanySK`. NULL when no customer matches. |
-| `InvoiceSK` | INT64 | Invoice surrogate key from [dim_invoice](/dimension/dim_invoice.md), joined on document number (`mihVnos`) and `CompanySK` (first SK per company and document number). |
+| `InvoiceSK` | INT64 | Invoice surrogate key from [dim_invoice](/dimension/dim_invoice.md), joined on document number (`mihVnos`) and `CompanySK` (selected per company and document number by `mix_date DESC, mihType, mihCus, mihRef1, mihRef2, mihDesc`). |
 | `CompanySK` | INT64 | Surrogate key of the company, from [dim_company](/dimension/dim_company.md) joined on CompanyID; NULL if no match. |
 | `companyID` | STRING | MAC5 company code (ag01 / aa05 / ab01 / ac02 / ak02), from `dim_company.companyID`. |
 | `dueDate` | DATE | Due date of the document: the date parsed from MAC5 `mie.MIEctermDX` (dd/mm/yyyy text) when present, otherwise `invoiceDate + transCreditTerm` days. |

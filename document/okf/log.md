@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-09 (Group A contracts)
+
+* **Update**: Refreshed changed validated keys, saleout extract-date column names, and business row-selection contracts in the affected table and view cards.
+
 ## 2026-11-08 (formula datetime parsing)
 
 * **Update**: Corrected formula date-field types in the [raw line](initial/raw_derp/inventory_formula_line.md#schema), [raw version](initial/raw_derp/inventory_formula_versions.md#schema), [validated line](validated/validated_derp/inventory_formula_line.md#schema) and [validated version](validated/validated_derp/inventory_formula_versions.md#schema) cards.

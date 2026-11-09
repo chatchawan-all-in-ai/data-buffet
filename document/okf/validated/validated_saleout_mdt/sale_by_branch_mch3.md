@@ -17,7 +17,7 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T21:55:28+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:15:58+00:00" }
 status: draft
 ---
 
@@ -46,14 +46,14 @@ One row per `vendor_id`, `branch`, `mch3`. The key is declared twice in the defi
 | `ytd_pct_growth` | FLOAT64 | Year-to-date sales growth versus last year, in percent. |
 | `start_date` | DATE | First day of the reporting period. |
 | `end_date` | DATE | Last day covered by the report (figures are counted up to this date). |
-| `ASATDATE` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
+| `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built
 
 - Definition: `definitions/validated/saleout_mdt/BT/sale_by_branch_mch3.sqlx` (`type: "incremental"`, tags `validated`, `saleout_daily`).
 - Reads: [raw_saleout_mdt.sale_by_branch_mch3](/initial/raw_saleout_mdt/sale_by_branch_mch3.md).
 - **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
-- Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY ASATDATE DESC) = 1`.
+- Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `vendor_id`, `branch`, `mch3`.
 
 # Examples

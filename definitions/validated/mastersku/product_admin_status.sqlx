@@ -52,7 +52,7 @@ END;`;
 }
 
 SELECT
-  ${databuffet.functionData.cleanString('pas_id')} AS pas_id,
+  IFNULL(${databuffet.functionData.cleanString('pas_id')}, '') AS pas_id,
   ${databuffet.functionData.cleanString('pas_name')} AS pas_name,
   ${databuffet.functionData.castBool('pas_is_use')} as pas_is_use,
   ${databuffet.functionData.parseFlexibleDatetime('pas_created_date')} as pas_created_date,

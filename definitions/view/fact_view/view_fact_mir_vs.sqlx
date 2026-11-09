@@ -29,4 +29,4 @@ left join `${DimAgingTableRef}` as t2
 
 -- join ด้วย cfsvnosid อย่างเดียว แต่ dim_aging มีได้หลายแถวต่อใบ (cfsTypeID ต่างกัน)
 -- ถ้าไม่กันไว้ view จะเกินมา 2 แถว แล้ว BillingSK ไม่ unique อีกต่อไป → SUM เบิ้ล
-qualify row_number() over(partition by t1.BillingSK order by t2.AgingSK desc) = 1
+qualify row_number() over(partition by t1.BillingSK order by t2.cfsTypeID, t2.dueDate, t2.realDueDate, t2.invoiceDate, t2.cfsJob, t2.cfsDep, t2.TotalAmount, t2.OutStanding) = 1

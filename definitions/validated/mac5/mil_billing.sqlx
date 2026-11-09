@@ -3,7 +3,7 @@ config {
     schema: databuffet.VALIDATED_MAC5,
     dependencies: ["validated_schema_mac5", "create_all_table_raw_mac5"],
     tags: [databuffet.TAG_VALIDATED, databuffet.TAG_VALIDATED_FULL],
-    uniqueKey: [],
+    uniqueKey: ["company_id", "miltype", "milvnos", "millistno"],
     bigquery: {
         clusterBy: ["company_id", "miltype", "milvnos", "milcus"]
     },
@@ -21,7 +21,7 @@ js {
     const sourceTableRef = `${sourceTable.database}.${sourceTable.schema}.${sourceTable.name}`;
 
     // Keep existing logic
-    const pk_key = []
+    const pk_key = ["company_id", "miltype", "milvnos", "millistno"]
 
     let partition_statement, post_operations_statement;
 

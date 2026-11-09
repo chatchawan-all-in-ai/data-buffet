@@ -17,7 +17,7 @@ sources:
   - id: inventory
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/validated/source-inventory.md"
     title: "Data Mart wiki: validated source inventory"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T22:28:26+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:15:58+00:00" }
 status: draft
 ---
 
@@ -48,14 +48,14 @@ One row per `sale_no`, `sale_date`, `branch_code`, `product_code`. The key is de
 | `type` | STRING | Document type: `SALE` or `RETURN` (newer files send Thai `ขาย`/`รับคืน`). |
 | `reference_no` | STRING | Original bill number referenced by a return. |
 | `deposit_no` | STRING | Deposit document number linked to the bill. |
-| `ASATDATE` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
+| `asatdate` | DATE | Extract date (the raw ASATDATE partition parsed to DATE) of the winning row; used as the dedup tiebreaker and the partition column. |
 
 # How it is built
 
 - Definition: `definitions/validated/saleout_mdt/GB/saleout_gb.sqlx` (`type: "incremental"`, tags `validated`, `saleout_daily`).
 - Reads: [raw_saleout_mdt.saleout_gb](/initial/raw_saleout_mdt/saleout_gb.md).
 - **Incremental**: each run reads only raw partitions with `ASATDATE` within the last `BACKFILL_DAYS` days and MERGEs on `uniqueKey`. A first or full build reads every raw partition.
-- Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY ASATDATE DESC) = 1`.
+- Dedup: `QUALIFY ROW_NUMBER() OVER(PARTITION BY <key> ORDER BY asatdate DESC) = 1`.
 - Storage: partition by `asatdate`, cluster by `sale_date`, `branch_code`, `product_code`, `sale_no`.
 
 # Examples

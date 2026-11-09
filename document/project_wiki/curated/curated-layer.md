@@ -211,7 +211,7 @@ BigQuery จะไม่ตัดพาร์ทิชันให้
 
 1. ขึ้นกับ `curated_schema_<source>` ของ source นั้น (ไม่ต้องขึ้นกับตาราง validated ตรง ๆ
    เพราะดึงผ่าน `${ref()}` อยู่แล้ว)
-2. `type: "incremental"` + `uniqueKey` ที่มี `company_id` สำหรับ MAC5
+2. เลือก materialization ตาม [มาตรฐาน SQLX §2](../../coding-standards/sqlx-coding-standard.md#2-config-block); เมื่อใช้ incremental ให้ `uniqueKey` มี `company_id` สำหรับ MAC5
 3. partition ด้วย `asatdate` (หรือคอลัมน์วันที่เชิงธุรกิจอย่าง `sale_date`/`stock_date`
    ถ้าเป็นชุดที่ปั้นใหม่ทั้งก้อน) · cluster ไม่เกิน 4 คอลัมน์ที่ใช้กรองจริง
 4. window แบบ inline `when(incremental(), ...)` เวลาไทย · **วางเงื่อนไข `asatdate`

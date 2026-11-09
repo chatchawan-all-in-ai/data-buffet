@@ -67,5 +67,5 @@ where dim_aging.cfsvnosid != 'BFCN020/47'
 -- และยังกันแถวบานจาก 2 join ใหม่ (ต้นทางมีคีย์ซ้ำอย่างละ 1 คู่)
 qualify row_number() over(
   partition by asatdate, dim_aging.companyID, dim_aging.cfsVnosID, dim_aging.cfsTypeID
-  order by dim_channel.companyID, dim_channel.DepCode, cur_vs.BillingSK
+  order by dim_channel.companyID, dim_channel.DepCode, cur_vs.mirtype, cur_vs.mirvnos, cur_vs.mirlistno, cur_vs.mirsum
 ) = 1

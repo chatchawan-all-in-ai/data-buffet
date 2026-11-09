@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T02:15:58+00:00" }
 status: draft
 ---
 
@@ -26,13 +26,13 @@ Read by: [dim_customer_report_info](/dimension/dim_customer_report_info.md), [ex
 
 # Grain and key
 
-One row = one `dim_invoice` sales document with each combination of matching customer and name records: intended key `InvoiceSK` (not guaranteed unique). `tab_main` keeps one row per `InvoiceSK` with `QUALIFY ROW_NUMBER()` ordered by `AgingSK`; subsequent LEFT JOINs to [view_dim_customer](/view/dimension_view/view_dim_customer.md#grain-and-key), `mec` and the active MDS CRC rename rows can add rows, with no final deduplication. dim_invoice natural key: company + year/month/day + vnos + customer + milLinkVcno.
+One row = one `dim_invoice` sales document with each combination of matching customer and name records: intended key `InvoiceSK` (not guaranteed unique). `tab_main` keeps one row per `InvoiceSK` with the [aging business row-selection order](../fact_view/view_fact_mir_vs.md#grain-and-key); subsequent LEFT JOINs to [view_dim_customer](/view/dimension_view/view_dim_customer.md#grain-and-key), `mec` and the active MDS CRC rename rows can add rows, with no final deduplication. dim_invoice natural key: company + year/month/day + vnos + customer + milLinkVcno.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `OrderSK` | INT64 | SK of the order in dim_order: the invoice's own OrderSK, else the latest OrderSK matching `RefOrder` + CompanySK for BS/AS documents. |
+| `OrderSK` | INT64 | SK of the order in dim_order: the invoice's own OrderSK, else the order matching `RefOrder` + CompanySK for BS/AS documents, selected by `mix_date DESC, mihCus, mihRef1, mihRef2, mihDesc`. |
 | `AgingSK` | INT64 | SK of the invoice in dim_aging, joined on invoice number (`CFSvnosID = mihvnos`) and CompanySK; NULL when not in aging. Regenerated nightly. |
 | `InvoiceSK` | INT64 | Stable SK of the invoice row in dim_invoice (MERGE). |
 | `mix_date` | DATE | Document date, `PARSE_DATE('%Y%m%d', CONCAT(mihYear, mihMonth, mihDay))`. |

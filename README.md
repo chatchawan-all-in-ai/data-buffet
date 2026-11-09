@@ -291,7 +291,10 @@ QUALIFY ROW_NUMBER() OVER (
 14 MAC5 tables (`mih`, `mil`, `deb`, `stk`, …) UNION ALL five company datasets with a
 literal `company_id` column.
 
-### Curated — incremental with Bangkok-time window
+### Curated
+
+Materialization choices follow the [SQLX standard](document/coding-standards/sqlx-coding-standard.md#2-config-block). The incremental pattern uses a Bangkok-time window:
+
 ```javascript
 config {
   type: "incremental",

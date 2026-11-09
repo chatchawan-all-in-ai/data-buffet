@@ -36,7 +36,7 @@ WITH dim_customer as (
 ), dim_customer_grade as (
   select * 
   from `${DimCustomerGradeTableRef}`
-  qualify row_number() over(partition by CustomerSK order by CustomerGradeSK desc) = 1
+  qualify row_number() over(partition by CustomerSK order by asatdate DESC, Year DESC, CompanyID, CustomerCode, InvoiceGrade, DueGrade) = 1
 
 )
   select cust_grade.CustomerGradeSK, cust.* except(Customer_CM_Grade), 

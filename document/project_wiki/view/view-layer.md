@@ -128,41 +128,17 @@ billing keys; the view
 looks up current keys using the stored natural keys. A document absent from the current
 `dim_aging` or `fact_mir_vs` has no current key in the view.
 
-The view joins the current dimension and fact with the natural keys stored in history:
-
-```sql
-select
-  cur_aging.AgingSK,
-  cur_vs.BillingSK,
-  dim_aging.* except(AgingSK, BillingSK)
-from `${DimAgingHistoryTableRef}` as dim_aging
-left join `${DimAgingTableRef}` as cur_aging
-  on dim_aging.companyID = cur_aging.companyID
-  and dim_aging.cfsVnosID = cur_aging.cfsVnosID
-  and dim_aging.cfsTypeID = cur_aging.cfsTypeID
-left join `${FactMirVsTableRef}` as cur_vs
-  on dim_aging.companyID = cur_vs.company_id
-  and dim_aging.cfsVnosID = cur_vs.mirbinvno
-qualify row_number() over(partition by asatdate, dim_aging.companyID,
-                          dim_aging.cfsVnosID, dim_aging.cfsTypeID
-                          order by ChannelSK, cur_vs.BillingSK) = 1
-```
-
-Keep the `QUALIFY` because joins can still return multiple rows for the same history
-snapshot key.
+The [history view card](../../okf/view/dimension_view/view_dim_aging_history.md#grain-and-key)
+owns the snapshot grain and business row-selection order. Keep its `QUALIFY` because
+joins can still return multiple rows for the same history snapshot key.
 
 ### `QUALIFY` prevents duplicate rows in views over facts
 
-`view_fact_mir_vs` / `view_fact_mir_rs` join `dim_aging` ด้วย `cfsvnosid` + `company_id`
-อย่างเดียว แต่ `dim_aging` มีได้หลายแถวต่อใบ (คนละ `cfsTypeID`) จึงต้องปิดท้ายด้วย
-
-```sql
-qualify row_number() over(partition by t1.BillingSK order by t2.AgingSK desc) = 1  -- vs
-qualify row_number() over(partition by t1.ReceiveSK order by t2.AgingSK desc) = 1  -- rs
-```
-
-This keeps one view row per source fact key after the aging join. Keep it when changing
-the view source or its natural-key matching.
+`view_fact_mir_vs` and `view_fact_mir_rs` join `dim_aging` by invoice number and company;
+several aging rows can match because `cfsTypeID` can differ. Their table cards own the
+business row-selection orders: [billing](../../okf/view/fact_view/view_fact_mir_vs.md#grain-and-key)
+and [receipts](../../okf/view/fact_view/view_fact_mir_rs.md#grain-and-key).
+Keep the final `QUALIFY` to retain one view row per source fact key.
 
 ### Run order: ประกาศ dependency เป็น "ตาราง" ไม่ใช่ "view" (ตัดสินใจ 2026-08-11)
 

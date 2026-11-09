@@ -339,9 +339,12 @@ BEGIN
     FROM `${TransactionDataMartTableRef}` AS trans
 
     LEFT JOIN (
-      SELECT CompanySK, mihType, mihVnos, MAX(OrderSK) AS OrderSK
+      SELECT CompanySK, mihType, mihVnos, OrderSK
       FROM `${ViewDimInvoiceTableRef}`
-      GROUP BY CompanySK, mihType, mihVnos
+      QUALIFY ROW_NUMBER() OVER(
+        PARTITION BY CompanySK, mihType, mihVnos
+        ORDER BY mix_date DESC, mihCus, mihRef1, mihRef2, mihDesc
+      ) = 1
     ) AS order_invoice
       ON trans.CompanySK = order_invoice.CompanySK
       AND trans.milType = order_invoice.mihType

@@ -65,7 +65,7 @@ BEGIN
     WITH mac5_dedup AS (
       SELECT ProductSK, ProductMktSK, companyID, ProductCode
       FROM `${DimProductMasterTableRef}`
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY companyID, ProductCode ORDER BY ProductSK) = 1
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY companyID, ProductCode ORDER BY Barcode, ProductName, ProductDescription, ProductCode1) = 1
 
       ), mkt_fallback AS (
 

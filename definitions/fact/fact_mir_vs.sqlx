@@ -56,7 +56,7 @@ FROM (
 with dim_invoice as (
   select InvoiceSK, companyID, mihVnos, mihType, mihCus, mix_date, mihCancel
   from `${DimInvoiceTableRef}`
-  qualify row_number() over(partition by mihVnos, mihType, mihCus, mix_date, companyID, mihCancel order by InvoiceSK) = 1
+  qualify row_number() over(partition by mihVnos, mihType, mihCus, mix_date, companyID, mihCancel order by milLinkVcno, mihRef1, mihRef2, mihDep, mihJob, mihDesc, mihNotes, mihMec) = 1
 
 ), mir as (
   select

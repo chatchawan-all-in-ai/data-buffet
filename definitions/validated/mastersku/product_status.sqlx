@@ -52,7 +52,7 @@ END;`;
 }
 
 SELECT
-  ${databuffet.functionData.cleanString('ps_id')} AS ps_id,
+  IFNULL(${databuffet.functionData.cleanString('ps_id')}, '') AS ps_id,
   ${databuffet.functionData.cleanString('ps_name')} AS ps_name,
   ${databuffet.functionData.castBool('ps_is_use')} as ps_is_use,
   ${databuffet.functionData.parseFlexibleDatetime('ps_created_date')} as ps_created_date,

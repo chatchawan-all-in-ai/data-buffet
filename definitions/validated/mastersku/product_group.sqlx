@@ -52,7 +52,7 @@ END;`;
 }
 
 SELECT
-  ${databuffet.functionData.cleanString('pg_id')} AS pg_id,
+  IFNULL(${databuffet.functionData.cleanString('pg_id')}, '') AS pg_id,
   ${databuffet.functionData.cleanString('pg_description')} AS pg_description,
   ${databuffet.functionData.cleanString('pg_dimension1')} AS pg_dimension1,
   ${databuffet.functionData.cleanString('pg_dimension2')} AS pg_dimension2,

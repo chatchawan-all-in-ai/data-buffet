@@ -52,7 +52,7 @@ END;`;
 }
 
 SELECT
-    ${databuffet.functionData.cleanString('id')} as id,
+    IFNULL(${databuffet.functionData.cleanString('id')}, '') as id,
     ${databuffet.functionData.cleanString('allkons_id')} as allkons_id,
     ${databuffet.functionData.cleanString('tax_id')} as tax_id,
     ${databuffet.functionData.cleanString('customer_id')} as customer_id,    

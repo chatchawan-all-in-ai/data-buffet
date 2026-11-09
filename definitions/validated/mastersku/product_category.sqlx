@@ -52,7 +52,7 @@ END;`;
 }
 
 SELECT
-  ${databuffet.functionData.cleanString('pc_id')} AS pc_id,
+  IFNULL(${databuffet.functionData.cleanString('pc_id')}, '') AS pc_id,
   ${databuffet.functionData.cleanString('pc_prod_id')} AS pc_prod_id,
   ${databuffet.functionData.cleanString('pc_cat_id')} AS pc_cat_id,
   ${databuffet.functionData.castBool('pc_is_ise')} AS pc_is_ise,

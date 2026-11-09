@@ -80,3 +80,41 @@ conversion scope and exceptions are owned by the [inventory](../project_wiki/dim
 ## ตาราง mds
 
 `mds_data_<entity>_master` — มี `id`, `is_active`, `updated_at` ทุกตาราง
+
+
+## Named exceptions retained for compatibility
+
+### File / action names
+
+Keep `curated/master_sku/product_for_aisearch_v3.sqlx`, `curated/mastersku/product_for_aisearch.sqlx`, `curated/saleout_mdt/curated_schema_saleout.sqlx`, and `validated/saleout_mdt/validated_schema_saleout.sqlx`; renaming changes the Dataform action name and its consumers.
+
+### Public columns
+
+#### Recent outputs
+
+Keep these established public names until their consumers can be migrated.
+
+- `curated/derp/curated_invoice_line_cost.sqlx`: `company_id`
+- `curated/derp/curated_journal_invoice.sqlx`: `company_id`
+- `fact/fact_saleout_mdt.sqlx`: `sale_date`, `store_code`, `branch_sk`, `zone_sk`, `product_mdt_sk`, `product_sk`, `product_mkt_sk`, `report_sk`, `region_sk`, `region_manager_sk`, `director_sk`, `doc_type`, `doc_type_source`, `sale_qty`, `sale_amount`, `days_covered`, `date_is_estimated`, `branch_code`, `product_code`
+- `fact/fact_saleout_monthly_mdt.sqlx`: `store_code`, `branch_code`, `month_date`, `sales_channel`, `product_code`, `product_name`, `branch_sk`, `zone_sk`, `product_mdt_sk`, `product_sk`, `product_mkt_sk`, `report_sk`, `region_sk`, `region_manager_sk`, `director_sk`, `sale_qty`, `sale_amount`
+- `fact/fact_target_saleout_mdt.sqlx`: `target_date`, `store_code`, `branch_sk`, `zone_sk`, `product_mkt_sk`, `region_sk`, `region_manager_sk`, `director_sk`, `marketing_group_id`, `marketing_group_name`, `sub_marketing_id`, `sub_marketing_name`, `segment_id`, `segment_name`, `target_amt`, `target_qty`, `target_year`, `target_month`, `days_in_month`, `branch_code`, `mds_id`
+- `fact/fact_target_series_mdt.sqlx`: `target_date`, `store_code`, `branch_sk`, `zone_sk`, `series_sk`, `region_sk`, `region_manager_sk`, `director_sk`, `series_code`, `series_name`, `target_amt`, `target_qty`, `target_year`, `target_month`, `days_in_month`, `branch_code`, `mds_id`
+- `fact/fact_transcation.sqlx`: `companyID`, `milDay`, `milMonth`, `milYear`, `milType`, `milVnos`, `milStk`, `memoextract`, `milDep`, `milCus`, `milPer`, `milListno`, `milJob`, `milSum`, `milDesc`, `mihdesc`
+
+#### Legacy outputs
+
+Keep these long-lived public names for downstream, report, and source compatibility; rename only with a consumer migration.
+
+- `curated/mac5/curated_mih.sqlx`: `company_id`, `mihstatus_desc`
+- `curated/mac5/curated_mil.sqlx`: `company_id`, `percent_sale`
+- `curated/mac5/curated_tbook_quotation.sqlx`: `company_id`, `ID`, `Running`, `Atten`, `Address`, `SDate`, `Project`, `TelePhone`, `Sale`, `PriceValidity`, `TermDelivery`, `TermPayment`, `UInsert`, `DInsert`, `UUpdate`, `Dupdate`, `Agent1`, `Agent2`, `Period`, `Position`, `Vat`, `Disc`, `ExtraSum`, `ExtraDesc`, `DateStart1`, `DateEnd1`, `DateStart2`, `DateEnd2`, `CashStatus`, `Note`, `NoteForApp`, `MemoForApp`, `Rev`, `TypeCus`, `Channel`, `Channel2`, `TypePrice`, `FOB`, `Cancel`, `AppType`, `TypeDeb`, `SaleDep`, `TypeProject`, `SelectStatus`, `ConpoStatus`, `Lat`, `Long`, `MapNote`, `FileUpload`, `City`, `RdoSend`, `CustomerName`, `CustomerTelePhone`, `CustomerAddress`, `CheckNote`, `TextNote`, `StatusSpread`, `ChkBox`, `FobStt`, `QuotationRef`, `CustomerId`, `CustomerGroup`, `QuotationId`, `EStatus`, `Area`, `District`, `PostCode`, `QtStepPrice`, `ExtraDis`
+- `curated/saleout_mdt/curated_eom_bt.sqlx`: `month_date`, `branch_code`, `product_code`, `product_name`, `sale_qty`, `sale_amount`, `store_code`
+- `curated/saleout_mdt/curated_eom_gb.sqlx`: `month_date`, `branch_code`, `branch_name`, `product_code`, `product_name`, `doc_type`, `sale_qty`, `sale_amount`, `store_code`
+- `curated/saleout_mdt/curated_eom_hp.sqlx`: `month_date`, `store_code`, `branch_code`, `branch_name`, `product_code`, `product_name`, `sale_qty`, `sale_amount`
+- `curated/saleout_mdt/curated_eom_tw.sqlx`: `month_date`, `branch_code`, `product_code`, `product_name`, `barcode_match`, `sale_qty`, `sale_amount`, `store_code`
+- `curated/saleout_mdt/curated_saleout_mdt.sqlx`: `branch_code`, `branch_name`, `product_code`, `product_name`, `barcode_match`, `sale_qty`, `sale_amount`, `doc_type`, `doc_type_source`, `days_covered`, `date_is_estimated`, `sale_date`, `store_code`
+- `curated/saleout_mdt/curated_saleout_monthly_mdt.sqlx`: `month_date`, `store_code`, `product_code`, `branch_code`, `branch_name`, `product_name`, `sale_qty`, `sale_amount`, `source_type`, `sales_channel`
+- `curated/saleout_mdt/curated_stock_mdt.sqlx`: `stock_date`, `store_code`, `branch_code`, `product_code`, `product_name`, `onhand_qty`, `onhand_amt`, `onorder_qty`
+- `fact/fact_stock_mdt.sqlx`: `stock_date`, `store_code`, `branch_sk`, `zone_sk`, `product_mdt_sk`, `product_sk`, `product_mkt_sk`, `onhand_qty`, `onhand_amt`, `onorder_qty`, `branch_code`, `product_code`
+- `fact/fact_stock_mdt_monthly.sqlx`: `store_code`, `snapshot_date`, `onhand_qty`, `month_end`, `is_month_end`, `branch_sk`, `zone_sk`, `product_mdt_sk`, `product_sk`, `product_mkt_sk`, `onhand_amt`, `onorder_qty`, `branch_code`, `product_code`
