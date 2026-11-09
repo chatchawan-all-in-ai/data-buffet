@@ -592,6 +592,7 @@ flowchart LR
   crm_nd_sd_price --> dim_price
   crm_nd_sd_price --> dim_price_tier
   curated_product --> product_for_aisearch
+  dim_company --> dim_price
   dim_company --> dim_price_channel
   dim_company --> dim_product_master
   dim_company --> dim_product_master_fc
@@ -607,6 +608,7 @@ flowchart LR
   dim_company --> fact_quotation
   dim_company --> fact_transaction_delivery
   dim_price --> dim_price_tier
+  dim_product_master --> dim_price
   dim_product_master --> dim_pump_information
   dim_product_master --> fact_backlog_store
   dim_product_master --> fact_invoice_store

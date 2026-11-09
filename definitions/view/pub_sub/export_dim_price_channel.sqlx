@@ -1,0 +1,84 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "dim_price_channel"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of every data column from dimension_table.dim_price_channel, plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const DimPriceChannelTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_price_channel",
+    };
+    const DimPriceChannelTableRef = `${DimPriceChannelTable.database}.${DimPriceChannelTable.schema}.${DimPriceChannelTable.name}`;
+}
+
+WITH src AS (
+  SELECT
+    PriceChannelSK,
+    MasterSalesChannelID,
+    SalesChannelCode,
+    SalesChannelName,
+    Description,
+    Status,
+    Level,
+    OrderSort,
+    ParentID,
+    ParentPriceChannelSK,
+    PathID,
+    PathCode,
+    PathName,
+    CompanyCode,
+    OrganizationCode,
+    CompanySK,
+    SourceUpdatedAt,
+    SourceAsatdate,
+    asatdate
+  FROM `${DimPriceChannelTableRef}`
+)
+SELECT
+  s.PriceChannelSK,
+  s.MasterSalesChannelID,
+  s.SalesChannelCode,
+  s.SalesChannelName,
+  s.Description,
+  s.Status,
+  s.Level,
+  s.OrderSort,
+  s.ParentID,
+  s.ParentPriceChannelSK,
+  s.PathID,
+  s.PathCode,
+  s.PathName,
+  s.CompanyCode,
+  s.OrganizationCode,
+  s.CompanySK,
+  s.SourceUpdatedAt,
+  s.SourceAsatdate,
+  s.asatdate,
+  TO_JSON_STRING(STRUCT(s.MasterSalesChannelID)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(
+    s.PriceChannelSK,
+    s.MasterSalesChannelID,
+    s.SalesChannelCode,
+    s.SalesChannelName,
+    s.Description,
+    s.Status,
+    s.Level,
+    s.OrderSort,
+    s.ParentID,
+    s.ParentPriceChannelSK,
+    s.PathID,
+    s.PathCode,
+    s.PathName,
+    s.CompanyCode,
+    s.OrganizationCode,
+    s.CompanySK,
+    s.SourceUpdatedAt,
+    s.SourceAsatdate,
+    s.asatdate
+  ))) AS row_hash
+FROM src AS s

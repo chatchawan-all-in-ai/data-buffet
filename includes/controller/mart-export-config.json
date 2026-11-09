@@ -562,6 +562,36 @@
       ]
     },
     {
+      "table_name": "dim_price",
+      "source_view": "export_dim_price",
+      "topic": "export-ta-dim_price",
+      "task_group": "master",
+      "trigger_scheduler": "daily_process",
+      "source_tables": [
+        "dimension_table.dim_price"
+      ]
+    },
+    {
+      "table_name": "dim_price_tier",
+      "source_view": "export_dim_price_tier",
+      "topic": "export-ta-dim_price_tier",
+      "task_group": "master",
+      "trigger_scheduler": "daily_process",
+      "source_tables": [
+        "dimension_table.dim_price_tier"
+      ]
+    },
+    {
+      "table_name": "dim_price_channel",
+      "source_view": "export_dim_price_channel",
+      "topic": "export-ta-dim_price_channel",
+      "task_group": "master",
+      "trigger_scheduler": "daily_process",
+      "source_tables": [
+        "dimension_table.dim_price_channel"
+      ]
+    },
+    {
       "table_name": "dim_section_last",
       "source_view": "export_dim_section_last",
       "topic": "export-ta-dim_section_last",

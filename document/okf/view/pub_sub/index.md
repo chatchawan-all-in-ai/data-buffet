@@ -1,6 +1,6 @@
 # pub_sub
 
-54 cards in BigQuery dataset `pub_sub`.
+57 cards in BigQuery dataset `pub_sub`.
 
 # Tables
 
@@ -18,6 +18,9 @@
 * [export_dim_customer_segment](export_dim_customer_segment.md) - One row = one customer segment, exposed for the Pub/Sub export of dimension_table.dim_customer_segment with row_key and row_hash.
 * [export_dim_doctype](export_dim_doctype.md) - One row = one document type code of a company, exposed for the Pub/Sub export of dimension_table.dim_doctype with row_key and row_hash.
 * [export_dim_payment](export_dim_payment.md) - One row = one payment method code of a company, exposed for the Pub/Sub export of dimension_table.dim_payment with row_key and row_hash.
+* [export_dim_price](export_dim_price.md) - One row = one D-ERP price sheet, exposed for the Pub/Sub export of dimension_table.dim_price with row_key and row_hash.
+* [export_dim_price_channel](export_dim_price_channel.md) - One row = one D-ERP sales channel, exposed for the Pub/Sub export of dimension_table.dim_price_channel with row_key and row_hash.
+* [export_dim_price_tier](export_dim_price_tier.md) - One row = one ND, SD1, SD2, SD3 or BIGPRO tier of a D-ERP price sheet, exposed for the Pub/Sub export of dimension_table.dim_price_tier with row_key and row_hash.
 * [export_dim_product_master_fc](export_dim_product_master_fc.md) - One row = one product of the finance product master, by barcode, exposed for the Pub/Sub export of dimension_table.dim_product_master_fc with row_key and row_hash.
 * [export_dim_product_series](export_dim_product_series.md) - One row = one product series, exposed for the Pub/Sub export of dimension_table.dim_product_series with row_key and row_hash.
 * [export_dim_project](export_dim_project.md) - One row = one project profile, exposed for the Pub/Sub export of dimension_table.dim_project with row_key and row_hash.

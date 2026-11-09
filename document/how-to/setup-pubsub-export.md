@@ -143,7 +143,7 @@ bash pubsub/scripts/setup.sh
 3. สร้าง service accounts `datamart-publish-trigger`, `datamart-publish-checker` และ
    `datamart-publisher` — **ไม่สร้าง key**
 4. ต่อทุกตารางใน [`mart-export-config.json`](../../includes/controller/mart-export-config.json):
-   topic (`export-commission-<ชุด>` สำหรับ 12 ชุด และ `export-ta-<ตาราง>` สำหรับ 9 ตาราง TA org กับ 33 ตารางตัวอย่าง AI), dead-letter topic (`<topic>-dead-letter`) และสิทธิ์ publisher
+   topic (`export-commission-<ชุด>` สำหรับ 12 ชุด และ `export-ta-<ตาราง>` สำหรับ 9 ตาราง TA org กับตารางตัวอย่าง AI), dead-letter topic (`<topic>-dead-letter`) และสิทธิ์ publisher
    ของ Pub/Sub service agent บน dead-letter topic · ไม่สร้าง subscription ทดสอบ · ตารางที่ไม่มี
    `task_group` หรือ `source_tables` ใน config ทำให้สคริปต์หยุด
    - dead-letter topic รับ dead letter ของทุก subscription ของทีมบน topic นั้น — subscription
@@ -618,13 +618,15 @@ topic: `export-ta-org_levels`, `export-ta-org_units`, `export-ta-positions`, `ex
 
 ---
 
-## ส่วน E — ตารางตัวอย่างของทีม AI (33 ตาราง)
+## ส่วน E — ตารางตัวอย่างของทีม AI (36 ตาราง)
 
-เพิ่ม 2026-11-03 · ทุกตารางที่ส่งให้ทีม AI เป็นตัวอย่างแล้ว (ชุด 26 ต.ค. 31 ตาราง, `rls_ta_customer`,
-`mds_data_ta_dashboard_display_control`) · 1 topic ต่อ 1 ตาราง ·
+ตัวอย่างครอบคลุมชุด 26 ต.ค. 31 ตาราง, `rls_ta_customer`, `mds_data_ta_dashboard_display_control`
+และมิติราคา D-ERP 3 ตาราง (`dim_price`, `dim_price_tier`, `dim_price_channel`) · 1 topic ต่อ 1 ตาราง ·
 อ่านจากตารางเดียวกัน ทั้งตาราง (ไม่ใช้ตัวกรองของตัวอย่าง) · เมื่อเปิดใช้งานจะส่งหลังรอบ `daily_process` ที่สำเร็จ ·
 รายชื่อ view และรายละเอียด schema, key และจำนวนแถวอยู่ใน
 [OKF export cards](../okf/view/pub_sub/index.md)
+
+topic ราคา: `export-ta-dim_price`, `export-ta-dim_price_tier`, `export-ta-dim_price_channel`.
 
 รายชื่อ topic อยู่ใน [`mart-export-config.json`](../../includes/controller/mart-export-config.json) ·
 ข้อจำกัดด้านปริมาณการเปลี่ยนแปลงและเพดาน publisher อยู่ใน
@@ -637,8 +639,8 @@ topic: `export-ta-org_levels`, `export-ta-org_units`, `export-ta-positions`, `ex
 ไม่สร้าง topic หรือ consumer และไม่ส่งข้อมูล · ขั้นตอนต่อไปนี้ใช้ภายหลังได้รับอนุมัติเปิดใช้งานเท่านั้น
 และ code ถึง `nonprod` แล้ว:
 
-1. รัน tag `pub_sub` ตาม [ขั้น deploy](../project_wiki/cdc-process/process.md#deploy) — สร้าง 33 view และเพิ่ม 33 แถว config ที่ `seeded_at` เป็น NULL
-2. `bash pubsub/scripts/setup.sh` — สร้าง 33 topic + dead-letter topic, ให้สิทธิ์ publisher อ่าน 33 view
+1. รัน tag `pub_sub` ตาม [ขั้น deploy](../project_wiki/cdc-process/process.md#deploy) — สร้าง 36 view และเพิ่ม 36 แถว config ที่ `seeded_at` เป็น NULL
+2. `bash pubsub/scripts/setup.sh` — สร้าง 36 topic + dead-letter topic, ให้สิทธิ์ publisher อ่าน 36 view
    (authorized view บนทุก dataset ในสายของ view นั้น) แล้ว dry-run `SELECT` ของแต่ละ export view ในนาม publisher
 3. ต่อทีม AI ด้วย `add-consumer.sh <ทีม> <topic>...` และโหลดครั้งแรกด้วย `export-snapshot.sh` ในวันที่กัปตันกำหนด
    (ส่วน B) — จนกว่าจะ seed publisher ข้ามทุก topic

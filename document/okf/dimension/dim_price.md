@@ -14,15 +14,15 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/dimension/inventory.md"
     title: "Data Mart wiki (document/project_wiki/dimension/inventory.md)"
-generated: { by: "agent:codex", at: "2026-11-09T11:52:48+07:00" }
+generated: { by: "agent:codex", at: "2026-11-09T14:42:02+07:00" }
 status: draft
 ---
 
 # What it is
 
-D-ERP price-sheet header and base ND price attributes intended for lookup from `fact_order`, `fact_quotation` and `view_fact_transcation` by `ProductSK` and document date. The source has no company and its `product_barcode` is empty. The current action always writes NULL to `ProductSK`, `CompanySK` and `ProductMatchCount`, and `UNKNOWN` to both resolution statuses; it does not implement company or product matching. The source `Status` is retained without filtering. See the [order-quantity lookup example](dim_price_tier.md#examples) for the selection rule and current mapping limitation.
+D-ERP price-sheet header and base ND price attributes intended for lookup from `fact_order`, `fact_quotation` and `view_fact_transcation` by `ProductSK`, `CompanySK` and document date. The source has no company and its `product_barcode` is empty; this dimension assigns the known D-ERP source scope to ag01. A unique product-code match in ag01 resolves `ProductSK`; unmatched or ambiguous codes keep it NULL. The source `Status` is retained without filtering. See the [order-quantity lookup example](dim_price_tier.md#examples) for the selection rule and mapping behavior.
 
-Read by: [dim_price_tier](dim_price_tier.md).
+Read by: [dim_price_tier](dim_price_tier.md), [export_dim_price](../view/pub_sub/export_dim_price.md).
 
 # Grain and key
 
@@ -37,11 +37,11 @@ One row = one `nd_sd_price_id`. Natural key: `NdSdPriceID`. `PriceSK` is retaine
 | `ProductID` | STRING | Product identifier from the price sheet. |
 | `ProductCode` | STRING | Product code from the price sheet. |
 | `ProductBarcode` | STRING | Product barcode from the price sheet. |
-| `ProductSK` | INT64 | Product key placeholder; always NULL in the current action. |
-| `CompanySK` | INT64 | Company key placeholder; always NULL in the current action. |
-| `ProductMatchCount` | INT64 | Candidate-count placeholder; always NULL in the current action. |
-| `CompanyResolutionStatus` | STRING | Company mapping state; always `UNKNOWN` in the current action. |
-| `ProductResolutionStatus` | STRING | Product mapping state; always `UNKNOWN` in the current action. |
+| `ProductSK` | INT64 | Stable product key for a unique ag01 `ProductCode` match; NULL when unmatched or ambiguous. |
+| `CompanySK` | INT64 | Stable company key for ag01, the known D-ERP source scope. |
+| `ProductMatchCount` | INT64 | Number of ag01 product rows matching the lower-cased `ProductCode`; zero means unmatched. |
+| `CompanyResolutionStatus` | STRING | `RESOLVED` for the asserted ag01 company mapping. |
+| `ProductResolutionStatus` | STRING | `RESOLVED` for one match, `AMBIGUOUS` for multiple matches, or `UNMATCHED` for no match. |
 | `EffectiveFrom` | DATE | First date the source sheet is effective. |
 | `ExpiryTo` | DATE | Last effective date; NULL remains NULL. |
 | `Status` | STRING | Source sheet status; all source statuses are retained. |
@@ -63,5 +63,6 @@ One row = one `nd_sd_price_id`. Natural key: `NdSdPriceID`. `PriceSK` is retaine
 
 - Definition: `definitions/dimension/dim_price.sqlx` (`type: "operations"`, `hasOutput: true`, tag `dimension_daily`).
 - Reads the complete `${ref(databuffet.VALIDATED_DERP, "crm_nd_sd_price")}` snapshot and retains every source `Status`.
-- No company is inferred from product codes. `ListPriceExclVat` and `ListPriceVatRate` stay as source values; no VAT value is filled.
+- Before modifying price rows, asserts exactly one ag01 company row with a non-NULL `CompanySK`; the company scope comes from `databuffet.PRICE_SOURCE_COMPANY_CODE` ([registry](../../project_wiki/includes/variables.md#source-company-scope)).
+- Resolves the company to ag01 and matches product codes against `dim_product_master` within ag01, case-insensitively. A product SK is assigned only for exactly one match; `ListPriceExclVat` and `ListPriceVatRate` stay as source values.
 - Synchronizes by `NdSdPriceID`: matching rows keep `PriceSK`, new rows receive `MAX(PriceSK) + ROW_NUMBER()`, and missing source rows are deleted.

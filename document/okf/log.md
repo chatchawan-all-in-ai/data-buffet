@@ -2,6 +2,7 @@
 
 ## 2026-11-09 (D-ERP price dimensions)
 
+* **Update**: Added Pub/Sub export views and OKF cards for the three D-ERP price dimensions, resolved ag01 company and unique product matches in `dim_price`, and updated the related OKF cards and indexes.
 * **Creation**: Added OKF cards for `dim_price`, `dim_price_tier` and `dim_price_channel`, plus their dimension index and inventory entries.
 
 ## 2026-11-09 (Group A contracts)

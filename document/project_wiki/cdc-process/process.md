@@ -129,7 +129,7 @@ runs** — see "Deploy" below:
 | `mart_sent_state.sqlx` | `process_dataset.mart_sent_state` | One row per data row sent. `CREATE TABLE IF NOT EXISTS`, cluster `table_name, row_key`. Schema and writers in its OKF card (linked below) |
 | `pub_sub/pub_sub_schema.sqlx` | dataset `pub_sub` (tags `view` + `pub_sub`) | `CREATE SCHEMA IF NOT EXISTS ... OPTIONS(location=REGION)`, the same bootstrap as `validated_schema_*` / `cdc_schema`. `definitions/pub_sub/` is the layer folder for future shaping tables before Pub/Sub |
 | `view/pub_sub/export_<table>.sqlx` × 9 | `pub_sub.export_<table>` (views, tags `view` + `pub_sub`) | TA app org tables for the AI team (below): the columns of the org sample sent 2026-11-02, `row_key`, `row_hash` |
-| `view/pub_sub/export_<table>.sqlx` × 33 | `pub_sub.export_<table>` (views, tags `view` + `pub_sub`) | AI team sample tables (below): schemas and keys in the [OKF export index](../../okf/view/pub_sub/index.md) |
+| `view/pub_sub/export_<table>.sqlx` × 36 | `pub_sub.export_<table>` (views, tags `view` + `pub_sub`) | AI team sample tables (below): schemas and keys in the [OKF export index](../../okf/view/pub_sub/index.md) |
 | `view/pub_sub/export_<set>.sqlx` × 12 | `pub_sub.export_<set>` (views, tags `view` + `pub_sub`) | Commission sets for TF (below): the columns of the sample sent to TF on 2026-10-14, `row_key`, `row_hash` |
 
 **Commission sets for the TF team** (company ag01; added 2026-11-02).
@@ -182,9 +182,10 @@ the next successful `daily_process` run.
 
 ### AI team sample tables
 
-Added 2026-11-03. One export view per table already sent to the AI team as
-sample data: the 31 tables of the 2026-10-26 package, `rls_ta_customer` (rls sample) and
-`mds_data_ta_dashboard_display_control` (dashboard display control). `table_name` = the BigQuery table name in
+One export view per AI team sample table: the 31 tables of the 2026-10-26 package,
+`rls_ta_customer` (rls sample), `mds_data_ta_dashboard_display_control` (dashboard display control),
+and the three D-ERP price dimensions `dim_price`, `dim_price_tier` and `dim_price_channel`.
+`table_name` = the BigQuery table name in
 lower case; view-based topics omit the leading `view_` from that name. Topic routing and triggers are owned by
 [`mart-export-config.json`](../../../includes/controller/mart-export-config.json). Except for the company export linked below, columns, names and order follow the
 sample CSV header, read from the same source for the whole table (the sample filters are not applied), so they
@@ -194,10 +195,13 @@ rules and migration scope are owned by the
 columns plus `occurrence` (position of the row among rows with the same key, ordered by their data JSON).
 The company export schema is owned by its [OKF card](../../okf/view/pub_sub/export_view_dim_company.md#schema).
 
+Price mapping, including the ambiguous and unmatched cases, is owned by the
+[dim_price card](../../okf/dimension/dim_price.md); the
+[quantity lookup example](../../okf/dimension/dim_price_tier.md#examples) shows the product and tier joins.
 The [OKF export index](../../okf/view/pub_sub/index.md) links to each view's authoritative
 schema, source and key. Deployment is deferred until the AI team has tested
 the samples; the stopping point and future activation procedure are owned by
-[setup guide, section E](../../how-to/setup-pubsub-export.md#ส่วน-e--ตารางตัวอย่างของทีม-ai-33-ตาราง).
+[setup guide, section E](../../how-to/setup-pubsub-export.md#ส่วน-e--ตารางตัวอย่างของทีม-ai-36-ตาราง).
 
 Measured 2026-11-02 against the limits of the Cloud Workflows publisher the Cloud Run jobs replace (about
 41,000 rows per execution shared by every table; first loads go through GCS files): daily changed rows (NEW + UPDATE + DELETE, two
@@ -213,7 +217,7 @@ The send job is sized for these volumes: about 7.9 million messages in a normal 
 and `dim_pump_information`), up to about 20 million in the worst night (when the SKs of
 `dim_target_product_group_by_sale_dayofwork`, 12.7 million rows, all move). A night that does not
 finish within the time limit of one send run is finished by the following check runs (see "Send job").
-Deploying the 42 export views still held back follows the cutover to the Cloud Run publisher.
+Deploying the 45 export views still held back follows the cutover to the Cloud Run publisher.
 
 The authoritative table schemas and writer contracts are in the OKF cards for
 [`mart_export_config`](../../okf/process/mart_export_config.md#schema) and

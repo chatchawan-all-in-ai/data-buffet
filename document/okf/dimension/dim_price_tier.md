@@ -22,6 +22,8 @@ status: draft
 
 The ND, SD1, SD2, SD3 and BIGPRO tiers unpivoted from each D-ERP price sheet. `PriceSK` links to [dim_price](dim_price.md). Empty price fields are not eligible prices. VAT basis is `unverified` when a tier has a source price and `missing` when both source price fields are empty. Quantity rule status is `confirmed` when `MinQty` is present, `unverified` when only `MaxQty` is present, and `missing` when no usable range is supplied; BIGPRO has no quantity range.
 
+Read by: [export_dim_price_tier](../view/pub_sub/export_dim_price_tier.md).
+
 # Grain and key
 
 One row = one (`NdSdPriceID`, `TierCode`) pair. `TierCode` is one of `ND`, `SD1`, `SD2`, `SD3` or `BIGPRO`. Natural key: (`NdSdPriceID`, `TierCode`). `PriceTierSK` is retained for a matching natural key and new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed.
@@ -74,6 +76,7 @@ WITH order_product_quantity AS (
     q.milVnos,
     q.milStk,
     product.ProductSK,
+    product.CompanySK,
     PARSE_DATE('%Y%m%d', CONCAT(
       header.mihYear, FORMAT('%02d', header.mihMonth), FORMAT('%02d', header.mihDay)
     )) AS DocumentDate,
@@ -102,6 +105,7 @@ SELECT
 FROM order_product AS q
 JOIN `databuffet-nonprd.dimension_table.dim_price` AS p
   ON p.ProductSK = q.ProductSK
+  AND p.CompanySK = q.CompanySK
   AND q.DocumentDate BETWEEN p.EffectiveFrom AND IFNULL(p.ExpiryTo, DATE '9999-12-31')
   AND p.Status = 'ACTIVE'
 JOIN `databuffet-nonprd.dimension_table.dim_price_tier` AS tier
@@ -111,4 +115,4 @@ JOIN `databuffet-nonprd.dimension_table.dim_price_tier` AS tier
   AND COALESCE(tier.PriceInclVat, tier.PriceExclVat) IS NOT NULL;
 ```
 
-The quantity is summed from `curated_mac5.curated_mil` PS lines with `milUprice > 0`, grouped by `company_id`, `milVnos` and `milStk`, before any dimension joins. Resolve `ProductSK` by company and product code, and use the PS header date from `curated_mac5.curated_mih` for price validity; partial billings and their dates do not change the order quantity or date used here. Match the price sheet by `ProductSK` and order document date, then apply the quantity range. This lookup reads NULL `MaxQty` as no upper bound, pending confirmation from D-ERP. BIGPRO has no `MinQty`, so it does not match this quantity-range lookup. An empty tier price is not eligible. Price sheets currently have NULL `ProductSK`, so this lookup returns no matches until company-confirmed product mapping is available.
+The quantity is summed from `curated_mac5.curated_mil` PS lines with `milUprice > 0`, grouped by `company_id`, `milVnos` and `milStk`, before any dimension joins. Resolve `ProductSK` by company and product code, and use the PS header date from `curated_mac5.curated_mih` for price validity; partial billings and their dates do not change the order quantity or date used here. Match the price sheet by `ProductSK`, `CompanySK` and order document date, then apply the quantity range. This lookup reads NULL `MaxQty` as no upper bound, pending confirmation from D-ERP. BIGPRO has no `MinQty`, so it does not match this quantity-range lookup. An empty tier price is not eligible. If `ProductResolutionStatus` is `AMBIGUOUS` or `UNMATCHED`, `ProductSK` remains NULL and the sheet cannot join by product SK until the mapping is resolved; do not choose one candidate.

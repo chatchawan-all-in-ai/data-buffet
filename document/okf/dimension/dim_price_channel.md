@@ -22,6 +22,8 @@ status: draft
 
 D-ERP sales-channel master with the source hierarchy and a self-lookup parent key. This source is separate from the MDS channel dimension and has no relationship to `view_dim_channel`. `CompanySK` is populated only when the source `CompanyCode` maps to one company in [dim_company](dim_company.md).
 
+Read by: [export_dim_price_channel](../view/pub_sub/export_dim_price_channel.md).
+
 # Grain and key
 
 One row = one `master_sales_channel_id`. Natural key: `MasterSalesChannelID`. `PriceChannelSK` is retained for a matching natural key and new keys are allocated after the current maximum. Rows absent from the complete source snapshot are removed. `ParentPriceChannelSK` looks up `ParentID` within the same complete source snapshot.

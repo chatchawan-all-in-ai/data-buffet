@@ -2,11 +2,23 @@ config {
   type: "operations",
   hasOutput: true,
   schema: databuffet.DIMENSION_TABLE,
-  dependencies: [],
+  dependencies: ["dim_company", "dim_product_master"],
   tags: [databuffet.TAG_DIM_DAILY],
 }
 
 js {
+    const DimCompanyTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_company",
+    };
+    const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
+    const DimProductMasterTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_product_master",
+    };
+    const DimProductMasterTableRef = `${DimProductMasterTable.database}.${DimProductMasterTable.schema}.${DimProductMasterTable.name}`;
     const DimPriceTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -33,18 +45,44 @@ js {
 BEGIN
   DECLARE max_sk INT64 DEFAULT 0;
 
+  -- D-ERP source holds ag01 only.
+  ASSERT (
+    SELECT COUNT(*) = 1 AND COUNTIF(CompanySK IS NOT NULL) = 1
+    FROM `${DimCompanyTableRef}`
+    WHERE CompanyID = '${databuffet.PRICE_SOURCE_COMPANY_CODE}'
+  ) AS 'dim_price requires one price-source company key';
+
   CREATE TEMP TABLE stable_sk_source_snapshot AS (
+    WITH company_source AS (
+      SELECT CompanySK
+      FROM `${DimCompanyTableRef}`
+      WHERE CompanyID = '${databuffet.PRICE_SOURCE_COMPANY_CODE}'
+    ), product_match_candidates AS (
+      SELECT
+        LOWER(ProductCode) AS ProductCodeMatchKey,
+        COUNT(*) AS ProductMatchCount,
+        IF(COUNT(*) = 1, ANY_VALUE(ProductSK), CAST(NULL AS INT64)) AS ProductSK
+      FROM `${DimProductMasterTableRef}`
+      WHERE companyID = '${databuffet.PRICE_SOURCE_COMPANY_CODE}'
+        AND ProductCode IS NOT NULL
+        AND ProductCode != ''
+      GROUP BY ProductCodeMatchKey
+    )
     SELECT
       ROW_NUMBER() OVER(ORDER BY t1.nd_sd_price_id) AS PriceSK,
       t1.nd_sd_price_id AS NdSdPriceID,
       t1.product_id AS ProductID,
       t1.product_code AS ProductCode,
       t1.product_barcode AS ProductBarcode,
-      CAST(NULL AS INT64) AS ProductSK,
-      CAST(NULL AS INT64) AS CompanySK,
-      CAST(NULL AS INT64) AS ProductMatchCount,
-      'UNKNOWN' AS CompanyResolutionStatus,
-      'UNKNOWN' AS ProductResolutionStatus,
+      product_match_candidates.ProductSK,
+      company_source.CompanySK,
+      COALESCE(product_match_candidates.ProductMatchCount, 0) AS ProductMatchCount,
+      'RESOLVED' AS CompanyResolutionStatus,
+      CASE
+        WHEN product_match_candidates.ProductMatchCount = 1 THEN 'RESOLVED'
+        WHEN product_match_candidates.ProductMatchCount > 1 THEN 'AMBIGUOUS'
+        ELSE 'UNMATCHED'
+      END AS ProductResolutionStatus,
       t1.effective_from AS EffectiveFrom,
       t1.expiry_to AS ExpiryTo,
       t1.status AS Status,
@@ -62,6 +100,9 @@ BEGIN
       t1.asatdate AS SourceAsatdate,
       CURRENT_DATE('Asia/Bangkok') AS asatdate
     FROM ${ref(databuffet.VALIDATED_DERP, "crm_nd_sd_price")} AS t1
+    CROSS JOIN company_source
+    LEFT JOIN product_match_candidates
+      ON LOWER(t1.product_code) = product_match_candidates.ProductCodeMatchKey
   );
 
   ASSERT NOT EXISTS (

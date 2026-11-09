@@ -63,6 +63,12 @@ Map source system → folder under `gs://file-raw-data`:
 `mac5_gps`, `mastersku`, `master_sku` (`GCS_MASTER_SKU`), `cis360`, `saleout_mdt`,
 `allkons_commission`, `derp_temp` (`GCS_DERP` — DERP; a temp-sounding name that may change).
 
+## Source company scope
+
+| Constant | Value | Purpose |
+|---|---|---|
+| `PRICE_SOURCE_COMPANY_CODE` | `ag01` | D-ERP source holds ag01 only; shared by the `dim_price` company assertion, company lookup, and product matching |
+
 ## MAC5 multi-company note
 
 MAC5 has **5 company instances** (ag01, aa05, ab01, ac02, ak02), each with its own raw

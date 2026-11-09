@@ -1,0 +1,72 @@
+config {
+    type: "view",
+    schema: databuffet.PUB_SUB,
+    dependencies: ["pub_sub_schema", "dim_price_tier"],
+    // TAG_VIEW like every view; TAG_PUB_SUB deploys it with the rest of the Pub/Sub export objects
+    tags: [databuffet.TAG_VIEW, databuffet.TAG_PUB_SUB],
+    description: "Pub/Sub export of every data column from dimension_table.dim_price_tier, plus row_key (primary_key of the message) and row_hash (fingerprint of the message data)",
+}
+
+js {
+    const DimPriceTierTable = {
+        database: databuffet.DATABASE,
+        schema: databuffet.DIMENSION_TABLE,
+        name: "dim_price_tier",
+    };
+    const DimPriceTierTableRef = `${DimPriceTierTable.database}.${DimPriceTierTable.schema}.${DimPriceTierTable.name}`;
+}
+
+WITH src AS (
+  SELECT
+    PriceTierSK,
+    PriceSK,
+    NdSdPriceID,
+    TierCode,
+    MinQty,
+    MaxQty,
+    Rate,
+    RateType,
+    PriceInclVat,
+    PriceExclVat,
+    VatRate,
+    VatBasisStatus,
+    QuantityRuleStatus,
+    SourceAsatdate,
+    asatdate
+  FROM `${DimPriceTierTableRef}`
+)
+SELECT
+  s.PriceTierSK,
+  s.PriceSK,
+  s.NdSdPriceID,
+  s.TierCode,
+  s.MinQty,
+  s.MaxQty,
+  s.Rate,
+  s.RateType,
+  s.PriceInclVat,
+  s.PriceExclVat,
+  s.VatRate,
+  s.VatBasisStatus,
+  s.QuantityRuleStatus,
+  s.SourceAsatdate,
+  s.asatdate,
+  TO_JSON_STRING(STRUCT(s.NdSdPriceID, s.TierCode)) AS row_key,
+  FARM_FINGERPRINT(TO_JSON_STRING(STRUCT(
+    s.PriceTierSK,
+    s.PriceSK,
+    s.NdSdPriceID,
+    s.TierCode,
+    s.MinQty,
+    s.MaxQty,
+    s.Rate,
+    s.RateType,
+    s.PriceInclVat,
+    s.PriceExclVat,
+    s.VatRate,
+    s.VatBasisStatus,
+    s.QuantityRuleStatus,
+    s.SourceAsatdate,
+    s.asatdate
+  ))) AS row_hash
+FROM src AS s

@@ -78,7 +78,8 @@ JavaScript-generated actions are outside that diagram's scope.
 | **Org center** | `definitions/org_center/` | Who sits in which unit and position, plus TA customer portfolios and special access exceptions, rebuilt nightly (`dimension_daily`); see the [Org Center reference](document/project_wiki/org_center/org-center.md) for tables, sources, PC → TA links, plan codes, company names, and data-quality flags |
 | **Process** | `definitions/process/` | AI address parsing + row-level security (see the [process reference](document/project_wiki/cdc-process/process.md), including TA customer access) + [Pub/Sub exports](document/project_wiki/cdc-process/process.md#pubsub-export) |
 
-The Pub/Sub export covers 12 commission datasets for TF, nine org-center tables of the TA app and 33 sample tables for the AI team.
+The Pub/Sub export covers 12 commission datasets for TF, nine org-center tables of the TA app and the AI team’s sample tables, including the D-ERP price dimensions.
+The export inventory is defined in [mart-export-config.json](includes/controller/mart-export-config.json).
 Dataform objects live here, with the publishing Cloud Run jobs (check + send) and their idempotent
 GCP setup script in `pubsub/`, deployed by hand.
 See the [setup and message guide](document/how-to/setup-pubsub-export.md).

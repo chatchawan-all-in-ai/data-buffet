@@ -53,6 +53,8 @@
     "VALIDATED_ALLKONS_COMMISSION" : "validated_allkons_commission",
     "RAW_ALLKONS_COMMISSION" : "raw_allkons_commission",
 
+    "PRICE_SOURCE_COMPANY_CODE": "ag01",
+
     "RAW_DERP": "raw_derp",
     "VALIDATED_DERP": "validated_derp",
     "CURATED_DERP": "curated_derp",
