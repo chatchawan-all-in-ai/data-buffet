@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-10 (price export calculated field)
+
+* **Update**: Refreshed the [price export schema](view/pub_sub/export_dim_price.md#schema) for its calculated field and row hash.
+
 ## 2026-11-09 (D-ERP CRM tables)
 
 * **Creation**: Added raw and validated cards for five CRM tables; refreshed DERP indexes and source inventory.

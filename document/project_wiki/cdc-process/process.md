@@ -190,13 +190,15 @@ One export view per AI team sample table: the 31 tables of the 2026-10-26 packag
 and the three D-ERP price dimensions `dim_price`, `dim_price_tier` and `dim_price_channel`.
 `table_name` = the BigQuery table name in
 lower case; view-based topics omit the leading `view_` from that name. Topic routing and triggers are owned by
-[`mart-export-config.json`](../../../includes/controller/mart-export-config.json). Except for the company export linked below, columns, names and order follow the
+[`mart-export-config.json`](../../../includes/controller/mart-export-config.json). Except for the company and price exports linked below, columns, names and order follow the
 sample CSV header, read from the same source for the whole table (the sample filters are not applied), so they
 keep the SK columns of the sample. Dimension SKs remain stable for matching natural keys; current fact row-key
 rules and migration scope are owned by the
 [coding standard](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). Where a table has no unique business key the key is the business
 columns plus `occurrence` (position of the row among rows with the same key, ordered by their data JSON).
 The company export schema is owned by its [OKF card](../../okf/view/pub_sub/export_view_dim_company.md#schema).
+The price export schema, including its calculated field, is owned by its
+[OKF card](../../okf/view/pub_sub/export_dim_price.md#schema).
 
 Price mapping, including the ambiguous and unmatched cases, is owned by the
 [dim_price card](../../okf/dimension/dim_price.md); the

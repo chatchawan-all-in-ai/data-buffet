@@ -48,6 +48,7 @@ One row = one D-ERP price sheet. Natural key: `NdSdPriceID`; `row_key` is the JS
 | `ListPriceVatRate` | FLOAT64 | Source `list_price_vat_rate`; kept as supplied. |
 | `FloorPct` | FLOAT64 | Source floor percentage or amount. |
 | `FloorPriceInclVat` | FLOAT64 | Source floor price inclusive of VAT. |
+| `FloorPriceExclVat` | FLOAT64 | Calculated in the view as floor price with VAT removed using `ListPriceVatRate`; no rate is treated as 0%. |
 | `FloorRateType` | STRING | Source floor rule type. |
 | `NdMinQty` | INT64 | Source ND minimum quantity. |
 | `NdMaxQty` | INT64 | Source ND maximum quantity. |
@@ -57,7 +58,7 @@ One row = one D-ERP price sheet. Natural key: `NdSdPriceID`; `row_key` is the JS
 | `SourceAsatdate` | DATE | Source snapshot date. |
 | `asatdate` | DATE | Bangkok date on which the dimension action runs. |
 | `row_key` | STRING | JSON of `NdSdPriceID`, used as the message `primary_key`; never NULL. |
-| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of all 26 data columns, i.e. exactly the message `data`. |
+| `row_hash` | INT64 | `FARM_FINGERPRINT` of the JSON of all 27 data columns, i.e. exactly the message `data`. |
 
 # Price joins
 
