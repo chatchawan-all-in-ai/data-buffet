@@ -164,8 +164,8 @@ bash pubsub/scripts/setup.sh
    `task_group` หรือ `source_tables` ใน config ทำให้สคริปต์หยุด
    - dead-letter topic รับ dead letter ของทุก subscription ของทีมบน topic นั้น — subscription
      ของทีมและ `dlq.<ทีม>.<topic>` ที่เก็บ dead letter สร้างตอนต่อทีมด้วย `add-consumer.sh` (ส่วน B)
-   - dataset staging `pubsub_staging` (ตารางหมดอายุใน 1 วัน เก็บผล diff ของแต่ละตาราง) และ dataset
-     `pubsub_record` ที่มีตาราง `messages` (partition ตาม `publish_time`, เก็บ 14 วัน) · ต่อ topic
+   - dataset staging `pubsub_staging` (ตารางหมดอายุใน 1 วัน เก็บผล diff ของแต่ละตาราง) และตาราง
+     `pub_sub.pubsub_record` (partition ตาม `publish_time`, เก็บ 14 วัน) · ต่อ topic
      ละ 1 **record subscription** `rec.datamart.<topic>` ชนิด BigQuery เขียนลงตารางเดียวกัน
      (write metadata, ไม่มี dead-letter) — ต้องมีก่อน job ส่งส่งข้อความแรก เพราะ subscription แบบ
      BigQuery บันทึกเฉพาะข้อความหลังสร้าง · ใช้กู้สถานะเมื่อรอบก่อนล่ม
@@ -191,7 +191,7 @@ bash pubsub/scripts/setup.sh
    | `roles/monitoring.viewer` | project | ดู backlog ของ record subscription ก่อนกู้สถานะ |
    | `roles/pubsub.viewer` | record subscription แต่ละตัว | อ่าน message retention เพื่อตรวจว่าข้อความที่ต้องกู้ยังไม่หมดอายุ |
    | `roles/bigquery.dataEditor` | ตาราง `mart_export_config`, `mart_sent_state` และ dataset `pubsub_staging` เท่านั้น | อ่าน config, claim, MERGE sent state, สร้างตาราง staging |
-   | `roles/bigquery.dataViewer` | export view แต่ละตัวใน config (`pub_sub.export_<ตาราง>`) และตาราง `pubsub_record.messages` | diff query ผ่าน export view โดยใช้ authorized-dataset entries ข้างต้น ไม่มีสิทธิ์ตรงบนตารางต้นทาง · อ่านตารางบันทึก |
+   | `roles/bigquery.dataViewer` | export view แต่ละตัวใน config (`pub_sub.export_<ตาราง>`) และตาราง `pub_sub.pubsub_record` | diff query ผ่าน export view โดยใช้ authorized-dataset entries ข้างต้น ไม่มีสิทธิ์ตรงบนตารางต้นทาง · อ่านตารางบันทึก |
    | `roles/pubsub.publisher` | topic ของแต่ละชุดเท่านั้น | publish |
    | `roles/secretmanager.secretAccessor` | secret `slack-datamart-dataform` เท่านั้น | อ่าน webhook |
 
@@ -201,13 +201,13 @@ bash pubsub/scripts/setup.sh
    `roles/secretmanager.secretAccessor` บน secret Slack, และ `roles/run.invoker` + `roles/run.viewer`
    บน job `datamart-publish-send` เท่านั้น (สั่งรัน + ดูว่ายังมี execution ค้างอยู่ไหม — ไม่สั่งซ้อน)
    · `datamart-publish-trigger` ได้ `roles/run.invoker` บน job `datamart-publish-check` เท่านั้น · Pub/Sub
-   service agent ได้ `roles/bigquery.dataEditor` บนตาราง `pubsub_record.messages`
+   service agent ได้ `roles/bigquery.dataEditor` บนตาราง `pub_sub.pubsub_record`
    · สิทธิ์ที่กว้างกว่าซึ่งสคริปต์รุ่นก่อนให้ไว้ (`roles/dataform.viewer` ระดับ project,
    `roles/bigquery.dataViewer` บนตารางต้นทาง) ถูกถอดออกทุกครั้งที่รัน ถ้ายังมีอยู่
 7. build image ด้วย Cloud Build เข้า Artifact Registry repository `cloud-run-source-deploy` ที่มีอยู่แล้ว
    (ไม่สร้าง repository ใหม่ ไม่มี IAM เพิ่ม · tag = hash ของไฟล์ ถ้าโค้ดไม่เปลี่ยนไม่ build ซ้ำ) แล้ว deploy
    job `datamart-publish-send` (5 task, parallelism 5, timeout 30 นาที, retry 0, 2 vCPU / 4 GiB)
-   และ `datamart-publish-check` (1 task, timeout 5 นาที, retry 0, 1 vCPU / 512 MiB) ใน `us-central1`
+   พร้อมตั้ง `RECORD_TABLE=pub_sub.pubsub_record` และ `datamart-publish-check` (1 task, timeout 5 นาที, retry 0, 1 vCPU / 512 MiB) ใน `us-central1`
    แล้วสร้าง/อัปเดต Scheduler job `datamart-publish-check-every-5m` (`*/5 * * * *`, Asia/Bangkok)
    ที่เรียก job ตรวจด้วย OAuth ของ `datamart-publish-trigger` · Scheduler ที่สร้างใหม่จะ **หยุดไว้ (paused)**
    จนกว่าจะรัน `setup.sh --enable-scheduler` — เปิดหลังลบ Scheduler ของตัวส่งเดิมเท่านั้น

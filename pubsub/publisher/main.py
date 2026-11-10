@@ -32,7 +32,7 @@ PROJECT = os.environ.get("PROJECT_ID", "databuffet-nonprd")
 BQ_LOCATION = os.environ.get("BQ_LOCATION", "us-central1")
 DATASET = os.environ.get("BQ_DATASET", "process_dataset")
 STAGING_DATASET = os.environ.get("STAGING_DATASET", "pubsub_staging")
-RECORD_TABLE = os.environ.get("RECORD_TABLE", "pubsub_record.messages")
+RECORD_TABLE = os.environ.get("RECORD_TABLE", "pub_sub.pubsub_record")
 RECORD_SUB_PREFIX = os.environ.get("RECORD_SUB_PREFIX", "rec.datamart.")
 DATAFORM_REPO = os.environ.get(
     "DATAFORM_REPO", f"projects/{PROJECT}/locations/us-central1/repositories/data-buffet")

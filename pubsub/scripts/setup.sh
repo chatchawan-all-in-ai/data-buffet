@@ -48,8 +48,8 @@ IMAGE_NAME=datamart-publisher
 # Staging (diff result per table, 1-day table expiration) and the record of what Pub/Sub accepted
 # (one table written by every record subscription, partitioned by publish_time).
 STAGING_DATASET=pubsub_staging
-RECORD_DATASET=pubsub_record
-RECORD_TABLE=messages
+RECORD_DATASET=pub_sub
+RECORD_TABLE=pubsub_record
 RECORD_RETENTION_DAYS=14
 RECORD_SUB_PREFIX=rec.datamart.
 # Project custom role holding only the permissions the publisher identities use on Dataform.
@@ -563,7 +563,7 @@ log "Cloud Run jobs ($REGION)"
 gcloud run jobs deploy "$SEND_JOB" --project="$PROJECT" --region="$REGION" --image="$image_uri" \
   --service-account="$publisher_sa" --tasks="$SEND_TASKS" --parallelism="$SEND_TASKS" \
   --task-timeout=30m --max-retries=0 --cpu=2 --memory=4Gi --args=send \
-  --set-env-vars="PROJECT_ID=$PROJECT"
+  --set-env-vars="PROJECT_ID=$PROJECT,RECORD_TABLE=$RECORD_DATASET.$RECORD_TABLE"
 gcloud run jobs deploy "$CHECK_JOB" --project="$PROJECT" --region="$REGION" --image="$image_uri" \
   --service-account="$checker_sa" --tasks=1 --parallelism=1 \
   --task-timeout=5m --max-retries=0 --cpu=1 --memory=512Mi --args=check \

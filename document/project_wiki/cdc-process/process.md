@@ -301,9 +301,8 @@ values. Invalid scheduling config fails the task. Per table:
    than the claim, so it never exports a table the publisher may already have taken over.)
 3. **Recovery** - only when the row's claim was expired rather than empty, i.e. the previous
    run on this table died. What Pub/Sub accepted is what the **record subscription**
-   `rec.datamart.<topic>` (BigQuery type, one per topic, all writing
-   `pubsub_record.messages`, partitioned by `publish_time`, kept 14 days, no dead-letter)
-   wrote. The task waits until the backlog of that subscription is 0, takes the messages
+   wrote (storage and subscription setup: [setup guide, A3](../../how-to/setup-pubsub-export.md#a3-รัน-setupsh)).
+   The task waits until the backlog of that subscription is 0, takes the messages
    published since the dead claim started, de-duplicates them by `message_id` (the record is
    at-least-once), keeps the newest message per `row_key` and MERGEs `row_key` / the
    fingerprint of the message `data` text (NULL for DELETE) into `mart_sent_state`. If the
