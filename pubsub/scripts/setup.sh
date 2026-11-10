@@ -229,25 +229,103 @@ print(json.dumps({"policy": policy}))
   echo "  $2 on Dataform repository $DATAFORM_REPO ($DATAFORM_LOCATION)"
 }
 
-# Adds pub_sub.<view> to the access list of <dataset>, so the view reads that dataset for its readers.
-authorize_view() { # <dataset> <view>
-  local dataset_json
-  dataset_json="$(mktemp)"
-  bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$1" |
-    "$python_bin" -c '
+# Adds the export and inner-view datasets as VIEWS on the fixed base-dataset set.
+authorize_datasets() {
+  local dataset_names dataset_json target source
+  local -a target_datasets=() available_authorized_datasets=()
+  local -A present=() selected=()
+  local -a authorized_datasets=(pub_sub dimension_view fact_view process_dataset onetime)
+
+  dataset_names="$("$python_bin" -c '
+import json, subprocess, sys
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+
+token = subprocess.check_output(["gcloud", "auth", "print-access-token"], text=True).strip()
+url = "https://bigquery.googleapis.com/bigquery/v2/projects/" + sys.argv[1] + "/datasets"
+params = {"maxResults": 1000}
+while True:
+    request = Request(url + "?" + urlencode(params), headers={"Authorization": "Bearer " + token})
+    with urlopen(request) as response:
+        page = json.load(response)
+    if page.get("unreachable"):
+        sys.exit("setup.sh: dataset discovery failed; unreachable locations: " + ", ".join(page["unreachable"]))
+    for dataset in page.get("datasets", []):
+        print(dataset["datasetReference"]["datasetId"])
+    if not page.get("nextPageToken"):
+        break
+    params["pageToken"] = page["nextPageToken"]
+' "$PROJECT")"
+  while IFS= read -r source; do
+    [ -n "$source" ] && present["$source"]=1
+  done <<< "$dataset_names"
+
+  while IFS= read -r target; do
+    case "$target" in
+      validated_*|curated_*)
+        target_datasets+=("$target")
+        selected["$target"]=1
+        ;;
+    esac
+  done <<< "$dataset_names"
+  for target in dimension_table dimension_view fact_table fact_view mds_dataset org_center \
+    function_dataset process_dataset onetime; do
+    if [ -z "${selected[$target]:-}" ]; then
+      target_datasets+=("$target")
+      selected["$target"]=1
+    fi
+  done
+
+  for source in "${authorized_datasets[@]}"; do
+    if [ -z "${present[$source]:-}" ]; then
+      echo "  authorized dataset $source does not exist; related entries skipped"
+    else
+      available_authorized_datasets+=("$source")
+    fi
+  done
+
+  for target in "${target_datasets[@]}"; do
+    if [ -z "${present[$target]:-}" ]; then
+      echo "  dataset $target does not exist; skipping authorized-dataset entries"
+      continue
+    fi
+    local -a target_sources=()
+    for source in "${available_authorized_datasets[@]}"; do
+      [ "$source" = "$target" ] || target_sources+=("$source")
+    done
+
+    dataset_json="$(mktemp)"
+    bq --project_id="$PROJECT" show --format=prettyjson "$PROJECT:$target" |
+      "$python_bin" -c '
 import json, sys
+project, *authorized = sys.argv[1:]
 dataset = json.load(sys.stdin)
-view = {"projectId": sys.argv[1], "datasetId": "pub_sub", "tableId": sys.argv[2]}
 access = dataset.setdefault("access", [])
-if all(a.get("view") != view for a in access):
-    access.append({"view": view})
+changed = False
+for dataset_id in authorized:
+    exists = any(
+        (entry.get("dataset") or {}).get("dataset", {}).get("datasetId") == dataset_id
+        and (entry.get("dataset") or {}).get("dataset", {}).get("projectId") in (None, project)
+        and "VIEWS" in (entry.get("dataset") or {}).get("targetTypes", [])
+        for entry in access
+    )
+    if not exists:
+        access.append({"dataset": {
+            "dataset": {"projectId": project, "datasetId": dataset_id},
+            "targetTypes": ["VIEWS"],
+        }})
+        changed = True
+if changed:
     print(json.dumps(dataset))
-' "$PROJECT" "$2" > "$dataset_json"
-  if [ -s "$dataset_json" ]; then
-    bq --project_id="$PROJECT" update --source="$dataset_json" "$PROJECT:$1" >/dev/null
-  fi
-  rm -f "$dataset_json"
-  echo "  pub_sub.$2 authorized on dataset $1"
+' "$PROJECT" "${target_sources[@]}" > "$dataset_json"
+    if [ -s "$dataset_json" ]; then
+      bq --project_id="$PROJECT" update --source="$dataset_json" "$PROJECT:$target" >/dev/null
+      echo "  authorized-dataset entries added on $target"
+    else
+      echo "  authorized-dataset entries already present on $target"
+    fi
+    rm -f "$dataset_json"
+  done
 }
 
 ensure_topic() {
@@ -436,17 +514,11 @@ grant_bq "$BQ_DATASET.mart_export_config" roles/bigquery.dataEditor
 grant_bq "$BQ_DATASET.mart_sent_state" roles/bigquery.dataEditor
 grant_dataset_writer "$STAGING_DATASET" "$publisher_sa"
 grant_bq "$RECORD_DATASET.$RECORD_TABLE" roles/bigquery.dataViewer
-# Read on the export view only; the view is authorized on its base tables' datasets.
-declare -A view_datasets=()
-while IFS=$'\t' read -r table_name source_view _topic _source_tables; do
+# Read on each export view only; authorized-dataset entries grant views access to base datasets.
+while IFS=$'\t' read -r _table_name source_view _topic _source_tables; do
   grant_bq "pub_sub.$source_view" roles/bigquery.dataViewer
-  for base in ${SOURCE_TABLES[$table_name]}; do
-    view_datasets["${base%%.*} $source_view"]=1
-  done
 done <<< "$export_tables"
-for dataset_view in "${!view_datasets[@]}"; do
-  authorize_view "${dataset_view% *}" "${dataset_view#* }"
-done
+authorize_datasets
 while IFS=$'\t' read -r table_name _source_view _topic _source_tables; do
   for base in ${SOURCE_TABLES[$table_name]}; do
     # Routines (function_dataset) have no table IAM policy: only tables and views carry an old grant to remove.

@@ -171,6 +171,18 @@ bash pubsub/scripts/setup.sh
      BigQuery บันทึกเฉพาะข้อความหลังสร้าง · ใช้กู้สถานะเมื่อรอบก่อนล่ม
 5. ให้สิทธิ์แบบ least privilege กับ `datamart-publisher` (job ส่ง — สิทธิ์เท่าที่ใช้จริงเท่านั้น):
 
+   `setup.sh` เพิ่ม authorized-dataset entries ระดับ dataset (`targetTypes: VIEWS`) ให้ views ใน
+   `pub_sub` และ inner view datasets `dimension_view`, `fact_view`, `process_dataset`, `onetime`
+   บนทุก dataset ชื่อ `validated_*` / `curated_*` ใน project และ `dimension_table`, `dimension_view`,
+   `fact_table`, `fact_view`, `mds_dataset`, `org_center`, `function_dataset`, `process_dataset`,
+   `onetime` (ข้าม dataset ของ inner view เอง) โดยเพิ่มเฉพาะ entry ที่ยังไม่มีและไม่ลบ entry เดิม
+   dataset นอก allowlist นี้ไม่ได้รับ authorization · สคริปต์อ่าน inventory ให้ครบทุกหน้าก่อนเพิ่ม
+   authorized-dataset entries และหยุดหาก discovery ล้มเหลวหรือมี `unreachable` ที่ไม่ว่าง
+   หาก source หรือ target dataset ไม่มีอยู่ จะข้าม entries ที่เกี่ยวข้องพร้อมแจ้งข้อความ
+   export view ใหม่จึงต้องการเพียง `roles/bigquery.dataViewer` บน view นั้น หาก view อ่าน base dataset
+   นอกชุดนี้ ให้เพิ่ม dataset ใน allowlist ของ `setup.sh` แล้วรันซ้ำ หรือเพิ่ม authorized-dataset
+   entries แบบเดียวกันด้วยมือ
+
    | Role | ขอบเขต | ใช้ทำ |
    |---|---|---|
    | custom role `datamartPublishDataformReader` (`dataform.workflowInvocations.list`, `dataform.workflowInvocations.query`) | Dataform repository `data-buffet` (`us-central1`) เท่านั้น | list workflow invocations + query actions |
@@ -179,7 +191,7 @@ bash pubsub/scripts/setup.sh
    | `roles/monitoring.viewer` | project | ดู backlog ของ record subscription ก่อนกู้สถานะ |
    | `roles/pubsub.viewer` | record subscription แต่ละตัว | อ่าน message retention เพื่อตรวจว่าข้อความที่ต้องกู้ยังไม่หมดอายุ |
    | `roles/bigquery.dataEditor` | ตาราง `mart_export_config`, `mart_sent_state` และ dataset `pubsub_staging` เท่านั้น | อ่าน config, claim, MERGE sent state, สร้างตาราง staging |
-   | `roles/bigquery.dataViewer` | export view แต่ละตัวใน config (`pub_sub.export_<ตาราง>`) และตาราง `pubsub_record.messages` | diff query — view เป็น **authorized view** บน dataset ของตารางต้นทาง (ตาม `source_tables` ใน config) จึงอ่านได้เฉพาะคอลัมน์ที่ export โดยไม่มีสิทธิ์บนตารางต้นทาง · อ่านตารางบันทึก |
+   | `roles/bigquery.dataViewer` | export view แต่ละตัวใน config (`pub_sub.export_<ตาราง>`) และตาราง `pubsub_record.messages` | diff query ผ่าน export view โดยใช้ authorized-dataset entries ข้างต้น ไม่มีสิทธิ์ตรงบนตารางต้นทาง · อ่านตารางบันทึก |
    | `roles/pubsub.publisher` | topic ของแต่ละชุดเท่านั้น | publish |
    | `roles/secretmanager.secretAccessor` | secret `slack-datamart-dataform` เท่านั้น | อ่าน webhook |
 
@@ -578,7 +590,7 @@ serialize ทุกการเขียนต่อ `(table, primary_key)` เ�
    การสร้างตาราง config และ backfill ดู [config reference](../okf/process/mart_export_config.md#how-it-is-built)
    ตรวจ prerequisite ของ `setup.sh` ตาม [A3](#a3-รัน-setupsh)
 2. `bash pubsub/scripts/setup.sh` — สร้าง 12 topic + dead-letter topic + record subscription, ให้สิทธิ์ publisher อ่าน 12 view
-   (authorized view บน `validated_mac5` และ `dimension_table`) และ deploy job ตรวจ/job ส่งที่รู้จัก `trigger_scheduler`
+   และเพิ่ม authorized-dataset entries ตาม A3 แล้ว deploy job ตรวจ/job ส่งที่รู้จัก `trigger_scheduler`
 3. ```bash
    bash pubsub/scripts/add-consumer.sh tf-prd export-commission-order export-commission-invoice export-commission-credit_note export-commission-debit_note export-commission-receipt export-commission-chqri export-commission-status export-commission-company export-commission-sell export-commission-warehouse export-commission-stk export-commission-company_source
    ```
@@ -622,7 +634,7 @@ topic: `export-ta-org_levels`, `export-ta-org_units`, `export-ta-positions`, `ex
 1. รัน tag `pub_sub` ตาม [ขั้น deploy](../project_wiki/cdc-process/process.md#deploy) — สร้าง 9 view และเพิ่ม 9 แถว config
    ที่ `seeded_at` เป็น NULL (ไม่ต้องรัน `org_center_unit` ใหม่: คอลัมน์ `region_code` มีอยู่แล้ว)
 2. `bash pubsub/scripts/setup.sh` — สร้าง 9 topic + dead-letter topic, ให้สิทธิ์ publisher อ่าน 9 view
-   (authorized view บน dataset `org_center` และ `mds_dataset` สำหรับ `export_employees`)
+   และเพิ่ม authorized-dataset entries ตาม A3
 3. ต่อทีม AI ด้วย `add-consumer.sh <ทีม> <topic>...` และโหลดครั้งแรกด้วย `export-snapshot.sh` ในวันที่กัปตันกำหนด
    (ส่วน B) — จนกว่าจะ seed publisher ข้ามทั้ง 9 topic
 
@@ -662,6 +674,6 @@ topic ราคา: `export-ta-dim_price`, `export-ta-dim_price_tier`, `export-t
 
 1. รัน tag `pub_sub` ตาม [ขั้น deploy](../project_wiki/cdc-process/process.md#deploy) — สร้าง 36 view และเพิ่ม 36 แถว config ที่ `seeded_at` เป็น NULL
 2. `bash pubsub/scripts/setup.sh` — สร้าง 36 topic + dead-letter topic, ให้สิทธิ์ publisher อ่าน 36 view
-   (authorized view บนทุก dataset ในสายของ view นั้น) แล้ว dry-run `SELECT` ของแต่ละ export view ในนาม publisher
+   และเพิ่ม authorized-dataset entries ตาม A3 แล้ว dry-run `SELECT` ของแต่ละ export view ในนาม publisher
 3. ต่อทีม AI ด้วย `add-consumer.sh <ทีม> <topic>...` และโหลดครั้งแรกด้วย `export-snapshot.sh` ในวันที่กัปตันกำหนด
    (ส่วน B) — จนกว่าจะ seed publisher ข้ามทุก topic

@@ -399,9 +399,11 @@ first-load files into date folders), then run tag `pub_sub` to create the view a
 `mart_export_config` Dataform action to add its row and `send_order`. The row remains unseeded until
 its first manual Cloud Shell snapshot seeds state and writes files together. Re-run
 `pubsub/scripts/setup.sh`: it creates the topic, dead-letter topic and record subscription, grants
-the publisher read on the view only, and authorizes the view on its base tables' datasets (from
-`source_tables`). It also deploys the jobs, but a config-only change reuses the same image because
-the config JSON is not part of the image. Consumer teams get the new topic through
+the publisher read on the export view, and configures dataset authorizations as described in the
+[setup guide](../../how-to/setup-pubsub-export.md#a3-รัน-setupsh), which owns the authorization scope
+and the procedure for exports reading datasets outside it. It also deploys the jobs, but a
+config-only change reuses the same image because the config JSON is not part of the image.
+Consumer teams get the new topic through
 `pubsub/scripts/add-consumer.sh`. To remove a table, remove its JSON entry and run the
 `mart_export_config` action after its claims and recovery fields are clear. For existing exports,
 follow the config lifecycle and scoped AI-route migration above.

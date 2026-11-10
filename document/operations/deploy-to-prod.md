@@ -321,14 +321,14 @@ region `us-central1`) แล้ว copy SQL ไปสร้างใหม่ท
 | เรื่อง | ผลสำรวจ nonprd | ต้องทำที่ prd ไหม |
 |---|---|---|
 | Row access policy | **ไม่มีเลยสักตาราง** ทั้งโปรเจกต์ | ❌ ไม่ต้องทำ |
-| Authorized view | **ไม่มีเลย** | ❌ ไม่ต้องทำ |
-| Dataset ACL | มีแค่ WRITER ให้ Dataform service agent (`curated_*`, `validated_*`) และ OWNER ให้ compute SA (`mds_dataset`) — เป็นของที่ระบบใส่เอง | ❌ prd สร้างของตัวเองอัตโนมัติ |
-| **สิทธิ์ระดับ project (IAM)** | **นี่คือที่เดียวที่คุมสิทธิ์จริง** | ✅ **ต้องทำ — ดู Step 24** |
+| Pub/Sub view authorization | ผลสำรวจเดิมไม่ครอบคลุม Pub/Sub export ปัจจุบัน | ✅ ทำตาม [คู่มือ setup ส่วน A3](../how-to/setup-pubsub-export.md#a3-รัน-setupsh) |
+| Dataset ACL | WRITER ให้ Dataform service agent (`curated_*`, `validated_*`) และ OWNER ให้ compute SA (`mds_dataset`) เป็นของที่ระบบใส่เอง | prd สร้างสิทธิ์ระบบของตัวเองอัตโนมัติ; authorization ของ Pub/Sub export ให้ทำตามคู่มือข้างต้น |
+| **สิทธิ์ระดับ project (IAM)** | สิทธิ์ผู้ใช้ระดับ project | ✅ **ต้องทำ — ดู Step 24** |
 
 **ไปที่** (ถ้าอยากยืนยันด้วยตาเอง): BigQuery Studio (nonprd) → คลิก dataset ใดก็ได้ →
-**SHARING → Permissions** จะเห็นแค่ project-level role ปกติ ไม่มี principal แปลกปลอม
+**SHARING → Permissions** และตรวจ authorization ตามคู่มือ setup ข้างต้นสำหรับ Pub/Sub export
 
-**สรุป**: งานด้านสิทธิ์ทั้งหมดยุบเหลือ **step เดียวคือ Step 24** (เพิ่ม IAM ให้ผู้ใช้)
+สิทธิ์ผู้ใช้อยู่ที่ **Step 24**; สิทธิ์ Pub/Sub export ให้ทำตามคู่มือ setup ข้างต้น
 
 ---
 
