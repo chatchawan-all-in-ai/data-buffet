@@ -1,5 +1,9 @@
 # Directory Update Log
 
+## 2026-11-11 (product stable keys)
+
+* **Update**: Refreshed the [product contract](dimension/dim_product_master.md#grain-and-key), affected consumer cards and index pointers.
+
 ## 2026-11-10 (price export calculated field)
 
 * **Update**: Refreshed the [price export schema](view/pub_sub/export_dim_price.md#schema) for its calculated field and row hash.

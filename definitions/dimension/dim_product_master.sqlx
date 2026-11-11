@@ -1,11 +1,12 @@
 config {
   type: "operations",
+  hasOutput: true,
+  schema: databuffet.DIMENSION_TABLE,
   dependencies: ["dim_company", "dim_product_mkt", "dim_rebate", "dim_stk_mkt"],
   tags: [databuffet.TAG_DIM_DAILY],
 }
 
 js {
-    // Define table references
     const DimProductMasterTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -18,6 +19,8 @@ js {
         schema: databuffet.DIMENSION_TABLE,
         name: "dim_rebate",
     };
+    const DimRebateTableRef = `${DimRebateTable.database}.${DimRebateTable.schema}.${DimRebateTable.name}`;
+
     const DimStkMktTable = {
         database: databuffet.DATABASE,
         schema: databuffet.DIMENSION_TABLE,
@@ -39,148 +42,191 @@ js {
     };
     const DimCompanyTableRef = `${DimCompanyTable.database}.${DimCompanyTable.schema}.${DimCompanyTable.name}`;
 
+    const stableDimensionColumns = ['ProductSK', 'StkMktSK', 'ProductMktSK', 'CompanySK', 'companyID', 'ProductCode', 'ProductCode1', 'ProductMac5Description', 'ProductGroupMAC5', 'ProductGroupMac5Description', 'ProductGroupMAC5Type', 'ProductGroupACC', 'ProductGroupACCName', 'ProductName', 'ProductDescription', 'ProductDimension1', 'ProductDimension2', 'ProductDimension3', 'ProductDimension4', 'ProductGarantee', 'ProductGaranteeDetail', 'ThaiIndustrialStandardFlag', 'ThaiIndustrialSatandardDetail', 'BrandID', 'VendorID', 'WarehouseID', 'Barcode'];
+    const stableDimensionKeyColumns = ['CompanySK', 'ProductCode'];
+    const stableDimensionKeySql = stableDimensionKeyColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionOrderSql = stableDimensionKeyColumns.map((column) => `existing_row.\`${column}\``).join(", ");
+    const stableDimensionLookupCondition = stableDimensionKeyColumns.map((column) =>
+        `source_row.\`${column}\` IS NOT DISTINCT FROM target_row.\`${column}\``
+    ).join("\n      AND ");
+    const stableDimensionMergeCondition = 'T.`ProductSK` = S.`ProductSK`';
+    const stableDimensionUpdateSet = stableDimensionColumns
+        .filter((column) => !['ProductSK', 'CompanySK', 'ProductCode'].includes(column))
+        .map((column) => `T.\`${column}\` = S.\`${column}\``)
+        .join(",\n      ");
+    const stableDimensionInsertColumns = stableDimensionColumns.map((column) => `\`${column}\``).join(", ");
+    const stableDimensionInsertValues = stableDimensionColumns.map((column) => `S.\`${column}\``).join(", ");
 }
 
 BEGIN
-  DECLARE max_sk INT64;
-  SET max_sk = (SELECT IFNULL(MAX(ProductSK), 0) FROM `${DimProductMasterTableRef}`);
+  DECLARE max_sk INT64 DEFAULT 0;
 
-  MERGE `${DimProductMasterTableRef}` T
-  USING (
-    WITH stk_src AS (
-      SELECT * FROM ${ref(databuffet.VALIDATED_MAC5, "stk")}
-    ), stk AS (
-      SELECT * FROM stk_src
-      UNION ALL
-      -- dummy สินค้าที่ไม่มีรหัส MDT: โครงคอลัมน์จาก stk เอง คอลัมน์ที่ไม่ระบุ = NULL
-      SELECT s.* REPLACE ('ag01' AS company_id, code AS stkcode, 'รหัสสินค้าพิเศษสินค้าที่ไม่มีรหัสMDT' AS stkdesct1)
-      FROM UNNEST(['LYNNDIY005OTHERS', 'OTHERS099OTHERS', 'HOMEPUMP002OTHERS', 'PUMPPROJECT007OTHERS',
-                   'WATERHEATER009OTHERS', 'PE001OTHERS', 'LITETITE006OTHERS', 'WAITING999']) AS code
-      LEFT JOIN (SELECT * FROM stk_src WHERE FALSE) AS s ON TRUE
-    ), raw_data AS (
-      select
-        stk_mkt_sk.StkMktSK,
-        product_mk_sk.ProductMktSK,
-        dim_com.CompanySK,
-        dim_com.companyID,
-        a.stkcode as ProductCode ,
-        a.stkcode2 as ProductCode1,
-        a.stkdesct1 as ProductMac5Description,
-        g.stgcode as ProductGroupMAC5,
-        g.stgdesct as ProductGroupMac5Description,
-        g.stgdesce as ProductGroupMAC5Type,
-        g.gacccode as ProductGroupACC,
-        g.gaccname as ProductGroupACCName,
-        pd.pd_product_name as ProductName,
-        p.prd_description as ProductDescription,
-        p.prd_dimension1 as ProductDimension1 ,
-        p.prd_dimension2 as ProductDimension2,
-        p.prd_dimension3 as ProductDimension3,
-        p.prd_dimension4 as ProductDimension4,
-        pd.pd_garantee as ProductGarantee,
-        pd.pd_garantee_detail as ProductGaranteeDetail,
-        (case
-          when
-            pd.pd_certificate is not null
-              and pd.pd_certificate <> ''
-              and pd.pd_certificate <> 'โปรดระบุ'
-              and pd.pd_certificate <> '-'
-              and pd.pd_certificate <> 'None'
-              and pd.pd_certificate <> 'No'
-            then 'Yes'
-          else 'No'
-        end) as ThaiIndustrialStandardFlag,
-        pd.pd_certificate as ThaiIndustrialSatandardDetail,
-        p.prd_brand_id as BrandID,
-        p.prd_vendor_id as VendorID,
-        a.stksto as WarehouseID,
-        a.STKcode885 as Barcode
+  CREATE TEMP TABLE stable_sk_source_snapshot AS
+WITH stk_src AS (
+  SELECT * FROM ${ref(databuffet.VALIDATED_MAC5, "stk")}
+), stk AS (
+  SELECT * FROM stk_src
+  UNION ALL
+  -- dummy สินค้าที่ไม่มีรหัส MDT: โครงคอลัมน์จาก stk เอง คอลัมน์ที่ไม่ระบุ = NULL
+  SELECT s.* REPLACE ('ag01' AS company_id, code AS stkcode, 'รหัสสินค้าพิเศษสินค้าที่ไม่มีรหัสMDT' AS stkdesct1)
+  FROM UNNEST(['LYNNDIY005OTHERS', 'OTHERS099OTHERS', 'HOMEPUMP002OTHERS', 'PUMPPROJECT007OTHERS',
+               'WATERHEATER009OTHERS', 'PE001OTHERS', 'LITETITE006OTHERS', 'WAITING999']) AS code
+  LEFT JOIN (SELECT * FROM stk_src WHERE FALSE) AS s ON TRUE
+), raw_data AS (
+  select
+    stk_mkt_sk.StkMktSK,
+    product_mk_sk.ProductMktSK,
+    dim_com.CompanySK,
+    dim_com.companyID,
+    a.stkcode as ProductCode ,
+    a.stkcode2 as ProductCode1,
+    a.stkdesct1 as ProductMac5Description,
+    g.stgcode as ProductGroupMAC5,
+    g.stgdesct as ProductGroupMac5Description,
+    g.stgdesce as ProductGroupMAC5Type,
+    g.gacccode as ProductGroupACC,
+    g.gaccname as ProductGroupACCName,
+    pd.pd_product_name as ProductName,
+    p.prd_description as ProductDescription,
+    p.prd_dimension1 as ProductDimension1 ,
+    p.prd_dimension2 as ProductDimension2,
+    p.prd_dimension3 as ProductDimension3,
+    p.prd_dimension4 as ProductDimension4,
+    pd.pd_garantee as ProductGarantee,
+    pd.pd_garantee_detail as ProductGaranteeDetail,
+    (case
+      when
+        pd.pd_certificate is not null
+          and pd.pd_certificate <> ''
+          and pd.pd_certificate <> 'โปรดระบุ'
+          and pd.pd_certificate <> '-'
+          and pd.pd_certificate <> 'None'
+          and pd.pd_certificate <> 'No'
+        then 'Yes'
+      else 'No'
+    end) as ThaiIndustrialStandardFlag,
+    pd.pd_certificate as ThaiIndustrialSatandardDetail,
+    p.prd_brand_id as BrandID,
+    p.prd_vendor_id as VendorID,
+    a.stksto as WarehouseID,
+    a.STKcode885 as Barcode
 
-        from stk as a
-        left join ${ref(databuffet.VALIDATED_MAC5, "stg")} as g
-          on a.STKgroup = g.STGcode
-            and a.company_id = g.company_id
-        left join ${ref(databuffet.VALIDATED_MASTERSKU, "product")} as p
-          on a.STKcode885 = p.prd_barcode
-        left join ${ref(databuffet.VALIDATED_MASTERSKU, "product_detail")} as pd
-          on p.prd_id = pd.pd_prd_id
+    from stk as a
+    left join ${ref(databuffet.VALIDATED_MAC5, "stg")} as g
+      on a.STKgroup = g.STGcode
+        and a.company_id = g.company_id
+    left join ${ref(databuffet.VALIDATED_MASTERSKU, "product")} as p
+      on a.STKcode885 = p.prd_barcode
+    left join ${ref(databuffet.VALIDATED_MASTERSKU, "product_detail")} as pd
+      on p.prd_id = pd.pd_prd_id
 
-        -- left join `${DimRebateTableRef}` as pdr on a.stkcode = pdr.rebate and pdr.status = 'Product'
+    -- left join `${DimRebateTableRef}` as pdr on a.stkcode = pdr.rebate and pdr.status = 'Product'
 
-        left join `${DimStkMktTableRef}` as stk_mkt_sk
-          on a.stkcode = stk_mkt_sk.StkCode
-            and a.company_id = stk_mkt_sk.companyID
-        left join `${DimProductMktTableRef}` as product_mk_sk
-          on stk_mkt_sk.MarketingGroupID = product_mk_sk.MarketingGroupID
-            and stk_mkt_sk.SubMarketingID = product_mk_sk.SubMarketingID
-            and stk_mkt_sk.SegmentID = product_mk_sk.SegmentID
-            and stk_mkt_sk.companyID = product_mk_sk.companyID
-        left join `${DimCompanyTableRef}` as dim_com
-          on a.company_id = dim_com.companyID
-        qualify row_number() over(partition by dim_com.CompanySK, ProductCode order by prd_updated_date desc) = 1
+    left join `${DimStkMktTableRef}` as stk_mkt_sk
+      on a.stkcode = stk_mkt_sk.StkCode
+        and a.company_id = stk_mkt_sk.companyID
+    left join `${DimProductMktTableRef}` as product_mk_sk
+      on stk_mkt_sk.MarketingGroupID = product_mk_sk.MarketingGroupID
+        and stk_mkt_sk.SubMarketingID = product_mk_sk.SubMarketingID
+        and stk_mkt_sk.SegmentID = product_mk_sk.SegmentID
+        and stk_mkt_sk.companyID = product_mk_sk.companyID
+    left join `${DimCompanyTableRef}` as dim_com
+      on a.company_id = dim_com.companyID
+    qualify row_number() over(partition by dim_com.CompanySK, ProductCode order by prd_updated_date desc) = 1
 
+)
+  SELECT CAST(NULL AS INT64) AS ProductSK, source_row.*
+  FROM raw_data AS source_row;
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source_snapshot
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_master source natural key must be unique';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductMasterTableRef}`
+    WHERE `ProductSK` IS NULL
+  ) AS 'dim_product_master target surrogate key must not be NULL';
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM `${DimProductMasterTableRef}`
+    GROUP BY `ProductSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_master target surrogate key must be unique';
+
+  -- Existing duplicates retain the lowest persisted key; the full snapshot deletes the rest.
+  CREATE TEMP TABLE stable_sk_target_lookup AS
+  SELECT `CompanySK`, `ProductCode`, `ProductSK`
+  FROM `${DimProductMasterTableRef}`
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY `CompanySK`, `ProductCode`
+    ORDER BY `ProductSK`
+  ) = 1;
+
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_target_lookup
+    GROUP BY ${stableDimensionKeySql}
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_master target key lookup must be unique';
+
+  SET max_sk = COALESCE((
+    SELECT MAX(`ProductSK`)
+    FROM `${DimProductMasterTableRef}`
+  ), 0);
+
+  CREATE TEMP TABLE stable_sk_source AS
+  SELECT
+    allocated_row.* EXCEPT (stable_existing_sk, stable_new_sk_rank)
+    REPLACE (
+      COALESCE(
+        allocated_row.stable_existing_sk,
+        max_sk + allocated_row.stable_new_sk_rank
+      ) AS `ProductSK`
     )
+  FROM (
     SELECT
-      S.*,
-      ROW_NUMBER() OVER(PARTITION BY T.ProductSK IS NULL ORDER BY S.CompanySK, S.ProductCode) as ProductSK
-    FROM raw_data S
-    LEFT JOIN `${DimProductMasterTableRef}` T
-      ON S.ProductCode = T.ProductCode
-      AND IFNULL(S.Barcode, '') = IFNULL(T.Barcode, '')
-      AND S.CompanySK = T.CompanySK
+      existing_row.*,
+      ROW_NUMBER() OVER (
+        PARTITION BY (existing_row.stable_existing_sk IS NULL)
+        ORDER BY ${stableDimensionOrderSql}
+      ) AS stable_new_sk_rank
+    FROM (
+      SELECT
+        source_row.*,
+        target_row.`ProductSK` AS stable_existing_sk
+      FROM _SESSION.stable_sk_source_snapshot AS source_row
+      LEFT JOIN _SESSION.stable_sk_target_lookup AS target_row
+        ON ${stableDimensionLookupCondition}
+    ) AS existing_row
+  ) AS allocated_row;
 
-  ) S
-  ON T.ProductCode = S.ProductCode
-    AND IFNULL(T.Barcode, '') = IFNULL(S.Barcode, '')
-    AND T.CompanySK = S.CompanySK
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source
+    WHERE `ProductSK` IS NULL
+  ) AS 'dim_product_master source surrogate key must not be NULL';
 
+  ASSERT NOT EXISTS (
+    SELECT 1
+    FROM _SESSION.stable_sk_source
+    GROUP BY `ProductSK`
+    HAVING COUNT(*) > 1
+  ) AS 'dim_product_master source surrogate key must be unique';
+
+  MERGE `${DimProductMasterTableRef}` AS T
+  USING _SESSION.stable_sk_source AS S
+    ON ${stableDimensionMergeCondition}
   WHEN MATCHED THEN
     UPDATE SET
-      T.StkMktSK = S.StkMktSK,
-      T.ProductMktSK = S.ProductMktSK,
-      T.ProductCode1 = S.ProductCode1,
-      T.ProductMac5Description = S.ProductMac5Description,
-      T.ProductGroupMAC5 = S.ProductGroupMAC5,
-      T.ProductGroupMac5Description = S.ProductGroupMac5Description,
-      T.ProductGroupMAC5Type = S.ProductGroupMAC5Type,
-      T.ProductGroupACC = S.ProductGroupACC,
-      T.ProductGroupACCName = S.ProductGroupACCName,
-      T.ProductName = S.ProductName,
-      T.ProductDescription = S.ProductDescription,
-      T.ProductDimension1 = S.ProductDimension1,
-      T.ProductDimension2 = S.ProductDimension2,
-      T.ProductDimension3 = S.ProductDimension3,
-      T.ProductDimension4 = S.ProductDimension4,
-      T.ProductGarantee = S.ProductGarantee,
-      T.ProductGaranteeDetail = S.ProductGaranteeDetail,
-      T.ThaiIndustrialStandardFlag = S.ThaiIndustrialStandardFlag,
-      T.ThaiIndustrialSatandardDetail = S.ThaiIndustrialSatandardDetail,
-      T.BrandID = S.BrandID,
-      T.VendorID = S.VendorID,
-      T.WarehouseID = S.WarehouseID
-
+      ${stableDimensionUpdateSet}
   WHEN NOT MATCHED THEN
-    INSERT (
-      ProductSK, StkMktSK, ProductMktSK, CompanySK,
-      companyID,
-      ProductCode, ProductCode1, ProductMac5Description,
-      ProductGroupMAC5, ProductGroupMac5Description, ProductGroupMAC5Type,
-      ProductGroupACC, ProductGroupACCName, ProductName, ProductDescription,
-      ProductDimension1, ProductDimension2, ProductDimension3, ProductDimension4,
-      ProductGarantee, ProductGaranteeDetail, ThaiIndustrialStandardFlag,
-      ThaiIndustrialSatandardDetail, BrandID, VendorID,
-      WarehouseID, Barcode
-    )
-    VALUES (
-      max_sk + ProductSK, S.StkMktSK, S.ProductMktSK, S.CompanySK,
-      S.companyID,
-      S.ProductCode, S.ProductCode1, S.ProductMac5Description,
-      S.ProductGroupMAC5, S.ProductGroupMac5Description, S.ProductGroupMAC5Type,
-      S.ProductGroupACC, S.ProductGroupACCName, S.ProductName, S.ProductDescription,
-      S.ProductDimension1, S.ProductDimension2, S.ProductDimension3, S.ProductDimension4,
-      S.ProductGarantee, S.ProductGaranteeDetail, S.ThaiIndustrialStandardFlag,
-      S.ThaiIndustrialSatandardDetail, S.BrandID, S.VendorID,
-      S.WarehouseID, S.Barcode
-    );
-
+    INSERT (${stableDimensionInsertColumns})
+    VALUES (${stableDimensionInsertValues})
+  WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
 END;

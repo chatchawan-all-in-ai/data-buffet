@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T23:54:24+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-11T18:33:42+07:00" }
 status: draft
 ---
 
@@ -26,13 +26,13 @@ Read by: [Product_Master_ALL](/view/onetime/Product_Master_ALL.md) and [export_p
 
 # Grain and key
 
-One row = one (`stk` row, matching `dim_product_master` row, matching MASTERSKU product row) combination for company `ag01`: intended key `ProductSK` (not unique). Each `stk` row with a non-empty `STKcode885` barcode joins every `dim_product_master` row with the same company and `ProductCode` (`ProductSK IS NOT NULL`); the join omits barcode, so one `ProductCode` can have several `ProductSK` values. `product` is joined by barcode (`prd_barcode`) and `product_detail` by `prd_id`, so one barcode can match several rows. The series join falls back to the `OTHERS` series when the series name is missing or not in `dim_product_series`.
+One row = one (`stk` row, matching `dim_product_master` row, matching MASTERSKU product row) combination for company `ag01`: intended key `ProductSK` (not unique). Each `stk` row with a non-empty `STKcode885` barcode joins every `dim_product_master` row with the same company and `ProductCode` (`ProductSK IS NOT NULL`); the source dimension grain is owned by the [product card](/dimension/dim_product_master.md#grain-and-key). `product` is joined by barcode (`prd_barcode`) and `product_detail` by `prd_id`, so one barcode can match several rows. The series join falls back to the `OTHERS` series when the series name is missing or not in `dim_product_series`.
 
 # Schema
 
 | Column | Type | Description |
 |---|---|---|
-| `ProductSK` | INT64 | SK of a matching `dim_product_master` row (stable MERGE dim). Matching uses company + `ProductCode`, without barcode; one code can match several SKs. |
+| `ProductSK` | INT64 | SK of a matching `dim_product_master` row (stable MERGE dim). Matching uses company + `ProductCode`, without barcode; see the [source grain](/dimension/dim_product_master.md#grain-and-key). |
 | `CompanySK` | INT64 | SK of `dim_company` for ag01. |
 | `SeriesSK` | INT64 | SK of `dim_product_series` for the product's series name; products whose series is missing or not in the dim fall to the `OTHERS` series. |
 | `SeriesCode` | STRING | Code of that series (`dim_product_series.SeriesCode`). |

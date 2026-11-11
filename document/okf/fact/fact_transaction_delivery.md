@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "fact_transaction_delivery"
-description: "One row = the invoiced totals of one product on one IS invoice (company, date, invoice number, customer) per matched ProductSK, for the last four years; retained barcode versions repeat the measures."
+description: "One row = the invoiced totals of one product on one IS invoice (company, date, invoice number, customer) per matched ProductSK, for the last four years."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_transaction_delivery&page=table"
 project_id: databuffet-nonprd
 dataset_id: fact_table
@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-08T22:57:16+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-11T18:33:42+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [fact_delivery](/fact/fact_delivery.md), [export_fact_transaction_deliv
 
 # Grain and key
 
-One row = the invoiced totals of one product on one IS invoice (company, date, `milvnos`, customer) per matched ProductSK: key `FactTransDeliverySK` (see [Schema](#schema) for key generation); the group-by also includes InvoiceSK and ProductSK. The INNER JOIN to `dim_invoice` drops lines without a matching invoice; the invoice join matches every InvoiceSK for the same company, date, type, invoice number and customer, regardless of linked order. The company + case-insensitive product-code join matches every retained barcode version; each InvoiceSK/ProductSK group repeats the source measures. FactTransDeliverySK is an expanded-row key, not a unique invoice/product total. Window: invoice date >= start of the year 4 years ago (Asia/Bangkok).
+One row = the invoiced totals of one product on one IS invoice (company, date, `milvnos`, customer) per matched ProductSK: key `FactTransDeliverySK` (see [Schema](#schema) for key generation); the group-by also includes InvoiceSK and ProductSK. The INNER JOIN to `dim_invoice` drops lines without a matching invoice; the invoice join matches every InvoiceSK for the same company, date, type, invoice number and customer, regardless of linked order. The product join uses company + case-insensitive product code; its source grain is owned by the [product card](/dimension/dim_product_master.md#grain-and-key). InvoiceSK matches can still repeat source measures. FactTransDeliverySK is an expanded-row key, not a unique invoice/product total. Window: invoice date >= start of the year 4 years ago (Asia/Bangkok).
 
 # Schema
 

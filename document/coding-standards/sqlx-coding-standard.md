@@ -232,6 +232,8 @@ dimension ที่แปลงแล้วต้องคง SK ตาม natur
 ห้ามเลือกรายการด้วยลำดับ SK เช่น `MIN`/`MAX`, `ORDER BY` หรือ `QUALIFY` บน SK ของ dimension
 หรือ fact ให้เรียงด้วยคอลัมน์ธุรกิจที่ `ROW_NUMBER()` เดิมใช้แทน เพราะ SK คงที่จัดสรรด้วย
 `MAX + n` สำหรับแถวใหม่ จึงไม่สื่อถึงลำดับธุรกิจ
+การรวม legacy target duplicates ของ `dim_product_master` เป็นข้อยกเว้นตาม
+[table contract](../okf/dimension/dim_product_master.md#grain-and-key)
 
 ### Fact row surrogate keys
 

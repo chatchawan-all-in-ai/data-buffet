@@ -1,7 +1,7 @@
 ---
 type: BigQuery View
 title: "Product_Master_ALL"
-description: "One row = one dim_product_master barcode version with matching marketing hierarchy, director and physical-attribute rows."
+description: "One row = one dim_product_master product with matching marketing hierarchy, director and physical-attribute rows."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=onetime&t=Product_Master_ALL&page=table"
 project_id: databuffet-nonprd
 dataset_id: onetime
@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-11T18:33:42+07:00" }
 status: draft
 ---
 
@@ -24,7 +24,7 @@ The wide product master: [dim_product_master](/dimension/dim_product_master.md) 
 
 # Grain and key
 
-One row = one `dim_product_master` row of company `ag01` with each combination of joined matches: intended key `ProductCode`, `Barcode` (not unique). The source key also includes `CompanySK` (constant for this company and not exposed by this view), with NULL barcode matched as empty. [view_dim_product_mkt](/view/dimension_view/view_dim_product_mkt.md) is joined on `ProductMktSK` + `CompanySK`, [Product_Attribute](/view/onetime/Product_Attribute.md) on `ProductSK` + `CompanySK` (can return several rows per `ProductSK`), and `dim_product_mkt_director` on `ProductMktDirectorSK` + `CompanySK`; all are LEFT JOINs.
+One row = one `dim_product_master` row of company `ag01` with each combination of joined matches: intended key `ProductCode` (not unique). The source grain is owned by the [product card](/dimension/dim_product_master.md#grain-and-key). [view_dim_product_mkt](/view/dimension_view/view_dim_product_mkt.md) is joined on `ProductMktSK` + `CompanySK`, [Product_Attribute](/view/onetime/Product_Attribute.md) on `ProductSK` + `CompanySK` (can return several rows per `ProductSK`), and `dim_product_mkt_director` on `ProductMktDirectorSK` + `CompanySK`; all are LEFT JOINs.
 
 # Schema
 

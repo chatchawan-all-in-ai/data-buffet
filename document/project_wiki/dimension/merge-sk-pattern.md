@@ -43,6 +43,9 @@ files.
 ## Exceptions
 
 See the [inventory](inventory.md) for held conversions and unchanged actions.
+`dim_product_master` reconciles legacy target duplicates before asserting lookup-key
+uniqueness; its [table card](../../okf/dimension/dim_product_master.md#grain-and-key)
+owns that reconciliation rule.
 `dim_company` preserves its legacy identity lookup rather than the common natural-key
 lookup and assertions; its exact behavior is owned by the
 [company card](../../okf/dimension/dim_company.md#how-it-is-built).

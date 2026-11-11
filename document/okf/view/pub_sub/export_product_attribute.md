@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/cdc-process/process.md"
     title: "Data Mart wiki (document/project_wiki/cdc-process/process.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T16:47:32+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-11T18:33:42+07:00" }
 status: draft
 ---
 
@@ -30,7 +30,7 @@ One row = one product attribute row: key `ProductSK`, `occurrence` (unique); `ro
 
 | Column | Type | Description |
 |---|---|---|
-| `ProductSK` | INT64 | SK of a matching `dim_product_master` row (stable MERGE dim). Matching uses company + `ProductCode`, without barcode; several retained barcode versions can produce different SKs for one code. |
+| `ProductSK` | INT64 | Product SK carried from [Product_Attribute](/view/onetime/Product_Attribute.md#schema). |
 | `ProductCode` | STRING | Product (stock item) code. |
 | `ProductSeries` | STRING | Product series name. |
 | `ProductSize` | STRING | Size of the product. |

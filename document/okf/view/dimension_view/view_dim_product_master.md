@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/view/view-layer.md"
     title: "Data Mart wiki (document/project_wiki/view/view-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-05T00:00:00+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-11T18:33:42+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [dim_pump_information](/dimension/dim_pump_information.md) and [export_
 
 # Grain and key
 
-One row = one dim_product_master row: key `ProductSK` (natural key `CompanySK` + `ProductCode` + `Barcode`, with NULL barcode matched as empty). A company + `ProductCode` can appear with several `Barcode` values when dim_product_master holds several barcode versions. The three dim_waterpac joins are on `CompanySK` + upper-case WaterPac code and add no rows.
+One row = one dim_product_master row: key `ProductSK`; the source grain is owned by the [product card](/dimension/dim_product_master.md#grain-and-key). The three dim_waterpac joins are on `CompanySK` + upper-case WaterPac code and add no rows.
 
 # Schema
 

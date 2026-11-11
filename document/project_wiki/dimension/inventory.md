@@ -10,7 +10,7 @@
 > | Distinct behavior | `dim_order`, `dim_customer_report_info` |
 > | Unchanged | Existing actions, including the held dimensions below |
 >
-> Held conversions: `dim_aging`, `dim_product_master`, `dim_stk_mkt`, and
+> Held conversions: `dim_aging`, `dim_stk_mkt`, and
 > `dim_target_saleout_mdt` retain their original key-generation behavior and OKF cards.
 > The only SQLX exception is `dim_target_saleout_mdt`'s ProductMkt lookup ordering,
 > which uses the business-field order from before stable allocation in `dim_product_mkt`.
@@ -93,7 +93,7 @@ action; see [stable dimension sync](merge-sk-pattern.md) and the project DAG.
 | dim_delivery | DeliverySK | curated_mil, ttrip/ttrip_document/tdelivery, deb, curated_mih | dim_company |
 | dim_project | ProjectSK | validated_mac5.tbook_profilecomp | dim_company |
 | dim_quotation | QuotationSK | curated_tbook_quotation, tbook_quodetail, curated_mih/mil | dim_company, dim_project |
-| dim_product_master | ProductSK · NK = CompanySK + ProductCode + Barcode | Held; original no-delete MERGE. See [table contract](../../okf/dimension/dim_product_master.md#how-it-is-built). Source: validated_mac5 stk/stg and validated_mastersku product/product_detail · includes 8 dummy ag01 codes (7 `*OTHERS` plus `WAITING999`) | dim_company, dim_product_mkt, dim_rebate, dim_stk_mkt |
+| dim_product_master | ProductSK | Stable-SK three-clause sync; see [table grain and duplicate-key reconciliation](../../okf/dimension/dim_product_master.md#grain-and-key). Source: validated_mac5 stk/stg and validated_mastersku product/product_detail | dim_company, dim_product_mkt, dim_rebate, dim_stk_mkt |
 | dim_customer_grade | CustomerGradeSK | chq, cql, mie, mir, deb, mih, curated_mih | dim_customer, dim_aging, dim_calendar, dim_status_not_receive + 5 score dims |
 | dim_group_customer | GroupCustomerSK | dim_customer | dim_customer |
 | dim_group_customer_grade | GroupCustomerGradeSK | deb, chq, cql, mie, mir, mih, curated_mih | dim_calendar, dim_customer, dim_group_customer + score dims |

@@ -43,7 +43,7 @@ Star-schema dimensions in `dimension_table` (surrogate keys, mds and lake source
 * [dim_payment](dim_payment.md) - One row = one payment memo code (CodeMemo) per company with its payment id, name, method (EN/TH) and type, from the MDS payment master.
 * [dim_payment_receive_score](dim_payment_receive_score.md) - One row = one score band (min/max total payment received, validity period) per company, used to score a customer's yearly payment volume.
 * [dim_pc](dim_pc.md) - One row = one promoter/PC (product consultant) assignment (employee, MDT branch, marketing group, period) from the MDS PC master, plus a reserved -1 'unknown' row.
-* [dim_product_master](dim_product_master.md) - One row = one MAC5 stock item (product code) per company and barcode, enriched with MAC5 stock-group, MASTERSKU product master data and marketing-group SKs.
+* [dim_product_master](dim_product_master.md)
 * [dim_product_master_fc](dim_product_master_fc.md) - One row = one product/variant (by barcode) per company from the MDS finance product master, with MAC5 and D365 codes, variant attributes, dimensions and product hierarchy.
 * [dim_product_mdt](dim_product_mdt.md) - One row = one MDT (modern trade saleout) product code with its link to the MAC5 product SK and marketing-group SK, plus placeholder rows for unmapped codes and a -1 unknown row.
 * [dim_product_mkt](dim_product_mkt.md) - One row = one marketing classification (type, marketing group, sub-marketing, segment) per company, from the MDS marketing-name master.

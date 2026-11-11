@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "fact_quotation"
-description: "One row = the quoted totals of one stock code on one quotation (company, Running, customer, project) per matched ProductSK; retained barcode versions repeat the quoted quantities and totals."
+description: "One row = the quoted totals of one stock code on one quotation (company, Running, customer, project) per matched ProductSK."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_quotation&page=table"
 project_id: databuffet-nonprd
 dataset_id: fact_table
@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-08T22:57:16+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-11T18:33:42+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [fact_order](/fact/fact_order.md), [export_fact_quotation](/view/pub_su
 
 # Grain and key
 
-One row = the quoted totals of one stock code on one quotation (company, `Running`, customer, project) per matched ProductSK: key `FactQuotationSK` (see [Schema](#schema) for key generation). The INNER JOIN to `dim_quotation` drops detail rows without a matching quotation. The detail is grouped by ProductSK, CompanySK, QuotationSK, SDate, Year/Month/Day, Running, StkCode, CustomerId, ProjectCode; `Price` is AVG, `Quantity`/`Total` are SUM, `StkDesc` is MAX. The product join uses company + stock code and retains each matching ProductSK, so the same source quantities and totals repeat across barcode versions. FactQuotationSK identifies an expanded row, not a unique quotation/product total.
+One row = the quoted totals of one stock code on one quotation (company, `Running`, customer, project) per matched ProductSK: key `FactQuotationSK` (see [Schema](#schema) for key generation). The INNER JOIN to `dim_quotation` drops detail rows without a matching quotation. The detail is grouped by ProductSK, CompanySK, QuotationSK, SDate, Year/Month/Day, Running, StkCode, CustomerId, ProjectCode; `Price` is AVG, `Quantity`/`Total` are SUM, `StkDesc` is MAX. The product join uses company + stock code; its source grain is owned by the [product card](/dimension/dim_product_master.md#grain-and-key).
 
 # Schema
 

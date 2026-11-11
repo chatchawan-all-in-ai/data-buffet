@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "fact_order"
-description: "One row = the summed lines of one product on one PS sales order (company, date, order number, customer) per matched ProductSK and quotation line; retained product versions and quotation matches repeat the quantities and amounts."
+description: "One row = the summed lines of one product on one PS sales order (company, date, order number, customer) per matched ProductSK and quotation line; quotation matches can repeat the quantities and amounts."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_order&page=table"
 project_id: databuffet-nonprd
 dataset_id: fact_table
@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-08T22:57:16+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-11T18:33:42+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [fact_invoice](/fact/fact_invoice.md), [view_fact_transcation](/view/fa
 
 # Grain and key
 
-One row = the summed lines of one product on one PS sales order (company, order date, `milvnos`, customer) per matched ProductSK and quotation line: key `FactOrderSk`. Its stable value is a typed business-key hash over company, order date, type, order number, customer, lower-case stock code and `occ`; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). `curated_mil` lines are summed (GROUP BY 12 keys incl. ProductSK, OrderSK, mihRef1). ProductSK is part of the grouping: company/code matches to retained barcode versions each receive the same source totals. The subsequent quotation join can repeat each grouped row again for every matching Running + StkCode + CompanySK. FactOrderSk identifies these expanded candidates, not a unique business-line total. No date retention filter.
+One row = the summed lines of one product on one PS sales order (company, order date, `milvnos`, customer) per matched ProductSK and quotation line: key `FactOrderSk`. Its stable value is a typed business-key hash over company, order date, type, order number, customer, lower-case stock code and `occ`; `occ` follows the [shared occurrence rule](../../coding-standards/sqlx-coding-standard.md#fact-row-surrogate-keys). `curated_mil` lines are summed (GROUP BY 12 keys incl. ProductSK, OrderSK, mihRef1). ProductSK is part of the grouping; the dimension grain is owned by the [product card](/dimension/dim_product_master.md#grain-and-key). The subsequent quotation join can repeat each grouped row again for every matching Running + StkCode + CompanySK. FactOrderSk identifies these expanded candidates, not a unique business-line total. No date retention filter.
 
 # Schema
 

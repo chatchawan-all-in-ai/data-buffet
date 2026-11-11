@@ -49,6 +49,12 @@ cdc → process   (สายแยก — process gate อยู่บน CDC �
 ตารางเวลาจริง (05:45 / 06:00 / 08:55 / ปีละครั้ง) ดูที่
 [running-and-troubleshooting § Schedule](../project_wiki/operations/running-and-troubleshooting.md#schedule-dataform-service-databuffet-nonprd)
 
+สำหรับการย้าย `dim_product_master` เป็น stable-SK ให้รันใน `sk_test_*` ก่อน
+ตามลำดับ dimension → `fact_quotation` → `fact_order` → facts ที่เหลือตาม dependency
+เพื่อให้ fact อ้าง SK ที่คงไว้หลังรวม legacy duplicates
+การ deploy จริงต้องได้รับคำสั่ง go ใหม่โดยชัดแจ้ง; ใช้
+[table contract](../okf/dimension/dim_product_master.md#grain-and-key) เป็นเกณฑ์ตรวจคีย์
+
 ## Query ตรงด้วย bq
 
 ```bash

@@ -1,7 +1,7 @@
 ---
 type: BigQuery Table
 title: "fact_delivery"
-description: "One row = the delivery status counts of one invoice item (company, invoice, item, vehicle, delivery date, location) for one matching invoice product candidate; retained product versions repeat the counts and invoice measures."
+description: "One row = the delivery status counts of one invoice item (company, invoice, item, vehicle, delivery date, location) for one matching invoice product candidate; multiple invoice candidates can repeat the counts and invoice measures."
 resource: "https://console.cloud.google.com/bigquery?project=databuffet-nonprd&p=databuffet-nonprd&d=fact_table&t=fact_delivery&page=table"
 project_id: databuffet-nonprd
 dataset_id: fact_table
@@ -14,7 +14,7 @@ sources:
   - id: wiki
     resource: "https://github.com/ALL-IN-AI-ASIA/data-buffet/blob/dev/document/project_wiki/fact/fact-layer.md"
     title: "Data Mart wiki (document/project_wiki/fact/fact-layer.md)"
-generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-08T22:57:16+07:00" }
+generated: { by: "agent:claude-code/claude-sonnet-5-5", at: "2026-11-11T18:33:42+07:00" }
 status: draft
 ---
 
@@ -26,7 +26,7 @@ Read by: [export_fact_delivery](/view/pub_sub/export_fact_delivery.md).
 
 # Grain and key
 
-One row = the delivery status counts of one invoice item for one vehicle, delivery date and location per matching invoice product candidate: key `FactDeliverySK` (see [Schema](#schema) for key generation). Business grain of the status aggregation: company + documentID (invoice number) + item + vehicle + DeliveryDate + location. Items come from `ttrip_document.fitem`; if (document, trip code, item) is not matched to `curated_mil`, the alternate item `fitem2` is used. The later join to fact_transaction_delivery emits every matching invoice/ProductSK candidate. Retained barcode versions therefore repeat all status counts and totalItems as well as invoice measures; FactDeliverySK identifies an expanded row. Only items present in `curated_mil` for the same document (case-insensitive) are kept; items starting with '8' are excluded; documents are restricted to IS lines with a link number.
+One row = the delivery status counts of one invoice item for one vehicle, delivery date and location per matching invoice product candidate: key `FactDeliverySK` (see [Schema](#schema) for key generation). Business grain of the status aggregation: company + documentID (invoice number) + item + vehicle + DeliveryDate + location. Items come from `ttrip_document.fitem`; if (document, trip code, item) is not matched to `curated_mil`, the alternate item `fitem2` is used. The later join to fact_transaction_delivery emits every matching invoice/ProductSK candidate. Multiple invoice candidates can repeat status counts and totalItems as well as invoice measures; see the [upstream grain](/fact/fact_transaction_delivery.md#grain-and-key). FactDeliverySK identifies an expanded row. Only items present in `curated_mil` for the same document (case-insensitive) are kept; items starting with '8' are excluded; documents are restricted to IS lines with a link number.
 
 # Schema
 
